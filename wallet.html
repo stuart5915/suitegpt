@@ -4,10 +4,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wallet | Stuart Hollinger</title>
+    <title>Wallet | SUITE</title>
     <meta name="description" content="Manage your SUITE tokens - deposit, withdraw, stake, and vote on charities.">
+    <!-- Ethers.js for blockchain interactions -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.umd.min.js"></script>
     <link rel="stylesheet" href="styles.css">
     <style>
+        /* LIGHT THEME OVERRIDES - Match homepage salmon/white design */
+        :root {
+            --bg-primary: #FDF7F4;
+            --bg-secondary: #FFFFFF;
+            --bg-tertiary: #FEF3EE;
+            --bg-card: #FFFFFF;
+            --text-primary: #1F2937;
+            --text-secondary: #6B7280;
+            --text-tertiary: #9CA3AF;
+            --border-color: rgba(0, 0, 0, 0.08);
+            --accent-primary: #E85D3B;
+            --accent-secondary: #F97316;
+        }
+
+        body {
+            background: linear-gradient(135deg, #FDF7F4 0%, #FEF3EE 50%, #FFF5EB 100%) !important;
+        }
+
+        .nav {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-logo {
+            color: #1F2937 !important;
+        }
+
+        .nav-links a {
+            color: #6B7280 !important;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: #E85D3B !important;
+        }
+
         /* Wallet Page Specific Styles */
         .wallet-page {
             padding-top: 100px;
@@ -107,6 +146,23 @@
             color: #ef4444;
         }
 
+        .connect-btn-inline {
+            background: linear-gradient(135deg, #E85D3B, #F97316);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .connect-btn-inline:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(232, 93, 59, 0.3);
+        }
+
         /* Balance Cards */
         .balance-grid {
             display: grid;
@@ -124,8 +180,8 @@
         }
 
         .balance-card.primary {
-            border-color: rgba(168, 85, 247, 0.4);
-            background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), transparent);
+            border-color: rgba(232, 93, 59, 0.4);
+            background: linear-gradient(135deg, rgba(232, 93, 59, 0.1), transparent);
         }
 
         .balance-label {
@@ -146,6 +202,24 @@
             font-size: 0.85rem;
             color: var(--text-secondary);
             margin-top: 4px;
+        }
+
+        /* Add to Wallet Button */
+        .add-to-wallet-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .add-to-wallet-btn:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+            background: rgba(232, 93, 59, 0.1);
         }
 
         /* Treasury Stats */
@@ -177,6 +251,132 @@
             font-size: 1.1rem;
             font-weight: 700;
             color: #22c55e;
+        }
+
+        .treasury-value-stacked {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 2px;
+        }
+
+        .treasury-usd {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #22c55e;
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+        }
+
+        .treasury-eth {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-tertiary);
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+        }
+
+        /* Admin Panel Styles */
+        .admin-panel {
+            border: 2px solid #ef4444 !important;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.05), rgba(239, 68, 68, 0.02)) !important;
+        }
+
+        .admin-notice {
+            color: #ef4444;
+            font-size: 0.9rem;
+            margin-bottom: 16px;
+        }
+
+        .admin-stats {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .admin-stat {
+            flex: 1;
+            background: rgba(239, 68, 68, 0.1);
+            padding: 12px 16px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .admin-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .admin-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #ef4444;
+            font-family: 'SF Mono', monospace;
+        }
+
+        .admin-actions {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .admin-btn {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            background: #22c55e;
+            color: white;
+        }
+
+        .admin-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+        }
+
+        .admin-btn.danger {
+            background: #ef4444;
+        }
+
+        .admin-btn.danger:hover {
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .admin-btn.secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .admin-ownership {
+            border-top: 1px solid var(--border-color);
+            padding-top: 16px;
+        }
+
+        .admin-ownership h4 {
+            margin-bottom: 12px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .admin-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            font-family: 'SF Mono', monospace;
+            font-size: 0.85rem;
+        }
+
+        .admin-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
         }
 
         /* Action Buttons */
@@ -626,14 +826,15 @@
     <nav class="nav">
         <div class="nav-container">
             <a href="index.html" class="nav-logo">
-                <span class="logo-icon">◆</span>
-                Stuart Hollinger
+                <span class="logo-icon"
+                    style="background: linear-gradient(135deg, #E85D3B, #F97316); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">◆</span>
+                SUITE
             </a>
             <div class="nav-links">
                 <a href="apps.html">Apps</a>
-                <a href="suite.html">$SUITE</a>
+                <a href="developer-portal.html">Developer Portal</a>
+                <a href="docs.html">Docs</a>
                 <a href="wallet.html" class="active">Wallet</a>
-                <a href="index.html#about">About</a>
             </div>
         </div>
     </nav>
@@ -641,30 +842,24 @@
     <main class="wallet-page">
         <div class="wallet-container">
 
-            <!-- Connect Section (shown when not connected) -->
-            <section class="connect-section" id="connectSection">
-                <h1>Your <span class="gradient-text">SUITE Wallet</span></h1>
-                <p>Connect your wallet to manage your SUITE tokens, stake for governance, and vote on charities.</p>
-                <button class="connect-btn" id="connectWalletBtn">
-                    🦊 Connect MetaMask
-                </button>
-                <p style="margin-top: 16px; font-size: 0.85rem; color: var(--text-tertiary);">
-                    Don't have a wallet? One will be created for you when you add funds in any app.
-                </p>
-            </section>
+            <!-- Wallet Dashboard (always visible) -->
+            <section class="wallet-dashboard connected" id="walletDashboard">
 
-            <!-- Wallet Dashboard (shown when connected) -->
-            <section class="wallet-dashboard" id="walletDashboard">
-
-                <!-- Header with Address -->
+                <!-- Header with Address or Connect Button -->
                 <div class="wallet-header">
                     <h1>Your Wallet</h1>
                     <div style="display: flex; gap: 12px; align-items: center;">
-                        <div class="wallet-address">
+                        <!-- Shown when connected -->
+                        <div class="wallet-address" id="walletConnectedInfo" style="display: none;">
                             <span class="dot"></span>
                             <span id="walletAddressDisplay">0x1234...5678</span>
                         </div>
-                        <button class="disconnect-btn" id="disconnectBtn">Disconnect</button>
+                        <button class="disconnect-btn" id="disconnectBtn" style="display: none;">Disconnect</button>
+
+                        <!-- Shown when not connected -->
+                        <button class="connect-btn-inline" id="connectWalletBtn">
+                            🦊 Connect Wallet
+                        </button>
                     </div>
                 </div>
 
@@ -700,7 +895,10 @@
                 <div class="treasury-stats">
                     <div class="treasury-stat">
                         <span class="treasury-label">🏦 Treasury Value</span>
-                        <span class="treasury-value" id="treasuryValue">Loading...</span>
+                        <div class="treasury-value-stacked">
+                            <span class="treasury-usd" id="treasuryValueUsd">$0.000000</span>
+                            <span class="treasury-eth" id="treasuryValueEth">0.0000000000 ETH</span>
+                        </div>
                     </div>
                     <div class="treasury-stat">
                         <span class="treasury-label">📊 Total SUITE Supply</span>
@@ -715,13 +913,20 @@
                 <!-- Action Buttons -->
                 <div class="action-buttons">
                     <button class="action-btn deposit" id="depositBtn">
-                        <span>+</span> Add Funds
+                        <span>💰</span> Get SUITE
                     </button>
                     <button class="action-btn withdraw" id="withdrawBtn">
-                        <span>↓</span> Withdraw
+                        <span>💵</span> Cash Out
                     </button>
                     <button class="action-btn stake" id="stakeBtn">
                         <span>⚡</span> Stake for Governance
+                    </button>
+                </div>
+
+                <!-- Add Token to Wallet -->
+                <div style="text-align: center; margin-top: 12px;">
+                    <button onclick="addSuiteToWallet()" class="add-to-wallet-btn">
+                        🦊 Add SUITE to MetaMask
                     </button>
                 </div>
 
@@ -729,26 +934,8 @@
                 <div class="wallet-section">
                     <h3>📜 Recent Activity</h3>
                     <div class="tx-list" id="txList">
-                        <div class="tx-item">
-                            <div class="tx-info">
-                                <span class="tx-action">FoodVital - Food Scan</span>
-                                <span class="tx-date">Today, 2:34 PM</span>
-                            </div>
-                            <span class="tx-amount negative">-2 SUITE</span>
-                        </div>
-                        <div class="tx-item">
-                            <div class="tx-info">
-                                <span class="tx-action">Treasury Yield</span>
-                                <span class="tx-date">Yesterday</span>
-                            </div>
-                            <span class="tx-amount positive">+127 SUITE</span>
-                        </div>
-                        <div class="tx-item">
-                            <div class="tx-info">
-                                <span class="tx-action">Deposited Funds</span>
-                                <span class="tx-date">3 days ago</span>
-                            </div>
-                            <span class="tx-amount positive">+50,000 SUITE</span>
+                        <div class="tx-item" style="justify-content: center; color: var(--text-tertiary);">
+                            No activity yet. Get SUITE to start using apps!
                         </div>
                     </div>
                 </div>
@@ -757,26 +944,26 @@
                 <div class="wallet-section">
                     <h3>🗳️ Vote on This Month's Giving</h3>
                     <p style="color: var(--text-secondary); margin-bottom: 16px; font-size: 0.9rem;">
-                        Giving Pool: <strong style="color: #22c55e;">$1,240</strong> • Voting ends in 12 days
+                        Giving Pool: <strong style="color: #22c55e;">$0</strong> • Voting starts when treasury grows
                     </p>
                     <div class="vote-options">
                         <label class="vote-option">
                             <input type="radio" name="charity" value="foodbank">
                             <span class="vote-radio"></span>
                             <span class="vote-label">Cambridge Food Bank</span>
-                            <span class="vote-count">42 votes</span>
+                            <span class="vote-count">0 votes</span>
                         </label>
                         <label class="vote-option">
                             <input type="radio" name="charity" value="youth">
                             <span class="vote-radio"></span>
                             <span class="vote-label">Local Youth Center</span>
-                            <span class="vote-count">38 votes</span>
+                            <span class="vote-count">0 votes</span>
                         </label>
                         <label class="vote-option">
                             <input type="radio" name="charity" value="mental">
                             <span class="vote-radio"></span>
                             <span class="vote-label">Mental Health Initiative</span>
-                            <span class="vote-count">27 votes</span>
+                            <span class="vote-count">0 votes</span>
                         </label>
                     </div>
                     <button class="vote-btn" disabled>Vote (Stake SUITE to unlock)</button>
@@ -786,34 +973,44 @@
                 <div class="wallet-section">
                     <h3>🔗 Connected Apps</h3>
                     <div class="apps-list">
-                        <div class="app-item">
-                            <div class="app-icon">🍎</div>
-                            <div>
-                                <div class="app-name">FoodVital</div>
-                                <div class="app-status">✓ Connected</div>
-                            </div>
+                        <p style="color: var(--text-tertiary); text-align: center; padding: 20px;">
+                            No apps connected yet. Use any SUITE app to auto-connect your wallet.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Admin Panel (Only visible to contract owner) -->
+                <div class="wallet-section admin-panel" id="adminPanel" style="display: none;">
+                    <h3>🔐 Treasury Admin</h3>
+                    <p class="admin-notice">You are the Treasury contract owner.</p>
+
+                    <div class="admin-stats">
+                        <div class="admin-stat">
+                            <span class="admin-label">Accumulated Fees</span>
+                            <span class="admin-value" id="accumulatedFees">$0.00</span>
                         </div>
-                        <div class="app-item">
-                            <div class="app-icon">🏃</div>
-                            <div>
-                                <div class="app-name">Physio AI</div>
-                                <div class="app-status">✓ Connected</div>
-                            </div>
+                        <div class="admin-stat">
+                            <span class="admin-label">Total Treasury ETH</span>
+                            <span class="admin-value" id="adminTreasuryEth">0 ETH</span>
                         </div>
-                        <div class="app-item">
-                            <div class="app-icon">🌙</div>
-                            <div>
-                                <div class="app-name">Dream Journal</div>
-                                <div class="app-status">✓ Connected</div>
-                            </div>
-                        </div>
-                        <div class="app-item">
-                            <div class="app-icon">🧠</div>
-                            <div>
-                                <div class="app-name">Life Hub</div>
-                                <div class="app-status" style="color: var(--text-tertiary);">○ Not connected</div>
-                            </div>
-                        </div>
+                    </div>
+
+                    <div class="admin-actions">
+                        <button class="admin-btn" onclick="withdrawFees()">
+                            💰 Withdraw Fees
+                        </button>
+                        <button class="admin-btn danger" onclick="emergencyWithdraw()">
+                            🚨 Emergency Withdraw
+                        </button>
+                    </div>
+
+                    <div class="admin-ownership">
+                        <h4>Transfer Ownership</h4>
+                        <input type="text" id="newOwnerAddress" placeholder="0x... new owner address"
+                            class="admin-input">
+                        <button class="admin-btn secondary" onclick="transferOwnership()">
+                            Transfer Ownership
+                        </button>
                     </div>
                 </div>
 
@@ -825,7 +1022,7 @@
     <div class="modal-overlay" id="depositModal">
         <div class="modal">
             <div class="modal-header">
-                <h2>➕ Add Funds</h2>
+                <h2>💰 Get SUITE</h2>
                 <button class="modal-close" onclick="closeModal('depositModal')">×</button>
             </div>
 
@@ -914,9 +1111,14 @@
             <!-- Amount Input -->
             <div class="deposit-amount-section">
                 <div class="amount-label">Amount to deposit:</div>
-                <div class="crypto-amount-input">
-                    <input type="number" id="cryptoDepositAmount" placeholder="0.00" oninput="updateCryptoPreview()">
-                    <span class="input-asset" id="inputAssetLabel">ETH</span>
+                <div class="crypto-amount-input-wrapper">
+                    <button class="amount-adjust-btn minus" onclick="adjustAmount(-0.00001)">−</button>
+                    <div class="crypto-amount-input">
+                        <input type="number" id="cryptoDepositAmount" placeholder="0.000000" step="0.000001" min="0"
+                            oninput="updateCryptoPreview()">
+                        <span class="input-asset" id="inputAssetLabel">ETH</span>
+                    </div>
+                    <button class="amount-adjust-btn plus" onclick="adjustAmount(0.00001)">+</button>
                 </div>
                 <div class="percentage-buttons">
                     <button onclick="setPercentage(25)">25%</button>
@@ -929,7 +1131,10 @@
             <!-- SUITE Preview -->
             <div class="suite-receive-preview">
                 <div class="receive-label">You'll receive:</div>
-                <div class="receive-value" id="cryptoSuitePreview">0 SUITE</div>
+                <div class="receive-value">
+                    <span id="cryptoSuitePreview">0 SUITE</span>
+                    <span class="receive-usd" id="cryptoUsdPreview">(~$0.00)</span>
+                </div>
                 <div class="receive-note">After 0.5% deposit fee • Earning ~18% APY</div>
             </div>
 
@@ -939,6 +1144,17 @@
             </button>
 
             <p class="fee-notice">Funds are always withdrawable • No lock-up period</p>
+        </div>
+    </div>
+
+    <!-- Custom Notification Modal -->
+    <div class="modal-overlay" id="notificationModal">
+        <div class="modal notification-modal">
+            <div class="notification-icon" id="notificationIcon">✅</div>
+            <h2 id="notificationTitle">Success!</h2>
+            <p id="notificationMessage">Your transaction was submitted.</p>
+            <div class="notification-details" id="notificationDetails"></div>
+            <button class="notification-btn" onclick="closeNotification()">Got it</button>
         </div>
     </div>
 
@@ -1075,14 +1291,51 @@
             margin-bottom: 20px;
         }
 
+        .crypto-amount-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .amount-adjust-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            border: 2px solid var(--accent-primary);
+            background: transparent;
+            color: var(--accent-primary);
+            font-size: 1.5rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .amount-adjust-btn:hover {
+            background: var(--accent-primary);
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .amount-adjust-btn:active {
+            transform: scale(0.95);
+        }
+
         .crypto-amount-input {
+            flex: 1;
             display: flex;
             align-items: center;
             background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
             overflow: hidden;
-            margin-bottom: 10px;
+        }
+
+        .crypto-amount-input:focus-within {
+            border-color: var(--accent-primary);
         }
 
         .crypto-amount-input input {
@@ -1130,7 +1383,7 @@
         .suite-receive-preview {
             text-align: center;
             padding: 20px;
-            background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(236, 72, 153, 0.1));
+            background: linear-gradient(135deg, rgba(232, 93, 59, 0.15), rgba(249, 115, 22, 0.1));
             border-radius: 12px;
             margin-bottom: 20px;
         }
@@ -1145,6 +1398,17 @@
             font-size: 2rem;
             font-weight: 700;
             color: var(--accent-primary);
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .receive-usd {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #22c55e;
         }
 
         .receive-note {
@@ -1176,26 +1440,83 @@
             cursor: not-allowed;
             transform: none;
         }
+
+        /* Notification Modal Styles */
+        .notification-modal {
+            text-align: center;
+            padding: 30px;
+            max-width: 400px;
+        }
+
+        .notification-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+
+        .notification-modal h2 {
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            font-size: 1.5rem;
+        }
+
+        .notification-modal p {
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        .notification-details {
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            word-break: break-all;
+        }
+
+        .notification-details:empty {
+            display: none;
+        }
+
+        .notification-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .notification-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(232, 93, 59, 0.3);
+        }
     </style>
 
-    <!-- Withdraw Modal -->
+    <!-- Cash Out Modal -->
     <div class="modal-overlay" id="withdrawModal">
         <div class="modal">
             <div class="modal-header">
-                <h2>💰 Withdraw Funds</h2>
+                <h2>💵 Cash Out</h2>
                 <button class="modal-close" onclick="closeModal('withdrawModal')">×</button>
             </div>
 
             <div class="balance-display">
-                <div class="balance-display-value">47,850 SUITE</div>
-                <div class="balance-display-label">Available to withdraw • ≈ $47.62 (after 0.5% fee)</div>
+                <div class="balance-display-value" id="cashOutBalance">0 SUITE</div>
+                <div class="balance-display-label">Available to cash out • ≈ $0.00</div>
             </div>
 
             <div class="amount-selector">
-                <div class="amount-label">How much would you like to withdraw?</div>
+                <div class="amount-label">How much would you like to cash out?</div>
                 <div class="custom-amount">
-                    <input type="number" id="withdrawAmount" placeholder="Amount in SUITE" value="47850">
-                    <button class="amount-option" onclick="document.getElementById('withdrawAmount').value = 47850"
+                    <input type="number" id="withdrawAmount" placeholder="Amount in SUITE" value="0">
+                    <button class="amount-option" onclick="document.getElementById('withdrawAmount').value = 0"
                         style="padding: 12px 20px;">MAX</button>
                 </div>
             </div>
@@ -1250,11 +1571,11 @@
 
     <script>
         // Wallet Connection Logic
-        const connectSection = document.getElementById('connectSection');
         const walletDashboard = document.getElementById('walletDashboard');
         const connectBtn = document.getElementById('connectWalletBtn');
         const disconnectBtn = document.getElementById('disconnectBtn');
         const addressDisplay = document.getElementById('walletAddressDisplay');
+        const connectedInfo = document.getElementById('walletConnectedInfo');
 
         // Check if MetaMask is installed
         const isMetaMaskInstalled = () => typeof window.ethereum !== 'undefined';
@@ -1290,18 +1611,95 @@
         function showConnectedState(address) {
             const shortAddress = `${address.slice(0, 6)}...${address.slice(-4)}`;
             addressDisplay.textContent = shortAddress;
-            connectSection.style.display = 'none';
-            walletDashboard.classList.add('connected');
 
-            // Mock balance data
-            document.getElementById('availableBalance').textContent = '47,850';
-            document.getElementById('stakedBalance').textContent = '10,000';
-            document.getElementById('totalValue').textContent = '$57.56';
+            // Show connected UI, hide connect button
+            connectBtn.style.display = 'none';
+            connectedInfo.style.display = 'flex';
+            disconnectBtn.style.display = 'block';
+
+            // Set initial balances to 0 (real values come from fetchTreasuryStats)
+            document.getElementById('availableBalance').textContent = '0';
+            document.getElementById('stakedBalance').textContent = '0';
+            document.getElementById('totalValue').textContent = '$0.00';
+
+            // Fetch real balance from chain
+            fetchUserSuiteBalance(address);
+
+            // Check if connected wallet is the contract owner
+            checkIfOwner(address);
+        }
+
+        async function fetchUserSuiteBalance(address) {
+            try {
+                if (!window.ethereum) return;
+
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const suiteContract = new ethers.Contract(SUITE_TOKEN_ADDRESS, SUITE_ABI, provider);
+
+                const balance = await suiteContract.balanceOf(address);
+                const formattedBalance = ethers.formatUnits(balance, 18);
+                const numericBalance = parseFloat(formattedBalance);
+                const displayBalance = numericBalance.toLocaleString(undefined, { maximumFractionDigits: 2 });
+
+                document.getElementById('availableBalance').textContent = displayBalance;
+
+                // Calculate USD value based on backing rate from treasury
+                // Get backing rate from displayed value or calculate
+                const backingRateText = document.getElementById('backingRate').textContent;
+                const backingRate = parseFloat(backingRateText.replace('$', '').replace('/SUITE', '')) || 0;
+
+                // Total Value = balance * backing rate (after 0.5% fee)
+                const totalUsdValue = numericBalance * backingRate * 0.995;
+                document.getElementById('totalValue').textContent = `$${totalUsdValue.toFixed(2)}`;
+
+            } catch (error) {
+                console.log('Could not fetch SUITE balance:', error);
+            }
+        }
+
+        // Add SUITE token to MetaMask
+        async function addSuiteToWallet() {
+            if (!isMetaMaskInstalled()) {
+                showNotification('🦊', 'MetaMask Required', 'Please install MetaMask to add tokens to your wallet.');
+                return;
+            }
+
+            try {
+                const wasAdded = await window.ethereum.request({
+                    method: 'wallet_watchAsset',
+                    params: {
+                        type: 'ERC20',
+                        options: {
+                            address: SUITE_TOKEN_ADDRESS,
+                            symbol: 'SUITE',
+                            decimals: 18,
+                            image: 'https://your-domain.com/suite-icon.png' // Optional: Add your logo URL
+                        },
+                    },
+                });
+
+                if (wasAdded) {
+                    showNotification('✅', 'Token Added!', 'SUITE has been added to your MetaMask wallet.');
+                }
+            } catch (error) {
+                console.error('Error adding token:', error);
+                showNotification('❌', 'Failed to Add Token', error.message || 'Could not add SUITE to wallet.');
+            }
         }
 
         function showDisconnectedState() {
-            connectSection.style.display = 'block';
-            walletDashboard.classList.remove('connected');
+            // Show connect button, hide connected UI
+            connectBtn.style.display = 'block';
+            connectedInfo.style.display = 'none';
+            disconnectBtn.style.display = 'none';
+
+            // Hide admin panel
+            document.getElementById('adminPanel').style.display = 'none';
+
+            // Reset balances to 0 but keep dashboard visible
+            document.getElementById('availableBalance').textContent = '0';
+            document.getElementById('stakedBalance').textContent = '0';
+            document.getElementById('totalValue').textContent = '$0.00';
         }
 
         // Check if already connected
@@ -1339,6 +1737,22 @@
             document.getElementById(modalId).classList.remove('active');
         }
 
+        // Custom notification modal functions
+        function showNotification(icon, title, message, details = '') {
+            document.getElementById('notificationIcon').textContent = icon;
+            document.getElementById('notificationTitle').textContent = title;
+            document.getElementById('notificationMessage').textContent = message;
+            document.getElementById('notificationDetails').textContent = details;
+            openModal('notificationModal');
+        }
+
+        function closeNotification() {
+            closeModal('notificationModal');
+            // Refresh balances after closing notification
+            checkConnection();
+            fetchTreasuryStats();
+        }
+
         // Close modal when clicking overlay
         document.querySelectorAll('.modal-overlay').forEach(overlay => {
             overlay.addEventListener('click', (e) => {
@@ -1352,20 +1766,26 @@
             selectedAmount = amount;
             document.querySelectorAll('.amount-option').forEach(opt => opt.classList.remove('selected'));
             element.classList.add('selected');
-            document.getElementById('customAmount').value = '';
+            const customAmountEl = document.getElementById('customAmount');
+            if (customAmountEl) customAmountEl.value = '';
             updateSuitePreview();
         }
 
         function updateSuitePreview() {
-            const customAmount = document.getElementById('customAmount').value;
+            const customAmountEl = document.getElementById('customAmount');
+            const suitePreviewEl = document.getElementById('suitePreviewValue');
+            if (!suitePreviewEl) return;
+
+            const customAmount = customAmountEl ? customAmountEl.value : '';
             const amount = customAmount ? parseFloat(customAmount) : selectedAmount;
             const suiteAmount = (amount * 1000).toLocaleString();
-            document.getElementById('suitePreviewValue').textContent = suiteAmount + ' SUITE';
+            suitePreviewEl.textContent = suiteAmount + ' SUITE';
         }
 
         function handlePayment(method) {
-            const customAmount = document.getElementById('customAmount').value;
-            const amount = customAmount ? parseFloat(customAmount) : selectedAmount;
+            // Get amount safely (customAmount might not exist in simplified modal)
+            const customAmountEl = document.getElementById('customAmount');
+            const amount = customAmountEl ? (parseFloat(customAmountEl.value) || selectedAmount) : selectedAmount;
 
             switch (method) {
                 case 'card':
@@ -1377,7 +1797,7 @@
                     closeModal('depositModal');
                     break;
                 case 'crypto':
-                    // Open the new crypto deposit modal instead of showing alert
+                    // Open the new crypto deposit modal
                     closeModal('depositModal');
                     openCryptoDepositModal();
                     break;
@@ -1483,9 +1903,9 @@
                 const displayEth = isNaN(treasuryEth) ? 0 : treasuryEth;
                 const displaySupply = isNaN(totalSupply) ? 0 : totalSupply;
 
-                // Update UI
-                document.getElementById('treasuryValue').textContent =
-                    '$' + treasuryValueUsd.toFixed(2) + ' (' + displayEth.toFixed(4) + ' ETH)';
+                // Update UI - stacked display with precision
+                document.getElementById('treasuryValueUsd').textContent = '$' + treasuryValueUsd.toFixed(6);
+                document.getElementById('treasuryValueEth').textContent = displayEth.toFixed(10) + ' ETH';
                 document.getElementById('totalSupply').textContent =
                     displaySupply.toLocaleString() + ' SUITE';
 
@@ -1497,18 +1917,33 @@
             } catch (error) {
                 console.error('Error fetching treasury stats:', error);
                 // Show zeros if contract not ready
-                document.getElementById('treasuryValue').textContent = '$0.00 (0 ETH)';
+                document.getElementById('treasuryValueUsd').textContent = '$0.000000';
+                document.getElementById('treasuryValueEth').textContent = '0.0000000000 ETH';
                 document.getElementById('totalSupply').textContent = '0 SUITE';
                 document.getElementById('backingRate').textContent = '$0.000000/SUITE';
             }
         }
 
         async function openCryptoDepositModal() {
+            // First, just open the modal immediately
             openModal('cryptoDepositModal');
-            await fetchWalletBalances();
-            await checkNetwork();
-            await fetchTreasuryStats();
-            updateCryptoPreview();
+
+            // Then try to fetch data (don't block modal opening)
+            try {
+                await fetchWalletBalances();
+            } catch (e) { console.log('fetchWalletBalances error:', e); }
+
+            try {
+                await checkNetwork();
+            } catch (e) { console.log('checkNetwork error:', e); }
+
+            try {
+                await fetchTreasuryStats();
+            } catch (e) { console.log('fetchTreasuryStats error:', e); }
+
+            try {
+                updateCryptoPreview();
+            } catch (e) { console.log('updateCryptoPreview error:', e); }
         }
 
         async function checkNetwork() {
@@ -1608,16 +2043,28 @@
             updateCryptoPreview();
         }
 
+        function adjustAmount(delta) {
+            const input = document.getElementById('cryptoDepositAmount');
+            const currentValue = parseFloat(input.value) || 0;
+            const newValue = Math.max(0, currentValue + delta);
+            // Show 6 decimals for ETH, 2 for USDC
+            const decimals = selectedCryptoAsset === 'eth' ? 6 : 2;
+            input.value = newValue.toFixed(decimals);
+            updateCryptoPreview();
+        }
+
         function setPercentage(percent) {
             const balance = selectedCryptoAsset === 'eth' ? walletBalances.eth : walletBalances.usdc;
             const amount = (balance * percent / 100);
 
             // For ETH, leave a little for gas
             const finalAmount = selectedCryptoAsset === 'eth' && percent === 100
-                ? Math.max(0, amount - 0.001)
+                ? Math.max(0, amount - 0.0005) // leave 0.0005 for gas
                 : amount;
 
-            document.getElementById('cryptoDepositAmount').value = finalAmount.toFixed(selectedCryptoAsset === 'eth' ? 4 : 2);
+            // Show 6 decimals for ETH, 2 for USDC
+            const decimals = selectedCryptoAsset === 'eth' ? 6 : 2;
+            document.getElementById('cryptoDepositAmount').value = finalAmount.toFixed(decimals);
             updateCryptoPreview();
         }
 
@@ -1639,6 +2086,10 @@
             document.getElementById('cryptoSuitePreview').textContent =
                 suiteAmount.toLocaleString() + ' SUITE';
 
+            // Show USD value
+            document.getElementById('cryptoUsdPreview').textContent =
+                `(~$${afterFee.toFixed(2)})`;
+
             // Enable/disable deposit button
             document.getElementById('cryptoDepositBtn').disabled = suiteAmount === 0;
         }
@@ -1646,7 +2097,7 @@
         async function executeCryptoDeposit() {
             const amount = parseFloat(document.getElementById('cryptoDepositAmount').value) || 0;
             if (amount <= 0) {
-                alert('Please enter an amount to deposit.');
+                showNotification('⚠️', 'Enter an Amount', 'Please enter an amount to deposit.');
                 return;
             }
 
@@ -1658,7 +2109,7 @@
             try {
                 const accounts = await window.ethereum.request({ method: 'eth_accounts' });
                 if (accounts.length === 0) {
-                    alert('Please connect your wallet first.');
+                    showNotification('🔗', 'Connect Wallet', 'Please connect your wallet first.');
                     return;
                 }
 
@@ -1685,11 +2136,19 @@
                     });
 
                     const suiteReceived = Math.floor(amount * ETH_PRICE_USD * 0.995 * 1000);
-                    alert(`✅ ETH Deposit Submitted!\n\nTx Hash: ${txHash}\n\n💎 You'll receive ~${suiteReceived.toLocaleString()} SUITE\n\nRefresh the page after the transaction confirms to see your SUITE balance!`);
                     closeModal('cryptoDepositModal');
+                    showNotification(
+                        '✅',
+                        'ETH Deposit Submitted!',
+                        `You'll receive ~${suiteReceived.toLocaleString()} SUITE once the transaction confirms.`,
+                        `Tx: ${txHash}`
+                    );
 
                     // Refresh treasury stats after deposit
-                    setTimeout(() => fetchTreasuryStats(), 5000);
+                    setTimeout(() => {
+                        fetchTreasuryStats();
+                        checkConnection();
+                    }, 5000);
 
                 } else {
                     // USDC deposits via Treasury contract
@@ -1750,16 +2209,27 @@
                     });
 
                     const suiteReceived = Math.floor(amount * 0.995 * 1000);
-                    alert(`✅ USDC Deposit Submitted!\n\nTx Hash: ${txHash}\n\n💎 You'll receive ~${suiteReceived.toLocaleString()} SUITE`);
                     closeModal('cryptoDepositModal');
+                    showNotification(
+                        '✅',
+                        'USDC Deposit Submitted!',
+                        `You'll receive ~${suiteReceived.toLocaleString()} SUITE once the transaction confirms.`,
+                        `Tx: ${txHash}`
+                    );
+
+                    // Refresh after deposit
+                    setTimeout(() => {
+                        fetchTreasuryStats();
+                        checkConnection();
+                    }, 5000);
                 }
 
             } catch (error) {
                 console.error('Deposit error:', error);
                 if (error.code === 4001) {
-                    alert('Transaction cancelled.');
+                    showNotification('❌', 'Cancelled', 'Transaction was cancelled.');
                 } else {
-                    alert('Transaction failed. Please try again.');
+                    showNotification('❌', 'Transaction Failed', 'Something went wrong. Please try again.', error.message || '');
                 }
             } finally {
                 btn.innerHTML = originalText;
@@ -1767,28 +2237,118 @@
             }
         }
 
-        function handleWithdraw(method) {
-            const amount = document.getElementById('withdrawAmount').value;
-            const usdValue = (amount / 1000 * 0.995).toFixed(2); // After 0.5% fee
+        async function handleWithdraw(method) {
+            const amount = parseFloat(document.getElementById('withdrawAmount').value) || 0;
+
+            // Get backing rate for precise calculation
+            const backingRateText = document.getElementById('backingRate').textContent;
+            const backingRate = parseFloat(backingRateText.replace('$', '').replace('/SUITE', '')) || 0;
+            const usdValue = (amount * backingRate * 0.995); // After 0.5% fee
+            const usdcValue = usdValue.toFixed(6); // 6 decimals for USDC precision
 
             switch (method) {
                 case 'paypal':
-                    alert(`[PAYPAL] Would send $${usdValue} to your PayPal\n\nEnter your PayPal email to continue.`);
+                    closeModal('withdrawModal');
+                    showNotification('🅿️', 'PayPal Cash Out', `Would send $${usdcValue} to your PayPal email.`, 'Coming soon!');
                     break;
                 case 'card':
-                    alert(`[CARD REFUND] Would refund $${usdValue} to your original card`);
+                    closeModal('withdrawModal');
+                    showNotification('💳', 'Card Refund', `Would refund $${usdcValue} to your original card.`, 'Coming soon!');
                     break;
                 case 'giftcard':
-                    alert(`[GIFT CARD] Choose a gift card:\n\n• Amazon - $${usdValue}\n• Visa Prepaid - $${usdValue}\n• Starbucks - $${usdValue}`);
+                    closeModal('withdrawModal');
+                    showNotification('🎁', 'Gift Card', `Choose a gift card worth $${usdcValue}`, 'Coming soon!');
                     break;
                 case 'crypto':
-                    alert(`[CRYPTO] Would send ${usdValue} USDC to your wallet address\n\nThis triggers ONE MetaMask popup to receive.`);
+                    // Actually execute the crypto withdrawal
+                    await executeCryptoWithdraw(amount);
                     break;
                 case 'bank':
-                    alert(`[BANK] Would initiate bank transfer of $${usdValue}\n\nCanada: Interac e-Transfer\nUSA: ACH Transfer\nOther: Wire Transfer`);
+                    closeModal('withdrawModal');
+                    showNotification('🏦', 'Bank Transfer', `Would initiate $${usdcValue} transfer.`, 'Coming soon!');
                     break;
             }
-            closeModal('withdrawModal');
+        }
+
+        async function executeCryptoWithdraw(suiteAmount) {
+            if (suiteAmount <= 0) {
+                showNotification('⚠️', 'Enter Amount', 'Please enter an amount to withdraw.');
+                return;
+            }
+
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                if (accounts.length === 0) {
+                    showNotification('🔗', 'Connect Wallet', 'Please connect your wallet first.');
+                    return;
+                }
+
+                const fromAddress = accounts[0];
+
+                closeModal('withdrawModal');
+                showNotification('⏳', 'Processing Withdrawal', 'Please confirm the transaction in MetaMask...', '');
+
+                // Convert SUITE amount to wei (18 decimals)
+                const suiteWei = '0x' + Math.floor(suiteAmount * 1e18).toString(16);
+
+                // First: Approve Treasury to spend SUITE tokens
+                // approve(address spender, uint256 amount)
+                const approveData = '0x095ea7b3' +
+                    TREASURY_ADDRESS.slice(2).padStart(64, '0') +
+                    suiteWei.slice(2).padStart(64, '0');
+
+                await window.ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [{
+                        from: fromAddress,
+                        to: SUITE_TOKEN_ADDRESS,
+                        data: approveData,
+                    }],
+                });
+
+                // Wait a bit for approval to process
+                await new Promise(resolve => setTimeout(resolve, 2000));
+
+                // Second: Call withdraw(uint256 suiteAmount) on Treasury
+                // Function selector for withdraw(uint256)
+                const withdrawData = '0x2e1a7d4d' + suiteWei.slice(2).padStart(64, '0');
+
+                const txHash = await window.ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [{
+                        from: fromAddress,
+                        to: TREASURY_ADDRESS,
+                        data: withdrawData,
+                    }],
+                });
+
+                // Calculate expected ETH received
+                const backingRateText = document.getElementById('backingRate').textContent;
+                const backingRate = parseFloat(backingRateText.replace('$', '').replace('/SUITE', '')) || 0;
+                const expectedUsd = suiteAmount * backingRate * 0.995;
+                const expectedEth = (expectedUsd / ETH_PRICE_USD).toFixed(8);
+
+                showNotification(
+                    '✅',
+                    'Withdrawal Submitted!',
+                    `You'll receive ~${expectedEth} ETH (~$${expectedUsd.toFixed(6)}) once confirmed.`,
+                    `Tx: ${txHash}`
+                );
+
+                // Refresh balances
+                setTimeout(() => {
+                    checkConnection();
+                    fetchTreasuryStats();
+                }, 5000);
+
+            } catch (error) {
+                console.error('Withdraw error:', error);
+                if (error.code === 4001) {
+                    showNotification('❌', 'Cancelled', 'Transaction was cancelled.');
+                } else {
+                    showNotification('❌', 'Withdrawal Failed', 'Something went wrong.', error.message || '');
+                }
+            }
         }
 
         // Wire up buttons
@@ -1797,16 +2357,205 @@
         });
 
         document.getElementById('withdrawBtn').addEventListener('click', () => {
+            // Get balance from the displayed available balance
+            const availableBalanceText = document.getElementById('availableBalance').textContent;
+            const availableBalance = parseFloat(availableBalanceText.replace(/,/g, '')) || 0;
+
+            // Get backing rate for USD calculation
+            const backingRateText = document.getElementById('backingRate').textContent;
+            const backingRate = parseFloat(backingRateText.replace('$', '').replace('/SUITE', '')) || 0;
+            const usdValue = (availableBalance * backingRate * 0.995).toFixed(2);
+
+            // Update Cash Out modal with actual balance
+            document.getElementById('cashOutBalance').textContent = `${availableBalance.toLocaleString()} SUITE`;
+            document.querySelector('#withdrawModal .balance-display-label').textContent = `Available to cash out • ≈ $${usdValue}`;
+            document.getElementById('withdrawAmount').value = availableBalance;
+            document.getElementById('withdrawAmount').max = availableBalance;
+
+            // Update MAX button
+            const maxBtn = document.querySelector('#withdrawModal .amount-option');
+            if (maxBtn) {
+                maxBtn.onclick = () => { document.getElementById('withdrawAmount').value = availableBalance; };
+            }
+
             openModal('withdrawModal');
         });
 
         document.getElementById('stakeBtn').addEventListener('click', () => {
-            alert('Staking interface coming soon! Stake your SUITE to earn voting power and unlock charity voting.');
+            showNotification('⚡', 'Staking Coming Soon', 'Stake your SUITE to earn voting power and unlock charity voting.');
         });
 
-        // Fetch treasury stats on page load
+        // ===== ADMIN PANEL FUNCTIONS =====
+
+        // Hardcoded admin addresses (can see admin panel)
+        const ADMIN_ADDRESSES = [
+            '0x92d67d8ad8b986e78b369be0272e121ae5acad59', // Stuart's primary wallet
+            '0xdefc3ae5a990206101463d208e7e1446c58a72bd', // Treasury owner (deployer)
+        ];
+
+        async function checkIfOwner(connectedAddress) {
+            try {
+                const connectedLower = connectedAddress.toLowerCase();
+
+                // Check if in admin list first
+                const isAdmin = ADMIN_ADDRESSES.includes(connectedLower);
+
+                // Also check contract owner
+                const ownerData = '0x8da5cb5b'; // owner()
+                const ownerHex = await window.ethereum.request({
+                    method: 'eth_call',
+                    params: [{ to: TREASURY_ADDRESS, data: ownerData }, 'latest']
+                });
+
+                // Extract address from response (remove 0x and leading zeros)
+                const ownerAddress = '0x' + ownerHex.slice(26).toLowerCase();
+                const isContractOwner = connectedLower === ownerAddress;
+
+                console.log('Admin check:', { connectedLower, ownerAddress, isAdmin, isContractOwner });
+
+                if (isAdmin || isContractOwner) {
+                    document.getElementById('adminPanel').style.display = 'block';
+                    updateAdminStats();
+                } else {
+                    document.getElementById('adminPanel').style.display = 'none';
+                }
+
+                return isAdmin || isContractOwner;
+            } catch (error) {
+                console.log('Could not check owner:', error);
+                return false;
+            }
+        }
+
+        async function updateAdminStats() {
+            try {
+                // Get treasury ETH balance
+                const treasuryBalanceHex = await window.ethereum.request({
+                    method: 'eth_getBalance',
+                    params: [TREASURY_ADDRESS, 'latest']
+                });
+                const treasuryEth = parseInt(treasuryBalanceHex, 16) / 1e18;
+                const treasuryUsd = treasuryEth * ETH_PRICE_USD;
+
+                document.getElementById('adminTreasuryEth').textContent = treasuryEth.toFixed(10) + ' ETH';
+                document.getElementById('accumulatedFees').textContent = '$' + (treasuryUsd * 0.005).toFixed(6); // Estimate 0.5% as fees
+            } catch (error) {
+                console.log('Could not update admin stats:', error);
+            }
+        }
+
+        async function withdrawFees() {
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                if (accounts.length === 0) return;
+
+                showNotification('⏳', 'Processing', 'Please confirm in MetaMask...');
+
+                // withdrawFees() function selector
+                const withdrawFeesData = '0x476343ee';
+
+                const txHash = await window.ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [{
+                        from: accounts[0],
+                        to: TREASURY_ADDRESS,
+                        data: withdrawFeesData,
+                    }],
+                });
+
+                showNotification('✅', 'Fees Withdrawn!', 'Transaction submitted.', `Tx: ${txHash}`);
+                setTimeout(updateAdminStats, 5000);
+            } catch (error) {
+                if (error.code === 4001) {
+                    showNotification('❌', 'Cancelled', 'Transaction cancelled.');
+                } else {
+                    showNotification('❌', 'Error', error.message || 'Failed to withdraw fees.');
+                }
+            }
+        }
+
+        async function emergencyWithdraw() {
+            if (!confirm('⚠️ EMERGENCY WITHDRAW\n\nThis will withdraw ALL ETH from the treasury.\nAll SUITE holders will lose their backing.\n\nAre you SURE?')) {
+                return;
+            }
+
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                if (accounts.length === 0) return;
+
+                showNotification('⏳', 'Processing', 'Please confirm in MetaMask...');
+
+                // emergencyWithdraw() function selector
+                const emergencyData = '0xdb2e21bc';
+
+                const txHash = await window.ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [{
+                        from: accounts[0],
+                        to: TREASURY_ADDRESS,
+                        data: emergencyData,
+                    }],
+                });
+
+                showNotification('✅', 'Emergency Withdraw Complete', 'All funds withdrawn.', `Tx: ${txHash}`);
+                setTimeout(() => {
+                    updateAdminStats();
+                    fetchTreasuryStats();
+                }, 5000);
+            } catch (error) {
+                if (error.code === 4001) {
+                    showNotification('❌', 'Cancelled', 'Transaction cancelled.');
+                } else {
+                    showNotification('❌', 'Error', error.message || 'Failed to withdraw.');
+                }
+            }
+        }
+
+        async function transferOwnership() {
+            const newOwner = document.getElementById('newOwnerAddress').value.trim();
+
+            if (!newOwner || !newOwner.startsWith('0x') || newOwner.length !== 42) {
+                showNotification('⚠️', 'Invalid Address', 'Please enter a valid Ethereum address.');
+                return;
+            }
+
+            if (!confirm(`Transfer ownership to:\n${newOwner}\n\nYou will lose admin access. Continue?`)) {
+                return;
+            }
+
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                if (accounts.length === 0) return;
+
+                showNotification('⏳', 'Processing', 'Please confirm in MetaMask...');
+
+                // transferOwnership(address) function selector + encoded address
+                const transferData = '0xf2fde38b' + newOwner.slice(2).padStart(64, '0');
+
+                const txHash = await window.ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [{
+                        from: accounts[0],
+                        to: TREASURY_ADDRESS,
+                        data: transferData,
+                    }],
+                });
+
+                showNotification('✅', 'Ownership Transferred', `New owner: ${newOwner.slice(0, 10)}...`, `Tx: ${txHash}`);
+                document.getElementById('adminPanel').style.display = 'none';
+            } catch (error) {
+                if (error.code === 4001) {
+                    showNotification('❌', 'Cancelled', 'Transaction cancelled.');
+                } else {
+                    showNotification('❌', 'Error', error.message || 'Failed to transfer ownership.');
+                }
+            }
+        }
+
+        // Fetch treasury stats and check connection on page load
         if (window.ethereum) {
             fetchTreasuryStats();
+            checkConnection(); // Auto-connect if already authorized
             // Refresh every 30 seconds
             setInterval(fetchTreasuryStats, 30000);
         }
