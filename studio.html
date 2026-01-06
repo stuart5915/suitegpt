@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Studio | Stuart Hollinger</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Studio Page Styles */
+        .studio-page {
+            padding-top: 100px;
+            min-height: 100vh;
+        }
+
+        .studio-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .studio-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .studio-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+        }
+
+        .studio-header p {
+            color: var(--text-secondary);
+        }
+
+        /* Section Cards */
+        .studio-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .section-header h2 {
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-badge {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* Today's Script */
+        .script-display {
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        .script-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            margin-bottom: 16px;
+        }
+
+        .shot-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .shot-item {
+            display: flex;
+            gap: 16px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            border-left: 3px solid var(--accent-primary);
+        }
+
+        .shot-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            min-width: 40px;
+        }
+
+        .shot-content {
+            flex: 1;
+        }
+
+        .shot-type {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .shot-instruction {
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+
+        .shot-script {
+            margin-top: 8px;
+            padding: 12px;
+            background: rgba(168, 85, 247, 0.1);
+            border-radius: 8px;
+            font-style: italic;
+            color: var(--text-secondary);
+        }
+
+        /* Quick Input */
+        .quick-input-wrapper {
+            display: flex;
+            gap: 12px;
+        }
+
+        .quick-input {
+            flex: 1;
+            padding: 16px 20px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .quick-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        .generate-btn {
+            padding: 16px 24px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(168, 85, 247, 0.3);
+        }
+
+        /* Upload Zone */
+        .upload-zone {
+            border: 2px dashed var(--border-color);
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: var(--accent-primary);
+            background: rgba(168, 85, 247, 0.05);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+
+        .upload-text {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+
+        .upload-subtext {
+            color: var(--text-tertiary);
+            font-size: 0.9rem;
+        }
+
+        .upload-input {
+            display: none;
+        }
+
+        /* Content Queue */
+        .queue-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .queue-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 20px;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+        }
+
+        .queue-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .queue-status.pending {
+            background: #f59e0b;
+        }
+
+        .queue-status.ready {
+            background: #22c55e;
+        }
+
+        .queue-status.published {
+            background: #3b82f6;
+        }
+
+        .queue-info {
+            flex: 1;
+        }
+
+        .queue-title {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .queue-meta {
+            font-size: 0.85rem;
+            color: var(--text-tertiary);
+        }
+
+        .queue-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .queue-btn {
+            padding: 8px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .queue-btn:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .queue-btn.primary {
+            background: linear-gradient(135deg, #22c55e, #10b981);
+            border: none;
+            color: white;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-tertiary);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+
+        /* Platform Icons */
+        .platforms {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .platform-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            background: var(--bg-secondary);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <span class="logo-icon">◆</span>
+                Stuart Hollinger
+            </a>
+            <div class="nav-links">
+                <a href="apps.html">Apps</a>
+                <a href="suite.html">$SUITE</a>
+                <a href="wallet.html">Wallet</a>
+                <a href="index.html#about">About</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="studio-page">
+        <div class="studio-container">
+
+            <!-- Header -->
+            <div class="studio-header">
+                <h1>🎬 Content <span class="gradient-text">Studio</span></h1>
+                <p>Your daily content creation dashboard</p>
+            </div>
+
+            <!-- Quick Input -->
+            <div class="studio-section">
+                <div class="section-header">
+                    <h2>💭 What did you work on today?</h2>
+                </div>
+                <div class="quick-input-wrapper">
+                    <input type="text" class="quick-input" id="quickInput"
+                        placeholder="e.g., 'Fixed treasury display, added Content Studio feature'">
+                    <button class="generate-btn" onclick="generateScript()">
+                        ✨ Generate Script
+                    </button>
+                </div>
+            </div>
+
+            <!-- Today's Script -->
+            <div class="studio-section">
+                <div class="section-header">
+                    <h2>📜 Today's Script</h2>
+                    <span class="section-badge">READY TO FILM</span>
+                </div>
+                <div class="script-display">
+                    <div class="script-title">Building in Public: The Content Studio</div>
+                    <div class="shot-list" id="shotList">
+                        <div class="shot-item">
+                            <div class="shot-number">1</div>
+                            <div class="shot-content">
+                                <div class="shot-type">📹 Webcam</div>
+                                <div class="shot-instruction">Quick intro - look at camera, be natural</div>
+                                <div class="shot-script">"So I just built something kinda cool - a Content Studio that
+                                    generates scripts for me so I can post daily without spending hours editing."</div>
+                            </div>
+                        </div>
+                        <div class="shot-item">
+                            <div class="shot-number">2</div>
+                            <div class="shot-content">
+                                <div class="shot-type">🖥️ Screen Recording</div>
+                                <div class="shot-instruction">Show the /studio.html page - scroll through it slowly
+                                </div>
+                            </div>
+                        </div>
+                        <div class="shot-item">
+                            <div class="shot-number">3</div>
+                            <div class="shot-content">
+                                <div class="shot-type">📹 Webcam</div>
+                                <div class="shot-instruction">Explain the concept</div>
+                                <div class="shot-script">"The idea is simple - I tell my AI what I worked on, it
+                                    generates a shot list, I record quick clips, and it handles the rest. No more
+                                    spending 3 hours editing a 60 second video."</div>
+                            </div>
+                        </div>
+                        <div class="shot-item">
+                            <div class="shot-number">4</div>
+                            <div class="shot-content">
+                                <div class="shot-type">📹 Webcam</div>
+                                <div class="shot-instruction">Call to action - short and punchy</div>
+                                <div class="shot-script">"If you're building stuff and want to document it without the
+                                    hassle - follow along. I'm sharing everything."</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upload Zone -->
+            <div class="studio-section">
+                <div class="section-header">
+                    <h2>📤 Upload Your Clips</h2>
+                </div>
+                <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">Drop your clips here or click to browse</div>
+                    <div class="upload-subtext">MP4, MOV, or screenshots (PNG, JPG)</div>
+                </div>
+                <input type="file" id="fileInput" class="upload-input" multiple accept="video/*,image/*"
+                    onchange="handleUpload(event)">
+            </div>
+
+            <!-- Content Queue -->
+            <div class="studio-section">
+                <div class="section-header">
+                    <h2>📋 Content Queue</h2>
+                </div>
+                <div class="queue-list" id="queueList">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <div>No content in queue yet</div>
+                        <div style="font-size: 0.85rem; margin-top: 4px;">Upload your clips to get started</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // Quick Input - Generate Script
+        function generateScript() {
+            const input = document.getElementById('quickInput').value;
+            if (!input.trim()) {
+                alert('Tell me what you worked on today!');
+                return;
+            }
+
+            // For now, show a message. In production, this would call an AI API
+            alert(`Script generation coming soon!\n\nYour input: "${input}"\n\nFor now, I'll generate scripts for you in our chat and you can copy them here.`);
+        }
+
+        // File Upload Handling
+        const uploadZone = document.getElementById('uploadZone');
+
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        function handleUpload(event) {
+            handleFiles(event.target.files);
+        }
+
+        function handleFiles(files) {
+            const queueList = document.getElementById('queueList');
+
+            // Clear empty state if it exists
+            const emptyState = queueList.querySelector('.empty-state');
+            if (emptyState) {
+                emptyState.remove();
+            }
+
+            Array.from(files).forEach((file, index) => {
+                const item = document.createElement('div');
+                item.className = 'queue-item';
+                item.innerHTML = `
+                    <div class="queue-status pending"></div>
+                    <div class="queue-info">
+                        <div class="queue-title">${file.name}</div>
+                        <div class="queue-meta">Uploaded just now • ${formatFileSize(file.size)}</div>
+                        <div class="platforms">
+                            <span class="platform-icon" title="YouTube">▶️</span>
+                            <span class="platform-icon" title="Twitter">🐦</span>
+                            <span class="platform-icon" title="TikTok">🎵</span>
+                        </div>
+                    </div>
+                    <div class="queue-actions">
+                        <button class="queue-btn">Preview</button>
+                        <button class="queue-btn primary">Publish</button>
+                    </div>
+                `;
+                queueList.appendChild(item);
+            });
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        // Enter key to generate
+        document.getElementById('quickInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') generateScript();
+        });
+    </script>
+</body>
+
+</html>

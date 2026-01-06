@@ -1,0 +1,53 @@
+import { ethers } from "ethers";
+import { readFileSync } from "fs";
+import dotenv from "dotenv";
+dotenv.config();
+
+// Deployed addresses
+const SUITE_TOKEN = "0xE6892803DF59D79cFB4794e7da9549df4eE70f71";
+const USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+
+async function main() {
+    const provider = new ethers.JsonRpcProvider("https://mainnet.base.org", undefined, {
+        staticNetwork: true
+    });
+    const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+
+    console.log("Deploying SimpleTreasury with:", wallet.address);
+
+    const balance = await provider.getBalance(wallet.address);
+    console.log("Account balance:", ethers.formatEther(balance), "ETH");
+
+    // Read the compiled contract
+    const artifact = JSON.parse(
+        readFileSync("./artifacts/src/SimpleTreasury.sol/SimpleTreasury.json", "utf8")
+    );
+
+    // Deploy SimpleTreasury
+    console.log("\n1. Deploying SimpleTreasury...");
+    console.log("   SUITE Token:", SUITE_TOKEN);
+    console.log("   USDC:", USDC_BASE);
+    console.log("   Owner:", wallet.address);
+
+    const factory = new ethers.ContractFactory(artifact.abi, artifact.bytecode, wallet);
+    const treasury = await factory.deploy(SUITE_TOKEN, USDC_BASE, wallet.address, {
+        gasLimit: 2000000
+    });
+
+    console.log("Transaction sent, waiting for confirmation...");
+    await treasury.waitForDeployment();
+    const treasuryAddress = await treasury.getAddress();
+
+    console.log("✅ SimpleTreasury deployed to:", treasuryAddress);
+
+    console.log("\n=== DEPLOYMENT COMPLETE ===");
+    console.log("SUITE Token:", SUITE_TOKEN);
+    console.log("SimpleTreasury:", treasuryAddress);
+    console.log("\n📋 SAVE THIS ADDRESS!");
+    console.log("\nNext: Add Treasury as minter on SUITE Token");
+}
+
+main().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+});
