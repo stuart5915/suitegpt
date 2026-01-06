@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Developer Portal | SUITE</title>
+    <meta name="description"
+        content="Everything you need to build on SUITE. Tutorials, walkthrough videos, documentation, and resources.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="suite-styles.css">
+    <style>
+        /* Developer Portal specific styles */
+        .portal-hero {
+            padding-top: 140px;
+            padding-bottom: 80px;
+            background: var(--gradient-hero);
+            text-align: center;
+        }
+
+        .portal-hero h1 {
+            margin-bottom: 16px;
+        }
+
+        .portal-hero p {
+            color: var(--text-secondary);
+            font-size: 1.25rem;
+            max-width: 700px;
+            margin: 0 auto 32px;
+        }
+
+        /* Quick Links Cards */
+        .quick-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            max-width: 900px;
+            margin: 40px auto 0;
+        }
+
+        .quick-link {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            text-decoration: none;
+            color: inherit;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-light);
+        }
+
+        .quick-link:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(249, 115, 22, 0.15);
+        }
+
+        .quick-link-icon {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+        }
+
+        .quick-link h4 {
+            margin-bottom: 4px;
+            font-size: 1rem;
+        }
+
+        .quick-link p {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin: 0;
+        }
+
+        /* Tutorials Section */
+        .tutorials-section {
+            padding: 100px 0;
+        }
+
+        .tutorials-section .section-header {
+            margin-bottom: 60px;
+        }
+
+        .tutorials-tabs {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            border: 2px solid var(--border-light);
+            background: white;
+            border-radius: 100px;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn:hover,
+        .tab-btn.active {
+            border-color: var(--accent-primary);
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 32px;
+        }
+
+        .video-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-light);
+        }
+
+        .video-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 16px 48px rgba(249, 115, 22, 0.12);
+        }
+
+        .video-thumbnail {
+            position: relative;
+            aspect-ratio: 16/9;
+            background: linear-gradient(135deg, #fef3e2 0%, #fce7d6 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .video-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .video-placeholder {
+            font-size: 4rem;
+        }
+
+        .play-btn {
+            position: absolute;
+            width: 64px;
+            height: 64px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .video-card:hover .play-btn {
+            transform: scale(1.1);
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        .play-btn svg {
+            width: 24px;
+            height: 24px;
+            margin-left: 4px;
+        }
+
+        .video-duration {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .video-content {
+            padding: 24px;
+        }
+
+        .video-tag {
+            display: inline-block;
+            background: var(--gradient-hero);
+            color: var(--accent-primary);
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .video-content h3 {
+            margin-bottom: 8px;
+            font-size: 1.15rem;
+        }
+
+        .video-content p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .video-meta {
+            display: flex;
+            gap: 16px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-light);
+            font-size: 0.85rem;
+            color: var(--text-tertiary);
+        }
+
+        .video-meta span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Coming Soon */
+        .coming-soon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-top: 60px;
+        }
+
+        .coming-soon-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 2px dashed #cbd5e1;
+            border-radius: 20px;
+            padding: 40px 32px;
+            text-align: center;
+        }
+
+        .coming-soon-card h4 {
+            margin-bottom: 8px;
+            color: #64748b;
+        }
+
+        .coming-soon-card p {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .coming-soon-badge {
+            display: inline-block;
+            background: #e2e8f0;
+            color: #64748b;
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        /* Resources Section */
+        .resources-section {
+            background: var(--bg-card);
+            padding: 100px 0;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .resources-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .resource-card {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            border: 1px solid var(--border-light);
+            transition: all 0.3s ease;
+        }
+
+        .resource-card:hover {
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+        }
+
+        .resource-icon {
+            width: 56px;
+            height: 56px;
+            background: var(--gradient-hero);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .resource-card h4 {
+            margin-bottom: 8px;
+        }
+
+        .resource-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 16px;
+        }
+
+        .resource-link {
+            color: var(--accent-primary);
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .resource-link:hover {
+            text-decoration: underline;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            background: var(--gradient-hero);
+            padding: 80px 0;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .video-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .quick-links {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <span class="logo-icon">◆</span>
+                SUITE
+            </a>
+            <div class="nav-links">
+                <a href="apps.html">Apps</a>
+                <a href="developer-portal.html" class="active">Developer Portal</a>
+                <a href="docs/">Docs</a>
+                <a href="wallet.html">Wallet</a>
+                <a href="#" class="nav-cta">Connect Discord</a>
+            </div>
+            <button class="mobile-menu-btn" aria-label="Menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="portal-hero">
+        <div class="container">
+            <span class="section-tag">Developer Portal</span>
+            <h1>Learn to Build on <span class="gradient-text">SUITE</span></h1>
+            <p>Tutorials, walkthrough videos, and everything you need to go from idea to published app. No coding
+                required — just follow along.</p>
+
+            <div class="quick-links">
+                <a href="#tutorials" class="quick-link">
+                    <div class="quick-link-icon">🎬</div>
+                    <h4>Video Tutorials</h4>
+                    <p>Watch & learn</p>
+                </a>
+                <a href="docs/" class="quick-link">
+                    <div class="quick-link-icon">📚</div>
+                    <h4>Documentation</h4>
+                    <p>Read the guides</p>
+                </a>
+                <a href="developers.html" class="quick-link">
+                    <div class="quick-link-icon">🚀</div>
+                    <h4>Get Started</h4>
+                    <p>Start building</p>
+                </a>
+                <a href="#" class="quick-link">
+                    <div class="quick-link-icon">💬</div>
+                    <h4>Discord</h4>
+                    <p>Join community</p>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Video Tutorials Section -->
+    <section class="tutorials-section" id="tutorials">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Learn by Watching</span>
+                <h2>Video <span class="gradient-text">Tutorials</span></h2>
+                <p style="color: var(--text-secondary); max-width: 600px; margin: 16px auto 0;">
+                    Full walkthrough videos showing you exactly how to build real apps on SUITE. Follow along
+                    step-by-step.
+                </p>
+            </div>
+
+            <div class="tutorials-tabs">
+                <button class="tab-btn active">All Videos</button>
+                <button class="tab-btn">Getting Started</button>
+                <button class="tab-btn">App Walkthroughs</button>
+                <button class="tab-btn">Advanced</button>
+            </div>
+
+            <div class="video-grid">
+                <!-- Featured Video 1 -->
+                <div class="video-card">
+                    <div class="video-thumbnail">
+                        <div class="video-placeholder">🏗️</div>
+                        <div class="play-btn">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z" />
+                            </svg>
+                        </div>
+                        <span class="video-duration">12:34</span>
+                    </div>
+                    <div class="video-content">
+                        <span class="video-tag">📌 FEATURED</span>
+                        <h3>Building Your First App: Complete Walkthrough</h3>
+                        <p>Watch me build a complete habit tracker app from scratch using only Discord commands. Start
+                            to finish.</p>
+                        <div class="video-meta">
+                            <span>🎥 Stuart</span>
+                            <span>📅 New</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Video 2 -->
+                <div class="video-card">
+                    <div class="video-thumbnail">
+                        <div class="video-placeholder">💬</div>
+                        <div class="play-btn">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z" />
+                            </svg>
+                        </div>
+                        <span class="video-duration">8:22</span>
+                    </div>
+                    <div class="video-content">
+                        <span class="video-tag">Getting Started</span>
+                        <h3>How to Talk to SUITE: Commands & Prompts</h3>
+                        <p>Learn the best ways to describe your app ideas so SUITE understands exactly what you want.
+                        </p>
+                        <div class="video-meta">
+                            <span>🎥 Stuart</span>
+                            <span>📅 New</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Video 3 -->
+                <div class="video-card">
+                    <div class="video-thumbnail">
+                        <div class="video-placeholder">💰</div>
+                        <div class="play-btn">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z" />
+                            </svg>
+                        </div>
+                        <span class="video-duration">15:48</span>
+                    </div>
+                    <div class="video-content">
+                        <span class="video-tag">Monetization</span>
+                        <h3>Adding Paywalls & Earning SUITE Tokens</h3>
+                        <p>How to monetize your app with paywalls, free tiers, and token pricing strategies.</p>
+                        <div class="video-meta">
+                            <span>🎥 Stuart</span>
+                            <span>📅 New</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Video 4 -->
+                <div class="video-card">
+                    <div class="video-thumbnail">
+                        <div class="video-placeholder">🔧</div>
+                        <div class="play-btn">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z" />
+                            </svg>
+                        </div>
+                        <span class="video-duration">10:15</span>
+                    </div>
+                    <div class="video-content">
+                        <span class="video-tag">Advanced</span>
+                        <h3>Environment Variables & API Keys</h3>
+                        <p>How to use /set-env and /get-env to securely add external APIs to your apps.</p>
+                        <div class="video-meta">
+                            <span>🎥 Stuart</span>
+                            <span>📅 New</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coming Soon -->
+            <div class="coming-soon-grid">
+                <div class="coming-soon-card">
+                    <span class="coming-soon-badge">Coming Soon</span>
+                    <h4>Building an AI Fitness App</h4>
+                    <p>Full walkthrough of creating a fitness app with AI workout suggestions</p>
+                </div>
+                <div class="coming-soon-card">
+                    <span class="coming-soon-badge">Coming Soon</span>
+                    <h4>Social Features Deep Dive</h4>
+                    <p>Adding user profiles, feeds, and social interactions to your app</p>
+                </div>
+                <div class="coming-soon-card">
+                    <span class="coming-soon-badge">Coming Soon</span>
+                    <h4>Marketing Your SUITE App</h4>
+                    <p>Tips for getting users and growing your app in the marketplace</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Resources Section -->
+    <section class="resources-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Resources</span>
+                <h2>Everything You <span class="gradient-text">Need</span></h2>
+            </div>
+
+            <div class="resources-grid">
+                <div class="resource-card">
+                    <div class="resource-icon">📖</div>
+                    <h4>Full Documentation</h4>
+                    <p>Complete guides covering every feature, command, and capability of SUITE.</p>
+                    <a href="docs/" class="resource-link">
+                        Browse Docs
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7" />
+                        </svg>
+                    </a>
+                </div>
+                <div class="resource-card">
+                    <div class="resource-icon">⭐</div>
+                    <h4>Feature Catalog</h4>
+                    <p>Browse all available features you can add to your apps — UI, AI, monetization, and more.</p>
+                    <a href="docs/building-apps/feature-catalog.html" class="resource-link">
+                        Explore Features
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7" />
+                        </svg>
+                    </a>
+                </div>
+                <div class="resource-card">
+                    <div class="resource-icon">💬</div>
+                    <h4>Discord Community</h4>
+                    <p>Get help, share your apps, and connect with other SUITE creators.</p>
+                    <a href="#" class="resource-link">
+                        Join Discord
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7" />
+                        </svg>
+                    </a>
+                </div>
+                <div class="resource-card">
+                    <div class="resource-icon">🔍</div>
+                    <h4>Example Apps</h4>
+                    <p>See real apps built on SUITE and learn from their command prompts.</p>
+                    <a href="apps.html" class="resource-link">
+                        Browse Apps
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7" />
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+        <div class="container">
+            <h2 style="margin-bottom: 16px;">Ready to start building?</h2>
+            <p style="color: var(--text-secondary); font-size: 1.2rem; margin-bottom: 32px;">
+                Join Discord and create your first app today. Watch the tutorials, then dive in.
+            </p>
+            <a href="#" class="btn btn-primary btn-lg">
+                Connect Discord & Start
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <span class="logo-icon">◆</span>
+                        SUITE
+                    </div>
+                    <p>Build apps by talking. No code required. Created by Stuart Hollinger.</p>
+                </div>
+                <div class="footer-column">
+                    <h5>Platform</h5>
+                    <a href="apps.html">Browse Apps</a>
+                    <a href="developer-portal.html">Developer Portal</a>
+                    <a href="docs/">Documentation</a>
+                </div>
+                <div class="footer-column">
+                    <h5>Resources</h5>
+                    <a href="wallet.html">Wallet</a>
+                    <a href="suite.html">$SUITE Token</a>
+                    <a href="#">Help Center</a>
+                </div>
+                <div class="footer-column">
+                    <h5>Connect</h5>
+                    <a href="#">Discord</a>
+                    <a href="#">Twitter</a>
+                    <a href="#">GitHub</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2026 SUITE by Stuart Hollinger. All rights reserved.</p>
+                <div class="footer-social">
+                    <a href="#" aria-label="Discord">💬</a>
+                    <a href="#" aria-label="Twitter">𝕏</a>
+                    <a href="#" aria-label="GitHub">⌨️</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>
