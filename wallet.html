@@ -996,12 +996,13 @@
                     </div>
 
                     <div class="admin-actions">
-                        <button class="admin-btn" onclick="withdrawFees()">
+                        <button class="admin-btn" id="withdrawFeesBtn" onclick="withdrawFees()" disabled>
                             💰 Withdraw Fees
                         </button>
-                        <button class="admin-btn danger" onclick="emergencyWithdraw()">
-                            🚨 Emergency Withdraw
-                        </button>
+                        <p class="admin-helper" id="withdrawFeesHelper"
+                            style="font-size: 12px; color: #888; margin-top: 4px;">
+                            Minimum 0.001 ETH in fees required to withdraw
+                        </p>
                     </div>
 
                     <div class="admin-ownership">
@@ -2437,8 +2438,33 @@
                 const treasuryEth = parseInt(treasuryBalanceHex, 16) / 1e18;
                 const treasuryUsd = treasuryEth * ETH_PRICE_USD;
 
+                // Get actual accumulatedFees from contract
+                const feesData = '0x79ddb121'; // accumulatedFees()
+                const feesHex = await window.ethereum.request({
+                    method: 'eth_call',
+                    params: [{ to: TREASURY_ADDRESS, data: feesData }, 'latest']
+                });
+                const accumulatedFeesWei = feesHex && feesHex !== '0x' ? parseInt(feesHex, 16) : 0;
+                const accumulatedFeesEth = accumulatedFeesWei / 1e18;
+                const accumulatedFeesUsd = accumulatedFeesEth * ETH_PRICE_USD;
+
                 document.getElementById('adminTreasuryEth').textContent = treasuryEth.toFixed(10) + ' ETH';
-                document.getElementById('accumulatedFees').textContent = '$' + (treasuryUsd * 0.005).toFixed(6); // Estimate 0.5% as fees
+                document.getElementById('accumulatedFees').textContent = '$' + accumulatedFeesUsd.toFixed(6);
+
+                // Enable/disable withdraw button based on minimum threshold (0.001 ETH)
+                const withdrawBtn = document.getElementById('withdrawFeesBtn');
+                const withdrawHelper = document.getElementById('withdrawFeesHelper');
+                const MIN_WITHDRAW_ETH = 0.001;
+
+                if (accumulatedFeesEth >= MIN_WITHDRAW_ETH) {
+                    withdrawBtn.disabled = false;
+                    withdrawHelper.textContent = `${accumulatedFeesEth.toFixed(6)} ETH available to withdraw`;
+                    withdrawHelper.style.color = '#2ecc71';
+                } else {
+                    withdrawBtn.disabled = true;
+                    withdrawHelper.textContent = `Minimum ${MIN_WITHDRAW_ETH} ETH in fees required (current: ${accumulatedFeesEth.toFixed(6)} ETH)`;
+                    withdrawHelper.style.color = '#888';
+                }
             } catch (error) {
                 console.log('Could not update admin stats:', error);
             }
@@ -2475,42 +2501,7 @@
             }
         }
 
-        async function emergencyWithdraw() {
-            if (!confirm('⚠️ EMERGENCY WITHDRAW\n\nThis will withdraw ALL ETH from the treasury.\nAll SUITE holders will lose their backing.\n\nAre you SURE?')) {
-                return;
-            }
-
-            try {
-                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-                if (accounts.length === 0) return;
-
-                showNotification('⏳', 'Processing', 'Please confirm in MetaMask...');
-
-                // emergencyWithdraw() function selector
-                const emergencyData = '0xdb2e21bc';
-
-                const txHash = await window.ethereum.request({
-                    method: 'eth_sendTransaction',
-                    params: [{
-                        from: accounts[0],
-                        to: TREASURY_ADDRESS,
-                        data: emergencyData,
-                    }],
-                });
-
-                showNotification('✅', 'Emergency Withdraw Complete', 'All funds withdrawn.', `Tx: ${txHash}`);
-                setTimeout(() => {
-                    updateAdminStats();
-                    fetchTreasuryStats();
-                }, 5000);
-            } catch (error) {
-                if (error.code === 4001) {
-                    showNotification('❌', 'Cancelled', 'Transaction cancelled.');
-                } else {
-                    showNotification('❌', 'Error', error.message || 'Failed to withdraw.');
-                }
-            }
-        }
+        // Note: emergencyWithdraw removed - not supported in TreasuryV4
 
         async function transferOwnership() {
             const newOwner = document.getElementById('newOwnerAddress').value.trim();
