@@ -4,306 +4,350 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#8B5CF6">
-    <title>SUITE App Store | Stuart Hollinger</title>
-    <meta name="description" content="Browse and install AI-powered apps. One wallet. Zero friction.">
+    <title>SUITE App Store | Discover AI-Powered Apps</title>
+    <meta name="description"
+        content="Discover and use apps built by people like you. Health, productivity, AI tools and more.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="suite-styles.css">
     <style>
+        /* App Store Page */
         .store-page {
             min-height: 100vh;
             padding-top: 80px;
+            background: url('assets/images/hero-app-icons.jpg') center top / cover no-repeat fixed;
         }
 
-        /* Hero Section */
-        .store-hero {
-            text-align: center;
-            padding: 60px 20px 40px;
-            position: relative;
+        /* Compact Header */
+        .store-header {
+            background: white;
+            border-bottom: 1px solid var(--border-light);
+            padding: 24px 20px;
+            position: sticky;
+            top: 60px;
+            z-index: 100;
         }
 
-        .store-hero::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 600px;
-            height: 600px;
-            background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
-            pointer-events: none;
-            z-index: -1;
+        .store-header-inner {
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
-        .store-hero h1 {
-            font-size: 3rem;
-            margin-bottom: 16px;
-            line-height: 1.1;
-        }
-
-        .store-hero .tagline {
-            font-size: 1.3rem;
-            color: var(--text-secondary);
-            margin-bottom: 32px;
-        }
-
-        .wallet-connect {
-            display: inline-flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 24px;
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .wallet-connect:hover {
-            border-color: var(--accent-primary);
-            transform: translateY(-2px);
-        }
-
-        .wallet-icon {
-            width: 20px;
-            height: 20px;
-        }
-
-        .wallet-balance {
-            font-weight: 600;
-            background: linear-gradient(135deg, #a855f7, #ec4899);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        /* Category Filters */
-        .category-filters {
+        .store-title-row {
             display: flex;
-            gap: 12px;
-            justify-content: center;
-            padding: 0 20px 40px;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
             flex-wrap: wrap;
+            gap: 16px;
         }
 
-        .category-btn {
-            padding: 10px 20px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-        }
-
-        .category-btn:hover,
-        .category-btn.active {
-            background: var(--bg-card);
-            border-color: var(--accent-primary);
+        .store-title {
+            font-size: 1.8rem;
+            font-weight: 700;
             color: var(--text-primary);
         }
 
-        /* App Grid */
-        .store-apps {
+        .store-title .gradient-text {
+            background: var(--gradient-button);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Search Bar */
+        .search-bar {
+            position: relative;
+            width: 300px;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 12px 16px 12px 44px;
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            background: var(--bg-warm);
+            transition: all 0.3s ease;
+        }
+
+        .search-bar input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            background: white;
+        }
+
+        .search-bar svg {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            color: var(--text-tertiary);
+        }
+
+        /* Category Tabs */
+        .category-tabs {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .category-tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .category-tab {
+            padding: 10px 20px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 100px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .category-tab:hover {
+            background: var(--bg-warm);
+            color: var(--text-primary);
+        }
+
+        .category-tab.active {
+            background: var(--text-primary);
+            color: white;
+        }
+
+        .category-tab .count {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 2px 8px;
+            border-radius: 100px;
+            font-size: 0.75rem;
+        }
+
+        .category-tab.active .count {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Apps Container */
+        .apps-container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 0 20px 100px;
+            padding: 32px 20px 80px;
         }
 
+        /* Results Info */
+        .results-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            color: var(--text-secondary);
+        }
+
+        .results-count {
+            font-size: 0.95rem;
+        }
+
+        .results-count strong {
+            color: var(--text-primary);
+        }
+
+        /* Apps Grid */
         .apps-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 24px;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
         }
 
+        /* App Card */
         .app-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            padding: 24px;
+            background: white;
+            border: 1px solid var(--border-light);
+            border-radius: 16px;
+            padding: 20px;
             transition: all 0.3s ease;
             cursor: pointer;
             position: relative;
-            overflow: hidden;
-        }
-
-        .app-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
-            opacity: 0;
-            transition: opacity 0.3s ease;
         }
 
         .app-card:hover {
             transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
             border-color: var(--accent-primary);
-            box-shadow: 0 20px 60px rgba(139, 92, 246, 0.2);
         }
 
-        .app-card:hover::before {
-            opacity: 1;
+        .app-card.featured {
+            border: 2px solid var(--accent-primary);
+            background: linear-gradient(135deg, #fff 0%, #fef7ed 100%);
         }
 
-        .app-header {
+        .app-card.featured::before {
+            content: '⭐ Featured';
+            position: absolute;
+            top: -10px;
+            left: 16px;
+            background: var(--gradient-button);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .app-row {
             display: flex;
-            align-items: center;
             gap: 16px;
-            margin-bottom: 16px;
         }
 
         .app-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 16px;
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2rem;
-            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(236, 72, 153, 0.05));
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, #fef3e2 0%, #fce7d6 100%);
             flex-shrink: 0;
         }
 
-        .app-info {
+        .app-content {
             flex: 1;
+            min-width: 0;
         }
 
         .app-name {
-            font-size: 1.2rem;
+            font-size: 1.05rem;
             font-weight: 600;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
+            color: var(--text-primary);
         }
 
-        .app-status {
-            font-size: 0.75rem;
-            padding: 4px 10px;
-            border-radius: 6px;
-            display: inline-block;
+        .app-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: var(--text-tertiary);
+            margin-bottom: 8px;
         }
 
-        .status-live {
-            background: rgba(16, 185, 129, 0.15);
-            color: #10b981;
+        .app-meta .dot {
+            width: 3px;
+            height: 3px;
+            background: var(--text-tertiary);
+            border-radius: 50%;
         }
 
-        .status-building {
-            background: rgba(251, 191, 36, 0.15);
+        .app-rating {
             color: #fbbf24;
-        }
-
-        .status-free {
-            background: rgba(59, 130, 246, 0.15);
-            color: #3b82f6;
         }
 
         .app-description {
             color: var(--text-secondary);
-            font-size: 0.95rem;
-            line-height: 1.6;
-            margin-bottom: 20px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
 
         .app-footer {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding-top: 16px;
-            border-top: 1px solid var(--border-color);
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .app-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .app-status.live {
+            color: #10b981;
+        }
+
+        .app-status.live::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: #10b981;
+            border-radius: 50%;
+        }
+
+        .app-status.coming {
+            color: #f59e0b;
         }
 
         .app-price {
             font-size: 0.9rem;
-            color: var(--text-secondary);
-        }
-
-        .price-value {
             font-weight: 600;
             color: var(--accent-primary);
         }
 
-        .install-btn {
-            padding: 8px 16px;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            border: none;
-            border-radius: 8px;
-            color: white;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-size: 0.9rem;
+        .app-price.free {
+            color: #10b981;
         }
 
-        .install-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
-        }
-
-        .install-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        /* Developer CTA */
-        .developer-cta {
-            max-width: 800px;
-            margin: 0 auto 80px;
-            padding: 0 20px;
-        }
-
-        .cta-card {
-            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(236, 72, 153, 0.05));
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            padding: 40px;
+        /* Empty State */
+        .empty-state {
             text-align: center;
-        }
-
-        .cta-card h2 {
-            font-size: 2rem;
-            margin-bottom: 12px;
-        }
-
-        .cta-card p {
+            padding: 60px 20px;
             color: var(--text-secondary);
-            margin-bottom: 24px;
-            font-size: 1.1rem;
         }
 
-        .cta-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 14px 28px;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            border: none;
-            border-radius: 12px;
+        .empty-state .icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+
+        /* Creator Banner */
+        .creator-banner {
+            background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+            padding: 40px 24px;
+            text-align: center;
             color: white;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 1rem;
+            margin-top: 60px;
+            border-radius: 20px;
         }
 
-        .cta-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 30px rgba(139, 92, 246, 0.3);
+        .creator-banner h3 {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
         }
 
+        .creator-banner p {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 20px;
+        }
+
+        /* Responsive */
         @media (max-width: 768px) {
-            .store-hero h1 {
-                font-size: 2rem;
+            .store-title-row {
+                flex-direction: column;
+                align-items: flex-start;
             }
 
-            .store-hero .tagline {
-                font-size: 1.1rem;
+            .search-bar {
+                width: 100%;
             }
 
             .apps-grid {
@@ -319,88 +363,125 @@
         <div class="nav-container">
             <a href="index.html" class="nav-logo">
                 <span class="logo-icon">◆</span>
-                Stuart Hollinger
+                SUITE
             </a>
             <div class="nav-links">
                 <a href="apps.html" class="active">Apps</a>
-                <a href="suite.html">$SUITE</a>
-                <a href="wallet.html" class="nav-wallet">Wallet</a>
-                <a href="index.html#pricing">Pricing</a>
-                <a href="index.html#about">About</a>
+                <a href="developer-portal.html">Developer Portal</a>
+                <a href="docs/">Docs</a>
+                <a href="wallet.html">Wallet</a>
+                <a href="#" class="nav-cta">Connect Discord</a>
             </div>
+            <button class="mobile-menu-btn" aria-label="Menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
         </div>
     </nav>
 
     <main class="store-page">
-        <!-- Hero -->
-        <section class="store-hero">
-            <h1>Your favorite apps. <span class="gradient-text">One wallet.</span></h1>
-            <p class="tagline">AI-powered tools. Instant install. Pay with $SUITE.</p>
+        <!-- Sticky Header with Search + Categories -->
+        <header class="store-header">
+            <div class="store-header-inner">
+                <div class="store-title-row">
+                    <h1 class="store-title">Discover <span class="gradient-text">Apps</span></h1>
+                    <div class="search-bar">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8" />
+                            <path d="M21 21l-4.35-4.35" />
+                        </svg>
+                        <input type="text" placeholder="Search apps..." id="searchInput">
+                    </div>
+                </div>
+                <div class="category-tabs" id="categoryTabs">
+                    <!-- Tabs rendered by JS -->
+                </div>
+            </div>
+        </header>
 
-            <button class="wallet-connect" id="connectWallet">
-                <svg class="wallet-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
-                    <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
-                    <path d="M18 12h.01" />
-                </svg>
-                <span id="walletText">Connect Wallet</span>
-                <span class="wallet-balance" id="balance" style="display:none;">0 SUITE</span>
-            </button>
-        </section>
+        <!-- Apps Container -->
+        <div class="apps-container">
+            <div class="results-info">
+                <span class="results-count" id="resultsCount">Showing <strong>9</strong> apps</span>
+            </div>
 
-        <!-- Category Filters -->
-        <div class="category-filters">
-            <button class="category-btn active" data-category="all">All Apps</button>
-            <button class="category-btn" data-category="health">💪 Health</button>
-            <button class="category-btn" data-category="life">🧠 Life</button>
-            <button class="category-btn" data-category="tools">🔧 Tools</button>
-            <button class="category-btn" data-category="products">🛍️ Products</button>
-        </div>
+            <div class="apps-grid" id="appsGrid">
+                <!-- Apps rendered by JS -->
+            </div>
 
-        <!-- Apps Grid -->
-        <section class="store-apps">
-            <div class="apps-grid" id="appsGrid"></div>
-        </section>
-
-        <!-- Developer CTA -->
-        <section class="developer-cta">
-            <div class="cta-card">
-                <h2><span class="gradient-text">Build apps.</span> Get paid.</h2>
-                <p>Create and publish apps using AI. Earn 70% revenue share automatically.</p>
-                <button class="cta-btn" onclick="window.open('https://discord.gg/your-discord', '_blank')">
-                    <span>Join Developer Program</span>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <!-- Creator Banner -->
+            <div class="creator-banner">
+                <h3>Have an app idea? 💡</h3>
+                <p>You don't need to code. Just describe it.</p>
+                <a href="developer-portal.html" class="btn btn-primary">
+                    Start Building
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M5 12h14M12 5l7 7-7 7" />
                     </svg>
-                </button>
+                </a>
             </div>
-        </section>
+        </div>
     </main>
 
-    <script src="script.js"></script>
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <span class="logo-icon">◆</span>
+                        SUITE
+                    </div>
+                    <p>Build apps by talking. No code required.</p>
+                </div>
+                <div class="footer-column">
+                    <h5>Platform</h5>
+                    <a href="apps.html">Browse Apps</a>
+                    <a href="developer-portal.html">Developer Portal</a>
+                    <a href="docs/">Documentation</a>
+                </div>
+                <div class="footer-column">
+                    <h5>Resources</h5>
+                    <a href="wallet.html">Wallet</a>
+                    <a href="suite.html">$SUITE Token</a>
+                </div>
+                <div class="footer-column">
+                    <h5>Connect</h5>
+                    <a href="#">Discord</a>
+                    <a href="#">Twitter</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2026 SUITE by Stuart Hollinger</p>
+            </div>
+        </div>
+    </footer>
+
     <script>
-        // App Data - All apps are FREE to install, with optional paid AI features
+        // Categories with counts
+        const categories = [
+            { id: 'all', name: 'All Apps', emoji: '✨' },
+            { id: 'health', name: 'Health', emoji: '💪' },
+            { id: 'productivity', name: 'Productivity', emoji: '⚡' },
+            { id: 'ai', name: 'AI Tools', emoji: '🤖' },
+            { id: 'lifestyle', name: 'Lifestyle', emoji: '🌟' },
+            { id: 'finance', name: 'Finance', emoji: '💰' }
+        ];
+
+        // App Data
         const apps = [
-            {
-                id: 'physio',
-                name: 'Physio AI Scanner',
-                icon: '🩺',
-                category: 'health',
-                description: 'AI-powered scanning for physio reports and movement analysis',
-                aiFeaturePrice: 150,
-                freeFeatures: 'Manual logging, exercise library',
-                status: 'live',
-                link: 'apps-subpages/physio-ai.html'
-            },
             {
                 id: 'opticrep',
                 name: 'OpticRep',
                 icon: '🏋️',
                 category: 'health',
-                description: 'AI personal trainer that watches your form and counts your reps',
-                aiFeaturePrice: 60,
-                freeFeatures: 'Manual workout tracking',
+                description: 'AI personal trainer that watches your form and counts your reps in real-time. Get instant feedback.',
+                rating: 4.9,
+                users: '2.3k',
+                price: 'Free',
                 status: 'live',
+                featured: true,
                 link: 'apps-subpages/opticrep.html'
             },
             {
@@ -408,159 +489,207 @@
                 name: 'FoodVital',
                 icon: '🍎',
                 category: 'health',
-                description: 'Scan any food, get instant nutrition info and log your meals',
-                aiFeaturePrice: 30,
-                freeFeatures: 'Manual food logging, nutrition database',
+                description: 'Scan any food, get instant nutrition info. Track your meals effortlessly with AI.',
+                rating: 4.8,
+                users: '1.8k',
+                price: 'Free',
                 status: 'live',
+                featured: true,
                 link: 'apps-subpages/foodvital.html'
             },
             {
-                id: 'lifehub',
-                name: 'Life Hub AI',
-                icon: '🤖',
-                category: 'life',
-                description: 'Your personal AI assistant that knows your life - connects all your apps into one brain',
-                aiFeaturePrice: 'varies',
-                freeFeatures: 'Basic chat, app connections',
-                status: 'building',
-                link: '#'
+                id: 'physio',
+                name: 'Physio AI',
+                icon: '🩺',
+                category: 'health',
+                description: 'AI-powered movement analysis for physiotherapy and personalized exercise plans.',
+                rating: 4.7,
+                users: '890',
+                price: 'Free',
+                status: 'live',
+                featured: false,
+                link: 'apps-subpages/physio-ai.html'
             },
             {
-                id: 'bible',
-                name: 'Bible Social',
-                icon: '📖',
-                category: 'life',
-                description: 'A social platform for faith communities to connect and grow',
-                aiFeaturePrice: null,
-                freeFeatures: 'All features free',
-                status: 'building',
-                link: '#'
-            },
-            {
-                id: 'dream',
-                name: 'Dream Journal',
-                icon: '💭',
-                category: 'life',
-                description: 'Record, analyze, and explore your dreams with AI insights',
-                aiFeaturePrice: 100,
-                freeFeatures: 'Dream logging, search',
-                status: 'building',
-                link: '#'
-            },
-            {
-                id: 'asmr',
-                name: 'ASMR Objects',
-                icon: '✨',
-                category: 'products',
-                description: 'Tactile objects designed for satisfying sensory experiences',
-                aiFeaturePrice: 'custom',
-                freeFeatures: 'Browse catalog',
-                status: 'building',
-                link: '#'
-            },
-            {
-                id: 'minime',
-                name: '3D Mini-Me',
-                icon: '🧍',
-                category: 'products',
-                description: 'Get a 3D printed figurine of yourself, incredibly detailed',
-                aiFeaturePrice: 'custom',
-                freeFeatures: 'Design preview',
-                status: 'building',
+                id: 'cadence',
+                name: 'Cadence AI',
+                icon: '📊',
+                category: 'productivity',
+                description: 'Automate your content marketing across all platforms with AI scheduling.',
+                rating: 4.4,
+                users: '420',
+                price: 'Free',
+                status: 'live',
+                featured: false,
                 link: '#'
             },
             {
                 id: 'deals',
                 name: 'Deal Finder',
                 icon: '🔍',
-                category: 'tools',
-                description: 'AI-powered local deals tracker for Kijiji, FB Marketplace & more',
-                aiFeaturePrice: null,
-                freeFeatures: 'All features free',
+                category: 'finance',
+                description: 'AI-powered local deals tracker for Kijiji, FB Marketplace & more.',
+                rating: 4.5,
+                users: '1.2k',
+                price: 'Free',
                 status: 'live',
+                featured: false,
                 link: '#'
             },
             {
-                id: 'marketing',
-                name: 'AI Marketing',
-                icon: '📊',
-                category: 'tools',
-                description: 'Automate your marketing across all platforms with AI',
-                aiFeaturePrice: 50,
-                freeFeatures: 'Manual posting, basic analytics',
-                status: 'building',
+                id: 'bible',
+                name: 'Cheshbon Reflections',
+                icon: '📖',
+                category: 'lifestyle',
+                description: 'Daily Bible reading with AI-powered insights and community discussion.',
+                rating: 4.6,
+                users: '650',
+                price: 'Free',
+                status: 'live',
+                featured: false,
+                link: '#'
+            },
+            {
+                id: 'lifehub',
+                name: 'Life Hub AI',
+                icon: '🤖',
+                category: 'ai',
+                description: 'Your personal AI assistant that connects all your apps into one brain.',
+                rating: null,
+                users: null,
+                price: 'Coming Soon',
+                status: 'coming',
+                featured: false,
+                link: '#'
+            },
+            {
+                id: 'dream',
+                name: 'REMcast',
+                icon: '💭',
+                category: 'lifestyle',
+                description: 'Record, analyze, and visualize your dreams with AI-generated imagery.',
+                rating: null,
+                users: null,
+                price: 'Coming Soon',
+                status: 'coming',
+                featured: false,
                 link: '#'
             },
             {
                 id: 'defi',
-                name: 'DeFi Knowledge Hub',
+                name: 'DeFi Knowledge',
                 icon: '📚',
-                category: 'tools',
-                description: 'Learn crypto, DeFi, and Web3 with guided resources',
-                aiFeaturePrice: null,
-                freeFeatures: 'All features free',
-                status: 'building',
+                category: 'finance',
+                description: 'Learn crypto, DeFi, and Web3 with guided interactive resources.',
+                rating: null,
+                users: null,
+                price: 'Coming Soon',
+                status: 'coming',
+                featured: false,
                 link: '#'
             }
         ];
 
-        // Render apps
-        function renderApps(category = 'all') {
-            const grid = document.getElementById('appsGrid');
-            const filteredApps = category === 'all' ? apps : apps.filter(app => app.category === category);
+        let currentCategory = 'all';
+        let searchQuery = '';
 
-            grid.innerHTML = filteredApps.map(app => `
-                <div class="app-card" data-app="${app.id}">
-                    <div class="app-header">
+        // Get counts per category
+        function getCategoryCounts() {
+            const counts = { all: apps.length };
+            categories.forEach(cat => {
+                if (cat.id !== 'all') {
+                    counts[cat.id] = apps.filter(app => app.category === cat.id).length;
+                }
+            });
+            return counts;
+        }
+
+        // Render category tabs
+        function renderTabs() {
+            const counts = getCategoryCounts();
+            const tabsHtml = categories.map(cat => `
+                <button class="category-tab ${currentCategory === cat.id ? 'active' : ''}" data-category="${cat.id}">
+                    ${cat.emoji} ${cat.name}
+                    <span class="count">${counts[cat.id]}</span>
+                </button>
+            `).join('');
+            document.getElementById('categoryTabs').innerHTML = tabsHtml;
+
+            // Add click handlers
+            document.querySelectorAll('.category-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    currentCategory = tab.dataset.category;
+                    renderTabs();
+                    renderApps();
+                });
+            });
+        }
+
+        // Render apps
+        function renderApps() {
+            let filtered = currentCategory === 'all' ? [...apps] : apps.filter(app => app.category === currentCategory);
+
+            if (searchQuery) {
+                filtered = filtered.filter(app =>
+                    app.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    app.description.toLowerCase().includes(searchQuery.toLowerCase())
+                );
+            }
+
+            // Sort: featured first, then live, then coming soon
+            filtered.sort((a, b) => {
+                if (a.featured && !b.featured) return -1;
+                if (!a.featured && b.featured) return 1;
+                if (a.status === 'live' && b.status !== 'live') return -1;
+                if (a.status !== 'live' && b.status === 'live') return 1;
+                return 0;
+            });
+
+            // Update count
+            document.getElementById('resultsCount').innerHTML = `Showing <strong>${filtered.length}</strong> app${filtered.length !== 1 ? 's' : ''}`;
+
+            if (filtered.length === 0) {
+                document.getElementById('appsGrid').innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">🔍</div>
+                        <p>No apps found. Try a different search or category.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const html = filtered.map(app => `
+                <div class="app-card ${app.featured ? 'featured' : ''}" onclick="${app.link !== '#' ? `window.location.href='${app.link}'` : ''}">
+                    <div class="app-row">
                         <div class="app-icon">${app.icon}</div>
-                        <div class="app-info">
+                        <div class="app-content">
                             <div class="app-name">${app.name}</div>
-                            <span class="app-status status-${app.status === 'live' ? 'live' : (app.price === 0 || app.price === 'Custom' ? 'free' : 'building')}">
-                                ${app.status === 'live' ? 'Live' : (app.price === 0 ? 'Free' : 'Building')}
-                            </span>
+                            <div class="app-meta">
+                                ${app.rating ? `<span class="app-rating">⭐ ${app.rating}</span><span class="dot"></span>` : ''}
+                                ${app.users ? `<span>${app.users} users</span>` : ''}
+                                ${!app.rating && !app.users ? `<span>Coming soon</span>` : ''}
+                            </div>
+                            <p class="app-description">${app.description}</p>
                         </div>
                     </div>
-                    <p class="app-description">${app.description}</p>
                     <div class="app-footer">
-                        <div class="app-price">
-                            ${typeof app.price === 'number' ?
-                    (app.price === 0 ? '<span class="price-value">Free</span>' : `<span class="price-value">${app.price} SUITE</span> per use`) :
-                    `<span class="price-value">${app.price}</span>`
-                }
-                        </div>
-                        <button class="install-btn" ${app.status !== 'live' ? 'disabled' : ''}>
-                            ${app.status === 'live' ? 'Open App' : 'Coming Soon'}
-                        </button>
+                        <span class="app-status ${app.status}">${app.status === 'live' ? 'Live' : 'Coming Soon'}</span>
+                        <span class="app-price ${app.price === 'Free' ? 'free' : ''}">${app.price}</span>
                     </div>
                 </div>
             `).join('');
+
+            document.getElementById('appsGrid').innerHTML = html;
         }
 
-        // Category filtering
-        document.querySelectorAll('.category-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                renderApps(btn.dataset.category);
-            });
-        });
-
-        // Wallet connection (placeholder)
-        document.getElementById('connectWallet').addEventListener('click', function () {
-            const text = document.getElementById('walletText');
-            const balance = document.getElementById('balance');
-
-            if (text.textContent === 'Connect Wallet') {
-                text.textContent = '0x7f3...a2c9';
-                balance.style.display = 'inline';
-                balance.textContent = '10,000 SUITE';
-            } else {
-                text.textContent = 'Connect Wallet';
-                balance.style.display = 'none';
-            }
+        // Search handler
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            searchQuery = e.target.value;
+            renderApps();
         });
 
         // Initial render
+        renderTabs();
         renderApps();
     </script>
 </body>
