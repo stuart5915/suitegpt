@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commands | SUITE Docs</title>
+    <link rel="stylesheet" href="../nav.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #fff5eb 0%, #ffe4d4 20%, #ffd4e3 50%, #e8d5f9 80%, #d4e5ff 100%);
+            min-height: 100vh;
+            color: #2d1b4e;
+        }
+
+        .docs-layout {
+            display: flex;
+            padding-top: 80px;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .docs-sidebar {
+            width: 260px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(0, 0, 0, 0.08);
+            padding: 24px;
+            position: fixed;
+            top: 80px;
+            left: 0;
+            bottom: 0;
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+
+        .sidebar-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #5a4a6f;
+            margin-bottom: 12px;
+        }
+
+        .sidebar-link {
+            display: block;
+            padding: 10px 14px;
+            color: #2d1b4e;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.2s;
+            margin-bottom: 4px;
+        }
+
+        .sidebar-link:hover {
+            background: rgba(255, 149, 0, 0.1);
+            color: #ff9500;
+        }
+
+        .sidebar-link.active {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+        }
+
+        /* Main Content */
+        .docs-content {
+            flex: 1;
+            margin-left: 260px;
+            padding: 40px;
+            max-width: 1000px;
+        }
+
+        .docs-content h1 {
+            font-size: 2.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #2d1b4e, #7c3aed, #ff6b9d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 16px;
+        }
+
+        .docs-content p {
+            font-size: 1.05rem;
+            line-height: 1.7;
+            color: #5a4a6f;
+            margin-bottom: 16px;
+        }
+
+        /* Category Header */
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin: 40px 0 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(255, 149, 0, 0.2);
+        }
+
+        .category-icon {
+            font-size: 1.8rem;
+        }
+
+        /* Command Card */
+        .command-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s;
+        }
+
+        .command-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .command-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .command-name {
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #7c3aed;
+            background: rgba(124, 58, 237, 0.1);
+            padding: 8px 16px;
+            border-radius: 10px;
+        }
+
+        .command-badge {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        .badge-public {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .badge-admin {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .badge-premium {
+            background: #fce7f3;
+            color: #db2777;
+        }
+
+        .command-desc {
+            color: #5a4a6f;
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .command-usage {
+            background: #1e1e2e;
+            border-radius: 12px;
+            padding: 16px 20px;
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 0.9rem;
+            color: #a6e3a1;
+            margin-bottom: 12px;
+            overflow-x: auto;
+        }
+
+        .command-params {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .param {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            padding: 6px 12px;
+            background: rgba(255, 149, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        .param-name {
+            font-family: monospace;
+            font-weight: 700;
+            color: #ff9500;
+        }
+
+        .param-required {
+            color: #ef4444;
+            font-size: 0.7rem;
+        }
+
+        .param-optional {
+            color: #6b7280;
+            font-size: 0.7rem;
+        }
+
+        /* Search */
+        .search-box {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 16px 24px;
+            margin-bottom: 32px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .search-box input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-size: 1rem;
+            color: #2d1b4e;
+            outline: none;
+        }
+
+        .search-box input::placeholder {
+            color: #9ca3af;
+        }
+
+        .search-icon {
+            font-size: 1.2rem;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Standard Navigation -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="../index.html" class="nav-logo">
+                <span class="icon"><svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2L2 12l10 10 10-10L12 2z" />
+                    </svg></span>
+                SUITE
+            </a>
+            <div class="nav-links">
+                <a href="../apps.html">Apps</a>
+                <a href="../developer-portal.html">Build</a>
+                <a href="../ecosystem.html">Ecosystem</a>
+                <a href="index.html" class="active">Docs</a>
+                <a href="../wallet.html">Wallet</a>
+                <a href="https://discord.gg/7JmJPmnRAu" class="nav-cta">Join Discord</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="docs-layout">
+        <!-- Sidebar -->
+        <aside class="docs-sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-title">Getting Started</div>
+                <a href="index.html" class="sidebar-link">Introduction</a>
+                <a href="quickstart.html" class="sidebar-link">Quick Start</a>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">Commands</div>
+                <a href="commands.html" class="sidebar-link active">All Commands</a>
+                <a href="#general" class="sidebar-link">📋 General</a>
+                <a href="#app" class="sidebar-link">📱 App Commands</a>
+                <a href="#ai" class="sidebar-link">🤖 AI Commands</a>
+                <a href="#developer" class="sidebar-link">👨‍💻 Developer</a>
+                <a href="#admin" class="sidebar-link">🔧 Admin</a>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">Guides</div>
+                <a href="tokenomics.html" class="sidebar-link">Tokenomics</a>
+                <a href="developer.html" class="sidebar-link">Developer Guide</a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="docs-content">
+            <h1>⚡ Command Reference</h1>
+            <p>All available commands for the SUITE Discord bot. Use these in any Discord server where SUITE bot is
+                installed.</p>
+
+            <!-- Search -->
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="commandSearch" placeholder="Search commands..." oninput="filterCommands()">
+            </div>
+
+            <!-- Commands will be rendered here by JavaScript -->
+            <div id="commandsList"></div>
+        </main>
+    </div>
+
+    <script>
+        // ============================================
+        // COMMAND DATA - ADD YOUR COMMANDS HERE!
+        // ============================================
+        // To add a new command, just add an object to the array below.
+        // The page will automatically render it with nice formatting.
+
+        const commands = [
+            // ========== GENERAL COMMANDS ==========
+            {
+                category: 'general',
+                categoryIcon: '�',
+                categoryName: 'General Commands',
+                name: '/help',
+                description: 'Show how to get SUITE - via fiat, crypto, or watching ads. Also lists available commands.',
+                usage: '/help',
+                badge: 'public',
+                params: []
+            },
+            {
+                category: 'general',
+                name: '/status',
+                description: 'Get current project status and priorities for SUITE development.',
+                usage: '/status',
+                badge: 'public',
+                params: []
+            },
+            {
+                category: 'general',
+                name: '/leaderboard',
+                description: 'Show this week\'s SUITE leaderboard - see top contributors and their earnings.',
+                usage: '/leaderboard',
+                badge: 'public',
+                params: []
+            },
+            {
+                category: 'general',
+                name: '/mystats',
+                description: 'Show your personal SUITE earnings, total contributions, and ranking.',
+                usage: '/mystats',
+                badge: 'public',
+                params: []
+            },
+
+            // ========== APP COMMANDS ==========
+            {
+                category: 'app',
+                categoryIcon: '📱',
+                categoryName: 'App Commands',
+                name: '/apps',
+                description: 'View all SUITE apps and their current status (live, dev, or archived).',
+                usage: '/apps',
+                badge: 'public',
+                params: []
+            },
+            {
+                category: 'app',
+                name: '/bug',
+                description: 'Report a bug for a specific app. Gets posted to pending for review.',
+                usage: '/bug [app] [description] [priority]',
+                badge: 'public',
+                params: [
+                    { name: 'app', required: true, desc: 'Which app (Cheshbon, TrueForm, etc.)' },
+                    { name: 'description', required: true, desc: 'Describe the bug' },
+                    { name: 'priority', required: false, desc: 'high, medium, or low' }
+                ]
+            },
+            {
+                category: 'app',
+                name: '/feature',
+                description: 'Request a new feature for an app. Community can vote on it.',
+                usage: '/feature [app] [description]',
+                badge: 'public',
+                params: [
+                    { name: 'app', required: true, desc: 'Which app' },
+                    { name: 'description', required: true, desc: 'Describe the feature' }
+                ]
+            },
+            {
+                category: 'app',
+                name: '/my-apps',
+                description: 'View all your submitted applications and their current status.',
+                usage: '/my-apps',
+                badge: 'public',
+                params: []
+            },
+            {
+                category: 'app',
+                name: '/my-app-status',
+                description: 'Get detailed status of a specific app you submitted.',
+                usage: '/my-app-status [app]',
+                badge: 'public',
+                params: [
+                    { name: 'app', required: true, desc: 'App name' }
+                ]
+            },
+            {
+                category: 'app',
+                name: '/delete-my-app',
+                description: 'Archive your application (soft delete).',
+                usage: '/delete-my-app [app] [reason]',
+                badge: 'public',
+                params: [
+                    { name: 'app', required: true, desc: 'App name to delete' },
+                    { name: 'reason', required: false, desc: 'Reason for deleting' }
+                ]
+            },
+
+            // ========== AI COMMANDS ==========
+            {
+                category: 'ai',
+                categoryIcon: '🤖',
+                categoryName: 'AI Commands',
+                name: '/idea',
+                description: 'Analyze an idea with AI - get rating, pros/cons, market fit, and actionable next steps.',
+                usage: '/idea [idea]',
+                badge: 'public',
+                params: [
+                    { name: 'idea', required: true, desc: 'Describe your idea' }
+                ]
+            },
+            {
+                category: 'ai',
+                name: '/study',
+                description: 'Deep research on a topic with structured findings, sources, and key insights.',
+                usage: '/study [topic]',
+                badge: 'public',
+                params: [
+                    { name: 'topic', required: true, desc: 'Topic to research' }
+                ]
+            },
+            {
+                category: 'ai',
+                name: '/review',
+                description: 'AI code review for a GitHub file - get feedback on quality, security, and improvements.',
+                usage: '/review [url]',
+                badge: 'public',
+                params: [
+                    { name: 'url', required: true, desc: 'GitHub file URL' }
+                ]
+            },
+            {
+                category: 'ai',
+                name: '/content',
+                description: 'Generate TikTok, Twitter, and blog content ideas for a specific app.',
+                usage: '/content [app]',
+                badge: 'public',
+                params: [
+                    { name: 'app', required: true, desc: 'Select app (Cheshbon, TrueForm, etc.)' }
+                ]
+            },
+            {
+                category: 'ai',
+                name: '/suggest',
+                description: 'AI suggests features to build for an app based on user needs and market trends.',
+                usage: '/suggest [app]',
+                badge: 'public',
+                params: [
+                    { name: 'app', required: true, desc: 'Which app to suggest features for' }
+                ]
+            },
+
+            // ========== DEVELOPER COMMANDS ==========
+            {
+                category: 'developer',
+                categoryIcon: '👨‍💻',
+                categoryName: 'Developer Commands',
+                name: '/dev-create-app',
+                description: 'Create a new app using AI. Requires Developer role. App goes to pending for approval.',
+                usage: '/dev-create-app [name] [description] [free_features] [paid_features]',
+                badge: 'public',
+                params: [
+                    { name: 'name', required: true, desc: 'App name (lowercase, dashes, e.g. meditation-timer)' },
+                    { name: 'description', required: true, desc: 'What the app should do' },
+                    { name: 'free_features', required: true, desc: 'Free features (comma-separated)' },
+                    { name: 'paid_features', required: false, desc: 'Paid AI features with SUITE price' }
+                ]
+            },
+            {
+                category: 'developer',
+                name: '/publish-app',
+                description: 'Build and publish an app to the SUITE App Store. Creates EAS update.',
+                usage: '/publish-app [app]',
+                badge: 'public',
+                params: [
+                    { name: 'app', required: true, desc: 'Select app to publish' }
+                ]
+            },
+            {
+                category: 'developer',
+                name: '/set-env',
+                description: 'Set an environment variable for your app (API keys, secrets, etc.).',
+                usage: '/set-env [app] [key] [value]',
+                badge: 'public',
+                params: [
+                    { name: 'app', required: true, desc: 'Select your app' },
+                    { name: 'key', required: true, desc: 'Variable name (e.g., API_KEY)' },
+                    { name: 'value', required: true, desc: 'Variable value' }
+                ]
+            },
+            {
+                category: 'developer',
+                name: '/get-env',
+                description: 'View environment variables for your app. Values are hidden for security.',
+                usage: '/get-env [app]',
+                badge: 'public',
+                params: [
+                    { name: 'app', required: true, desc: 'Select your app' }
+                ]
+            },
+
+            // ========== ADMIN COMMANDS ==========
+            {
+                category: 'admin',
+                categoryIcon: '🔧',
+                categoryName: 'Admin Commands',
+                name: '/create-app',
+                description: 'Create a new app in the ecosystem. Owner only.',
+                usage: '/create-app [name] [description] [type] [features]',
+                badge: 'admin',
+                params: [
+                    { name: 'name', required: true, desc: 'App name' },
+                    { name: 'description', required: true, desc: 'What the app does' },
+                    { name: 'type', required: true, desc: 'expo-go, testflight, or web' },
+                    { name: 'features', required: false, desc: 'Key features (comma-separated)' }
+                ]
+            },
+            {
+                category: 'admin',
+                name: '/archive-app',
+                description: 'Archive an existing app. Removes from active apps but keeps data.',
+                usage: '/archive-app [name] [reason]',
+                badge: 'admin',
+                params: [
+                    { name: 'name', required: true, desc: 'App name to archive' },
+                    { name: 'reason', required: false, desc: 'Why archiving this app' }
+                ]
+            },
+            {
+                category: 'admin',
+                name: '/promote',
+                description: 'Promote an app from dev to live status. Makes it visible to users.',
+                usage: '/promote [app]',
+                badge: 'admin',
+                params: [
+                    { name: 'app', required: true, desc: 'App to promote' }
+                ]
+            },
+            {
+                category: 'admin',
+                name: '/demote',
+                description: 'Demote an app from live back to dev status.',
+                usage: '/demote [app]',
+                badge: 'admin',
+                params: [
+                    { name: 'app', required: true, desc: 'App to demote' }
+                ]
+            }
+        ];
+
+        // ============================================
+        // RENDERING LOGIC (don't need to edit this)
+        // ============================================
+
+        function renderCommands(filter = '') {
+            const container = document.getElementById('commandsList');
+            const filtered = commands.filter(cmd =>
+                cmd.name.toLowerCase().includes(filter.toLowerCase()) ||
+                cmd.description.toLowerCase().includes(filter.toLowerCase())
+            );
+
+            // Group by category
+            const categories = {};
+            filtered.forEach(cmd => {
+                if (!categories[cmd.category]) {
+                    categories[cmd.category] = {
+                        icon: cmd.categoryIcon || '📌',
+                        name: cmd.categoryName || cmd.category,
+                        commands: []
+                    };
+                }
+                categories[cmd.category].commands.push(cmd);
+            });
+
+            let html = '';
+            Object.entries(categories).forEach(([catId, cat]) => {
+                html += `
+                <div id="${catId}" class="category-header">
+                    <span class="category-icon">${cat.icon}</span>
+                    ${cat.name}
+                </div>
+            `;
+
+                cat.commands.forEach(cmd => {
+                    const badgeClass = cmd.badge === 'admin' ? 'badge-admin' :
+                        cmd.badge === 'premium' ? 'badge-premium' : 'badge-public';
+
+                    let paramsHtml = '';
+                    if (cmd.params.length > 0) {
+                        paramsHtml = '<div class="command-params">' +
+                            cmd.params.map(p => `
+                            <span class="param">
+                                <span class="param-name">${p.name}</span>
+                                <span class="${p.required ? 'param-required' : 'param-optional'}">
+                                    ${p.required ? 'required' : 'optional'}
+                                </span>
+                            </span>
+                        `).join('') + '</div>';
+                    }
+
+                    html += `
+                    <div class="command-card">
+                        <div class="command-header">
+                            <span class="command-name">${cmd.name}</span>
+                            <span class="command-badge ${badgeClass}">${cmd.badge}</span>
+                        </div>
+                        <p class="command-desc">${cmd.description}</p>
+                        <div class="command-usage">${cmd.usage}</div>
+                        ${paramsHtml}
+                    </div>
+                `;
+                });
+            });
+
+            container.innerHTML = html || '<p>No commands found.</p>';
+        }
+
+        function filterCommands() {
+            const search = document.getElementById('commandSearch').value;
+            renderCommands(search);
+        }
+
+        // Initial render
+        renderCommands();
+    </script>
+</body>
+
+</html>

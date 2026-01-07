@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUITE Ecosystem | Interactive Overview</title>
+    <meta name="description"
+        content="Explore the SUITE ecosystem - see how the Treasury, App Store, and token flows connect.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="suite-styles.css">
+    <link rel="stylesheet" href="nav.css">
+
+    <style>
+        /* Global reset handled by suite-styles.css */
+
+        /* Force nav-links to be visible on desktop */
+        @media (min-width: 769px) {
+            .nav-links {
+                display: flex !important;
+            }
+        }
+
+        body {
+            font-family: 'Nunito', 'Inter', sans-serif;
+            background: linear-gradient(135deg, #fff5eb 0%, #ffe4d4 20%, #ffd4e3 50%, #e8d5f9 80%, #d4e5ff 100%);
+            color: #2d1b4e;
+            min-height: 100vh;
+            overflow-x: hidden;
+            overflow-y: scroll;
+        }
+
+        /* Floating background blobs */
+        body::before,
+        body::after {
+            content: '';
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.5;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        body::before {
+            width: 500px;
+            height: 500px;
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            top: -100px;
+            right: -100px;
+        }
+
+        body::after {
+            width: 400px;
+            height: 400px;
+            background: linear-gradient(135deg, #a855f7, #3b82f6);
+            bottom: -100px;
+            left: -100px;
+        }
+
+        /* .header and .logo styles moved to nav.css */
+
+
+        /* nav-links styles moved to nav.css */
+
+        .canvas-container {
+            width: 100%;
+            min-height: 100vh;
+            padding: 90px 24px 20px 24px;
+            padding-right: calc(24px + (100vw - 100%));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+            box-sizing: border-box;
+        }
+
+        /* Main ecosystem container - smaller, auto height */
+        .ecosystem-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 32px;
+            box-shadow: 0 16px 80px rgba(0, 0, 0, 0.08);
+            padding: 30px;
+            width: 100%;
+            max-width: 1200px;
+            min-height: 460px;
+            margin: 0 auto;
+            position: relative;
+            display: flex;
+            gap: 20px;
+            overflow: hidden;
+        }
+
+        #canvas {
+            flex: 1;
+            height: 100%;
+            position: relative;
+        }
+
+        #connections {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+            /* Behind entities so lines don't overlay boxes */
+        }
+
+        /* Entity nodes - Playful bubbly style */
+        .entity {
+            position: absolute;
+            padding: 16px 20px;
+            border-radius: 20px;
+            width: 130px;
+            text-align: center;
+            cursor: pointer;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+            z-index: 10;
+            user-select: none;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+                left 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                top 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                width 0.5s ease,
+                height 0.5s ease,
+                padding 0.5s ease,
+                box-shadow 0.3s ease;
+        }
+
+        .entity.no-transition {
+            transition: none !important;
+        }
+
+        .entity:hover:not(.expanded) {
+            transform: scale(1.1) translateY(-4px);
+            z-index: 20;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15), 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .entity.treasury {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
+            color: white;
+        }
+
+        .entity.appstore {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .entity.wallet {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            color: white;
+        }
+
+        .entity.user {
+            background: linear-gradient(135deg, #a855f7 0%, #8b5cf6 100%);
+            color: white;
+        }
+
+        .entity.developer {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .entity.token {
+            background: linear-gradient(135deg, #ff9500 0%, #ff6b9d 100%);
+            color: white;
+        }
+
+        .entity.discord {
+            background: linear-gradient(135deg, #5865F2 0%, #7289DA 100%);
+            color: white;
+        }
+
+        .entity-icon {
+            font-size: 24px;
+            margin-bottom: 6px;
+            transition: font-size 0.5s ease;
+        }
+
+        .entity-title {
+            font-weight: 600;
+            font-size: 12px;
+            margin-bottom: 2px;
+            transition: font-size 0.5s ease;
+        }
+
+        .entity-subtitle {
+            font-size: 10px;
+            opacity: 0.85;
+            transition: opacity 0.3s;
+        }
+
+        /* Expanded state */
+        .entity.expanded {
+            width: 360px;
+            padding: 24px 28px;
+            z-index: 50;
+            transform: scale(1);
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.18);
+            border-radius: 24px;
+        }
+
+        .entity.expanded .entity-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .entity.expanded .entity-title {
+            font-size: 22px;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .entity.expanded .entity-subtitle {
+            opacity: 0;
+            height: 0;
+            margin: 0;
+        }
+
+        .entity-content {
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+            transition: max-height 0.5s ease, opacity 0.3s ease, margin-top 0.5s ease;
+        }
+
+        .entity.expanded .entity-content {
+            max-height: 400px;
+            opacity: 1;
+            margin-top: 16px;
+        }
+
+        .entity-description {
+            font-size: 13px;
+            line-height: 1.6;
+            opacity: 0.95;
+            margin-bottom: 16px;
+            text-align: left;
+        }
+
+        .entity-actions {
+            list-style: none;
+            text-align: left;
+        }
+
+        .entity-actions li {
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 12px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.2s ease;
+        }
+
+        .entity-actions li:hover {
+            background: rgba(255, 255, 255, 0.35);
+        }
+
+        .entity-actions li .icon {
+            font-size: 16px;
+        }
+
+        .close-entity {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: none;
+            color: inherit;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            opacity: 0;
+            transition: opacity 0.3s, background 0.2s;
+        }
+
+        .entity.expanded .close-entity {
+            opacity: 1;
+        }
+
+        .close-entity:hover {
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        /* Floating animation for displaced entities */
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+
+        .entity.floating {
+            animation: float 2s ease-in-out infinite;
+        }
+
+        /* Connection lines */
+        .connection {
+            fill: none;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            transition: d 0.8s ease;
+        }
+
+        .connection-label {
+            font-size: 11px;
+            font-family: 'Nunito', 'Inter', sans-serif;
+            fill: #5a4a6f;
+            font-weight: 600;
+            transition: all 0.8s ease;
+        }
+
+        @keyframes flowAnimation {
+            0% {
+                stroke-dashoffset: 20;
+            }
+
+            100% {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        .connection.animated {
+            stroke-dasharray: 5, 5;
+            animation: flowAnimation 0.8s linear infinite;
+        }
+
+        /* Legend - Inside container top right */
+        .legend {
+            position: absolute;
+            right: 16px;
+            top: 16px;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 12px;
+            padding: 10px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            z-index: 50;
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: #5a4a6f;
+        }
+
+        .legend-color {
+            width: 14px;
+            height: 14px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Controls hint - Warm glassmorphism */
+        .controls-hint {
+            position: fixed;
+            left: 20px;
+            top: 100px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 14px 18px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            z-index: 50;
+            font-size: 12px;
+            color: #5a4a6f;
+            line-height: 1.8;
+        }
+
+        .controls-hint strong {
+            color: #2d1b4e;
+        }
+
+        /* ============================================
+           LEFT SIDEBAR - Journey Tabs (inside container)
+           ============================================ */
+        .journey-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-shrink: 0;
+            padding: 10px 0;
+        }
+
+        .journey-tab {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 18px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 16px;
+            border: 2px solid transparent;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            font-size: 14px;
+            font-weight: 600;
+            color: #5a4a6f;
+            min-width: 160px;
+        }
+
+        .journey-tab:hover {
+            transform: translateX(8px) scale(1.02);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            border-color: rgba(255, 149, 0, 0.3);
+        }
+
+        .journey-tab.active {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 8px 32px rgba(255, 149, 0, 0.3);
+        }
+
+        .journey-tab .tab-icon {
+            font-size: 20px;
+        }
+
+        .journey-tab .tab-label {
+            flex: 1;
+        }
+
+        /* ============================================
+           BOTTOM PANEL - Journey Flow (Second Container)
+           ============================================ */
+        .journey-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 32px;
+            box-shadow: 0 16px 80px rgba(0, 0, 0, 0.08);
+            padding: 30px;
+            width: 100%;
+            max-width: 1200px;
+            margin: 20px auto 0;
+            display: none;
+            justify-content: center;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .journey-panel.open {
+            display: flex;
+        }
+
+        .journey-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            padding: 12px 24px;
+            margin: 0 auto 16px;
+            width: fit-content;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 100px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .journey-panel-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #2d1b4e;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .journey-panel-close {
+            background: rgba(0, 0, 0, 0.08);
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: #5a4a6f;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .journey-panel-close:hover {
+            background: rgba(0, 0, 0, 0.15);
+            color: #2d1b4e;
+        }
+
+        .journey-panel-content {
+            padding: 0 32px;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* Journey Steps Flow */
+        .journey-steps {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            min-width: max-content;
+        }
+
+        .journey-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            min-width: 140px;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: stepFadeIn 0.5s ease forwards;
+        }
+
+        .journey-step:nth-child(1) {
+            animation-delay: 0.1s;
+        }
+
+        .journey-step:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .journey-step:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+
+        .journey-step:nth-child(4) {
+            animation-delay: 0.4s;
+        }
+
+        .journey-step:nth-child(5) {
+            animation-delay: 0.5s;
+        }
+
+        .journey-step:nth-child(6) {
+            animation-delay: 0.6s;
+        }
+
+        @keyframes stepFadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .step-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            animation: iconBounce 2s ease-in-out infinite;
+        }
+
+        .journey-step:nth-child(1) .step-icon {
+            animation-delay: 0s;
+        }
+
+        .journey-step:nth-child(3) .step-icon {
+            animation-delay: 0.2s;
+        }
+
+        .journey-step:nth-child(5) .step-icon {
+            animation-delay: 0.4s;
+        }
+
+        .journey-step:nth-child(7) .step-icon {
+            animation-delay: 0.6s;
+        }
+
+        .journey-step:nth-child(9) .step-icon {
+            animation-delay: 0.8s;
+        }
+
+        @keyframes iconBounce {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+
+        .step-icon.user {
+            background: linear-gradient(135deg, #a855f7, #8b5cf6);
+        }
+
+        .step-icon.deposit {
+            background: linear-gradient(135deg, #10b981, #34d399);
+        }
+
+        .step-icon.treasury {
+            background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+        }
+
+        .step-icon.token {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+        }
+
+        .step-icon.appstore {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+        }
+
+        .step-icon.discord {
+            background: linear-gradient(135deg, #5865F2, #7289DA);
+        }
+
+        .step-icon.developer {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+        }
+
+        .step-icon.charity {
+            background: linear-gradient(135deg, #ec4899, #f472b6);
+        }
+
+        .step-title {
+            font-weight: 700;
+            font-size: 14px;
+            color: #2d1b4e;
+            margin-bottom: 4px;
+        }
+
+        .step-description {
+            font-size: 12px;
+            color: #5a4a6f;
+            max-width: 120px;
+        }
+
+        /* Clickable step styling */
+        .journey-step {
+            cursor: pointer;
+            position: relative;
+        }
+
+        .journey-step:hover .step-icon {
+            transform: scale(1.1);
+            animation: none;
+        }
+
+        .journey-step.active .step-icon {
+            transform: scale(1.15);
+            animation: none;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Step tooltip/detail popup */
+        .step-tooltip {
+            position: absolute;
+            bottom: calc(100% + 12px);
+            left: 50%;
+            transform: translateX(-50%) scale(0.9);
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 16px 20px;
+            width: 220px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .step-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 8px solid transparent;
+            border-top-color: rgba(255, 255, 255, 0.98);
+        }
+
+        .journey-step.active .step-tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) scale(1);
+            pointer-events: auto;
+        }
+
+        .tooltip-title {
+            font-weight: 700;
+            font-size: 14px;
+            color: #2d1b4e;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tooltip-text {
+            font-size: 13px;
+            color: #5a4a6f;
+            line-height: 1.5;
+        }
+
+        /* Arrow between steps */
+        .journey-arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 60px;
+            color: #ff9500;
+            font-size: 24px;
+            opacity: 0;
+            animation: arrowFadeIn 0.3s ease forwards;
+        }
+
+        .journey-arrow:nth-of-type(2) {
+            animation-delay: 0.15s;
+        }
+
+        .journey-arrow:nth-of-type(4) {
+            animation-delay: 0.25s;
+        }
+
+        .journey-arrow:nth-of-type(6) {
+            animation-delay: 0.35s;
+        }
+
+        .journey-arrow:nth-of-type(8) {
+            animation-delay: 0.45s;
+        }
+
+        @keyframes arrowFadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation - Playful Style -->
+    <style>
+        .header {
+            display: none;
+        }
+
+        /* Hide old header */
+    </style>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-logo">
+                <span class="icon"><svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2L2 12l10 10 10-10L12 2z" />
+                    </svg></span>
+                SUITE
+            </a>
+            <div class="nav-links">
+                <a href="apps.html">Apps</a>
+                <a href="developer-portal.html">Build</a>
+                <a href="ecosystem.html" class="active">Ecosystem</a>
+                <a href="docs/index.html">Docs</a>
+                <a href="wallet.html">Wallet</a>
+                <a href="https://discord.gg/7JmJPmnRAu" class="nav-cta">Join Discord</a>
+            </div>
+            <button class="mobile-menu-btn">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="canvas-container">
+        <div class="ecosystem-container">
+            <!-- Journey Sidebar - inside container -->
+            <div class="journey-sidebar">
+                <div class="journey-tab" data-journey="buy" onclick="showJourney('buy')">
+                    <span class="tab-icon">🪙</span>
+                    <span class="tab-label">Buy SUITE</span>
+                </div>
+                <div class="journey-tab" data-journey="sell" onclick="showJourney('sell')">
+                    <span class="tab-icon">💰</span>
+                    <span class="tab-label">Sell SUITE</span>
+                </div>
+                <div class="journey-tab" data-journey="developer" onclick="showJourney('developer')">
+                    <span class="tab-icon">👨‍💻</span>
+                    <span class="tab-label">Developer</span>
+                </div>
+                <div class="journey-tab" data-journey="use" onclick="showJourney('use')">
+                    <span class="tab-icon">📱</span>
+                    <span class="tab-label">Use Apps</span>
+                </div>
+                <div class="journey-tab" data-journey="giving" onclick="showJourney('giving')">
+                    <span class="tab-icon">🎁</span>
+                    <span class="tab-label">Giving</span>
+                </div>
+            </div>
+
+            <div id="canvas">
+                <svg id="connections"></svg>
+            </div>
+
+            <!-- Legend - inside container bottom right -->
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: linear-gradient(135deg, #ff6b6b, #ff8e8e);"></div>
+                    <span>Treasury</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: linear-gradient(135deg, #ffecd2, #fcb69f);"></div>
+                    <span>Token</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: linear-gradient(135deg, #4facfe, #00f2fe);"></div>
+                    <span>Platform</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: linear-gradient(135deg, #667eea, #764ba2);"></div>
+                    <span>Users</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: linear-gradient(135deg, #f093fb, #f5576c);"></div>
+                    <span>Developers</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Journey Panel (second container) -->
+        <div class="journey-panel" id="journeyPanel">
+            <div class="journey-panel-content">
+                <div class="journey-steps" id="journeySteps">
+                    <!-- Steps will be dynamically inserted -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls-hint" style="display: none;">
+        <strong>Click</strong> entity to expand<br>
+        <strong>Click ×</strong> or outside to close
+    </div>
+
+    <script>
+        // Entity data
+        const entities = {
+            treasury: {
+                id: 'treasury', icon: '🏛️', title: 'Treasury', subtitle: 'Value Vault', type: 'treasury',
+                x: 550, y: 80, originalX: 550, originalY: 80,
+                description: 'The core value vault of the SUITE ecosystem. Holds ETH that backs all SUITE tokens.',
+                actions: [
+                    { icon: '💰', text: 'Deposit ETH → Receive SUITE' },
+                    { icon: '🔄', text: 'Withdraw SUITE → Get ETH back' },
+                    { icon: '📊', text: '0.5% fee on transactions' },
+                    { icon: '🔐', text: 'Admin: Withdraw fees' },
+                ]
+            },
+            token: {
+                id: 'token', icon: '🪙', title: 'SUITE Token', subtitle: 'ERC-20', type: 'token',
+                x: 550, y: 220, originalX: 550, originalY: 220,
+                description: 'The native token representing your share of the Treasury. Always backed by ETH.',
+                actions: [
+                    { icon: '⚖️', text: '1 SUITE = % of Treasury' },
+                    { icon: '🔥', text: 'Burned on withdraw' },
+                    { icon: '✨', text: 'Minted on deposit' },
+                    { icon: '📜', text: 'ERC-20 on Base chain' },
+                ]
+            },
+            appstore: {
+                id: 'appstore', icon: '🏪', title: 'App Store', subtitle: 'Apps', type: 'appstore',
+                x: 850, y: 150, originalX: 850, originalY: 150,
+                description: 'Marketplace for SUITE-powered apps created by developers.',
+                actions: [
+                    { icon: '📱', text: 'Browse apps' },
+                    { icon: '⚡', text: 'Pay with SUITE' },
+                    { icon: '⭐', text: 'Rate and review' },
+                    { icon: '🎯', text: 'Get recommendations' },
+                ]
+            },
+            user: {
+                id: 'user', icon: '👤', title: 'Users', subtitle: 'Ecosystem Participants', type: 'user',
+                x: 250, y: 150, originalX: 250, originalY: 150,
+                description: 'Users interact with the SUITE ecosystem through the Wallet dashboard.',
+                actions: [
+                    { icon: '👛', text: 'WALLET DASHBOARD:' },
+                    { icon: '💎', text: '  • View SUITE balance' },
+                    { icon: '📈', text: '  • Track portfolio value' },
+                    { icon: '🔌', text: '  • Connect MetaMask' },
+                    { icon: '🔒', text: '  • Stake for voting power' },
+                ],
+                subActions: [
+                    { icon: '📲', text: 'Use apps from App Store' },
+                    { icon: '💵', text: 'Deposit ETH → Get SUITE' },
+                    { icon: '🗳️', text: 'Vote on charity giving' },
+                ]
+            },
+            developer: {
+                id: 'developer', icon: '👨‍💻', title: 'Developers', subtitle: 'Builders', type: 'developer',
+                x: 850, y: 340, originalX: 850, originalY: 340,
+                description: 'Builders who create apps using SUITE payments.',
+                actions: [
+                    { icon: '🛠️', text: 'Build with SDK' },
+                    { icon: '💸', text: 'Earn SUITE' },
+                    { icon: '🤖', text: 'Deploy via Discord' },
+                    { icon: '📊', text: 'Track earnings' },
+                ]
+            },
+            discord: {
+                id: 'discord', icon: '💬', title: 'Discord', subtitle: 'Community', type: 'discord',
+                x: 550, y: 380, originalX: 550, originalY: 380,
+                description: 'Community center + dev automation hub.',
+                actions: [
+                    { icon: '🤖', text: 'Bot deploys apps' },
+                    { icon: '📣', text: 'Live updates' },
+                    { icon: '👥', text: 'Join community' },
+                    { icon: '🔧', text: 'Feature requests' },
+                ]
+            }
+        };
+
+        // Connections - arranged to avoid crossing entities
+        const connections = [
+            // Center column
+            { from: 'treasury', to: 'token', label: 'backs', color: '#ff8e8e', animated: true },
+            { from: 'token', to: 'discord', label: 'community', color: '#fcb69f' },
+            // Left side - Users
+            { from: 'user', to: 'treasury', label: 'deposit ETH', color: '#667eea' },
+            { from: 'user', to: 'discord', label: 'community', color: '#667eea' },
+            // Right side - Developers + App Store 
+            { from: 'appstore', to: 'token', label: 'accepts SUITE', color: '#4facfe' },
+            { from: 'developer', to: 'appstore', label: 'publish', color: '#f093fb' },
+            { from: 'developer', to: 'discord', label: 'deploy', color: '#f093fb' },
+        ];
+
+        let expandedEntity = null;
+        const canvas = document.getElementById('canvas');
+
+        // Container is now 900px max-width, so position relative to it
+
+        // Update entity positions - now relative to container
+        function repositionEntities() {
+            // Positions relative to container (480px height - 80px padding = ~400px usable)
+            // Layout: Users left, Treasury/Token/Discord center, AppStore/Developer right
+            const basePositions = {
+                user: { x: 60, y: 110 },
+                treasury: { x: 320, y: 20 },
+                token: { x: 320, y: 150 },
+                discord: { x: 320, y: 280 },
+                appstore: { x: 580, y: 80 },
+                developer: { x: 580, y: 220 }
+            };
+
+            Object.keys(entities).forEach(id => {
+                const entity = entities[id];
+                const basePos = basePositions[id];
+                if (basePos) {
+                    entity.x = basePos.x;
+                    entity.y = basePos.y;
+                    entity.originalX = entity.x;
+                    entity.originalY = entity.y;
+
+                    const el = document.getElementById(id);
+                    if (el && !el.classList.contains('expanded') && expandedEntity !== id) {
+                        // Disable transitions for instant repositioning
+                        el.classList.add('no-transition');
+                        el.style.left = entity.x + 'px';
+                        el.style.top = entity.y + 'px';
+                    }
+                }
+            });
+
+            // Force reflow to apply positions immediately
+            void document.body.offsetHeight;
+
+            // Draw connections immediately (positions are now stable)
+            drawConnections();
+
+            // Re-enable transitions after a brief moment
+            requestAnimationFrame(() => {
+                Object.keys(entities).forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.remove('no-transition');
+                });
+            });
+        }
+
+        // Create entities
+        Object.values(entities).forEach(entity => {
+            const el = document.createElement('div');
+            el.className = `entity ${entity.type}`;
+            el.id = entity.id;
+            el.style.left = entity.x + 'px';
+            el.style.top = entity.y + 'px';
+            el.innerHTML = `
+                <button class="close-entity" onclick="event.stopPropagation(); collapseEntity()">×</button>
+                <div class="entity-icon">${entity.icon}</div>
+                <div class="entity-title">${entity.title}</div>
+                <div class="entity-subtitle">${entity.subtitle}</div>
+                <div class="entity-content">
+                    <p class="entity-description">${entity.description}</p>
+                    <ul class="entity-actions">
+                        ${entity.actions.map(a => `<li><span class="icon">${a.icon}</span>${a.text}</li>`).join('')}
+                    </ul>
+                    ${entity.subActions ? `
+                        <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.2); margin: 12px 0;">
+                        <ul class="entity-actions">
+                            ${entity.subActions.map(a => `<li><span class="icon">${a.icon}</span>${a.text}</li>`).join('')}
+                        </ul>
+                    ` : ''}
+                </div>
+            `;
+            el.addEventListener('click', (e) => {
+                if (!el.classList.contains('expanded')) {
+                    expandEntity(entity.id);
+                }
+            });
+            canvas.appendChild(el);
+        });
+
+        // Expand entity - stays in place, others float away
+        function expandEntity(id) {
+            if (expandedEntity === id) return;
+
+            // Collapse previous if any
+            if (expandedEntity) {
+                collapseEntity();
+            }
+
+            expandedEntity = id;
+            const expandedEl = document.getElementById(id);
+            const expandedData = entities[id];
+
+            // Expand the clicked entity
+            expandedEl.classList.add('expanded');
+
+            // Keep entity in place, but clamp to screen edges
+            const canvasRect = canvas.getBoundingClientRect();
+            const expandedWidth = 340;
+            const expandedHeight = 350;
+
+            // Clamp position so expanded box stays on screen
+            let newX = expandedData.originalX;
+            let newY = expandedData.originalY;
+
+            // Right edge
+            if (newX + expandedWidth > canvasRect.width - 20) {
+                newX = canvasRect.width - expandedWidth - 20;
+            }
+            // Left edge
+            if (newX < 20) {
+                newX = 20;
+            }
+            // Bottom edge
+            if (newY + expandedHeight > canvasRect.height - 20) {
+                newY = canvasRect.height - expandedHeight - 20;
+            }
+            // Top edge
+            if (newY < 80) {
+                newY = 80;
+            }
+
+            expandedEl.style.left = newX + 'px';
+            expandedEl.style.top = newY + 'px';
+            expandedData.x = newX;
+            expandedData.y = newY;
+
+            // Push other entities away if they would overlap expanded box
+            const expandedBox = {
+                x: newX - 20, // padding
+                y: newY - 20,
+                width: expandedWidth + 40,
+                height: expandedHeight + 40
+            };
+
+            Object.values(entities).forEach(entity => {
+                if (entity.id === id) return;
+
+                const el = document.getElementById(entity.id);
+                const entityWidth = 120;
+                const entityHeight = 100;
+
+                // Check if entity overlaps with expanded box
+                const wouldOverlap = !(
+                    entity.originalX + entityWidth < expandedBox.x ||
+                    entity.originalX > expandedBox.x + expandedBox.width ||
+                    entity.originalY + entityHeight < expandedBox.y ||
+                    entity.originalY > expandedBox.y + expandedBox.height
+                );
+
+                let newEntityX, newEntityY;
+
+                if (wouldOverlap) {
+                    // Push entity out of the way
+                    const centerExpandedX = newX + expandedWidth / 2;
+                    const centerExpandedY = newY + expandedHeight / 2;
+                    const centerEntityX = entity.originalX + entityWidth / 2;
+                    const centerEntityY = entity.originalY + entityHeight / 2;
+
+                    const dx = centerEntityX - centerExpandedX;
+                    const dy = centerEntityY - centerExpandedY;
+                    const angle = Math.atan2(dy, dx);
+
+                    // Push distance based on which direction is shortest
+                    let pushDist;
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                        // Push horizontally
+                        pushDist = (expandedWidth / 2 + entityWidth / 2 + 40);
+                    } else {
+                        // Push vertically
+                        pushDist = (expandedHeight / 2 + entityHeight / 2 + 40);
+                    }
+
+                    newEntityX = centerExpandedX + Math.cos(angle) * pushDist - entityWidth / 2;
+                    newEntityY = centerExpandedY + Math.sin(angle) * pushDist - entityHeight / 2;
+                } else {
+                    // Just subtle push
+                    const dx = entity.originalX - expandedData.originalX;
+                    const dy = entity.originalY - expandedData.originalY;
+                    newEntityX = entity.originalX + dx * 0.15;
+                    newEntityY = entity.originalY + dy * 0.15;
+                }
+
+                // Keep within bounds
+                newEntityX = Math.max(20, Math.min(canvasRect.width - 140, newEntityX));
+                newEntityY = Math.max(80, Math.min(canvasRect.height - 100, newEntityY));
+
+                entity.x = newEntityX;
+                entity.y = newEntityY;
+
+                el.style.left = newEntityX + 'px';
+                el.style.top = newEntityY + 'px';
+                el.classList.add('floating');
+
+                // Stop floating after 3 seconds
+                setTimeout(() => {
+                    el.classList.remove('floating');
+                }, 3000);
+            });
+
+            // Redraw connections with animation
+            setTimeout(drawConnections, 50);
+            setTimeout(drawConnections, 300);
+            setTimeout(drawConnections, 600);
+        }
+
+        // Collapse back to normal
+        function collapseEntity() {
+            if (!expandedEntity) return;
+
+            const el = document.getElementById(expandedEntity);
+            el.classList.remove('expanded');
+
+            // Reset all entities to original positions
+            Object.values(entities).forEach(entity => {
+                entity.x = entity.originalX;
+                entity.y = entity.originalY;
+                const entityEl = document.getElementById(entity.id);
+                entityEl.style.left = entity.originalX + 'px';
+                entityEl.style.top = entity.originalY + 'px';
+                entityEl.classList.remove('floating');
+            });
+
+            expandedEntity = null;
+
+            // Redraw connections
+            setTimeout(drawConnections, 50);
+            setTimeout(drawConnections, 300);
+            setTimeout(drawConnections, 600);
+        }
+
+        // Click outside to collapse
+        canvas.addEventListener('click', (e) => {
+            if (e.target === canvas || e.target.id === 'connections') {
+                collapseEntity();
+            }
+        });
+
+        // Draw connections - edge to edge, not center to center
+        function drawConnections() {
+            const svg = document.getElementById('connections');
+            svg.innerHTML = '';
+
+            const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+            connections.forEach((conn, i) => {
+                const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+                marker.setAttribute('id', `arrow-${i}`);
+                marker.setAttribute('markerWidth', '8');
+                marker.setAttribute('markerHeight', '8');
+                marker.setAttribute('refX', '7');
+                marker.setAttribute('refY', '3');
+                marker.setAttribute('orient', 'auto');
+                marker.innerHTML = `<path d="M0,0 L0,6 L7,3 z" fill="${conn.color}" opacity="0.8" />`;
+                defs.appendChild(marker);
+            });
+            svg.appendChild(defs);
+
+            connections.forEach((conn, i) => {
+                const fromEl = document.getElementById(conn.from);
+                const toEl = document.getElementById(conn.to);
+                if (!fromEl || !toEl) return;
+
+                const fromRect = fromEl.getBoundingClientRect();
+                const toRect = toEl.getBoundingClientRect();
+                const canvasRect = canvas.getBoundingClientRect();
+
+                // Calculate centers
+                const fromCenterX = fromRect.left + fromRect.width / 2 - canvasRect.left;
+                const fromCenterY = fromRect.top + fromRect.height / 2 - canvasRect.top;
+                const toCenterX = toRect.left + toRect.width / 2 - canvasRect.left;
+                const toCenterY = toRect.top + toRect.height / 2 - canvasRect.top;
+
+                // Calculate angle between centers
+                const angle = Math.atan2(toCenterY - fromCenterY, toCenterX - fromCenterX);
+
+                // Calculate edge points (where lines should start/end)
+                const fromHalfW = fromRect.width / 2 + 5;
+                const fromHalfH = fromRect.height / 2 + 5;
+                const toHalfW = toRect.width / 2 + 5;
+                const toHalfH = toRect.height / 2 + 5;
+
+                // Start point at edge of from-entity
+                const x1 = fromCenterX + Math.cos(angle) * Math.min(fromHalfW, fromHalfH * 1.5);
+                const y1 = fromCenterY + Math.sin(angle) * Math.min(fromHalfH, fromHalfW * 1.5);
+
+                // End point at edge of to-entity
+                const x2 = toCenterX - Math.cos(angle) * Math.min(toHalfW, toHalfH * 1.5);
+                const y2 = toCenterY - Math.sin(angle) * Math.min(toHalfH, toHalfW * 1.5);
+
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', `M${x1},${y1} L${x2},${y2}`);
+                path.setAttribute('stroke', conn.color);
+                path.setAttribute('stroke-opacity', '0.6');
+                path.setAttribute('class', `connection ${conn.animated ? 'animated' : ''}`);
+                path.setAttribute('marker-end', `url(#arrow-${i})`);
+                svg.appendChild(path);
+            });
+        }
+
+        // Initial positioning and draw (reposition calls drawConnections internally)
+        repositionEntities();
+
+        // Reposition entities dynamically on resize
+        window.addEventListener('resize', () => {
+            repositionEntities();
+        });
+
+        // ============================================
+        // JOURNEY PANEL FUNCTIONALITY
+        // ============================================
+
+        const journeys = {
+            buy: {
+                icon: '🪙',
+                name: 'Buying SUITE',
+                steps: [
+                    { icon: '👤', iconClass: 'user', title: 'You', desc: 'Start here', detail: 'You begin by deciding how much value you want to convert into SUITE tokens. Connect your wallet or use fiat payment options.' },
+                    { icon: '💳', iconClass: 'deposit', title: 'Deposit', desc: 'Send fiat or crypto', detail: 'Send ETH, USDC, or other supported tokens. You can also use a credit card through our fiat on-ramp partner.' },
+                    { icon: '🏛️', iconClass: 'treasury', title: 'Treasury', desc: 'Receives value', detail: 'The Treasury smart contract receives your deposit and adds it to the collateral pool that backs all SUITE tokens.' },
+                    { icon: '⚡', iconClass: 'treasury', title: 'Mint', desc: 'Creates new SUITE', detail: 'New SUITE tokens are minted proportional to your deposit\'s share of the total Treasury value. A 0.5% fee is applied.' },
+                    { icon: '🪙', iconClass: 'token', title: '$SUITE', desc: 'Sent to your wallet', detail: 'Your freshly minted SUITE tokens appear in your wallet! Use them to pay for apps or hold for potential value appreciation.' }
+                ]
+            },
+            sell: {
+                icon: '💰',
+                name: 'Selling SUITE',
+                steps: [
+                    { icon: '👤', iconClass: 'user', title: 'You', desc: 'Hold SUITE tokens', detail: 'You have SUITE tokens in your wallet and want to convert them back to ETH or fiat currency.' },
+                    { icon: '🪙', iconClass: 'token', title: 'Send SUITE', desc: 'To Treasury', detail: 'Initiate a withdrawal by sending your SUITE tokens to the Treasury contract. Specify how much you want to redeem.' },
+                    { icon: '🏛️', iconClass: 'treasury', title: 'Treasury', desc: 'Burns tokens', detail: 'The Treasury permanently destroys (burns) your SUITE tokens, reducing the total supply proportionally.' },
+                    { icon: '💎', iconClass: 'deposit', title: 'Collateral', desc: 'Released to you', detail: 'The ETH collateral backing your burned tokens is released from the Treasury. A 0.5% fee is deducted.' },
+                    { icon: '💰', iconClass: 'user', title: 'Receive', desc: 'ETH/USD value', detail: 'The ETH is sent to your wallet! You can hold it or convert to USD via your preferred exchange.' }
+                ]
+            },
+            developer: {
+                icon: '👨‍💻',
+                name: 'Developer Journey',
+                steps: [
+                    { icon: '💬', iconClass: 'discord', title: 'Join Discord', desc: 'Connect with us', detail: 'Join our Discord community and access the Forge channel where you can submit app ideas and get support.' },
+                    { icon: '💡', iconClass: 'developer', title: 'Describe App', desc: 'Share your idea', detail: 'Describe your app idea in plain English. No coding required! Our AI assistant will understand what you want to build.' },
+                    { icon: '🤖', iconClass: 'developer', title: 'AI Builds', desc: 'Code generated', detail: 'Our AI generates the complete app code, tests it, and creates a deployable package. You can request changes via chat.' },
+                    { icon: '📱', iconClass: 'appstore', title: 'Publish', desc: 'To App Store', detail: 'Once approved, your app is published to the SUITE App Store where users can discover and use it.' },
+                    { icon: '🪙', iconClass: 'token', title: 'Earn SUITE', desc: 'From user payments', detail: 'Every time someone uses your app, you earn SUITE tokens directly! Set your own pricing per use.' }
+                ]
+            },
+            use: {
+                icon: '📱',
+                name: 'Using Apps',
+                steps: [
+                    { icon: '👤', iconClass: 'user', title: 'Browse', desc: 'App Store', detail: 'Explore the SUITE App Store filled with useful apps created by community developers. Filter by category or popularity.' },
+                    { icon: '📱', iconClass: 'appstore', title: 'Select App', desc: 'Choose one', detail: 'Find an app that solves your problem. Each app shows its price per use (typically micro-amounts of SUITE).' },
+                    { icon: '🪙', iconClass: 'token', title: 'Pay SUITE', desc: 'Microtransaction', detail: 'Pay a small amount of SUITE tokens to use the app. Transactions are instant and gas-free on Layer 2.' },
+                    { icon: '✨', iconClass: 'appstore', title: 'Use App', desc: 'Enjoy features', detail: 'Access the app\'s features immediately! No subscriptions, no accounts needed - just seamless utility.' },
+                    { icon: '👨‍💻', iconClass: 'developer', title: 'Dev Earns', desc: 'Gets your SUITE', detail: 'Your payment goes directly to the developer who built the app, incentivizing more great apps!' }
+                ]
+            },
+            giving: {
+                icon: '🎁',
+                name: 'Treasury & Giving',
+                steps: [
+                    { icon: '🏛️', iconClass: 'treasury', title: 'Treasury', desc: 'Holds collateral', detail: 'The Treasury holds all ETH collateral backing SUITE tokens. This creates a stable, growing pool of value.' },
+                    { icon: '📈', iconClass: 'deposit', title: 'Earn Yield', desc: 'On deposited value', detail: 'Treasury funds are deployed to earn yield through staking, lending, and other DeFi strategies.' },
+                    { icon: '💝', iconClass: 'charity', title: '10% to Charity', desc: 'Automatic giving', detail: 'Once the Treasury hits $100k, 10% of all yield is automatically allocated to charitable giving!' },
+                    { icon: '🗳️', iconClass: 'user', title: 'Community Vote', desc: 'Choose charities', detail: 'SUITE holders vote on which charities receive funds. Stake SUITE to earn voting power.' },
+                    { icon: '🌍', iconClass: 'charity', title: 'Impact', desc: 'Make a difference', detail: 'Your participation in SUITE directly contributes to making the world a better place!' }
+                ]
+            }
+        };
+
+        let currentJourney = null;
+        let activeStep = null;
+
+        function showJourney(journeyKey) {
+            const journey = journeys[journeyKey];
+            if (!journey) return;
+
+            // Update active tab
+            document.querySelectorAll('.journey-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[data-journey="${journeyKey}"]`).classList.add('active');
+
+            // Build steps HTML with tooltips
+            const stepsContainer = document.getElementById('journeySteps');
+            stepsContainer.innerHTML = journey.steps.map((step, i) => `
+                <div class="journey-step" data-step="${i}" onclick="toggleStep(${i})">
+                    <div class="step-tooltip">
+                        <div class="tooltip-title">${step.icon} ${step.title}</div>
+                        <div class="tooltip-text">${step.detail}</div>
+                    </div>
+                    <div class="step-icon ${step.iconClass}">${step.icon}</div>
+                    <div class="step-title">${step.title}</div>
+                    <div class="step-description">${step.desc}</div>
+                </div>
+                ${i < journey.steps.length - 1 ? '<div class="journey-arrow">→</div>' : ''}
+            `).join('');
+
+            // Open panel
+            document.getElementById('journeyPanel').classList.add('open');
+            currentJourney = journeyKey;
+        }
+
+        function closeJourney() {
+            document.getElementById('journeyPanel').classList.remove('open');
+            document.querySelectorAll('.journey-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            currentJourney = null;
+            activeStep = null;
+        }
+
+        function toggleStep(stepIndex) {
+            const allSteps = document.querySelectorAll('.journey-step');
+
+            // If clicking the same step, deactivate it
+            if (activeStep === stepIndex) {
+                allSteps.forEach(s => s.classList.remove('active'));
+                activeStep = null;
+                return;
+            }
+
+            // Deactivate all, activate clicked
+            allSteps.forEach(s => s.classList.remove('active'));
+            allSteps[stepIndex].classList.add('active');
+            activeStep = stepIndex;
+        }
+
+        // Close tooltip when clicking outside a step
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.journey-step') && activeStep !== null) {
+                document.querySelectorAll('.journey-step').forEach(s => s.classList.remove('active'));
+                activeStep = null;
+            }
+        });
+
+        // Close panel when clicking outside
+        document.addEventListener('click', (e) => {
+            if (currentJourney &&
+                !e.target.closest('.journey-panel') &&
+                !e.target.closest('.journey-tab')) {
+                closeJourney();
+            }
+        });
+    </script>
+</body>
+
+</html>
