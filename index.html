@@ -8,6 +8,7 @@
     <meta name="description"
         content="Build apps by talking. Discover AI-powered apps. Earn from your creations. No coding required.">
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="assets/suite-mascot.png">
     <link rel="stylesheet" href="suite-styles.css">
     <link rel="stylesheet" href="nav.css">
 
@@ -42,6 +43,15 @@
             min-height: 100vh;
             color: var(--text-dark);
             overflow-x: hidden;
+        }
+
+        /* Homepage nav - match value-container style */
+        .nav-inner {
+            background: rgba(255, 255, 255, 0.15) !important;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
         }
 
         /* Animated background blobs */
@@ -96,7 +106,182 @@
             }
         }
 
+        /* Animated pulsating grid background */
+        .grid-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .grid-background::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.25) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.25) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+
+        .grid-pulse {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.5) 0%, transparent 70%);
+            border-radius: 4px;
+            animation: pulse-grid 4s ease-in-out infinite;
+            opacity: 0;
+        }
+
+        .grid-pulse:nth-child(1) {
+            top: 10%;
+            left: 15%;
+            animation-delay: 0s;
+        }
+
+        .grid-pulse:nth-child(2) {
+            top: 25%;
+            left: 75%;
+            animation-delay: 0.5s;
+        }
+
+        .grid-pulse:nth-child(3) {
+            top: 45%;
+            left: 30%;
+            animation-delay: 1s;
+        }
+
+        .grid-pulse:nth-child(4) {
+            top: 60%;
+            left: 85%;
+            animation-delay: 1.5s;
+        }
+
+        .grid-pulse:nth-child(5) {
+            top: 15%;
+            left: 55%;
+            animation-delay: 2s;
+        }
+
+        .grid-pulse:nth-child(6) {
+            top: 70%;
+            left: 20%;
+            animation-delay: 2.5s;
+        }
+
+        .grid-pulse:nth-child(7) {
+            top: 35%;
+            left: 90%;
+            animation-delay: 3s;
+        }
+
+        .grid-pulse:nth-child(8) {
+            top: 80%;
+            left: 45%;
+            animation-delay: 3.5s;
+        }
+
+        @keyframes pulse-grid {
+
+            0%,
+            100% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.2);
+            }
+        }
+
         /* Navigation uses external nav.css */
+
+        /* Live Activity Ticker */
+        .activity-ticker {
+            width: 100%;
+            overflow: hidden;
+            padding: 8px 0;
+            margin-top: 130px;
+            position: relative;
+            z-index: 5;
+        }
+
+        .activity-ticker::before,
+        .activity-ticker::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            width: 100px;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .activity-ticker::before {
+            left: 0;
+            background: linear-gradient(90deg, #ffb347 0%, transparent 100%);
+        }
+
+        .activity-ticker::after {
+            right: 0;
+            background: linear-gradient(90deg, transparent 0%, #ff9a8b 100%);
+        }
+
+        .ticker-track {
+            display: flex;
+            gap: 40px;
+            animation: scroll-ticker 30s linear infinite;
+            width: max-content;
+        }
+
+        .ticker-track:hover {
+            animation-play-state: paused;
+        }
+
+        .ticker-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 10px 18px;
+            border-radius: 100px;
+            white-space: nowrap;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #2d1b4e;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+            z-index: 20;
+        }
+
+        .ticker-item .emoji {
+            font-size: 1.1rem;
+        }
+
+        .ticker-item .user {
+            color: #ff6b9d;
+            font-weight: 700;
+        }
+
+        @keyframes scroll-ticker {
+            0% {
+                transform: translateX(0);
+            }
+
+            100% {
+                transform: translateX(-50%);
+            }
+        }
 
         /* Hero Section with Character Arc */
         .hero {
@@ -105,7 +290,8 @@
             align-items: center;
             justify-content: flex-start;
             text-align: center;
-            padding: 90px 24px 0;
+            padding: 0 24px 0;
+            margin-top: -200px;
             position: relative;
             background: transparent !important;
         }
@@ -114,22 +300,27 @@
             position: relative;
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-end;
             margin-bottom: 0;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .hero-character-arc img {
             width: 100%;
-            max-width: 700px;
+            max-width: 600px;
             height: auto;
+            transform: scaleX(-1);
+            filter: drop-shadow(0 0 0 white) drop-shadow(3px 3px 0 white) drop-shadow(-3px -3px 0 white) drop-shadow(3px -3px 0 white) drop-shadow(-3px 3px 0 white);
         }
 
         .hero-content {
             position: absolute;
             top: 50%;
-            left: 53%;
-            transform: translate(-50%, -50%);
-            text-align: center;
+            left: calc(50% - 450px + 24px);
+            transform: translateY(-50%);
+            text-align: left;
             min-width: 350px;
         }
 
@@ -300,7 +491,7 @@
 
         .section-header {
             text-align: center;
-            margin-bottom: 48px;
+            margin-bottom: 38px;
         }
 
         .section-tag {
@@ -325,14 +516,14 @@
         .value-section {
             padding: 30px 24px 40px;
             max-width: 900px;
-            margin: -80px auto 0;
+            margin: -220px auto 0;
             position: relative;
             z-index: 5;
         }
 
         .value-section .section-header {
             text-align: center;
-            margin-bottom: -32px;
+            margin-bottom: -35px;
             position: relative;
             z-index: 10;
         }
@@ -368,6 +559,7 @@
             padding: 32px 24px;
             text-align: center;
             border-right: 1px solid rgba(255, 255, 255, 0.2);
+            overflow: visible;
         }
 
         .value-card:last-child {
@@ -401,14 +593,41 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #22c55e 0%, #84cc16 50%, #a3e635 100%);
-            width: 100px;
-            height: 100px;
-            border-radius: 24px;
-            margin-bottom: 20px;
+            background: transparent;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            margin: 0;
             color: white;
             font-weight: 800;
-            box-shadow: 0 8px 24px rgba(34, 197, 94, 0.3);
+            box-shadow: none;
+            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            cursor: pointer;
+        }
+
+        .value-card.build .token-badge:hover {
+            transform: scale(1.15) rotate(5deg);
+            animation: coinBounce 0.5s ease;
+        }
+
+        @keyframes coinBounce {
+
+            0%,
+            100% {
+                transform: scale(1.15) rotate(5deg);
+            }
+
+            25% {
+                transform: scale(1.2) rotate(-3deg);
+            }
+
+            50% {
+                transform: scale(1.1) rotate(8deg);
+            }
+
+            75% {
+                transform: scale(1.18) rotate(-2deg);
+            }
         }
 
         .value-card.build .token-badge .dollar {
@@ -428,11 +647,107 @@
             opacity: 0.9;
         }
 
+        /* Old styles removed - see bubbly text effect below */
+
+        .value-card.build .token-wrapper {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        /* Bubbly text effect */
+        .suite-token-text .suite-name {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #ff9500;
+            -webkit-text-stroke: 0;
+            paint-order: stroke fill;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.8),
+                0 0 30px rgba(255, 255, 255, 0.4),
+                2px 2px 0 rgba(168, 92, 0, 0.3);
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .suite-token-text .suite-name:hover {
+            transform: scale(1.1);
+            animation: textWobble 0.5s ease;
+        }
+
+        @keyframes textWobble {
+
+            0%,
+            100% {
+                transform: scale(1.1) rotate(0deg);
+            }
+
+            25% {
+                transform: scale(1.12) rotate(-2deg);
+            }
+
+            75% {
+                transform: scale(1.08) rotate(2deg);
+            }
+        }
+
+        .suite-token-text .suite-label {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.6),
+                0 2px 4px rgba(0, 0, 0, 0.3);
+            margin-top: -4px;
+            margin-left: 0;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .suite-token-text .suite-label:hover {
+            transform: scale(1.05);
+        }
+
+        /* Falling coins container */
+        .falling-coins {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 9999;
+        }
+
+        .falling-coin {
+            position: absolute;
+            font-size: 2rem;
+            pointer-events: none;
+            user-select: none;
+            will-change: transform, left, top;
+        }
+
+        .falling-coin.physics-coin:hover {
+            filter: brightness(1.2);
+        }
+
+
+        .value-card.build {
+            padding-bottom: 0;
+        }
+
         .value-card.build .tools-row {
             display: flex;
             justify-content: center;
-            gap: 16px;
-            margin-top: 16px;
+            align-items: flex-end;
+            gap: 0;
+            margin-top: 40px;
+            margin-bottom: -32px;
+            perspective: 600px;
+            position: relative;
         }
 
         .value-card.build .tool-card {
@@ -440,17 +755,52 @@
             flex-direction: column;
             align-items: center;
             gap: 6px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 14px 16px 20px;
+            border-radius: 18px 18px 0 0;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+            transition: transform 0.3s ease;
+        }
+
+        /* Side cards - smaller and rotated back */
+        .value-card.build .tool-card:first-child,
+        .value-card.build .tool-card:last-child {
+            transform: scale(0.85);
+            opacity: 0.9;
+        }
+
+        .value-card.build .tool-card:first-child {
+            transform: scale(0.85) translateX(15px) rotateY(15deg);
+            z-index: 1;
+        }
+
+        .value-card.build .tool-card:last-child {
+            transform: scale(0.85) translateX(-15px) rotateY(-15deg);
+            z-index: 1;
+        }
+
+        /* Center card - larger and in front */
+        .value-card.build .tool-card:nth-child(2) {
+            transform: scale(1.15) translateY(-5px);
+            z-index: 3;
         }
 
         .value-card.build .tool-icon-img {
             width: 50px;
             height: 50px;
-            border-radius: 12px;
+            border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 1.5rem;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Center card icon is bigger */
+        .value-card.build .tool-card:nth-child(2) .tool-icon-img {
+            width: 58px;
+            height: 58px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
         }
 
         .value-card.build .tool-label {
@@ -847,6 +1197,10 @@
             padding: 60px 24px 30px;
             max-width: 1200px;
             margin: 0 auto;
+            background: linear-gradient(180deg, rgba(255, 179, 71, 0.15) 0%, rgba(255, 154, 139, 0.2) 100%);
+            backdrop-filter: blur(10px);
+            border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+            margin-top: 60px;
         }
 
         .footer-content {
@@ -964,13 +1318,23 @@
     <div class="bg-blob blob-2"></div>
     <div class="bg-blob blob-3"></div>
 
+    <!-- Animated Grid Background -->
+    <div class="grid-background">
+        <div class="grid-pulse"></div>
+        <div class="grid-pulse"></div>
+        <div class="grid-pulse"></div>
+        <div class="grid-pulse"></div>
+        <div class="grid-pulse"></div>
+        <div class="grid-pulse"></div>
+        <div class="grid-pulse"></div>
+        <div class="grid-pulse"></div>
+    </div>
+
     <!-- Navigation -->
     <nav class="nav">
         <div class="nav-inner">
             <a href="index.html" class="nav-logo">
-                <span class="icon"><svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2L2 12l10 10 10-10L12 2z" />
-                    </svg></span>
+                <img src="assets/suite-mascot.png" alt="SUITE" class="nav-logo-img">
                 SUITE
             </a>
             <div class="nav-links">
@@ -988,6 +1352,38 @@
             </button>
         </div>
     </nav>
+
+    <!-- Live Activity Ticker -->
+    <div class="activity-ticker">
+        <div class="ticker-track">
+            <!-- First set of items -->
+            <div class="ticker-item"><span class="emoji">🚀</span><span class="user">Alex</span> just created
+                "FitTracker"</div>
+            <div class="ticker-item"><span class="emoji">✅</span><span class="user">Maria's</span> app approved!</div>
+            <div class="ticker-item"><span class="emoji">💰</span><span class="user">Sam</span> earned 50 $SUITE</div>
+            <div class="ticker-item"><span class="emoji">🎨</span><span class="user">Jordan</span> submitted "MindMap"
+            </div>
+            <div class="ticker-item"><span class="emoji">⭐</span><span class="user">Casey</span> hit 100 downloads</div>
+            <div class="ticker-item"><span class="emoji">🔥</span><span class="user">Taylor</span> is building
+                "DreamLog"</div>
+            <div class="ticker-item"><span class="emoji">💎</span><span class="user">Chris</span> earned 25 $SUITE</div>
+            <div class="ticker-item"><span class="emoji">🎯</span><span class="user">Robin</span> created "BudgetBuddy"
+            </div>
+            <!-- Duplicate for seamless loop -->
+            <div class="ticker-item"><span class="emoji">🚀</span><span class="user">Alex</span> just created
+                "FitTracker"</div>
+            <div class="ticker-item"><span class="emoji">✅</span><span class="user">Maria's</span> app approved!</div>
+            <div class="ticker-item"><span class="emoji">💰</span><span class="user">Sam</span> earned 50 $SUITE</div>
+            <div class="ticker-item"><span class="emoji">🎨</span><span class="user">Jordan</span> submitted "MindMap"
+            </div>
+            <div class="ticker-item"><span class="emoji">⭐</span><span class="user">Casey</span> hit 100 downloads</div>
+            <div class="ticker-item"><span class="emoji">🔥</span><span class="user">Taylor</span> is building
+                "DreamLog"</div>
+            <div class="ticker-item"><span class="emoji">💎</span><span class="user">Chris</span> earned 25 $SUITE</div>
+            <div class="ticker-item"><span class="emoji">🎯</span><span class="user">Robin</span> created "BudgetBuddy"
+            </div>
+        </div>
+    </div>
 
     <!-- Hero Section with Character Arc -->
     <section class="hero">
@@ -1010,9 +1406,13 @@
                 <!-- BUILD -->
                 <div class="value-card build">
                     <h3>Build</h3>
-                    <div class="token-badge">
-                        <span class="dollar">SUITE</span>
-                        <span class="token-text">token</span>
+                    <div class="token-wrapper">
+                        <img src="assets/suite-mascot.png" alt="$SUITE Token" class="token-badge"
+                            style="width: 100px; height: 100px; border-radius: 24px;">
+                        <div class="suite-token-text">
+                            <span class="suite-name">$SUITE</span>
+                            <span class="suite-label">token</span>
+                        </div>
                     </div>
                     <a href="developer-portal.html" class="cta-btn">Launch Your Idea</a>
                     <div class="tools-row">
@@ -1263,6 +1663,165 @@
             card.style.transition = 'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
             observer.observe(card);
         });
+
+        // 🎉 EASTER EGG: Coin Physics System!
+        const coinPhysics = {
+            coins: [],
+            mouseX: 0,
+            mouseY: 0,
+            lastMouseX: 0,
+            lastMouseY: 0,
+            mouseVelX: 0,
+            mouseVelY: 0,
+            gravity: 0.3,
+            friction: 0.98,
+            mouseRadius: 80,
+            running: false,
+
+            init() {
+                document.addEventListener('mousemove', (e) => {
+                    this.mouseVelX = e.clientX - this.mouseX;
+                    this.mouseVelY = e.clientY - this.mouseY;
+                    this.mouseX = e.clientX;
+                    this.mouseY = e.clientY;
+                });
+
+                if (!this.running) {
+                    this.running = true;
+                    this.animate();
+                }
+            },
+
+            spawnCoin(x, y, emoji) {
+                const coin = document.createElement('div');
+                coin.className = 'falling-coin physics-coin';
+                coin.textContent = emoji;
+                coin.style.fontSize = (1.5 + Math.random() * 1) + 'rem';
+                coin.style.left = x + 'px';
+                coin.style.top = y + 'px';
+
+                let container = document.querySelector('.falling-coins');
+                if (!container) {
+                    container = document.createElement('div');
+                    container.className = 'falling-coins';
+                    document.body.appendChild(container);
+                }
+                container.appendChild(coin);
+
+                const coinData = {
+                    el: coin,
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 15,
+                    vy: (Math.random() - 0.5) * 10 - 5,
+                    rotation: 0,
+                    rotationSpeed: (Math.random() - 0.5) * 20
+                };
+                this.coins.push(coinData);
+
+                // Auto-delete coin after 6.5 seconds
+                setTimeout(() => {
+                    const idx = this.coins.indexOf(coinData);
+                    if (idx > -1) {
+                        this.coins.splice(idx, 1);
+                        coin.remove();
+                    }
+                }, 6500);
+
+                // Limit coins for performance (auto-delete oldest when over 400)
+                if (this.coins.length > 400) {
+                    const removed = this.coins.shift();
+                    removed.el.remove();
+                }
+            },
+
+            animate() {
+                const screenHeight = window.innerHeight;
+                const screenWidth = window.innerWidth;
+
+                for (let i = this.coins.length - 1; i >= 0; i--) {
+                    const coin = this.coins[i];
+
+                    // Apply gravity
+                    coin.vy += this.gravity;
+
+                    // Mouse interaction - push coins away
+                    const dx = coin.x - this.mouseX;
+                    const dy = coin.y - this.mouseY;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < this.mouseRadius && dist > 0) {
+                        const force = (this.mouseRadius - dist) / this.mouseRadius;
+                        const pushX = (dx / dist) * force * 8 + this.mouseVelX * 0.3;
+                        const pushY = (dy / dist) * force * 8 + this.mouseVelY * 0.3;
+                        coin.vx += pushX;
+                        coin.vy += pushY;
+                    }
+
+                    // Apply velocity
+                    coin.x += coin.vx;
+                    coin.y += coin.vy;
+
+                    // Apply friction
+                    coin.vx *= this.friction;
+                    coin.vy *= this.friction;
+
+                    // Rotation
+                    coin.rotation += coin.rotationSpeed;
+                    coin.rotationSpeed *= 0.98;
+
+                    // Bounce off edges
+                    if (coin.x < 20) { coin.x = 20; coin.vx *= -0.6; }
+                    if (coin.x > screenWidth - 20) { coin.x = screenWidth - 20; coin.vx *= -0.6; }
+                    if (coin.y > screenHeight - 30) {
+                        coin.y = screenHeight - 30;
+                        coin.vy *= -0.5;
+                        coin.vx *= 0.9; // Floor friction
+                    }
+                    if (coin.y < 20) { coin.y = 20; coin.vy *= -0.6; }
+
+                    // Update DOM
+                    coin.el.style.left = coin.x + 'px';
+                    coin.el.style.top = coin.y + 'px';
+                    coin.el.style.transform = `rotate(${coin.rotation}deg)`;
+                }
+
+                // Reset mouse velocity decay
+                this.mouseVelX *= 0.8;
+                this.mouseVelY *= 0.8;
+
+                requestAnimationFrame(() => this.animate());
+            }
+        };
+
+        const tokenBadge = document.querySelector('.value-card.build .token-badge');
+        if (tokenBadge) {
+            coinPhysics.init();
+
+            tokenBadge.addEventListener('click', function (e) {
+                const rect = this.getBoundingClientRect();
+                const startX = rect.left + rect.width / 2;
+                const startY = rect.top + rect.height / 2;
+
+                const coinEmojis = ['💰', '🪙', '💎', '✨', '⭐', '🌟'];
+
+                // Spawn coins with slight delay for explosion effect
+                for (let i = 0; i < 15; i++) {
+                    setTimeout(() => {
+                        const offsetX = (Math.random() - 0.5) * 100;
+                        const offsetY = (Math.random() - 0.5) * 60;
+                        const emoji = coinEmojis[Math.floor(Math.random() * coinEmojis.length)];
+                        coinPhysics.spawnCoin(startX + offsetX, startY + offsetY, emoji);
+                    }, i * 30);
+                }
+
+                // Satisfying click feedback
+                this.style.transform = 'scale(0.9)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 150);
+            });
+        }
     </script>
 </body>
 

@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tokenomics | SUITE Docs</title>
+    <link rel="icon" type="image/png" href="../assets/suite-mascot.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../suite-styles.css">
+    <link rel="stylesheet" href="../nav.css">
+    <style>
+        html {
+            overflow-y: scroll;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fff5eb 0%, #ffe4d4 20%, #ffd4e3 50%, #e8d5f9 80%, #d4e5ff 100%);
+            min-height: 100vh;
+            color: #2d1b4e;
+            overflow-x: hidden;
+        }
+
+        .canvas-container {
+            width: 100%;
+            min-height: 100vh;
+            padding: 90px 24px 40px 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        .docs-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 32px;
+            box-shadow: 0 16px 80px rgba(0, 0, 0, 0.08);
+            padding: 30px;
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            gap: 30px;
+        }
+
+        .docs-sidebar {
+            width: 200px;
+            flex-shrink: 0;
+            border-right: 1px solid rgba(0, 0, 0, 0.06);
+            padding-right: 24px;
+        }
+
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+
+        .sidebar-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #9ca3af;
+            margin-bottom: 12px;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            color: #2d1b4e;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            margin-bottom: 4px;
+        }
+
+        .sidebar-link:hover {
+            background: rgba(255, 149, 0, 0.1);
+            color: #ff9500;
+        }
+
+        .sidebar-link.active {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+        }
+
+        .docs-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .docs-content h1 {
+            font-size: 2rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #2d1b4e, #7c3aed, #ff6b9d);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .docs-content h2 {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin: 32px 0 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid rgba(255, 149, 0, 0.2);
+        }
+
+        .docs-content h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #5a4a6f;
+            margin: 20px 0 12px;
+        }
+
+        .docs-content p,
+        .docs-content li {
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: #5a4a6f;
+            margin-bottom: 12px;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(59, 130, 246, 0.1));
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .highlight-box h4 {
+            margin: 0 0 12px 0;
+            color: #22c55e;
+            font-size: 1rem;
+        }
+
+        .scenario-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .scenario-card {
+            background: rgba(255, 255, 255, 0.7);
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .scenario-card .price {
+            font-size: 1.1rem;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .scenario-card .action {
+            font-size: 0.85rem;
+            color: #5a4a6f;
+        }
+
+        .green {
+            color: #22c55e;
+        }
+
+        .blue {
+            color: #3b82f6;
+        }
+
+        .red {
+            color: #ef4444;
+        }
+
+        .flow-diagram {
+            background: #1e1e2e;
+            border-radius: 12px;
+            padding: 20px;
+            color: #a6e3a1;
+            font-family: monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            overflow-x: auto;
+            margin: 16px 0;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .stat-box {
+            background: rgba(255, 149, 0, 0.1);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .stat-box .label {
+            font-size: 0.75rem;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-box .value {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #ff9500;
+        }
+
+        @media (max-width: 768px) {
+            .docs-container {
+                flex-direction: column;
+            }
+
+            .docs-sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+                padding-right: 0;
+                padding-bottom: 20px;
+            }
+
+            .scenario-grid,
+            .stats-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="../index.html" class="nav-logo">
+                <img src="../assets/suite-mascot.png" alt="SUITE"
+                    style="width: 32px; height: 32px; border-radius: 8px;">
+                SUITE
+            </a>
+            <div class="nav-links">
+                <a href="../apps.html">Apps</a>
+                <a href="../developer-portal.html">Build</a>
+                <a href="../ecosystem.html">Ecosystem</a>
+                <a href="index.html" class="active">Docs</a>
+                <a href="../wallet.html">Wallet</a>
+                <a href="https://discord.gg/7JmJPmnRAu" class="nav-cta">Join Discord</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="canvas-container">
+        <div class="docs-container">
+            <aside class="docs-sidebar">
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Getting Started</div>
+                    <a href="index.html" class="sidebar-link">📚 Introduction</a>
+                    <a href="quickstart.html" class="sidebar-link">🚀 Quick Start</a>
+                </div>
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Commands</div>
+                    <a href="commands.html" class="sidebar-link">⚡ All Commands</a>
+                </div>
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Guides</div>
+                    <a href="tokenomics.html" class="sidebar-link active">📊 Tokenomics</a>
+                    <a href="developer.html" class="sidebar-link">👨‍💻 Developer Guide</a>
+                </div>
+            </aside>
+
+            <main class="docs-content">
+                <h1>📊 SUITE Tokenomics</h1>
+                <p style="color: #6b7280; margin-bottom: 24px;">How SUITE maintains its value and why the price can
+                    never fall below the floor.</p>
+
+                <h2>🛡️ The Floor Price Guarantee</h2>
+                <p>Every SUITE token is backed by real ETH in the treasury. This creates a <strong>hard price
+                        floor</strong> that makes it structurally impossible for SUITE to trade below its backing value.
+                </p>
+
+                <div class="highlight-box">
+                    <h4>🔑 Key Insight: It's Structurally Impossible</h4>
+                    <p style="margin-bottom: 16px;">Every SUITE token in existence was either:</p>
+                    <ul style="margin-left: 20px;">
+                        <li>Minted by depositing ETH to the treasury (at floor price)</li>
+                        <li>Bought from DEX at market price (at or above floor)</li>
+                    </ul>
+                    <p style="margin-top: 12px; margin-bottom: 0;"><strong>No one would ever sell below floor because
+                            they can always redeem at the treasury for floor price!</strong></p>
+                </div>
+
+                <h3>Price Scenarios</h3>
+                <div class="scenario-grid">
+                    <div class="scenario-card">
+                        <div class="price green">DEX @ $1.20</div>
+                        <div class="action">Sell on DEX for profit ✓</div>
+                    </div>
+                    <div class="scenario-card">
+                        <div class="price blue">DEX @ $1.00</div>
+                        <div class="action">Sell DEX or redeem treasury ✓</div>
+                    </div>
+                    <div class="scenario-card">
+                        <div class="price red">DEX @ $0.80</div>
+                        <div class="action">Can't happen - redeem at $1 ✗</div>
+                    </div>
+                </div>
+
+                <h2>💰 How Treasury Backing Works</h2>
+                <div class="flow-diagram">
+                    User deposits 1 ETH to Treasury
+                    ↓
+                    Treasury mints SUITE at floor price
+                    ↓
+                    User receives SUITE tokens
+                    ↓
+                    Floor Price = Treasury ETH / Total SUITE Supply
+                    ↓
+                    User can ALWAYS redeem SUITE for proportional ETH
+                </div>
+
+                <h3>The Math</h3>
+                <p>If the treasury holds <strong>10 ETH</strong> and there are <strong>100,000 SUITE</strong> tokens:
+                </p>
+                <div class="stats-row">
+                    <div class="stat-box">
+                        <div class="label">Floor Price</div>
+                        <div class="value">$0.0001/SUITE</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="label">Your 10,000 SUITE</div>
+                        <div class="value">= 1 ETH</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="label">Backing Rate</div>
+                        <div class="value">100%</div>
+                    </div>
+                </div>
+
+                <h2>📈 Why Price Can Go UP</h2>
+                <p>While the floor provides downside protection, SUITE can trade <strong>above</strong> the floor on DEX
+                    markets due to:</p>
+                <ul style="margin-left: 20px;">
+                    <li><strong>Demand:</strong> More people wanting to use SUITE apps</li>
+                    <li><strong>Scarcity:</strong> Limited supply on DEX</li>
+                    <li><strong>Speculation:</strong> Traders expecting future growth</li>
+                    <li><strong>Buybacks:</strong> Treasury using yield to buy SUITE</li>
+                </ul>
+
+                <h2>🏦 Treasury Growth</h2>
+                <p>The treasury grows through:</p>
+                <ul style="margin-left: 20px;">
+                    <li><strong>Deposits:</strong> Users depositing ETH to mint SUITE</li>
+                    <li><strong>Fees:</strong> Small fees on deposits/withdrawals</li>
+                    <li><strong>Yield:</strong> Treasury ETH earning staking rewards</li>
+                </ul>
+                <p>As treasury grows faster than supply (thanks to fees), the <strong>floor price increases over
+                        time</strong>!</p>
+
+                <h2>🎁 10% for Giving</h2>
+                <p>10% of all fees go to the <strong>Giving Pool</strong>. SUITE holders vote monthly on which charities
+                    receive funds. This makes SUITE not just a utility token, but a tool for positive impact.</p>
+
+                <div class="highlight-box"
+                    style="background: linear-gradient(135deg, rgba(255, 149, 0, 0.1), rgba(255, 107, 157, 0.1)); border-color: rgba(255, 149, 0, 0.2);">
+                    <h4 style="color: #ff9500;">💡 Summary</h4>
+                    <p style="margin: 0;"><strong>SUITE = Utility + Safety + Growth + Impact</strong><br>Use it in apps,
+                        backed by real value, grows over time, gives back to community.</p>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+
+</html>

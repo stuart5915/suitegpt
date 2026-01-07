@@ -86,18 +86,21 @@
             padding: 30px;
             width: 100%;
             max-width: 1200px;
-            min-height: 460px;
+            min-height: 480px;
             margin: 0 auto;
             position: relative;
             display: flex;
             gap: 20px;
-            overflow: hidden;
+            overflow: visible;
+            transition: min-height 0.4s ease;
         }
 
         #canvas {
             flex: 1;
             height: 100%;
+            min-height: 450px;
             position: relative;
+            transition: min-height 0.4s ease;
         }
 
         #connections {
@@ -109,6 +112,17 @@
             pointer-events: none;
             z-index: 5;
             /* Behind entities so lines don't overlay boxes */
+        }
+
+        /* Hide all arrows by default */
+        #connections path {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Show arrows only when a flow is active */
+        #connections path.flow-active {
+            opacity: 1;
         }
 
         /* Entity nodes - Playful bubbly style */
@@ -175,6 +189,11 @@
 
         .entity.discord {
             background: linear-gradient(135deg, #5865F2 0%, #7289DA 100%);
+            color: white;
+        }
+
+        .entity.charity {
+            background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
             color: white;
         }
 
@@ -341,6 +360,39 @@
         .connection.animated {
             stroke-dasharray: 5, 5;
             animation: flowAnimation 0.8s linear infinite;
+        }
+
+        /* Flow highlight styles for value flow visualization */
+        .connection.flow-active {
+            stroke-width: 4;
+            stroke-opacity: 1;
+            filter: drop-shadow(0 0 6px currentColor);
+        }
+
+        /* Highlighted arrows should appear above others */
+        #connections path.flow-active {
+            position: relative;
+        }
+
+        @keyframes flowDash {
+            to {
+                stroke-dashoffset: -20;
+            }
+        }
+
+        .connection.flow-animated {
+            stroke-dasharray: 10 5;
+            animation: flowDash 0.4s linear infinite;
+        }
+
+        .entity.flow-highlight {
+            transform: scale(1.08);
+            box-shadow: 0 0 20px rgba(255, 149, 0, 0.5), 0 8px 32px rgba(0, 0, 0, 0.15);
+            z-index: 10;
+        }
+
+        .entity.flow-dim {
+            opacity: 0.4;
         }
 
         /* Legend - Inside container top right */
@@ -780,9 +832,7 @@
     <nav class="nav">
         <div class="nav-inner">
             <a href="index.html" class="nav-logo">
-                <span class="icon"><svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2L2 12l10 10 10-10L12 2z" />
-                    </svg></span>
+                <img src="assets/suite-mascot.png" alt="SUITE" class="nav-logo-img">
                 SUITE
             </a>
             <div class="nav-links">
@@ -805,25 +855,25 @@
         <div class="ecosystem-container">
             <!-- Journey Sidebar - inside container -->
             <div class="journey-sidebar">
-                <div class="journey-tab" data-journey="buy" onclick="showJourney('buy')">
-                    <span class="tab-icon">🪙</span>
-                    <span class="tab-label">Buy SUITE</span>
-                </div>
-                <div class="journey-tab" data-journey="sell" onclick="showJourney('sell')">
-                    <span class="tab-icon">💰</span>
-                    <span class="tab-label">Sell SUITE</span>
-                </div>
-                <div class="journey-tab" data-journey="developer" onclick="showJourney('developer')">
-                    <span class="tab-icon">👨‍💻</span>
-                    <span class="tab-label">Developer</span>
-                </div>
                 <div class="journey-tab" data-journey="use" onclick="showJourney('use')">
                     <span class="tab-icon">📱</span>
                     <span class="tab-label">Use Apps</span>
                 </div>
+                <div class="journey-tab" data-journey="premium" onclick="showJourney('premium')">
+                    <span class="tab-icon">⭐</span>
+                    <span class="tab-label">Go Premium</span>
+                </div>
+                <div class="journey-tab" data-journey="build" onclick="showJourney('build')">
+                    <span class="tab-icon">🛠️</span>
+                    <span class="tab-label">Build & Earn</span>
+                </div>
+                <div class="journey-tab" data-journey="buy" onclick="showJourney('buy')">
+                    <span class="tab-icon">🪙</span>
+                    <span class="tab-label">Buy SUITE</span>
+                </div>
                 <div class="journey-tab" data-journey="giving" onclick="showJourney('giving')">
-                    <span class="tab-icon">🎁</span>
-                    <span class="tab-label">Giving</span>
+                    <span class="tab-icon">💝</span>
+                    <span class="tab-label">Give Back</span>
                 </div>
             </div>
 
@@ -834,24 +884,28 @@
             <!-- Legend - inside container bottom right -->
             <div class="legend">
                 <div class="legend-item">
+                    <div class="legend-color" style="background: linear-gradient(135deg, #667eea, #764ba2);"></div>
+                    <span>You</span>
+                </div>
+                <div class="legend-item">
                     <div class="legend-color" style="background: linear-gradient(135deg, #ff6b6b, #ff8e8e);"></div>
-                    <span>Treasury</span>
+                    <span>Vault</span>
                 </div>
                 <div class="legend-item">
                     <div class="legend-color" style="background: linear-gradient(135deg, #ffecd2, #fcb69f);"></div>
-                    <span>Token</span>
+                    <span>$SUITE</span>
                 </div>
                 <div class="legend-item">
                     <div class="legend-color" style="background: linear-gradient(135deg, #4facfe, #00f2fe);"></div>
-                    <span>Platform</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: linear-gradient(135deg, #667eea, #764ba2);"></div>
-                    <span>Users</span>
+                    <span>Apps</span>
                 </div>
                 <div class="legend-item">
                     <div class="legend-color" style="background: linear-gradient(135deg, #f093fb, #f5576c);"></div>
-                    <span>Developers</span>
+                    <span>Forge</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: linear-gradient(135deg, #ec4899, #db2777);"></div>
+                    <span>Charity</span>
                 </div>
             </div>
         </div>
@@ -872,95 +926,102 @@
     </div>
 
     <script>
-        // Entity data
+        // 5 Core Entities - simplified ecosystem
         const entities = {
-            treasury: {
-                id: 'treasury', icon: '🏛️', title: 'Treasury', subtitle: 'Value Vault', type: 'treasury',
-                x: 550, y: 80, originalX: 550, originalY: 80,
-                description: 'The core value vault of the SUITE ecosystem. Holds ETH that backs all SUITE tokens.',
+            you: {
+                id: 'you', icon: '👤', title: 'You', subtitle: 'Build • Use • Earn', type: 'user',
+                x: 60, y: 180, originalX: 60, originalY: 180,
+                description: 'You are at the center of SUITE. Buy tokens, use apps, or build your own - no coding required!',
                 actions: [
-                    { icon: '💰', text: 'Deposit ETH → Receive SUITE' },
-                    { icon: '🔄', text: 'Withdraw SUITE → Get ETH back' },
-                    { icon: '📊', text: '0.5% fee on transactions' },
-                    { icon: '🔐', text: 'Admin: Withdraw fees' },
+                    { icon: '💰', text: 'Buy SUITE with ETH' },
+                    { icon: '📱', text: 'Use any app' },
+                    { icon: '🛠️', text: 'Build apps in the Forge' },
+                    { icon: '💸', text: 'Earn from your creations' },
                 ]
             },
-            token: {
-                id: 'token', icon: '🪙', title: 'SUITE Token', subtitle: 'ERC-20', type: 'token',
-                x: 550, y: 220, originalX: 550, originalY: 220,
-                description: 'The native token representing your share of the Treasury. Always backed by ETH.',
+            vault: {
+                id: 'vault', icon: '🏦', title: 'Vault', subtitle: 'Treasury', type: 'treasury',
+                x: 320, y: 40, originalX: 320, originalY: 40,
+                description: 'The secure vault holding all ETH that backs SUITE tokens. Your value is always protected.',
                 actions: [
-                    { icon: '⚖️', text: '1 SUITE = % of Treasury' },
+                    { icon: '💎', text: 'Holds ETH collateral' },
+                    { icon: '🔒', text: 'Fully backed tokens' },
+                    { icon: '📈', text: 'Earns yield' },
+                    { icon: '💝', text: '10% to charity' },
+                ]
+            },
+            suite: {
+                id: 'suite', icon: '🪙', title: '$SUITE', subtitle: 'Token', type: 'token',
+                x: 320, y: 180, originalX: 320, originalY: 180,
+                description: 'The SUITE token - your currency for the entire ecosystem. Always backed by ETH.',
+                actions: [
+                    { icon: '⚡', text: 'Instant payments' },
                     { icon: '🔥', text: 'Burned on withdraw' },
                     { icon: '✨', text: 'Minted on deposit' },
-                    { icon: '📜', text: 'ERC-20 on Base chain' },
+                    { icon: '🌐', text: 'ERC-20 on Base' },
                 ]
             },
-            appstore: {
-                id: 'appstore', icon: '🏪', title: 'App Store', subtitle: 'Apps', type: 'appstore',
-                x: 850, y: 150, originalX: 850, originalY: 150,
-                description: 'Marketplace for SUITE-powered apps created by developers.',
+            apps: {
+                id: 'apps', icon: '📱', title: 'Apps', subtitle: 'Marketplace', type: 'appstore',
+                x: 580, y: 100, originalX: 580, originalY: 100,
+                description: 'Discover and use AI-powered apps. Every app is built by someone like you!',
                 actions: [
-                    { icon: '📱', text: 'Browse apps' },
-                    { icon: '⚡', text: 'Pay with SUITE' },
+                    { icon: '🔍', text: 'Browse 50+ apps' },
                     { icon: '⭐', text: 'Rate and review' },
-                    { icon: '🎯', text: 'Get recommendations' },
+                    { icon: '💳', text: 'Pay per use' },
+                    { icon: '🚀', text: 'Publish your own' },
                 ]
             },
-            user: {
-                id: 'user', icon: '👤', title: 'Users', subtitle: 'Ecosystem Participants', type: 'user',
-                x: 250, y: 150, originalX: 250, originalY: 150,
-                description: 'Users interact with the SUITE ecosystem through the Wallet dashboard.',
+            forge: {
+                id: 'forge', icon: '🔥', title: 'Forge', subtitle: 'Build Hub', type: 'discord',
+                x: 580, y: 260, originalX: 580, originalY: 260,
+                description: 'The Forge is where apps are built. Describe what you want, AI creates it. No coding!',
                 actions: [
-                    { icon: '👛', text: 'WALLET DASHBOARD:' },
-                    { icon: '💎', text: '  • View SUITE balance' },
-                    { icon: '📈', text: '  • Track portfolio value' },
-                    { icon: '🔌', text: '  • Connect MetaMask' },
-                    { icon: '🔒', text: '  • Stake for voting power' },
-                ],
-                subActions: [
-                    { icon: '📲', text: 'Use apps from App Store' },
-                    { icon: '💵', text: 'Deposit ETH → Get SUITE' },
-                    { icon: '🗳️', text: 'Vote on charity giving' },
+                    { icon: '💬', text: 'Describe your app' },
+                    { icon: '🤖', text: 'AI builds it' },
+                    { icon: '🚀', text: 'Publish to Apps' },
+                    { icon: '💸', text: 'Earn $SUITE' },
                 ]
             },
-            developer: {
-                id: 'developer', icon: '👨‍💻', title: 'Developers', subtitle: 'Builders', type: 'developer',
-                x: 850, y: 340, originalX: 850, originalY: 340,
-                description: 'Builders who create apps using SUITE payments.',
+            charity: {
+                id: 'charity', icon: '💝', title: 'Charity', subtitle: '10% Giving', type: 'charity',
+                x: 80, y: 20, originalX: 80, originalY: 20,
+                description: 'Once the Vault reaches $100k, 10% of all yield goes to charity. Community votes on recipients!',
                 actions: [
-                    { icon: '🛠️', text: 'Build with SDK' },
-                    { icon: '💸', text: 'Earn SUITE' },
-                    { icon: '🤖', text: 'Deploy via Discord' },
-                    { icon: '📊', text: 'Track earnings' },
-                ]
-            },
-            discord: {
-                id: 'discord', icon: '💬', title: 'Discord', subtitle: 'Community', type: 'discord',
-                x: 550, y: 380, originalX: 550, originalY: 380,
-                description: 'Community center + dev automation hub.',
-                actions: [
-                    { icon: '🤖', text: 'Bot deploys apps' },
-                    { icon: '📣', text: 'Live updates' },
-                    { icon: '👥', text: 'Join community' },
-                    { icon: '🔧', text: 'Feature requests' },
+                    { icon: '🌍', text: 'Real world impact' },
+                    { icon: '🗳️', text: 'Community decides' },
+                    { icon: '📊', text: 'Transparent giving' },
+                    { icon: '♻️', text: '90% reinvested' },
                 ]
             }
         };
 
-        // Connections - arranged to avoid crossing entities
+        // Connections - only between ADJACENT entities (no crossings!)
         const connections = [
-            // Center column
-            { from: 'treasury', to: 'token', label: 'backs', color: '#ff8e8e', animated: true },
-            { from: 'token', to: 'discord', label: 'community', color: '#fcb69f' },
-            // Left side - Users
-            { from: 'user', to: 'treasury', label: 'deposit ETH', color: '#667eea' },
-            { from: 'user', to: 'discord', label: 'community', color: '#667eea' },
-            // Right side - Developers + App Store 
-            { from: 'appstore', to: 'token', label: 'accepts SUITE', color: '#4facfe' },
-            { from: 'developer', to: 'appstore', label: 'publish', color: '#f093fb' },
-            { from: 'developer', to: 'discord', label: 'deploy', color: '#f093fb' },
+            // You connects to Vault (vertical up), Suite (diagonal), and Forge (horizontal)
+            { from: 'you', to: 'vault', label: 'deposits', color: '#667eea' },
+            { from: 'you', to: 'suite', label: 'uses', color: '#667eea' },
+            { from: 'you', to: 'forge', label: 'builds (free!)', color: '#667eea' },
+            // Vault connections
+            { from: 'vault', to: 'suite', label: 'mints', color: '#ff8e8e', animated: true },
+            { from: 'vault', to: 'charity', label: '10% yield', color: '#ec4899' },
+            // Suite connects to Apps and Forge
+            { from: 'suite', to: 'apps', label: 'unlocks', color: '#4facfe' },
+            { from: 'suite', to: 'forge', label: 'optional', color: '#fcb69f' },
+            // Forge to Apps
+            { from: 'forge', to: 'apps', label: 'publishes', color: '#f093fb' },
+            // Earns back
+            { from: 'apps', to: 'suite', label: 'earns', color: '#22c55e' },
         ];
+
+        // Flow paths for each journey
+        const flowPaths = {
+            use: ['you', 'suite', 'apps'],             // You → $SUITE → Apps
+            premium: ['you', 'suite', 'apps'],         // Same path, pay for premium  
+            build: ['you', 'suite', 'forge', 'apps'],  // You → Forge + optional $SUITE
+            buy: ['you', 'vault', 'suite'],            // You → Vault → $SUITE
+            giving: ['vault', 'charity']               // Vault → Charity (10% giving)
+        };
 
         let expandedEntity = null;
         const canvas = document.getElementById('canvas');
@@ -969,15 +1030,19 @@
 
         // Update entity positions - now relative to container
         function repositionEntities() {
-            // Positions relative to container (480px height - 80px padding = ~400px usable)
-            // Layout: Users left, Treasury/Token/Discord center, AppStore/Developer right
+            // Layout - You below Vault for vertical connection!
+            // [Vault]      [Apps]     [Charity]
+            //    ↓           ↑           ↑
+            // [$SUITE] ──→ [Forge] ─────┘
+            //    ↑           ↑
+            // [You] ─────────┘
             const basePositions = {
-                user: { x: 60, y: 110 },
-                treasury: { x: 320, y: 20 },
-                token: { x: 320, y: 150 },
-                discord: { x: 320, y: 280 },
-                appstore: { x: 580, y: 80 },
-                developer: { x: 580, y: 220 }
+                vault: { x: 80, y: 20 },     // Top-left
+                apps: { x: 300, y: 20 },     // Top-center
+                charity: { x: 540, y: 20 },  // Top-right
+                suite: { x: 300, y: 180 },   // Center
+                you: { x: 80, y: 300 },      // Bottom-left (same column as Vault!)
+                forge: { x: 540, y: 300 }    // Bottom-right
             };
 
             Object.keys(entities).forEach(id => {
@@ -1171,6 +1236,12 @@
             setTimeout(drawConnections, 50);
             setTimeout(drawConnections, 300);
             setTimeout(drawConnections, 600);
+
+            // Expand canvas and container to fit expanded entity card
+            const canvasEl = document.getElementById('canvas');
+            const containerEl = document.querySelector('.ecosystem-container');
+            canvasEl.style.minHeight = '650px';
+            containerEl.style.minHeight = '680px';
         }
 
         // Collapse back to normal
@@ -1196,6 +1267,12 @@
             setTimeout(drawConnections, 50);
             setTimeout(drawConnections, 300);
             setTimeout(drawConnections, 600);
+
+            // Shrink canvas and container back to original size
+            const canvasEl = document.getElementById('canvas');
+            const containerEl = document.querySelector('.ecosystem-container');
+            canvasEl.style.minHeight = '450px';
+            containerEl.style.minHeight = '480px';
         }
 
         // Click outside to collapse
@@ -1233,31 +1310,54 @@
                 const toRect = toEl.getBoundingClientRect();
                 const canvasRect = canvas.getBoundingClientRect();
 
-                // Calculate centers
+                // Calculate centers relative to canvas
                 const fromCenterX = fromRect.left + fromRect.width / 2 - canvasRect.left;
                 const fromCenterY = fromRect.top + fromRect.height / 2 - canvasRect.top;
                 const toCenterX = toRect.left + toRect.width / 2 - canvasRect.left;
                 const toCenterY = toRect.top + toRect.height / 2 - canvasRect.top;
 
-                // Calculate angle between centers
-                const angle = Math.atan2(toCenterY - fromCenterY, toCenterX - fromCenterX);
+                // Determine if primarily horizontal or vertical connection
+                const dx = toCenterX - fromCenterX;
+                const dy = toCenterY - fromCenterY;
+                const isHorizontal = Math.abs(dx) > Math.abs(dy);
 
-                // Calculate edge points (where lines should start/end)
-                const fromHalfW = fromRect.width / 2 + 5;
-                const fromHalfH = fromRect.height / 2 + 5;
-                const toHalfW = toRect.width / 2 + 5;
-                const toHalfH = toRect.height / 2 + 5;
+                let x1, y1, x2, y2, pathD;
+                const padding = 15; // Larger gap to keep arrowheads outside entities
 
-                // Start point at edge of from-entity
-                const x1 = fromCenterX + Math.cos(angle) * Math.min(fromHalfW, fromHalfH * 1.5);
-                const y1 = fromCenterY + Math.sin(angle) * Math.min(fromHalfH, fromHalfW * 1.5);
+                if (isHorizontal) {
+                    // Horizontal-first: exit right/left, then go up/down
+                    if (dx > 0) {
+                        x1 = fromRect.right - canvasRect.left + padding;
+                        x2 = toRect.left - canvasRect.left - padding;
+                    } else {
+                        x1 = fromRect.left - canvasRect.left - padding;
+                        x2 = toRect.right - canvasRect.left + padding;
+                    }
+                    y1 = fromCenterY;
+                    y2 = toCenterY;
 
-                // End point at edge of to-entity
-                const x2 = toCenterX - Math.cos(angle) * Math.min(toHalfW, toHalfH * 1.5);
-                const y2 = toCenterY - Math.sin(angle) * Math.min(toHalfH, toHalfW * 1.5);
+                    // L-shaped path: go horizontal to midpoint, then vertical
+                    const midX = (x1 + x2) / 2;
+                    pathD = `M${x1},${y1} L${midX},${y1} L${midX},${y2} L${x2},${y2}`;
+                } else {
+                    // Vertical-first: exit top/bottom, then go left/right
+                    if (dy > 0) {
+                        y1 = fromRect.bottom - canvasRect.top + padding;
+                        y2 = toRect.top - canvasRect.top - padding;
+                    } else {
+                        y1 = fromRect.top - canvasRect.top - padding;
+                        y2 = toRect.bottom - canvasRect.top + padding;
+                    }
+                    x1 = fromCenterX;
+                    x2 = toCenterX;
+
+                    // L-shaped path: go vertical to midpoint, then horizontal
+                    const midY = (y1 + y2) / 2;
+                    pathD = `M${x1},${y1} L${x1},${midY} L${x2},${midY} L${x2},${y2}`;
+                }
 
                 const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                path.setAttribute('d', `M${x1},${y1} L${x2},${y2}`);
+                path.setAttribute('d', pathD);
                 path.setAttribute('stroke', conn.color);
                 path.setAttribute('stroke-opacity', '0.6');
                 path.setAttribute('class', `connection ${conn.animated ? 'animated' : ''}`);
@@ -1279,65 +1379,121 @@
         // ============================================
 
         const journeys = {
-            buy: {
-                icon: '🪙',
-                name: 'Buying SUITE',
-                steps: [
-                    { icon: '👤', iconClass: 'user', title: 'You', desc: 'Start here', detail: 'You begin by deciding how much value you want to convert into SUITE tokens. Connect your wallet or use fiat payment options.' },
-                    { icon: '💳', iconClass: 'deposit', title: 'Deposit', desc: 'Send fiat or crypto', detail: 'Send ETH, USDC, or other supported tokens. You can also use a credit card through our fiat on-ramp partner.' },
-                    { icon: '🏛️', iconClass: 'treasury', title: 'Treasury', desc: 'Receives value', detail: 'The Treasury smart contract receives your deposit and adds it to the collateral pool that backs all SUITE tokens.' },
-                    { icon: '⚡', iconClass: 'treasury', title: 'Mint', desc: 'Creates new SUITE', detail: 'New SUITE tokens are minted proportional to your deposit\'s share of the total Treasury value. A 0.5% fee is applied.' },
-                    { icon: '🪙', iconClass: 'token', title: '$SUITE', desc: 'Sent to your wallet', detail: 'Your freshly minted SUITE tokens appear in your wallet! Use them to pay for apps or hold for potential value appreciation.' }
-                ]
-            },
-            sell: {
-                icon: '💰',
-                name: 'Selling SUITE',
-                steps: [
-                    { icon: '👤', iconClass: 'user', title: 'You', desc: 'Hold SUITE tokens', detail: 'You have SUITE tokens in your wallet and want to convert them back to ETH or fiat currency.' },
-                    { icon: '🪙', iconClass: 'token', title: 'Send SUITE', desc: 'To Treasury', detail: 'Initiate a withdrawal by sending your SUITE tokens to the Treasury contract. Specify how much you want to redeem.' },
-                    { icon: '🏛️', iconClass: 'treasury', title: 'Treasury', desc: 'Burns tokens', detail: 'The Treasury permanently destroys (burns) your SUITE tokens, reducing the total supply proportionally.' },
-                    { icon: '💎', iconClass: 'deposit', title: 'Collateral', desc: 'Released to you', detail: 'The ETH collateral backing your burned tokens is released from the Treasury. A 0.5% fee is deducted.' },
-                    { icon: '💰', iconClass: 'user', title: 'Receive', desc: 'ETH/USD value', detail: 'The ETH is sent to your wallet! You can hold it or convert to USD via your preferred exchange.' }
-                ]
-            },
-            developer: {
-                icon: '👨‍💻',
-                name: 'Developer Journey',
-                steps: [
-                    { icon: '💬', iconClass: 'discord', title: 'Join Discord', desc: 'Connect with us', detail: 'Join our Discord community and access the Forge channel where you can submit app ideas and get support.' },
-                    { icon: '💡', iconClass: 'developer', title: 'Describe App', desc: 'Share your idea', detail: 'Describe your app idea in plain English. No coding required! Our AI assistant will understand what you want to build.' },
-                    { icon: '🤖', iconClass: 'developer', title: 'AI Builds', desc: 'Code generated', detail: 'Our AI generates the complete app code, tests it, and creates a deployable package. You can request changes via chat.' },
-                    { icon: '📱', iconClass: 'appstore', title: 'Publish', desc: 'To App Store', detail: 'Once approved, your app is published to the SUITE App Store where users can discover and use it.' },
-                    { icon: '🪙', iconClass: 'token', title: 'Earn SUITE', desc: 'From user payments', detail: 'Every time someone uses your app, you earn SUITE tokens directly! Set your own pricing per use.' }
-                ]
-            },
             use: {
                 icon: '📱',
-                name: 'Using Apps',
+                name: 'Use Apps (Free!)',
                 steps: [
-                    { icon: '👤', iconClass: 'user', title: 'Browse', desc: 'App Store', detail: 'Explore the SUITE App Store filled with useful apps created by community developers. Filter by category or popularity.' },
-                    { icon: '📱', iconClass: 'appstore', title: 'Select App', desc: 'Choose one', detail: 'Find an app that solves your problem. Each app shows its price per use (typically micro-amounts of SUITE).' },
-                    { icon: '🪙', iconClass: 'token', title: 'Pay SUITE', desc: 'Microtransaction', detail: 'Pay a small amount of SUITE tokens to use the app. Transactions are instant and gas-free on Layer 2.' },
-                    { icon: '✨', iconClass: 'appstore', title: 'Use App', desc: 'Enjoy features', detail: 'Access the app\'s features immediately! No subscriptions, no accounts needed - just seamless utility.' },
-                    { icon: '👨‍💻', iconClass: 'developer', title: 'Dev Earns', desc: 'Gets your SUITE', detail: 'Your payment goes directly to the developer who built the app, incentivizing more great apps!' }
+                    { icon: '👤', iconClass: 'user', title: 'You', desc: 'Start exploring', detail: 'You can use any app in the SUITE ecosystem completely FREE! No tokens, no wallet, no barriers.' },
+                    { icon: '📱', iconClass: 'appstore', title: 'Browse Apps', desc: '50+ available', detail: 'Explore the App Store filled with AI-powered apps built by the community. Filter by category or popularity.' },
+                    { icon: '✨', iconClass: 'appstore', title: 'Use Freely', desc: 'No payment needed', detail: 'Core features of every app are FREE. Just open and use - no accounts, no subscriptions, no hidden costs.' },
+                    { icon: '⭐', iconClass: 'appstore', title: 'Love It?', desc: 'Consider premium', detail: 'If you love an app, you can optionally unlock premium features with $SUITE tokens - but it\'s never required!' }
+                ]
+            },
+            premium: {
+                icon: '⭐',
+                name: 'Go Premium (Optional)',
+                steps: [
+                    { icon: '👤', iconClass: 'user', title: 'You', desc: 'Want more features?', detail: 'You\'ve been using free apps and want to unlock premium features like AI enhancements, advanced tools, or priority access.' },
+                    { icon: '🪙', iconClass: 'token', title: 'Get $SUITE', desc: 'If you need tokens', detail: 'Buy $SUITE tokens through the Vault by depositing ETH, or earn them by building your own apps!' },
+                    { icon: '💳', iconClass: 'token', title: 'Pay Micro-fee', desc: 'Tiny amounts', detail: 'Premium features cost micro-amounts of $SUITE (often fractions of a cent). Instant, gas-free payments.' },
+                    { icon: '🚀', iconClass: 'appstore', title: 'Unlock Premium', desc: 'Enhanced experience', detail: 'Access advanced features, remove limits, get priority support - whatever the app builder offers as premium!' },
+                    { icon: '💸', iconClass: 'developer', title: 'Builder Earns', desc: 'Direct payment', detail: 'Your $SUITE goes directly to the person who built the app. This is how builders earn from their creations!' }
+                ]
+            },
+            build: {
+                icon: '🛠️',
+                name: 'Build & Earn',
+                steps: [
+                    { icon: '👤', iconClass: 'user', title: 'You', desc: 'Have an idea?', detail: 'Anyone can build apps in SUITE! You don\'t need coding skills - just describe what you want.' },
+                    { icon: '🔥', iconClass: 'discord', title: 'Join the Forge', desc: 'Discord channel', detail: 'Head to our Discord and find the Forge channel. This is where all building happens!' },
+                    { icon: '💬', iconClass: 'discord', title: 'Describe It', desc: 'Plain English', detail: 'Just describe your app idea in plain English. "I want an app that..." - our AI takes it from there.' },
+                    { icon: '🤖', iconClass: 'discord', title: 'AI Builds It', desc: 'Automatic coding', detail: 'Our AI generates the complete app code, tests it, and prepares it for publishing. You can request changes anytime.' },
+                    { icon: '📱', iconClass: 'appstore', title: 'Publish', desc: 'To App Store', detail: 'Your app goes live in the SUITE App Store! Users can discover and use it immediately.' },
+                    { icon: '🪙', iconClass: 'token', title: 'Earn $SUITE', desc: 'From premium users', detail: 'When users pay for premium features in YOUR app, you earn $SUITE directly! Set your own pricing.' }
+                ]
+            },
+            buy: {
+                icon: '🪙',
+                name: 'Buy $SUITE',
+                steps: [
+                    { icon: '👤', iconClass: 'user', title: 'You', desc: 'Want tokens?', detail: 'You want to get $SUITE tokens for premium features, building apps, or just to hold.' },
+                    { icon: '💳', iconClass: 'deposit', title: 'Deposit', desc: 'ETH or fiat', detail: 'Send ETH directly or use our fiat on-ramp with a credit card. Your choice!' },
+                    { icon: '🏦', iconClass: 'treasury', title: 'Vault', desc: 'Receives value', detail: 'Your deposit goes into the Vault - a smart contract that holds all the ETH backing $SUITE tokens.' },
+                    { icon: '⚡', iconClass: 'treasury', title: 'Mint', desc: 'New tokens created', detail: 'New $SUITE tokens are minted proportional to your deposit. 0.5% fee goes to the community.' },
+                    { icon: '🪙', iconClass: 'token', title: '$SUITE', desc: 'In your wallet!', detail: 'Your $SUITE tokens appear in your wallet. Use them for premium features, building, or hold for later!' }
                 ]
             },
             giving: {
-                icon: '🎁',
-                name: 'Treasury & Giving',
+                icon: '💝',
+                name: 'Give Back',
                 steps: [
-                    { icon: '🏛️', iconClass: 'treasury', title: 'Treasury', desc: 'Holds collateral', detail: 'The Treasury holds all ETH collateral backing SUITE tokens. This creates a stable, growing pool of value.' },
-                    { icon: '📈', iconClass: 'deposit', title: 'Earn Yield', desc: 'On deposited value', detail: 'Treasury funds are deployed to earn yield through staking, lending, and other DeFi strategies.' },
-                    { icon: '💝', iconClass: 'charity', title: '10% to Charity', desc: 'Automatic giving', detail: 'Once the Treasury hits $100k, 10% of all yield is automatically allocated to charitable giving!' },
-                    { icon: '🗳️', iconClass: 'user', title: 'Community Vote', desc: 'Choose charities', detail: 'SUITE holders vote on which charities receive funds. Stake SUITE to earn voting power.' },
-                    { icon: '🌍', iconClass: 'charity', title: 'Impact', desc: 'Make a difference', detail: 'Your participation in SUITE directly contributes to making the world a better place!' }
+                    { icon: '🏦', iconClass: 'treasury', title: 'Vault', desc: 'Earns yield', detail: 'The Vault holds all ETH backing $SUITE. This ETH is deployed to earn yield through DeFi strategies.' },
+                    { icon: '📈', iconClass: 'deposit', title: 'Yield Grows', desc: 'Passive income', detail: 'The yield earned increases the total value backing all $SUITE tokens - everyone benefits!' },
+                    { icon: '💝', iconClass: 'charity', title: '10% to Charity', desc: 'Automatic giving', detail: 'Once the Vault hits $100k, 10% of all yield is automatically set aside for charitable giving.' },
+                    { icon: '🗳️', iconClass: 'user', title: 'Community Votes', desc: 'Choose recipients', detail: 'SUITE holders vote on which charities receive funds. Stake $SUITE to earn voting power!' },
+                    { icon: '🌍', iconClass: 'charity', title: 'Real Impact', desc: 'Change the world', detail: 'By using SUITE, you\'re automatically contributing to making the world better. No extra effort needed!' }
                 ]
             }
         };
 
         let currentJourney = null;
         let activeStep = null;
+
+        // Clear all flow highlights
+        function clearFlowHighlights() {
+            document.querySelectorAll('.entity').forEach(el => {
+                el.classList.remove('flow-highlight', 'flow-dim');
+            });
+            document.querySelectorAll('.connection').forEach(conn => {
+                conn.classList.remove('flow-active', 'flow-animated');
+            });
+        }
+
+        // Highlight entities and arrows for a journey flow
+        function highlightFlow(journeyKey) {
+            clearFlowHighlights();
+
+            const flowPath = flowPaths[journeyKey];
+            if (!flowPath) return;
+
+            // Dim all entities first
+            document.querySelectorAll('.entity').forEach(el => {
+                el.classList.add('flow-dim');
+            });
+
+            // Highlight entities in the flow with staggered timing
+            flowPath.forEach((entityId, index) => {
+                setTimeout(() => {
+                    const el = document.getElementById(entityId);
+                    if (el) {
+                        el.classList.remove('flow-dim');
+                        el.classList.add('flow-highlight');
+                    }
+                }, index * 200);
+            });
+
+            // Find and highlight connections between flow entities (FORWARD direction only)
+            const svg = document.getElementById('connections');
+            const allPaths = svg.querySelectorAll('path.connection');
+
+            // Check all connections - only highlight if 'from' comes before 'to' in flow path
+            connections.forEach((conn, connIndex) => {
+                const fromIndex = flowPath.indexOf(conn.from);
+                const toIndex = flowPath.indexOf(conn.to);
+
+                // Both must be in path AND 'from' must come before or equal to 'to' in flow order
+                if (fromIndex !== -1 && toIndex !== -1 && fromIndex <= toIndex) {
+                    const pathEl = allPaths[connIndex];
+                    if (pathEl) {
+                        setTimeout(() => {
+                            pathEl.classList.add('flow-active', 'flow-animated');
+                            // Move highlighted path to end of SVG to render on top
+                            svg.appendChild(pathEl);
+                        }, (fromIndex + 1) * 200);
+                    }
+                }
+            });
+        }
 
         function showJourney(journeyKey) {
             const journey = journeys[journeyKey];
@@ -1348,6 +1504,9 @@
                 tab.classList.remove('active');
             });
             document.querySelector(`[data-journey="${journeyKey}"]`).classList.add('active');
+
+            // Highlight the flow on the diagram
+            highlightFlow(journeyKey);
 
             // Build steps HTML with tooltips
             const stepsContainer = document.getElementById('journeySteps');
@@ -1374,6 +1533,7 @@
             document.querySelectorAll('.journey-tab').forEach(tab => {
                 tab.classList.remove('active');
             });
+            clearFlowHighlights();
             currentJourney = null;
             activeStep = null;
         }
