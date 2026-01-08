@@ -60,7 +60,10 @@ const commands = [
         .setDescription('Show your SUITE earnings'),
     new SlashCommandBuilder()
         .setName('help')
-        .setDescription('Show how to earn SUITE'),
+        .setDescription('Learn about this server and available commands'),
+    new SlashCommandBuilder()
+        .setName('suite')
+        .setDescription('How to get SUITE tokens'),
     new SlashCommandBuilder()
         .setName('create-app')
         .setDescription('Create a new app in the ecosystem')
@@ -768,30 +771,58 @@ client.on('interactionCreate', async (interaction) => {
 
             case 'help': {
                 await interaction.reply({
+                    content: `**👋 Welcome to SUITE!**
+
+This is the SUITE community - where anyone can build apps without coding.
+
+**🤖 Talk to Stu**
+• @mention the bot or say "stu" in your message
+• Ask anything: "stu what is SUITE?" or "hey stu help me"
+
+**📱 Commands:**
+• \`/apps\` - Browse all SUITE apps
+• \`/suite\` - How to get SUITE tokens
+• \`/idea\` - Get AI analysis of your idea
+• \`/study\` - Research a topic with AI
+• \`/content\` - Get content ideas for an app
+• \`/suggest\` - AI suggests features for an app
+• \`/bug\` - Report a bug
+• \`/feature\` - Request a feature
+• \`/mystats\` - See your contributions
+• \`/leaderboard\` - Weekly rankings
+
+**🔗 Links:**
+• Website: getsuite.app
+• Forge (build apps): getsuite.app (Start Building)
+• Docs: getsuite.app/docs`,
+                    ephemeral: true
+                });
+                break;
+            }
+
+            case 'suite': {
+                await interaction.reply({
                     content: `**💰 How to Get SUITE**
 
-**💳 Fiat (Card)**
+**💳 Buy (Card/Crypto)**
 • Deposit with credit/debit card
-• Instantly receive SUITE tokens
-
-**🔗 Crypto**
-• Deposit ETH, USDC, or other tokens
+• Or deposit ETH, USDC, other tokens
 • Swapped to SUITE automatically
+
+**🏆 Earn**
+• Report bugs: 500 SUITE
+• Request features: 1,000 SUITE
+• Ship fixes: 750 bonus
+• Create content: 1,000-5,000 SUITE
 
 **📺 Watch Ads**
 • Earn free SUITE by watching ads
 • Great for getting started!
 
----
+**What is SUITE?**
+A utility token that powers AI features in apps, app development, and more. Treasury-backed with guaranteed floor price.
 
-**Commands:**
-• \`/apps\` - Browse all apps
-• \`/idea\` - Analyze your ideas
-• \`/study\` - Research a topic
-• \`/content\` - Content ideas
-• \`/status\` - Project status
-
-**More info:** getsuite.app`,
+**More info:** getsuite.app/docs/tokenomics.html`,
                     ephemeral: true
                 });
                 break;
