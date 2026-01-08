@@ -979,6 +979,86 @@
             color: var(--text-tertiary);
             margin-top: 16px;
         }
+
+        /* Boost Cards */
+        .boost-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 149, 0, 0.1);
+            border: 2px solid rgba(255, 149, 0, 0.2);
+            padding: 12px 16px;
+            border-radius: 14px;
+            transition: all 0.2s;
+        }
+
+        .boost-item:hover {
+            border-color: var(--accent-orange);
+            transform: translateY(-2px);
+        }
+
+        .boost-item-icon {
+            font-size: 1.5rem;
+        }
+
+        .boost-item-info {
+            flex: 1;
+        }
+
+        .boost-item-name {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--text-dark);
+        }
+
+        .boost-item-status {
+            font-size: 0.75rem;
+            color: var(--text-medium);
+        }
+
+        .boost-item-btn {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .boost-item-btn.mint {
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-pink));
+            color: white;
+        }
+
+        .boost-item-btn.mint:hover {
+            transform: scale(1.05);
+        }
+
+        .boost-item-btn.redeem {
+            background: linear-gradient(135deg, #22c55e, #10b981);
+            color: white;
+        }
+
+        .boost-item-btn.redeem:hover {
+            transform: scale(1.05);
+        }
+
+        .boost-item-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .info-tooltip {
+            cursor: help;
+            font-size: 0.75rem;
+            opacity: 0.7;
+        }
+
+        .info-tooltip:hover {
+            opacity: 1;
+        }
     </style>
 </head>
 
@@ -993,7 +1073,6 @@
             <div class="nav-links">
                 <a href="apps.html">Apps</a>
                 <a href="developer-portal.html">Build</a>
-                <a href="discuss.html">Discuss</a>
                 <a href="incubate.html">Incubate</a>
                 <a href="ecosystem.html">Ecosystem</a>
                 <a href="docs/index.html">Docs</a>
@@ -2914,6 +2993,216 @@
         // Load ad stats on page load
         fetchAdRevenueStats();
         setInterval(fetchAdRevenueStats, 60000); // Refresh every minute
+
+        // ============================================
+        // BOOST NFT SYSTEM
+        // ============================================
+
+        const SUITE_BOOSTS_ADDRESS = null; // TODO: Set after deployment
+        const SUITE_BOOSTS_ABI = [
+            "function balanceOf(address account, uint256 id) view returns (uint256)",
+            "function getAllBoostBalances(address account) view returns (uint256[5])",
+            "function redeem(uint256 boostType, uint256 amount)"
+        ];
+
+        const BOOST_TYPES = {
+            1: { name: 'Priority Queue', icon: '⚡', dbType: 'priority-queue' },
+            2: { name: 'AI Pack', icon: '🧠', dbType: 'ai-pack' },
+            3: { name: 'App Slot', icon: '📱', dbType: 'app-slot' },
+            4: { name: 'Featured Week', icon: '⭐', dbType: 'featured-week' },
+            5: { name: '2x Earn', icon: '2️⃣', dbType: '2x-earn' }
+        };
+
+        // Load database boosts (from Discord/Supabase)
+        async function loadDatabaseBoosts() {
+            const container = document.getElementById('databaseBoostsContent');
+            if (!container) return;
+
+            // Check for Discord user in localStorage
+            const savedUser = localStorage.getItem('suiteUser');
+            if (!savedUser) {
+                container.innerHTML = '<span style="color: var(--text-tertiary); font-size: 0.9rem;">Connect Discord on <a href="earn.html" style="color: var(--accent-orange);">Earn page</a> to view boosts</span>';
+                return;
+            }
+
+            const user = JSON.parse(savedUser);
+
+            try {
+                const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.rTqKxT2LYhPt5nQEjLxMxdRDqvVoT7eILWHhBo1MVHU';
+
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/user_boosts?discord_id=eq.${user.id}&status=eq.active&select=*`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+
+                const boosts = await response.json();
+
+                if (!Array.isArray(boosts) || boosts.length === 0) {
+                    container.innerHTML = '<span style="color: var(--text-tertiary); font-size: 0.9rem;">No account boosts. <a href="boost.html" style="color: var(--accent-orange);">Buy some →</a></span>';
+                    return;
+                }
+
+                container.innerHTML = boosts.map(boost => {
+                    const boostInfo = Object.values(BOOST_TYPES).find(b => b.dbType === boost.boost_type) || { name: boost.boost_type, icon: '🎯' };
+                    return `
+                        <div class="boost-item">
+                            <span class="boost-item-icon">${boostInfo.icon}</span>
+                            <div class="boost-item-info">
+                                <div class="boost-item-name">${boostInfo.name}</div>
+                                <div class="boost-item-status">Active • ${boost.status}</div>
+                            </div>
+                            <button class="boost-item-btn mint" onclick="mintBoostAsNFT('${boost.id}')" ${!walletAddress ? 'disabled title="Connect wallet first"' : ''}>
+                                Mint NFT
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('Error loading database boosts:', error);
+                container.innerHTML = '<span style="color: #ef4444; font-size: 0.9rem;">Error loading boosts</span>';
+            }
+        }
+
+        // Load NFT boosts (from wallet)
+        async function loadNFTBoosts() {
+            const container = document.getElementById('nftBoostsContent');
+            if (!container) return;
+
+            if (!walletAddress || !SUITE_BOOSTS_ADDRESS) {
+                container.innerHTML = '<span style="color: var(--text-tertiary); font-size: 0.9rem;">' +
+                    (!walletAddress ? 'Connect wallet to view NFT boosts' : 'NFT contract not deployed yet') + '</span>';
+                return;
+            }
+
+            try {
+                const boostsContract = new ethers.Contract(SUITE_BOOSTS_ADDRESS, SUITE_BOOSTS_ABI, provider);
+                const balances = await boostsContract.getAllBoostBalances(walletAddress);
+
+                let html = '';
+                for (let i = 0; i < 5; i++) {
+                    const count = Number(balances[i]);
+                    if (count > 0) {
+                        const boostType = BOOST_TYPES[i + 1];
+                        html += `
+                            <div class="boost-item">
+                                <span class="boost-item-icon">${boostType.icon}</span>
+                                <div class="boost-item-info">
+                                    <div class="boost-item-name">${boostType.name}</div>
+                                    <div class="boost-item-status">NFT • ${count}x owned</div>
+                                </div>
+                                <button class="boost-item-btn redeem" onclick="redeemNFTBoost(${i + 1})">
+                                    Redeem
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+
+                container.innerHTML = html || '<span style="color: var(--text-tertiary); font-size: 0.9rem;">No NFT boosts. Mint from account boosts above.</span>';
+
+            } catch (error) {
+                console.error('Error loading NFT boosts:', error);
+                container.innerHTML = '<span style="color: var(--text-tertiary); font-size: 0.9rem;">NFT contract not deployed yet</span>';
+            }
+        }
+
+        // Mint a database boost as NFT
+        async function mintBoostAsNFT(boostId) {
+            if (!walletAddress) {
+                alert('Please connect your wallet first');
+                return;
+            }
+
+            try {
+                const btn = event.target;
+                btn.disabled = true;
+                btn.textContent = 'Minting...';
+
+                // Call backend to mint (backend handles state machine + on-chain minting)
+                const response = await fetch('/api/boost-mint', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        boost_id: boostId,
+                        wallet_address: walletAddress
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('✅ Boost minted as NFT! Check your wallet.');
+                    await loadDatabaseBoosts();
+                    await loadNFTBoosts();
+                } else {
+                    throw new Error(result.error || 'Minting failed');
+                }
+
+            } catch (error) {
+                console.error('Mint error:', error);
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // Redeem an NFT boost back to database
+        async function redeemNFTBoost(boostType) {
+            if (!walletAddress || !signer) {
+                alert('Please connect your wallet first');
+                return;
+            }
+
+            try {
+                const boostsContract = new ethers.Contract(SUITE_BOOSTS_ADDRESS, SUITE_BOOSTS_ABI, signer);
+
+                // User burns the NFT
+                const tx = await boostsContract.redeem(boostType, 1);
+                alert('Transaction submitted. Please wait...');
+                await tx.wait();
+
+                // Tell backend to credit the database boost
+                const savedUser = localStorage.getItem('suiteUser');
+                if (savedUser) {
+                    const user = JSON.parse(savedUser);
+                    await fetch('/api/boost-redeem', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            discord_id: user.id,
+                            boost_type: boostType,
+                            tx_hash: tx.hash
+                        })
+                    });
+                }
+
+                alert('✅ Boost redeemed to your account!');
+                await loadDatabaseBoosts();
+                await loadNFTBoosts();
+
+            } catch (error) {
+                console.error('Redeem error:', error);
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // Load boosts when wallet connects or page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDatabaseBoosts();
+            loadNFTBoosts();
+        });
+
+        // Refresh boosts when wallet connects
+        const originalUpdateUI = typeof updateUI === 'function' ? updateUI : null;
+        if (originalUpdateUI) {
+            window.updateUI = async function () {
+                await originalUpdateUI.apply(this, arguments);
+                await loadDatabaseBoosts();
+                await loadNFTBoosts();
+            };
+        }
     </script>
 </body>
 
