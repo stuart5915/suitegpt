@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Details | SUITE</title>
+    <link rel="icon" type="image/png" href="assets/suite-mascot.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="suite-styles.css">
+    <link rel="stylesheet" href="nav.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
+    <style>
+        html {
+            overflow-y: scroll;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fff5eb 0%, #ffe4d4 20%, #ffd4e3 50%, #e8d5f9 80%, #d4e5ff 100%);
+            min-height: 100vh;
+            color: #2d1b4e;
+        }
+
+        .nav-links a:hover {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            color: white !important;
+        }
+
+        .nav-links a.active {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            color: white !important;
+        }
+
+        .app-page {
+            padding: 100px 24px 60px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* Hero Section - Google Play Style */
+        .app-hero {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 40px;
+            align-items: start;
+            margin-bottom: 40px;
+        }
+
+        .app-hero-left {}
+
+        .app-title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            margin-bottom: 8px;
+            color: #2d1b4e;
+        }
+
+        .app-creator {
+            color: #ff9500;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .app-meta-row {
+            display: flex;
+            gap: 4px;
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+
+        .app-stats-row {
+            display: flex;
+            gap: 32px;
+            margin-bottom: 24px;
+        }
+
+        .app-stat {
+            text-align: center;
+        }
+
+        .app-stat-value {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #2d1b4e;
+        }
+
+        .app-stat-label {
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+
+        .app-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+            padding: 14px 32px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 149, 0, 0.3);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #2d1b4e;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            border-color: #ff9500;
+        }
+
+        .app-disclaimer {
+            font-size: 0.8rem;
+            color: #9ca3af;
+            line-height: 1.5;
+        }
+
+        .app-disclaimer a {
+            color: #ff9500;
+        }
+
+        .app-icon-large {
+            width: 160px;
+            height: 160px;
+            border-radius: 32px;
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+            box-shadow: 0 16px 48px rgba(255, 149, 0, 0.3);
+        }
+
+        /* Screenshots Carousel */
+        .screenshots-section {
+            margin-bottom: 40px;
+        }
+
+        .screenshots-row {
+            display: flex;
+            gap: 16px;
+            overflow-x: auto;
+            padding: 16px 0;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .screenshot-item {
+            width: 140px;
+            height: 280px;
+            border-radius: 16px;
+            background: #1a1a2e;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8rem;
+            text-align: center;
+            padding: 12px;
+        }
+
+        /* About Section */
+        .section-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 24px;
+            padding: 28px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 800;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-content {
+            color: #5a4a6f;
+            line-height: 1.8;
+        }
+
+        .section-content p {
+            margin-bottom: 12px;
+        }
+
+        /* Features Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .feature-card {
+            background: rgba(255, 149, 0, 0.08);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .feature-icon {
+            font-size: 1.5rem;
+        }
+
+        .feature-text {
+            font-size: 0.95rem;
+            color: #2d1b4e;
+            font-weight: 500;
+        }
+
+        /* Install Guide */
+        .install-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .install-step {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+
+        .step-number {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .step-content {}
+
+        .step-title {
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .step-desc {
+            font-size: 0.9rem;
+            color: #6b7280;
+        }
+
+        /* Back link */
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #ff9500;
+            font-weight: 600;
+            margin-bottom: 24px;
+            text-decoration: none;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Loading & Error States */
+        .loading-state,
+        .error-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: #6b7280;
+        }
+
+        .loading-state .icon,
+        .error-state .icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+        }
+
+        .error-state h2 {
+            color: #2d1b4e;
+            margin-bottom: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .app-hero {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .app-hero-left {
+                order: 2;
+            }
+
+            .app-icon-large {
+                margin: 0 auto 24px;
+                width: 120px;
+                height: 120px;
+                font-size: 3.5rem;
+            }
+
+            .app-stats-row {
+                justify-content: center;
+            }
+
+            .app-actions {
+                justify-content: center;
+            }
+
+            .app-title {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-logo">
+                <img src="assets/suite-mascot.png" alt="SUITE" class="nav-logo-img">
+                SUITE
+            </a>
+            <div class="nav-links">
+                <a href="apps.html" class="active">Apps</a>
+                <a href="developer-portal.html">Build</a>
+                <a href="discuss.html">Discuss</a>
+                <a href="incubate.html">Incubate</a>
+                <a href="ecosystem.html">Ecosystem</a>
+                <a href="docs/index.html">Docs</a>
+                <a href="wallet.html">Wallet</a>
+                <a href="earn.html">Earn</a>
+                <a href="boost.html">Boost</a>
+                <a href="start-building.html" class="nav-cta">✨ Start Building</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="app-page" id="appPage">
+        <!-- Loading State -->
+        <div class="loading-state" id="loadingState">
+            <div class="icon">⏳</div>
+            <p>Loading app details...</p>
+        </div>
+
+        <!-- Error State (hidden by default) -->
+        <div class="error-state" id="errorState" style="display: none;">
+            <div class="icon">🔍</div>
+            <h2>App Not Found</h2>
+            <p>Sorry, we couldn't find that app.</p>
+            <a href="apps.html" class="btn-primary"
+                style="margin-top: 20px; display: inline-block; text-decoration: none;">← Back to App Store</a>
+        </div>
+
+        <!-- App Content (hidden until loaded) -->
+        <div id="appContent" style="display: none;">
+            <a href="apps.html" class="back-link">← Back to App Store</a>
+
+            <!-- Hero Section -->
+            <section class="app-hero">
+                <div class="app-hero-left">
+                    <h1 class="app-title" id="appTitle">App Name</h1>
+                    <div class="app-creator" id="appCreator">SUITE</div>
+                    <div class="app-meta-row" id="appMeta">
+                        <span>Contains ads</span> · <span>In-app purchases</span>
+                    </div>
+
+                    <div class="app-stats-row">
+                        <div class="app-stat">
+                            <div class="app-stat-value" id="appRating">4.8★</div>
+                            <div class="app-stat-label" id="appReviews">reviews</div>
+                        </div>
+                        <div class="app-stat">
+                            <div class="app-stat-value" id="appUsers">1K+</div>
+                            <div class="app-stat-label">Users</div>
+                        </div>
+                        <div class="app-stat">
+                            <div class="app-stat-value" id="appCategory">📱</div>
+                            <div class="app-stat-label" id="appCategoryLabel">App</div>
+                        </div>
+                    </div>
+
+                    <div class="app-actions">
+                        <button class="btn-primary" id="openAppBtn">Open App</button>
+                        <button class="btn-secondary" onclick="shareApp()">📤 Share</button>
+                    </div>
+
+                    <p class="app-disclaimer">
+                        SUITE apps are built by community creators. By using this app, you agree to the
+                        <a href="#">Terms of Service</a>.
+                    </p>
+                </div>
+
+                <div class="app-icon-large" id="appIcon">📱</div>
+            </section>
+
+            <!-- Screenshots -->
+            <section class="screenshots-section">
+                <div class="screenshots-row" id="screenshotsRow">
+                    <!-- Screenshots populated by JS -->
+                </div>
+            </section>
+
+            <!-- About -->
+            <section class="section-card">
+                <h2 class="section-title">About this app →</h2>
+                <div class="section-content" id="appDescription">
+                    <p>Loading description...</p>
+                </div>
+            </section>
+
+            <!-- Features -->
+            <section class="section-card" id="featuresSection">
+                <h2 class="section-title">Key Features</h2>
+                <div class="features-grid" id="featuresGrid">
+                    <!-- Features populated by JS -->
+                </div>
+            </section>
+
+            <!-- Install Guide -->
+            <section class="section-card">
+                <h2 class="section-title">How to Install</h2>
+                <p style="color: #6b7280; margin-bottom: 20px;">
+                    This is a Progressive Web App (PWA). Install it to your home screen for a native app experience!
+                </p>
+                <div class="install-steps">
+                    <div class="install-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <div class="step-title">Open the App</div>
+                            <p class="step-desc">Click "Open App" above to launch in your browser</p>
+                        </div>
+                    </div>
+                    <div class="install-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <div class="step-title">Add to Home Screen</div>
+                            <p class="step-desc">
+                                <strong>iOS:</strong> Tap Share → "Add to Home Screen"<br>
+                                <strong>Android:</strong> Tap menu (⋮) → "Install App"
+                            </p>
+                        </div>
+                    </div>
+                    <div class="install-step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <div class="step-title">Start Using!</div>
+                            <p class="step-desc">The app icon will appear on your home screen like a native app</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        let currentApp = null;
+
+        // Get slug from URL
+        function getSlugFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('slug');
+        }
+
+        // Load app data
+        async function loadApp() {
+            const slug = getSlugFromUrl();
+
+            if (!slug) {
+                showError();
+                return;
+            }
+
+            try {
+                // Use the SuiteAppStore helper
+                if (typeof SuiteAppStore !== 'undefined') {
+                    currentApp = await SuiteAppStore.fetchSuiteAppBySlug(slug);
+                }
+
+                if (!currentApp) {
+                    showError();
+                    return;
+                }
+
+                renderApp(currentApp);
+            } catch (error) {
+                console.error('Error loading app:', error);
+                showError();
+            }
+        }
+
+        // Render app data
+        function renderApp(app) {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('appContent').style.display = 'block';
+
+            // Update page title
+            document.title = `${app.name} | SUITE App Store`;
+
+            // Hero
+            document.getElementById('appTitle').textContent = app.name;
+            document.getElementById('appCreator').textContent = 'SUITE';
+            document.getElementById('appIcon').textContent = app.icon_emoji || getDefaultEmoji(app.name);
+
+            // Stats
+            const rating = app.rating || 4.5;
+            const users = app.users_count || 100;
+            document.getElementById('appRating').textContent = `${rating}★`;
+            document.getElementById('appReviews').textContent = `${Math.floor(users / 10)} reviews`;
+            document.getElementById('appUsers').textContent = formatNumber(users);
+            document.getElementById('appCategory').textContent = getCategoryIcon(app.category);
+            document.getElementById('appCategoryLabel').textContent = app.category || 'App';
+
+            // Meta row
+            const status = app.status === 'published' ? '🟢 Live' : '🔨 In Development';
+            document.getElementById('appMeta').innerHTML = `<span>${status}</span> · <span>Free</span>`;
+
+            // Description
+            const desc = app.description || app.tagline || 'A SUITE ecosystem app.';
+            document.getElementById('appDescription').innerHTML = `<p>${desc}</p>`;
+
+            // Features
+            let features = [];
+            if (app.features) {
+                try {
+                    features = typeof app.features === 'string' ? JSON.parse(app.features) : app.features;
+                } catch (e) { }
+            }
+
+            if (features.length > 0) {
+                document.getElementById('featuresGrid').innerHTML = features.map(f => `
+                    <div class="feature-card">
+                        <span class="feature-icon">✨</span>
+                        <span class="feature-text">${f}</span>
+                    </div>
+                `).join('');
+            } else {
+                document.getElementById('featuresSection').style.display = 'none';
+            }
+
+            // Screenshots (placeholder for now)
+            const screenshots = app.screenshots || [];
+            if (screenshots.length > 0) {
+                document.getElementById('screenshotsRow').innerHTML = screenshots.map(s => `
+                    <div class="screenshot-item" style="background-image: url('${s}'); background-size: cover;"></div>
+                `).join('');
+            } else {
+                // Show placeholder screenshots
+                document.getElementById('screenshotsRow').innerHTML = `
+                    <div class="screenshot-item">📱 Screenshot 1</div>
+                    <div class="screenshot-item">📱 Screenshot 2</div>
+                    <div class="screenshot-item">📱 Screenshot 3</div>
+                    <div class="screenshot-item">📱 Screenshot 4</div>
+                `;
+            }
+
+            // Open App button
+            const openBtn = document.getElementById('openAppBtn');
+            if (app.download_url) {
+                openBtn.onclick = () => window.open(app.download_url, '_blank');
+            } else {
+                openBtn.textContent = 'Coming Soon';
+                openBtn.disabled = true;
+                openBtn.style.opacity = '0.6';
+            }
+        }
+
+        function showError() {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('errorState').style.display = 'block';
+        }
+
+        function getDefaultEmoji(name) {
+            const map = {
+                'Cheshbon': '📖',
+                'FoodVital': '🍎',
+                'OpticRep': '🏋️',
+                'REMcast': '🎙️',
+                'TrueForm': '🧘',
+                'ReVibe': '💭'
+            };
+            for (const [key, emoji] of Object.entries(map)) {
+                if (name.includes(key)) return emoji;
+            }
+            return '📱';
+        }
+
+        function getCategoryIcon(category) {
+            const map = {
+                'Health': '💪',
+                'Fitness': '🏃',
+                'Spirituality': '🙏',
+                'Wellness': '🧘',
+                'Audio': '🎙️',
+                'Productivity': '📊'
+            };
+            return map[category] || '📱';
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M+';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K+';
+            return num + '+';
+        }
+
+        function shareApp() {
+            if (navigator.share) {
+                navigator.share({
+                    title: currentApp?.name || 'SUITE App',
+                    text: currentApp?.tagline || 'Check out this SUITE app!',
+                    url: window.location.href
+                });
+            } else {
+                navigator.clipboard.writeText(window.location.href);
+                alert('Link copied to clipboard!');
+            }
+        }
+
+        // Load on page ready
+        loadApp();
+    </script>
+</body>
+
+</html>
