@@ -823,7 +823,7 @@
             align-items: center;
             gap: 6px;
             background: rgba(255, 255, 255, 0.95);
-            padding: 14px 16px 20px;
+            padding: 14px 16px 40px;
             border-radius: 18px 18px 0 0;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
             transition: transform 0.3s ease;
@@ -1692,17 +1692,39 @@
         </div>
 
         <!-- Floating LP Pager Widget -->
-        <a href="https://aerodrome.finance/pools?token0=eth&token1=0xE6892803DF59D79cFB4794e7da9549df4eE70f71"
-            target="_blank" class="lp-pager" id="lpPager">
+        <div class="lp-pager" id="lpPager" style="cursor: pointer;">
             <div class="lp-pager-header">
                 <span class="lp-pager-dot"></span>
                 <span class="lp-pager-title">SUITE/ETH LP</span>
             </div>
             <div class="lp-pager-content">
                 <span class="lp-pager-dex">🔵 Aerodrome</span>
-                <span class="lp-pager-action">Provide Liquidity →</span>
+                <span class="lp-pager-action">Click to Expand →</span>
             </div>
-        </a>
+        </div>
+
+        <!-- Expanded LP Modal -->
+        <div id="lpModal"
+            style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(8px);">
+            <div
+                style="background: #1a1a2e; border-radius: 24px; width: 90%; max-width: 800px; height: 80vh; max-height: 700px; position: relative; overflow: hidden; box-shadow: 0 32px 80px rgba(0,0,0,0.5);">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; background: linear-gradient(135deg, #22c55e, #10b981); color: white;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 1.5rem;">💧</span>
+                        <div>
+                            <div style="font-weight: 800; font-size: 1.1rem;">SUITE/ETH Liquidity Pool</div>
+                            <div style="font-size: 0.85rem; opacity: 0.9;">Aerodrome Finance on Base</div>
+                        </div>
+                    </div>
+                    <button id="closeLpModal"
+                        style="background: rgba(255,255,255,0.2); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; font-size: 1.2rem; cursor: pointer;">✕</button>
+                </div>
+                <iframe
+                    src="https://aerodrome.finance/pools?token0=eth&token1=0xE6892803DF59D79cFB4794e7da9549df4eE70f71"
+                    style="width: 100%; height: calc(100% - 70px); border: none;" title="Aerodrome LP"></iframe>
+            </div>
+        </div>
     </section>
 
     <!-- Build, Discover, Earn -->
@@ -2252,13 +2274,113 @@
     </style>
 
     <script>
-        // Make LP Pager Draggable
+        // LP Pager - Click to Expand & Drag-Drop Easter Egg
         (function () {
             const pager = document.getElementById('lpPager');
-            if (!pager) return;
+            const modal = document.getElementById('lpModal');
+            const closeBtn = document.getElementById('closeLpModal');
+            const suiteToken = document.getElementById('suiteTokenDraggable');
 
-            let isDragging = false;
+            if (!pager || !modal) return;
+
+            // ============================================
+            // Click to Expand LP Modal
+            // ============================================
+            function openLpModal() {
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+                // Add celebration if dropped
+                if (wasDropped) {
+                    celebrateDrop();
+                    wasDropped = false;
+                }
+            }
+
+            function closeLpModal() {
+                modal.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+
+            pager.addEventListener('click', (e) => {
+                if (!wasDragged) {
+                    openLpModal();
+                }
+            });
+
+            closeBtn.addEventListener('click', closeLpModal);
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeLpModal();
+                }
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeLpModal();
+            });
+
+            // ============================================
+            // Drag-Drop Easter Egg: SUITE Token → LP Widget
+            // ============================================
+            let wasDropped = false;
             let wasDragged = false;
+
+            if (suiteToken) {
+                // Add visual feedback that it's draggable
+                suiteToken.style.cursor = 'grab';
+
+                suiteToken.addEventListener('dragstart', (e) => {
+                    suiteToken.style.opacity = '0.5';
+                    suiteToken.style.cursor = 'grabbing';
+                    e.dataTransfer.setData('text/plain', 'suite-token');
+                    e.dataTransfer.effectAllowed = 'move';
+
+                    // Highlight LP pager as drop target
+                    pager.style.transform = 'scale(1.1)';
+                    pager.style.boxShadow = '0 0 30px rgba(34, 197, 94, 0.8)';
+                    pager.style.border = '2px dashed #22c55e';
+                });
+
+                suiteToken.addEventListener('dragend', (e) => {
+                    suiteToken.style.opacity = '1';
+                    suiteToken.style.cursor = 'grab';
+
+                    // Reset LP pager highlight
+                    pager.style.transform = '';
+                    pager.style.boxShadow = '';
+                    pager.style.border = '';
+                });
+            }
+
+            // LP Pager as drop target
+            pager.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                pager.style.background = 'linear-gradient(135deg, #22c55e, #10b981)';
+                pager.style.transform = 'scale(1.15)';
+            });
+
+            pager.addEventListener('dragleave', (e) => {
+                pager.style.background = '';
+                pager.style.transform = 'scale(1.1)';
+            });
+
+            pager.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const data = e.dataTransfer.getData('text/plain');
+
+                if (data === 'suite-token') {
+                    wasDropped = true;
+                    pager.style.background = '';
+                    pager.style.transform = '';
+                    openLpModal();
+                }
+            });
+
+            // ============================================
+            // Make LP Pager Draggable (existing functionality)
+            // ============================================
+            let isDragging = false;
             let startX, startY, initialX, initialY;
 
             pager.addEventListener('mousedown', (e) => {
@@ -2266,14 +2388,17 @@
                 wasDragged = false;
                 pager.style.cursor = 'grabbing';
                 pager.style.animation = 'none';
-                pager.style.position = 'fixed';
+                pager.style.transition = 'none';
+                pager.style.transform = 'none';
 
+                // Get rect AFTER clearing animation/transform
                 const rect = pager.getBoundingClientRect();
                 initialX = rect.left;
                 initialY = rect.top;
                 startX = e.clientX;
                 startY = e.clientY;
 
+                pager.style.position = 'fixed';
                 pager.style.left = initialX + 'px';
                 pager.style.top = initialY + 'px';
                 pager.style.right = 'auto';
@@ -2299,11 +2424,58 @@
             document.addEventListener('mouseup', () => {
                 if (isDragging) {
                     isDragging = false;
-                    pager.style.cursor = 'grab';
+                    pager.style.cursor = 'pointer';
+
+                    // Reset wasDragged after a short delay so click can be prevented
+                    setTimeout(() => { wasDragged = false; }, 100);
                 }
             });
 
-            pager.addEventListener('click', (e) => {
-                if (wasDragged) {
-                    e.preventDefault();
-                   
+            // ============================================
+            // Celebration when token is dropped!
+            // ============================================
+            function celebrateDrop() {
+                // Create confetti
+                for (let i = 0; i < 50; i++) {
+                    const confetti = document.createElement('div');
+                    confetti.innerHTML = ['🪙', '💧', '✨', '🎉', '💰'][Math.floor(Math.random() * 5)];
+                    confetti.style.cssText = `
+                        position: fixed;
+                        top: 50%;
+                        left: 50%;
+                        font-size: ${20 + Math.random() * 20}px;
+                        pointer-events: none;
+                        z-index: 10001;
+                        animation: confettiFall ${2 + Math.random() * 2}s ease-out forwards;
+                    `;
+                    confetti.style.setProperty('--confetti-x', `${(Math.random() - 0.5) * 400}px`);
+                    confetti.style.setProperty('--confetti-y', `${Math.random() * -300 - 100}px`);
+                    document.body.appendChild(confetti);
+
+                    setTimeout(() => confetti.remove(), 4000);
+                }
+
+                // Add confetti animation if not exists
+                if (!document.getElementById('confettiStyles')) {
+                    const style = document.createElement('style');
+                    style.id = 'confettiStyles';
+                    style.textContent = `
+                        @keyframes confettiFall {
+                            0% {
+                                transform: translate(0, 0) rotate(0deg) scale(1);
+                                opacity: 1;
+                            }
+                            100% {
+                                transform: translate(var(--confetti-x), var(--confetti-y)) rotate(720deg) scale(0);
+                                opacity: 0;
+                            }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+            }
+        })();
+    </script>
+</body>
+
+</html>
