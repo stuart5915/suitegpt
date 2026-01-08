@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="view-transition" content="same-origin">
+    <title>Pricing | SUITE Pro Builder</title>
+    <link rel="icon" type="image/png" href="assets/suite-mascot.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="suite-styles.css">
+    <link rel="stylesheet" href="nav.css">
+    <style>
+        html {
+            overflow-y: scroll;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fff5eb 0%, #ffe4d4 20%, #ffd4e3 50%, #e8d5f9 80%, #d4e5ff 100%);
+            min-height: 100vh;
+            color: #2d1b4e;
+        }
+
+        .pricing-container {
+            max-width: 1000px;
+            margin: 100px auto 60px;
+            padding: 0 24px;
+        }
+
+        .pricing-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .pricing-title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #2d1b4e, #7c3aed, #ff6b9d);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 16px;
+        }
+
+        .pricing-subtitle {
+            font-size: 1.2rem;
+            color: #5a4a6f;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .pricing-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+
+        .toggle-option {
+            padding: 12px 24px;
+            border-radius: 20px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(255, 255, 255, 0.5);
+            border: 2px solid transparent;
+        }
+
+        .toggle-option.active {
+            background: white;
+            border-color: #ff9500;
+            color: #ff9500;
+        }
+
+        .save-badge {
+            background: linear-gradient(135deg, #22c55e, #10b981);
+            color: white;
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 10px;
+            margin-left: 8px;
+        }
+
+        .pricing-cards {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .pricing-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .pricing-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 28px;
+            padding: 36px;
+            box-shadow: 0 16px 60px rgba(0, 0, 0, 0.08);
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.12);
+        }
+
+        .pricing-card.popular {
+            border: 3px solid #ff9500;
+        }
+
+        .popular-badge {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+            padding: 6px 20px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+
+        .plan-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+
+        .plan-name {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin-bottom: 8px;
+        }
+
+        .plan-desc {
+            color: #5a4a6f;
+            font-size: 0.95rem;
+            margin-bottom: 24px;
+        }
+
+        .plan-price {
+            margin-bottom: 24px;
+        }
+
+        .price-amount {
+            font-size: 3rem;
+            font-weight: 900;
+            color: #2d1b4e;
+        }
+
+        .price-period {
+            color: #9ca3af;
+            font-size: 1rem;
+        }
+
+        .price-free {
+            font-size: 2.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #22c55e, #10b981);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .plan-features {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 28px 0;
+        }
+
+        .plan-features li {
+            padding: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.95rem;
+            color: #5a4a6f;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .plan-features li:last-child {
+            border-bottom: none;
+        }
+
+        .feature-icon {
+            font-size: 1.1rem;
+        }
+
+        .feature-icon.check {
+            color: #22c55e;
+        }
+
+        .feature-icon.x {
+            color: #ef4444;
+            opacity: 0.5;
+        }
+
+        .feature-highlight {
+            background: linear-gradient(135deg, rgba(255, 149, 0, 0.1), rgba(255, 107, 157, 0.1));
+            padding: 3px 10px;
+            border-radius: 8px;
+            font-weight: 700;
+            color: #ff9500;
+        }
+
+        .plan-cta {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            border-radius: 16px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: none;
+        }
+
+        .cta-free {
+            background: rgba(45, 27, 78, 0.1);
+            color: #2d1b4e;
+        }
+
+        .cta-free:hover {
+            background: rgba(45, 27, 78, 0.15);
+        }
+
+        .cta-pro {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+        }
+
+        .cta-pro:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 24px rgba(255, 149, 0, 0.4);
+        }
+
+        /* 2x Earn Highlight */
+        .earn-multiplier {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: white;
+            padding: 16px;
+            border-radius: 12px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .multiplier-big {
+            font-size: 2rem;
+            font-weight: 900;
+        }
+
+        .multiplier-text {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* Footer Note */
+        .pricing-note {
+            text-align: center;
+            margin-top: 40px;
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+
+        .pricing-note a {
+            color: #ff9500;
+            text-decoration: none;
+        }
+
+        /* FAQ Section */
+        .faq-section {
+            margin-top: 60px;
+        }
+
+        .faq-title {
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 32px;
+            color: #2d1b4e;
+        }
+
+        .faq-item {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-bottom: 12px;
+        }
+
+        .faq-q {
+            font-weight: 700;
+            color: #2d1b4e;
+            margin-bottom: 8px;
+        }
+
+        .faq-a {
+            color: #5a4a6f;
+            font-size: 0.95rem;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-logo">
+                <img src="assets/suite-mascot.png" alt="SUITE" class="nav-logo-img">
+                SUITE
+            </a>
+            <div class="nav-links">
+                <a href="apps.html">Apps</a>
+                <a href="developer-portal.html">Build</a>
+                <a href="incubate.html">Incubate</a>
+                <a href="ecosystem.html">Ecosystem</a>
+                <a href="docs/index.html">Docs</a>
+                <a href="wallet.html">Wallet</a>
+                <a href="earn.html">Earn</a>
+                <a href="pricing.html" class="active">Pricing</a>
+                <a href="start-building.html" class="nav-cta">✨ Start Building</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="pricing-container">
+        <div class="pricing-header">
+            <h1 class="pricing-title">Choose Your Builder Plan</h1>
+            <p class="pricing-subtitle">Everyone can build for free. Upgrade to Pro for faster reviews, more AI power,
+                and 2x earn rate!</p>
+        </div>
+
+        <div class="pricing-cards">
+            <!-- Free Plan -->
+            <div class="pricing-card">
+                <div class="plan-icon">🌱</div>
+                <div class="plan-name">Free Builder</div>
+                <div class="plan-desc">Perfect for trying out SUITE and building your first app.</div>
+
+                <div class="plan-price">
+                    <span class="price-free">$0</span>
+                    <span class="price-period">forever</span>
+                </div>
+
+                <ul class="plan-features">
+                    <li><span class="feature-icon check">✓</span> 1 app in development</li>
+                    <li><span class="feature-icon check">✓</span> 10 AI commands/month</li>
+                    <li><span class="feature-icon check">✓</span> Community support</li>
+                    <li><span class="feature-icon check">✓</span> Standard review (5-7 days)</li>
+                    <li><span class="feature-icon check">✓</span> 1x earn rate</li>
+                    <li><span class="feature-icon x">✗</span> App analytics</li>
+                    <li><span class="feature-icon x">✗</span> Featured eligibility</li>
+                </ul>
+
+                <a href="start-building.html" class="plan-cta cta-free">Get Started Free</a>
+            </div>
+
+            <!-- Pro Plan -->
+            <div class="pricing-card popular">
+                <div class="popular-badge">🔥 MOST POPULAR</div>
+                <div class="plan-icon">⚡</div>
+                <div class="plan-name">Pro Builder</div>
+                <div class="plan-desc">For serious builders who want to move fast and earn more.</div>
+
+                <div class="plan-price">
+                    <span class="price-amount">$19</span>
+                    <span class="price-period">CAD/month</span>
+                </div>
+
+                <div class="earn-multiplier">
+                    <div class="multiplier-big">2X EARN RATE</div>
+                    <div class="multiplier-text">Double $SUITE on ads, surveys, & app trials!</div>
+                </div>
+
+                <ul class="plan-features">
+                    <li><span class="feature-icon check">✓</span> <strong>5 apps</strong> in development</li>
+                    <li><span class="feature-icon check">✓</span> <strong>100 AI commands</strong>/month</li>
+                    <li><span class="feature-icon check">✓</span> Priority support</li>
+                    <li><span class="feature-icon check">✓</span> <span class="feature-highlight">24hr review</span>
+                    </li>
+                    <li><span class="feature-icon check">✓</span> <span class="feature-highlight">2x earn rate</span>
+                    </li>
+                    <li><span class="feature-icon check">✓</span> Full analytics dashboard</li>
+                    <li><span class="feature-icon check">✓</span> Featured app eligibility</li>
+                </ul>
+
+                <button class="plan-cta cta-pro" onclick="alert('Coming soon! Join Discord for updates.')">Upgrade to
+                    Pro</button>
+            </div>
+        </div>
+
+        <p class="pricing-note">
+            All prices in CAD. Cancel anytime. Questions? <a href="https://discord.gg/B2Kz5Rqf3u">Ask in Discord</a>
+        </p>
+
+        <!-- FAQ -->
+        <div class="faq-section">
+            <h2 class="faq-title">Frequently Asked Questions</h2>
+
+            <div class="faq-item">
+                <div class="faq-q">What is 2x earn rate?</div>
+                <div class="faq-a">Pro subscribers earn double $SUITE tokens on all earning activities - watching ads,
+                    completing surveys, trying apps, and more. Same effort, double rewards!</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q">Can I cancel anytime?</div>
+                <div class="faq-a">Yes! Cancel anytime from your account. You'll keep Pro benefits until the end of your
+                    billing period.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q">What happens to my apps if I downgrade?</div>
+                <div class="faq-a">Your published apps stay live. You just can't add more than 1 active development app
+                    on the free plan.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q">Do I need Pro to publish an app?</div>
+                <div class="faq-a">No! Free builders can publish apps too. Pro just gives you faster reviews and more
+                    development slots.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q">Is this a subscription for $SUITE tokens?</div>
+                <div class="faq-a">No. You're paying for platform features (faster reviews, analytics, more apps).
+                    $SUITE is earned through activity - Pro just gives you a 2x multiplier on earnings.</div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
