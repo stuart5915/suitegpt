@@ -538,30 +538,55 @@
 
         let adLoaded = false;
         let adWatching = false;
+        let currentAdToken = null; // Store the token for this ad session
 
-        function watchAd() {
+        async function watchAd() {
             if (adWatching) return; // Prevent double-clicks
             adWatching = true;
 
-            // Show ad container with timer
             const adContainer = document.getElementById('adContainer');
+            const timerEl = document.getElementById('adTimer');
+            const messageEl = document.querySelector('.ad-message');
+
+            // Step 1: Get a token from the server BEFORE starting
+            messageEl.textContent = 'Starting ad session...';
             adContainer.classList.add('active');
 
-            // Load the Adsterra Social Bar ad with user's Discord ID as subid
+            try {
+                const startResponse = await fetch('/api/ad-start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ discord_id: currentUser.id })
+                });
+
+                const startResult = await startResponse.json();
+
+                if (!startResult.success) {
+                    throw new Error(startResult.error || 'Failed to start ad session');
+                }
+
+                currentAdToken = startResult.token;
+                console.log('Ad session started with token');
+
+            } catch (error) {
+                console.error('Error starting ad:', error);
+                adContainer.classList.remove('active');
+                adWatching = false;
+                alert('Failed to start ad session. Please try again.');
+                return;
+            }
+
+            // Step 2: Load the Adsterra Social Bar ad
             if (!adLoaded) {
                 const script = document.createElement('script');
-                // Pass discord_id as subid for tracking
                 script.src = `https://pl28427796.effectivegatecpm.com/9e/34/e7/9e34e707a82f1e5d2161869745ab386f.js`;
                 script.async = true;
-                script.dataset.subid = currentUser.id; // For Adsterra postback
                 document.body.appendChild(script);
                 adLoaded = true;
             }
 
-            // Start 30-second countdown (real ads need ~30 seconds viewing)
+            // Step 3: Start 30-second countdown
             let timeLeft = 30;
-            const timerEl = document.getElementById('adTimer');
-            const messageEl = document.querySelector('.ad-message');
             timerEl.textContent = timeLeft;
             messageEl.textContent = 'Viewing ad... Stay on this page!';
 
@@ -586,36 +611,40 @@
             successEl.innerHTML = '<span style="font-size: 32px;">⏳</span><br>Verifying ad completion...';
             successEl.classList.add('show');
 
+            if (!currentAdToken) {
+                successEl.innerHTML = '<span style="font-size: 32px;">❌</span><br>No valid session. Please try again.';
+                setTimeout(() => successEl.classList.remove('show'), 3000);
+                return;
+            }
+
             try {
-                // Call server-side API to credit user (secure postback simulation)
-                // In production, Adsterra calls this directly, but we also call it
-                // as a backup in case the postback is delayed
-                const response = await fetch(`/api/ad-callback?subid=${currentUser.id}`, {
-                    method: 'GET'
+                // Step 4: Submit token to get credit
+                const response = await fetch('/api/ad-callback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        discord_id: currentUser.id,
+                        token: currentAdToken
+                    })
                 });
 
                 const result = await response.json();
+                currentAdToken = null; // Clear token after use
 
                 if (result.success) {
-                    // Update UI with new balance
-                    const newBalance = result.new_balance || 0;
-                    document.getElementById('balanceAmount').textContent = `${newBalance.toFixed(0)} SUITE`;
+                    // Refresh balance from server
+                    await loadUserBalance();
 
-                    // Show success
                     successEl.innerHTML = '<span style="font-size: 32px;">✨</span><br>+2 SUITE earned!';
-                    setTimeout(() => {
-                        successEl.classList.remove('show');
-                    }, 3000);
+                    setTimeout(() => successEl.classList.remove('show'), 3000);
                 } else {
                     throw new Error(result.error || 'Unknown error');
                 }
 
             } catch (error) {
                 console.error('Error awarding credits:', error);
-                successEl.innerHTML = '<span style="font-size: 32px;">⚠️</span><br>Credit pending - please check balance later';
-                setTimeout(() => {
-                    successEl.classList.remove('show');
-                }, 4000);
+                successEl.innerHTML = '<span style="font-size: 32px;">⚠️</span><br>' + (error.message || 'Credit pending - please check balance later');
+                setTimeout(() => successEl.classList.remove('show'), 4000);
             }
         }
 

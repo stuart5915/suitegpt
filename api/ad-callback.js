@@ -1,93 +1,97 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase client
 const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_KEY
 );
 
-// Adsterra IP ranges for verification (add more as needed)
-const ADSTERRA_IPS = [
-    // Adsterra doesn't publish exact IPs, so we'll use a secret token instead
-];
+// Minimum time user must wait (in seconds)
+const MIN_WATCH_TIME = 25;
 
 export default async function handler(req, res) {
     // CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
 
-    // Only allow GET and POST (Adsterra can use either)
-    if (req.method !== 'GET' && req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed. Use POST.' });
     }
 
     try {
-        // Get parameters from query or body
-        const params = req.method === 'GET' ? req.query : req.body;
+        const { discord_id, token } = req.body;
 
-        // subid contains Discord user ID (passed from earn page)
-        const { subid, subid1, subid2, payout, status } = params;
-
-        // Discord ID is passed as subid
-        const discordId = subid || subid1;
-
-        if (!discordId) {
-            console.log('[Ad Callback] Missing discord ID in subid');
-            return res.status(400).json({ error: 'Missing subid (discord_id)' });
+        if (!discord_id || !token) {
+            return res.status(400).json({ error: 'Missing discord_id or token' });
         }
 
-        // Optional: Verify secret token if configured
-        const secretToken = params.token || req.headers['x-adsterra-token'];
-        if (process.env.ADSTERRA_SECRET && secretToken !== process.env.ADSTERRA_SECRET) {
-            console.log('[Ad Callback] Invalid secret token');
-            return res.status(403).json({ error: 'Invalid token' });
+        // Find the token in ad_events
+        const { data: tokenData, error: tokenError } = await supabase
+            .from('ad_events')
+            .select('*')
+            .eq('adsterra_subid', token)
+            .eq('discord_id', discord_id)
+            .eq('event_type', 'started')
+            .single();
+
+        if (tokenError || !tokenData) {
+            console.log(`[Ad Callback] Invalid token for ${discord_id}`);
+            return res.status(400).json({ error: 'Invalid or expired token' });
         }
 
-        // Generate unique subid for this callback to prevent duplicates
-        const uniqueSubid = `${discordId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        // Check if already credited
+        if (tokenData.credited) {
+            return res.status(400).json({ error: 'Token already used' });
+        }
 
-        // Get request metadata
+        // Check minimum time elapsed
+        const createdAt = new Date(tokenData.created_at);
+        const now = new Date();
+        const secondsElapsed = (now - createdAt) / 1000;
+
+        if (secondsElapsed < MIN_WATCH_TIME) {
+            console.log(`[Ad Callback] Too fast: ${secondsElapsed}s < ${MIN_WATCH_TIME}s`);
+            return res.status(400).json({
+                error: 'Ad not watched long enough',
+                waited: Math.floor(secondsElapsed),
+                required: MIN_WATCH_TIME
+            });
+        }
+
+        // All checks passed - credit the user
         const ipAddress = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown';
         const userAgent = req.headers['user-agent'] || 'unknown';
 
-        console.log(`[Ad Callback] Processing for discord_id: ${discordId}`);
-
-        // Call the Supabase function to credit user
-        const { data, error } = await supabase.rpc('credit_user_from_ad', {
-            p_discord_id: discordId,
-            p_subid: uniqueSubid,
+        // Call the credit function
+        const { data: creditResult, error: creditError } = await supabase.rpc('credit_user_from_ad', {
+            p_discord_id: discord_id,
+            p_subid: token,
             p_ip: ipAddress,
             p_user_agent: userAgent
         });
 
-        if (error) {
-            console.error('[Ad Callback] Supabase error:', error);
-
-            // Log failed event directly
-            await supabase.from('ad_events').insert({
-                discord_id: discordId,
-                event_type: 'failed',
-                adsterra_subid: uniqueSubid,
-                ip_address: ipAddress,
-                user_agent: userAgent,
-                error_message: error.message
-            });
-
-            return res.status(500).json({ error: 'Failed to credit user', details: error.message });
+        if (creditError) {
+            console.error('[Ad Callback] Credit error:', creditError);
+            return res.status(500).json({ error: 'Failed to credit user' });
         }
 
-        console.log(`[Ad Callback] Success:`, data);
+        // Mark the original token as used (in case RPC didn't update it)
+        await supabase
+            .from('ad_events')
+            .update({ credited: true, event_type: 'credited' })
+            .eq('adsterra_subid', token);
 
-        // Return success
+        console.log(`[Ad Callback] Success for ${discord_id}: +2 SUITE`);
+
         return res.status(200).json({
             success: true,
             message: 'Credit applied',
-            ...data
+            amount: 2,
+            new_balance: creditResult?.new_balance || null
         });
 
     } catch (error) {
