@@ -86,21 +86,10 @@ export default async function handler(req, res) {
             console.log(`[Ad Callback] Revenue check: ${snapshotRevenue} → ${currentRevenue} (verified: ${revenueVerified})`);
         }
 
-        // If no API token, fall back to timer-only (less secure)
-        const canCredit = revenueVerified || currentRevenue === null;
-
-        if (!canCredit) {
-            // Update session with failed status
-            await supabase
-                .from('ad_events')
-                .update({ event_type: 'failed', error_message: 'No revenue increase detected' })
-                .eq('id', session_id);
-
-            return res.status(400).json({
-                error: 'Ad view not verified. Please try again.',
-                hint: 'Make sure you watch the full ad without closing it.'
-            });
-        }
+        // IMPORTANT: Credit user if they waited the full time
+        // Revenue verification is a bonus check, not a requirement
+        // This prevents false rejections due to Adsterra API delays
+        // If API token not configured, revenueVerified stays false but we still credit
 
         // Credit the user
         const { data: creditResult, error: creditError } = await supabase.rpc('credit_user_from_ad', {
