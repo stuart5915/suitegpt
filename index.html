@@ -12,6 +12,8 @@
     <link rel="icon" type="image/png" href="assets/suite-mascot.png">
     <link rel="stylesheet" href="suite-styles.css">
     <link rel="stylesheet" href="nav.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
 
     <style>
         * {
@@ -1629,7 +1631,7 @@
                 <a href="docs/index.html">Docs</a>
                 <a href="wallet.html">Wallet</a>
                 <a href="earn.html">Earn</a>
-                <a href="boost.html">Boost</a>
+                <a href="boost.html">Store</a>
                 <a href="giving.html">Giving</a>
                 <a href="start-building.html" class="nav-cta">✨ Start Building</a>
             </div>
@@ -1772,33 +1774,15 @@
                 <!-- DISCOVER -->
                 <div class="value-card discover">
                     <h3>Discover</h3>
-                    <div class="mini-apps">
-                        <div class="mini-app" onclick="window.location.href='apps-subpages/opticrep.html'">
-                            <div class="app-icon" style="background: linear-gradient(135deg, #fef3c7, #fde68a);">🏋️
-                            </div>
+                    <div class="mini-apps" id="discoverAppsContainer">
+                        <!-- Loading state -->
+                        <div class="mini-app loading-placeholder"
+                            style="opacity: 0.5; animation: pulse 1.5s ease-in-out infinite;">
+                            <div class="app-icon" style="background: linear-gradient(135deg, #f3f4f6, #e5e7eb);">⏳</div>
                             <div class="app-info">
-                                <div class="app-name">OpticRep</div>
-                                <div class="app-creator">by Stuart H.</div>
+                                <div class="app-name">Loading...</div>
+                                <div class="app-creator">Fetching apps</div>
                             </div>
-                            <div class="creator-avatar">👨</div>
-                        </div>
-                        <div class="mini-app" onclick="window.location.href='apps-subpages/foodvital.html'">
-                            <div class="app-icon" style="background: linear-gradient(135deg, #dcfce7, #bbf7d0);">🍎
-                            </div>
-                            <div class="app-info">
-                                <div class="app-name">FoodVital</div>
-                                <div class="app-creator">by Maria G.</div>
-                            </div>
-                            <div class="creator-avatar">👩</div>
-                        </div>
-                        <div class="mini-app">
-                            <div class="app-icon" style="background: linear-gradient(135deg, #e0e7ff, #c7d2fe);">🧠
-                            </div>
-                            <div class="app-info">
-                                <div class="app-name">MindMap</div>
-                                <div class="app-creator">by Alex P.</div>
-                            </div>
-                            <div class="creator-avatar">🧔</div>
                         </div>
                     </div>
                     <a href="apps.html"
@@ -2473,6 +2457,80 @@
                     `;
                     document.head.appendChild(style);
                 }
+            }
+        })();
+    </script>
+
+    <!-- Dynamic Discover Apps -->
+    <script>
+        (async function loadDiscoverApps() {
+            const container = document.getElementById('discoverAppsContainer');
+            if (!container || !window.SuiteAppStore) return;
+
+            try {
+                // Fetch published apps from Supabase
+                const apps = await window.SuiteAppStore.fetchAllSuiteApps();
+
+                // Filter to only published apps and take the 3 most recent
+                const publishedApps = apps
+                    .filter(app => app.status === 'published')
+                    .slice(0, 3);
+
+                if (publishedApps.length === 0) {
+                    container.innerHTML = `
+                        <div class="mini-app" style="opacity: 0.6;">
+                            <div class="app-icon" style="background: linear-gradient(135deg, #f3f4f6, #e5e7eb);">🚀</div>
+                            <div class="app-info">
+                                <div class="app-name">Coming Soon</div>
+                                <div class="app-creator">Be the first!</div>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Icon colors for variety
+                const iconColors = [
+                    'linear-gradient(135deg, #fef3c7, #fde68a)',
+                    'linear-gradient(135deg, #dcfce7, #bbf7d0)',
+                    'linear-gradient(135deg, #e0e7ff, #c7d2fe)',
+                    'linear-gradient(135deg, #fce7f3, #fbcfe8)',
+                    'linear-gradient(135deg, #dbeafe, #bfdbfe)'
+                ];
+
+                // Default icons based on category or random
+                const defaultIcons = ['📱', '🎮', '🧠', '💡', '🎨', '📊', '🔧', '🎯'];
+
+                // Render each app
+                container.innerHTML = publishedApps.map((app, i) => {
+                    const icon = app.icon || defaultIcons[i % defaultIcons.length];
+                    const color = iconColors[i % iconColors.length];
+                    const creator = app.creator_discord || app.creator_name || 'SUITE Builder';
+                    const appUrl = app.expo_link || app.pwa_url || `app.html?slug=${app.slug}`;
+
+                    return `
+                        <div class="mini-app" onclick="window.open('${appUrl}', '_blank')" style="cursor: pointer;">
+                            <div class="app-icon" style="background: ${color};">${icon}</div>
+                            <div class="app-info">
+                                <div class="app-name">${app.name}</div>
+                                <div class="app-creator">by ${creator}</div>
+                            </div>
+                            <div class="creator-avatar">👤</div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                console.error('Failed to load discover apps:', err);
+                container.innerHTML = `
+                    <div class="mini-app" style="opacity: 0.5;">
+                        <div class="app-icon" style="background: linear-gradient(135deg, #f3f4f6, #e5e7eb);">⚠️</div>
+                        <div class="app-info">
+                            <div class="app-name">Offline</div>
+                            <div class="app-creator">Check connection</div>
+                        </div>
+                    </div>
+                `;
             }
         })();
     </script>
