@@ -315,6 +315,7 @@
                 <a href="ecosystem.html">Ecosystem</a>
                 <a href="docs/index.html">Docs</a>
                 <a href="wallet.html">Wallet</a>
+                <a href="earn.html" class="active">Earn</a>
                 <a href="https://discord.gg/7JmJPmnRAu" class="nav-cta">Join Discord</a>
             </div>
         </div>
@@ -519,15 +520,32 @@
             }
         }
 
+        let adLoaded = false;
+        let adWatching = false;
+
         function watchAd() {
-            // Show ad container
+            if (adWatching) return; // Prevent double-clicks
+            adWatching = true;
+
+            // Show ad container with timer
             const adContainer = document.getElementById('adContainer');
             adContainer.classList.add('active');
 
-            // Simulate ad playback with countdown
-            let timeLeft = 5; // 5 seconds for demo (would be 30 in production)
+            // Load the Adsterra Social Bar ad
+            if (!adLoaded) {
+                const script = document.createElement('script');
+                script.src = 'https://pl28427796.effectivegatecpm.com/9e/34/e7/9e34e707a82f1e5d2161869745ab386f.js';
+                script.async = true;
+                document.body.appendChild(script);
+                adLoaded = true;
+            }
+
+            // Start 30-second countdown (real ads need ~30 seconds viewing)
+            let timeLeft = 30;
             const timerEl = document.getElementById('adTimer');
+            const messageEl = document.querySelector('.ad-message');
             timerEl.textContent = timeLeft;
+            messageEl.textContent = 'Viewing ad... Stay on this page!';
 
             const countdown = setInterval(() => {
                 timeLeft--;
@@ -535,6 +553,7 @@
 
                 if (timeLeft <= 0) {
                     clearInterval(countdown);
+                    adWatching = false;
                     adCompleted();
                 }
             }, 1000);
