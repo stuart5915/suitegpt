@@ -581,11 +581,29 @@ client.on('messageCreate', async (message) => {
         }
 
         const response = await generateStuResponse(userMessage, context);
-        await message.reply(response);
 
         // Deduct credit after successful response
         await useAction(message.author.id, message.author.username);
-        console.log(`[AI Stu] Responded ${isAutoResponse ? '(auto)' : '(mentioned)'} to ${message.author.username} (${creditCheck.reason}: ${creditCheck.remaining} remaining)`);
+
+        // Get updated balance for footer
+        const updatedStats = await getUserStats(message.author.id);
+        let actionsRemaining = 20; // Default
+        if (updatedStats) {
+            actionsRemaining = Math.floor(updatedStats.totalActionsAvailable);
+        }
+
+        // Build footer based on remaining actions
+        let footer = '';
+        if (actionsRemaining > 10) {
+            footer = `\n\n─────────────────────────\n💰 ${actionsRemaining} actions remaining`;
+        } else if (actionsRemaining > 0) {
+            footer = `\n\n─────────────────────────\n⚠️ ${actionsRemaining} actions left • \`/earn\` for more`;
+        } else {
+            footer = `\n\n─────────────────────────\n🚨 0 actions left! Use \`/earn\` to watch ads`;
+        }
+
+        await message.reply(response + footer);
+        console.log(`[AI Stu] Responded ${isAutoResponse ? '(auto)' : '(mentioned)'} to ${message.author.username} (${creditCheck.reason}: ${actionsRemaining} remaining)`);
     } catch (error) {
         console.error('AI Stu error:', error);
         if (!isAutoResponse) {  // Only show error if they directly asked
