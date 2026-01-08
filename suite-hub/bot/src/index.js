@@ -581,16 +581,16 @@ client.on('messageCreate', async (message) => {
         } else {
             // Get balance for footer (don't deduct - chat is free!)
             const stats = await getUserStats(message.author.id);
-            const actionsRemaining = stats ? Math.floor(stats.totalActionsAvailable) : 20;
-            // $0.001 per SUITE/action
-            const dollarValue = (actionsRemaining * 0.001).toFixed(2);
+            const suiteBalance = stats ? Math.floor(stats.totalActionsAvailable) : 20;
+            // $0.001 per SUITE
+            const dollarValue = (suiteBalance * 0.001).toFixed(2);
 
-            if (actionsRemaining > 10) {
-                footer = `\n\n─────────────────────────\n💰 ${actionsRemaining} actions (~$${dollarValue}) • \`/suite\` to learn more`;
-            } else if (actionsRemaining > 0) {
-                footer = `\n\n─────────────────────────\n⚠️ ${actionsRemaining} actions (~$${dollarValue}) • \`/earn\` for more`;
+            if (suiteBalance > 10) {
+                footer = `\n\n─────────────────────────\n💰 ${suiteBalance} SUITE (~$${dollarValue}) • \`/suite\` to learn more`;
+            } else if (suiteBalance > 0) {
+                footer = `\n\n─────────────────────────\n⚠️ ${suiteBalance} SUITE (~$${dollarValue}) • \`/earn\` for more`;
             } else {
-                footer = `\n\n─────────────────────────\n🚨 0 actions! Use \`/earn\` to watch ads`;
+                footer = `\n\n─────────────────────────\n🚨 0 SUITE! Use \`/earn\` to watch ads`;
             }
         }
 
@@ -838,12 +838,21 @@ This is the SUITE community - where anyone can build apps without coding.
 • Or deposit ETH, USDC, other tokens
 • Swapped to SUITE automatically
 
+**🔄 Trade on DEX**
+• Coming soon: Trade SUITE on decentralized exchanges
+
 **📺 Watch Ads**
 • Earn free SUITE by watching ads
-• Great for getting started!
+• Use \`/earn\` to get started!
+
+**🏆 Earn Rewards**
+• Report bugs: 500 SUITE
+• Request features: 1,000 SUITE
+• Ship fixes: 750 SUITE bonus
 
 **What is SUITE?**
-A utility token that powers AI features in apps, app development, and more. Treasury-backed with guaranteed floor price.
+1 SUITE = ~$0.001 (treasury-backed floor price)
+Powers AI features, app development, and more.
 
 **More info:** getsuite.app/docs/tokenomics.html`,
                     ephemeral: true
@@ -853,18 +862,18 @@ A utility token that powers AI features in apps, app development, and more. Trea
 
             case 'earn': {
                 await interaction.reply({
-                    content: `**📺 Earn Free SUITE**
+                    content: `**📺 Earn Free SUITE **
 
-Watch short video ads to earn SUITE tokens - no purchase required!
+                    Watch short video ads to earn SUITE tokens - no purchase required!
 
-**🔗 Click here to start earning:**
-https://getsuite.app/earn
+                        **🔗 Click here to start earning:**
+                            https://getsuite.app/earn
 
-**How it works:**
-1. Click the link above
-2. Login with Discord
-3. Watch a 30-second ad
-4. Get +10 SUITE instantly!
+** How it works:**
+                    1. Click the link above
+                2. Login with Discord
+3. Watch a 30 - second ad
+                4. Get + 10 SUITE instantly!
 
 You can watch unlimited ads to earn as much SUITE as you want! 🚀`,
                     ephemeral: true
@@ -877,12 +886,12 @@ You can watch unlimited ads to earn as much SUITE as you want! 🚀`,
 
                 if (!stats) {
                     await interaction.reply({
-                        content: `**💰 Your SUITE Balance**
+                        content: `**💰 Your SUITE Balance **
 
-You haven't used any actions yet!
+                    You haven't used any actions yet!
 
-**Free Tier:** 20 actions remaining
-**SUITE Balance:** 0 SUITE
+                        ** Free Tier:** 20 actions remaining
+                            ** SUITE Balance:** 0 SUITE
 
 Start chatting with me or use \`/earn\` to get more SUITE!`,
                         ephemeral: true
@@ -1109,11 +1118,11 @@ IMPORTANT: Verify app name is correct before archiving!
                     footer = `👑 Admin • ∞ Unlimited`;
                 } else {
                     const updatedStats = await getUserStats(interaction.user.id);
-                    const actionsRemaining = updatedStats ? Math.floor(updatedStats.totalActionsAvailable) : 0;
-                    const dollarValue = (actionsRemaining * 0.001).toFixed(2);
-                    footer = actionsRemaining > 5
-                        ? `💰 ${actionsRemaining} actions (~$${dollarValue}) • \`/suite\` to learn more`
-                        : `⚠️ ${actionsRemaining} actions (~$${dollarValue}) • \`/earn\` for more`;
+                    const suiteBalance = updatedStats ? Math.floor(updatedStats.totalActionsAvailable) : 0;
+                    const dollarValue = (suiteBalance * 0.001).toFixed(2);
+                    footer = suiteBalance > 5
+                        ? `💰 ${suiteBalance} SUITE (~$${dollarValue}) • \`/suite\` to learn more`
+                        : `⚠️ ${suiteBalance} SUITE (~$${dollarValue}) • \`/earn\` for more`;
                 }
 
                 await interaction.followUp({
