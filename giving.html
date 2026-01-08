@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giving | SUITE</title>
+    <meta name="description"
+        content="SUITE's charitable giving program. Vote on monthly donations, apply to be a featured charity, and see our impact.">
+    <link rel="icon" type="image/png" href="assets/suite-mascot.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="suite-styles.css">
+    <link rel="stylesheet" href="nav.css">
+    <style>
+        :root {
+            --giving-green: #22c55e;
+            --giving-green-light: rgba(34, 197, 94, 0.1);
+        }
+
+        body {
+            background: linear-gradient(135deg, #e8f5e9 0%, #fff5eb 30%, #ffd4e3 60%, #e8d5f9 100%);
+            min-height: 100vh;
+        }
+
+        .giving-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 100px 24px 60px;
+        }
+
+        /* Hero Section */
+        .giving-hero {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .giving-title {
+            font-size: 3.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #22c55e, #10b981);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 16px;
+        }
+
+        .giving-subtitle {
+            font-size: 1.2rem;
+            color: #5a4a6f;
+            max-width: 600px;
+            margin: 0 auto 32px;
+            line-height: 1.6;
+        }
+
+        /* Impact Stats */
+        .impact-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 60px;
+        }
+
+        .impact-card {
+            background: white;
+            border-radius: 20px;
+            padding: 28px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .impact-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.1);
+        }
+
+        .impact-icon {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+        }
+
+        .impact-value {
+            font-size: 2rem;
+            font-weight: 900;
+            color: #22c55e;
+            margin-bottom: 4px;
+        }
+
+        .impact-label {
+            font-size: 0.85rem;
+            color: #6b7280;
+            font-weight: 600;
+        }
+
+        /* Section Headers */
+        .section-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .section-header h2 {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin-bottom: 8px;
+        }
+
+        .section-header p {
+            color: #6b7280;
+            font-size: 1rem;
+        }
+
+        /* Featured Charities */
+        .charities-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-bottom: 60px;
+        }
+
+        .charity-card {
+            background: white;
+            border-radius: 24px;
+            padding: 28px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .charity-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.1);
+        }
+
+        .charity-card.featured {
+            border: 2px solid #22c55e;
+        }
+
+        .charity-card.featured::before {
+            content: '⭐ Featured';
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: linear-gradient(135deg, #22c55e, #10b981);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        .charity-logo {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            object-fit: cover;
+            margin-bottom: 16px;
+            background: #f3f4f6;
+        }
+
+        .charity-name {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin-bottom: 8px;
+        }
+
+        .charity-category {
+            display: inline-block;
+            background: var(--giving-green-light);
+            color: #22c55e;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-bottom: 12px;
+        }
+
+        .charity-description {
+            font-size: 0.9rem;
+            color: #6b7280;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .charity-stats {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+            font-size: 0.8rem;
+        }
+
+        .charity-stat {
+            color: #9ca3af;
+        }
+
+        .charity-stat strong {
+            color: #22c55e;
+        }
+
+        .vote-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #22c55e, #10b981);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .vote-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+        }
+
+        .vote-btn.voted {
+            background: #e5e7eb;
+            color: #6b7280;
+        }
+
+        /* Monthly Pool */
+        .pool-banner {
+            background: linear-gradient(135deg, #22c55e, #10b981);
+            border-radius: 24px;
+            padding: 32px;
+            color: white;
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .pool-amount {
+            font-size: 3rem;
+            font-weight: 900;
+            margin-bottom: 8px;
+        }
+
+        .pool-label {
+            font-size: 1rem;
+            opacity: 0.9;
+            margin-bottom: 16px;
+        }
+
+        .pool-timer {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        /* Apply Section */
+        .apply-section {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+            margin-bottom: 60px;
+        }
+
+        .apply-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: center;
+        }
+
+        .apply-content h3 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin-bottom: 16px;
+        }
+
+        .apply-content p {
+            color: #6b7280;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .apply-requirements {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 24px 0;
+        }
+
+        .apply-requirements li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            color: #5a4a6f;
+            font-size: 0.95rem;
+        }
+
+        .apply-requirements li::before {
+            content: '✓';
+            width: 24px;
+            height: 24px;
+            background: var(--giving-green-light);
+            color: #22c55e;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.8rem;
+        }
+
+        .apply-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 32px;
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .apply-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 149, 0, 0.4);
+        }
+
+        .apply-cost {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            font-size: 0.85rem;
+            color: #9ca3af;
+        }
+
+        .apply-visual {
+            display: flex;
+            justify-content: center;
+        }
+
+        .apply-visual img {
+            max-width: 300px;
+            height: auto;
+        }
+
+        /* Past Donations */
+        .donations-table {
+            background: white;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+        }
+
+        .donations-header {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            padding: 16px 24px;
+            background: #f9fafb;
+            font-weight: 700;
+            font-size: 0.8rem;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .donation-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            padding: 20px 24px;
+            border-bottom: 1px solid #f3f4f6;
+            align-items: center;
+        }
+
+        .donation-row:last-child {
+            border-bottom: none;
+        }
+
+        .donation-org {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .donation-org img {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+        }
+
+        .donation-org-name {
+            font-weight: 700;
+            color: #2d1b4e;
+        }
+
+        .donation-amount {
+            font-weight: 700;
+            color: #22c55e;
+        }
+
+        .donation-date {
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+
+        .donation-tx {
+            color: #3b82f6;
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+
+        .donation-tx:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .impact-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .charities-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .apply-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .giving-title {
+                font-size: 2.5rem;
+            }
+
+            .charities-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .donations-header,
+            .donation-row {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+
+            .donations-header>*:nth-child(3),
+            .donations-header>*:nth-child(4),
+            .donation-row>*:nth-child(3),
+            .donation-row>*:nth-child(4) {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-logo">
+                <img src="assets/suite-mascot.png" alt="SUITE" class="nav-logo-img">
+                SUITE
+            </a>
+            <div class="nav-links">
+                <a href="apps.html">Apps</a>
+                <a href="developer-portal.html">Build</a>
+                <a href="incubate.html">Incubate</a>
+                <a href="ecosystem.html">Ecosystem</a>
+                <a href="docs/index.html">Docs</a>
+                <a href="wallet.html">Wallet</a>
+                <a href="earn.html">Earn</a>
+                <a href="boost.html">Boost</a>
+                <a href="giving.html" class="active">Giving</a>
+                <a href="start-building.html" class="nav-cta">✨ Start Building</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="giving-container">
+        <!-- Hero -->
+        <section class="giving-hero">
+            <h1 class="giving-title">💚 SUITE Giving</h1>
+            <p class="giving-subtitle">
+                Every month, SUITE token holders vote to distribute funds to verified charities.
+                Be part of something bigger.
+            </p>
+        </section>
+
+        <!-- Impact Stats -->
+        <section class="impact-stats">
+            <div class="impact-card">
+                <div class="impact-icon">💰</div>
+                <div class="impact-value" id="totalDonated">$0</div>
+                <div class="impact-label">Total Donated</div>
+            </div>
+            <div class="impact-card">
+                <div class="impact-icon">🏛️</div>
+                <div class="impact-value" id="charitiesSupported">0</div>
+                <div class="impact-label">Charities Supported</div>
+            </div>
+            <div class="impact-card">
+                <div class="impact-icon">🗳️</div>
+                <div class="impact-value" id="totalVotes">0</div>
+                <div class="impact-label">Votes Cast</div>
+            </div>
+            <div class="impact-card">
+                <div class="impact-icon">📅</div>
+                <div class="impact-value" id="monthsActive">0</div>
+                <div class="impact-label">Months Active</div>
+            </div>
+        </section>
+
+        <!-- Monthly Pool -->
+        <section class="pool-banner">
+            <div class="pool-amount" id="poolAmount">$0.00</div>
+            <div class="pool-label">This Month's Giving Pool</div>
+            <div class="pool-timer">
+                ⏰ Voting ends in <strong id="daysRemaining">-- days</strong>
+            </div>
+        </section>
+
+        <!-- Featured Charities -->
+        <section>
+            <div class="section-header">
+                <h2>🏆 Featured Charities</h2>
+                <p>Verified organizations eligible for this month's distribution</p>
+            </div>
+
+            <div class="charities-grid">
+                <!-- Ethereum Foundation -->
+                <div class="charity-card featured">
+                    <img src="https://ethereum.org/static/a183661dd70e0e5c70689a0ec95ef0ba/cdbe4/eth-diamond-purple.webp"
+                        alt="Ethereum Foundation" class="charity-logo">
+                    <div class="charity-name">Ethereum Foundation</div>
+                    <span class="charity-category">🌐 Open Source</span>
+                    <p class="charity-description">Supporting Ethereum ecosystem development, research, and education
+                        worldwide.</p>
+                    <div class="charity-stats">
+                        <span class="charity-stat"><strong>$2.1B</strong> assets</span>
+                        <span class="charity-stat"><strong>847</strong> grants given</span>
+                    </div>
+                    <button class="vote-btn" onclick="voteFor('ethereum-foundation')">Vote for This Charity</button>
+                </div>
+
+                <!-- GiveDirectly -->
+                <div class="charity-card">
+                    <img src="https://www.givedirectly.org/wp-content/uploads/2019/06/cropped-GD-favicon-1-192x192.png"
+                        alt="GiveDirectly" class="charity-logo">
+                    <div class="charity-name">GiveDirectly</div>
+                    <span class="charity-category">🌍 Poverty Relief</span>
+                    <p class="charity-description">Send money directly to people living in poverty. 100% of donations go
+                        to recipients.</p>
+                    <div class="charity-stats">
+                        <span class="charity-stat"><strong>$700M+</strong> transferred</span>
+                        <span class="charity-stat"><strong>1.5M</strong> recipients</span>
+                    </div>
+                    <button class="vote-btn" onclick="voteFor('givedirectly')">Vote for This Charity</button>
+                </div>
+
+                <!-- Gitcoin -->
+                <div class="charity-card">
+                    <img src="https://assets-global.website-files.com/6433c5d029c6bb75f3f00bd5/6433f6a5dcbdeb5c6c5eacf3_gitcoin-logo.svg"
+                        alt="Gitcoin" class="charity-logo" style="background: #0e0333; padding: 12px;">
+                    <div class="charity-name">Gitcoin Grants</div>
+                    <span class="charity-category">💻 Public Goods</span>
+                    <p class="charity-description">Funding open source projects and public goods through quadratic
+                        funding rounds.</p>
+                    <div class="charity-stats">
+                        <span class="charity-stat"><strong>$60M+</strong> distributed</span>
+                        <span class="charity-stat"><strong>4,000+</strong> projects</span>
+                    </div>
+                    <button class="vote-btn" onclick="voteFor('gitcoin')">Vote for This Charity</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Apply Section -->
+        <section class="apply-section">
+            <div class="apply-grid">
+                <div class="apply-content">
+                    <h3>🏛️ Apply to Be Listed</h3>
+                    <p>
+                        Is your organization making a difference? Apply to become a verified charity
+                        and receive monthly donations from the SUITE community.
+                    </p>
+                    <ul class="apply-requirements">
+                        <li>Registered 501(c)(3) or equivalent</li>
+                        <li>Public financial transparency</li>
+                        <li>Active for at least 1 year</li>
+                        <li>Crypto-native or accepts crypto donations</li>
+                        <li>Community vote approval required</li>
+                    </ul>
+                    <button class="apply-btn" onclick="openApplyModal()">
+                        📝 Apply Now
+                    </button>
+                    <div class="apply-cost">
+                        <span>💰 Application fee: 500 SUITE</span>
+                        <span style="color: #22c55e;">(goes to next month's pool if approved)</span>
+                    </div>
+                </div>
+                <div class="apply-visual">
+                    <img src="assets/clay/celebration.png" alt="Giving" style="max-width: 280px; opacity: 0.9;">
+                </div>
+            </div>
+        </section>
+
+        <!-- Past Donations -->
+        <section>
+            <div class="section-header">
+                <h2>📜 Donation History</h2>
+                <p>Transparent record of all SUITE giving</p>
+            </div>
+
+            <div class="donations-table">
+                <div class="donations-header">
+                    <span>Organization</span>
+                    <span>Amount</span>
+                    <span>Date</span>
+                    <span>Transaction</span>
+                </div>
+                <div class="donation-row">
+                    <div class="donation-org">
+                        <img src="https://ethereum.org/static/a183661dd70e0e5c70689a0ec95ef0ba/cdbe4/eth-diamond-purple.webp"
+                            alt="">
+                        <span class="donation-org-name">Ethereum Foundation</span>
+                    </div>
+                    <span class="donation-amount">$500.00</span>
+                    <span class="donation-date">Jan 2026</span>
+                    <a href="#" class="donation-tx">View on Etherscan →</a>
+                </div>
+                <div class="donation-row" style="opacity: 0.5;">
+                    <div class="donation-org">
+                        <span
+                            style="width: 36px; height: 36px; background: #f3f4f6; border-radius: 10px; display: flex; align-items: center; justify-content: center;">🔮</span>
+                        <span class="donation-org-name" style="color: #9ca3af;">More donations coming...</span>
+                    </div>
+                    <span class="donation-amount" style="color: #9ca3af;">--</span>
+                    <span class="donation-date">--</span>
+                    <span style="color: #9ca3af;">--</span>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Apply Modal -->
+    <div id="applyModal"
+        style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div
+            style="background: white; border-radius: 24px; padding: 32px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;">
+            <h3 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 20px;">📝 Apply to Be Listed</h3>
+            <form id="applyForm">
+                <div style="margin-bottom: 16px;">
+                    <label style="font-weight: 600; font-size: 0.9rem; display: block; margin-bottom: 6px;">Organization
+                        Name</label>
+                    <input type="text" required
+                        style="width: 100%; padding: 12px; border: 1px solid #e5e7eb; border-radius: 12px; font-size: 1rem;">
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label
+                        style="font-weight: 600; font-size: 0.9rem; display: block; margin-bottom: 6px;">Website</label>
+                    <input type="url" required
+                        style="width: 100%; padding: 12px; border: 1px solid #e5e7eb; border-radius: 12px; font-size: 1rem;">
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label
+                        style="font-weight: 600; font-size: 0.9rem; display: block; margin-bottom: 6px;">Category</label>
+                    <select required
+                        style="width: 100%; padding: 12px; border: 1px solid #e5e7eb; border-radius: 12px; font-size: 1rem;">
+                        <option value="">Select category...</option>
+                        <option value="open-source">🌐 Open Source</option>
+                        <option value="poverty">🌍 Poverty Relief</option>
+                        <option value="education">📚 Education</option>
+                        <option value="health">🏥 Health</option>
+                        <option value="environment">🌱 Environment</option>
+                        <option value="public-goods">💻 Public Goods</option>
+                    </select>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label style="font-weight: 600; font-size: 0.9rem; display: block; margin-bottom: 6px;">Why should
+                        SUITE support you?</label>
+                    <textarea required rows="4"
+                        style="width: 100%; padding: 12px; border: 1px solid #e5e7eb; border-radius: 12px; font-size: 1rem; resize: vertical;"></textarea>
+                </div>
+                <div style="margin-bottom: 24px;">
+                    <label style="font-weight: 600; font-size: 0.9rem; display: block; margin-bottom: 6px;">Wallet
+                        Address (for donations)</label>
+                    <input type="text" required placeholder="0x..."
+                        style="width: 100%; padding: 12px; border: 1px solid #e5e7eb; border-radius: 12px; font-size: 1rem;">
+                </div>
+                <div
+                    style="background: rgba(255, 149, 0, 0.1); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                    <strong style="color: #ff9500;">📢 Application Fee: 500 SUITE</strong>
+                    <p style="margin: 8px 0 0; font-size: 0.85rem; color: #6b7280;">Fee is added to next month's giving
+                        pool if approved, or returned if rejected.</p>
+                </div>
+                <div style="display: flex; gap: 12px;">
+                    <button type="button" onclick="closeApplyModal()"
+                        style="flex: 1; padding: 14px; background: #f3f4f6; border: none; border-radius: 12px; font-weight: 700; cursor: pointer;">Cancel</button>
+                    <button type="submit"
+                        style="flex: 2; padding: 14px; background: linear-gradient(135deg, #22c55e, #10b981); color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer;">Submit
+                        & Pay 500 SUITE</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Calculate days remaining in month
+        function updateTimer() {
+            const now = new Date();
+            const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            const daysRemaining = Math.ceil((endOfMonth - now) / (1000 * 60 * 60 * 24));
+            document.getElementById('daysRemaining').textContent = `${daysRemaining} days`;
+        }
+        updateTimer();
+
+        // Modal functions
+        function openApplyModal() {
+            document.getElementById('applyModal').style.display = 'flex';
+        }
+
+        function closeApplyModal() {
+            document.getElementById('applyModal').style.display = 'none';
+        }
+
+        // Vote function
+        function voteFor(charityId) {
+            // Check if wallet connected
+            const savedUser = localStorage.getItem('suiteUser');
+            if (!savedUser) {
+                alert('Please connect your Discord on the Earn page first!');
+                return;
+            }
+
+            // TODO: Implement actual voting with Supabase
+            alert(`Vote submitted for ${charityId}! (Coming soon)`);
+        }
+
+        // Close modal on outside click
+        document.getElementById('applyModal').addEventListener('click', (e) => {
+            if (e.target.id === 'applyModal') {
+                closeApplyModal();
+            }
+        });
+
+        // Form submission
+        document.getElementById('applyForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            alert('Application submitted! The SUITE team will review your submission. (Coming soon)');
+            closeApplyModal();
+        });
+    </script>
+</body>
+
+</html>
