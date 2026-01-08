@@ -50,6 +50,8 @@ export const config = {
   },
 
   // Feature flags
+  maintenanceMode: process.env.MAINTENANCE_MODE === 'true',
+  maintenanceMessage: process.env.MAINTENANCE_MESSAGE || '🚀 **SUITE is launching January 10th!**\n\nCommands are temporarily disabled while we prepare for launch.\n\nIn the meantime:\n• Join the waitlist at https://getsuite.app\n• Follow @suiteappstore on X\n• Get ready to build! 🎉',
   enableRewards: process.env.ENABLE_REWARDS === 'true',
 };
 

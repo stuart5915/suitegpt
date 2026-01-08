@@ -776,6 +776,16 @@ client.on('interactionCreate', async (interaction) => {
     // Track if we should auto-delete (for non-ephemeral replies in commands channel)
     const shouldAutoDelete = interaction.channel.id === config.channels.commands;
 
+    // ════ MAINTENANCE MODE ════
+    // Block all commands except for owner during maintenance
+    if (config.maintenanceMode && interaction.user.id !== config.ownerId) {
+        await interaction.reply({
+            content: config.maintenanceMessage,
+            ephemeral: true
+        });
+        return;
+    }
+
     try {
         switch (commandName) {
             case 'leaderboard': {
