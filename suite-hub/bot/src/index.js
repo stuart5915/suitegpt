@@ -560,16 +560,6 @@ client.on('messageCreate', async (message) => {
     };
 
     try {
-        // Check credits before AI response
-        const creditCheck = await canPerformAction(message.author.id, message.author.username);
-
-        if (!creditCheck.canAct) {
-            // User has no credits left
-            await message.reply(getNoCreditsMessage());
-            console.log(`[Credits] ${message.author.username} hit credit limit`);
-            return;
-        }
-
         // Clean up the message
         let userMessage = message.content
             .replace(/<@!?\d+>/g, '')  // Remove mentions
@@ -580,30 +570,10 @@ client.on('messageCreate', async (message) => {
             userMessage = "what's up?";  // Default if just pinged
         }
 
+        // Stu chat is FREE - no credits needed for casual conversation
         const response = await generateStuResponse(userMessage, context);
-
-        // Deduct credit after successful response
-        await useAction(message.author.id, message.author.username);
-
-        // Get updated balance for footer
-        const updatedStats = await getUserStats(message.author.id);
-        let actionsRemaining = 20; // Default
-        if (updatedStats) {
-            actionsRemaining = Math.floor(updatedStats.totalActionsAvailable);
-        }
-
-        // Build footer based on remaining actions
-        let footer = '';
-        if (actionsRemaining > 10) {
-            footer = `\n\n─────────────────────────\n💰 ${actionsRemaining} actions remaining`;
-        } else if (actionsRemaining > 0) {
-            footer = `\n\n─────────────────────────\n⚠️ ${actionsRemaining} actions left • \`/earn\` for more`;
-        } else {
-            footer = `\n\n─────────────────────────\n🚨 0 actions left! Use \`/earn\` to watch ads`;
-        }
-
-        await message.reply(response + footer);
-        console.log(`[AI Stu] Responded ${isAutoResponse ? '(auto)' : '(mentioned)'} to ${message.author.username} (${creditCheck.reason}: ${actionsRemaining} remaining)`);
+        await message.reply(response);
+        console.log(`[AI Stu] Responded ${isAutoResponse ? '(auto)' : '(mentioned)'} to ${message.author.username} (FREE chat)`);
     } catch (error) {
         console.error('AI Stu error:', error);
         if (!isAutoResponse) {  // Only show error if they directly asked
