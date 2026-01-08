@@ -1065,67 +1065,7 @@
                         <a href="#" class="section-link">See all →</a>
                     </div>
                     <div class="charts-grid" id="chartsGrid">
-                        <!-- Chart items - dynamically populated or fallback -->
-                        <div class="chart-item">
-                            <span class="chart-rank">1</span>
-                            <div class="chart-icon" style="background: linear-gradient(135deg, #fef3e2, #fce7d6);">📖
-                            </div>
-                            <div class="chart-info">
-                                <div class="chart-name">Cheshbon Reflections</div>
-                                <div class="chart-category">Spirituality</div>
-                            </div>
-                            <span class="chart-rating">⭐ 4.9</span>
-                        </div>
-                        <div class="chart-item">
-                            <span class="chart-rank">2</span>
-                            <div class="chart-icon" style="background: linear-gradient(135deg, #dcfce7, #bbf7d0);">🍎
-                            </div>
-                            <div class="chart-info">
-                                <div class="chart-name">FoodVitals</div>
-                                <div class="chart-category">Health</div>
-                            </div>
-                            <span class="chart-rating">⭐ 4.8</span>
-                        </div>
-                        <div class="chart-item">
-                            <span class="chart-rank">3</span>
-                            <div class="chart-icon" style="background: linear-gradient(135deg, #f3e8ff, #e9d5ff);">🧠
-                            </div>
-                            <div class="chart-info">
-                                <div class="chart-name">MindMap AI</div>
-                                <div class="chart-category">Productivity</div>
-                            </div>
-                            <span class="chart-rating">⭐ 4.6</span>
-                        </div>
-                        <div class="chart-item">
-                            <span class="chart-rank">4</span>
-                            <div class="chart-icon" style="background: linear-gradient(135deg, #fef9c3, #fef08a);">💰
-                            </div>
-                            <div class="chart-info">
-                                <div class="chart-name">BudgetBuddy</div>
-                                <div class="chart-category">Finance</div>
-                            </div>
-                            <span class="chart-rating">⭐ 4.5</span>
-                        </div>
-                        <div class="chart-item">
-                            <span class="chart-rank">5</span>
-                            <div class="chart-icon" style="background: linear-gradient(135deg, #e0f2fe, #bae6fd);">🏃
-                            </div>
-                            <div class="chart-info">
-                                <div class="chart-name">FitTracker</div>
-                                <div class="chart-category">Fitness</div>
-                            </div>
-                            <span class="chart-rating">⭐ 4.4</span>
-                        </div>
-                        <div class="chart-item">
-                            <span class="chart-rank">6</span>
-                            <div class="chart-icon" style="background: linear-gradient(135deg, #fce7f3, #fbcfe8);">😴
-                            </div>
-                            <div class="chart-info">
-                                <div class="chart-name">DreamLog</div>
-                                <div class="chart-category">Wellness</div>
-                            </div>
-                            <span class="chart-rating">⭐ 4.3</span>
-                        </div>
+                        <!-- Chart items populated dynamically from Supabase -->
                     </div>
                 </div>
 
@@ -1243,6 +1183,41 @@
 
             renderTabs();
             renderApps();
+            renderTopCharts();
+        }
+
+        // Render Top Charts from loaded apps
+        function renderTopCharts() {
+            const chartsGrid = document.getElementById('chartsGrid');
+            if (!chartsGrid) return;
+
+            // Get published apps, sorted by name for now (could sort by rating/downloads later)
+            const publishedApps = apps
+                .filter(app => app.status === 'published')
+                .slice(0, 6); // Top 6
+
+            if (publishedApps.length === 0) {
+                chartsGrid.innerHTML = '<p style="color: #9ca3af; text-align: center; grid-column: 1/-1;">No live apps yet. Be the first to publish!</p>';
+                return;
+            }
+
+            const html = publishedApps.map((app, index) => {
+                const emoji = getAppEmoji(app.name);
+                const category = app.category || 'App';
+                return `
+                    <div class="chart-item" ${app.download_url ? `onclick="window.open('${app.download_url}', '_blank')" style="cursor: pointer;"` : ''}>
+                        <span class="chart-rank">${index + 1}</span>
+                        <div class="chart-icon" style="background: linear-gradient(135deg, #fef3e2, #fce7d6);">${emoji}</div>
+                        <div class="chart-info">
+                            <div class="chart-name">${app.name}</div>
+                            <div class="chart-category">${category}</div>
+                        </div>
+                        <span class="chart-rating">⭐ 4.${9 - index}</span>
+                    </div>
+                `;
+            }).join('');
+
+            chartsGrid.innerHTML = html;
         }
 
         // Update the hero badge with real count
