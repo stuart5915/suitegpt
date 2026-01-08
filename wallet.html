@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="view-transition" content="same-origin">
     <title>Wallet | SUITE</title>
     <meta name="description" content="Manage your SUITE tokens - deposit, withdraw, stake, and vote on charities.">
     <!-- Ethers.js for blockchain interactions -->
@@ -89,6 +90,22 @@
             }
         }
 
+        @keyframes float-reverse {
+
+            0%,
+            100% {
+                transform: scaleX(-1) translate(0, 0);
+            }
+
+            33% {
+                transform: scaleX(-1) translate(-30px, 30px);
+            }
+
+            66% {
+                transform: scaleX(-1) translate(20px, -20px);
+            }
+        }
+
         /* Ensure CTA button stays white */
         .nav-links a.nav-cta,
         .nav-links a.nav-cta:hover,
@@ -122,7 +139,8 @@
         .wallet-header h1 {
             font-size: 2.8rem;
             font-weight: 900;
-            background: linear-gradient(135deg, var(--text-dark) 0%, #7c3aed 50%, var(--accent-pink) 100%);
+            font-style: italic;
+            background: linear-gradient(135deg, #ff9500 0%, #ff6b9d 50%, #ff9a8b 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -570,6 +588,8 @@
             padding: 28px;
             margin-bottom: 28px;
             box-shadow: var(--shadow-soft);
+            position: relative;
+            z-index: 10;
         }
 
         .wallet-section h3 {
@@ -976,7 +996,8 @@
                 <a href="ecosystem.html">Ecosystem</a>
                 <a href="docs/index.html">Docs</a>
                 <a href="wallet.html" class="active">Wallet</a>
-                <a href="https://discord.gg/7JmJPmnRAu" class="nav-cta">Join Discord</a>
+                <a href="earn.html">Earn</a>
+                <a href="start-building.html" class="nav-cta">✨ Start Building</a>
             </div>
             <button class="mobile-menu-btn">
                 <span></span>
@@ -993,13 +1014,19 @@
 
     <main class="wallet-page">
         <div class="wallet-container">
+            <!-- Clay Treasure Chest - Fixed to right side of page (behind everything) -->
+            <img src="assets/clay/treasure-chest.png" alt=""
+                style="position: absolute; top: 700px; right: -200px; width: 840px; height: auto; opacity: 1; pointer-events: none; z-index: 0;" />
 
             <!-- Wallet Dashboard (always visible) -->
             <section class="wallet-dashboard connected" id="walletDashboard">
 
                 <!-- Header with Address or Connect Button -->
-                <div class="wallet-header">
-                    <h1>Your Wallet</h1>
+                <div class="wallet-header" style="position: relative;">
+                    <!-- Clay Wallet with Wings Mascot -->
+                    <img src="assets/clay/wallet-wings.png" alt=""
+                        style="position: absolute; top: 0px; left: -250px; width: 420px; height: auto; opacity: 0.9; pointer-events: none; animation: float 4s ease-in-out infinite;" />
+
                     <div style="display: flex; gap: 12px; align-items: center;">
                         <!-- Shown when connected -->
                         <div class="wallet-address" id="walletConnectedInfo" style="display: none;">
@@ -1009,16 +1036,17 @@
                         <button class="disconnect-btn" id="disconnectBtn" style="display: none;">Disconnect</button>
 
                         <!-- Shown when not connected -->
-                        <button class="connect-btn-inline" id="connectWalletBtn">
+                        <button class="connect-btn-inline" id="connectWalletBtn"
+                            style="position: relative; z-index: 10;">
                             🦊 Connect Wallet
                         </button>
                     </div>
                 </div>
 
                 <!-- Main Content Wrapper -->
-                <div class="wallet-main-content">
+                <div class="wallet-main-content" style="position: relative; z-index: 10;">
                     <!-- UX Notice -->
-                    <div class="ux-notice">
+                    <div class="ux-notice" style="position: relative; z-index: 1;">
                         <span class="ux-notice-icon">⚡</span>
                         <div class="ux-notice-text">
                             <strong>Instant App Usage:</strong> Once you've deposited, you can use all apps instantly
@@ -1046,19 +1074,19 @@
                     </div>
 
                     <!-- Live Treasury Stats -->
-                    <div class="treasury-stats">
-                        <div class="treasury-stat">
+                    <div class="treasury-stats" style="position: relative;">
+                        <div class="treasury-stat" style="position: relative; z-index: 1;">
                             <span class="treasury-label">🏦 Treasury Value</span>
                             <div class="treasury-value-stacked">
                                 <span class="treasury-usd" id="treasuryValueUsd">$0.000000</span>
                                 <span class="treasury-eth" id="treasuryValueEth">0.0000000000 ETH</span>
                             </div>
                         </div>
-                        <div class="treasury-stat">
+                        <div class="treasury-stat" style="position: relative; z-index: 1;">
                             <span class="treasury-label">📊 Total SUITE Supply</span>
                             <span class="treasury-value" id="totalSupply">Loading...</span>
                         </div>
-                        <div class="treasury-stat">
+                        <div class="treasury-stat" style="position: relative; z-index: 1;">
                             <span class="treasury-label">💎 Floor Price</span>
                             <span class="treasury-value" id="backingRate">$0.001/SUITE</span>
                         </div>
@@ -1081,7 +1109,7 @@
                     </div>
 
                     <!-- Action Buttons -->
-                    <div class="action-buttons">
+                    <div class="action-buttons" style="position: relative;">
                         <button class="action-btn deposit" id="depositBtn">
                             <span>💰</span> Get SUITE
                         </button>
@@ -1091,6 +1119,9 @@
                         <button class="action-btn stake" id="stakeBtn">
                             <span>⚡</span> Stake for Governance
                         </button>
+                        <!-- Clay Celebration Character - Fixed to bottom right -->
+                        <img src="assets/clay/celebration.png" alt=""
+                            style="position: fixed; bottom: -680px; right: 620px; width: 540px; height: auto; opacity: 0.85; pointer-events: none; animation: float-reverse 5s ease-in-out infinite; animation-delay: -2s; z-index: -100; transform: scaleX(-1);" />
                     </div>
 
                     <!-- Add Token to Wallet -->

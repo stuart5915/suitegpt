@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="view-transition" content="same-origin">
     <title>SUITE App Store | Discover AI-Powered Apps</title>
     <meta name="description"
         content="Discover and use apps built by people like you. Health, productivity, AI tools and more.">
@@ -20,14 +21,426 @@
         /* App Store Page */
         .store-page {
             min-height: 100vh;
-            padding-top: 100px;
-            background: url('assets/images/hero-app-icons.jpg') center top / cover no-repeat fixed;
+            padding-top: 90px;
+            padding-bottom: 40px;
+            background: linear-gradient(180deg, #ffb347 0%, #ff9a8b 25%, #ffa07a 50%, #d4a5c9 75%, #c9a0dc 100%);
+        }
+
+        /* Animated pulsating grid background */
+        .grid-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .grid-background::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.25) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.25) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+
+        .grid-pulse {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.5) 0%, transparent 70%);
+            border-radius: 4px;
+            animation: pulse-grid 4s ease-in-out infinite;
+            opacity: 0;
+        }
+
+        .grid-pulse:nth-child(1) {
+            top: 10%;
+            left: 15%;
+            animation-delay: 0s;
+        }
+
+        .grid-pulse:nth-child(2) {
+            top: 25%;
+            left: 75%;
+            animation-delay: 0.5s;
+        }
+
+        .grid-pulse:nth-child(3) {
+            top: 45%;
+            left: 30%;
+            animation-delay: 1s;
+        }
+
+        .grid-pulse:nth-child(4) {
+            top: 60%;
+            left: 85%;
+            animation-delay: 1.5s;
+        }
+
+        .grid-pulse:nth-child(5) {
+            top: 15%;
+            left: 55%;
+            animation-delay: 2s;
+        }
+
+        .grid-pulse:nth-child(6) {
+            top: 70%;
+            left: 20%;
+            animation-delay: 2.5s;
+        }
+
+        .grid-pulse:nth-child(7) {
+            top: 35%;
+            left: 90%;
+            animation-delay: 3s;
+        }
+
+        .grid-pulse:nth-child(8) {
+            top: 80%;
+            left: 45%;
+            animation-delay: 3.5s;
+        }
+
+        @keyframes pulse-grid {
+
+            0%,
+            100% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.5);
+            }
+        }
+
+        /* Canvas Container - matches ecosystem/docs pages */
+        .canvas-container {
+            width: 100%;
+            padding: 0 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Frosted glass main container */
+        .apps-main-container {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 32px;
+            box-shadow: 0 16px 80px rgba(0, 0, 0, 0.08);
+            padding: 32px;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto 40px;
         }
 
         /* Hero Badge - Small intro area */
         .store-hero {
-            padding: 32px 20px 16px;
+            padding: 20px 0 24px;
             text-align: center;
+        }
+
+        /* ============================================
+           FEATURED HERO CAROUSEL
+           ============================================ */
+        .featured-hero {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .featured-large {
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            min-height: 280px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 24px;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .featured-large:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+        }
+
+        .featured-large .featured-badge {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 6px 12px;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .featured-large .featured-content {
+            color: white;
+        }
+
+        .featured-large .featured-icon {
+            width: 56px;
+            height: 56px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-bottom: 16px;
+        }
+
+        .featured-large .featured-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .featured-large .featured-desc {
+            font-size: 0.95rem;
+            opacity: 0.9;
+            margin-bottom: 16px;
+        }
+
+        .featured-large .featured-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            color: #764ba2;
+            padding: 12px 24px;
+            border-radius: 100px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .featured-large .featured-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        .featured-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .featured-small {
+            flex: 1;
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            cursor: pointer;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+        }
+
+        .featured-small:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border-color: #ff9500;
+        }
+
+        .featured-small .small-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            flex-shrink: 0;
+        }
+
+        .featured-small .small-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .featured-small .small-title {
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 4px;
+            color: #2d1b4e;
+        }
+
+        .featured-small .small-meta {
+            font-size: 0.85rem;
+            color: #5a4a6f;
+        }
+
+        .featured-small .small-rating {
+            color: #fbbf24;
+            font-weight: 600;
+        }
+
+        /* Carousel dots */
+        .carousel-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .carousel-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.15);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .carousel-dot.active {
+            width: 24px;
+            border-radius: 4px;
+            background: #ff9500;
+        }
+
+        /* ============================================
+           TOP CHARTS SECTION
+           ============================================ */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #2d1b4e;
+        }
+
+        .section-link {
+            color: #ff9500;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .top-charts {
+            margin-bottom: 40px;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .chart-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .chart-item:hover {
+            background: #fef7ed;
+            border-color: #ff9500;
+        }
+
+        .chart-rank {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #9ca3af;
+            width: 24px;
+            text-align: center;
+        }
+
+        .chart-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+
+        .chart-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .chart-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #2d1b4e;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chart-category {
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+
+        .chart-rating {
+            font-size: 0.85rem;
+            color: #fbbf24;
+            font-weight: 600;
+        }
+
+        /* ============================================
+           RESPONSIVE ADJUSTMENTS
+           ============================================ */
+        @media (max-width: 900px) {
+            .featured-hero {
+                grid-template-columns: 1fr;
+            }
+
+            .featured-stack {
+                flex-direction: row;
+            }
+
+            .charts-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .featured-stack {
+                flex-direction: column;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         .store-badge {
@@ -79,21 +492,10 @@
             }
         }
 
-        /* Glassmorphism Header */
         .store-header {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            padding: 24px 20px;
-            position: sticky;
-            top: 76px;
-            z-index: 100;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
-        }
-
-        .store-header-inner {
-            max-width: 1200px;
-            margin: 0 auto;
+            padding: 0 0 20px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
         }
 
         .store-title-row {
@@ -398,21 +800,27 @@
 
         /* Creator Banner */
         .creator-banner {
-            background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             padding: 40px 24px;
             text-align: center;
-            color: white;
-            margin-top: 60px;
+            color: #2d1b4e;
             border-radius: 20px;
+            width: 100%;
+            max-width: 1200px;
+            position: relative;
+            z-index: 1;
         }
 
         .creator-banner h3 {
             font-size: 1.5rem;
             margin-bottom: 8px;
+            color: #2d1b4e;
         }
 
         .creator-banner p {
-            color: rgba(255, 255, 255, 0.7);
+            color: #5a4a6f;
             margin-bottom: 20px;
         }
 
@@ -432,16 +840,15 @@
             }
         }
 
-        /* Footer override - frosted style matching homepage */
+        /* Footer override - match creator-banner width */
         footer.footer {
-            padding: 60px 24px 30px;
+            padding: 40px 24px;
             max-width: 1200px;
-            margin: 0 auto;
-            background: linear-gradient(180deg, rgba(255, 179, 71, 0.15) 0%, rgba(255, 154, 139, 0.2) 100%);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-radius: 28px 28px 0 0;
-            margin-top: 60px;
+            margin: 32px auto 0;
+            background: white;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
         }
 
         footer.footer .footer-content {
@@ -531,6 +938,18 @@
 </head>
 
 <body>
+    <!-- Animated Grid Background -->
+    <div class="grid-background">
+        <div class="grid-pulse"></div>
+        <div class="grid-pulse"></div>
+        <div class="grid-pulse"></div>
+        <div class="grid-pulse"></div>
+        <div class="grid-pulse"></div>
+        <div class="grid-pulse"></div>
+        <div class="grid-pulse"></div>
+        <div class="grid-pulse"></div>
+    </div>
+
     <!-- Navigation -->
     <nav class="nav">
         <div class="nav-inner">
@@ -545,7 +964,7 @@
                 <a href="docs/index.html">Docs</a>
                 <a href="wallet.html">Wallet</a>
                 <a href="earn.html">Earn</a>
-                <a href="https://discord.gg/7JmJPmnRAu" class="nav-cta">Join Discord</a>
+                <a href="start-building.html" class="nav-cta">✨ Start Building</a>
             </div>
             <button class="mobile-menu-btn">
                 <span></span>
@@ -556,44 +975,167 @@
     </nav>
 
     <main class="store-page">
-        <!-- Hero Badge Section -->
-        <div class="store-hero">
-            <div class="store-badge">
-                <span class="dot"></span>
-                Discover 9+ apps built by creators
-            </div>
-        </div>
+        <div class="canvas-container">
+            <!-- Frosted Glass Container -->
+            <div class="apps-main-container">
+                <!-- Featured Hero Section -->
+                <div class="featured-hero">
+                    <!-- Large Featured Card -->
+                    <div class="featured-large" style="background: linear-gradient(135deg, #ff9500 0%, #ff6b9d 100%);"
+                        id="featuredLarge">
+                        <span class="featured-badge">⭐ Featured App</span>
+                        <div class="featured-content">
+                            <div class="featured-icon">📖</div>
+                            <div class="featured-title">Cheshbon Reflections</div>
+                            <div class="featured-desc">Journal through insights at your own pace with AI-powered
+                                guidance</div>
+                            <a href="#" class="featured-btn">
+                                Try Now
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M5 12h14M12 5l7 7-7 7" />
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
 
-        <!-- Sticky Header with Search + Categories -->
-        <header class="store-header">
-            <div class="store-header-inner">
-                <div class="store-title-row">
-                    <h1 class="store-title">SUITE Apps</h1>
-                    <div class="search-bar">
+                    <!-- Stacked Small Cards -->
+                    <div class="featured-stack">
+                        <div class="featured-small">
+                            <div class="small-icon" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">🍎
+                            </div>
+                            <div class="small-content">
+                                <div class="small-title">FoodVitals</div>
+                                <div class="small-meta">Health & Fitness • <span class="small-rating">⭐ 4.8</span></div>
+                            </div>
+                        </div>
+                        <div class="featured-small">
+                            <div class="small-icon" style="background: linear-gradient(135deg, #a855f7, #ec4899);">🧠
+                            </div>
+                            <div class="small-content">
+                                <div class="small-title">MindMap AI</div>
+                                <div class="small-meta">Productivity • <span class="small-rating">⭐ 4.6</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Carousel Dots -->
+                <div class="carousel-dots">
+                    <span class="carousel-dot active"></span>
+                    <span class="carousel-dot"></span>
+                    <span class="carousel-dot"></span>
+                </div>
+
+                <!-- Filter Pills -->
+                <div style="margin: 32px 0 24px;">
+                    <div class="category-tabs" id="categoryTabs">
+                        <!-- Tabs rendered by JS, with fallback -->
+                        <button class="category-tab active">✨ All Apps <span class="count">3</span></button>
+                        <button class="category-tab">🔥 Trending</button>
+                        <button class="category-tab">🆕 New</button>
+                        <button class="category-tab">🤖 AI Tools</button>
+                        <button class="category-tab">💪 Health</button>
+                        <button class="category-tab">📊 Productivity</button>
+                    </div>
+                </div>
+
+                <!-- Top Charts Section -->
+                <div class="top-charts">
+                    <div class="section-header">
+                        <h2 class="section-title">Top Charts</h2>
+                        <a href="#" class="section-link">See all →</a>
+                    </div>
+                    <div class="charts-grid" id="chartsGrid">
+                        <!-- Chart items - dynamically populated or fallback -->
+                        <div class="chart-item">
+                            <span class="chart-rank">1</span>
+                            <div class="chart-icon" style="background: linear-gradient(135deg, #fef3e2, #fce7d6);">📖
+                            </div>
+                            <div class="chart-info">
+                                <div class="chart-name">Cheshbon Reflections</div>
+                                <div class="chart-category">Spirituality</div>
+                            </div>
+                            <span class="chart-rating">⭐ 4.9</span>
+                        </div>
+                        <div class="chart-item">
+                            <span class="chart-rank">2</span>
+                            <div class="chart-icon" style="background: linear-gradient(135deg, #dcfce7, #bbf7d0);">🍎
+                            </div>
+                            <div class="chart-info">
+                                <div class="chart-name">FoodVitals</div>
+                                <div class="chart-category">Health</div>
+                            </div>
+                            <span class="chart-rating">⭐ 4.8</span>
+                        </div>
+                        <div class="chart-item">
+                            <span class="chart-rank">3</span>
+                            <div class="chart-icon" style="background: linear-gradient(135deg, #f3e8ff, #e9d5ff);">🧠
+                            </div>
+                            <div class="chart-info">
+                                <div class="chart-name">MindMap AI</div>
+                                <div class="chart-category">Productivity</div>
+                            </div>
+                            <span class="chart-rating">⭐ 4.6</span>
+                        </div>
+                        <div class="chart-item">
+                            <span class="chart-rank">4</span>
+                            <div class="chart-icon" style="background: linear-gradient(135deg, #fef9c3, #fef08a);">💰
+                            </div>
+                            <div class="chart-info">
+                                <div class="chart-name">BudgetBuddy</div>
+                                <div class="chart-category">Finance</div>
+                            </div>
+                            <span class="chart-rating">⭐ 4.5</span>
+                        </div>
+                        <div class="chart-item">
+                            <span class="chart-rank">5</span>
+                            <div class="chart-icon" style="background: linear-gradient(135deg, #e0f2fe, #bae6fd);">🏃
+                            </div>
+                            <div class="chart-info">
+                                <div class="chart-name">FitTracker</div>
+                                <div class="chart-category">Fitness</div>
+                            </div>
+                            <span class="chart-rating">⭐ 4.4</span>
+                        </div>
+                        <div class="chart-item">
+                            <span class="chart-rank">6</span>
+                            <div class="chart-icon" style="background: linear-gradient(135deg, #fce7f3, #fbcfe8);">😴
+                            </div>
+                            <div class="chart-info">
+                                <div class="chart-name">DreamLog</div>
+                                <div class="chart-category">Wellness</div>
+                            </div>
+                            <span class="chart-rating">⭐ 4.3</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Search Bar -->
+                <div style="margin-bottom: 24px;">
+                    <div class="search-bar" style="width: 100%; max-width: 400px;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="11" cy="11" r="8" />
                             <path d="M21 21l-4.35-4.35" />
                         </svg>
-                        <input type="text" placeholder="Search apps..." id="searchInput">
+                        <input type="text" placeholder="Search all apps..." id="searchInput">
                     </div>
                 </div>
-                <div class="category-tabs" id="categoryTabs">
-                    <!-- Tabs rendered by JS -->
+
+                <!-- All Apps Section -->
+                <div class="apps-container" style="padding: 0;">
+                    <div class="section-header">
+                        <h2 class="section-title">All Apps</h2>
+                        <span class="results-count" id="resultsCount">Showing <strong>6</strong> apps</span>
+                    </div>
+
+                    <div class="apps-grid" id="appsGrid">
+                        <!-- Apps rendered by JS -->
+                    </div>
                 </div>
             </div>
-        </header>
 
-        <!-- Apps Container -->
-        <div class="apps-container">
-            <div class="results-info">
-                <span class="results-count" id="resultsCount">Showing <strong>9</strong> apps</span>
-            </div>
-
-            <div class="apps-grid" id="appsGrid">
-                <!-- Apps rendered by JS -->
-            </div>
-
-            <!-- Creator Banner -->
+            <!-- Creator Banner - outside main container for visual separation -->
             <div class="creator-banner">
                 <h3>Have an app idea? 💡</h3>
                 <p>You don't need to code. Just describe it.</p>
@@ -633,7 +1175,7 @@
             <div class="footer-column">
                 <h5>Connect</h5>
                 <a href="https://discord.gg/7JmJPmnRAu">Discord</a>
-                <a href="#">Twitter</a>
+                <a href="https://x.com/suiteappstore" target="_blank">Twitter</a>
                 <a href="#">GitHub</a>
             </div>
         </div>

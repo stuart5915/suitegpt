@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="view-transition" content="same-origin">
     <title>SUITE Ecosystem | Interactive Overview</title>
     <meta name="description"
         content="Explore the SUITE ecosystem - see how the Treasury, App Store, and token flows connect.">
@@ -842,7 +843,7 @@
                 <a href="docs/index.html">Docs</a>
                 <a href="wallet.html">Wallet</a>
                 <a href="earn.html">Earn</a>
-                <a href="https://discord.gg/7JmJPmnRAu" class="nav-cta">Join Discord</a>
+                <a href="start-building.html" class="nav-cta">✨ Start Building</a>
             </div>
             <button class="mobile-menu-btn">
                 <span></span>
@@ -1371,6 +1372,8 @@
                 path.setAttribute('stroke-opacity', '0.6');
                 path.setAttribute('class', `connection ${conn.animated ? 'animated' : ''}`);
                 path.setAttribute('marker-end', `url(#arrow-${i})`);
+                path.setAttribute('data-from', conn.from);
+                path.setAttribute('data-to', conn.to);
                 svg.appendChild(path);
             });
         }
@@ -1497,21 +1500,21 @@
             const svg = document.getElementById('connections');
             const allPaths = svg.querySelectorAll('path.connection');
 
-            // Check all connections - only highlight if 'from' comes before 'to' in flow path
-            connections.forEach((conn, connIndex) => {
-                const fromIndex = flowPath.indexOf(conn.from);
-                const toIndex = flowPath.indexOf(conn.to);
+            // Check each path by its data attributes
+            allPaths.forEach(pathEl => {
+                const fromId = pathEl.getAttribute('data-from');
+                const toId = pathEl.getAttribute('data-to');
 
-                // Both must be in path AND 'from' must come before or equal to 'to' in flow order
-                if (fromIndex !== -1 && toIndex !== -1 && fromIndex <= toIndex) {
-                    const pathEl = allPaths[connIndex];
-                    if (pathEl) {
-                        setTimeout(() => {
-                            pathEl.classList.add('flow-active', 'flow-animated');
-                            // Move highlighted path to end of SVG to render on top
-                            svg.appendChild(pathEl);
-                        }, (fromIndex + 1) * 200);
-                    }
+                const fromIndex = flowPath.indexOf(fromId);
+                const toIndex = flowPath.indexOf(toId);
+
+                // Both must be in path AND 'from' must come before 'to' in flow order
+                if (fromIndex !== -1 && toIndex !== -1 && fromIndex < toIndex) {
+                    setTimeout(() => {
+                        pathEl.classList.add('flow-active', 'flow-animated');
+                        // Move highlighted path to end of SVG to render on top
+                        svg.appendChild(pathEl);
+                    }, (fromIndex + 1) * 200);
                 }
             });
         }

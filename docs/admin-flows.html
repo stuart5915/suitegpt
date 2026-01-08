@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="view-transition" content="same-origin">
+    <title>Admin Flows | SUITE Docs</title>
+    <link rel="icon" type="image/png" href="../assets/suite-mascot.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../suite-styles.css">
+    <link rel="stylesheet" href="../nav.css">
+    <style>
+        html {
+            overflow-y: scroll;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fff5eb 0%, #ffe4d4 20%, #ffd4e3 50%, #e8d5f9 80%, #d4e5ff 100%);
+            min-height: 100vh;
+            color: #2d1b4e;
+            overflow-x: hidden;
+        }
+
+        .canvas-container {
+            width: 100%;
+            min-height: 100vh;
+            padding: 90px 24px 40px 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+            box-sizing: border-box;
+        }
+
+        .docs-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 32px;
+            box-shadow: 0 16px 80px rgba(0, 0, 0, 0.08);
+            padding: 30px;
+            width: 100%;
+            max-width: 1200px;
+            min-height: 500px;
+            margin: 0 auto;
+            display: flex;
+            gap: 30px;
+        }
+
+        .docs-sidebar {
+            width: 220px;
+            flex-shrink: 0;
+            border-right: 1px solid rgba(0, 0, 0, 0.06);
+            padding-right: 24px;
+        }
+
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+
+        .sidebar-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #9ca3af;
+            margin-bottom: 12px;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            color: #2d1b4e;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            margin-bottom: 4px;
+        }
+
+        .sidebar-link:hover {
+            background: rgba(255, 149, 0, 0.1);
+            color: #ff9500;
+        }
+
+        .sidebar-link.active {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+        }
+
+        .docs-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .docs-content h1 {
+            font-size: 2.2rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #2d1b4e, #7c3aed, #ff6b9d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 12px;
+        }
+
+        .docs-content .subtitle {
+            font-size: 1rem;
+            color: #6b7280;
+            margin-bottom: 24px;
+        }
+
+        .docs-content h2 {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin: 28px 0 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid rgba(255, 149, 0, 0.2);
+        }
+
+        .docs-content h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #5a4a6f;
+            margin: 20px 0 10px;
+        }
+
+        .docs-content p {
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: #5a4a6f;
+            margin-bottom: 12px;
+        }
+
+        .docs-content ul,
+        .docs-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+        }
+
+        .docs-content li {
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: #5a4a6f;
+            margin-bottom: 8px;
+        }
+
+        /* Flow Diagram */
+        .flow-diagram {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border-radius: 16px;
+            padding: 24px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            color: #e0e0e0;
+            overflow-x: auto;
+        }
+
+        .flow-diagram pre {
+            margin: 0;
+            white-space: pre;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        .flow-step {
+            background: rgba(255, 149, 0, 0.1);
+            border-left: 3px solid #ff9500;
+            padding: 16px;
+            margin: 12px 0;
+            border-radius: 0 12px 12px 0;
+        }
+
+        .flow-step strong {
+            color: #ff9500;
+        }
+
+        /* Code blocks */
+        code {
+            background: rgba(255, 149, 0, 0.1);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            color: #7c3aed;
+        }
+
+        .code-block {
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 16px;
+            margin: 12px 0;
+            overflow-x: auto;
+        }
+
+        .code-block code {
+            background: none;
+            color: #4ade80;
+            display: block;
+            white-space: pre;
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .badge-automated {
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            color: white;
+        }
+
+        .badge-manual {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .docs-container {
+                flex-direction: column;
+                padding: 20px;
+            }
+
+            .docs-sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+                padding-right: 0;
+                padding-bottom: 20px;
+                margin-bottom: 20px;
+            }
+
+            .flow-diagram {
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Standard Navigation -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="../index.html" class="nav-logo">
+                <img src="../assets/suite-mascot.png" alt="SUITE" class="nav-logo-img">
+                SUITE
+            </a>
+            <div class="nav-links">
+                <a href="../apps.html">Apps</a>
+                <a href="../developer-portal.html">Build</a>
+                <a href="../ecosystem.html">Ecosystem</a>
+                <a href="index.html" class="active">Docs</a>
+                <a href="../wallet.html">Wallet</a>
+                <a href="../earn.html">Earn</a>
+                <a href="../start-building.html" class="nav-cta">✨ Start Building</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="canvas-container">
+        <div class="docs-container">
+            <!-- Sidebar -->
+            <aside class="docs-sidebar">
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Getting Started</div>
+                    <a href="index.html" class="sidebar-link">📚 Introduction</a>
+                    <a href="quickstart.html" class="sidebar-link">🚀 Quick Start</a>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Commands</div>
+                    <a href="commands.html" class="sidebar-link">⚡ All Commands</a>
+                    <a href="commands.html#app" class="sidebar-link">📱 App Commands</a>
+                    <a href="commands.html#wallet" class="sidebar-link">💰 Wallet Commands</a>
+                    <a href="commands.html#admin" class="sidebar-link">🔧 Admin Commands</a>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Guides</div>
+                    <a href="tokenomics.html" class="sidebar-link">📊 Tokenomics</a>
+                    <a href="developer.html" class="sidebar-link">👨‍💻 Developer Guide</a>
+                    <a href="admin-flows.html" class="sidebar-link active">⚙️ Admin Flows</a>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="docs-content">
+                <h1>⚙️ Admin User Flows</h1>
+                <p class="subtitle">Automated workflows for managing the SUITE ecosystem.</p>
+
+                <!-- App Publishing Flow -->
+                <h2 id="publish">📱 App Publishing Flow <span class="badge badge-automated">Automated</span></h2>
+                <p>When you publish an app via Discord, it automatically syncs with the marketing system (Cadence) so
+                    the app appears in generated content.</p>
+
+                <div class="flow-diagram">
+                    <pre>
+┌─────────────────────────────────────────────────────────────┐
+│  1. RUN COMMAND                                             │
+│     Discord: /publish-app food-vitals-expo                  │
+└─────────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  2. BOT BUILDS & DEPLOYS                                    │
+│     • Runs preflight check                                  │
+│     • Builds PWA with expo export                           │
+│     • Deploys to Vercel                                     │
+└─────────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  3. APPROVAL REQUEST                                        │
+│     Bot sends message to owner with:                        │
+│     • App preview link                                      │
+│     • ✅ Approve / ❌ Reject buttons                         │
+└─────────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  4. CLICK APPROVE                                           │
+│     Two databases updated automatically:                    │
+│     • App Store DB → status = 'approved'                    │
+│     • Cadence DB (suite_apps) → status = 'published'        │
+└─────────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  5. AUTOMATIC SYNC                                          │
+│     Cadence now includes this app in:                       │
+│     • App Spotlight posts                                   │
+│     • Ecosystem Update threads                              │
+│     • All generated marketing content                       │
+└─────────────────────────────────────────────────────────────┘
+</pre>
+                </div>
+
+                <h3>Commands Used</h3>
+                <ul>
+                    <li><code>/preflight-check [app]</code> - Verify app is ready for publishing</li>
+                    <li><code>/publish-app [app]</code> - Build and deploy the app</li>
+                </ul>
+
+                <!-- Daily Content Generation -->
+                <h2 id="content">✍️ Daily Content Generation <span class="badge badge-automated">Automated</span></h2>
+                <p>Generate and schedule 4 daily X/Twitter posts with one click.</p>
+
+                <div class="flow-diagram">
+                    <pre>
+┌─────────────────────────────────────────────────────────────┐
+│  1. OPEN CADENCE                                            │
+│     Go to: localhost:3001/quick (or deployed URL)           │
+└─────────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  2. CLICK "GENERATE TODAY'S POSTS"                          │
+│     API queries suite_apps table for:                       │
+│     • Published apps (status = 'published')                 │
+│     • Coming soon apps (status = 'development')             │
+└─────────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  3. AI GENERATES 4 POSTS                                    │
+│     09:00 - Morning Motivation                              │
+│     12:00 - App Spotlight (features PUBLISHED apps only)    │
+│     17:00 - Thread/Tip                                      │
+│     20:00 - Ecosystem Update (3-tweet thread)               │
+└─────────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  4. REVIEW & EDIT                                           │
+│     • Edit text if needed                                   │
+│     • Regenerate individual posts                           │
+│     • Generate images for each post                         │
+│     • Approve/skip posts                                    │
+└─────────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  5. CLICK "SCHEDULE ALL"                                    │
+│     Posts are saved and ready for publishing                │
+└─────────────────────────────────────────────────────────────┘
+</pre>
+                </div>
+
+                <h3>Post Schedule</h3>
+                <ul>
+                    <li><strong>9:00 AM</strong> - ☀️ Morning Motivation</li>
+                    <li><strong>12:00 PM</strong> - 📱 App Spotlight (only published apps)</li>
+                    <li><strong>5:00 PM</strong> - 🧵 Thread or Tip</li>
+                    <li><strong>8:00 PM</strong> - 🔥 Ecosystem Update Thread (3 tweets)</li>
+                </ul>
+
+                <!-- App Creation -->
+                <h2 id="create">🆕 App Creation Flow <span class="badge badge-automated">Automated</span></h2>
+                <p>Create new apps via Discord with AI-generated code.</p>
+
+                <div class="flow-step">
+                    <strong>Step 1:</strong> Run <code>/create-app [name] [description]</code> in Discord
+                </div>
+                <div class="flow-step">
+                    <strong>Step 2:</strong> Bot creates prompt file for Antigravity IDE
+                </div>
+                <div class="flow-step">
+                    <strong>Step 3:</strong> AI generates the app code automatically
+                </div>
+                <div class="flow-step">
+                    <strong>Step 4:</strong> App appears in pending review channel
+                </div>
+                <div class="flow-step">
+                    <strong>Step 5:</strong> Review and approve → app is created!
+                </div>
+
+                <!-- Manual Database Update -->
+                <h2 id="manual">🔧 Manual Database Updates <span class="badge badge-manual">Manual</span></h2>
+                <p>For edge cases, you can manually update the suite_apps table.</p>
+
+                <h3>Publish an app manually</h3>
+                <div class="code-block">
+                    <code>UPDATE suite_apps 
+SET status = 'published', published_at = NOW() 
+WHERE slug = 'food-vitals-expo';</code>
+                </div>
+
+                <h3>Unpublish an app</h3>
+                <div class="code-block">
+                    <code>UPDATE suite_apps 
+SET status = 'development', published_at = NULL 
+WHERE slug = 'food-vitals-expo';</code>
+                </div>
+
+                <h3>Add new app features</h3>
+                <div class="code-block">
+                    <code>UPDATE suite_apps 
+SET features = '["Feature 1", "Feature 2", "Feature 3"]'::jsonb 
+WHERE slug = 'food-vitals-expo';</code>
+                </div>
+
+                <!-- Environment Setup -->
+                <h2 id="setup">🔑 Environment Setup</h2>
+                <p>Required environment variables for the automation to work:</p>
+
+                <h3>Discord Bot (.env)</h3>
+                <div class="code-block">
+                    <code># App Store Database
+SUPABASE_URL=https://rdsmdywbdiskxknluiym.supabase.co
+SUPABASE_SERVICE_KEY=your_service_key
+
+# Cadence Database (for marketing sync)
+CADENCE_SUPABASE_URL=https://tbfpopablanksrzyxaxj.supabase.co
+CADENCE_SUPABASE_KEY=your_anon_key</code>
+                </div>
+
+                <h3>Cadence App (.env.local)</h3>
+                <div class="code-block">
+                    <code>NEXT_PUBLIC_SUPABASE_URL=https://tbfpopablanksrzyxaxj.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+GEMINI_API_KEY=your_gemini_key</code>
+                </div>
+
+            </main>
+        </div>
+    </div>
+</body>
+
+</html>
