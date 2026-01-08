@@ -11,11 +11,6 @@ CREATE TABLE IF NOT EXISTS council_members (
     added_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Your wallet as founding council member
-INSERT INTO council_members (wallet_address, name, role) VALUES 
-    ('0xYOUR_WALLET_ADDRESS_HERE', 'Founder', 'Lead')
-ON CONFLICT (wallet_address) DO NOTHING;
-
 -- ═══════════════════════════════════════════════════════
 -- 2. USER GOVERNANCE PROFILES (points, stats)
 -- ═══════════════════════════════════════════════════════
@@ -95,3 +90,11 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE plpgsql;
+
+-- ═══════════════════════════════════════════════════════
+-- 8. ADD YOUR WALLET AS COUNCIL MEMBER
+-- Replace the wallet address below with your actual wallet!
+-- ═══════════════════════════════════════════════════════
+INSERT INTO council_members (wallet_address, name, role) VALUES 
+    ('0xYOUR_WALLET_ADDRESS_HERE', 'Founder', 'Lead')
+ON CONFLICT (wallet_address) DO NOTHING;
