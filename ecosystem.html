@@ -992,6 +992,28 @@
                     { icon: '🔄', text: 'Unlimited watches' },
                     { icon: '🆓', text: '100% free access' },
                 ]
+            },
+            incubate: {
+                id: 'incubate', icon: '🚀', title: 'Incubate', subtitle: 'Launch Pad', type: 'developer',
+                x: 420, y: 340, originalX: 420, originalY: 340,
+                description: 'Got a bigger project idea? Apply to the SUITE Incubator for funding, mentorship, and community support.',
+                actions: [
+                    { icon: '📝', text: 'Submit your idea' },
+                    { icon: '👥', text: 'Get mentorship' },
+                    { icon: '💰', text: 'Receive funding' },
+                    { icon: '🚀', text: 'Launch with backing' },
+                ]
+            },
+            governance: {
+                id: 'governance', icon: '🗳️', title: 'Governance', subtitle: 'Vote & Decide', type: 'token',
+                x: 680, y: 180, originalX: 680, originalY: 180,
+                description: 'Shape the future of SUITE! Vote on proposals, earn governance points, and join the Council.',
+                actions: [
+                    { icon: '✍️', text: 'Vote on proposals' },
+                    { icon: '💡', text: 'Submit ideas (10 SUITE)' },
+                    { icon: '🏆', text: 'Earn governance points' },
+                    { icon: '🛡️', text: 'Council access' },
+                ]
             }
         };
 
@@ -1007,11 +1029,17 @@
             // Vault connections
             { from: 'vault', to: 'suite', label: 'mints', color: '#ff8e8e', animated: true },
             { from: 'vault', to: 'charity', label: '10% yield', color: '#ec4899' },
-            // Suite connects to Apps and Forge
+            // Suite connects to Apps, Forge, and Governance
             { from: 'suite', to: 'apps', label: 'unlocks', color: '#4facfe' },
             { from: 'suite', to: 'forge', label: 'optional', color: '#fcb69f' },
-            // Forge to Apps
+            { from: 'suite', to: 'governance', label: 'votes', color: '#ff9500' },
+            // Forge to Apps and Incubate
             { from: 'forge', to: 'apps', label: 'publishes', color: '#f093fb' },
+            { from: 'forge', to: 'incubate', label: 'grows into', color: '#f093fb' },
+            // Incubate to Apps
+            { from: 'incubate', to: 'apps', label: 'launches', color: '#f093fb' },
+            // Governance shapes ecosystem
+            { from: 'governance', to: 'charity', label: 'votes on', color: '#ff9500' },
             // Earns back
             { from: 'apps', to: 'suite', label: 'earns', color: '#22c55e' },
         ];
@@ -1023,7 +1051,9 @@
             build: ['you', 'forge', 'apps', 'suite'],  // You → Forge → Apps → earn $SUITE
             buy: ['you', 'vault', 'suite'],            // You → Vault → $SUITE
             giving: ['vault', 'charity'],              // Vault → Charity (10% giving)
-            ads: ['you', 'earn', 'suite']               // You → Earn → $SUITE (watch ads)
+            ads: ['you', 'earn', 'suite'],             // You → Earn → $SUITE (watch ads)
+            govern: ['suite', 'governance', 'charity'], // $SUITE → Governance → Charity
+            incubate: ['you', 'forge', 'incubate', 'apps'] // You → Forge → Incubate → Apps
         };
 
         let expandedEntity = null;
@@ -1033,20 +1063,21 @@
 
         // Update entity positions - now relative to container
         function repositionEntities() {
-            // Layout - You below Vault for vertical connection!
-            // [Vault]      [Apps]     [Charity]
-            //    ↓           ↑           ↑
-            // [$SUITE] ──→ [Forge] ─────┘
-            //    ↑           ↑
-            // [You] ─────────┘
+            // Layout - Expanded grid with new entities
+            // [Charity]   [Governance]
+            // [Vault]     [$SUITE]    [Apps]
+            // [You]       [Earn]      [Forge]
+            //             [Incubate]
             const basePositions = {
-                vault: { x: 80, y: 20 },     // Top-left
-                apps: { x: 300, y: 20 },     // Top-center
-                charity: { x: 540, y: 20 },  // Top-right
-                suite: { x: 300, y: 180 },   // Center
-                you: { x: 80, y: 300 },      // Bottom-left (same column as Vault!)
-                earn: { x: 300, y: 340 },    // Bottom-center (below $SUITE)
-                forge: { x: 540, y: 300 }    // Bottom-right
+                charity: { x: 80, y: 20 },       // Top-left
+                governance: { x: 540, y: 20 },   // Top-right
+                vault: { x: 80, y: 140 },        // Middle-left
+                suite: { x: 300, y: 140 },       // Center
+                apps: { x: 540, y: 140 },        // Middle-right
+                you: { x: 80, y: 280 },          // Bottom-left
+                earn: { x: 300, y: 280 },        // Bottom-center
+                forge: { x: 540, y: 280 },       // Bottom-right
+                incubate: { x: 300, y: 400 }     // Very bottom center
             };
 
             Object.keys(entities).forEach(id => {
