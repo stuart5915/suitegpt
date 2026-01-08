@@ -573,22 +573,27 @@ client.on('messageCreate', async (message) => {
         // Stu chat is FREE - no credits charged, but show balance footer
         const response = await generateStuResponse(userMessage, context);
 
-        // Get balance for footer (don't deduct - chat is free!)
-        const stats = await getUserStats(message.author.id);
-        const actionsRemaining = stats ? Math.floor(stats.totalActionsAvailable) : 20;
-
-        // Build footer with learn more link
+        // Build footer - Admin gets unlimited, others see balance
         let footer = '';
-        if (actionsRemaining > 10) {
-            footer = `\n\n─────────────────────────\n💰 ${actionsRemaining} actions • [Learn about SUITE](https://getsuite.app/docs/tokenomics.html)`;
-        } else if (actionsRemaining > 0) {
-            footer = `\n\n─────────────────────────\n⚠️ ${actionsRemaining} actions left • \`/earn\` for more`;
+        if (message.author.id === config.ownerId) {
+            // Owner/Admin gets unlimited
+            footer = `\n\n─────────────────────────\n👑 Admin • ∞ Unlimited`;
         } else {
-            footer = `\n\n─────────────────────────\n🚨 0 actions! Use \`/earn\` to watch ads`;
+            // Get balance for footer (don't deduct - chat is free!)
+            const stats = await getUserStats(message.author.id);
+            const actionsRemaining = stats ? Math.floor(stats.totalActionsAvailable) : 20;
+
+            if (actionsRemaining > 10) {
+                footer = `\n\n─────────────────────────\n💰 ${actionsRemaining} actions • [Learn about SUITE](https://getsuite.app/docs/tokenomics.html)`;
+            } else if (actionsRemaining > 0) {
+                footer = `\n\n─────────────────────────\n⚠️ ${actionsRemaining} actions left • \`/earn\` for more`;
+            } else {
+                footer = `\n\n─────────────────────────\n🚨 0 actions! Use \`/earn\` to watch ads`;
+            }
         }
 
         await message.reply(response + footer);
-        console.log(`[AI Stu] Responded ${isAutoResponse ? '(auto)' : '(mentioned)'} to ${message.author.username} (FREE chat, ${actionsRemaining} actions)`);
+        console.log(`[AI Stu] Responded ${isAutoResponse ? '(auto)' : '(mentioned)'} to ${message.author.username} (${message.author.id === config.ownerId ? 'ADMIN' : 'FREE chat'})`);
     } catch (error) {
         console.error('AI Stu error:', error);
         if (!isAutoResponse) {  // Only show error if they directly asked
@@ -1062,21 +1067,25 @@ IMPORTANT: Verify app name is correct before archiving!
                 break;
             }
 
-            // AI-POWERED COMMANDS - These cost 1 SUITE credit
+            // AI-POWERED COMMANDS - These cost 1 SUITE credit (admin gets unlimited)
             case 'idea':
             case 'study':
             case 'review':
             case 'content':
             case 'suggest': {
-                // Check credits before AI command
-                const creditCheck = await canPerformAction(interaction.user.id, interaction.user.username);
+                const isAdmin = interaction.user.id === config.ownerId;
 
-                if (!creditCheck.canAct) {
-                    await interaction.reply({
-                        content: getNoCreditsMessage(),
-                        ephemeral: true
-                    });
-                    return;
+                // Check credits before AI command (admin bypasses)
+                if (!isAdmin) {
+                    const creditCheck = await canPerformAction(interaction.user.id, interaction.user.username);
+
+                    if (!creditCheck.canAct) {
+                        await interaction.reply({
+                            content: getNoCreditsMessage(),
+                            ephemeral: true
+                        });
+                        return;
+                    }
                 }
 
                 // Run the appropriate handler
@@ -1087,17 +1096,22 @@ IMPORTANT: Verify app name is correct before archiving!
                 else if (commandName === 'content') await handleContentCommand(interaction);
                 else if (commandName === 'suggest') await handleSuggestCommand(interaction);
 
-                // Deduct credit after successful response
-                await useAction(interaction.user.id, interaction.user.username);
-
-                // Get updated balance
-                const updatedStats = await getUserStats(interaction.user.id);
-                const actionsRemaining = updatedStats ? Math.floor(updatedStats.totalActionsAvailable) : 0;
+                // Deduct credit after successful response (admin skips)
+                if (!isAdmin) {
+                    await useAction(interaction.user.id, interaction.user.username);
+                }
 
                 // Follow up with balance footer
-                const footer = actionsRemaining > 5
-                    ? `💰 ${actionsRemaining} actions remaining • [Learn about credits](https://getsuite.app/docs/tokenomics.html#faq)`
-                    : `⚠️ ${actionsRemaining} actions left • \`/earn\` for more`;
+                let footer;
+                if (isAdmin) {
+                    footer = `👑 Admin • ∞ Unlimited`;
+                } else {
+                    const updatedStats = await getUserStats(interaction.user.id);
+                    const actionsRemaining = updatedStats ? Math.floor(updatedStats.totalActionsAvailable) : 0;
+                    footer = actionsRemaining > 5
+                        ? `💰 ${actionsRemaining} actions remaining • [Learn about credits](https://getsuite.app/docs/tokenomics.html#faq)`
+                        : `⚠️ ${actionsRemaining} actions left • \`/earn\` for more`;
+                }
 
                 await interaction.followUp({
                     content: `─────────────────────────\n${footer}`,
