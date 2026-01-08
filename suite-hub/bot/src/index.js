@@ -579,18 +579,25 @@ client.on('messageCreate', async (message) => {
             // Owner/Admin gets unlimited
             footer = `\n\n─────────────────────────\n👑 Admin • ∞ Unlimited`;
         } else {
-            // Get balance for footer (don't deduct - chat is free!)
+            // Get both free tier and SUITE balance
             const stats = await getUserStats(message.author.id);
-            const suiteBalance = stats ? Math.floor(stats.totalActionsAvailable) : 20;
-            // $0.001 per SUITE
+            const freeRemaining = stats ? stats.freeActionsRemaining : 20;
+            const suiteBalance = stats ? Math.floor(stats.suiteBalance) : 0;
+            // $0.001 per SUITE (only real SUITE is cashable)
             const dollarValue = (suiteBalance * 0.001).toFixed(2);
 
-            if (suiteBalance > 10) {
-                footer = `\n\n─────────────────────────\n💰 ${suiteBalance} SUITE (~$${dollarValue}) • \`/suite\` to learn more`;
+            if (freeRemaining > 0 && suiteBalance > 0) {
+                // Has both
+                footer = `\n\n─────────────────────────\n🎁 ${freeRemaining} free + 💰 ${suiteBalance} SUITE (~$${dollarValue}) • \`/suite\``;
+            } else if (freeRemaining > 0) {
+                // Only free tier
+                footer = `\n\n─────────────────────────\n🎁 ${freeRemaining} free actions • \`/earn\` for SUITE`;
             } else if (suiteBalance > 0) {
-                footer = `\n\n─────────────────────────\n⚠️ ${suiteBalance} SUITE (~$${dollarValue}) • \`/earn\` for more`;
+                // Only SUITE
+                footer = `\n\n─────────────────────────\n💰 ${suiteBalance} SUITE (~$${dollarValue}) • \`/suite\``;
             } else {
-                footer = `\n\n─────────────────────────\n🚨 0 SUITE! Use \`/earn\` to watch ads`;
+                // Nothing left
+                footer = `\n\n─────────────────────────\n🚨 0 credits! Use \`/earn\` to watch ads`;
             }
         }
 
@@ -842,7 +849,7 @@ This is the SUITE community - where anyone can build apps without coding.
 • Coming soon: Trade SUITE on decentralized exchanges
 
 **📺 Watch Ads**
-• Earn free SUITE by watching ads
+• Earn real SUITE by watching ads
 • Use \`/earn\` to get started!
 
 **🏆 Earn Rewards**
@@ -850,9 +857,13 @@ This is the SUITE community - where anyone can build apps without coding.
 • Request features: 1,000 SUITE
 • Ship fixes: 750 SUITE bonus
 
+**🎁 Free Tier vs 💰 SUITE**
+• 🎁 Free tier = 20 trial credits (can't cash out)
+• 💰 SUITE = Real tokens you earn/buy (can cash out!)
+
 **What is SUITE?**
 1 SUITE = ~$0.001 (treasury-backed floor price)
-Powers AI features, app development, and more.
+Redeem anytime for ETH at getsuite.app/wallet
 
 **More info:** getsuite.app/docs/tokenomics.html`,
                     ephemeral: true
@@ -1118,11 +1129,19 @@ IMPORTANT: Verify app name is correct before archiving!
                     footer = `👑 Admin • ∞ Unlimited`;
                 } else {
                     const updatedStats = await getUserStats(interaction.user.id);
-                    const suiteBalance = updatedStats ? Math.floor(updatedStats.totalActionsAvailable) : 0;
+                    const freeRemaining = updatedStats ? updatedStats.freeActionsRemaining : 0;
+                    const suiteBalance = updatedStats ? Math.floor(updatedStats.suiteBalance) : 0;
                     const dollarValue = (suiteBalance * 0.001).toFixed(2);
-                    footer = suiteBalance > 5
-                        ? `💰 ${suiteBalance} SUITE (~$${dollarValue}) • \`/suite\` to learn more`
-                        : `⚠️ ${suiteBalance} SUITE (~$${dollarValue}) • \`/earn\` for more`;
+
+                    if (freeRemaining > 0 && suiteBalance > 0) {
+                        footer = `🎁 ${freeRemaining} free + 💰 ${suiteBalance} SUITE (~$${dollarValue})`;
+                    } else if (freeRemaining > 0) {
+                        footer = `🎁 ${freeRemaining} free actions left • \`/earn\` for SUITE`;
+                    } else if (suiteBalance > 0) {
+                        footer = `💰 ${suiteBalance} SUITE (~$${dollarValue})`;
+                    } else {
+                        footer = `🚨 0 credits! Use \`/earn\` to watch ads`;
+                    }
                 }
 
                 await interaction.followUp({
