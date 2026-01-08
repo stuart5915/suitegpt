@@ -316,7 +316,7 @@
                 <a href="docs/index.html">Docs</a>
                 <a href="wallet.html">Wallet</a>
                 <a href="earn.html" class="active">Earn</a>
-                <a href="https://discord.gg/7JmJPmnRAu" class="nav-cta">Join Discord</a>
+                <a href="start-building.html" class="nav-cta">✨ Start Building</a>
             </div>
         </div>
     </nav>
@@ -531,11 +531,13 @@
             const adContainer = document.getElementById('adContainer');
             adContainer.classList.add('active');
 
-            // Load the Adsterra Social Bar ad
+            // Load the Adsterra Social Bar ad with user's Discord ID as subid
             if (!adLoaded) {
                 const script = document.createElement('script');
-                script.src = 'https://pl28427796.effectivegatecpm.com/9e/34/e7/9e34e707a82f1e5d2161869745ab386f.js';
+                // Pass discord_id as subid for tracking
+                script.src = `https://pl28427796.effectivegatecpm.com/9e/34/e7/9e34e707a82f1e5d2161869745ab386f.js`;
                 script.async = true;
+                script.dataset.subid = currentUser.id; // For Adsterra postback
                 document.body.appendChild(script);
                 adLoaded = true;
             }
@@ -563,53 +565,41 @@
             // Hide ad container
             document.getElementById('adContainer').classList.remove('active');
 
-            // Award credits
+            // Show pending state
+            const successEl = document.getElementById('successMessage');
+            successEl.innerHTML = '<span style="font-size: 32px;">⏳</span><br>Verifying ad completion...';
+            successEl.classList.add('show');
+
             try {
-                // Get current balance
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/user_credits?discord_id=eq.${currentUser.id}&select=*`, {
-                    headers: {
-                        'apikey': SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-                    }
+                // Call server-side API to credit user (secure postback simulation)
+                // In production, Adsterra calls this directly, but we also call it
+                // as a backup in case the postback is delayed
+                const response = await fetch(`/api/ad-callback?subid=${currentUser.id}`, {
+                    method: 'GET'
                 });
 
-                const data = await response.json();
+                const result = await response.json();
 
-                if (data.length > 0) {
-                    const currentBalance = parseFloat(data[0].suite_balance) || 0;
-                    const newBalance = currentBalance + 2;  // 2 SUITE per ad (matches $0.002 treasury deposit)
-                    const totalAds = (data[0].total_ads_watched || 0) + 1;
-
-                    // Update balance
-                    await fetch(`${SUPABASE_URL}/rest/v1/user_credits?discord_id=eq.${currentUser.id}`, {
-                        method: 'PATCH',
-                        headers: {
-                            'apikey': SUPABASE_ANON_KEY,
-                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                            'Content-Type': 'application/json',
-                            'Prefer': 'return=minimal'
-                        },
-                        body: JSON.stringify({
-                            suite_balance: newBalance,
-                            total_ads_watched: totalAds,
-                            last_ad_watched: new Date().toISOString()
-                        })
-                    });
-
-                    // Update UI
+                if (result.success) {
+                    // Update UI with new balance
+                    const newBalance = result.new_balance || 0;
                     document.getElementById('balanceAmount').textContent = `${newBalance.toFixed(0)} SUITE`;
-                }
 
-                // Show success message
-                const successEl = document.getElementById('successMessage');
-                successEl.classList.add('show');
-                setTimeout(() => {
-                    successEl.classList.remove('show');
-                }, 3000);
+                    // Show success
+                    successEl.innerHTML = '<span style="font-size: 32px;">✨</span><br>+2 SUITE earned!';
+                    setTimeout(() => {
+                        successEl.classList.remove('show');
+                    }, 3000);
+                } else {
+                    throw new Error(result.error || 'Unknown error');
+                }
 
             } catch (error) {
                 console.error('Error awarding credits:', error);
-                alert('Error awarding credits. Please try again.');
+                successEl.innerHTML = '<span style="font-size: 32px;">⚠️</span><br>Credit pending - please check balance later';
+                setTimeout(() => {
+                    successEl.classList.remove('show');
+                }, 4000);
             }
         }
 
