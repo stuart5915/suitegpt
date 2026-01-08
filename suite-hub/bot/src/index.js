@@ -582,11 +582,13 @@ client.on('messageCreate', async (message) => {
             // Get balance for footer (don't deduct - chat is free!)
             const stats = await getUserStats(message.author.id);
             const actionsRemaining = stats ? Math.floor(stats.totalActionsAvailable) : 20;
+            // $0.001 per SUITE/action
+            const dollarValue = (actionsRemaining * 0.001).toFixed(2);
 
             if (actionsRemaining > 10) {
-                footer = `\n\n─────────────────────────\n💰 ${actionsRemaining} actions • [Learn about SUITE](https://getsuite.app/docs/tokenomics.html)`;
+                footer = `\n\n─────────────────────────\n💰 ${actionsRemaining} actions (~$${dollarValue}) • \`/suite\` to learn more`;
             } else if (actionsRemaining > 0) {
-                footer = `\n\n─────────────────────────\n⚠️ ${actionsRemaining} actions left • \`/earn\` for more`;
+                footer = `\n\n─────────────────────────\n⚠️ ${actionsRemaining} actions (~$${dollarValue}) • \`/earn\` for more`;
             } else {
                 footer = `\n\n─────────────────────────\n🚨 0 actions! Use \`/earn\` to watch ads`;
             }
@@ -1108,9 +1110,10 @@ IMPORTANT: Verify app name is correct before archiving!
                 } else {
                     const updatedStats = await getUserStats(interaction.user.id);
                     const actionsRemaining = updatedStats ? Math.floor(updatedStats.totalActionsAvailable) : 0;
+                    const dollarValue = (actionsRemaining * 0.001).toFixed(2);
                     footer = actionsRemaining > 5
-                        ? `💰 ${actionsRemaining} actions remaining • [Learn about credits](https://getsuite.app/docs/tokenomics.html#faq)`
-                        : `⚠️ ${actionsRemaining} actions left • \`/earn\` for more`;
+                        ? `💰 ${actionsRemaining} actions (~$${dollarValue}) • \`/suite\` to learn more`
+                        : `⚠️ ${actionsRemaining} actions (~$${dollarValue}) • \`/earn\` for more`;
                 }
 
                 await interaction.followUp({
