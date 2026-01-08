@@ -412,21 +412,22 @@
         const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.rTqKxT2LYhPt5nQEjLxMxdRDqvVoT7eILWHhBo1MVHU';
 
-        // Discord OAuth (you'll need to set up a Discord app)
-        const DISCORD_CLIENT_ID = 'YOUR_DISCORD_CLIENT_ID'; // Replace with your Discord app client ID
+        // Discord OAuth
+        const DISCORD_CLIENT_ID = '1457474266390986865';
         const REDIRECT_URI = window.location.origin + '/earn.html';
 
         let currentUser = null;
 
         // Check if user is logged in on page load
         document.addEventListener('DOMContentLoaded', () => {
-            // Check for OAuth callback
-            const urlParams = new URLSearchParams(window.location.search);
-            const code = urlParams.get('code');
+            // Check for OAuth callback - Discord returns token in hash for implicit flow
+            const hash = window.location.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            const accessToken = params.get('access_token');
 
-            if (code) {
-                // Handle OAuth callback
-                handleOAuthCallback(code);
+            if (accessToken) {
+                // Handle OAuth callback - get user info
+                handleOAuthCallback(accessToken);
             } else {
                 // Check local storage for saved session
                 const savedUser = localStorage.getItem('suiteUser');
@@ -439,40 +440,44 @@
         });
 
         function loginWithDiscord() {
-            // Prompt user for their Discord ID
-            const discordId = prompt(
-                'Enter your Discord User ID:\n\n' +
-                'To find it:\n' +
-                '1. Enable Developer Mode in Discord (Settings → Advanced)\n' +
-                '2. Right-click your username\n' +
-                '3. Click "Copy User ID"'
-            );
-
-            if (!discordId || discordId.length < 10) {
-                alert('Invalid Discord ID. Please try again.');
-                return;
-            }
-
-            // Prompt for username
-            const username = prompt('Enter your Discord username:') || 'User';
-
-            const user = {
-                id: discordId.trim(),
-                username: username.trim(),
-                avatar: 'https://cdn.discordapp.com/embed/avatars/0.png'
-            };
-
-            currentUser = user;
-            localStorage.setItem('suiteUser', JSON.stringify(user));
-            showEarnSection();
-            loadUserBalance();
+            // Redirect to Discord OAuth (implicit flow - no backend needed)
+            const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=identify`;
+            window.location.href = authUrl;
         }
 
-        async function handleOAuthCallback(code) {
-            // In production, exchange code for token via your backend
-            console.log('OAuth code received:', code);
-            // For now, just show demo
-            loginWithDiscord();
+        async function handleOAuthCallback(accessToken) {
+            try {
+                // Get user info from Discord
+                const response = await fetch('https://discord.com/api/users/@me', {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to get user info');
+
+                const discordUser = await response.json();
+
+                const user = {
+                    id: discordUser.id,
+                    username: discordUser.username,
+                    avatar: discordUser.avatar
+                        ? `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png`
+                        : 'https://cdn.discordapp.com/embed/avatars/0.png'
+                };
+
+                currentUser = user;
+                localStorage.setItem('suiteUser', JSON.stringify(user));
+
+                // Clear the hash from URL
+                history.replaceState(null, '', window.location.pathname);
+
+                showEarnSection();
+                loadUserBalance();
+            } catch (error) {
+                console.error('OAuth error:', error);
+                alert('Failed to log in with Discord. Please try again.');
+            }
         }
 
         function showEarnSection() {
