@@ -14,6 +14,7 @@ import { handleMyAppsCommand, handleMyAppStatusCommand, handleDeleteMyAppCommand
 import { handlePublishApp, handlePublishButton } from './handlers/publishApp.js';
 import { handlePreflightCheck } from './handlers/preflightCheck.js';
 import { generateStuResponse } from './ai/stuPersona.js';
+import { canPerformAction, useAction, getNoCreditsMessage } from './credits.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -553,6 +554,16 @@ client.on('messageCreate', async (message) => {
     };
 
     try {
+        // Check credits before AI response
+        const creditCheck = await canPerformAction(message.author.id, message.author.username);
+
+        if (!creditCheck.canAct) {
+            // User has no credits left
+            await message.reply(getNoCreditsMessage());
+            console.log(`[Credits] ${message.author.username} hit credit limit`);
+            return;
+        }
+
         // Clean up the message
         let userMessage = message.content
             .replace(/<@!?\d+>/g, '')  // Remove mentions
@@ -566,7 +577,9 @@ client.on('messageCreate', async (message) => {
         const response = await generateStuResponse(userMessage, context);
         await message.reply(response);
 
-        console.log(`[AI Stu] Responded ${isAutoResponse ? '(auto)' : '(mentioned)'} to ${message.author.username}: ${userMessage.slice(0, 50)}`);
+        // Deduct credit after successful response
+        await useAction(message.author.id, message.author.username);
+        console.log(`[AI Stu] Responded ${isAutoResponse ? '(auto)' : '(mentioned)'} to ${message.author.username} (${creditCheck.reason}: ${creditCheck.remaining} remaining)`);
     } catch (error) {
         console.error('AI Stu error:', error);
         if (!isAutoResponse) {  // Only show error if they directly asked
