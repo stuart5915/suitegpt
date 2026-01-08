@@ -17,6 +17,7 @@ export const config = {
     pending: process.env.CHANNEL_PENDING,     // Bugs/features awaiting approval
     shipped: process.env.CHANNEL_SHIPPED,     // Completed work
     savedIdeas: process.env.CHANNEL_SAVED_IDEAS, // User-saved AI outputs
+    general: process.env.CHANNEL_GENERAL,     // General chat for welcome messages
   },
 
   // Gemini

@@ -420,6 +420,37 @@ client.once('ready', async () => {
     console.log('Bot fully initialized!');
 });
 
+// Welcome new members in #general
+client.on('guildMemberAdd', async (member) => {
+    console.log(`👋 New member joined: ${member.user.tag}`);
+
+    // Get the general channel
+    const generalChannelId = config.channels.general;
+    if (!generalChannelId) {
+        console.log('No CHANNEL_GENERAL configured, skipping welcome message');
+        return;
+    }
+
+    try {
+        const generalChannel = await client.channels.fetch(generalChannelId);
+        if (!generalChannel) return;
+
+        // Welcome message with AI Stu vibe
+        const welcomeMessages = [
+            `Welcome <@${member.id}>! 👋 I'm Stu - if you have any questions about SUITE or building apps, just @me or say "stu" in your message. What brings you here?`,
+            `Hey <@${member.id}>! 🚀 Welcome to SUITE! I'm here 24/7 if you need help - just tag me or say "stu" and I'll jump in. What are you building?`,
+            `Yo <@${member.id}>! Good to have you here! 🎉 Need help? Just mention me or say "stu" in your message. Let's build something awesome!`,
+        ];
+
+        const randomWelcome = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
+        await generalChannel.send(randomWelcome);
+
+        console.log(`✅ Sent welcome message for ${member.user.tag}`);
+    } catch (error) {
+        console.error('Error sending welcome message:', error);
+    }
+});
+
 // Handle new messages (for submissions)
 client.on('messageCreate', async (message) => {
     // Ignore messages from bots
