@@ -1108,6 +1108,22 @@
                         </div>
                     </div>
 
+                    <!-- Revenue Sources Row -->
+                    <div class="treasury-stats" style="margin-top: 12px;">
+                        <div class="treasury-stat" style="background: rgba(255, 149, 0, 0.08);">
+                            <span class="treasury-label">📺 Ad Revenue (Today)</span>
+                            <span class="treasury-value" id="adRevenueToday" style="color: #ff9500;">$0.00</span>
+                        </div>
+                        <div class="treasury-stat" style="background: rgba(168, 85, 247, 0.08);">
+                            <span class="treasury-label">🎯 SUITE Issued (Ads)</span>
+                            <span class="treasury-value" id="suiteIssuedAds" style="color: #a855f7;">0</span>
+                        </div>
+                        <div class="treasury-stat" style="background: rgba(34, 197, 94, 0.08);">
+                            <span class="treasury-label">✅ Verified Ads</span>
+                            <span class="treasury-value" id="verifiedAdsPercent" style="color: #22c55e;">--%</span>
+                        </div>
+                    </div>
+
                     <!-- Action Buttons -->
                     <div class="action-buttons" style="position: relative;">
                         <button class="action-btn deposit" id="depositBtn">
@@ -2797,6 +2813,52 @@
             // Refresh every 30 seconds
             setInterval(fetchTreasuryStats, 30000);
         }
+
+        // Fetch ad revenue stats from Supabase
+        async function fetchAdRevenueStats() {
+            const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.rTqKxT2LYhPt5nQEjLxMxdRDqvVoT7eILWHhBo1MVHU';
+
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/ad_events?created_at=gte.${today}T00:00:00&event_type=eq.credited&select=error_message,suite_amount`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                const events = await response.json();
+
+                if (!Array.isArray(events)) return;
+
+                // Calculate stats
+                const totalSuite = events.length * 2; // 2 SUITE per ad
+                const verified = events.filter(e => e.error_message?.includes('verified:true')).length;
+                const verifiedPercent = events.length > 0 ? Math.round((verified / events.length) * 100) : 0;
+                const estimatedRevenue = events.length * 0.002; // ~$0.002 per ad
+
+                // Update UI
+                const adRevenueEl = document.getElementById('adRevenueToday');
+                const suiteIssuedEl = document.getElementById('suiteIssuedAds');
+                const verifiedEl = document.getElementById('verifiedAdsPercent');
+
+                if (adRevenueEl) adRevenueEl.textContent = '$' + estimatedRevenue.toFixed(2);
+                if (suiteIssuedEl) suiteIssuedEl.textContent = totalSuite;
+                if (verifiedEl) {
+                    verifiedEl.textContent = verifiedPercent + '%';
+                    // Color based on percentage
+                    if (verifiedPercent >= 80) verifiedEl.style.color = '#22c55e';
+                    else if (verifiedPercent >= 50) verifiedEl.style.color = '#f59e0b';
+                    else verifiedEl.style.color = '#ef4444';
+                }
+            } catch (error) {
+                console.log('Could not fetch ad stats:', error);
+            }
+        }
+
+        // Load ad stats on page load
+        fetchAdRevenueStats();
+        setInterval(fetchAdRevenueStats, 60000); // Refresh every minute
     </script>
 </body>
 
