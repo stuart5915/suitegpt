@@ -809,12 +809,6 @@ This is the SUITE community - where anyone can build apps without coding.
 • Or deposit ETH, USDC, other tokens
 • Swapped to SUITE automatically
 
-**🏆 Earn**
-• Report bugs: 500 SUITE
-• Request features: 1,000 SUITE
-• Ship fixes: 750 bonus
-• Create content: 1,000-5,000 SUITE
-
 **📺 Watch Ads**
 • Earn free SUITE by watching ads
 • Great for getting started!
