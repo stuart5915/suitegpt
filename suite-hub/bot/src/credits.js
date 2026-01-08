@@ -12,7 +12,7 @@ const supabase = createClient(
 
 // Configuration
 const FREE_TIER_LIMIT = 20;
-const SUITE_PER_AD = 10; // SUITE credits per ad watched
+const SUITE_PER_AD = 2;  // 2 SUITE per ad (matches $0.002 treasury deposit at $1 = 1000 SUITE) // SUITE credits per ad watched
 
 /**
  * Get or create user credits record
