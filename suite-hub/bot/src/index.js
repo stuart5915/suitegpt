@@ -1047,28 +1047,47 @@ IMPORTANT: Verify app name is correct before archiving!
                 break;
             }
 
-            case 'idea': {
-                await handleIdeaCommand(interaction);
-                break;
-            }
-
-            case 'study': {
-                await handleStudyCommand(interaction);
-                break;
-            }
-
-            case 'review': {
-                await handleReviewCommand(interaction);
-                break;
-            }
-
-            case 'content': {
-                await handleContentCommand(interaction);
-                break;
-            }
-
+            // AI-POWERED COMMANDS - These cost 1 SUITE credit
+            case 'idea':
+            case 'study':
+            case 'review':
+            case 'content':
             case 'suggest': {
-                await handleSuggestCommand(interaction);
+                // Check credits before AI command
+                const creditCheck = await canPerformAction(interaction.user.id, interaction.user.username);
+
+                if (!creditCheck.canAct) {
+                    await interaction.reply({
+                        content: getNoCreditsMessage(),
+                        ephemeral: true
+                    });
+                    return;
+                }
+
+                // Run the appropriate handler
+                const commandName = interaction.commandName;
+                if (commandName === 'idea') await handleIdeaCommand(interaction);
+                else if (commandName === 'study') await handleStudyCommand(interaction);
+                else if (commandName === 'review') await handleReviewCommand(interaction);
+                else if (commandName === 'content') await handleContentCommand(interaction);
+                else if (commandName === 'suggest') await handleSuggestCommand(interaction);
+
+                // Deduct credit after successful response
+                await useAction(interaction.user.id, interaction.user.username);
+
+                // Get updated balance
+                const updatedStats = await getUserStats(interaction.user.id);
+                const actionsRemaining = updatedStats ? Math.floor(updatedStats.totalActionsAvailable) : 0;
+
+                // Follow up with balance footer
+                const footer = actionsRemaining > 5
+                    ? `💰 ${actionsRemaining} actions remaining • [Learn about credits](https://getsuite.app/docs/tokenomics.html#faq)`
+                    : `⚠️ ${actionsRemaining} actions left • \`/earn\` for more`;
+
+                await interaction.followUp({
+                    content: `─────────────────────────\n${footer}`,
+                    ephemeral: true
+                });
                 break;
             }
 
