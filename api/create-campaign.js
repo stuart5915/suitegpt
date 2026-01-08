@@ -34,7 +34,7 @@ export default async function handler(req, res) {
         // Verify the app belongs to this developer
         const { data: app, error: appError } = await supabase
             .from('apps')
-            .select('id, developer_discord_id')
+            .select('id, creator_discord_id')
             .eq('id', app_id)
             .single();
 
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'App not found' });
         }
 
-        if (app.developer_discord_id !== developer_discord_id) {
+        if (app.creator_discord_id !== developer_discord_id) {
             return res.status(403).json({ error: 'You do not own this app' });
         }
 

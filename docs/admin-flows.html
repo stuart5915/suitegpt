@@ -22,6 +22,18 @@
             overflow-x: hidden;
         }
 
+        /* Inverse nav hover - orange bg, white text */
+        .nav-links a:hover {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            color: white !important;
+        }
+
+        .nav-links a.active {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(255, 149, 0, 0.3);
+        }
+
         .canvas-container {
             width: 100%;
             min-height: 100vh;
@@ -146,6 +158,77 @@
             line-height: 1.7;
             color: #5a4a6f;
             margin-bottom: 8px;
+        }
+
+        /* Accordion/Toggle Styles */
+        .command-toggle {
+            margin: 8px 0;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            border-radius: 12px;
+            overflow: hidden;
+            background: white;
+        }
+
+        .command-toggle summary {
+            padding: 14px 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            color: #2d1b4e;
+            list-style: none;
+            transition: all 0.2s;
+        }
+
+        .command-toggle summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .command-toggle summary::after {
+            content: '+';
+            margin-left: auto;
+            font-size: 1.2rem;
+            color: #9ca3af;
+            transition: transform 0.2s;
+        }
+
+        .command-toggle[open] summary::after {
+            content: '−';
+            color: #ff9500;
+        }
+
+        .command-toggle summary:hover {
+            background: rgba(255, 149, 0, 0.05);
+        }
+
+        .command-toggle[open] summary {
+            background: rgba(255, 149, 0, 0.1);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .toggle-content {
+            padding: 16px 18px;
+            font-size: 0.9rem;
+            color: #5a4a6f;
+        }
+
+        .toggle-content .code-block {
+            margin: 10px 0;
+        }
+
+        .section-group {
+            margin: 24px 0;
+        }
+
+        .section-group-title {
+            font-size: 1rem;
+            font-weight: 800;
+            color: #ff9500;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         /* Flow Diagram */
@@ -293,180 +376,217 @@
 
             <!-- Main Content -->
             <main class="docs-content">
-                <h1>⚙️ Admin User Flows</h1>
-                <p class="subtitle">Automated workflows for managing the SUITE ecosystem.</p>
+                <h1>⚙️ Admin Commands</h1>
+                <p class="subtitle">All admin workflows and AI prompts. Click to expand.</p>
 
-                <!-- App Publishing Flow -->
-                <h2 id="publish">📱 App Publishing Flow <span class="badge badge-automated">Automated</span></h2>
-                <p>When you publish an app via Discord, it automatically syncs with the marketing system (Cadence) so
-                    the app appears in generated content.</p>
+                <!-- APP MANAGEMENT -->
+                <div class="section-group">
+                    <div class="section-group-title">📱 App Management</div>
 
-                <div class="flow-diagram">
-                    <pre>
-┌─────────────────────────────────────────────────────────────┐
-│  1. RUN COMMAND                                             │
-│     Discord: /publish-app food-vitals-expo                  │
-└─────────────────────────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────┐
-│  2. BOT BUILDS & DEPLOYS                                    │
-│     • Runs preflight check                                  │
-│     • Builds PWA with expo export                           │
-│     • Deploys to Vercel                                     │
-└─────────────────────────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────┐
-│  3. APPROVAL REQUEST                                        │
-│     Bot sends message to owner with:                        │
-│     • App preview link                                      │
-│     • ✅ Approve / ❌ Reject buttons                         │
-└─────────────────────────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────┐
-│  4. CLICK APPROVE                                           │
-│     Two databases updated automatically:                    │
-│     • App Store DB → status = 'approved'                    │
-│     • Cadence DB (suite_apps) → status = 'published'        │
-└─────────────────────────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────┐
-│  5. AUTOMATIC SYNC                                          │
-│     Cadence now includes this app in:                       │
-│     • App Spotlight posts                                   │
-│     • Ecosystem Update threads                              │
-│     • All generated marketing content                       │
-└─────────────────────────────────────────────────────────────┘
-</pre>
+                    <details class="command-toggle">
+                        <summary>Publish App</summary>
+                        <div class="toggle-content">
+                            <code>/publish-app [app-name]</code>
+                            <p>Builds PWA, deploys to Vercel, sends approval request.</p>
+                        </div>
+                    </details>
+
+                    <details class="command-toggle">
+                        <summary>Preflight Check</summary>
+                        <div class="toggle-content">
+                            <code>/preflight-check [app-name]</code>
+                            <p>Verify app is ready for publishing.</p>
+                        </div>
+                    </details>
+
+                    <details class="command-toggle">
+                        <summary>Create New App</summary>
+                        <div class="toggle-content">
+                            <code>/create-app [name] [description]</code>
+                            <p>Creates prompt → AI generates code → Appears in #pending.</p>
+                        </div>
+                    </details>
+
+                    <details class="command-toggle">
+                        <summary>Archive App</summary>
+                        <div class="toggle-content">
+                            <code>/archive-app [name] [reason]</code>
+                            <p>Removes from active apps but keeps data.</p>
+                        </div>
+                    </details>
                 </div>
 
-                <h3>Commands Used</h3>
-                <ul>
-                    <li><code>/preflight-check [app]</code> - Verify app is ready for publishing</li>
-                    <li><code>/publish-app [app]</code> - Build and deploy the app</li>
-                </ul>
+                <!-- DATABASE COMMANDS -->
+                <div class="section-group">
+                    <div class="section-group-title">🗄️ Database Commands</div>
 
-                <!-- Daily Content Generation -->
-                <h2 id="content">✍️ Daily Content Generation <span class="badge badge-automated">Automated</span></h2>
-                <p>Generate and schedule 4 daily X/Twitter posts with one click.</p>
+                    <details class="command-toggle">
+                        <summary>Publish Manually (SQL)</summary>
+                        <div class="toggle-content">
+                            <div class="code-block">
+                                <code>UPDATE suite_apps SET status = 'published', published_at = NOW() WHERE slug = '[app-slug]';</code>
+                            </div>
+                        </div>
+                    </details>
 
-                <div class="flow-diagram">
-                    <pre>
-┌─────────────────────────────────────────────────────────────┐
-│  1. OPEN CADENCE                                            │
-│     Go to: localhost:3001/quick (or deployed URL)           │
-└─────────────────────────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────┐
-│  2. CLICK "GENERATE TODAY'S POSTS"                          │
-│     API queries suite_apps table for:                       │
-│     • Published apps (status = 'published')                 │
-│     • Coming soon apps (status = 'development')             │
-└─────────────────────────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────┐
-│  3. AI GENERATES 4 POSTS                                    │
-│     09:00 - Morning Motivation                              │
-│     12:00 - App Spotlight (features PUBLISHED apps only)    │
-│     17:00 - Thread/Tip                                      │
-│     20:00 - Ecosystem Update (3-tweet thread)               │
-└─────────────────────────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────┐
-│  4. REVIEW & EDIT                                           │
-│     • Edit text if needed                                   │
-│     • Regenerate individual posts                           │
-│     • Generate images for each post                         │
-│     • Approve/skip posts                                    │
-└─────────────────────────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────┐
-│  5. CLICK "SCHEDULE ALL"                                    │
-│     Posts are saved and ready for publishing                │
-└─────────────────────────────────────────────────────────────┘
-</pre>
+                    <details class="command-toggle">
+                        <summary>Unpublish App (SQL)</summary>
+                        <div class="toggle-content">
+                            <div class="code-block">
+                                <code>UPDATE suite_apps SET status = 'development', published_at = NULL WHERE slug = '[app-slug]';</code>
+                            </div>
+                        </div>
+                    </details>
+
+                    <details class="command-toggle">
+                        <summary>Feature in Hero Banner (SQL)</summary>
+                        <div class="toggle-content">
+                            <div class="code-block">
+                                <code>UPDATE suite_apps SET is_featured = true, featured_order = 1 WHERE slug = '[app-slug]';</code>
+                            </div>
+                        </div>
+                    </details>
+
+                    <details class="command-toggle">
+                        <summary>Register Earn Flow App (SQL)</summary>
+                        <div class="toggle-content">
+                            <div class="code-block">
+                                <code>INSERT INTO earn_apps (app_id, action_name, reward_amount, is_active) VALUES ('[app]', '[action]', [amount], true);</code>
+                            </div>
+                        </div>
+                    </details>
                 </div>
 
-                <h3>Post Schedule</h3>
-                <ul>
-                    <li><strong>9:00 AM</strong> - ☀️ Morning Motivation</li>
-                    <li><strong>12:00 PM</strong> - 📱 App Spotlight (only published apps)</li>
-                    <li><strong>5:00 PM</strong> - 🧵 Thread or Tip</li>
-                    <li><strong>8:00 PM</strong> - 🔥 Ecosystem Update Thread (3 tweets)</li>
-                </ul>
+                <!-- AI PROMPTS -->
+                <div class="section-group">
+                    <div class="section-group-title">🤖 AI Prompts (Copy-Paste)</div>
 
-                <!-- App Creation -->
-                <h2 id="create">🆕 App Creation Flow <span class="badge badge-automated">Automated</span></h2>
-                <p>Create new apps via Discord with AI-generated code.</p>
+                    <details class="command-toggle">
+                        <summary>Enable Earn Flow</summary>
+                        <div class="toggle-content">
+                            <div class="code-block"><code>Enable earn flow for [APP_NAME]:
+- Action trigger: "[ACTION]"
+- $SUITE reward: [AMOUNT]
+- App location: [PATH]
 
-                <div class="flow-step">
-                    <strong>Step 1:</strong> Run <code>/create-app [name] [description]</code> in Discord
-                </div>
-                <div class="flow-step">
-                    <strong>Step 2:</strong> Bot creates prompt file for Antigravity IDE
-                </div>
-                <div class="flow-step">
-                    <strong>Step 3:</strong> AI generates the app code automatically
-                </div>
-                <div class="flow-step">
-                    <strong>Step 4:</strong> App appears in pending review channel
-                </div>
-                <div class="flow-step">
-                    <strong>Step 5:</strong> Review and approve → app is created!
-                </div>
+Add SUITE earn SDK: track action, call SuiteEarn.reward(), show success toast.</code></div>
+                        </div>
+                    </details>
 
-                <!-- Manual Database Update -->
-                <h2 id="manual">🔧 Manual Database Updates <span class="badge badge-manual">Manual</span></h2>
-                <p>For edge cases, you can manually update the suite_apps table.</p>
+                    <details class="command-toggle">
+                        <summary>Fix Bug</summary>
+                        <div class="toggle-content">
+                            <div class="code-block"><code>Fix [ISSUE] in [APP_NAME]. The bug is: [DESCRIPTION]</code>
+                            </div>
+                        </div>
+                    </details>
 
-                <h3>Publish an app manually</h3>
-                <div class="code-block">
-                    <code>UPDATE suite_apps 
-SET status = 'published', published_at = NOW() 
-WHERE slug = 'food-vitals-expo';</code>
-                </div>
+                    <details class="command-toggle">
+                        <summary>Add Feature</summary>
+                        <div class="toggle-content">
+                            <div class="code-block"><code>Add [FEATURE] to [APP_NAME]. It should: [REQUIREMENTS]</code>
+                            </div>
+                        </div>
+                    </details>
 
-                <h3>Unpublish an app</h3>
-                <div class="code-block">
-                    <code>UPDATE suite_apps 
-SET status = 'development', published_at = NULL 
-WHERE slug = 'food-vitals-expo';</code>
-                </div>
+                    <details class="command-toggle">
+                        <summary>Update UI</summary>
+                        <div class="toggle-content">
+                            <div class="code-block">
+                                <code>Update the [SCREEN/COMPONENT] in [APP_NAME] to: [CHANGES]</code>
+                            </div>
+                        </div>
+                    </details>
 
-                <h3>Add new app features</h3>
-                <div class="code-block">
-                    <code>UPDATE suite_apps 
-SET features = '["Feature 1", "Feature 2", "Feature 3"]'::jsonb 
-WHERE slug = 'food-vitals-expo';</code>
-                </div>
+                    <details class="command-toggle">
+                        <summary>Twitter Spotlight</summary>
+                        <div class="toggle-content">
+                            <div class="code-block"><code>Write Twitter spotlight for [APP_NAME]:
+- Features: [LIST]
+- Creator: @[USERNAME]
+Write 3 tweets: hook, features, CTA.</code></div>
+                        </div>
+                    </details>
 
-                <!-- Environment Setup -->
-                <h2 id="setup">🔑 Environment Setup</h2>
-                <p>Required environment variables for the automation to work:</p>
-
-                <h3>Discord Bot (.env)</h3>
-                <div class="code-block">
-                    <code># App Store Database
-SUPABASE_URL=https://rdsmdywbdiskxknluiym.supabase.co
-SUPABASE_SERVICE_KEY=your_service_key
-
-# Cadence Database (for marketing sync)
-CADENCE_SUPABASE_URL=https://tbfpopablanksrzyxaxj.supabase.co
-CADENCE_SUPABASE_KEY=your_anon_key</code>
+                    <details class="command-toggle">
+                        <summary>Generate Promo Image</summary>
+                        <div class="toggle-content">
+                            <div class="code-block">
+                                <code>Create promotional image for [APP_NAME] showing: [DESCRIPTION]</code>
+                            </div>
+                        </div>
+                    </details>
                 </div>
 
-                <h3>Cadence App (.env.local)</h3>
-                <div class="code-block">
-                    <code>NEXT_PUBLIC_SUPABASE_URL=https://tbfpopablanksrzyxaxj.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-GEMINI_API_KEY=your_gemini_key</code>
+                <!-- PROMOTION FORUM -->
+                <div class="section-group">
+                    <div class="section-group-title">🌟 Promotion Forum (Discord)</div>
+
+                    <details class="command-toggle">
+                        <summary>Forum Tags</summary>
+                        <div class="toggle-content">
+                            <p>🟡 <strong>Pending</strong> • 🟢 <strong>Approved</strong> • 🔵 <strong>Featured</strong>
+                                • 🔴 <strong>Declined</strong></p>
+                        </div>
+                    </details>
+
+                    <details class="command-toggle">
+                        <summary>Earn Flow Application Process</summary>
+                        <div class="toggle-content">
+                            <p><strong>1.</strong> Dev applies in #promotions: app name, reward action, $SUITE amount
+                            </p>
+                            <p><strong>2.</strong> Add "Approved" tag → <strong>3.</strong> Use AI prompt to integrate
+                                SDK</p>
+                        </div>
+                    </details>
+                </div>
+
+                <!-- APPROVAL CHECKLISTS -->
+                <div class="section-group">
+                    <div class="section-group-title">✅ Approval Checklists</div>
+
+                    <details class="command-toggle">
+                        <summary>App Approval</summary>
+                        <div class="toggle-content">
+                            <p>✓ Works without crashes? ✓ UI usable? ✓ Provides value? ✓ No inappropriate content?</p>
+                        </div>
+                    </details>
+
+                    <details class="command-toggle">
+                        <summary>Earn Flow Approval</summary>
+                        <div class="toggle-content">
+                            <p>✓ Action meaningful? ✓ $SUITE reasonable (1-10)? ✓ Verifiable programmatically?</p>
+                        </div>
+                    </details>
+
+                    <details class="command-toggle">
+                        <summary>Featured App Approval</summary>
+                        <div class="toggle-content">
+                            <p>✓ High quality? ✓ Good brand fit? ✓ Variety in features? ✓ Active creator?</p>
+                        </div>
+                    </details>
+                </div>
+
+                <!-- ENV -->
+                <div class="section-group">
+                    <div class="section-group-title">🔑 Environment Variables</div>
+
+                    <details class="command-toggle">
+                        <summary>Discord Bot .env</summary>
+                        <div class="toggle-content">
+                            <div class="code-block"><code>SUPABASE_URL=https://rdsmdywbdiskxknluiym.supabase.co
+SUPABASE_SERVICE_KEY=your_key
+CADENCE_SUPABASE_URL=https://tbfpopablanksrzyxaxj.supabase.co</code></div>
+                        </div>
+                    </details>
+
+                    <details class="command-toggle">
+                        <summary>Cadence .env.local</summary>
+                        <div class="toggle-content">
+                            <div class="code-block"><code>NEXT_PUBLIC_SUPABASE_URL=https://tbfpopablanksrzyxaxj.supabase.co
+GEMINI_API_KEY=your_key</code></div>
+                        </div>
+                    </details>
                 </div>
 
             </main>

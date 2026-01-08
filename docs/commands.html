@@ -22,6 +22,18 @@
             overflow-x: hidden;
         }
 
+        /* Inverse nav hover - orange bg, white text */
+        .nav-links a:hover {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            color: white !important;
+        }
+
+        .nav-links a.active {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(255, 149, 0, 0.3);
+        }
+
         /* Canvas Container - matches ecosystem */
         .canvas-container {
             width: 100%;
@@ -142,20 +154,76 @@
             font-size: 1.8rem;
         }
 
-        /* Command Card */
-        .command-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            padding: 24px;
-            margin-bottom: 16px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-            transition: all 0.3s;
+        /* Command Toggle */
+        .command-toggle {
+            margin: 6px 0;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            border-radius: 10px;
+            overflow: hidden;
+            background: white;
         }
 
-        .command-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        .command-toggle summary {
+            padding: 12px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            color: #2d1b4e;
+            list-style: none;
+            transition: all 0.2s;
+        }
+
+        .command-toggle summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .command-toggle summary::after {
+            content: '+';
+            margin-left: auto;
+            font-size: 1rem;
+            color: #9ca3af;
+        }
+
+        .command-toggle[open] summary::after {
+            content: '−';
+            color: #ff9500;
+        }
+
+        .command-toggle summary:hover {
+            background: rgba(255, 149, 0, 0.05);
+        }
+
+        .command-toggle[open] summary {
+            background: rgba(255, 149, 0, 0.1);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .toggle-content {
+            padding: 12px 16px;
+            font-size: 0.9rem;
+            color: #5a4a6f;
+        }
+
+        .section-group {
+            margin: 20px 0;
+        }
+
+        .section-group-title {
+            font-size: 1rem;
+            font-weight: 800;
+            color: #ff9500;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .commands-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
         }
 
         .command-header {
@@ -670,42 +738,26 @@
 
             let html = '';
             Object.entries(categories).forEach(([catId, cat]) => {
-                html += `
-                <div id="${catId}" class="category-header">
-                    <span class="category-icon">${cat.icon}</span>
-                    ${cat.name}
-                </div>
-            `;
+                html += `<div class="section-group"><div id="${catId}" class="section-group-title">${cat.icon} ${cat.name}</div><div class="commands-grid">`;
 
                 cat.commands.forEach(cmd => {
-                    const badgeClass = cmd.badge === 'admin' ? 'badge-admin' :
-                        cmd.badge === 'premium' ? 'badge-premium' : 'badge-public';
-
-                    let paramsHtml = '';
-                    if (cmd.params.length > 0) {
-                        paramsHtml = '<div class="command-params">' +
-                            cmd.params.map(p => `
-                            <span class="param">
-                                <span class="param-name">${p.name}</span>
-                                <span class="${p.required ? 'param-required' : 'param-optional'}">
-                                    ${p.required ? 'required' : 'optional'}
-                                </span>
-                            </span>
-                        `).join('') + '</div>';
-                    }
+                    const badgeClass = cmd.badge === 'admin' ? 'badge-admin' : cmd.badge === 'premium' ? 'badge-premium' : 'badge-public';
+                    let paramsText = cmd.params.length > 0 ? cmd.params.map(p => `<span class="param"><span class="param-name">${p.name}</span> <span class="${p.required ? 'param-required' : 'param-optional'}">${p.required ? 'req' : 'opt'}</span></span>`).join(' ') : '';
 
                     html += `
-                    <div class="command-card">
-                        <div class="command-header">
-                            <span class="command-name">${cmd.name}</span>
+                    <details class="command-toggle">
+                        <summary>
+                            <span class="command-name" style="font-size:0.9rem;padding:4px 10px;">${cmd.name}</span>
                             <span class="command-badge ${badgeClass}">${cmd.badge}</span>
+                        </summary>
+                        <div class="toggle-content">
+                            <p style="margin:0 0 8px;">${cmd.description}</p>
+                            <div class="command-usage" style="padding:10px 14px;font-size:0.85rem;">${cmd.usage}</div>
+                            ${paramsText ? '<div class="command-params">' + paramsText + '</div>' : ''}
                         </div>
-                        <p class="command-desc">${cmd.description}</p>
-                        <div class="command-usage">${cmd.usage}</div>
-                        ${paramsHtml}
-                    </div>
-                `;
+                    </details>`;
                 });
+                html += '</div></div>';
             });
 
             container.innerHTML = html || '<p>No commands found.</p>';
