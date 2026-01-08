@@ -396,22 +396,23 @@
             opacity: 0.4;
         }
 
-        /* Legend - Inside container top right */
+        /* Legend - Vertical on right side */
         .legend {
             position: absolute;
             right: 16px;
-            top: 16px;
+            top: 50%;
+            transform: translateY(-50%);
             background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border-radius: 12px;
-            padding: 10px 14px;
+            padding: 14px 16px;
             border: 1px solid rgba(255, 255, 255, 0.5);
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
             z-index: 50;
             display: flex;
-            gap: 14px;
-            flex-wrap: wrap;
+            flex-direction: column;
+            gap: 10px;
         }
 
         .legend-item {
@@ -891,33 +892,7 @@
                 <svg id="connections"></svg>
             </div>
 
-            <!-- Legend - inside container bottom right -->
-            <div class="legend">
-                <div class="legend-item">
-                    <div class="legend-color" style="background: linear-gradient(135deg, #667eea, #764ba2);"></div>
-                    <span>You</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: linear-gradient(135deg, #ff6b6b, #ff8e8e);"></div>
-                    <span>Vault</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: linear-gradient(135deg, #ffecd2, #fcb69f);"></div>
-                    <span>$SUITE</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: linear-gradient(135deg, #4facfe, #00f2fe);"></div>
-                    <span>Apps</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: linear-gradient(135deg, #f093fb, #f5576c);"></div>
-                    <span>Forge</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: linear-gradient(135deg, #ec4899, #db2777);"></div>
-                    <span>Charity</span>
-                </div>
-            </div>
+
         </div>
 
         <!-- Journey Panel (second container) -->
@@ -1003,14 +978,28 @@
                     { icon: '📊', text: 'Transparent giving' },
                     { icon: '♻️', text: '90% reinvested' },
                 ]
+            },
+            earn: {
+                id: 'earn', icon: '📺', title: 'Earn', subtitle: 'Watch Ads', type: 'wallet',
+                x: 180, y: 300, originalX: 180, originalY: 300,
+                description: 'Watch short video ads to earn FREE $SUITE! No payment required - just your time.',
+                actions: [
+                    { icon: '📺', text: 'Watch 30-sec ads' },
+                    { icon: '🪙', text: 'Earn 2 SUITE per ad' },
+                    { icon: '🔄', text: 'Unlimited watches' },
+                    { icon: '🆓', text: '100% free access' },
+                ]
             }
         };
 
         // Connections - only between ADJACENT entities (no crossings!)
         const connections = [
-            // You connects to Vault (vertical up), Suite (diagonal), and Forge (horizontal)
+            // You connects to Vault (vertical up), Suite (diagonal), Forge (horizontal), and Earn
             { from: 'you', to: 'vault', label: 'deposits', color: '#667eea' },
             { from: 'you', to: 'suite', label: 'uses', color: '#667eea' },
+            { from: 'you', to: 'earn', label: 'watches ads', color: '#22c55e' },
+            // Earn connects to Suite
+            { from: 'earn', to: 'suite', label: 'earns free', color: '#22c55e', animated: true },
             { from: 'you', to: 'forge', label: 'builds (free!)', color: '#667eea' },
             // Vault connections
             { from: 'vault', to: 'suite', label: 'mints', color: '#ff8e8e', animated: true },
@@ -1028,9 +1017,10 @@
         const flowPaths = {
             use: ['you', 'suite', 'apps'],             // You → $SUITE → Apps
             premium: ['you', 'suite', 'apps'],         // Same path, pay for premium  
-            build: ['you', 'suite', 'forge', 'apps'],  // You → Forge + optional $SUITE
+            build: ['you', 'forge', 'apps', 'suite'],  // You → Forge → Apps → earn $SUITE
             buy: ['you', 'vault', 'suite'],            // You → Vault → $SUITE
-            giving: ['vault', 'charity']               // Vault → Charity (10% giving)
+            giving: ['vault', 'charity'],              // Vault → Charity (10% giving)
+            ads: ['you', 'earn', 'suite']               // You → Earn → $SUITE (watch ads)
         };
 
         let expandedEntity = null;
@@ -1052,6 +1042,7 @@
                 charity: { x: 540, y: 20 },  // Top-right
                 suite: { x: 300, y: 180 },   // Center
                 you: { x: 80, y: 300 },      // Bottom-left (same column as Vault!)
+                earn: { x: 300, y: 340 },    // Bottom-center (below $SUITE)
                 forge: { x: 540, y: 300 }    // Bottom-right
             };
 

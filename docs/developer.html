@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="view-transition" content="same-origin">
+    <title>Developer Guide | SUITE Docs</title>
+    <link rel="icon" type="image/png" href="../assets/suite-mascot.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../suite-styles.css">
+    <link rel="stylesheet" href="../nav.css">
+    <style>
+        html {
+            overflow-y: scroll;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fff5eb 0%, #ffe4d4 20%, #ffd4e3 50%, #e8d5f9 80%, #d4e5ff 100%);
+            min-height: 100vh;
+            color: #2d1b4e;
+            overflow-x: hidden;
+        }
+
+        .canvas-container {
+            width: 100%;
+            min-height: 100vh;
+            padding: 90px 24px 40px 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+            box-sizing: border-box;
+        }
+
+        .docs-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 32px;
+            box-shadow: 0 16px 80px rgba(0, 0, 0, 0.08);
+            padding: 30px;
+            width: 100%;
+            max-width: 1200px;
+            min-height: 500px;
+            margin: 0 auto;
+            display: flex;
+            gap: 30px;
+        }
+
+        .docs-sidebar {
+            width: 220px;
+            flex-shrink: 0;
+            border-right: 1px solid rgba(0, 0, 0, 0.06);
+            padding-right: 24px;
+        }
+
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+
+        .sidebar-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #9ca3af;
+            margin-bottom: 12px;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            color: #2d1b4e;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            margin-bottom: 4px;
+        }
+
+        .sidebar-link:hover {
+            background: rgba(255, 149, 0, 0.1);
+            color: #ff9500;
+        }
+
+        .sidebar-link.active {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+        }
+
+        .docs-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .docs-content h1 {
+            font-size: 2rem;
+            font-weight: 900;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #ff9500 0%, #ff6b9d 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .docs-content .subtitle {
+            font-size: 1.1rem;
+            color: #5a4a6f;
+            margin-bottom: 32px;
+        }
+
+        .journey-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .journey-card {
+            background: white;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .journey-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+            border-color: #ff9500;
+        }
+
+        .journey-icon {
+            font-size: 2.5rem;
+            margin-bottom: 16px;
+        }
+
+        .journey-title {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin-bottom: 8px;
+        }
+
+        .journey-desc {
+            color: #5a4a6f;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .journey-steps {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .journey-steps li {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+            font-size: 0.9rem;
+            color: #5a4a6f;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .journey-steps li:last-child {
+            border-bottom: none;
+        }
+
+        .journey-steps .step-num {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin-bottom: 20px;
+            margin-top: 40px;
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, rgba(255, 149, 0, 0.1), rgba(255, 107, 157, 0.1));
+            border-radius: 12px;
+            padding: 20px;
+            margin: 24px 0;
+        }
+
+        .info-box h4 {
+            font-weight: 700;
+            color: #ff9500;
+            margin-bottom: 8px;
+        }
+
+        .info-box p {
+            color: #5a4a6f;
+            font-size: 0.95rem;
+            margin: 0;
+        }
+
+        .cta-section {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .cta-section h3 {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+
+        .cta-section p {
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 20px;
+        }
+
+        .cta-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            color: #ff9500;
+            padding: 14px 28px;
+            border-radius: 100px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .cta-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            .docs-container {
+                flex-direction: column;
+                padding: 20px;
+            }
+
+            .docs-sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+                padding-right: 0;
+                padding-bottom: 20px;
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="../index.html" class="nav-logo">
+                <img src="../assets/suite-mascot.png" alt="SUITE" class="nav-logo-img">
+                SUITE
+            </a>
+            <div class="nav-links">
+                <a href="../apps.html">Apps</a>
+                <a href="../developer-portal.html">Build</a>
+                <a href="../ecosystem.html">Ecosystem</a>
+                <a href="index.html" class="active">Docs</a>
+                <a href="../wallet.html">Wallet</a>
+                <a href="../earn.html">Earn</a>
+                <a href="../start-building.html" class="nav-cta">✨ Start Building</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="canvas-container">
+        <div class="docs-container">
+            <!-- Sidebar -->
+            <aside class="docs-sidebar">
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Getting Started</div>
+                    <a href="index.html" class="sidebar-link">📚 Introduction</a>
+                    <a href="quickstart.html" class="sidebar-link">🚀 Quick Start</a>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Commands</div>
+                    <a href="commands.html" class="sidebar-link">⚡ All Commands</a>
+                    <a href="commands.html#app" class="sidebar-link">📱 App Commands</a>
+                    <a href="commands.html#wallet" class="sidebar-link">💰 Wallet Commands</a>
+                    <a href="commands.html#admin" class="sidebar-link">🔧 Admin Commands</a>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Guides</div>
+                    <a href="tokenomics.html" class="sidebar-link">📊 Tokenomics</a>
+                    <a href="developer.html" class="sidebar-link active">👨‍💻 Developer Guide</a>
+                    <a href="admin-flows.html" class="sidebar-link">⚙️ Admin Flows</a>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="docs-content">
+                <h1>👨‍💻 Developer Guide</h1>
+                <p class="subtitle">Everything you need to know about building, submitting, and earning from your apps
+                    on SUITE.</p>
+
+                <div class="info-box">
+                    <h4>💡 No Coding Required</h4>
+                    <p>SUITE apps are built through conversation with AI. Just describe what you want, and our AI
+                        handles the technical details. Focus on your idea, not the code.</p>
+                </div>
+
+                <h2 class="section-title">Developer Journeys</h2>
+                <p style="color: #5a4a6f; margin-bottom: 24px;">Choose the path that matches where you are in your
+                    app-building journey.</p>
+
+                <div class="journey-cards">
+                    <!-- Journey 1: First-Time Builder -->
+                    <div class="journey-card">
+                        <div class="journey-icon">🌱</div>
+                        <div class="journey-title">First-Time Builder</div>
+                        <div class="journey-desc">Never built an app before? Start here. We'll guide you through
+                            creating your first app step by step.</div>
+                        <ul class="journey-steps">
+                            <li><span class="step-num">1</span> Join SUITE Discord</li>
+                            <li><span class="step-num">2</span> Go to #the-forge channel</li>
+                            <li><span class="step-num">3</span> Describe your app idea</li>
+                            <li><span class="step-num">4</span> Review & test your app</li>
+                            <li><span class="step-num">5</span> Submit for approval</li>
+                        </ul>
+                    </div>
+
+                    <!-- Journey 2: App Improver -->
+                    <div class="journey-card">
+                        <div class="journey-icon">🔧</div>
+                        <div class="journey-title">App Improver</div>
+                        <div class="journey-desc">Already have an app live? Learn how to iterate, add features, and
+                            improve based on user feedback.</div>
+                        <ul class="journey-steps">
+                            <li><span class="step-num">1</span> Check /mystats for insights</li>
+                            <li><span class="step-num">2</span> Identify improvement areas</li>
+                            <li><span class="step-num">3</span> Request changes in Discord</li>
+                            <li><span class="step-num">4</span> Test the update</li>
+                            <li><span class="step-num">5</span> Push update live</li>
+                        </ul>
+                    </div>
+
+                    <!-- Journey 3: Revenue Builder -->
+                    <div class="journey-card">
+                        <div class="journey-icon">💰</div>
+                        <div class="journey-title">Revenue Builder</div>
+                        <div class="journey-desc">Focus on earning. Learn pricing strategies, promotion tips, and how to
+                            maximize your $SUITE earnings.</div>
+                        <ul class="journey-steps">
+                            <li><span class="step-num">1</span> Set your app pricing</li>
+                            <li><span class="step-num">2</span> Share with your network</li>
+                            <li><span class="step-num">3</span> Engage in community</li>
+                            <li><span class="step-num">4</span> Track earnings via /mystats</li>
+                            <li><span class="step-num">5</span> Withdraw or reinvest</li>
+                        </ul>
+                    </div>
+
+                    <!-- Journey 4: Power Builder -->
+                    <div class="journey-card">
+                        <div class="journey-icon">⚡</div>
+                        <div class="journey-title">Power Builder</div>
+                        <div class="journey-desc">Build multiple apps, become a top creator, and maximize your presence
+                            in the SUITE ecosystem.</div>
+                        <ul class="journey-steps">
+                            <li><span class="step-num">1</span> Build your first 3 apps</li>
+                            <li><span class="step-num">2</span> Analyze what works</li>
+                            <li><span class="step-num">3</span> Create a niche portfolio</li>
+                            <li><span class="step-num">4</span> Earn creator badge</li>
+                            <li><span class="step-num">5</span> Help other builders</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h2 class="section-title">Key Concepts</h2>
+
+                <div class="info-box">
+                    <h4>🔨 The Forge</h4>
+                    <p>The Forge is where apps are built. It's a Discord channel where you describe your app idea and
+                        our AI creates it for you. You can iterate on the design, add features, and refine until it's
+                        perfect.</p>
+                </div>
+
+                <div class="info-box">
+                    <h4>📊 Revenue Share</h4>
+                    <p>Creators keep 90% of all $SUITE earned from their apps. You set your own pricing - per use,
+                        subscription, or free. Track everything with /mystats.</p>
+                </div>
+
+                <div class="info-box">
+                    <h4>✅ App Approval</h4>
+                    <p>All apps go through a quick review before going live. This ensures quality and safety for users.
+                        Most apps are approved within 24 hours.</p>
+                </div>
+
+                <div class="cta-section">
+                    <h3>Ready to Build?</h3>
+                    <p>Start creating your first app in minutes. No coding required.</p>
+                    <a href="../developer-portal.html" class="cta-btn">
+                        Start Building
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7" />
+                        </svg>
+                    </a>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+
+</html>
