@@ -570,10 +570,25 @@ client.on('messageCreate', async (message) => {
             userMessage = "what's up?";  // Default if just pinged
         }
 
-        // Stu chat is FREE - no credits needed for casual conversation
+        // Stu chat is FREE - no credits charged, but show balance footer
         const response = await generateStuResponse(userMessage, context);
-        await message.reply(response);
-        console.log(`[AI Stu] Responded ${isAutoResponse ? '(auto)' : '(mentioned)'} to ${message.author.username} (FREE chat)`);
+
+        // Get balance for footer (don't deduct - chat is free!)
+        const stats = await getUserStats(message.author.id);
+        const actionsRemaining = stats ? Math.floor(stats.totalActionsAvailable) : 20;
+
+        // Build footer with learn more link
+        let footer = '';
+        if (actionsRemaining > 10) {
+            footer = `\n\n─────────────────────────\n💰 ${actionsRemaining} actions • [Learn about SUITE](https://getsuite.app/docs/tokenomics.html)`;
+        } else if (actionsRemaining > 0) {
+            footer = `\n\n─────────────────────────\n⚠️ ${actionsRemaining} actions left • \`/earn\` for more`;
+        } else {
+            footer = `\n\n─────────────────────────\n🚨 0 actions! Use \`/earn\` to watch ads`;
+        }
+
+        await message.reply(response + footer);
+        console.log(`[AI Stu] Responded ${isAutoResponse ? '(auto)' : '(mentioned)'} to ${message.author.username} (FREE chat, ${actionsRemaining} actions)`);
     } catch (error) {
         console.error('AI Stu error:', error);
         if (!isAutoResponse) {  // Only show error if they directly asked
