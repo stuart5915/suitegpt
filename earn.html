@@ -439,22 +439,33 @@
         });
 
         function loginWithDiscord() {
-            // For demo purposes, we'll simulate login
-            // In production, you'd redirect to Discord OAuth
-            const demoUser = {
-                id: 'demo_user_' + Date.now(),
-                username: 'DemoUser',
+            // Prompt user for their Discord ID
+            const discordId = prompt(
+                'Enter your Discord User ID:\n\n' +
+                'To find it:\n' +
+                '1. Enable Developer Mode in Discord (Settings → Advanced)\n' +
+                '2. Right-click your username\n' +
+                '3. Click "Copy User ID"'
+            );
+
+            if (!discordId || discordId.length < 10) {
+                alert('Invalid Discord ID. Please try again.');
+                return;
+            }
+
+            // Prompt for username
+            const username = prompt('Enter your Discord username:') || 'User';
+
+            const user = {
+                id: discordId.trim(),
+                username: username.trim(),
                 avatar: 'https://cdn.discordapp.com/embed/avatars/0.png'
             };
 
-            currentUser = demoUser;
-            localStorage.setItem('suiteUser', JSON.stringify(demoUser));
+            currentUser = user;
+            localStorage.setItem('suiteUser', JSON.stringify(user));
             showEarnSection();
             loadUserBalance();
-
-            // Uncomment for real Discord OAuth:
-            // const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=identify`;
-            // window.location.href = authUrl;
         }
 
         async function handleOAuthCallback(code) {
