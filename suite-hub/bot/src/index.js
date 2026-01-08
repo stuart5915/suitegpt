@@ -14,7 +14,7 @@ import { handleMyAppsCommand, handleMyAppStatusCommand, handleDeleteMyAppCommand
 import { handlePublishApp, handlePublishButton } from './handlers/publishApp.js';
 import { handlePreflightCheck } from './handlers/preflightCheck.js';
 import { generateStuResponse } from './ai/stuPersona.js';
-import { canPerformAction, useAction, getNoCreditsMessage } from './credits.js';
+import { canPerformAction, useAction, getNoCreditsMessage, getUserStats } from './credits.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -65,6 +65,12 @@ const commands = [
     new SlashCommandBuilder()
         .setName('suite')
         .setDescription('How to get SUITE tokens'),
+    new SlashCommandBuilder()
+        .setName('earn')
+        .setDescription('Watch ads to earn free SUITE tokens'),
+    new SlashCommandBuilder()
+        .setName('balance')
+        .setDescription('Check your SUITE balance and free actions'),
     new SlashCommandBuilder()
         .setName('create-app')
         .setDescription('Create a new app in the ecosystem')
@@ -832,6 +838,59 @@ A utility token that powers AI features in apps, app development, and more. Trea
 **More info:** getsuite.app/docs/tokenomics.html`,
                     ephemeral: true
                 });
+                break;
+            }
+
+            case 'earn': {
+                await interaction.reply({
+                    content: `**📺 Earn Free SUITE**
+
+Watch short video ads to earn SUITE tokens - no purchase required!
+
+**🔗 Click here to start earning:**
+https://getsuite.app/earn
+
+**How it works:**
+1. Click the link above
+2. Login with Discord
+3. Watch a 30-second ad
+4. Get +10 SUITE instantly!
+
+You can watch unlimited ads to earn as much SUITE as you want! 🚀`,
+                    ephemeral: true
+                });
+                break;
+            }
+
+            case 'balance': {
+                const stats = await getUserStats(interaction.user.id);
+
+                if (!stats) {
+                    await interaction.reply({
+                        content: `**💰 Your SUITE Balance**
+
+You haven't used any actions yet!
+
+**Free Tier:** 20 actions remaining
+**SUITE Balance:** 0 SUITE
+
+Start chatting with me or use \`/earn\` to get more SUITE!`,
+                        ephemeral: true
+                    });
+                } else {
+                    await interaction.reply({
+                        content: `**💰 Your SUITE Balance**
+
+**Free Tier:** ${stats.freeActionsRemaining} actions remaining
+**SUITE Balance:** ${stats.suiteBalance.toFixed(0)} SUITE
+**Total Available:** ${Math.floor(stats.totalActionsAvailable)} actions
+
+**Ads Watched:** ${stats.totalAdsWatched}
+
+Need more? Use \`/earn\` to watch ads for free SUITE!`,
+                        ephemeral: true
+                    });
+                }
                 break;
             }
 
