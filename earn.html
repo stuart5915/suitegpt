@@ -390,13 +390,17 @@
                         <div class="option-reward">+50 SUITE</div>
                     </div>
 
-                    <div class="earn-option disabled" title="Coming Soon">
-                        <div class="option-icon">🎮</div>
-                        <div class="option-content">
-                            <div class="option-title">Try an App</div>
-                            <div class="option-desc">Install & use • Coming soon</div>
+                    <!-- Dynamic App Campaigns -->
+                    <div id="campaignsContainer">
+                        <!-- Will be populated by loadCampaigns() -->
+                        <div class="earn-option disabled" title="Loading...">
+                            <div class="option-icon">🎮</div>
+                            <div class="option-content">
+                                <div class="option-title">Try an App</div>
+                                <div class="option-desc">Install & use • Loading...</div>
+                            </div>
+                            <div class="option-reward">+100 SUITE</div>
                         </div>
-                        <div class="option-reward">+100 SUITE</div>
                     </div>
                 </div>
             </div>
@@ -436,6 +440,7 @@
                     currentUser = JSON.parse(savedUser);
                     showEarnSection();
                     loadUserBalance();
+                    loadCampaigns();
                 }
             }
         });
@@ -475,6 +480,7 @@
 
                 showEarnSection();
                 loadUserBalance();
+                loadCampaigns();
             } catch (error) {
                 console.error('OAuth error:', error);
                 alert('Failed to log in with Discord. Please try again.');
@@ -654,6 +660,95 @@
             currentUser = null;
             document.getElementById('loginSection').style.display = 'block';
             document.getElementById('earnSection').style.display = 'none';
+        }
+
+        // Load app campaigns
+        async function loadCampaigns() {
+            const container = document.getElementById('campaignsContainer');
+            if (!container || !currentUser) return;
+
+            try {
+                const response = await fetch(`/api/campaigns?discord_id=${currentUser.id}`);
+                const data = await response.json();
+
+                if (!data.campaigns || data.campaigns.length === 0) {
+                    container.innerHTML = `
+                        <div class="earn-option disabled">
+                            <div class="option-icon">🎮</div>
+                            <div class="option-content">
+                                <div class="option-title">Try an App</div>
+                                <div class="option-desc">No campaigns available</div>
+                            </div>
+                            <div class="option-reward">Coming soon</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = data.campaigns.map(c => {
+                    const progress = c.userProgress || {};
+                    const claimed = progress.claimed || false;
+                    const canClaim = !claimed &&
+                        (!c.requirements.time || progress.time_spent_seconds >= c.requirements.time) &&
+                        (!c.requirements.actions || progress.unique_actions >= c.requirements.actions);
+
+                    let statusText = 'Open app to start';
+                    if (claimed) statusText = '✅ Claimed';
+                    else if (progress.time_spent_seconds || progress.unique_actions) {
+                        const timeReq = c.requirements.time ? `${Math.floor(progress.time_spent_seconds / 60)}/${Math.floor(c.requirements.time / 60)} min` : '';
+                        const actReq = c.requirements.actions ? `${progress.unique_actions}/${c.requirements.actions} actions` : '';
+                        statusText = [timeReq, actReq].filter(Boolean).join(' • ');
+                    }
+
+                    return `
+                        <div class="earn-option ${claimed ? 'disabled' : ''}" data-campaign-id="${c.id}" onclick="${canClaim ? `claimCampaign('${c.id}')` : claimed ? '' : `window.open('${c.app?.url || '#'}', '_blank')`}">
+                            <div class="option-icon">${c.app?.icon_url ? `<img src="${c.app.icon_url}" style="width:40px;height:40px;border-radius:10px;">` : '🎮'}</div>
+                            <div class="option-content">
+                                <div class="option-title">Try ${c.app?.name || 'App'}</div>
+                                <div class="option-desc">${statusText}</div>
+                            </div>
+                            <div class="option-reward" style="${canClaim ? 'background: linear-gradient(135deg, #22c55e, #10b981); color: white; padding: 8px 12px; border-radius: 20px;' : ''}">
+                                ${canClaim ? '🎁 Claim ' : '+'}${c.reward} SUITE
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('Error loading campaigns:', error);
+            }
+        }
+
+        async function claimCampaign(campaignId) {
+            if (!currentUser) return;
+
+            try {
+                const response = await fetch('/api/campaign-claim', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        campaign_id: campaignId,
+                        discord_id: currentUser.id
+                    })
+                });
+
+                const result = await response.json();
+
+                const successEl = document.getElementById('successMessage');
+                if (result.success) {
+                    successEl.innerHTML = `<span style="font-size: 32px;">🎉</span><br>+${result.amount} SUITE earned!`;
+                    successEl.classList.add('show');
+                    await loadUserBalance();
+                    await loadCampaigns();
+                    setTimeout(() => successEl.classList.remove('show'), 3000);
+                } else {
+                    alert(result.error || 'Could not claim reward');
+                }
+
+            } catch (error) {
+                console.error('Error claiming campaign:', error);
+                alert('Error claiming reward');
+            }
         }
     </script>
 </body>
