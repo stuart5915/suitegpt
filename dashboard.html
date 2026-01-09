@@ -157,18 +157,65 @@
         .section {
             background: rgba(255, 255, 255, 0.95);
             border-radius: 24px;
-            padding: 32px;
+            padding: 0;
             margin-bottom: 24px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 32px;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .section-header:hover {
+            background: rgba(255, 149, 0, 0.05);
         }
 
         .section-title {
             font-size: 1.3rem;
             font-weight: 800;
-            margin-bottom: 24px;
+            margin: 0;
             display: flex;
             align-items: center;
             gap: 12px;
+        }
+
+        .section-toggle {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            transition: transform 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .section.collapsed .section-toggle {
+            transform: rotate(-90deg);
+        }
+
+        .section-content {
+            padding: 0 32px 32px;
+            max-height: 2000px;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.2s ease;
+            opacity: 1;
+        }
+
+        .section.collapsed .section-content {
+            max-height: 0;
+            padding: 0 32px;
+            opacity: 0;
         }
 
         .form-grid {
@@ -412,324 +459,390 @@
             </div>
 
             <!-- Create Campaign -->
-            <div class="section">
-                <h3 class="section-title">🎯 Create Campaign</h3>
-                <p style="color: #666; margin-bottom: 24px;">Pay SUITE to get users to try your app. Set requirements to
-                    ensure quality engagement.</p>
+            <div class="section collapsed" id="section-campaigns" data-section="campaigns">
+                <div class="section-header" onclick="toggleSection('campaigns')">
+                    <h3 class="section-title">🎯 Create Campaign</h3>
+                    <div class="section-toggle">▼</div>
+                </div>
+                <div class="section-content">
+                    <p style="color: #666; margin-bottom: 24px;">Pay SUITE to get users to try your app. Set
+                        requirements to ensure quality engagement.</p>
 
-                <form id="campaignForm">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>Select App</label>
-                            <select id="appSelect" required>
-                                <option value="">Choose an app...</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Reward per User (SUITE)</label>
-                            <input type="number" id="rewardAmount" value="100" min="10" max="1000" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Total Budget (SUITE)</label>
-                            <input type="number" id="totalBudget" value="1000" min="100" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Max Claims (optional)</label>
-                            <input type="number" id="maxClaims" placeholder="Unlimited">
-                        </div>
-                    </div>
-
-                    <div style="margin-top: 24px;">
-                        <h4 style="margin-bottom: 16px; color: #444;">Requirements (Optional)</h4>
+                    <form id="campaignForm">
                         <div class="form-grid">
-                            <div class="toggle-group">
-                                <input type="checkbox" id="requireTime">
-                                <div>
-                                    <label for="requireTime">Minimum Time in App</label>
-                                    <input type="number" id="minTime" placeholder="10"
-                                        style="width: 80px; margin-left: 12px;"> minutes
-                                </div>
+                            <div class="form-group">
+                                <label>Select App</label>
+                                <select id="appSelect" required>
+                                    <option value="">Choose an app...</option>
+                                </select>
                             </div>
-                            <div class="toggle-group">
-                                <input type="checkbox" id="requireActions">
-                                <div>
-                                    <label for="requireActions">Minimum Unique Actions</label>
-                                    <input type="number" id="minActions" placeholder="50"
-                                        style="width: 80px; margin-left: 12px;"> actions
-                                </div>
+                            <div class="form-group">
+                                <label>Reward per User (SUITE)</label>
+                                <input type="number" id="rewardAmount" value="100" min="10" max="1000" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Total Budget (SUITE)</label>
+                                <input type="number" id="totalBudget" value="1000" min="100" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Max Claims (optional)</label>
+                                <input type="number" id="maxClaims" placeholder="Unlimited">
                             </div>
                         </div>
-                    </div>
 
-                    <div
-                        style="margin-top: 32px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
-                        <div style="color: #666;">
-                            Cost: <strong id="campaignCost" style="color: #ff9500; font-size: 1.2rem;">1,000
-                                SUITE</strong>
+                        <div style="margin-top: 24px;">
+                            <h4 style="margin-bottom: 16px; color: #444;">Requirements (Optional)</h4>
+                            <div class="form-grid">
+                                <div class="toggle-group">
+                                    <input type="checkbox" id="requireTime">
+                                    <div>
+                                        <label for="requireTime">Minimum Time in App</label>
+                                        <input type="number" id="minTime" placeholder="10"
+                                            style="width: 80px; margin-left: 12px;"> minutes
+                                    </div>
+                                </div>
+                                <div class="toggle-group">
+                                    <input type="checkbox" id="requireActions">
+                                    <div>
+                                        <label for="requireActions">Minimum Unique Actions</label>
+                                        <input type="number" id="minActions" placeholder="50"
+                                            style="width: 80px; margin-left: 12px;"> actions
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <button type="submit" class="btn-primary" id="createCampaignBtn">
-                            🚀 Launch Campaign
-                        </button>
-                    </div>
-                </form>
+
+                        <div
+                            style="margin-top: 32px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                            <div style="color: #666;">
+                                Cost: <strong id="campaignCost" style="color: #ff9500; font-size: 1.2rem;">1,000
+                                    SUITE</strong>
+                            </div>
+                            <button type="submit" class="btn-primary" id="createCampaignBtn">
+                                🚀 Launch Campaign
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
 
-            <!-- Active Campaigns -->
-            <div class="section">
-                <h3 class="section-title">📊 Your Campaigns</h3>
-                <div id="campaignsList" class="campaigns-list">
-                    <div class="empty-state">
-                        <p>No campaigns yet. Create one above!</p>
+            <!-- Your Campaigns -->
+            <div class="section collapsed" id="section-my-campaigns" data-section="my-campaigns">
+                <div class="section-header" onclick="toggleSection('my-campaigns')">
+                    <h3 class="section-title">📊 Your Campaigns</h3>
+                    <div class="section-toggle">▼</div>
+                </div>
+                <div class="section-content">
+                    <div id="campaignsList" class="campaigns-list">
+                        <div class="empty-state">
+                            <p>No campaigns yet. Create one above!</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Your Apps -->
-            <div class="section">
-                <h3 class="section-title">📱 Your Apps</h3>
-                <div id="appsList">
-                    <div class="empty-state">
-                        <p>No apps found. <a href="start-building.html" style="color: #ff9500;">Start building</a> or
-                            submit via Discord!</p>
+            <div class="section" id="section-apps" data-section="apps">
+                <div class="section-header" onclick="toggleSection('apps')">
+                    <h3 class="section-title">📱 Your Apps</h3>
+                    <div class="section-toggle">▼</div>
+                </div>
+                <div class="section-content">
+                    <div id="appsList">
+                        <div class="empty-state">
+                            <p>No apps found. <a href="start-building.html" style="color: #ff9500;">Start building</a>
+                                or submit via Discord!</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Request Reviews -->
-            <div class="section">
-                <h3 class="section-title">📝 Request Reviews</h3>
-                <p style="color: #666; margin-bottom: 24px;">Pay SUITE tokens to get honest reviews from real users.
-                    Users must use your app for a minimum time before they can review.</p>
+            <div class="section collapsed" id="section-reviews" data-section="reviews">
+                <div class="section-header" onclick="toggleSection('reviews')">
+                    <h3 class="section-title">📝 Request Reviews</h3>
+                    <div class="section-toggle">▼</div>
+                </div>
+                <div class="section-content">
+                    <p style="color: #666; margin-bottom: 24px;">Pay SUITE tokens to get honest reviews from real users.
+                        Users must use your app for a minimum time before they can review.</p>
 
-                <form id="reviewCampaignForm">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>Select App</label>
-                            <select id="reviewAppSelect" required>
-                                <option value="">Choose an app...</option>
-                            </select>
+                    <form id="reviewCampaignForm">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Select App</label>
+                                <select id="reviewAppSelect" required>
+                                    <option value="">Choose an app...</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>SUITE per Review</label>
+                                <input type="number" id="reviewReward" value="50" min="10" max="500" required>
+                                <small style="color: #888; font-size: 0.8rem;">10-500 SUITE per honest review</small>
+                            </div>
+                            <div class="form-group">
+                                <label>Minimum Usage Time</label>
+                                <select id="reviewMinTime" required>
+                                    <option value="60">1 minute</option>
+                                    <option value="180">3 minutes</option>
+                                    <option value="300" selected>5 minutes</option>
+                                    <option value="600">10 minutes</option>
+                                    <option value="1800">30 minutes</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Total Budget (SUITE)</label>
+                                <input type="number" id="reviewBudget" value="500" min="50" required>
+                                <small style="color: #888; font-size: 0.8rem;">= <span
+                                        id="reviewCountEstimate">10</span>
+                                    reviews max</small>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label>SUITE per Review</label>
-                            <input type="number" id="reviewReward" value="50" min="10" max="500" required>
-                            <small style="color: #888; font-size: 0.8rem;">10-500 SUITE per honest review</small>
-                        </div>
-                        <div class="form-group">
-                            <label>Minimum Usage Time</label>
-                            <select id="reviewMinTime" required>
-                                <option value="60">1 minute</option>
-                                <option value="180">3 minutes</option>
-                                <option value="300" selected>5 minutes</option>
-                                <option value="600">10 minutes</option>
-                                <option value="1800">30 minutes</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Total Budget (SUITE)</label>
-                            <input type="number" id="reviewBudget" value="500" min="50" required>
-                            <small style="color: #888; font-size: 0.8rem;">= <span id="reviewCountEstimate">10</span>
-                                reviews max</small>
-                        </div>
-                    </div>
 
-                    <div
-                        style="margin-top: 24px; padding: 16px; background: rgba(99, 102, 241, 0.1); border-radius: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
-                        <div>
-                            <div style="font-weight: 700; color: #2d1b4e;">💡 How it works</div>
-                            <div style="font-size: 0.9rem; color: #666;">Users try your app → Use it for min time →
-                                Write honest review → Get paid</div>
+                        <div
+                            style="margin-top: 24px; padding: 16px; background: rgba(99, 102, 241, 0.1); border-radius: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                            <div>
+                                <div style="font-weight: 700; color: #2d1b4e;">💡 How it works</div>
+                                <div style="font-size: 0.9rem; color: #666;">Users try your app → Use it for min time →
+                                    Write honest review → Get paid</div>
+                            </div>
+                            <button type="submit" class="btn-primary" id="createReviewCampaignBtn">
+                                📝 Start Review Campaign
+                            </button>
                         </div>
-                        <button type="submit" class="btn-primary" id="createReviewCampaignBtn">
-                            📝 Start Review Campaign
-                        </button>
-                    </div>
-                </form>
+                    </form>
 
-                <!-- Active Review Campaigns -->
-                <div style="margin-top: 32px;">
-                    <h4 style="font-weight: 700; margin-bottom: 16px;">Your Review Campaigns</h4>
-                    <div id="reviewCampaignsList" class="campaigns-list">
-                        <div class="empty-state">
-                            <p>No review campaigns yet. Create one above to get feedback!</p>
+                    <!-- Active Review Campaigns -->
+                    <div style="margin-top: 32px;">
+                        <h4 style="font-weight: 700; margin-bottom: 16px;">Your Review Campaigns</h4>
+                        <div id="reviewCampaignsList" class="campaigns-list">
+                            <div class="empty-state">
+                                <p>No review campaigns yet. Create one above to get feedback!</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Create Power-Up -->
-            <div class="section">
-                <h3 class="section-title">⚡ Create Power-Up</h3>
-                <p style="color: #666; margin-bottom: 24px;">Create custom power-ups for your app. Users buy them in the
-                    SUITE Store, you earn 70% of each sale!</p>
+            <div class="section collapsed" id="section-powerups" data-section="powerups">
+                <div class="section-header" onclick="toggleSection('powerups')">
+                    <h3 class="section-title">⚡ Create Power-Up</h3>
+                    <div class="section-toggle">▼</div>
+                </div>
+                <div class="section-content">
+                    <p style="color: #666; margin-bottom: 24px;">Create custom power-ups for your app. Users buy
+                        them in the SUITE Store, you earn 70% of each sale!</p>
 
-                <form id="powerupForm">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>Select Your App</label>
-                            <select id="powerupAppSelect" required>
-                                <option value="">Choose an app...</option>
-                            </select>
+                    <form id="powerupForm">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Select Your App</label>
+                                <select id="powerupAppSelect" required>
+                                    <option value="">Choose an app...</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Power-Up Name</label>
+                                <input type="text" id="powerupName" placeholder="e.g., Super Scan Mode" required
+                                    maxlength="30">
+                            </div>
+                            <div class="form-group">
+                                <label>Description</label>
+                                <input type="text" id="powerupDesc"
+                                    placeholder="e.g., Unlock premium features for 7 days" required maxlength="100">
+                            </div>
+                            <div class="form-group">
+                                <label>Icon (emoji)</label>
+                                <input type="text" id="powerupIcon" placeholder="🔮" maxlength="4"
+                                    style="font-size: 1.5rem; text-align: center;">
+                            </div>
+                            <div class="form-group">
+                                <label>Price (SUITE)</label>
+                                <input type="number" id="powerupPrice" value="50" min="10" max="1000" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Duration (days, 0 = permanent)</label>
+                                <input type="number" id="powerupDuration" value="7" min="0" max="365">
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label>Power-Up Name</label>
-                            <input type="text" id="powerupName" placeholder="e.g., Super Scan Mode" required
-                                maxlength="30">
-                        </div>
-                        <div class="form-group">
-                            <label>Description</label>
-                            <input type="text" id="powerupDesc" placeholder="e.g., Unlock premium features for 7 days"
-                                required maxlength="100">
-                        </div>
-                        <div class="form-group">
-                            <label>Icon (emoji)</label>
-                            <input type="text" id="powerupIcon" placeholder="🔮" maxlength="4"
-                                style="font-size: 1.5rem; text-align: center;">
-                        </div>
-                        <div class="form-group">
-                            <label>Price (SUITE)</label>
-                            <input type="number" id="powerupPrice" value="50" min="10" max="1000" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Duration (days, 0 = permanent)</label>
-                            <input type="number" id="powerupDuration" value="7" min="0" max="365">
-                        </div>
-                    </div>
 
-                    <div
-                        style="margin-top: 24px; padding: 16px; background: rgba(255, 149, 0, 0.1); border-radius: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
-                        <div>
-                            <div style="font-weight: 700; color: #2d1b4e;">💰 Revenue Split</div>
-                            <div style="font-size: 0.9rem; color: #666;">You earn <strong
-                                    style="color: #22c55e;">70%</strong> • Treasury gets 30%</div>
+                        <div
+                            style="margin-top: 24px; padding: 16px; background: rgba(255, 149, 0, 0.1); border-radius: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                            <div>
+                                <div style="font-weight: 700; color: #2d1b4e;">💰 Revenue Split</div>
+                                <div style="font-size: 0.9rem; color: #666;">You earn <strong
+                                        style="color: #22c55e;">70%</strong> • Treasury gets 30%</div>
+                            </div>
+                            <button type="submit" class="btn-primary" id="createPowerupBtn">
+                                ⚡ Create Power-Up
+                            </button>
                         </div>
-                        <button type="submit" class="btn-primary" id="createPowerupBtn">
-                            ⚡ Create Power-Up
-                        </button>
-                    </div>
-                </form>
+                    </form>
 
-                <!-- Your Power-Ups List -->
-                <div style="margin-top: 32px;">
-                    <h4 style="font-weight: 700; margin-bottom: 16px;">Your Power-Ups</h4>
-                    <div id="powerupsList" class="campaigns-list">
-                        <div class="empty-state">
-                            <p>No power-ups yet. Create your first one above!</p>
+                    <!-- Your Power-Ups List -->
+                    <div style="margin-top: 32px;">
+                        <h4 style="font-weight: 700; margin-bottom: 16px;">Your Power-Ups</h4>
+                        <div id="powerupsList" class="campaigns-list">
+                            <div class="empty-state">
+                                <p>No power-ups yet. Create your first one above!</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <script>
-        const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
-        const DISCORD_CLIENT_ID = '1457474266390986865';
-        const REDIRECT_URI = window.location.origin + '/dashboard.html';
+        <script>
+            const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
+            const DISCORD_CLIENT_ID = '1457474266390986865';
+            const REDIRECT_URI = window.location.origin + '/dashboard.html';
 
-        let currentUser = null;
+            let currentUser = null;
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const hash = window.location.hash.substring(1);
-            const params = new URLSearchParams(hash);
-            const accessToken = params.get('access_token');
+            // ========== COLLAPSIBLE SECTIONS ==========
+            function toggleSection(sectionName) {
+                const section = document.getElementById(`section-${sectionName}`);
+                if (!section) return;
 
-            if (accessToken) {
-                handleOAuthCallback(accessToken);
-            } else {
-                const savedUser = localStorage.getItem('suiteDev');
-                if (savedUser) {
-                    currentUser = JSON.parse(savedUser);
-                    showDashboard();
-                }
+                section.classList.toggle('collapsed');
+
+                // Save state to localStorage
+                const states = JSON.parse(localStorage.getItem('dashboardSections') || '{}');
+                states[sectionName] = section.classList.contains('collapsed');
+                localStorage.setItem('dashboardSections', JSON.stringify(states));
             }
-        });
 
-        function loginWithDiscord() {
-            const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=identify`;
-            window.location.href = authUrl;
-        }
+            function initSectionStates() {
+                const states = JSON.parse(localStorage.getItem('dashboardSections') || '{}');
 
-        async function handleOAuthCallback(accessToken) {
-            try {
-                const response = await fetch('https://discord.com/api/users/@me', {
-                    headers: { 'Authorization': `Bearer ${accessToken}` }
-                });
-                const user = await response.json();
-
-                currentUser = {
-                    id: user.id,
-                    username: user.username,
-                    avatar: user.avatar
-                        ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
-                        : `https://cdn.discordapp.com/embed/avatars/${parseInt(user.discriminator || '0') % 5}.png`
+                // Default: apps open, others collapsed
+                const defaults = {
+                    'campaigns': true,
+                    'my-campaigns': true,
+                    'apps': false,  // Open by default
+                    'reviews': true,
+                    'powerups': true
                 };
 
-                localStorage.setItem('suiteDev', JSON.stringify(currentUser));
-                history.replaceState(null, '', window.location.pathname);
-                showDashboard();
-            } catch (error) {
-                console.error('OAuth error:', error);
-                alert('Login failed. Please try again.');
-            }
-        }
+                Object.keys(defaults).forEach(sectionName => {
+                    const section = document.getElementById(`section-${sectionName}`);
+                    if (!section) return;
 
-        function showDashboard() {
-            // Hide login banner, show user pill
-            document.getElementById('loginBanner').style.display = 'none';
-            document.getElementById('userPill').style.display = 'flex';
-            document.getElementById('userName').textContent = currentUser.username;
-            document.getElementById('userAvatar').src = currentUser.avatar;
-
-            loadDevData();
-        }
-
-        async function loadDevData() {
-            await Promise.all([
-                loadApps(),
-                loadCampaigns(),
-                loadBalance()
-            ]);
-        }
-
-        async function loadApps() {
-            try {
-                // Query suite_apps table for apps created by this user
-                const url = `${SUPABASE_URL}/rest/v1/suite_apps?creator_discord_id=eq.${currentUser.id}&select=*`;
-                console.log('🔍 Loading apps for Discord ID:', currentUser.id);
-                console.log('🔗 API URL:', url);
-
-                const response = await fetch(url, {
-                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+                    const isCollapsed = states[sectionName] !== undefined ? states[sectionName] : defaults[sectionName];
+                    if (isCollapsed) {
+                        section.classList.add('collapsed');
+                    } else {
+                        section.classList.remove('collapsed');
+                    }
                 });
-                const apps = await response.json();
+            }
 
-                console.log('📦 API Response:', apps);
-                console.log('📊 Apps count:', Array.isArray(apps) ? apps.length : 'Not an array');
+            document.addEventListener('DOMContentLoaded', () => {
+                // Initialize collapsible sections
+                initSectionStates();
 
-                document.getElementById('totalApps').textContent = Array.isArray(apps) ? apps.length : 0;
+                const hash = window.location.hash.substring(1);
+                const params = new URLSearchParams(hash);
+                const accessToken = params.get('access_token');
 
-                const select = document.getElementById('appSelect');
-                const powerupSelect = document.getElementById('powerupAppSelect');
-                const reviewSelect = document.getElementById('reviewAppSelect');
-                select.innerHTML = '<option value="">Choose an app...</option>';
-                if (powerupSelect) powerupSelect.innerHTML = '<option value="">Choose an app...</option>';
-                if (reviewSelect) reviewSelect.innerHTML = '<option value="">Choose an app...</option>';
-
-                if (Array.isArray(apps)) {
-                    apps.forEach(app => {
-                        const option = `<option value="${app.id}">${app.name}</option>`;
-                        select.innerHTML += option;
-                        if (powerupSelect) powerupSelect.innerHTML += option;
-                        if (reviewSelect) reviewSelect.innerHTML += option;
-                    });
-                }
-
-                const appsList = document.getElementById('appsList');
-                if (!Array.isArray(apps) || apps.length === 0) {
-                    appsList.innerHTML = '<div class="empty-state"><p>No apps yet. <a href="start-building.html" style="color: #ff9500;">Submit your first app!</a></p></div>';
+                if (accessToken) {
+                    handleOAuthCallback(accessToken);
                 } else {
-                    appsList.innerHTML = apps.map(app => `
+                    const savedUser = localStorage.getItem('suiteDev');
+                    if (savedUser) {
+                        currentUser = JSON.parse(savedUser);
+                        showDashboard();
+                    }
+                }
+            });
+
+            function loginWithDiscord() {
+                const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=identify`;
+                window.location.href = authUrl;
+            }
+
+            async function handleOAuthCallback(accessToken) {
+                try {
+                    const response = await fetch('https://discord.com/api/users/@me', {
+                        headers: { 'Authorization': `Bearer ${accessToken}` }
+                    });
+                    const user = await response.json();
+
+                    currentUser = {
+                        id: user.id,
+                        username: user.username,
+                        avatar: user.avatar
+                            ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
+                            : `https://cdn.discordapp.com/embed/avatars/${parseInt(user.discriminator || '0') % 5}.png`
+                    };
+
+                    localStorage.setItem('suiteDev', JSON.stringify(currentUser));
+                    history.replaceState(null, '', window.location.pathname);
+                    showDashboard();
+                } catch (error) {
+                    console.error('OAuth error:', error);
+                    alert('Login failed. Please try again.');
+                }
+            }
+
+            function showDashboard() {
+                // Hide login banner, show user pill
+                document.getElementById('loginBanner').style.display = 'none';
+                document.getElementById('userPill').style.display = 'flex';
+                document.getElementById('userName').textContent = currentUser.username;
+                document.getElementById('userAvatar').src = currentUser.avatar;
+
+                loadDevData();
+            }
+
+            async function loadDevData() {
+                await Promise.all([
+                    loadApps(),
+                    loadCampaigns(),
+                    loadBalance()
+                ]);
+            }
+
+            async function loadApps() {
+                try {
+                    // Query suite_apps table for apps created by this user
+                    const url = `${SUPABASE_URL}/rest/v1/suite_apps?creator_discord_id=eq.${currentUser.id}&select=*`;
+                    console.log('🔍 Loading apps for Discord ID:', currentUser.id);
+                    console.log('🔗 API URL:', url);
+
+                    const response = await fetch(url, {
+                        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+                    });
+                    const apps = await response.json();
+
+                    console.log('📦 API Response:', apps);
+                    console.log('📊 Apps count:', Array.isArray(apps) ? apps.length : 'Not an array');
+
+                    document.getElementById('totalApps').textContent = Array.isArray(apps) ? apps.length : 0;
+
+                    const select = document.getElementById('appSelect');
+                    const powerupSelect = document.getElementById('powerupAppSelect');
+                    const reviewSelect = document.getElementById('reviewAppSelect');
+                    select.innerHTML = '<option value="">Choose an app...</option>';
+                    if (powerupSelect) powerupSelect.innerHTML = '<option value="">Choose an app...</option>';
+                    if (reviewSelect) reviewSelect.innerHTML = '<option value="">Choose an app...</option>';
+
+                    if (Array.isArray(apps)) {
+                        apps.forEach(app => {
+                            const option = `<option value="${app.id}">${app.name}</option>`;
+                            select.innerHTML += option;
+                            if (powerupSelect) powerupSelect.innerHTML += option;
+                            if (reviewSelect) reviewSelect.innerHTML += option;
+                        });
+                    }
+
+                    const appsList = document.getElementById('appsList');
+                    if (!Array.isArray(apps) || apps.length === 0) {
+                        appsList.innerHTML = '<div class="empty-state"><p>No apps yet. <a href="start-building.html" style="color: #ff9500;">Submit your first app!</a></p></div>';
+                    } else {
+                        appsList.innerHTML = apps.map(app => `
                         <div class="campaign-item">
                             <div class="campaign-info">
                                 <img src="${app.icon_url || 'assets/suite-mascot.png'}" alt="${app.name}" style="border-radius: 12px;">
@@ -741,36 +854,36 @@
                             <span class="badge badge-${app.status === 'published' ? 'active' : 'paused'}">${app.status || 'development'}</span>
                         </div>
                     `).join('');
+                    }
+                } catch (error) {
+                    console.error('Error loading apps:', error);
+                    document.getElementById('totalApps').textContent = '0';
                 }
-            } catch (error) {
-                console.error('Error loading apps:', error);
-                document.getElementById('totalApps').textContent = '0';
             }
-        }
 
-        async function loadCampaigns() {
-            try {
-                // Note: app_campaigns references suite_apps via app_id
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/app_campaigns?developer_discord_id=eq.${currentUser.id}&select=*,suite_apps(name,icon_url)`, {
-                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
-                });
-                const campaigns = await response.json();
+            async function loadCampaigns() {
+                try {
+                    // Note: app_campaigns references suite_apps via app_id
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/app_campaigns?developer_discord_id=eq.${currentUser.id}&select=*,suite_apps(name,icon_url)`, {
+                        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+                    });
+                    const campaigns = await response.json();
 
-                if (!Array.isArray(campaigns)) {
-                    document.getElementById('totalCampaigns').textContent = '0';
-                    document.getElementById('totalClaims').textContent = '0';
-                    return;
-                }
+                    if (!Array.isArray(campaigns)) {
+                        document.getElementById('totalCampaigns').textContent = '0';
+                        document.getElementById('totalClaims').textContent = '0';
+                        return;
+                    }
 
-                const active = campaigns.filter(c => c.status === 'active');
-                document.getElementById('totalCampaigns').textContent = active.length;
-                document.getElementById('totalClaims').textContent = campaigns.reduce((sum, c) => sum + (c.claims_count || 0), 0).toLocaleString();
+                    const active = campaigns.filter(c => c.status === 'active');
+                    document.getElementById('totalCampaigns').textContent = active.length;
+                    document.getElementById('totalClaims').textContent = campaigns.reduce((sum, c) => sum + (c.claims_count || 0), 0).toLocaleString();
 
-                const list = document.getElementById('campaignsList');
-                if (campaigns.length === 0) {
-                    list.innerHTML = '<div class="empty-state"><p>No campaigns yet. Create one above!</p></div>';
-                } else {
-                    list.innerHTML = campaigns.map(c => `
+                    const list = document.getElementById('campaignsList');
+                    if (campaigns.length === 0) {
+                        list.innerHTML = '<div class="empty-state"><p>No campaigns yet. Create one above!</p></div>';
+                    } else {
+                        list.innerHTML = campaigns.map(c => `
                         <div class="campaign-item">
                             <div class="campaign-info">
                                 <img src="${c.suite_apps?.icon_url || 'assets/suite-mascot.png'}" alt="" style="border-radius: 12px;">
@@ -786,125 +899,125 @@
                             <span class="badge badge-${c.status}">${c.status}</span>
                         </div>
                     `).join('');
+                    }
+                } catch (error) {
+                    console.error('Error loading campaigns:', error);
+                    document.getElementById('totalCampaigns').textContent = '0';
+                    document.getElementById('totalClaims').textContent = '0';
                 }
-            } catch (error) {
-                console.error('Error loading campaigns:', error);
-                document.getElementById('totalCampaigns').textContent = '0';
-                document.getElementById('totalClaims').textContent = '0';
-            }
-        }
-
-        async function loadBalance() {
-            try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/user_credits?discord_id=eq.${currentUser.id}&select=suite_balance`, {
-                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
-                });
-                const data = await response.json();
-                const balance = data[0]?.suite_balance || 0;
-                document.getElementById('suiteBalance').textContent = balance;
-            } catch (error) {
-                console.error('Error loading balance:', error);
-            }
-        }
-
-        // Update cost display
-        document.getElementById('totalBudget').addEventListener('input', (e) => {
-            document.getElementById('campaignCost').textContent = parseInt(e.target.value || 0).toLocaleString() + ' SUITE';
-        });
-
-        // Form submission
-        document.getElementById('campaignForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const appId = document.getElementById('appSelect').value;
-            const rewardAmount = parseInt(document.getElementById('rewardAmount').value);
-            const totalBudget = parseInt(document.getElementById('totalBudget').value);
-            const maxClaims = document.getElementById('maxClaims').value ? parseInt(document.getElementById('maxClaims').value) : null;
-            const requireTime = document.getElementById('requireTime').checked;
-            const minTime = requireTime ? parseInt(document.getElementById('minTime').value || 10) * 60 : 0;
-            const requireActions = document.getElementById('requireActions').checked;
-            const minActions = requireActions ? parseInt(document.getElementById('minActions').value || 50) : 0;
-
-            if (!appId) {
-                alert('Please select an app');
-                return;
             }
 
-            // Check balance
-            const balance = parseInt(document.getElementById('suiteBalance').textContent);
-            if (balance < totalBudget) {
-                alert(`Insufficient SUITE balance. You have ${balance} but need ${totalBudget}.`);
-                return;
+            async function loadBalance() {
+                try {
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/user_credits?discord_id=eq.${currentUser.id}&select=suite_balance`, {
+                        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+                    });
+                    const data = await response.json();
+                    const balance = data[0]?.suite_balance || 0;
+                    document.getElementById('suiteBalance').textContent = balance;
+                } catch (error) {
+                    console.error('Error loading balance:', error);
+                }
             }
 
-            try {
-                const btn = document.getElementById('createCampaignBtn');
-                btn.disabled = true;
-                btn.textContent = 'Creating...';
+            // Update cost display
+            document.getElementById('totalBudget').addEventListener('input', (e) => {
+                document.getElementById('campaignCost').textContent = parseInt(e.target.value || 0).toLocaleString() + ' SUITE';
+            });
 
-                const response = await fetch('/api/create-campaign', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        app_id: appId,
-                        developer_discord_id: currentUser.id,
-                        suite_per_claim: rewardAmount,
-                        total_budget: totalBudget,
-                        max_claims: maxClaims,
-                        require_time: requireTime,
-                        min_time_seconds: minTime,
-                        require_actions: requireActions,
-                        min_actions: minActions
-                    })
-                });
+            // Form submission
+            document.getElementById('campaignForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
 
-                const result = await response.json();
+                const appId = document.getElementById('appSelect').value;
+                const rewardAmount = parseInt(document.getElementById('rewardAmount').value);
+                const totalBudget = parseInt(document.getElementById('totalBudget').value);
+                const maxClaims = document.getElementById('maxClaims').value ? parseInt(document.getElementById('maxClaims').value) : null;
+                const requireTime = document.getElementById('requireTime').checked;
+                const minTime = requireTime ? parseInt(document.getElementById('minTime').value || 10) * 60 : 0;
+                const requireActions = document.getElementById('requireActions').checked;
+                const minActions = requireActions ? parseInt(document.getElementById('minActions').value || 50) : 0;
 
-                if (result.success) {
-                    alert('Campaign created successfully!');
-                    await loadDevData();
-                    document.getElementById('campaignForm').reset();
-                } else {
-                    alert(result.error || 'Failed to create campaign');
+                if (!appId) {
+                    alert('Please select an app');
+                    return;
                 }
 
-                btn.disabled = false;
-                btn.textContent = '🚀 Launch Campaign';
-            } catch (error) {
-                console.error('Error creating campaign:', error);
-                alert('Error creating campaign');
+                // Check balance
+                const balance = parseInt(document.getElementById('suiteBalance').textContent);
+                if (balance < totalBudget) {
+                    alert(`Insufficient SUITE balance. You have ${balance} but need ${totalBudget}.`);
+                    return;
+                }
+
+                try {
+                    const btn = document.getElementById('createCampaignBtn');
+                    btn.disabled = true;
+                    btn.textContent = 'Creating...';
+
+                    const response = await fetch('/api/create-campaign', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            app_id: appId,
+                            developer_discord_id: currentUser.id,
+                            suite_per_claim: rewardAmount,
+                            total_budget: totalBudget,
+                            max_claims: maxClaims,
+                            require_time: requireTime,
+                            min_time_seconds: minTime,
+                            require_actions: requireActions,
+                            min_actions: minActions
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        alert('Campaign created successfully!');
+                        await loadDevData();
+                        document.getElementById('campaignForm').reset();
+                    } else {
+                        alert(result.error || 'Failed to create campaign');
+                    }
+
+                    btn.disabled = false;
+                    btn.textContent = '🚀 Launch Campaign';
+                } catch (error) {
+                    console.error('Error creating campaign:', error);
+                    alert('Error creating campaign');
+                }
+            });
+
+            function logout() {
+                localStorage.removeItem('suiteDev');
+                currentUser = null;
+                // Show login banner, hide user pill, reset to dashes
+                document.getElementById('loginBanner').style.display = 'flex';
+                document.getElementById('userPill').style.display = 'none';
+                // Reset to dashes (not logged in state)
+                document.getElementById('totalApps').textContent = '-';
+                document.getElementById('totalCampaigns').textContent = '-';
+                document.getElementById('totalClaims').textContent = '-';
+                document.getElementById('suiteBalance').textContent = '-';
             }
-        });
 
-        function logout() {
-            localStorage.removeItem('suiteDev');
-            currentUser = null;
-            // Show login banner, hide user pill, reset to dashes
-            document.getElementById('loginBanner').style.display = 'flex';
-            document.getElementById('userPill').style.display = 'none';
-            // Reset to dashes (not logged in state)
-            document.getElementById('totalApps').textContent = '-';
-            document.getElementById('totalCampaigns').textContent = '-';
-            document.getElementById('totalClaims').textContent = '-';
-            document.getElementById('suiteBalance').textContent = '-';
-        }
+            // ========== POWER-UP FUNCTIONS ==========
 
-        // ========== POWER-UP FUNCTIONS ==========
+            let userApps = []; // Store apps for power-up dropdown
 
-        let userApps = []; // Store apps for power-up dropdown
+            async function loadPowerups() {
+                try {
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/store_powerups?creator_discord_id=eq.${currentUser.id}&select=*`, {
+                        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+                    });
+                    const powerups = await response.json();
 
-        async function loadPowerups() {
-            try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/store_powerups?creator_discord_id=eq.${currentUser.id}&select=*`, {
-                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
-                });
-                const powerups = await response.json();
-
-                const list = document.getElementById('powerupsList');
-                if (!powerups || powerups.length === 0) {
-                    list.innerHTML = '<div class="empty-state"><p>No power-ups yet. Create your first one above!</p></div>';
-                } else {
-                    list.innerHTML = powerups.map(p => `
+                    const list = document.getElementById('powerupsList');
+                    if (!powerups || powerups.length === 0) {
+                        list.innerHTML = '<div class="empty-state"><p>No power-ups yet. Create your first one above!</p></div>';
+                    } else {
+                        list.innerHTML = powerups.map(p => `
                         <div class="campaign-item">
                             <div class="campaign-info">
                                 <div style="font-size: 2rem; margin-right: 8px;">${p.icon || '⚡'}</div>
@@ -920,138 +1033,138 @@
                             <span class="badge ${p.status === 'active' ? 'badge-active' : 'badge-paused'}">${p.status || 'pending'}</span>
                         </div>
                     `).join('');
+                    }
+                } catch (error) {
+                    console.error('Error loading power-ups:', error);
                 }
-            } catch (error) {
-                console.error('Error loading power-ups:', error);
             }
-        }
 
-        function populatePowerupAppSelect(apps) {
-            userApps = apps;
-            const select = document.getElementById('powerupAppSelect');
-            select.innerHTML = '<option value="">Choose an app...</option>';
-            apps.forEach(app => {
-                select.innerHTML += `<option value="${app.id}">${app.name}</option>`;
+            function populatePowerupAppSelect(apps) {
+                userApps = apps;
+                const select = document.getElementById('powerupAppSelect');
+                select.innerHTML = '<option value="">Choose an app...</option>';
+                apps.forEach(app => {
+                    select.innerHTML += `<option value="${app.id}">${app.name}</option>`;
+                });
+            }
+
+            // Power-up form submission
+            document.getElementById('powerupForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const appId = document.getElementById('powerupAppSelect').value;
+                const name = document.getElementById('powerupName').value;
+                const description = document.getElementById('powerupDesc').value;
+                const icon = document.getElementById('powerupIcon').value || '⚡';
+                const price = parseInt(document.getElementById('powerupPrice').value);
+                const duration = parseInt(document.getElementById('powerupDuration').value);
+
+                if (!appId) {
+                    alert('Please select an app');
+                    return;
+                }
+
+                const selectedApp = userApps.find(a => a.id == appId);
+
+                try {
+                    const btn = document.getElementById('createPowerupBtn');
+                    btn.disabled = true;
+                    btn.textContent = 'Creating...';
+
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/store_powerups`, {
+                        method: 'POST',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({
+                            creator_discord_id: currentUser.id,
+                            app_id: appId,
+                            app_name: selectedApp?.name || 'Unknown',
+                            name: name,
+                            description: description,
+                            icon: icon,
+                            price: price,
+                            duration_days: duration,
+                            status: 'pending', // Requires approval
+                            total_sales: 0,
+                            revenue_earned: 0
+                        })
+                    });
+
+                    if (response.ok) {
+                        alert('Power-up submitted for review! It will appear in the Store once approved.');
+                        document.getElementById('powerupForm').reset();
+                        document.getElementById('powerupIcon').value = '🔮';
+                        await loadPowerups();
+                    } else {
+                        throw new Error('Failed to create power-up');
+                    }
+
+                    btn.disabled = false;
+                    btn.textContent = '⚡ Create Power-Up';
+                } catch (error) {
+                    console.error('Error creating power-up:', error);
+                    alert('Error creating power-up. Please try again.');
+                    document.getElementById('createPowerupBtn').disabled = false;
+                    document.getElementById('createPowerupBtn').textContent = '⚡ Create Power-Up';
+                }
             });
-        }
 
-        // Power-up form submission
-        document.getElementById('powerupForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
+            // Update loadApps to also populate power-up dropdown
+            const originalLoadApps = loadApps;
+            loadApps = async function () {
+                await originalLoadApps();
+                // Get apps for power-up select
+                try {
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/apps?creator_discord_id=eq.${currentUser.id}&select=*`, {
+                        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+                    });
+                    const apps = await response.json();
+                    populatePowerupAppSelect(apps);
+                } catch (e) { console.error('Error populating power-up select:', e); }
+            };
 
-            const appId = document.getElementById('powerupAppSelect').value;
-            const name = document.getElementById('powerupName').value;
-            const description = document.getElementById('powerupDesc').value;
-            const icon = document.getElementById('powerupIcon').value || '⚡';
-            const price = parseInt(document.getElementById('powerupPrice').value);
-            const duration = parseInt(document.getElementById('powerupDuration').value);
+            // Load power-ups when dashboard loads
+            const originalLoadDevData = loadDevData;
+            loadDevData = async function () {
+                await originalLoadDevData();
+                await loadPowerups();
+                await loadReviewCampaigns();
+            };
 
-            if (!appId) {
-                alert('Please select an app');
-                return;
+            // ========== REVIEW CAMPAIGN FUNCTIONS ==========
+
+            // Update review count estimate
+            function updateReviewEstimate() {
+                const budget = parseInt(document.getElementById('reviewBudget').value) || 500;
+                const reward = parseInt(document.getElementById('reviewReward').value) || 50;
+                const estimate = Math.floor(budget / reward);
+                document.getElementById('reviewCountEstimate').textContent = estimate;
             }
 
-            const selectedApp = userApps.find(a => a.id == appId);
+            document.getElementById('reviewBudget')?.addEventListener('input', updateReviewEstimate);
+            document.getElementById('reviewReward')?.addEventListener('input', updateReviewEstimate);
 
-            try {
-                const btn = document.getElementById('createPowerupBtn');
-                btn.disabled = true;
-                btn.textContent = 'Creating...';
+            // Load existing review campaigns
+            async function loadReviewCampaigns() {
+                if (!currentUser) return;
 
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/store_powerups`, {
-                    method: 'POST',
-                    headers: {
-                        'apikey': SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                        'Content-Type': 'application/json',
-                        'Prefer': 'return=minimal'
-                    },
-                    body: JSON.stringify({
-                        creator_discord_id: currentUser.id,
-                        app_id: appId,
-                        app_name: selectedApp?.name || 'Unknown',
-                        name: name,
-                        description: description,
-                        icon: icon,
-                        price: price,
-                        duration_days: duration,
-                        status: 'pending', // Requires approval
-                        total_sales: 0,
-                        revenue_earned: 0
-                    })
-                });
+                try {
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/review_campaigns?developer_discord_id=eq.${currentUser.id}&select=*,suite_apps(name,icon_url)`, {
+                        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+                    });
+                    const campaigns = await response.json();
 
-                if (response.ok) {
-                    alert('Power-up submitted for review! It will appear in the Store once approved.');
-                    document.getElementById('powerupForm').reset();
-                    document.getElementById('powerupIcon').value = '🔮';
-                    await loadPowerups();
-                } else {
-                    throw new Error('Failed to create power-up');
-                }
-
-                btn.disabled = false;
-                btn.textContent = '⚡ Create Power-Up';
-            } catch (error) {
-                console.error('Error creating power-up:', error);
-                alert('Error creating power-up. Please try again.');
-                document.getElementById('createPowerupBtn').disabled = false;
-                document.getElementById('createPowerupBtn').textContent = '⚡ Create Power-Up';
-            }
-        });
-
-        // Update loadApps to also populate power-up dropdown
-        const originalLoadApps = loadApps;
-        loadApps = async function () {
-            await originalLoadApps();
-            // Get apps for power-up select
-            try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/apps?creator_discord_id=eq.${currentUser.id}&select=*`, {
-                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
-                });
-                const apps = await response.json();
-                populatePowerupAppSelect(apps);
-            } catch (e) { console.error('Error populating power-up select:', e); }
-        };
-
-        // Load power-ups when dashboard loads
-        const originalLoadDevData = loadDevData;
-        loadDevData = async function () {
-            await originalLoadDevData();
-            await loadPowerups();
-            await loadReviewCampaigns();
-        };
-
-        // ========== REVIEW CAMPAIGN FUNCTIONS ==========
-
-        // Update review count estimate
-        function updateReviewEstimate() {
-            const budget = parseInt(document.getElementById('reviewBudget').value) || 500;
-            const reward = parseInt(document.getElementById('reviewReward').value) || 50;
-            const estimate = Math.floor(budget / reward);
-            document.getElementById('reviewCountEstimate').textContent = estimate;
-        }
-
-        document.getElementById('reviewBudget')?.addEventListener('input', updateReviewEstimate);
-        document.getElementById('reviewReward')?.addEventListener('input', updateReviewEstimate);
-
-        // Load existing review campaigns
-        async function loadReviewCampaigns() {
-            if (!currentUser) return;
-
-            try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/review_campaigns?developer_discord_id=eq.${currentUser.id}&select=*,suite_apps(name,icon_url)`, {
-                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
-                });
-                const campaigns = await response.json();
-
-                const list = document.getElementById('reviewCampaignsList');
-                if (!campaigns || campaigns.length === 0 || campaigns.error) {
-                    list.innerHTML = '<div class="empty-state"><p>No review campaigns yet. Create one above to get feedback!</p></div>';
-                } else {
-                    list.innerHTML = campaigns.map(c => {
-                        const minMins = Math.floor(c.min_usage_seconds / 60);
-                        return `
+                    const list = document.getElementById('reviewCampaignsList');
+                    if (!campaigns || campaigns.length === 0 || campaigns.error) {
+                        list.innerHTML = '<div class="empty-state"><p>No review campaigns yet. Create one above to get feedback!</p></div>';
+                    } else {
+                        list.innerHTML = campaigns.map(c => {
+                            const minMins = Math.floor(c.min_usage_seconds / 60);
+                            return `
                         <div class="campaign-item">
                             <div class="campaign-info">
                                 <div style="font-size: 2rem; margin-right: 8px;">📝</div>
@@ -1067,81 +1180,81 @@
                             <span class="badge badge-${c.status}">${c.status}</span>
                         </div>
                     `}).join('');
+                    }
+                } catch (error) {
+                    console.error('Error loading review campaigns:', error);
                 }
-            } catch (error) {
-                console.error('Error loading review campaigns:', error);
-            }
-        }
-
-        // Create review campaign form handler
-        document.getElementById('reviewCampaignForm')?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!currentUser) {
-                alert('Please log in first');
-                return;
             }
 
-            const appId = document.getElementById('reviewAppSelect').value;
-            const suitePerReview = parseInt(document.getElementById('reviewReward').value);
-            const minUsageSeconds = parseInt(document.getElementById('reviewMinTime').value);
-            const totalBudget = parseInt(document.getElementById('reviewBudget').value);
-
-            if (!appId) {
-                alert('Please select an app');
-                return;
-            }
-
-            // Check balance
-            const balance = parseInt(document.getElementById('suiteBalance').textContent.replace(/,/g, '')) || 0;
-            if (balance < totalBudget) {
-                alert(`Insufficient SUITE balance. You have ${balance} but need ${totalBudget}.`);
-                return;
-            }
-
-            const btn = document.getElementById('createReviewCampaignBtn');
-            btn.disabled = true;
-            btn.textContent = 'Creating...';
-
-            try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/review_campaigns`, {
-                    method: 'POST',
-                    headers: {
-                        'apikey': SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                        'Content-Type': 'application/json',
-                        'Prefer': 'return=minimal'
-                    },
-                    body: JSON.stringify({
-                        app_id: appId,
-                        developer_discord_id: currentUser.id,
-                        suite_per_review: suitePerReview,
-                        min_usage_seconds: minUsageSeconds,
-                        total_budget: totalBudget,
-                        remaining_budget: totalBudget,
-                        status: 'active'
-                    })
-                });
-
-                if (response.ok) {
-                    alert('Review campaign created! Users can now earn SUITE by reviewing your app.');
-                    document.getElementById('reviewCampaignForm').reset();
-                    document.getElementById('reviewReward').value = '50';
-                    document.getElementById('reviewBudget').value = '500';
-                    updateReviewEstimate();
-                    await loadReviewCampaigns();
-                } else {
-                    const err = await response.json();
-                    throw new Error(err.message || 'Failed to create campaign');
+            // Create review campaign form handler
+            document.getElementById('reviewCampaignForm')?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (!currentUser) {
+                    alert('Please log in first');
+                    return;
                 }
-            } catch (error) {
-                console.error('Error creating review campaign:', error);
-                alert('Error creating review campaign: ' + error.message);
-            }
 
-            btn.disabled = false;
-            btn.textContent = '📝 Start Review Campaign';
-        });
-    </script>
+                const appId = document.getElementById('reviewAppSelect').value;
+                const suitePerReview = parseInt(document.getElementById('reviewReward').value);
+                const minUsageSeconds = parseInt(document.getElementById('reviewMinTime').value);
+                const totalBudget = parseInt(document.getElementById('reviewBudget').value);
+
+                if (!appId) {
+                    alert('Please select an app');
+                    return;
+                }
+
+                // Check balance
+                const balance = parseInt(document.getElementById('suiteBalance').textContent.replace(/,/g, '')) || 0;
+                if (balance < totalBudget) {
+                    alert(`Insufficient SUITE balance. You have ${balance} but need ${totalBudget}.`);
+                    return;
+                }
+
+                const btn = document.getElementById('createReviewCampaignBtn');
+                btn.disabled = true;
+                btn.textContent = 'Creating...';
+
+                try {
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/review_campaigns`, {
+                        method: 'POST',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({
+                            app_id: appId,
+                            developer_discord_id: currentUser.id,
+                            suite_per_review: suitePerReview,
+                            min_usage_seconds: minUsageSeconds,
+                            total_budget: totalBudget,
+                            remaining_budget: totalBudget,
+                            status: 'active'
+                        })
+                    });
+
+                    if (response.ok) {
+                        alert('Review campaign created! Users can now earn SUITE by reviewing your app.');
+                        document.getElementById('reviewCampaignForm').reset();
+                        document.getElementById('reviewReward').value = '50';
+                        document.getElementById('reviewBudget').value = '500';
+                        updateReviewEstimate();
+                        await loadReviewCampaigns();
+                    } else {
+                        const err = await response.json();
+                        throw new Error(err.message || 'Failed to create campaign');
+                    }
+                } catch (error) {
+                    console.error('Error creating review campaign:', error);
+                    alert('Error creating review campaign: ' + error.message);
+                }
+
+                btn.disabled = false;
+                btn.textContent = '📝 Start Review Campaign';
+            });
+        </script>
 </body>
 
 </html>
