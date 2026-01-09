@@ -77,7 +77,7 @@
             box-sizing: border-box;
         }
 
-        /* Main ecosystem container - smaller, auto height */
+        /* Main ecosystem container - column layout for stacking */
         .ecosystem-container {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(20px);
@@ -91,9 +91,16 @@
             margin: 0 auto;
             position: relative;
             display: flex;
-            gap: 20px;
+            flex-direction: column;
+            gap: 0;
             overflow: visible;
             transition: min-height 0.4s ease;
+        }
+
+        .ecosystem-row {
+            display: flex;
+            gap: 20px;
+            flex: 1;
         }
 
         #canvas {
@@ -554,21 +561,19 @@
         }
 
         /* ============================================
-           BOTTOM PANEL - Journey Flow (Second Container)
+           INLINE Journey Flow - Below canvas inside container
            ============================================ */
         .journey-panel {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 32px;
-            box-shadow: 0 16px 80px rgba(0, 0, 0, 0.08);
-            padding: 30px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 16px;
+            padding: 16px 20px;
             width: 100%;
-            max-width: 1200px;
-            margin: 20px auto 0;
+            flex-basis: 100%;
             display: none;
             justify-content: center;
-            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transition: all 0.3s ease;
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
+            margin-top: 12px;
         }
 
         .journey-panel.open {
@@ -620,9 +625,10 @@
         }
 
         .journey-panel-content {
-            padding: 0 32px;
+            padding: 0;
             display: flex;
             justify-content: center;
+            width: 100%;
         }
 
         /* Journey Steps Flow */
@@ -630,7 +636,8 @@
             display: flex;
             align-items: center;
             gap: 0;
-            min-width: max-content;
+            justify-content: center;
+            flex-wrap: wrap;
         }
 
         .journey-step {
@@ -638,10 +645,10 @@
             flex-direction: column;
             align-items: center;
             text-align: center;
-            min-width: 140px;
+            min-width: 100px;
             opacity: 0;
-            transform: translateY(20px);
-            animation: stepFadeIn 0.5s ease forwards;
+            transform: translateY(10px);
+            animation: stepFadeIn 0.4s ease forwards;
         }
 
         .journey-step:nth-child(1) {
@@ -676,16 +683,16 @@
         }
 
         .step-icon {
-            width: 64px;
-            height: 64px;
-            border-radius: 20px;
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 28px;
-            margin-bottom: 12px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-            animation: iconBounce 2s ease-in-out infinite;
+            font-size: 20px;
+            margin-bottom: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            animation: none;
         }
 
         .journey-step:nth-child(1) .step-icon {
@@ -754,15 +761,16 @@
 
         .step-title {
             font-weight: 700;
-            font-size: 14px;
+            font-size: 11px;
             color: #2d1b4e;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
         .step-description {
-            font-size: 12px;
+            font-size: 10px;
             color: #5a4a6f;
-            max-width: 120px;
+            max-width: 90px;
+            display: none;
         }
 
         /* Clickable step styling */
@@ -912,34 +920,31 @@
             <!-- Docs Sidebar - Left -->
             <aside class="docs-sidebar">
                 <div class="sidebar-section">
-                    <div class="sidebar-title">Getting Started</div>
+                    <div class="sidebar-title">Learn</div>
                     <a href="docs/index.html" class="sidebar-link">📚 Introduction</a>
-                    <a href="docs/quickstart.html" class="sidebar-link">🚀 Quick Start</a>
-                    <a href="ecosystem.html" class="sidebar-link active">⚙️ How It Works</a>
-                </div>
-
-                <div class="sidebar-section">
-                    <div class="sidebar-title">Commands</div>
-                    <a href="docs/commands.html" class="sidebar-link">⚡ All Commands</a>
-                    <a href="docs/commands.html#app" class="sidebar-link">📱 App Commands</a>
-                    <a href="docs/commands.html#wallet" class="sidebar-link">💰 Wallet Commands</a>
-                    <a href="docs/commands.html#admin" class="sidebar-link">🔧 Admin Commands</a>
-                </div>
-
-                <div class="sidebar-section">
-                    <div class="sidebar-title">Earning</div>
-                    <a href="docs/earning.html" class="sidebar-link">💰 How to Earn</a>
-                </div>
-
-                <div class="sidebar-section">
-                    <div class="sidebar-title">Guides</div>
+                    <a href="ecosystem.html" class="sidebar-link active">🔄 How It Works</a>
                     <a href="docs/tokenomics.html" class="sidebar-link">📊 Tokenomics</a>
-                    <a href="docs/revenue.html" class="sidebar-link">💰 Revenue & Fees</a>
-                    <a href="docs/governance.html" class="sidebar-link">🗳️ Governance</a>
-                    <a href="docs/developer.html" class="sidebar-link">👨‍💻 Developer Guide</a>
-                    <a href="docs/user-flows.html" class="sidebar-link">🔄 User Flows</a>
                     <a href="docs/roadmap.html" class="sidebar-link">🗺️ Roadmap</a>
-                    <a href="docs/dashboard.html" class="sidebar-link">🛠️ Dashboard Guide</a>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Build</div>
+                    <a href="docs/quickstart.html" class="sidebar-link">🚀 Quick Start</a>
+                    <a href="docs/developer.html" class="sidebar-link">👨‍💻 Developer Guide</a>
+                    <a href="docs/commands.html" class="sidebar-link">⚡ Commands</a>
+                    <a href="docs/dashboard.html" class="sidebar-link">🛠️ Dashboard</a>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Earn</div>
+                    <a href="docs/earning.html" class="sidebar-link">💰 How to Earn</a>
+                    <a href="docs/revenue.html" class="sidebar-link">💵 Revenue & Fees</a>
+                    <a href="docs/user-flows.html" class="sidebar-link">🔄 User Flows</a>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Admin</div>
+                    <a href="docs/governance.html" class="sidebar-link">🗳️ Governance</a>
                     <a href="docs/admin-flows.html" class="sidebar-link">⚙️ Admin Flows</a>
                 </div>
             </aside>
@@ -980,17 +985,16 @@
                     <span class="tab-label">More →</span>
                 </a>
             </div>
-        </div>
-    </div>
 
-    <!-- Journey Panel (second container) -->
-    <div class="journey-panel" id="journeyPanel">
-        <div class="journey-panel-content">
-            <div class="journey-steps" id="journeySteps">
-                <!-- Steps will be dynamically inserted -->
+            <!-- Inline Journey Panel - inside container -->
+            <div class="journey-panel" id="journeyPanel" style="grid-column: 1 / -1;">
+                <div class="journey-panel-content">
+                    <div class="journey-steps" id="journeySteps">
+                        <!-- Steps will be dynamically inserted -->
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
     </div>
 
     <div class="controls-hint" style="display: none;">
