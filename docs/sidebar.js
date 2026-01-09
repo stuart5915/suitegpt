@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         <div class="sidebar-section">
             <div class="sidebar-title">Earn</div>
-            <a href="earning.html" class="sidebar-link ${isActive('earning.html')}">💰 How to Earn</a>
+            <a href="earning.html" class="sidebar-link ${isActive('earning.html')}">💰 Earn SUITE</a>
             <a href="revenue.html" class="sidebar-link ${isActive('revenue.html')}">💵 Revenue & Fees</a>
             <a href="user-flows.html" class="sidebar-link ${isActive('user-flows.html')}">🔄 User Flows</a>
         </div>
