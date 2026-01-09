@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Content Marketplace | SUITE</title>
+    <meta name="description" content="Community-driven content creation. Post bounties, submit content, earn SUITE.">
+    <link rel="icon" type="image/png" href="assets/suite-mascot.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="suite-styles.css">
+    <link rel="stylesheet" href="nav.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
+    <style>
+        html {
+            overflow-y: scroll;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fff5eb 0%, #ffe4d4 20%, #ffd4e3 50%, #e8d5f9 80%, #d4e5ff 100%);
+            min-height: 100vh;
+            color: #2d1b4e;
+        }
+
+        .content-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 120px 20px 60px;
+        }
+
+        /* Header */
+        .content-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .content-title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 12px;
+        }
+
+        .content-subtitle {
+            color: #5a4a6f;
+            font-size: 1.1rem;
+            margin-bottom: 24px;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: #6b7280;
+            font-weight: 600;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .btn-post {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+            border: none;
+            border-radius: 100px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .btn-post:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 149, 0, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.9);
+            color: #2d1b4e;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        /* Tabs */
+        .content-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 32px;
+        }
+
+        .tab-btn {
+            padding: 10px 24px;
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            border-radius: 100px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #5a4a6f;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn:hover {
+            background: white;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+            border-color: transparent;
+        }
+
+        /* Bounty Grid */
+        .bounty-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 24px;
+        }
+
+        /* Bounty Card */
+        .bounty-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .bounty-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .bounty-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .bounty-type {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            background: rgba(255, 149, 0, 0.1);
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #ff9500;
+        }
+
+        .bounty-reward {
+            font-size: 1.2rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .bounty-title {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin-bottom: 8px;
+        }
+
+        .bounty-description {
+            color: #6b7280;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 16px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .bounty-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 16px;
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .bounty-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 0.85rem;
+            color: #6b7280;
+        }
+
+        .bounty-meta span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .bounty-status {
+            padding: 4px 10px;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .status-open {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .status-reviewing {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .status-completed {
+            background: #e0e7ff;
+            color: #4f46e5;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 24px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 24px;
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #2d1b4e;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #ff9500;
+            box-shadow: 0 0 0 3px rgba(255, 149, 0, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .modal-actions button {
+            flex: 1;
+            padding: 14px;
+            border-radius: 100px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-cancel {
+            background: #f3f4f6;
+            border: none;
+            color: #6b7280;
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            border: none;
+            color: white;
+        }
+
+        .btn-submit:hover {
+            box-shadow: 0 8px 24px rgba(255, 149, 0, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            .bounty-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-logo">
+                <img src="assets/suite-mascot.png" alt="SUITE" class="nav-logo-img">
+                SUITE
+            </a>
+            <div class="nav-links">
+                <a href="apps.html">Apps</a>
+                <a href="developer-portal.html">Build</a>
+                <a href="discuss.html">Discuss</a>
+                <a href="incubate.html">Incubate</a>
+                <a href="docs/index.html">Docs</a>
+                <a href="wallet.html">Wallet</a>
+                <a href="earn.html">Earn</a>
+                <a href="boost.html">Store</a>
+                <a href="giving.html">Giving</a>
+                <a href="content.html" class="active">Content</a>
+                <a href="start-building.html" class="nav-cta">✨ Start Building</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="content-container">
+        <!-- Header -->
+        <div class="content-header">
+            <h1 class="content-title">📸 Content Marketplace</h1>
+            <p class="content-subtitle">Community-driven content creation. Post bounties, submit work, earn SUITE.</p>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-value" id="openBounties">0</div>
+                <div class="stat-label">Open Bounties</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalPaid">0</div>
+                <div class="stat-label">SUITE Paid Out</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalCreators">0</div>
+                <div class="stat-label">Active Creators</div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="action-buttons">
+            <button class="btn-post" onclick="openPostModal()">
+                📝 Post a Bounty
+            </button>
+            <button class="btn-post btn-secondary" onclick="showMySubmissions()">
+                📂 My Submissions
+            </button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="content-tabs">
+            <button class="tab-btn active" data-filter="all">All</button>
+            <button class="tab-btn" data-filter="video">🎬 Video</button>
+            <button class="tab-btn" data-filter="graphic">🎨 Graphic</button>
+            <button class="tab-btn" data-filter="copy">✍️ Copy</button>
+        </div>
+
+        <!-- Bounty Grid -->
+        <div class="bounty-grid" id="bountyGrid">
+            <!-- Bounties loaded from Supabase -->
+            <div class="empty-state" style="grid-column: 1/-1;">
+                <div class="empty-state-icon">⏳</div>
+                <p>Loading bounties...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Post Bounty Modal -->
+    <div class="modal-overlay" id="postModal">
+        <div class="modal">
+            <h2 class="modal-title">📝 Post a Content Bounty</h2>
+            <form id="bountyForm">
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" placeholder="e.g., TikTok promo for my app" required>
+                </div>
+                <div class="form-group">
+                    <label>Content Type</label>
+                    <select required>
+                        <option value="video">🎬 Video</option>
+                        <option value="graphic">🎨 Graphic Design</option>
+                        <option value="copy">✍️ Copywriting</option>
+                        <option value="other">📦 Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea placeholder="Describe what you need in detail..." required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Reward (SUITE)</label>
+                    <input type="number" min="10" placeholder="Minimum 10 SUITE" required>
+                </div>
+                <div class="form-group">
+                    <label>Deadline</label>
+                    <input type="date" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closePostModal()">Cancel</button>
+                    <button type="submit" class="btn-submit">Post Bounty</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Supabase config
+        const SUPABASE_URL = 'https://xwikkljmglmaaheqofas.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3aWtrbGptZ2xtYWFoZXFvZmFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDEwMjE4ODUsImV4cCI6MjA1NjU5Nzg4NX0.B1Z9CvGgtfo-wp1sJHdMPMovqKBdJkuJlPoHU_PjKn0';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let allBounties = [];
+        let currentFilter = 'all';
+
+        // Load bounties on page load
+        async function loadBounties() {
+            try {
+                // Get bounties with submission counts
+                const { data: bounties, error } = await supabase
+                    .from('content_bounties')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                // Get submission counts for each bounty
+                const { data: submissions } = await supabase
+                    .from('content_submissions')
+                    .select('bounty_id');
+
+                // Count submissions per bounty
+                const submissionCounts = {};
+                if (submissions) {
+                    submissions.forEach(s => {
+                        submissionCounts[s.bounty_id] = (submissionCounts[s.bounty_id] || 0) + 1;
+                    });
+                }
+
+                // Merge counts into bounties
+                allBounties = (bounties || []).map(b => ({
+                    ...b,
+                    submission_count: submissionCounts[b.id] || 0
+                }));
+
+                renderBounties();
+                updateStats();
+            } catch (err) {
+                console.error('Error loading bounties:', err);
+                // Show sample data if DB fails
+                renderSampleBounties();
+            }
+        }
+
+        function renderBounties() {
+            const grid = document.getElementById('bountyGrid');
+            const filtered = currentFilter === 'all'
+                ? allBounties
+                : allBounties.filter(b => b.content_type === currentFilter);
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1/-1;">
+                        <div class="empty-state-icon">📭</div>
+                        <h3>No bounties yet</h3>
+                        <p>Be the first to post a content bounty!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(b => renderBountyCard(b)).join('');
+        }
+
+        function renderBountyCard(bounty) {
+            const typeEmojis = { video: '🎬', graphic: '🎨', copy: '✍️', other: '📦' };
+            const emoji = typeEmojis[bounty.content_type] || '📦';
+            const daysLeft = Math.ceil((new Date(bounty.deadline) - new Date()) / (1000 * 60 * 60 * 24));
+            const statusClass = bounty.status === 'open' ? 'status-open' :
+                bounty.status === 'reviewing' ? 'status-reviewing' : 'status-completed';
+
+            return `
+                <div class="bounty-card" onclick="viewBounty('${bounty.id}')">
+                    <div class="bounty-header">
+                        <span class="bounty-type">${emoji} ${bounty.content_type}</span>
+                        <span class="bounty-reward">${bounty.reward_amount} SUITE</span>
+                    </div>
+                    <div class="bounty-title">${escapeHtml(bounty.title)}</div>
+                    <div class="bounty-description">${escapeHtml(bounty.description || '')}</div>
+                    <div class="bounty-footer">
+                        <div class="bounty-meta">
+                            <span>⏰ ${daysLeft > 0 ? daysLeft + ' days left' : 'Ended'}</span>
+                            <span>📨 ${bounty.submission_count} submissions</span>
+                        </div>
+                        <span class="bounty-status ${statusClass}">${bounty.status}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderSampleBounties() {
+            // Keep existing sample HTML if Supabase fails
+            console.log('Using sample bounties');
+        }
+
+        function updateStats() {
+            const openCount = allBounties.filter(b => b.status === 'open').length;
+            const totalPaid = allBounties
+                .filter(b => b.status === 'completed')
+                .reduce((sum, b) => sum + b.reward_amount, 0);
+
+            document.getElementById('openBounties').textContent = openCount;
+            document.getElementById('totalPaid').textContent = totalPaid;
+            document.getElementById('totalCreators').textContent = allBounties.length > 0 ? '—' : '0';
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function viewBounty(id) {
+            alert('Bounty details modal coming soon! ID: ' + id);
+        }
+
+        // Modal functions
+        function openPostModal() {
+            document.getElementById('postModal').classList.add('active');
+        }
+
+        function closePostModal() {
+            document.getElementById('postModal').classList.remove('active');
+        }
+
+        function showMySubmissions() {
+            alert('Connect your Discord account to view your submissions!');
+        }
+
+        // Tab filtering
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                renderBounties();
+            });
+        });
+
+        // Close modal on overlay click
+        document.getElementById('postModal').addEventListener('click', (e) => {
+            if (e.target.id === 'postModal') closePostModal();
+        });
+
+        // Form submission
+        document.getElementById('bountyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const title = form.querySelector('input[type="text"]').value;
+            const contentType = form.querySelector('select').value;
+            const description = form.querySelector('textarea').value;
+            const reward = parseInt(form.querySelector('input[type="number"]').value);
+            const deadline = form.querySelector('input[type="date"]').value;
+
+            try {
+                const { error } = await supabase.from('content_bounties').insert({
+                    requester_discord_id: 'web-user', // Would be real Discord ID after OAuth
+                    requester_name: 'Web User',
+                    title,
+                    content_type: contentType,
+                    description,
+                    reward_amount: reward,
+                    deadline: new Date(deadline).toISOString(),
+                    status: 'open'
+                });
+
+                if (error) throw error;
+
+                alert('✅ Bounty posted successfully!');
+                closePostModal();
+                form.reset();
+                loadBounties();
+            } catch (err) {
+                console.error('Error posting bounty:', err);
+                alert('Error posting bounty: ' + err.message);
+            }
+        });
+
+        // Load on page ready
+        loadBounties();
+    </script>
+</body>
+
+</html>
