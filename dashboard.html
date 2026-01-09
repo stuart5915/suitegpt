@@ -495,6 +495,67 @@
                 </div>
             </div>
 
+            <!-- Request Reviews -->
+            <div class="section">
+                <h3 class="section-title">📝 Request Reviews</h3>
+                <p style="color: #666; margin-bottom: 24px;">Pay SUITE tokens to get honest reviews from real users.
+                    Users must use your app for a minimum time before they can review.</p>
+
+                <form id="reviewCampaignForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Select App</label>
+                            <select id="reviewAppSelect" required>
+                                <option value="">Choose an app...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>SUITE per Review</label>
+                            <input type="number" id="reviewReward" value="50" min="10" max="500" required>
+                            <small style="color: #888; font-size: 0.8rem;">10-500 SUITE per honest review</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Minimum Usage Time</label>
+                            <select id="reviewMinTime" required>
+                                <option value="60">1 minute</option>
+                                <option value="180">3 minutes</option>
+                                <option value="300" selected>5 minutes</option>
+                                <option value="600">10 minutes</option>
+                                <option value="1800">30 minutes</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Total Budget (SUITE)</label>
+                            <input type="number" id="reviewBudget" value="500" min="50" required>
+                            <small style="color: #888; font-size: 0.8rem;">= <span id="reviewCountEstimate">10</span>
+                                reviews max</small>
+                        </div>
+                    </div>
+
+                    <div
+                        style="margin-top: 24px; padding: 16px; background: rgba(99, 102, 241, 0.1); border-radius: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                        <div>
+                            <div style="font-weight: 700; color: #2d1b4e;">💡 How it works</div>
+                            <div style="font-size: 0.9rem; color: #666;">Users try your app → Use it for min time →
+                                Write honest review → Get paid</div>
+                        </div>
+                        <button type="submit" class="btn-primary" id="createReviewCampaignBtn">
+                            📝 Start Review Campaign
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Active Review Campaigns -->
+                <div style="margin-top: 32px;">
+                    <h4 style="font-weight: 700; margin-bottom: 16px;">Your Review Campaigns</h4>
+                    <div id="reviewCampaignsList" class="campaigns-list">
+                        <div class="empty-state">
+                            <p>No review campaigns yet. Create one above to get feedback!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Create Power-Up -->
             <div class="section">
                 <h3 class="section-title">⚡ Create Power-Up</h3>
@@ -634,23 +695,33 @@
         async function loadApps() {
             try {
                 // Query suite_apps table for apps created by this user
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/suite_apps?creator_discord_id=eq.${currentUser.id}&select=*`, {
+                const url = `${SUPABASE_URL}/rest/v1/suite_apps?creator_discord_id=eq.${currentUser.id}&select=*`;
+                console.log('🔍 Loading apps for Discord ID:', currentUser.id);
+                console.log('🔗 API URL:', url);
+
+                const response = await fetch(url, {
                     headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
                 });
                 const apps = await response.json();
+
+                console.log('📦 API Response:', apps);
+                console.log('📊 Apps count:', Array.isArray(apps) ? apps.length : 'Not an array');
 
                 document.getElementById('totalApps').textContent = Array.isArray(apps) ? apps.length : 0;
 
                 const select = document.getElementById('appSelect');
                 const powerupSelect = document.getElementById('powerupAppSelect');
+                const reviewSelect = document.getElementById('reviewAppSelect');
                 select.innerHTML = '<option value="">Choose an app...</option>';
                 if (powerupSelect) powerupSelect.innerHTML = '<option value="">Choose an app...</option>';
+                if (reviewSelect) reviewSelect.innerHTML = '<option value="">Choose an app...</option>';
 
                 if (Array.isArray(apps)) {
                     apps.forEach(app => {
                         const option = `<option value="${app.id}">${app.name}</option>`;
                         select.innerHTML += option;
                         if (powerupSelect) powerupSelect.innerHTML += option;
+                        if (reviewSelect) reviewSelect.innerHTML += option;
                     });
                 }
 
@@ -948,7 +1019,128 @@
         loadDevData = async function () {
             await originalLoadDevData();
             await loadPowerups();
+            await loadReviewCampaigns();
         };
+
+        // ========== REVIEW CAMPAIGN FUNCTIONS ==========
+
+        // Update review count estimate
+        function updateReviewEstimate() {
+            const budget = parseInt(document.getElementById('reviewBudget').value) || 500;
+            const reward = parseInt(document.getElementById('reviewReward').value) || 50;
+            const estimate = Math.floor(budget / reward);
+            document.getElementById('reviewCountEstimate').textContent = estimate;
+        }
+
+        document.getElementById('reviewBudget')?.addEventListener('input', updateReviewEstimate);
+        document.getElementById('reviewReward')?.addEventListener('input', updateReviewEstimate);
+
+        // Load existing review campaigns
+        async function loadReviewCampaigns() {
+            if (!currentUser) return;
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/review_campaigns?developer_discord_id=eq.${currentUser.id}&select=*,suite_apps(name,icon_url)`, {
+                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+                });
+                const campaigns = await response.json();
+
+                const list = document.getElementById('reviewCampaignsList');
+                if (!campaigns || campaigns.length === 0 || campaigns.error) {
+                    list.innerHTML = '<div class="empty-state"><p>No review campaigns yet. Create one above to get feedback!</p></div>';
+                } else {
+                    list.innerHTML = campaigns.map(c => {
+                        const minMins = Math.floor(c.min_usage_seconds / 60);
+                        return `
+                        <div class="campaign-item">
+                            <div class="campaign-info">
+                                <div style="font-size: 2rem; margin-right: 8px;">📝</div>
+                                <div>
+                                    <strong>${c.suite_apps?.name || 'Unknown App'}</strong>
+                                    <div style="font-size: 0.85rem; color: #888;">+${c.suite_per_review} SUITE per review · ${minMins}min min</div>
+                                </div>
+                            </div>
+                            <div class="campaign-stats">
+                                <span><strong>${c.reviews_count || 0}</strong> Reviews</span>
+                                <span><strong>${c.remaining_budget}</strong> Budget Left</span>
+                            </div>
+                            <span class="badge badge-${c.status}">${c.status}</span>
+                        </div>
+                    `}).join('');
+                }
+            } catch (error) {
+                console.error('Error loading review campaigns:', error);
+            }
+        }
+
+        // Create review campaign form handler
+        document.getElementById('reviewCampaignForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentUser) {
+                alert('Please log in first');
+                return;
+            }
+
+            const appId = document.getElementById('reviewAppSelect').value;
+            const suitePerReview = parseInt(document.getElementById('reviewReward').value);
+            const minUsageSeconds = parseInt(document.getElementById('reviewMinTime').value);
+            const totalBudget = parseInt(document.getElementById('reviewBudget').value);
+
+            if (!appId) {
+                alert('Please select an app');
+                return;
+            }
+
+            // Check balance
+            const balance = parseInt(document.getElementById('suiteBalance').textContent.replace(/,/g, '')) || 0;
+            if (balance < totalBudget) {
+                alert(`Insufficient SUITE balance. You have ${balance} but need ${totalBudget}.`);
+                return;
+            }
+
+            const btn = document.getElementById('createReviewCampaignBtn');
+            btn.disabled = true;
+            btn.textContent = 'Creating...';
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/review_campaigns`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({
+                        app_id: appId,
+                        developer_discord_id: currentUser.id,
+                        suite_per_review: suitePerReview,
+                        min_usage_seconds: minUsageSeconds,
+                        total_budget: totalBudget,
+                        remaining_budget: totalBudget,
+                        status: 'active'
+                    })
+                });
+
+                if (response.ok) {
+                    alert('Review campaign created! Users can now earn SUITE by reviewing your app.');
+                    document.getElementById('reviewCampaignForm').reset();
+                    document.getElementById('reviewReward').value = '50';
+                    document.getElementById('reviewBudget').value = '500';
+                    updateReviewEstimate();
+                    await loadReviewCampaigns();
+                } else {
+                    const err = await response.json();
+                    throw new Error(err.message || 'Failed to create campaign');
+                }
+            } catch (error) {
+                console.error('Error creating review campaign:', error);
+                alert('Error creating review campaign: ' + error.message);
+            }
+
+            btn.disabled = false;
+            btn.textContent = '📝 Start Review Campaign';
+        });
     </script>
 </body>
 
