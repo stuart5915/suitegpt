@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -668,40 +668,40 @@
 
 <body>
     <!-- Navigation -->
-<nav class="nav">
-    <div class="nav-inner">
-        <a href="index.html" class="nav-logo">
-            <img src="assets/suite-token.png" alt="SUITE" class="nav-logo-img">
-            SUITE
-        </a>
-        <div class="nav-links">
-            <a href="apps.html">Apps</a>
-            <a href="developer-portal.html">Build</a>
-            <a href="discuss.html">Discuss</a>
-            <a href="incubate.html">Incubate</a>
-            <a href="docs/index.html">Docs</a>
-            <div class="nav-dropdown">
-                <span class="nav-dropdown-trigger">SUITE</span>
-                <div class="nav-dropdown-menu">
-                    <a href="wallet.html">🏦 Vault</a>
-                    <a href="earn.html">💰 Earn</a>
-                    <a href="boost.html">🛒 Store</a>
-                    <a href="giving.html">💝 Giving</a>
-                    <a href="content.html">📚 Content</a>
-                    <a href="cadence.html">🎯 Cadence</a>
-                    <a href="suitehub.html">🏠 Hub</a>
-                    <a href="dashboard.html">⚙️ Dashboard</a>
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-logo">
+                <img src="assets/suite-token.png" alt="SUITE" class="nav-logo-img">
+                SUITE
+            </a>
+            <div class="nav-links">
+                <a href="apps.html">Apps</a>
+                <a href="developer-portal.html">Build</a>
+                <a href="discuss.html">Discuss</a>
+                <a href="incubate.html">Incubate</a>
+                <a href="docs/index.html">Docs</a>
+                <div class="nav-dropdown">
+                    <span class="nav-dropdown-trigger">SUITE</span>
+                    <div class="nav-dropdown-menu">
+                        <a href="wallet.html">🏦 Vault</a>
+                        <a href="earn.html">💰 Earn</a>
+                        <a href="boost.html">🛒 Store</a>
+                        <a href="giving.html">💝 Giving</a>
+                        <a href="content.html">📚 Content</a>
+                        <a href="cadence.html">🎯 Cadence</a>
+                        <a href="suitehub.html">🏠 Hub</a>
+                        <a href="dashboard.html">⚙️ Dashboard</a>
+                    </div>
                 </div>
+                <a href="start-building.html" class="nav-cta">🚀 Start Building</a>
             </div>
-            <a href="start-building.html" class="nav-cta">🚀 Start Building</a>
+            <button class="mobile-menu-btn">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
         </div>
-        <button class="mobile-menu-btn">
-            <span></span>
-            <span></span>
-            <span></span>
-        </button>
-    </div>
-</nav>
+    </nav>
 
     <div class="governance-container">
         <!-- Header -->
@@ -852,7 +852,7 @@
     <script>
         // Configuration
         const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.rTqKxT2LYhPt5nQEjLxMxdRDqvVoT7eILWHhBo1MVHU';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
 
         const SUITE_TOKEN = '0x49B0546e16150529a6bCf8B3bdE76C91b61735c7';
         const SUITE_ABI = ['function balanceOf(address) view returns (uint256)'];
@@ -898,14 +898,26 @@
             }
 
             try {
+                // Check if ethers is loaded
+                if (typeof ethers === 'undefined') {
+                    showToast('ethers.js not loaded - refresh page', true);
+                    return;
+                }
+
                 provider = new ethers.BrowserProvider(window.ethereum);
                 await provider.send('eth_requestAccounts', []);
                 signer = await provider.getSigner();
                 walletAddress = (await signer.getAddress()).toLowerCase();
 
-                // Get SUITE balance
-                const suiteContract = new ethers.Contract(SUITE_TOKEN, SUITE_ABI, provider);
-                const balance = await suiteContract.balanceOf(walletAddress);
+                // Get SUITE balance - wrap in try-catch for contract issues
+                let balance = 0n;
+                try {
+                    const suiteContract = new ethers.Contract(SUITE_TOKEN, SUITE_ABI, provider);
+                    balance = await suiteContract.balanceOf(walletAddress);
+                } catch (contractErr) {
+                    console.warn('Could not fetch SUITE balance (contract may not exist on this network):', contractErr);
+                    // Continue anyway - balance will be 0
+                }
                 suiteBalance = parseFloat(ethers.formatEther(balance));
 
                 // Check if council
@@ -939,10 +951,17 @@
                 localStorage.setItem('walletConnected', 'true');
                 await loadUserVotes();
                 loadProposals();
+                showToast('Wallet connected! ✓');
 
             } catch (err) {
                 console.error('Wallet connection error:', err);
-                showToast('Failed to connect wallet', true);
+                if (err.code === 4001 || err.code === 'ACTION_REJECTED') {
+                    showToast('Connection rejected by user', true);
+                } else if (err.message?.includes('network')) {
+                    showToast('Network error - check your connection', true);
+                } else {
+                    showToast('Failed to connect: ' + (err.shortMessage || err.message || 'Unknown error'), true);
+                }
             }
         }
 
