@@ -614,8 +614,9 @@
         }
 
         function showDashboard() {
-            document.getElementById('loginSection').style.display = 'none';
-            document.getElementById('dashboardContent').style.display = 'block';
+            // Hide login banner, show user pill
+            document.getElementById('loginBanner').style.display = 'none';
+            document.getElementById('userPill').style.display = 'flex';
             document.getElementById('userName').textContent = currentUser.username;
             document.getElementById('userAvatar').src = currentUser.avatar;
 
@@ -632,51 +633,67 @@
 
         async function loadApps() {
             try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/apps?creator_discord_id=eq.${currentUser.id}&select=*`, {
+                // Query suite_apps table for apps created by this user
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/suite_apps?creator_discord_id=eq.${currentUser.id}&select=*`, {
                     headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
                 });
                 const apps = await response.json();
 
-                document.getElementById('totalApps').textContent = apps.length;
+                document.getElementById('totalApps').textContent = Array.isArray(apps) ? apps.length : 0;
 
                 const select = document.getElementById('appSelect');
+                const powerupSelect = document.getElementById('powerupAppSelect');
                 select.innerHTML = '<option value="">Choose an app...</option>';
-                apps.forEach(app => {
-                    select.innerHTML += `<option value="${app.id}">${app.name}</option>`;
-                });
+                if (powerupSelect) powerupSelect.innerHTML = '<option value="">Choose an app...</option>';
+
+                if (Array.isArray(apps)) {
+                    apps.forEach(app => {
+                        const option = `<option value="${app.id}">${app.name}</option>`;
+                        select.innerHTML += option;
+                        if (powerupSelect) powerupSelect.innerHTML += option;
+                    });
+                }
 
                 const appsList = document.getElementById('appsList');
-                if (apps.length === 0) {
+                if (!Array.isArray(apps) || apps.length === 0) {
                     appsList.innerHTML = '<div class="empty-state"><p>No apps yet. <a href="start-building.html" style="color: #ff9500;">Submit your first app!</a></p></div>';
                 } else {
                     appsList.innerHTML = apps.map(app => `
                         <div class="campaign-item">
                             <div class="campaign-info">
-                                <img src="${app.icon_url || 'assets/suite-mascot.png'}" alt="${app.name}">
+                                <img src="${app.icon_url || 'assets/suite-mascot.png'}" alt="${app.name}" style="border-radius: 12px;">
                                 <div>
                                     <strong>${app.name}</strong>
-                                    <div style="font-size: 0.85rem; color: #888;">${app.description || 'No description'}</div>
+                                    <div style="font-size: 0.85rem; color: #888;">${app.tagline || app.description || 'No description'}</div>
                                 </div>
                             </div>
-                            <span class="badge badge-active">${app.status || 'Active'}</span>
+                            <span class="badge badge-${app.status === 'published' ? 'active' : 'paused'}">${app.status || 'development'}</span>
                         </div>
                     `).join('');
                 }
             } catch (error) {
                 console.error('Error loading apps:', error);
+                document.getElementById('totalApps').textContent = '0';
             }
         }
 
         async function loadCampaigns() {
             try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/app_campaigns?developer_discord_id=eq.${currentUser.id}&select=*,apps(name,icon_url)`, {
+                // Note: app_campaigns references suite_apps via app_id
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/app_campaigns?developer_discord_id=eq.${currentUser.id}&select=*,suite_apps(name,icon_url)`, {
                     headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
                 });
                 const campaigns = await response.json();
 
+                if (!Array.isArray(campaigns)) {
+                    document.getElementById('totalCampaigns').textContent = '0';
+                    document.getElementById('totalClaims').textContent = '0';
+                    return;
+                }
+
                 const active = campaigns.filter(c => c.status === 'active');
                 document.getElementById('totalCampaigns').textContent = active.length;
-                document.getElementById('totalClaims').textContent = campaigns.reduce((sum, c) => sum + (c.claims_count || 0), 0);
+                document.getElementById('totalClaims').textContent = campaigns.reduce((sum, c) => sum + (c.claims_count || 0), 0).toLocaleString();
 
                 const list = document.getElementById('campaignsList');
                 if (campaigns.length === 0) {
@@ -685,15 +702,15 @@
                     list.innerHTML = campaigns.map(c => `
                         <div class="campaign-item">
                             <div class="campaign-info">
-                                <img src="${c.apps?.icon_url || 'assets/suite-mascot.png'}" alt="">
+                                <img src="${c.suite_apps?.icon_url || 'assets/suite-mascot.png'}" alt="" style="border-radius: 12px;">
                                 <div>
-                                    <strong>${c.apps?.name || 'Unknown App'}</strong>
+                                    <strong>${c.suite_apps?.name || 'Unknown App'}</strong>
                                     <div style="font-size: 0.85rem; color: #888;">+${c.suite_per_claim} SUITE per user</div>
                                 </div>
                             </div>
                             <div class="campaign-stats">
                                 <span><strong>${c.claims_count || 0}</strong> Claims</span>
-                                <span><strong>${c.remaining_budget}</strong> Budget Left</span>
+                                <span><strong>${c.remaining_budget?.toLocaleString() || 0}</strong> Budget Left</span>
                             </div>
                             <span class="badge badge-${c.status}">${c.status}</span>
                         </div>
@@ -701,6 +718,8 @@
                 }
             } catch (error) {
                 console.error('Error loading campaigns:', error);
+                document.getElementById('totalCampaigns').textContent = '0';
+                document.getElementById('totalClaims').textContent = '0';
             }
         }
 
@@ -789,8 +808,14 @@
         function logout() {
             localStorage.removeItem('suiteDev');
             currentUser = null;
-            document.getElementById('loginSection').style.display = 'block';
-            document.getElementById('dashboardContent').style.display = 'none';
+            // Show login banner, hide user pill, reset to demo data
+            document.getElementById('loginBanner').style.display = 'flex';
+            document.getElementById('userPill').style.display = 'none';
+            // Reset to demo values
+            document.getElementById('totalApps').textContent = '3';
+            document.getElementById('totalCampaigns').textContent = '2';
+            document.getElementById('totalClaims').textContent = '1,247';
+            document.getElementById('suiteBalance').textContent = '15,340';
         }
 
         // ========== POWER-UP FUNCTIONS ==========

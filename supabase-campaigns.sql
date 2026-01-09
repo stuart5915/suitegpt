@@ -4,7 +4,7 @@
 -- Campaign definitions
 CREATE TABLE IF NOT EXISTS app_campaigns (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    app_id UUID REFERENCES apps(id) ON DELETE CASCADE,
+    app_id UUID REFERENCES suite_apps(id) ON DELETE CASCADE,
     developer_discord_id TEXT NOT NULL,
     
     -- Rewards
