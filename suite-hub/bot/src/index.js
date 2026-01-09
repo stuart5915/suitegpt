@@ -13,6 +13,8 @@ import { handleBugCommand, handleFeatureCommand, getAppChoices } from './handler
 import { handleMyAppsCommand, handleMyAppStatusCommand, handleDeleteMyAppCommand, getUserAppChoices, addUserApp } from './handlers/userApps.js';
 import { handlePublishApp, handlePublishButton } from './handlers/publishApp.js';
 import { handlePreflightCheck } from './handlers/preflightCheck.js';
+import { handleFeatureFast, handleBugFast } from './handlers/featureFast.js';
+import { handleFeaturePro, handleBugPro } from './handlers/featurePro.js';
 import { generateBotResponse } from './ai/suiteBot.js';
 import { canPerformAction, useAction, getNoCreditsMessage, getUserStats } from './credits.js';
 import fs from 'fs';
@@ -371,6 +373,88 @@ const commands = [
                     { name: '💭 REMcast', value: 'remcast' },
                     { name: '💎 DeFi Knowledge', value: 'defi-knowledge' }
                 )),
+    // ⚡ FAST COMMANDS - Instant AI-powered changes via Gemini 1.5 Pro
+    new SlashCommandBuilder()
+        .setName('feature-fast')
+        .setDescription('⚡ INSTANT feature implementation using AI - bypasses IDE queue')
+        .addStringOption(option =>
+            option.setName('app')
+                .setDescription('Select app to update')
+                .setRequired(true)
+                .addChoices(
+                    { name: '📊 Cheshbon', value: 'cheshbon-reflections' },
+                    { name: '🥗 FoodVitals', value: 'food-vitals-expo' },
+                    { name: '💪 OpticRep', value: 'opticrep-ai-workout-trainer' },
+                    { name: '🧠 LifeHub', value: 'life-hub-app' },
+                    { name: '💭 REMcast', value: 'remcast' },
+                    { name: '💎 DeFi Knowledge', value: 'defi-knowledge' },
+                    { name: '🏃 TrueForm', value: 'trueform-ai-physiotherapist' }
+                ))
+        .addStringOption(option =>
+            option.setName('description')
+                .setDescription('Describe the feature to add')
+                .setRequired(true)),
+    new SlashCommandBuilder()
+        .setName('bug-fast')
+        .setDescription('⚡ INSTANT bug fix using AI - bypasses IDE queue')
+        .addStringOption(option =>
+            option.setName('app')
+                .setDescription('Select app to fix')
+                .setRequired(true)
+                .addChoices(
+                    { name: '📊 Cheshbon', value: 'cheshbon-reflections' },
+                    { name: '🥗 FoodVitals', value: 'food-vitals-expo' },
+                    { name: '💪 OpticRep', value: 'opticrep-ai-workout-trainer' },
+                    { name: '🧠 LifeHub', value: 'life-hub-app' },
+                    { name: '💭 REMcast', value: 'remcast' },
+                    { name: '💎 DeFi Knowledge', value: 'defi-knowledge' },
+                    { name: '🏃 TrueForm', value: 'trueform-ai-physiotherapist' }
+                ))
+        .addStringOption(option =>
+            option.setName('bug_description')
+                .setDescription('Describe the bug to fix')
+                .setRequired(true)),
+    // 👨‍💻 PRO COMMANDS - Human developer with AI assistance (5-15 min, during office hours)
+    new SlashCommandBuilder()
+        .setName('feature-pro')
+        .setDescription('👨‍💻 PRO: Human developer implements your feature with AI (5-15 min)')
+        .addStringOption(option =>
+            option.setName('app')
+                .setDescription('Select app to update')
+                .setRequired(true)
+                .addChoices(
+                    { name: '📊 Cheshbon', value: 'cheshbon-reflections' },
+                    { name: '🥗 FoodVitals', value: 'food-vitals-expo' },
+                    { name: '💪 OpticRep', value: 'opticrep-ai-workout-trainer' },
+                    { name: '🧠 LifeHub', value: 'life-hub-app' },
+                    { name: '💭 REMcast', value: 'remcast' },
+                    { name: '💎 DeFi Knowledge', value: 'defi-knowledge' },
+                    { name: '🏃 TrueForm', value: 'trueform-ai-physiotherapist' }
+                ))
+        .addStringOption(option =>
+            option.setName('description')
+                .setDescription('Describe the feature in detail')
+                .setRequired(true)),
+    new SlashCommandBuilder()
+        .setName('bug-pro')
+        .setDescription('👨‍💻 PRO: Human developer fixes your bug with AI (5-15 min)')
+        .addStringOption(option =>
+            option.setName('app')
+                .setDescription('Select app to fix')
+                .setRequired(true)
+                .addChoices(
+                    { name: '📊 Cheshbon', value: 'cheshbon-reflections' },
+                    { name: '🥗 FoodVitals', value: 'food-vitals-expo' },
+                    { name: '💪 OpticRep', value: 'opticrep-ai-workout-trainer' },
+                    { name: '🧠 LifeHub', value: 'life-hub-app' },
+                    { name: '💭 REMcast', value: 'remcast' },
+                    { name: '💎 DeFi Knowledge', value: 'defi-knowledge' },
+                    { name: '🏃 TrueForm', value: 'trueform-ai-physiotherapist' }
+                ))
+        .addStringOption(option =>
+            option.setName('bug_description')
+                .setDescription('Describe the bug in detail')
+                .setRequired(true)),
 ];
 
 // Register slash commands
@@ -1399,6 +1483,28 @@ IMPORTANT: Verify app name is correct before archiving!
                         content: '❌ Failed to remove app. Check logs for details.'
                     });
                 }
+                break;
+            }
+
+            // ⚡ FAST COMMANDS - Instant AI changes
+            case 'feature-fast': {
+                await handleFeatureFast(interaction);
+                break;
+            }
+
+            case 'bug-fast': {
+                await handleBugFast(interaction);
+                break;
+            }
+
+            // 👨‍💻 PRO COMMANDS - Human developer with AI
+            case 'feature-pro': {
+                await handleFeaturePro(interaction);
+                break;
+            }
+
+            case 'bug-pro': {
+                await handleBugPro(interaction);
                 break;
             }
         }
