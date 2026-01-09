@@ -1932,15 +1932,21 @@
         })();
 
         function renderAppCard(app) {
-            const icon = app.icon_emoji || app.icon || '📱';
+            const iconUrl = app.icon_url;
+            const iconEmoji = app.icon_emoji || app.icon || '📱';
             const rating = app.rating ? app.rating.toFixed(1) : '4.5';
             const users = app.users_count || Math.floor(Math.random() * 1000 + 100);
             const usersDisplay = users >= 1000 ? (users / 1000).toFixed(1) + 'k' : users;
             const appUrl = app.expo_link || app.pwa_url || `app.html?slug=${app.slug}`;
 
+            // Use image if icon_url exists, otherwise emoji
+            const iconHtml = iconUrl
+                ? `<img src="${iconUrl}" alt="${app.name}" style="width: 60px; height: 60px; border-radius: 16px; object-fit: cover;">`
+                : iconEmoji;
+
             return `
                 <div class="app-card" onclick="window.location.href='${appUrl}'">
-                    <div class="app-icon">${icon}</div>
+                    <div class="app-icon">${iconHtml}</div>
                     <h3>${app.name}</h3>
                     <p>${app.tagline || app.description?.substring(0, 60) || ''}</p>
                     <div class="meta">
@@ -2633,16 +2639,25 @@
                 // Default icons based on category or random
                 const defaultIcons = ['📱', '🎮', '🧠', '💡', '🎨', '📊', '🔧', '🎯'];
 
-                // Render each app
+                // Render each app with real icons
                 container.innerHTML = publishedApps.map((app, i) => {
-                    const icon = app.icon || defaultIcons[i % defaultIcons.length];
+                    const iconUrl = app.icon_url;
+                    const iconEmoji = app.icon || defaultIcons[i % defaultIcons.length];
                     const color = iconColors[i % iconColors.length];
                     const creator = app.creator_discord || app.creator_name || 'SUITE Builder';
                     const appUrl = app.expo_link || app.pwa_url || `app.html?slug=${app.slug}`;
 
+                    // Use image if icon_url exists, otherwise emoji with background
+                    const iconContent = iconUrl
+                        ? `<img src="${iconUrl}" alt="${app.name}" style="width: 48px; height: 48px; border-radius: 12px; object-fit: cover;">`
+                        : iconEmoji;
+                    const iconStyle = iconUrl
+                        ? 'background: transparent;'
+                        : `background: ${color};`;
+
                     return `
                         <div class="mini-app" onclick="window.open('${appUrl}', '_blank')" style="cursor: pointer;">
-                            <div class="app-icon" style="background: ${color};">${icon}</div>
+                            <div class="app-icon" style="${iconStyle}">${iconContent}</div>
                             <div class="app-info">
                                 <div class="app-name">${app.name}</div>
                                 <div class="app-creator">by ${creator}</div>
