@@ -53,6 +53,11 @@ CREATE TABLE IF NOT EXISTS campaign_progress (
 ALTER TABLE app_campaigns ENABLE ROW LEVEL SECURITY;
 ALTER TABLE campaign_progress ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies first (to allow re-running)
+DROP POLICY IF EXISTS "read_active_campaigns" ON app_campaigns;
+DROP POLICY IF EXISTS "manage_own_campaigns" ON app_campaigns;
+DROP POLICY IF EXISTS "manage_own_progress" ON campaign_progress;
+
 -- Anyone can read active campaigns
 CREATE POLICY "read_active_campaigns" ON app_campaigns
     FOR SELECT USING (status = 'active');
