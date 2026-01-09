@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <a href="index.html" class="sidebar-link ${isActive('index.html')}">📚 Introduction</a>
             <a href="../ecosystem.html" class="sidebar-link">🔄 How It Works</a>
             <a href="tokenomics.html" class="sidebar-link ${isActive('tokenomics.html')}">📊 Tokenomics</a>
+            <a href="utility.html" class="sidebar-link ${isActive('utility.html')}">⚡ SUITE Utility</a>
             <a href="roadmap.html" class="sidebar-link ${isActive('roadmap.html')}">🗺️ Roadmap</a>
             <a href="../suitehub.html" class="sidebar-link">🧠 SUITEhub</a>
         </div>
