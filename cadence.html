@@ -476,6 +476,90 @@
             margin-bottom: 16px;
         }
 
+        /* Tier Selection Cards */
+        .tier-selection {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .tier-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .tier-card:hover {
+            border-color: rgba(168, 85, 247, 0.5);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .tier-card.active {
+            border-color: #a855f7;
+            background: rgba(168, 85, 247, 0.15);
+            box-shadow: 0 0 30px rgba(168, 85, 247, 0.3);
+        }
+
+        .tier-badge {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #a855f7, #ec4899);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .tier-card h4 {
+            font-size: 1.2rem;
+            margin: 16px 0 8px;
+        }
+
+        .tier-price {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: #a855f7;
+            margin-bottom: 8px;
+        }
+
+        .tier-price span {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .tier-desc {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 16px;
+        }
+
+        .tier-features {
+            list-style: none;
+            padding: 0;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .tier-features li {
+            margin-bottom: 6px;
+        }
+
+        @media (max-width: 768px) {
+            .tier-selection {
+                grid-template-columns: 1fr;
+            }
+        }
+
         /* CTA Section */
         .cta-section {
             padding: 80px 24px;
@@ -683,6 +767,43 @@
                 <p class="section-subtitle">Generate Veo 2 prompts for your promo videos. Describe your concept, pick
                     the style, and get ready-to-use prompts with matching text overlays.</p>
 
+                <!-- Tier Selection -->
+                <div class="tier-selection" id="tierSelection">
+                    <div class="tier-card active" data-tier="diy">
+                        <div class="tier-badge">🆓 FREE</div>
+                        <h4>DIY Mode</h4>
+                        <p class="tier-price">$0</p>
+                        <p class="tier-desc">Copy prompts and generate yourself on gemini.google.com</p>
+                        <ul class="tier-features">
+                            <li>✓ Unlimited prompts</li>
+                            <li>✓ All styles</li>
+                            <li>✓ Self-serve</li>
+                        </ul>
+                    </div>
+                    <div class="tier-card" data-tier="priority">
+                        <div class="tier-badge">⚡ FAST</div>
+                        <h4>Priority</h4>
+                        <p class="tier-price">$1.00 <span>SUITE</span></p>
+                        <p class="tier-desc">We generate your clips within 1-2 hours</p>
+                        <ul class="tier-features">
+                            <li>✓ 1-2 hour delivery</li>
+                            <li>✓ Pro quality</li>
+                            <li>✓ Download ready</li>
+                        </ul>
+                    </div>
+                    <div class="tier-card" data-tier="batch">
+                        <div class="tier-badge">📦 VALUE</div>
+                        <h4>Batch (5 clips)</h4>
+                        <p class="tier-price">$0.50 <span>SUITE</span></p>
+                        <p class="tier-desc">Submit up to 5 clips, delivered within 24h</p>
+                        <ul class="tier-features">
+                            <li>✓ Best value</li>
+                            <li>✓ 24h delivery</li>
+                            <li>✓ Bulk discount</li>
+                        </ul>
+                    </div>
+                </div>
+
                 <div class="studio-input-group">
                     <label for="videoConceptInput">What's your video about?</label>
                     <textarea id="videoConceptInput" class="studio-textarea"
@@ -781,8 +902,28 @@
         const generateBtn = document.getElementById('generatePromptsBtn');
         const conceptInput = document.getElementById('videoConceptInput');
         const promptsGrid = document.getElementById('promptsGrid');
+        const tierCards = document.querySelectorAll('.tier-card');
 
         let selectedStyle = 'claymation';
+        let selectedTier = 'diy';
+
+        // Tier card selection
+        tierCards.forEach(card => {
+            card.addEventListener('click', () => {
+                tierCards.forEach(c => c.classList.remove('active'));
+                card.classList.add('active');
+                selectedTier = card.dataset.tier;
+
+                // Update button text based on tier
+                if (selectedTier === 'diy') {
+                    generateBtn.textContent = '✨ Generate Prompts';
+                } else if (selectedTier === 'priority') {
+                    generateBtn.textContent = '⚡ Generate & Submit ($1 SUITE)';
+                } else {
+                    generateBtn.textContent = '📦 Generate & Submit ($0.50 SUITE)';
+                }
+            });
+        });
 
         // Update clip count display
         clipSlider.addEventListener('input', () => {

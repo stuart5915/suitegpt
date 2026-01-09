@@ -108,15 +108,15 @@ Keep responses short, friendly, and helpful. Use emojis sparingly. If you don't 
         widget.innerHTML = `
             <div class="stu-panel">
                 <div class="stu-header">
-                    <img src="/assets/suite-mascot.png" alt="Stu">
+                    <div class="suite-coin-icon">$</div>
                     <div class="stu-header-text">
-                        <h3>Hey, I'm Stu! 👋</h3>
-                        <p>Ask me anything about SUITE</p>
+                        <h3>SUITE Help</h3>
+                        <p>AI-powered assistance</p>
                     </div>
                 </div>
                 <div class="stu-messages" id="stuMessages">
                     <div class="stu-message stu">
-                        Hi there! 🎉 I'm Stu, your AI-powered SUITE guide. Ask me anything!
+                        Hey! 👋 How can I help you with SUITE today?
                     </div>
                 </div>
                 <div class="stu-quick">
@@ -138,7 +138,7 @@ Keep responses short, friendly, and helpful. Use emojis sparingly. If you don't 
                 </a>
             </div>
             <button class="stu-button" aria-label="Open help chat">
-                <img src="/assets/suite-mascot.png" alt="Stu">
+                <span class="suite-coin-btn">$</span>
                 <span class="stu-close">✕</span>
             </button>
         `;
