@@ -1363,7 +1363,97 @@
                 }
 
                 btn.disabled = false;
-                btn.textContent = '?? Start Review Campaign';
+                btn.textContent = '🌟 Start Review Campaign';
+            });
+
+            // ========== EDIT APP MODAL ==========
+            function openEditAppModal(id, name, iconUrl, description, category) {
+                document.getElementById('editAppId').value = id;
+                document.getElementById('editAppName').value = name;
+                document.getElementById('editAppIconUrl').value = iconUrl;
+                document.getElementById('editAppDescription').value = description;
+                document.getElementById('editAppCategory').value = category || 'productivity';
+
+                // Show icon preview
+                updateIconPreview(iconUrl);
+
+                document.getElementById('editAppModal').style.display = 'flex';
+            }
+
+            function closeEditAppModal() {
+                document.getElementById('editAppModal').style.display = 'none';
+            }
+
+            function updateIconPreview(url) {
+                const preview = document.getElementById('iconPreview');
+                if (url) {
+                    preview.innerHTML = `<img src="${url}" alt="Preview" style="width: 80px; height: 80px; border-radius: 16px; object-fit: cover;" onerror="this.outerHTML='<span style=\\'color: red; font-size: 0.9rem;\\'>⚠️ Invalid image URL</span>'">`;
+                } else {
+                    preview.innerHTML = '';
+                }
+            }
+
+            // Live preview as user types icon URL
+            document.getElementById('editAppIconUrl').addEventListener('input', (e) => {
+                updateIconPreview(e.target.value);
+            });
+
+            // Save app changes
+            document.getElementById('editAppForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const id = document.getElementById('editAppId').value;
+                const iconUrl = document.getElementById('editAppIconUrl').value;
+                const description = document.getElementById('editAppDescription').value;
+                const category = document.getElementById('editAppCategory').value;
+
+                try {
+                    // Try updating suite_apps first
+                    let response = await fetch(`${SUPABASE_URL}/rest/v1/suite_apps?id=eq.${id}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({
+                            icon_url: iconUrl || null,
+                            description: description,
+                            category: category
+                        })
+                    });
+
+                    // Also try updating the apps table (for apps there)
+                    await fetch(`${SUPABASE_URL}/rest/v1/apps?id=eq.${id}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({
+                            icon_url: iconUrl || null,
+                            description: description,
+                            category: category
+                        })
+                    });
+
+                    alert('✅ App updated successfully!');
+                    closeEditAppModal();
+                    loadApps(); // Reload apps list
+                } catch (error) {
+                    console.error('Error updating app:', error);
+                    alert('Error updating app: ' + error.message);
+                }
+            });
+
+            // Close modal when clicking outside
+            document.getElementById('editAppModal').addEventListener('click', (e) => {
+                if (e.target.id === 'editAppModal') {
+                    closeEditAppModal();
+                }
             });
         </script>
 
