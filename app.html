@@ -528,7 +528,14 @@
             // Hero
             document.getElementById('appTitle').textContent = app.name;
             document.getElementById('appCreator').textContent = 'SUITE';
-            document.getElementById('appIcon').textContent = app.icon_emoji || getDefaultEmoji(app.name);
+            
+            // App Icon - use icon_url if available, otherwise emoji
+            const iconEl = document.getElementById('appIcon');
+            if (app.icon_url) {
+                iconEl.innerHTML = `<img src="${app.icon_url}" alt="${app.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 24px;">`;
+            } else {
+                iconEl.textContent = app.icon_emoji || getDefaultEmoji(app.name);
+            }
 
             // Stats
             const rating = app.rating || 4.5;
@@ -539,8 +546,9 @@
             document.getElementById('appCategory').textContent = getCategoryIcon(app.category);
             document.getElementById('appCategoryLabel').textContent = app.category || 'App';
 
-            // Meta row
-            const status = app.status === 'published' ? '🟢 Live' : '🔨 In Development';
+            // Meta row - check for "published" status or "approved" status
+            const isLive = app.status === 'published' || app.status === 'approved';
+            const status = isLive ? '🟢 Live' : '🔨 In Development';
             document.getElementById('appMeta').innerHTML = `<span>${status}</span> · <span>Free</span>`;
 
             // Description
@@ -582,10 +590,12 @@
                 `;
             }
 
-            // Open App button
+            // Open App button - check download_url OR app_url, and status
             const openBtn = document.getElementById('openAppBtn');
-            if (app.download_url) {
-                openBtn.onclick = () => window.open(app.download_url, '_blank');
+            const appUrl = app.download_url || app.app_url;
+            if (appUrl && isLive) {
+                openBtn.textContent = 'Open App';
+                openBtn.onclick = () => window.open(appUrl, '_blank');
             } else {
                 openBtn.textContent = 'Coming Soon';
                 openBtn.disabled = true;
@@ -627,7 +637,7 @@
 
         function formatNumber(num) {
             if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M+';
-            if (num >= 1000) return (num / 1000).toFixed(1) + 'K+';
+            if (num >00) (num / 1000).toFixed(1) + 'K+';
             return num + '+';
         }
 
