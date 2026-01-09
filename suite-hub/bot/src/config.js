@@ -53,6 +53,21 @@ export const config = {
   maintenanceMode: process.env.MAINTENANCE_MODE === 'true',
   maintenanceMessage: process.env.MAINTENANCE_MESSAGE || '🚀 **SUITE is launching January 10th!**\n\nCommands are temporarily disabled while we prepare for launch.\n\nIn the meantime:\n• Join the waitlist at https://getsuite.app\n• Follow @suiteappstore on X\n• Get ready to build! 🎉',
   enableRewards: process.env.ENABLE_REWARDS === 'true',
+
+  // GitHub API (for fast code generation)
+  githubToken: process.env.GITHUB_TOKEN,
+  githubOwner: 'stuart5915',
+
+  // App slug to GitHub repo mapping
+  appRepos: {
+    'cheshbon-reflections': 'cheshbon-reflections',
+    'food-vitals-expo': 'food-vitals-expo',
+    'opticrep-ai-workout-trainer': 'opticrep-ai-workout-trainer',
+    'life-hub-app': 'life-hub-app',
+    'remcast': 'remcast',
+    'defi-knowledge': 'defi-knowledge',
+    'trueform-ai-physiotherapist': 'trueform-ai-physiotherapist',
+  },
 };
 
 // Validate required config
