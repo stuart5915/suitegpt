@@ -39,17 +39,44 @@ async function fetchAllSuiteApps() {
 
 // Get app status stats (Live, Development, Beta, etc.)
 async function fetchAppStats() {
-    const apps = await fetchAllSuiteApps();
+    const client = initSupabase();
+    if (!client) return { stats: { total: 0, published: 0, development: 0, beta: 0 }, apps: [] };
 
-    const stats = {
-        total: apps.length,
-        published: apps.filter(a => a.status === 'published' || a.status === 'approved').length,
-        development: apps.filter(a => a.status === 'development').length,
-        beta: apps.filter(a => a.status === 'beta').length,
-        deprecated: apps.filter(a => a.status === 'deprecated').length
-    };
+    try {
+        // Fetch from apps table (approved and featured are "live")
+        const { data, error } = await client
+            .from('apps')
+            .select('*')
+            .in('status', ['approved', 'featured', 'pending'])
+            .order('created_at', { ascending: false });
 
-    return { stats, apps };
+        if (error) {
+            console.error('Error fetching apps:', error);
+            return { stats: { total: 0, published: 0, development: 0, beta: 0 }, apps: [] };
+        }
+
+        const apps = data || [];
+
+        // Map statuses: approved/featured = "published" (live), pending = "development"
+        const mappedApps = apps.map(app => ({
+            ...app,
+            // Normalize status for display
+            displayStatus: ['approved', 'featured'].includes(app.status) ? 'published' : 'development'
+        }));
+
+        const stats = {
+            total: apps.length,
+            published: apps.filter(a => a.status === 'approved' || a.status === 'featured').length,
+            development: apps.filter(a => a.status === 'pending').length,
+            beta: 0,
+            deprecated: apps.filter(a => a.status === 'rejected').length
+        };
+
+        return { stats, apps: mappedApps };
+    } catch (err) {
+        console.error('Failed to fetch apps:', err);
+        return { stats: { total: 0, published: 0, development: 0, beta: 0 }, apps: [] };
+    }
 }
 
 // Fetch approved apps from the OLD apps table (fallback)

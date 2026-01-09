@@ -1,7 +1,5 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
-
-<head>
+<html lang="en"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -975,9 +973,7 @@
             color: #ff9500;
         }
     </style>
-</head>
-
-<body>
+</head><body>
     <!-- Animated Grid Background -->
     <div class="grid-background">
         <div class="grid-pulse"></div>
@@ -1159,7 +1155,7 @@
                 <a href="incubate.html">?? Incubator</a>
                 <a href="content.html"> Content</a>
                 <a href="cadence.html"> Cadence</a>
-                        <a href="suitehub.html"> Hub</a>
+                <a href="suitehub.html"> Hub</a>
             </div>
             <div class="footer-column">
                 <h5>Learn</h5>
@@ -1260,7 +1256,7 @@
 
             // Get published apps, sorted by name for now (could sort by rating/downloads later)
             const publishedApps = apps
-                .filter(app => app.status === 'published')
+                .filter(app => app.displayStatus === 'published' || app.status === 'approved' || app.status === 'featured')
                 .slice(0, 6); // Top 6
 
             if (publishedApps.length === 0) {
@@ -1307,8 +1303,11 @@
         // Get status label
         function getStatusLabel(status) {
             switch (status) {
-                case 'published': return 'Live';
-                case 'development': return 'In Development';
+                case 'published':
+                case 'approved':
+                case 'featured': return 'Live';
+                case 'development':
+                case 'pending': return 'In Development';
                 case 'beta': return 'Beta';
                 default: return status;
             }
@@ -1366,8 +1365,10 @@
 
             // Sort: published first, then by name
             filtered.sort((a, b) => {
-                if (a.status === 'published' && b.status !== 'published') return -1;
-                if (a.status !== 'published' && b.status === 'published') return 1;
+                const aLive = a.displayStatus === 'published' || a.status === 'approved' || a.status === 'featured';
+                const bLive = b.displayStatus === 'published' || b.status === 'approved' || b.status === 'featured';
+                if (aLive && !bLive) return -1;
+                if (!aLive && bLive) return 1;
                 return a.name.localeCompare(b.name);
             });
 
@@ -1377,7 +1378,7 @@
             if (filtered.length === 0) {
                 document.getElementById('appsGrid').innerHTML = `
                     <div class="empty-state">
-                        <div class="icon">??</div>
+                        <div class="icon"></div>
                         <p>No apps found. Try a different search or filter.</p>
                     </div>
                 `;
@@ -1394,7 +1395,7 @@
                 }
 
                 const description = app.tagline || (features.length > 0 ? features[0] : 'A SUITE ecosystem app');
-                const isLive = app.status === 'published';
+                const isLive = app.displayStatus === 'published' || app.status === 'approved' || app.status === 'featured';
 
                 return `
                 <div class="app-card ${isLive ? 'featured' : ''}" onclick="window.location.href='app.html?slug=${app.slug}'">
@@ -1495,12 +1496,12 @@
             if (!container) return;
 
             // Get published apps (already loaded or load them)
-            const publishedApps = allApps.filter(app => app.status === 'published').slice(0, 2);
+            const publishedApps = allApps.filter(app => app.displayStatus === 'published' || app.status === 'approved' || app.status === 'featured').slice(0, 2);
 
             if (publishedApps.length === 0) {
                 container.innerHTML = `
                     <div class="featured-small" style="opacity: 0.5;">
-                        <div class="small-icon" style="background: #f3f4f6;">??</div>
+                        <div class="small-icon" style="background: #f3f4f6;"></div>
                         <div class="small-content">
                             <div class="small-title">Coming Soon</div>
                             <div class="small-meta">More apps launching</div>
@@ -1536,6 +1537,4 @@
     <!-- Stu Helper Widget -->
     <link rel="stylesheet" href="stu-helper.css">
     <script src="stu-helper.js"></script>
-</body>
-
-</html>
+</body></html>
