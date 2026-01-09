@@ -1,13 +1,9 @@
 // SUITE App Store - Supabase Configuration
 // This file provides the Supabase client for the app store
 
-// App Store Database (original)
+// Main SUITE Ecosystem Database (primary source for all apps)
 const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
-
-// Cadence Database (for suite_apps table with status tracking)
-const CADENCE_SUPABASE_URL = 'https://tbfpopablanksrzyxaxj.supabase.co';
-const CADENCE_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRiZnBvcGFibGFua3Nyenl4YXhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczNDcxMjAsImV4cCI6MjA4MjkyMzEyMH0.S6MPS-VOdwZ9_2L7Yb4fkOh_OT-Q1--t1ZSKy9hXatU';
 
 // Initialize Supabase client (using CDN version for static HTML)
 function initSupabase() {
@@ -18,18 +14,9 @@ function initSupabase() {
     return supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 
-// Initialize Cadence Supabase client
-function initCadenceSupabase() {
-    if (typeof supabase === 'undefined') {
-        console.error('Supabase library not loaded. Add the CDN script to your HTML.');
-        return null;
-    }
-    return supabase.createClient(CADENCE_SUPABASE_URL, CADENCE_SUPABASE_KEY);
-}
-
-// Fetch ALL apps from suite_apps table (primary source)
+// Fetch ALL apps from suite_apps table
 async function fetchAllSuiteApps() {
-    const client = initCadenceSupabase();
+    const client = initSupabase();
     if (!client) return [];
 
     try {
@@ -56,7 +43,7 @@ async function fetchAppStats() {
 
     const stats = {
         total: apps.length,
-        published: apps.filter(a => a.status === 'published').length,
+        published: apps.filter(a => a.status === 'published' || a.status === 'approved').length,
         development: apps.filter(a => a.status === 'development').length,
         beta: apps.filter(a => a.status === 'beta').length,
         deprecated: apps.filter(a => a.status === 'deprecated').length
@@ -91,7 +78,7 @@ async function fetchApprovedApps() {
 
 // Fetch a single app by slug from suite_apps
 async function fetchSuiteAppBySlug(slug) {
-    const client = initCadenceSupabase();
+    const client = initSupabase();
     if (!client) return null;
 
     try {
