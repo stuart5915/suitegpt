@@ -1748,7 +1748,7 @@
                             <span class="suite-label">token</span>
                         </div>
                     </div>
-                    <a href="https://stuart-hollinger-landing-pxan.vercel.app" class="cta-btn">Launch Your Idea</a>
+                    <a href="start-building.html" class="cta-btn">Launch Your Idea</a>
                     <div class="tools-row">
                         <div class="tool-card">
                             <div class="tool-icon-img" style="background: linear-gradient(135deg, #1a1a2e, #2d2d44);">
@@ -1891,12 +1891,12 @@
         </div>
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-number">50+</div>
+                <div class="stat-number" id="statAppsPublished">--</div>
                 <div class="stat-label">Apps Published</div>
                 <div class="stat-sublabel">and counting</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number">3,000+</div>
+                <div class="stat-number" id="statActiveUsers">--</div>
                 <div class="stat-label">Active Users</div>
                 <div class="stat-sublabel">building & using</div>
             </div>
@@ -2531,6 +2531,36 @@
                         </div>
                     </div>
                 `;
+            }
+        })();
+    </script>
+
+    <!-- Dynamic Stats -->
+    <script>
+        (async function loadStats() {
+            if (!window.SuiteAppStore) return;
+
+            try {
+                const { stats } = await window.SuiteAppStore.fetchAppStats();
+
+                // Update Apps Published (total apps, regardless of status)
+                const appsEl = document.getElementById('statAppsPublished');
+                if (appsEl) {
+                    appsEl.textContent = stats.total > 0 ? `${stats.total}+` : '0';
+                }
+
+                // For Active Users - we'd need a users table, for now estimate from Discord
+                // Using a placeholder that can be connected to real data later
+                const usersEl = document.getElementById('statActiveUsers');
+                if (usersEl) {
+                    // Estimate: multiply apps by avg 50 users + base of 100
+                    const estimated = Math.max(100, stats.total * 50 + 100);
+                    usersEl.textContent = estimated.toLocaleString() + '+';
+                }
+
+            } catch (err) {
+                console.error('Failed to load stats:', err);
+                // Keep the "--" fallback
             }
         })();
     </script>

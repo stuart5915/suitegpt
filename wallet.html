@@ -1170,6 +1170,30 @@
                         </div>
                     </div>
 
+                    <!-- Your Wallet (ETH Balance) -->
+                    <div id="walletEthSection" style="display: none; margin-bottom: 20px;">
+                        <div
+                            style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(168, 85, 247, 0.08)); border-radius: 16px; border: 1px solid rgba(99, 102, 241, 0.2);">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div
+                                    style="width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, #627eea, #8b5cf6); display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                                    🔷</div>
+                                <div>
+                                    <div
+                                        style="font-size: 0.75rem; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
+                                        Your Wallet (Base)</div>
+                                    <div style="font-size: 1.3rem; font-weight: 800; color: #2d1b4e;"
+                                        id="walletEthBalance">0.00 ETH</div>
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 1.1rem; font-weight: 700; color: #22c55e;" id="walletEthValue">
+                                    ~$0.00</div>
+                                <div style="font-size: 0.75rem; color: #9ca3af;">Available to deposit</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Collapsible Treasury Stats -->
                     <details class="treasury-details" style="margin-bottom: 20px;">
                         <summary
@@ -2090,8 +2114,34 @@
             // Fetch real balance from chain
             fetchUserSuiteBalance(address);
 
+            // Fetch and show wallet ETH balance
+            fetchWalletEthBalance(address);
+
             // Check if connected wallet is the contract owner
             checkIfOwner(address);
+        }
+
+        async function fetchWalletEthBalance(address) {
+            try {
+                if (!window.ethereum) return;
+
+                // Get ETH balance
+                const balanceHex = await window.ethereum.request({
+                    method: 'eth_getBalance',
+                    params: [address, 'latest']
+                });
+
+                const ethBalance = parseInt(balanceHex, 16) / 1e18;
+                const usdValue = ethBalance * ETH_PRICE_USD;
+
+                // Update UI
+                document.getElementById('walletEthBalance').textContent = `${ethBalance.toFixed(6)} ETH`;
+                document.getElementById('walletEthValue').textContent = `~$${usdValue.toFixed(2)}`;
+                document.getElementById('walletEthSection').style.display = 'block';
+
+            } catch (error) {
+                console.error('Error fetching wallet ETH balance:', error);
+            }
         }
 
         async function fetchUserSuiteBalance(address) {
