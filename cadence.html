@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -625,6 +625,7 @@
                         <a href="giving.html">❤️ Giving</a>
                         <a href="content.html">📸 Content</a>
                         <a href="cadence.html" class="active">🤖 Cadence</a>
+                        <a href="suitehub.html"> Hub</a>
                     </div>
                 </div>
                 <a href="start-building.html" class="nav-cta">✨ Start Building</a>
@@ -832,6 +833,72 @@
                     <div class="empty-prompts">
                         <div class="icon">🎬</div>
                         <p>Describe your video concept above and click "Generate Prompts"</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Voice Studio Section -->
+        <section class="video-studio" id="voice">
+            <div class="studio-container">
+                <h2 class="section-title">🎙️ Voice Studio</h2>
+                <p class="section-subtitle">Generate professional AI voiceovers with ElevenLabs. Paste your script,
+                    choose a voice, get studio-quality audio.</p>
+
+                <div class="tier-selection" id="voiceTierSelection">
+                    <div class="tier-card active" data-tier="voice-diy">
+                        <div class="tier-badge">🆓 FREE</div>
+                        <h4>DIY Mode</h4>
+                        <p class="tier-price">$0</p>
+                        <p class="tier-desc">Use your own ElevenLabs account</p>
+                        <ul class="tier-features">
+                            <li>✓ Copy script</li>
+                            <li>✓ Voice tips</li>
+                            <li>✓ Self-serve</li>
+                        </ul>
+                    </div>
+                    <div class="tier-card" data-tier="voice-priority">
+                        <div class="tier-badge">⚡ FAST</div>
+                        <h4>Priority</h4>
+                        <p class="tier-price">$0.50 <span>SUITE</span></p>
+                        <p class="tier-desc">We generate within 1-2 hours</p>
+                        <ul class="tier-features">
+                            <li>✓ 1-2 hour delivery</li>
+                            <li>✓ Premium voices</li>
+                            <li>✓ MP3 download</li>
+                        </ul>
+                    </div>
+                    <div class="tier-card" data-tier="voice-clone">
+                        <div class="tier-badge">🎭 PREMIUM</div>
+                        <h4>Voice Clone</h4>
+                        <p class="tier-price">$2.00 <span>SUITE</span></p>
+                        <p class="tier-desc">Clone YOUR voice + generate</p>
+                        <ul class="tier-features">
+                            <li>✓ Your voice cloned</li>
+                            <li>✓ Unlimited use</li>
+                            <li>✓ 24h delivery</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="studio-input-group">
+                    <label for="voiceScriptInput">📝 Your Script</label>
+                    <textarea id="voiceScriptInput" class="studio-textarea"
+                        placeholder="Paste or type your script here..."></textarea>
+                    <div class="studio-row">
+                        <div class="style-selector" id="voiceSelector">
+                            <button class="style-btn active" data-voice="adam">🎙️ Adam</button>
+                            <button class="style-btn" data-voice="rachel">👩 Rachel</button>
+                            <button class="style-btn" data-voice="sam">🧑 Sam</button>
+                        </div>
+                        <button class="generate-btn" id="generateVoiceBtn">🎙️ Generate Audio</button>
+                    </div>
+                </div>
+
+                <div class="prompts-grid" id="voiceOutput">
+                    <div class="empty-prompts">
+                        <div class="icon">🎙️</div>
+                        <p>Paste your script and click "Generate Audio"</p>
                     </div>
                 </div>
             </div>
@@ -1053,6 +1120,93 @@
             const card = document.querySelector(`[data-index="${index}"]`);
             card.classList.toggle('done');
         }
+
+        // ========== VOICE STUDIO ==========
+        const voiceTierCards = document.querySelectorAll('#voiceTierSelection .tier-card');
+        const voiceScriptInput = document.getElementById('voiceScriptInput');
+        const generateVoiceBtn = document.getElementById('generateVoiceBtn');
+        const voiceOutput = document.getElementById('voiceOutput');
+        const voiceBtns = document.querySelectorAll('#voiceSelector .style-btn');
+
+        let selectedVoiceTier = 'voice-diy';
+        let selectedVoice = 'adam';
+
+        // Voice tier selection
+        voiceTierCards.forEach(card => {
+            card.addEventListener('click', () => {
+                voiceTierCards.forEach(c => c.classList.remove('active'));
+                card.classList.add('active');
+                selectedVoiceTier = card.dataset.tier;
+
+                if (selectedVoiceTier === 'voice-diy') {
+                    generateVoiceBtn.textContent = '🎙️ Show DIY Instructions';
+                } else if (selectedVoiceTier === 'voice-priority') {
+                    generateVoiceBtn.textContent = '⚡ Generate Audio ($0.50 SUITE)';
+                } else {
+                    generateVoiceBtn.textContent = '🎭 Clone & Generate ($2 SUITE)';
+                }
+            });
+        });
+
+        // Voice selection
+        voiceBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                voiceBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedVoice = btn.dataset.voice;
+            });
+        });
+
+        // Generate voice
+        generateVoiceBtn.addEventListener('click', () => {
+            const script = voiceScriptInput.value.trim();
+            if (!script) {
+                alert('Please enter a script first!');
+                return;
+            }
+
+            if (selectedVoiceTier === 'voice-diy') {
+                voiceOutput.innerHTML = `
+                    <div class="prompt-card">
+                        <div class="prompt-header">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div class="prompt-number">1</div>
+                                <span style="font-weight: 600;">DIY Instructions</span>
+                            </div>
+                        </div>
+                        <div class="prompt-text">
+                            <strong>Step 1:</strong> Go to <a href="https://elevenlabs.io" target="_blank" style="color: #a855f7;">elevenlabs.io</a><br><br>
+                            <strong>Step 2:</strong> Select voice: ${selectedVoice.charAt(0).toUpperCase() + selectedVoice.slice(1)}<br><br>
+                            <strong>Step 3:</strong> Paste your script and generate!
+                        </div>
+                        <div class="prompt-actions">
+                            <button class="prompt-btn copy" onclick="navigator.clipboard.writeText(\`${script.replace(/`/g, "'")}\`).then(() => alert('Script copied!'))">📋 Copy Script</button>
+                            <a href="https://elevenlabs.io" target="_blank" class="prompt-btn" style="text-decoration: none;">🔗 Open ElevenLabs</a>
+                        </div>
+                    </div>
+                `;
+            } else {
+                const price = selectedVoiceTier === 'voice-priority' ? '$0.50' : '$2.00';
+                voiceOutput.innerHTML = `
+                    <div class="prompt-card">
+                        <div class="prompt-header">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div class="prompt-number">⚡</div>
+                                <span style="font-weight: 600;">Submit Request (${price} SUITE)</span>
+                            </div>
+                        </div>
+                        <div class="prompt-text">
+                            <strong>Voice:</strong> ${selectedVoice.charAt(0).toUpperCase() + selectedVoice.slice(1)}<br>
+                            <strong>Script:</strong> ${script.substring(0, 100)}${script.length > 100 ? '...' : ''}<br><br>
+                            <em>Coming soon: Direct $SUITE payment integration. For now, join Discord to submit requests!</em>
+                        </div>
+                        <div class="prompt-actions">
+                            <a href="https://discord.gg/B2Kz5Rqf3u" target="_blank" class="prompt-btn copy" style="text-decoration: none;">💬 Submit on Discord</a>
+                        </div>
+                    </div>
+                `;
+            }
+        });
     </script>
 </body>
 

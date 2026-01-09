@@ -5,9 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Wallet | SUITE</title>
+    <title>Vault | SUITE</title>
     <link rel="icon" type="image/png" href="assets/suite-mascot.png">
-    <meta name="description" content="Manage your SUITE tokens - deposit, withdraw, stake, and vote on charities.">
+    <meta name="description"
+        content="SUITE Vault - Manage your SUITE tokens, execute arbitrage, deposit, withdraw, and stake.">
     <!-- Ethers.js for blockchain interactions -->
     <script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.umd.min.js"></script>
     <link rel="stylesheet" href="suite-styles.css">
@@ -1089,7 +1090,7 @@
                 <div class="nav-dropdown">
                     <span class="nav-dropdown-trigger">SUITE</span>
                     <div class="nav-dropdown-menu">
-                        <a href="wallet.html">?? Wallet</a>
+                        <a href="wallet.html">🏦 Vault</a>
                         <a href="earn.html">?? Earn</a>
                         <a href="boost.html">?? Store</a>
                         <a href="giving.html">?? Giving</a>
@@ -1267,6 +1268,113 @@
                             </div>
                         </div>
                     </details>
+
+                    <!-- Arbitrage Opportunity Card -->
+                    <div class="arb-opportunity-card" id="arbOpportunityCard" style="
+                        background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(255, 149, 0, 0.08));
+                        border: 2px solid rgba(34, 197, 94, 0.2);
+                        border-radius: 20px;
+                        padding: 24px;
+                        margin-bottom: 24px;
+                        position: relative;
+                        overflow: hidden;
+                    ">
+                        <!-- Header -->
+                        <div
+                            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <span style="font-size: 1.5rem;">📊</span>
+                                <div>
+                                    <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: #2d1b4e;">
+                                        Arbitrage Opportunity</h3>
+                                    <p style="margin: 2px 0 0; font-size: 0.8rem; color: #6b7280;">Earn by stabilizing
+                                        SUITE price</p>
+                                </div>
+                            </div>
+                            <div id="arbStatusBadge" style="
+                                padding: 6px 14px;
+                                border-radius: 100px;
+                                font-size: 0.75rem;
+                                font-weight: 700;
+                                background: rgba(156, 163, 175, 0.15);
+                                color: #6b7280;
+                            ">⏳ CHECKING...</div>
+                        </div>
+
+                        <!-- Price Comparison -->
+                        <div
+                            style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: center; margin-bottom: 20px;">
+                            <!-- DEX Price -->
+                            <div
+                                style="text-align: center; padding: 16px; background: rgba(255,255,255,0.6); border-radius: 14px;">
+                                <div
+                                    style="font-size: 0.75rem; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">
+                                    DEX Price</div>
+                                <div id="arbDexPrice" style="font-size: 1.4rem; font-weight: 800; color: #2d1b4e;">
+                                    $0.00000</div>
+                                <div id="arbDexDiff"
+                                    style="font-size: 0.8rem; font-weight: 600; color: #9ca3af; margin-top: 2px;">--
+                                </div>
+                            </div>
+
+                            <!-- Arrow -->
+                            <div style="font-size: 1.5rem; color: #9ca3af;">↔️</div>
+
+                            <!-- Floor Price -->
+                            <div
+                                style="text-align: center; padding: 16px; background: rgba(34, 197, 94, 0.1); border-radius: 14px;">
+                                <div
+                                    style="font-size: 0.75rem; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">
+                                    Floor Price</div>
+                                <div id="arbFloorPrice" style="font-size: 1.4rem; font-weight: 800; color: #22c55e;">
+                                    $0.00100</div>
+                                <div style="font-size: 0.8rem; font-weight: 600; color: #22c55e; margin-top: 2px;">
+                                    Treasury Backed</div>
+                            </div>
+                        </div>
+
+                        <!-- Opportunity Box -->
+                        <div id="arbOpportunityBox" style="
+                            background: rgba(156, 163, 175, 0.1);
+                            border: 1px dashed rgba(156, 163, 175, 0.3);
+                            border-radius: 14px;
+                            padding: 16px;
+                            text-align: center;
+                            margin-bottom: 16px;
+                        ">
+                            <div id="arbOpportunityText" style="font-size: 0.95rem; color: #6b7280;">
+                                Waiting for LP to go live...
+                            </div>
+                            <div id="arbProfitSplit"
+                                style="font-size: 0.8rem; color: #9ca3af; margin-top: 8px; display: none;">
+                                Your cut: <strong style="color: #22c55e;">50%</strong> | Treasury: <strong
+                                    style="color: #ff9500;">50%</strong>
+                            </div>
+                        </div>
+
+                        <!-- Execute Button -->
+                        <button id="arbExecuteBtn" disabled style="
+                            width: 100%;
+                            padding: 16px;
+                            border-radius: 100px;
+                            font-size: 1rem;
+                            font-weight: 700;
+                            cursor: pointer;
+                            border: none;
+                            background: linear-gradient(135deg, #9ca3af, #6b7280);
+                            color: white;
+                            opacity: 0.6;
+                            transition: all 0.3s ease;
+                        ">
+                            🔒 Execute Arb (Coming Soon)
+                        </button>
+
+                        <!-- Info footer -->
+                        <div style="margin-top: 12px; text-align: center; font-size: 0.75rem; color: #9ca3af;">
+                            <a href="docs/earning.html#arbitrage" style="color: #ff9500; text-decoration: none;">Learn
+                                how arbitrage works →</a>
+                        </div>
+                    </div>
 
                     <!-- Action Buttons -->
                     <div class="action-buttons" style="position: relative;">
