@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { config } from '../config.js';
 import { EmbedBuilder } from 'discord.js';
-import { getRepoFiles, listRepoFiles, commitChangesToRepo, writeCompletionFile } from './github.js';
+import { getRepoFiles, getAllRepoFiles, commitChangesToRepo, writeCompletionFile } from './github.js';
 
 // Use Gemini 1.5 Pro for higher quality code generation (free tier: 50 req/day)
 const genAI = new GoogleGenerativeAI(config.geminiApiKey);
@@ -18,12 +18,8 @@ const appNames = {
     'trueform-ai-physiotherapist': 'TrueForm'
 };
 
-// Key files to fetch for context
-const CONTEXT_FILES = [
-    'App.js', 'app/_layout.tsx', 'app/index.tsx',
-    'src/App.js', 'src/screens/HomeScreen.js',
-    'package.json', 'app.config.js'
-];
+// Max files to fetch for full codebase context
+const MAX_CONTEXT_FILES = 50;
 
 /**
  * Parse AI response to extract file changes
@@ -73,17 +69,19 @@ export async function handleFeatureFast(interaction) {
             return handleFeatureFastPreview(interaction, app, description, appName);
         }
 
-        // Step 1: Fetch relevant files from GitHub for context
-        await interaction.editReply({ content: `⏳ Fetching ${appName} codebase...` });
+        // Step 1: Fetch FULL codebase from GitHub for context
+        await interaction.editReply({ content: `⏳ Fetching entire ${appName} codebase (this may take a few seconds)...` });
 
         let contextCode = '';
+        let allFiles = {};
         try {
-            const files = await getRepoFiles(app, CONTEXT_FILES);
-            for (const [path, data] of Object.entries(files)) {
-                contextCode += `\n\n--- ${path} ---\n${data.content.slice(0, 2000)}`; // Limit per file
+            allFiles = await getAllRepoFiles(app, MAX_CONTEXT_FILES);
+            for (const [path, data] of Object.entries(allFiles)) {
+                contextCode += `\n\n--- ${path} ---\n${data.content}`;
             }
+            console.log(`📂 Loaded ${Object.keys(allFiles).length} files for context`);
         } catch (err) {
-            console.log(`Could not fetch context files: ${err.message}`);
+            console.log(`Could not fetch codebase: ${err.message}`);
         }
 
         // Step 2: Generate code with Gemini 1.5 Pro
@@ -247,17 +245,19 @@ export async function handleBugFast(interaction) {
             return handleBugFastPreview(interaction, app, bugDescription, appName);
         }
 
-        // Step 1: Fetch relevant files for context
-        await interaction.editReply({ content: `⏳ Fetching ${appName} codebase...` });
+        // Step 1: Fetch FULL codebase for context
+        await interaction.editReply({ content: `⏳ Fetching entire ${appName} codebase...` });
 
         let contextCode = '';
+        let allFiles = {};
         try {
-            const files = await getRepoFiles(app, CONTEXT_FILES);
-            for (const [path, data] of Object.entries(files)) {
-                contextCode += `\n\n--- ${path} ---\n${data.content.slice(0, 2000)}`;
+            allFiles = await getAllRepoFiles(app, MAX_CONTEXT_FILES);
+            for (const [path, data] of Object.entries(allFiles)) {
+                contextCode += `\n\n--- ${path} ---\n${data.content}`;
             }
+            console.log(`📂 Loaded ${Object.keys(allFiles).length} files for bug context`);
         } catch (err) {
-            console.log(`Could not fetch context: ${err.message}`);
+            console.log(`Could not fetch codebase: ${err.message}`);
         }
 
         // Step 2: Generate fix with Gemini

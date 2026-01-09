@@ -87,6 +87,96 @@ export async function listRepoFiles(repoSlug, dirPath = '') {
 }
 
 /**
+ * Recursively fetch ALL code files from a repo
+ * @param {string} repoSlug - App slug
+ * @param {number} maxFiles - Maximum files to fetch (default 50)
+ * @returns {Promise<Object>} Map of path -> { content, sha }
+ */
+export async function getAllRepoFiles(repoSlug, maxFiles = 50) {
+    const repoName = config.appRepos[repoSlug];
+    if (!repoName || !config.githubToken) {
+        throw new Error('Missing repo or token');
+    }
+
+    // Extensions to include
+    const codeExtensions = ['.js', '.jsx', '.ts', '.tsx', '.json', '.css', '.html'];
+
+    // Directories to skip
+    const skipDirs = ['node_modules', '.git', '.expo', 'dist', 'build', '.next', 'coverage'];
+
+    const allFiles = {};
+    let fileCount = 0;
+
+    async function fetchDir(dirPath = '') {
+        if (fileCount >= maxFiles) return;
+
+        try {
+            const response = await fetch(
+                `${GITHUB_API}/repos/${config.githubOwner}/${repoName}/contents/${dirPath}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${config.githubToken}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                    }
+                }
+            );
+
+            if (!response.ok) return;
+
+            const items = await response.json();
+
+            for (const item of items) {
+                if (fileCount >= maxFiles) break;
+
+                // Skip unwanted directories
+                if (item.type === 'dir') {
+                    if (!skipDirs.some(skip => item.name === skip || item.path.includes(skip))) {
+                        await fetchDir(item.path);
+                    }
+                    continue;
+                }
+
+                // Skip non-code files
+                const ext = '.' + item.name.split('.').pop();
+                if (!codeExtensions.includes(ext)) continue;
+
+                // Skip large files (package-lock.json, etc)
+                if (item.name === 'package-lock.json') continue;
+
+                // Fetch file content
+                try {
+                    const fileResponse = await fetch(item.url, {
+                        headers: {
+                            'Authorization': `Bearer ${config.githubToken}`,
+                            'Accept': 'application/vnd.github.v3+json',
+                        }
+                    });
+
+                    if (fileResponse.ok) {
+                        const fileData = await fileResponse.json();
+                        const content = Buffer.from(fileData.content, 'base64').toString('utf-8');
+
+                        // Skip very large files (>50KB)
+                        if (content.length < 50000) {
+                            allFiles[item.path] = { content, sha: fileData.sha };
+                            fileCount++;
+                        }
+                    }
+                } catch (err) {
+                    console.log(`Skipping ${item.path}: ${err.message}`);
+                }
+            }
+        } catch (err) {
+            console.log(`Error fetching ${dirPath}: ${err.message}`);
+        }
+    }
+
+    await fetchDir('');
+    console.log(`📂 Fetched ${fileCount} files from ${repoName}`);
+    return allFiles;
+}
+
+/**
  * Commit changes to a GitHub repo
  * @param {string} repoSlug - App slug
  * @param {Object} files - Map of path -> { content, sha (optional) }
