@@ -1,5 +1,7 @@
 <!DOCTYPE html>
-<html lang="en"><head>
+<html lang="en">
+
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>App Details | SUITE</title>
@@ -494,7 +496,9 @@
             }
         }
     </style>
-</head><body>
+</head>
+
+<body>
     <nav class="nav">
         <div class="nav-inner">
             <a href="index.html" class="nav-logo">
@@ -709,7 +713,13 @@
             try {
                 // Use the SuiteAppStore helper
                 if (typeof SuiteAppStore !== 'undefined') {
+                    // Try suite_apps table first
                     currentApp = await SuiteAppStore.fetchSuiteAppBySlug(slug);
+
+                    // Fallback to apps table if not found
+                    if (!currentApp) {
+                        currentApp = await SuiteAppStore.fetchAppBySlug(slug);
+                    }
                 }
 
                 if (!currentApp) {
@@ -1051,4 +1061,6 @@
     <!-- Stu Helper Widget -->
     <link rel="stylesheet" href="stu-helper.css">
     <script src="stu-helper.js"></script>
-</body></html>
+</body>
+
+</html>
