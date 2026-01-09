@@ -1,5 +1,7 @@
 <!DOCTYPE html>
-<html lang="en"><head>
+<html lang="en">
+
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Developer Dashboard | SUITE</title>
@@ -393,7 +395,9 @@
             color: #888;
         }
     </style>
-</head><body>
+</head>
+
+<body>
     <!-- Navigation -->
     <nav class="nav">
         <div class="nav-inner">
@@ -407,11 +411,26 @@
                 <a href="discuss.html">Discuss</a>
                 <a href="incubate.html">Incubate</a>
                 <a href="docs/index.html">Docs</a>
-                <a href="wallet.html">Wallet</a>
-                <a href="earn.html">Earn</a>
-                <a href="boost.html">Store</a>
+                <div class="nav-dropdown">
+                    <span class="nav-dropdown-trigger">SUITE</span>
+                    <div class="nav-dropdown-menu">
+                        <a href="wallet.html">🏦 Vault</a>
+                        <a href="earn.html">💰 Earn</a>
+                        <a href="boost.html">🛒 Store</a>
+                        <a href="giving.html">💝 Giving</a>
+                        <a href="content.html">📚 Content</a>
+                        <a href="cadence.html">🎯 Cadence</a>
+                        <a href="suitehub.html">🏠 Hub</a>
+                        <a href="dashboard.html">⚙️ Dashboard</a>
+                    </div>
+                </div>
                 <a href="start-building.html" class="nav-cta">🚀 Start Building</a>
             </div>
+            <button class="mobile-menu-btn">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
         </div>
     </nav>
 
@@ -720,6 +739,65 @@
             </div>
         </div>
 
+        <!-- Edit App Modal -->
+        <div id="editAppModal"
+            style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+            <div
+                style="background: white; border-radius: 24px; padding: 32px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                    <h3 style="font-size: 1.5rem; font-weight: 800; margin: 0;">✏️ Edit App</h3>
+                    <button onclick="closeEditAppModal()"
+                        style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">×</button>
+                </div>
+
+                <form id="editAppForm">
+                    <input type="hidden" id="editAppId">
+
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label style="font-weight: 700; display: block; margin-bottom: 8px;">App Name</label>
+                        <input type="text" id="editAppName" disabled
+                            style="padding: 14px; border: 2px solid #eee; border-radius: 12px; width: 100%; background: #f8f9fa;">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label style="font-weight: 700; display: block; margin-bottom: 8px;">Icon URL</label>
+                        <input type="url" id="editAppIconUrl" placeholder="https://example.com/icon.png"
+                            style="padding: 14px; border: 2px solid #eee; border-radius: 12px; width: 100%;">
+                        <small style="color: #888; font-size: 0.8rem;">Upload your icon to Imgur, Discord CDN, or your
+                            own hosting</small>
+                        <div id="iconPreview" style="margin-top: 12px; text-align: center;"></div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label style="font-weight: 700; display: block; margin-bottom: 8px;">Description</label>
+                        <textarea id="editAppDescription" placeholder="What does your app do?" rows="3"
+                            style="padding: 14px; border: 2px solid #eee; border-radius: 12px; width: 100%; resize: vertical;"></textarea>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 24px;">
+                        <label style="font-weight: 700; display: block; margin-bottom: 8px;">Category</label>
+                        <select id="editAppCategory"
+                            style="padding: 14px; border: 2px solid #eee; border-radius: 12px; width: 100%;">
+                            <option value="productivity">Productivity</option>
+                            <option value="health">Health & Fitness</option>
+                            <option value="finance">Finance</option>
+                            <option value="lifestyle">Lifestyle</option>
+                            <option value="entertainment">Entertainment</option>
+                            <option value="education">Education</option>
+                            <option value="utilities">Utilities</option>
+                            <option value="social">Social</option>
+                        </select>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                        <button type="button" onclick="closeEditAppModal()"
+                            style="padding: 14px 24px; border: 2px solid #eee; background: white; border-radius: 12px; cursor: pointer; font-weight: 600;">Cancel</button>
+                        <button type="submit" class="btn-primary" style="padding: 14px 24px;">💾 Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <script>
             const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
             const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
@@ -872,13 +950,19 @@
                         appsList.innerHTML = apps.map(app => `
                         <div class="campaign-item">
                             <div class="campaign-info">
-                                <img src="${app.icon_url || 'assets/suite-mascot.png'}" alt="${app.name}" style="border-radius: 12px;">
+                                <img src="${app.icon_url || 'assets/suite-mascot.png'}" alt="${app.name}" style="border-radius: 12px;" onerror="this.src='assets/suite-mascot.png'">
                                 <div>
                                     <strong>${app.name}</strong>
                                     <div style="font-size: 0.85rem; color: #888;">${app.tagline || app.description || 'No description'}</div>
                                 </div>
                             </div>
-                            <span class="badge badge-${app.status === 'published' ? 'active' : 'paused'}">${app.status || 'development'}</span>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <button onclick="openEditAppModal('${app.id}', '${app.name}', '${app.icon_url || ''}', '${(app.description || '').replace(/'/g, "\\'")}', '${app.category || ''}')" 
+                                    style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none; padding: 8px 16px; border-radius: 20px; font-weight: 600; cursor: pointer;">
+                                    ✏️ Edit
+                                </button>
+                                <span class="badge badge-${app.status === 'published' || app.status === 'approved' ? 'active' : 'paused'}">${app.status || 'development'}</span>
+                            </div>
                         </div>
                     `).join('');
                     }
@@ -1283,7 +1367,9 @@
             });
         </script>
 
-    <!-- Stu Helper Widget -->
-    <link rel="stylesheet" href="stu-helper.css">
-    <script src="stu-helper.js"></script>
-</body></html>
+        <!-- Stu Helper Widget -->
+        <link rel="stylesheet" href="stu-helper.css">
+        <script src="stu-helper.js"></script>
+</body>
+
+</html>
