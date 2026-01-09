@@ -14,6 +14,7 @@
         rel="stylesheet">
     <link rel="stylesheet" href="suite-styles.css">
     <link rel="stylesheet" href="nav.css">
+    <link rel="stylesheet" href="earning-badges.css">
     <!-- Supabase for dynamic app loading -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-config.js"></script>
@@ -1009,6 +1010,7 @@
                         <a href="boost.html">🛒 Store</a>
                         <a href="giving.html">❤️ Giving</a>
                         <a href="content.html">📸 Content</a>
+                        <a href="cadence.html">🤖 Cadence</a>
                     </div>
                 </div>
                 <a href="start-building.html" class="nav-cta">✨ Start Building</a>
@@ -1154,6 +1156,7 @@
                 <a href="docs/quickstart.html">🚀 Quick Start</a>
                 <a href="incubate.html">🌱 Incubator</a>
                 <a href="content.html">📸 Content</a>
+                <a href="cadence.html">🤖 Cadence</a>
             </div>
             <div class="footer-column">
                 <h5>Learn</h5>
@@ -1364,6 +1367,7 @@
                                 ${app.published_at ? `<span>Published ${formatDate(app.published_at)}</span>` : ''}
                             </div>
                             <p class="app-description">${description}</p>
+                            ${getEarningBadges(app)}
                         </div>
                     </div>
                     <div class="app-footer">
@@ -1406,6 +1410,39 @@
             const date = new Date(dateStr);
             return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         }
+
+        // Get earning badges for an app
+        function getEarningBadges(app) {
+            const badges = [];
+
+            // Check if app has active campaigns (from joined data)
+            if (app.has_campaign || activeCampaigns[app.id]) {
+                const reward = activeCampaigns[app.id]?.suite_per_claim || 100;
+                badges.push(`<span class="earning-badge earn-suite">💰 Earn +${reward} SUITE</span>`);
+            }
+
+            // Check if app has review campaigns
+            if (app.has_reviews || activeReviews[app.id]) {
+                const reward = activeReviews[app.id]?.suite_per_review || 50;
+                badges.push(`<span class="earning-badge review-reward">⭐ Review +${reward}</span>`);
+            }
+
+            // Check if app has power-ups
+            if (app.has_powerups || appPowerups[app.id]) {
+                badges.push(`<span class="earning-badge has-powerups">⚡ Power-Ups</span>`);
+            }
+
+            if (badges.length === 0) {
+                return '';
+            }
+
+            return `<div class="earning-badges">${badges.join('')}</div>`;
+        }
+
+        // Global stores for campaign/power-up data
+        let activeCampaigns = {};
+        let activeReviews = {};
+        let appPowerups = {};
 
         // Search handler
         document.getElementById('searchInput').addEventListener('input', (e) => {
