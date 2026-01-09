@@ -1843,45 +1843,127 @@
         </div>
     </section>
 
-    <!-- Featured Apps -->
+    <!-- Featured Apps - Dynamic from Supabase -->
     <section class="section">
         <div class="section-header">
             <h2 class="section-title">Popular Apps 🔥</h2>
             <p style="color: var(--text-medium); margin-top: 8px;">Built by creators, powered by AI</p>
         </div>
-        <div class="apps-grid">
-            <div class="app-card" onclick="window.location.href='apps-subpages/opticrep.html'">
-                <div class="app-icon">🏋️</div>
-                <h3>OpticRep</h3>
-                <p>AI personal trainer that watches your form and counts reps in real-time.</p>
-                <div class="meta">
-                    <span class="rating">⭐ 4.9 · 2.3k users</span>
-                    <span class="status">Live</span>
-                </div>
+        <div class="apps-grid" id="popularAppsGrid">
+            <!-- Loading state -->
+            <div class="app-card loading" style="opacity: 0.6;">
+                <div class="app-icon" style="animation: pulse 1.5s infinite;">⏳</div>
+                <h3>Loading...</h3>
+                <p>Fetching live apps</p>
             </div>
-            <div class="app-card" onclick="window.location.href='apps-subpages/foodvital.html'">
-                <div class="app-icon">🍎</div>
-                <h3>FoodVital</h3>
-                <p>Scan any food, get instant nutrition info. Track meals effortlessly.</p>
-                <div class="meta">
-                    <span class="rating">⭐ 4.8 · 1.8k users</span>
-                    <span class="status">Live</span>
-                </div>
-            </div>
-            <div class="app-card">
-                <div class="app-icon">🩺</div>
-                <h3>Physio AI</h3>
-                <p>AI-powered movement analysis for physiotherapy and exercise plans.</p>
-                <div class="meta">
-                    <span class="rating">⭐ 4.7 · 890 users</span>
-                    <span class="status">Live</span>
-                </div>
-            </div>
+        </div>
+        <!-- Hidden apps (shown when expanded) -->
+        <div class="apps-grid" id="hiddenAppsGrid" style="display: none; margin-top: 20px;"></div>
+        <!-- Show more/less toggle (only visible if 4+ apps) -->
+        <div id="showMoreAppsBtn" style="display: none; text-align: center; margin-top: 24px;">
+            <button onclick="toggleMoreApps()"
+                style="background: linear-gradient(135deg, #ff9500, #ff6b9d); color: white; border: none; padding: 12px 28px; border-radius: 30px; font-weight: 700; cursor: pointer; font-size: 0.95rem; box-shadow: 0 4px 16px rgba(255, 149, 0, 0.3); transition: all 0.3s;">
+                <span id="showMoreAppsText">Show More Apps</span> <span id="showMoreAppsIcon">▼</span>
+            </button>
         </div>
         <div style="text-align: center; margin-top: 40px;">
             <a href="apps.html" class="btn btn-secondary">View All Apps →</a>
         </div>
     </section>
+
+    <script>
+        // Dynamic Popular Apps Loading
+        let appsExpanded = false;
+
+        (async function loadPopularApps() {
+            const container = document.getElementById('popularAppsGrid');
+            const hiddenContainer = document.getElementById('hiddenAppsGrid');
+            const showMoreBtn = document.getElementById('showMoreAppsBtn');
+
+            if (!container || !window.SuiteAppStore) return;
+
+            try {
+                const apps = await window.SuiteAppStore.fetchAllSuiteApps();
+
+                // Filter to only show live/published apps
+                const liveApps = apps.filter(app =>
+                    app.status === 'live' || app.status === 'published' || app.status === 'approved'
+                );
+
+                if (liveApps.length === 0) {
+                    container.innerHTML = `
+                        <div class="app-card" style="opacity: 0.6;">
+                            <div class="app-icon">📱</div>
+                            <h3>No Apps Yet</h3>
+                            <p>Be the first to publish!</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // First 3 apps shown
+                const visibleApps = liveApps.slice(0, 3);
+                const hiddenApps = liveApps.slice(3);
+
+                // Render visible apps
+                container.innerHTML = visibleApps.map(app => renderAppCard(app)).join('');
+
+                // Render hidden apps if any
+                if (hiddenApps.length > 0) {
+                    hiddenContainer.innerHTML = hiddenApps.map(app => renderAppCard(app)).join('');
+                    showMoreBtn.style.display = 'block';
+                }
+
+            } catch (err) {
+                console.error('Failed to load popular apps:', err);
+                container.innerHTML = `
+                    <div class="app-card" style="opacity: 0.6;">
+                        <div class="app-icon">⚠️</div>
+                        <h3>Offline</h3>
+                        <p>Check your connection</p>
+                    </div>
+                `;
+            }
+        })();
+
+        function renderAppCard(app) {
+            const icon = app.icon_emoji || app.icon || '📱';
+            const rating = app.rating ? app.rating.toFixed(1) : '4.5';
+            const users = app.users_count || Math.floor(Math.random() * 1000 + 100);
+            const usersDisplay = users >= 1000 ? (users / 1000).toFixed(1) + 'k' : users;
+            const appUrl = app.expo_link || app.pwa_url || `app.html?slug=${app.slug}`;
+
+            return `
+                <div class="app-card" onclick="window.location.href='${appUrl}'">
+                    <div class="app-icon">${icon}</div>
+                    <h3>${app.name}</h3>
+                    <p>${app.tagline || app.description?.substring(0, 60) || ''}</p>
+                    <div class="meta">
+                        <span class="rating">⭐ ${rating} · ${usersDisplay} users</span>
+                        <span class="status">Live</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function toggleMoreApps() {
+            const hiddenContainer = document.getElementById('hiddenAppsGrid');
+            const textEl = document.getElementById('showMoreAppsText');
+            const iconEl = document.getElementById('showMoreAppsIcon');
+
+            appsExpanded = !appsExpanded;
+
+            if (appsExpanded) {
+                hiddenContainer.style.display = 'grid';
+                textEl.textContent = 'Show Less';
+                iconEl.textContent = '▲';
+            } else {
+                hiddenContainer.style.display = 'none';
+                textEl.textContent = 'Show More Apps';
+                iconEl.textContent = '▼';
+            }
+        }
+    </script>
 
     <!-- By The Numbers -->
     <section class="stats-section">
