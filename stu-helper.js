@@ -106,6 +106,10 @@ Keep responses short, friendly, and helpful. Use emojis sparingly. If you don't 
         const widget = document.createElement('div');
         widget.className = 'stu-widget';
         widget.innerHTML = `
+            <!-- Speech Bubble - appears on page load -->
+            <div class="stu-bubble" id="stuBubble">
+                👋 Need help? Ask me anything!
+            </div>
             <div class="stu-panel">
                 <div class="stu-header">
                     <div class="suite-coin-icon">$</div>
@@ -138,7 +142,7 @@ Keep responses short, friendly, and helpful. Use emojis sparingly. If you don't 
                 </a>
             </div>
             <button class="stu-button" aria-label="Open help chat">
-                <span class="suite-coin-btn">$</span>
+                <img src="/assets/suite-token.png" alt="SUITE" class="suite-coin-btn-img">
                 <span class="stu-close">✕</span>
             </button>
         `;
@@ -248,7 +252,29 @@ Keep responses short, friendly, and helpful. Use emojis sparingly. If you don't 
             e.stopPropagation();
             widget.classList.toggle('open');
             if (isExplainMode) disableExplainMode();
+
+            // Hide speech bubble when panel opens
+            const bubble = document.getElementById('stuBubble');
+            if (bubble) bubble.classList.add('hidden');
         });
+
+        // Speech bubble: show for 8 seconds, then hide
+        const bubble = document.getElementById('stuBubble');
+        if (bubble) {
+            setTimeout(() => {
+                bubble.classList.add('hidden');
+            }, 8000);
+        }
+
+        // Jiggle animation: trigger every 8 seconds (when widget is closed)
+        setInterval(() => {
+            if (!widget.classList.contains('open')) {
+                button.classList.add('jiggle');
+                setTimeout(() => {
+                    button.classList.remove('jiggle');
+                }, 600);
+            }
+        }, 8000);
 
         // Quick question pills
         pills.forEach(pill => {

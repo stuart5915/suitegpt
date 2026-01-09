@@ -994,7 +994,7 @@
 <nav class="nav">
     <div class="nav-inner">
         <a href="index.html" class="nav-logo">
-            <img src="assets/suite-mascot.png" alt="SUITE" class="nav-logo-img">
+            <img src="assets/suite-token.png" alt="SUITE" class="nav-logo-img">
             SUITE
         </a>
         <div class="nav-links">
@@ -1057,7 +1057,7 @@
                     <div class="featured-stack" id="featuredSmallCards">
                         <!-- Populated dynamically from Supabase -->
                         <div class="featured-small" style="opacity: 0.5;">
-                            <div class="small-icon" style="background: #f3f4f6;">?</div>
+                            <div class="small-icon" style="background: #f3f4f6;">⏳</div>
                             <div class="small-content">
                                 <div class="small-title">Loading...</div>
                                 <div class="small-meta">Fetching apps</div>
@@ -1077,12 +1077,12 @@
                 <div style="margin: 32px 0 24px;">
                     <div class="category-tabs" id="categoryTabs">
                         <!-- Tabs rendered by JS, with fallback -->
-                        <button class="category-tab active">? All Apps <span class="count">3</span></button>
-                        <button class="category-tab">?? Trending</button>
-                        <button class="category-tab">?? New</button>
-                        <button class="category-tab">?? AI Tools</button>
-                        <button class="category-tab">?? Health</button>
-                        <button class="category-tab">?? Productivity</button>
+                        <button class="category-tab active">📱 All Apps <span class="count">3</span></button>
+                        <button class="category-tab">🔥 Trending</button>
+                        <button class="category-tab">✨ New</button>
+                        <button class="category-tab">🤖 AI Tools</button>
+                        <button class="category-tab">💚 Health</button>
+                        <button class="category-tab">⚡ Productivity</button>
                     </div>
                 </div>
 
@@ -1090,7 +1090,7 @@
                 <div class="top-charts">
                     <div class="section-header">
                         <h2 class="section-title">Top Charts</h2>
-                        <a href="#" class="section-link">See all ?</a>
+                        <a href="#" class="section-link">See all →</a>
                     </div>
                     <div class="charts-grid" id="chartsGrid">
                         <!-- Chart items populated dynamically from Supabase -->
@@ -1186,11 +1186,11 @@
     <script>
         // Status-based categories (not content categories)
         const statusCategories = [
-            { id: 'all', name: 'All Apps', emoji: '?' },
-            { id: 'pays-review', name: 'Pays to Review', emoji: '??' },
-            { id: 'published', name: 'Live', emoji: '??' },
-            { id: 'development', name: 'In Development', emoji: '??' },
-            { id: 'beta', name: 'Beta', emoji: '??' }
+            { id: 'all', name: 'All Apps', emoji: '📱' },
+            { id: 'pays-review', name: 'Pays to Review', emoji: '💰' },
+            { id: 'published', name: 'Live', emoji: '🟢' },
+            { id: 'development', name: 'In Development', emoji: '🔧' },
+            { id: 'beta', name: 'Beta', emoji: '🧪' }
         ];
 
         let apps = [];
@@ -1421,20 +1421,18 @@
                     </div>
                 </div>
             `}).join('');
-
             document.getElementById('appsGrid').innerHTML = html;
         }
 
         // Get icon HTML - use icon_url image if available, otherwise emoji
-        // Shows visual indicator: red border = broken URL, yellow border = no icon_url set
         function getAppIcon(app) {
             const emoji = getAppEmoji(app.name);
-            if (app.icon_url) {
-                // Red border appears on error - indicates broken URL
-                return `<img src="${app.icon_url}" alt="${app.name}" onerror="this.style.border='3px solid red'; this.style.background='#fee'; this.title='⚠️ Broken icon URL'" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">`;
+            if (app.icon_url && app.icon_url !== 'null' && !app.icon_url.includes('example.com')) {
+                // Only use icon_url if it's a real URL (not placeholder)
+                return `<img src="${app.icon_url}" alt="${app.name}" onerror="this.outerHTML='<span style=\\'font-size:1.8rem; display:flex; align-items:center; justify-content:center; width:100%; height:100%;\\'>${emoji}</span>'" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">`;
             }
-            // Yellow border = no icon_url set in database
-            return `<span style="font-size:1.8rem; display:flex; align-items:center; justify-content:center; width:100%; height:100%; border:2px dashed #f59e0b; border-radius:12px; background:rgba(245,158,11,0.1);" title="⚠️ No icon_url set">${emoji}</span>`;
+            // Clean emoji fallback - no border indicators
+            return `<span style="font-size:1.8rem; display:flex; align-items:center; justify-content:center; width:100%; height:100%;">${emoji}</span>`;
         }
 
         // Get emoji based on app name (fallback)
