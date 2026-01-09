@@ -13,7 +13,7 @@ import { handleBugCommand, handleFeatureCommand, getAppChoices } from './handler
 import { handleMyAppsCommand, handleMyAppStatusCommand, handleDeleteMyAppCommand, getUserAppChoices, addUserApp } from './handlers/userApps.js';
 import { handlePublishApp, handlePublishButton } from './handlers/publishApp.js';
 import { handlePreflightCheck } from './handlers/preflightCheck.js';
-import { generateStuResponse } from './ai/stuPersona.js';
+import { generateBotResponse } from './ai/suiteBot.js';
 import { canPerformAction, useAction, getNoCreditsMessage, getUserStats } from './credits.js';
 import fs from 'fs';
 import path from 'path';
@@ -445,11 +445,11 @@ client.on('guildMemberAdd', async (member) => {
         const generalChannel = await client.channels.fetch(generalChannelId);
         if (!generalChannel) return;
 
-        // Welcome message with AI Stu vibe
+        // Welcome message
         const welcomeMessages = [
-            `Welcome <@${member.id}>! 👋 I'm Stu - if you have any questions about SUITE or building apps, just @me or say "stu" in your message. What brings you here?`,
-            `Hey <@${member.id}>! 🚀 Welcome to SUITE! I'm here 24/7 if you need help - just tag me or say "stu" and I'll jump in. What are you building?`,
-            `Yo <@${member.id}>! Good to have you here! 🎉 Need help? Just mention me or say "stu" in your message. Let's build something awesome!`,
+            `Welcome <@${member.id}>! 👋 Need help with SUITE or building apps? Just @mention me anytime. What brings you here?`,
+            `Hey <@${member.id}>! 🚀 Welcome to SUITE! I'm here 24/7 if you need help - just @mention me. What are you building?`,
+            `Yo <@${member.id}>! Good to have you here! 🎉 Need help? Just @mention me and I'll jump in. Let's build something awesome!`,
         ];
 
         const randomWelcome = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
@@ -505,7 +505,7 @@ client.on('messageCreate', async (message) => {
     }, 300 * 1000);
 });
 
-// AI Stu - Respond when mentioned, "hey stu", OR auto-respond to questions
+// AI Bot - Respond when @mentioned or auto-respond to SUITE questions
 // Rate limiting for auto-responses to prevent spam
 const autoResponseCooldown = new Map();
 const AUTO_RESPONSE_COOLDOWN_MS = 60000; // 1 minute per channel
@@ -520,17 +520,14 @@ client.on('messageCreate', async (message) => {
 
     const content = message.content.toLowerCase();
     const isMentioned = message.mentions.has(client.user);
-    const isStuCall = /\b(hey\s+)?stu\b/i.test(content) ||
-        /\bstu[,\s]+/i.test(content) ||
-        content.startsWith('stu ');
 
     // Auto-dialog: detect questions or SUITE-related topics
     const isQuestion = content.endsWith('?') ||
         /\b(how|what|why|when|where|can i|is there|does|will|should)\b/i.test(content);
-    const isSuiteRelated = /\b(suite|app|build|create|token|earn|submit)\b/i.test(content);
+    const isSuiteRelated = /\b(app|build|create|token|earn|submit)\b/i.test(content);
 
-    // Determine if we should respond
-    let shouldRespond = isMentioned || isStuCall;
+    // Determine if we should respond - @mention only or auto for questions
+    let shouldRespond = isMentioned;
     let isAutoResponse = false;
 
     // Auto-respond to questions about SUITE topics (with rate limiting)
@@ -563,15 +560,14 @@ client.on('messageCreate', async (message) => {
         // Clean up the message
         let userMessage = message.content
             .replace(/<@!?\d+>/g, '')  // Remove mentions
-            .replace(/\b(hey\s+)?stu[,\s]*/gi, '')  // Remove "stu" prefix
             .trim();
 
         if (!userMessage) {
             userMessage = "what's up?";  // Default if just pinged
         }
 
-        // Stu chat is FREE - no credits charged, but show balance footer
-        const response = await generateStuResponse(userMessage, context);
+        // Bot chat is FREE - no credits charged, but show balance footer
+        const response = await generateBotResponse(userMessage, context);
 
         // Build footer - Admin gets unlimited, others see balance
         let footer = '';
@@ -602,11 +598,11 @@ client.on('messageCreate', async (message) => {
         }
 
         await message.reply(response + footer);
-        console.log(`[AI Stu] Responded ${isAutoResponse ? '(auto)' : '(mentioned)'} to ${message.author.username} (${message.author.id === config.ownerId ? 'ADMIN' : 'FREE chat'})`);
+        console.log(`[SUITE Bot] Responded ${isAutoResponse ? '(auto)' : '(mentioned)'} to ${message.author.username} (${message.author.id === config.ownerId ? 'ADMIN' : 'FREE chat'})`);
     } catch (error) {
-        console.error('AI Stu error:', error);
+        console.error('SUITE Bot error:', error);
         if (!isAutoResponse) {  // Only show error if they directly asked
-            await message.reply("yo my brain glitched lol, what's up? 🤔");
+            await message.reply("Something went wrong, try again? 🤔");
         }
     }
 });
@@ -821,9 +817,9 @@ client.on('interactionCreate', async (interaction) => {
 
 This is the SUITE community - where anyone can build apps without coding.
 
-**🤖 Talk to Stu**
-• @mention the bot or say "stu" in your message
-• Ask anything: "stu what is SUITE?" or "hey stu help me"
+**🤖 Talk to SUITE Bot**
+• @mention the bot to ask a question
+• Ask anything: "@SUITE what is SUITE?" or "@SUITE help me"
 
 **📱 Commands:**
 • \`/apps\` - Browse all SUITE apps

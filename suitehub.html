@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>SUITEhub | Your AI That Knows Everything</title>
+    <meta name="description"
+        content="SUITEhub is your personal AI assistant connected to all your SUITE ecosystem apps. One chat, all your data, infinite possibilities.">
+    <link rel="icon" type="image/png" href="assets/suite-mascot.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="suite-styles.css">
+    <link rel="stylesheet" href="nav.css">
+
+    <style>
+        body {
+            background: linear-gradient(180deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+            color: white;
+            min-height: 100vh;
+        }
+
+        .hero-section {
+            padding: 140px 24px 100px;
+            text-align: center;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(99, 102, 241, 0.2);
+            padding: 10px 20px;
+            border-radius: 100px;
+            font-size: 0.9rem;
+            color: #a5b4fc;
+            margin-bottom: 32px;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+
+        .hero-title {
+            font-size: 4rem;
+            font-weight: 900;
+            margin-bottom: 24px;
+            background: linear-gradient(135deg, #fff 0%, #a5b4fc 50%, #c4b5fd 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.1;
+        }
+
+        .hero-subtitle {
+            font-size: 1.4rem;
+            color: rgba(255, 255, 255, 0.7);
+            max-width: 600px;
+            margin: 0 auto 48px;
+            line-height: 1.7;
+        }
+
+        .cta-row {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            padding: 18px 36px;
+            border-radius: 100px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.4);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(99, 102, 241, 0.5);
+        }
+
+        .cta-button.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: none;
+        }
+
+        .cta-button.secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Chat Preview */
+        .chat-preview {
+            max-width: 500px;
+            margin: 60px auto 0;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 24px;
+            text-align: left;
+        }
+
+        .chat-message {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .chat-message.user {
+            flex-direction: row-reverse;
+        }
+
+        .chat-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .chat-message.ai .chat-avatar {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        }
+
+        .chat-message.user .chat-avatar {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .chat-bubble {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px 16px;
+            border-radius: 16px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            max-width: 80%;
+        }
+
+        .chat-message.user .chat-bubble {
+            background: rgba(99, 102, 241, 0.3);
+        }
+
+        /* Features Section */
+        .features-section {
+            padding: 100px 24px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 16px;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            max-width: 600px;
+            margin: 0 auto 60px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 32px;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-4px);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+        }
+
+        .feature-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+        }
+
+        .feature-card p {
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.6;
+        }
+
+        /* Connected Apps Section */
+        .connected-section {
+            padding: 80px 24px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .connected-container {
+            max-width: 900px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .apps-flow {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-top: 48px;
+        }
+
+        .app-bubble {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 16px 24px;
+            border-radius: 100px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .app-bubble:hover {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: rgba(99, 102, 241, 0.4);
+        }
+
+        .hub-center {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            box-shadow: 0 0 60px rgba(99, 102, 241, 0.5);
+        }
+
+        /* Use Cases */
+        .usecases-section {
+            padding: 80px 24px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .usecase-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+
+        .usecase-query {
+            font-style: italic;
+            color: #a5b4fc;
+            margin-bottom: 12px;
+            font-size: 1.1rem;
+        }
+
+        .usecase-answer {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* CTA Section */
+        .cta-section {
+            padding: 100px 24px;
+            text-align: center;
+            background: linear-gradient(180deg, transparent, rgba(99, 102, 241, 0.1));
+        }
+
+        .cta-section h2 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 16px;
+        }
+
+        .cta-section p {
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 32px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Footer */
+        .footer {
+            background: rgba(0, 0, 0, 0.3) !important;
+        }
+
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+
+            .apps-flow {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-logo">
+                <img src="assets/suite-mascot.png" alt="SUITE" class="nav-logo-img">
+                SUITE
+            </a>
+            <div class="nav-links">
+                <a href="apps.html">Apps</a>
+                <a href="developer-portal.html">Build</a>
+                <a href="incubate.html">Incubate</a>
+                <a href="discuss.html">Discuss</a>
+                <a href="docs/">Docs</a>
+                <div class="nav-dropdown">
+                    <span class="nav-dropdown-trigger">SUITE</span>
+                    <div class="nav-dropdown-menu">
+                        <a href="wallet.html">💳 Wallet</a>
+                        <a href="earn.html">💰 Earn</a>
+                        <a href="boost.html">🛒 Store</a>
+                        <a href="giving.html">❤️ Giving</a>
+                        <a href="content.html">📸 Content</a>
+                        <a href="cadence.html">🤖 Cadence</a>
+                        <a href="suitehub.html" class="active">🧠 Hub</a>
+                    </div>
+                </div>
+                <a href="start-building.html" class="nav-cta">✨ Start Building</a>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="hero-badge">
+                🧠 Introducing SUITEhub
+            </div>
+            <h1 class="hero-title">Your AI That Knows Everything</h1>
+            <p class="hero-subtitle">
+                One chat connected to all your SUITE apps. Ask anything about your data, finances, content, and more.
+            </p>
+            <div class="cta-row">
+                <a href="https://discord.gg/B2Kz5Rqf3u" class="cta-button" target="_blank">
+                    🚀 Join Waitlist
+                </a>
+                <a href="#features" class="cta-button secondary">
+                    Learn More ↓
+                </a>
+            </div>
+
+            <!-- Chat Preview -->
+            <div class="chat-preview">
+                <div class="chat-message user">
+                    <div class="chat-avatar">👤</div>
+                    <div class="chat-bubble">How much have I earned from my apps this month?</div>
+                </div>
+                <div class="chat-message ai">
+                    <div class="chat-avatar">🧠</div>
+                    <div class="chat-bubble">You've earned <strong>$127.50 SUITE</strong> across 3 apps this month.
+                        FoodVitals contributed 65%, Deal Tracker 25%, and Life Hub 10%. Want me to break down the daily
+                        trends?</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="features-section" id="features">
+            <h2 class="section-title">Why SUITEhub?</h2>
+            <p class="section-subtitle">Your personal AI with full context across the entire SUITE ecosystem.</p>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🔗</div>
+                    <h3>Connected to Everything</h3>
+                    <p>One AI with access to your Wallet, Earn stats, Content performance, and every app you use.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🧠</div>
+                    <h3>Persistent Memory</h3>
+                    <p>Remembers your preferences, goals, and past conversations. Gets smarter over time.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3>Your Data, Your AI</h3>
+                    <p>All data stays in your SUITE account. Not sold, not shared, not used to train other models.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Instant Insights</h3>
+                    <p>Ask complex questions and get instant answers. No more digging through dashboards.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <h3>Actionable Suggestions</h3>
+                    <p>Get personalized recommendations based on your actual usage patterns and goals.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💳</div>
+                    <h3>Powered by $SUITE</h3>
+                    <p>Free basic tier. Pro features unlock with $SUITE tokens for power users.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Connected Apps Section -->
+        <section class="connected-section">
+            <div class="connected-container">
+                <h2 class="section-title">All Your Apps, One Brain</h2>
+                <p class="section-subtitle">SUITEhub connects to every app in the ecosystem to give you unified
+                    insights.</p>
+
+                <div class="apps-flow">
+                    <div class="app-bubble">💳 Wallet</div>
+                    <div class="app-bubble">💰 Earn</div>
+                    <div class="app-bubble">📸 Cadence</div>
+                    <div class="hub-center">🧠</div>
+                    <div class="app-bubble">🛒 Store</div>
+                    <div class="app-bubble">❤️ Giving</div>
+                    <div class="app-bubble">📱 Your Apps</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Use Cases Section -->
+        <section class="usecases-section">
+            <h2 class="section-title">Ask Anything</h2>
+            <p class="section-subtitle">Real questions, real answers from your real data.</p>
+
+            <div class="usecase-card">
+                <div class="usecase-query">"What's my most profitable app and why?"</div>
+                <div class="usecase-answer">Analyzes your Earn dashboard, user engagement, and revenue to give you
+                    insights.</div>
+            </div>
+            <div class="usecase-card">
+                <div class="usecase-query">"Schedule my Twitter content for the week"</div>
+                <div class="usecase-answer">Connects to Cadence AI to create and schedule posts based on your brand
+                    voice.</div>
+            </div>
+            <div class="usecase-card">
+                <div class="usecase-query">"How much have I donated to charity this year?"</div>
+                <div class="usecase-answer">Pulls from Giving dashboard to show your total impact and donation history.
+                </div>
+            </div>
+            <div class="usecase-card">
+                <div class="usecase-query">"What should I build next?"</div>
+                <div class="usecase-answer">Analyzes ecosystem trends, user requests, and gaps to suggest high-potential
+                    ideas.</div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="cta-section">
+            <h2>Be First to Try SUITEhub</h2>
+            <p>Join the waitlist and get early access when we launch. Limited spots available.</p>
+            <a href="https://discord.gg/B2Kz5Rqf3u" class="cta-button" target="_blank">
+                🚀 Join Waitlist on Discord
+            </a>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content" style="grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr; gap: 24px;">
+            <div class="footer-brand">
+                <div class="footer-logo">
+                    <img src="assets/suite-mascot.png" alt="SUITE"
+                        style="width: 32px; height: 32px; border-radius: 8px;">
+                    SUITE
+                </div>
+                <p>Anyone can build. Everyone gets paid.</p>
+            </div>
+            <div class="footer-column">
+                <h5>Explore</h5>
+                <a href="apps.html">📱 Browse Apps</a>
+                <a href="ecosystem.html">🔄 How It Works</a>
+                <a href="wallet.html">💳 Wallet</a>
+                <a href="boost.html">🛒 Store</a>
+            </div>
+            <div class="footer-column">
+                <h5>Build</h5>
+                <a href="developer-portal.html">🛠️ Developer Portal</a>
+                <a href="docs/quickstart.html">🚀 Quick Start</a>
+                <a href="incubate.html">🌱 Incubator</a>
+                <a href="content.html">📸 Content</a>
+            </div>
+            <div class="footer-column">
+                <h5>Learn</h5>
+                <a href="docs/tokenomics.html">📊 Tokenomics</a>
+                <a href="docs/roadmap.html">🗺️ Roadmap</a>
+                <a href="giving.html">❤️ Giving</a>
+                <a href="docs/">📚 All Docs</a>
+            </div>
+            <div class="footer-column">
+                <h5>Connect</h5>
+                <a href="https://discord.gg/B2Kz5Rqf3u" target="_blank">💬 Discord</a>
+                <a href="https://x.com/suiteappstore" target="_blank">𝕏 Twitter</a>
+                <a href="https://youtube.com/@SUITEAppStore" target="_blank">▶️ YouTube</a>
+                <a href="discuss.html">💭 Discuss</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2026 SUITE by <a href="https://artstu.ca" target="_blank"
+                    style="color: inherit; text-decoration: underline;">Stuart Hollinger</a>. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="nav.js"></script>
+</body>
+
+</html>
