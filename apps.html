@@ -1366,8 +1366,48 @@
             renderApps();
         });
 
+        // Populate featured small cards from database
+        async function loadFeaturedSmallCards() {
+            const container = document.getElementById('featuredSmallCards');
+            if (!container) return;
+
+            // Get published apps (already loaded or load them)
+            const publishedApps = allApps.filter(app => app.status === 'published').slice(0, 2);
+
+            if (publishedApps.length === 0) {
+                container.innerHTML = `
+                    <div class="featured-small" style="opacity: 0.5;">
+                        <div class="small-icon" style="background: #f3f4f6;">🚀</div>
+                        <div class="small-content">
+                            <div class="small-title">Coming Soon</div>
+                            <div class="small-meta">More apps launching</div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            const iconColors = [
+                'linear-gradient(135deg, #4facfe, #00f2fe)',
+                'linear-gradient(135deg, #a855f7, #ec4899)',
+                'linear-gradient(135deg, #22c55e, #10b981)'
+            ];
+
+            container.innerHTML = publishedApps.map((app, i) => `
+                <div class="featured-small" onclick="window.open('${app.expo_link || app.pwa_url || '#'}', '_blank')" style="cursor: pointer;">
+                    <div class="small-icon" style="background: ${iconColors[i % iconColors.length]};">${getAppEmoji(app.name)}</div>
+                    <div class="small-content">
+                        <div class="small-title">${app.name}</div>
+                        <div class="small-meta">${app.category || 'App'} • <span class="small-rating">⭐ 4.${8 - i}</span></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
         // Initial render - load from database
-        loadAppsFromDatabase();
+        loadAppsFromDatabase().then(() => {
+            loadFeaturedSmallCards();
+        });
     </script>
 </body>
 
