@@ -789,6 +789,40 @@
             color: #10b981;
         }
 
+        /* Action Buttons for AI-Human Symbiosis */
+        .action-btn {
+            padding: 6px 12px;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .action-btn.feature-btn {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+        }
+
+        .action-btn.feature-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(255, 149, 0, 0.3);
+        }
+
+        .action-btn.bug-btn {
+            background: rgba(0, 0, 0, 0.05);
+            color: #5a4a6f;
+        }
+
+        .action-btn.bug-btn:hover {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
         /* Empty State */
         .empty-state {
             text-align: center;
@@ -1397,8 +1431,8 @@
                 const isLive = app.displayStatus === 'published' || app.status === 'approved' || app.status === 'featured';
 
                 return `
-                <div class="app-card ${isLive ? 'featured' : ''}" onclick="window.location.href='app.html?slug=${app.slug}'">
-                    <div class="app-row">
+                <div class="app-card ${isLive ? 'featured' : ''}" data-slug="${app.slug}">
+                    <div class="app-row" onclick="window.location.href='app.html?slug=${app.slug}'">
                         <div class="app-icon">${getAppIcon(app)}</div>
                         <div class="app-content">
                             <div class="app-name">${app.name}</div>
@@ -1409,9 +1443,16 @@
                             ${getEarningBadges(app)}
                         </div>
                     </div>
-                    <div class="app-footer">
+                    <div class="app-footer" style="flex-wrap: wrap; gap: 8px;">
                         <span class="app-status ${isLive ? 'live' : 'coming'}">${getStatusLabel(app.status)}</span>
-                        <span class="app-price free">Free</span>
+                        <div class="app-actions" style="display: flex; gap: 6px; margin-left: auto;">
+                            <button onclick="event.stopPropagation(); requestFeature('${app.slug}', '${app.name}')" class="action-btn feature-btn" title="Request a Feature">
+                                ✨ Request
+                            </button>
+                            <button onclick="event.stopPropagation(); reportBug('${app.slug}', '${app.name}')" class="action-btn bug-btn" title="Report a Bug">
+                                🐛 Bug
+                            </button>
+                        </div>
                     </div>
                 </div>
             `}).join('');
@@ -1536,6 +1577,54 @@
         loadAppsFromDatabase().then(() => {
             loadFeaturedSmallCards();
         });
+
+        // ════════════════════════════════════════════════════════════
+        // AI-HUMAN SYMBIOSIS: Feature Request & Bug Report Functions
+        // These submit directly to Supabase → PC Watcher → AI Processing
+        // ════════════════════════════════════════════════════════════
+
+        function requestFeature(appSlug, appName) {
+            const request = prompt(`✨ Request a feature for ${appName}:\n\nDescribe what you'd like to see added:`);
+            if (request && request.trim()) {
+                submitRequest(appSlug, appName, 'feature', request);
+            }
+        }
+
+        function reportBug(appSlug, appName) {
+            const bug = prompt(`🐛 Report a bug in ${appName}:\n\nDescribe the issue you encountered:`);
+            if (bug && bug.trim()) {
+                submitRequest(appSlug, appName, 'bug', bug);
+            }
+        }
+
+        async function submitRequest(appSlug, appName, type, description) {
+            try {
+                // Create prompt for AI to process
+                const prompt = type === 'feature'
+                    ? `[FEATURE REQUEST for ${appName}] ${description}`
+                    : `[BUG REPORT for ${appName}] ${description}`;
+
+                // Submit to Supabase prompts table
+                const { data, error } = await supabase
+                    .from('prompts')
+                    .insert({
+                        prompt: prompt,
+                        status: 'pending',
+                        target: appSlug,
+                        source: 'website',
+                        discord_user_id: 'website_user',
+                        discord_channel_id: 'website'
+                    });
+
+                if (error) throw error;
+
+                alert(`✅ ${type === 'feature' ? 'Feature request' : 'Bug report'} submitted!\n\nOur AI will review and implement this. Check back soon!`);
+
+            } catch (err) {
+                console.error('Submit error:', err);
+                alert(`❌ Failed to submit. Please try again or use Discord.\n\nError: ${err.message}`);
+            }
+        }
     </script>
 
     <!-- Stu Helper Widget -->
