@@ -346,8 +346,8 @@
 
     <!-- SEND PROMPT PANEL -->
     <div id="send" class="panel active">
-        <!-- Send Prompt Card - Full Width -->
-        <div class="card" style="margin-bottom: 20px;">
+        <!-- Send Prompt Card - Hidden on localhost, shown on PC -->
+        <div class="card" id="sendPromptCard" style="margin-bottom: 20px;">
             <h2>📤 Send Prompt to PC</h2>
             <div class="status" id="serverStatus">PC Server Connected</div>
             <br><br>
@@ -360,35 +360,47 @@ Example: Update the footer on all pages"></textarea>
             <div id="response"></div>
         </div>
 
-        <!-- Bottom Row: Laptop Sync + Recent Prompts -->
-        <div class="grid">
-            <div class="card">
-                <h2>🔄 Laptop Sync</h2>
-                <p style="color: rgba(255,255,255,0.6); margin-bottom: 12px;">
-                    <strong style="color: #22c55e;">PC push/pull is automatic</strong> via watcher.py
-                </p>
-                <p style="color: rgba(255,255,255,0.5); font-size: 0.85rem; margin-bottom: 16px;">
-                    For <em>laptop</em> auto-pull/push controls:
-                </p>
-                <a href="http://localhost:3000/" target="_blank" style="
-                    display: block;
-                    padding: 14px 20px;
-                    background: linear-gradient(135deg, #3b82f6, #6366f1);
-                    color: white;
-                    font-weight: 700;
-                    text-align: center;
-                    border-radius: 12px;
-                    text-decoration: none;
-                    font-size: 0.95rem;
-                ">🖥️ Open localhost:3000</a>
-                <p style="font-size: 0.75rem; color: rgba(255,255,255,0.4); margin-top: 10px; text-align: center;">
-                    (Requires laptop's server.py)
-                </p>
-            </div>
-            <div class="card">
-                <h2>📝 Recent Prompts</h2>
-                <div id="history" style="color: rgba(255,255,255,0.6); max-height: 150px; overflow-y: auto;">Loading...
+        <!-- Sync Controls - Full Width on localhost -->
+        <div class="card" style="margin-bottom: 20px;">
+            <h2>🔄 Sync Controls</h2>
+
+            <!-- Sync Rules -->
+            <div style="background: rgba(0,0,0,0.3); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                <div style="font-weight: 700; color: #ff9500; margin-bottom: 12px;">📋 The Golden Rule:</div>
+                <div style="color: rgba(255,255,255,0.9); font-size: 1.1rem; margin-bottom: 12px;">
+                    <strong>Laptop pulls. PC pushes. Never both at once.</strong>
                 </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.85rem;">
+                    <div style="background: rgba(34,197,94,0.1); padding: 10px; border-radius: 8px;">
+                        <div style="color: #22c55e; font-weight: 700;">✅ Laptop</div>
+                        <div style="color: rgba(255,255,255,0.7);">Auto-Pull = ON</div>
+                        <div style="color: rgba(255,255,255,0.7);">Auto-Push = OFF</div>
+                    </div>
+                    <div style="background: rgba(59,130,246,0.1); padding: 10px; border-radius: 8px;">
+                        <div style="color: #3b82f6; font-weight: 700;">🖥️ PC</div>
+                        <div style="color: rgba(255,255,255,0.7);">Everything automatic</div>
+                        <div style="color: rgba(255,255,255,0.7);">via watcher.py</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pull/Push Buttons -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                <button onclick="gitPull()" id="pullBtn">📥 Pull Now</button>
+                <button onclick="toggleAutoPull()" id="autoPullBtn" style="background: rgba(255,255,255,0.1);">⏸️
+                    Auto-Pull: OFF</button>
+            </div>
+            <div id="pullResponse" style="color: rgba(255,255,255,0.6); font-size: 0.85rem; margin-bottom: 16px;"></div>
+
+            <p style="font-size: 0.8rem; color: rgba(255,255,255,0.4); text-align: center;">
+                Only push from laptop when PC is NOT processing prompts
+            </p>
+        </div>
+
+        <!-- Recent Prompts -->
+        <div class="card">
+            <h2>📝 Recent Prompts</h2>
+            <div id="history" style="color: rgba(255,255,255,0.6); max-height: 200px; overflow-y: auto;">Loading...
             </div>
         </div>
     </div>
@@ -914,6 +926,13 @@ Example: Update the footer on all pages"></textarea>
         setInterval(checkStatus, 5000);
         setInterval(checkLaptopStatus, 5000);
         setInterval(loadHistory, 10000);
+
+        // Hide prompt box on localhost (user only needs sync controls there)
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        if (isLocalhost) {
+            const sendCard = document.getElementById('sendPromptCard');
+            if (sendCard) sendCard.style.display = 'none';
+        }
     </script>
 </body>
 
