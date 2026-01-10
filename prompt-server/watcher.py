@@ -478,11 +478,16 @@ def background_push_worker():
                     # Safe to sweep all windows
                     for i, slot in enumerate(WINDOW_SLOTS):
                         try:
+                            # Click Accept button
                             pyautogui.click(slot["accept_x"], slot["accept_y"])
                             time.sleep(0.05)
+                            # Press Alt+Enter for command dialogs
                             pyautogui.hotkey('alt', 'Return')
                             time.sleep(0.05)
-                            pyautogui.scroll(-2)
+                            # Click in chat area then scroll (scroll works at mouse position)
+                            pyautogui.click(slot["chat_x"], slot["chat_y"])
+                            time.sleep(0.05)
+                            pyautogui.scroll(-3)  # Scroll down in chat
                         except:
                             pass
                     last_accept_time = current_time
