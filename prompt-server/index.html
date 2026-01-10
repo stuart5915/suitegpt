@@ -767,12 +767,13 @@ Example: Update the footer on all pages"></textarea>
             pullBtn.textContent = 'Pulling...';
 
             try {
-                const res = await fetch('/pull', { method: 'POST' });
+                // Call laptop's local server to pull (not the PC's server)
+                const res = await fetch('http://localhost:3000/pull', { method: 'POST' });
                 const data = await res.json();
                 responseEl.textContent = data.success ? `✅ ${data.output}` : `❌ ${data.error}`;
                 responseEl.style.color = data.success ? '#22c55e' : '#ef4444';
             } catch (err) {
-                responseEl.textContent = '❌ Pull failed';
+                responseEl.textContent = '❌ Laptop server not running (localhost:3000)';
                 responseEl.style.color = '#ef4444';
             }
 
@@ -782,20 +783,45 @@ Example: Update the footer on all pages"></textarea>
 
         async function toggleAutoPull() {
             try {
-                const res = await fetch('/auto-pull', { method: 'POST' });
+                // Call laptop's local server to toggle auto-pull
+                const res = await fetch('http://localhost:3000/auto-pull', { method: 'POST' });
                 const data = await res.json();
                 document.getElementById('pullResponse').textContent = data.message;
                 document.getElementById('pullResponse').style.color = '#22c55e';
-                checkStatus();
+                checkLaptopStatus();
             } catch (err) {
-                document.getElementById('pullResponse').textContent = '❌ Failed to toggle';
+                document.getElementById('pullResponse').textContent = '❌ Laptop server not running';
                 document.getElementById('pullResponse').style.color = '#ef4444';
+            }
+        }
+
+        // Check laptop's auto-pull status
+        async function checkLaptopStatus() {
+            try {
+                const res = await fetch('http://localhost:3000/status');
+                const data = await res.json();
+
+                // Update auto-pull button based on laptop's server state
+                const btn = document.getElementById('autoPullBtn');
+                if (data.auto_pull) {
+                    btn.textContent = '▶️ Auto-Pull: ON';
+                    btn.style.background = 'linear-gradient(135deg, #22c55e, #16a34a)';
+                    btn.style.color = 'white';
+                } else {
+                    btn.textContent = '⏸️ Auto-Pull: OFF';
+                    btn.style.background = 'rgba(255,255,255,0.1)';
+                    btn.style.color = 'inherit';
+                }
+            } catch (err) {
+                // Laptop server not running - that's OK
             }
         }
 
         loadHistory();
         checkStatus();
+        checkLaptopStatus();
         setInterval(checkStatus, 5000);
+        setInterval(checkLaptopStatus, 5000);
         setInterval(loadHistory, 10000);
     </script>
 </body>
