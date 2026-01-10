@@ -1,11 +1,15 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
-import time
+import requests
 from datetime import datetime
 
 app = Flask(__name__)
 CORS(app)
+
+# Supabase config - same as watcher
+SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://rdsmdywbdiskxknluiym.supabase.co')
+SUPABASE_KEY = os.environ.get('SUPABASE_SERVICE_KEY', '')
 
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), 'prompts')
 os.makedirs(PROMPTS_DIR, exist_ok=True)
@@ -22,20 +26,42 @@ def send_prompt():
     if not prompt:
         return jsonify({'error': 'No prompt provided'}), 400
     
-    # Create unique filename
+    # Save to local file (backup)
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     filename = f'{timestamp}.txt'
     filepath = os.path.join(PROMPTS_DIR, filename)
-    
-    # Save prompt
     with open(filepath, 'w', encoding='utf-8') as f:
         f.write(prompt)
     
-    print(f'[NEW PROMPT] {filename}: {prompt[:50]}...')
+    # INSERT into Supabase (main path - watcher polls this)
+    if SUPABASE_KEY:
+        try:
+            response = requests.post(
+                f'{SUPABASE_URL}/rest/v1/prompts',
+                headers={
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': f'Bearer {SUPABASE_KEY}',
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=representation'
+                },
+                json={
+                    'prompt': prompt,
+                    'target': 'stuart-hollinger-landing',
+                    'status': 'pending'
+                }
+            )
+            if response.ok:
+                print(f'[NEW PROMPT] {filename}: {prompt[:50]}... -> Supabase ✓')
+            else:
+                print(f'[WARNING] Supabase insert failed: {response.text}')
+        except Exception as e:
+            print(f'[WARNING] Supabase error: {e}')
+    else:
+        print(f'[NEW PROMPT] {filename}: {prompt[:50]}... (local only - no SUPABASE_KEY)')
     
     return jsonify({
         'success': True,
-        'message': f'Prompt saved as {filename}',
+        'message': f'Prompt queued! Watcher will process it.',
         'filename': filename
     })
 
@@ -56,6 +82,9 @@ if __name__ == '__main__':
     print('PROMPT SERVER RUNNING')
     print('=' * 50)
     print(f'Open http://10.0.0.142:3000 on your laptop')
-    print(f'Prompts saved to: {PROMPTS_DIR}')
+    if SUPABASE_KEY:
+        print(f'Supabase: Connected ✓')
+    else:
+        print(f'Supabase: NOT CONNECTED (set SUPABASE_SERVICE_KEY)')
     print('=' * 50)
     app.run(host='0.0.0.0', port=3000, debug=True)
