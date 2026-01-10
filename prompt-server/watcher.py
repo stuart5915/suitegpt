@@ -224,12 +224,7 @@ def process_prompt(prompt_data):
         pyautogui.click(slot["x"], slot["y"], button='right')
         time.sleep(0.3)
         
-        # Step 2: Left-click to dismiss context menu and confirm focus  
-        print('[ACTION] Left-click to dismiss context menu...')
-        pyautogui.click(slot["x"], slot["y"])
-        time.sleep(0.3)
-        
-        # Step 3: Press Escape to close any menu that might have opened
+        # Step 2: Press Escape to close context menu
         pyautogui.press('escape')
         time.sleep(0.2)
         
