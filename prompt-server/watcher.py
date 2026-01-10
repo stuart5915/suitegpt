@@ -20,12 +20,14 @@ try:
     import pyautogui
     import pyperclip
     import pygetwindow as gw
+    import keyboard  # For spacebar pause toggle
 except ImportError:
     print("Installing required packages...")
-    subprocess.run([sys.executable, '-m', 'pip', 'install', 'pyautogui', 'pyperclip', 'pygetwindow', 'requests'])
+    subprocess.run([sys.executable, '-m', 'pip', 'install', 'pyautogui', 'pyperclip', 'pygetwindow', 'requests', 'keyboard'])
     import pyautogui
     import pyperclip
     import pygetwindow as gw
+    import keyboard
 
 # ═══ CONFIGURATION ═══
 # Set these or use environment variables
@@ -36,9 +38,19 @@ REPO_DIR = r'C:\Users\Stuart\stuart-hollinger-landing'
 POLL_INTERVAL = 5  # seconds
 WAIT_TIME_AFTER_PROMPT = 45  # 45 seconds to wait for AI
 
-# ═══ PAUSE FILE ═══
-# Create this file to pause the watcher, delete to resume
+# ═══ PAUSE STATE ═══
+# Press SPACE to toggle pause, or create .pause file
 PAUSE_FILE = os.path.join(os.path.dirname(__file__), '.pause')
+paused = False  # Runtime pause state
+
+def toggle_pause():
+    global paused
+    paused = not paused
+    status = "PAUSED ⏸️" if paused else "RUNNING ▶️"
+    print(f'\n[SPACEBAR] {status} - Press SPACE again to toggle\n')
+
+# Register spacebar hotkey
+keyboard.on_press_key('space', lambda e: toggle_pause())
 
 # ═══ PROMPT PREFIX ═══
 # Added to every prompt to prevent AI from asking questions and opening browsers
@@ -468,11 +480,11 @@ def background_push_worker():
         try:
             current_time = time.time()
             
-            # Accept sweep every 5 seconds - BUT ONLY if NO slots are typing
+            # Accept sweep every 5 seconds - BUT ONLY if NO slots are typing AND not paused
             # Clicking any window steals focus, which breaks typewrite
             if current_time - last_accept_time >= accept_interval:
-                if any(slot_typing):
-                    # Someone is typing - don't click anything!
+                if paused or any(slot_typing):
+                    # Paused or someone is typing - don't click anything!
                     pass
                 else:
                     # Safe to sweep all windows
@@ -558,10 +570,9 @@ def main():
     
     try:
         while True:
-            # Check for pause file
-            if os.path.exists(PAUSE_FILE):
-                print('[PAUSED] Create prompt-server/.pause file detected. Delete to resume.')
-                time.sleep(5)
+            # Check for pause (spacebar toggle or file)
+            if paused or os.path.exists(PAUSE_FILE):
+                time.sleep(1)
                 continue
             
             # Poll for pending prompts
