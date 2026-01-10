@@ -332,12 +332,15 @@ def process_prompt(prompt_data):
                     # No file changes at all - AI might be asking questions
                     print(f'[W{slot_index}] Idle but NO file changes - AI may be waiting for input')
             
-            # Click Accept button periodically
+            # Click Accept button periodically + press Alt+Enter for command approvals
             elapsed = time.time() - start_time
             if elapsed - last_accept_time >= accept_interval:
                 try:
+                    # Click the main Accept button
                     pyautogui.click(slot["accept_x"], slot["accept_y"])
-                    print(f'[W{slot_index}] Auto-Accept - {int(elapsed)}s elapsed, idle: {int(idle_time)}s')
+                    # Also press Alt+Enter to approve any command dialogs
+                    pyautogui.hotkey('alt', 'Return')
+                    print(f'[W{slot_index}] Auto-Accept + Alt+Enter - {int(elapsed)}s elapsed, idle: {int(idle_time)}s')
                     last_accept_time = elapsed
                 except:
                     pass
