@@ -359,6 +359,13 @@ Example: Update the footer on all pages"></textarea>
             <button onclick="sendPrompt()" id="sendBtn">🚀 Send to PC (Ctrl+Enter)</button>
             <div id="response"></div>
 
+            <!-- Quick History (last 5 prompts) -->
+            <div id="quickHistory" style="margin-top: 16px; display: none;">
+                <div style="font-size: 0.85rem; color: rgba(255,255,255,0.5); margin-bottom: 8px;">📜 Recent (click to
+                    refill):</div>
+                <div id="quickHistoryList" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+            </div>
+
             <!-- PC Setup Commands (collapsible) -->
             <details style="margin-top: 20px; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 16px;">
                 <summary style="cursor: pointer; font-weight: 700; color: #ff9500;">📋 PC Startup Commands (click to
@@ -766,6 +773,9 @@ Example: Update the footer on all pages"></textarea>
                 return;
             }
 
+            // Save to quick history (localStorage)
+            saveToQuickHistory(prompt);
+
             btn.disabled = true;
             btn.textContent = 'Sending...';
 
@@ -782,6 +792,7 @@ Example: Update the footer on all pages"></textarea>
                     response.textContent = '✅ Sent to PC! Watcher will process it.';
                     document.getElementById('prompt').value = '';
                     loadHistory();
+                    renderQuickHistory();
                 } else {
                     response.className = 'response error';
                     response.textContent = '❌ ' + data.error;
@@ -963,6 +974,55 @@ Example: Update the footer on all pages"></textarea>
             const sendCard = document.getElementById('sendPromptCard');
             if (sendCard) sendCard.style.display = 'none';
         }
+
+        // ═══ QUICK HISTORY (localStorage) ═══
+        function saveToQuickHistory(prompt) {
+            let history = JSON.parse(localStorage.getItem('quickPromptHistory') || '[]');
+            // Remove if already exists (to move to front)
+            history = history.filter(p => p !== prompt);
+            // Add to front
+            history.unshift(prompt);
+            // Keep only last 5
+            history = history.slice(0, 5);
+            localStorage.setItem('quickPromptHistory', JSON.stringify(history));
+        }
+
+        function renderQuickHistory() {
+            const history = JSON.parse(localStorage.getItem('quickPromptHistory') || '[]');
+            const container = document.getElementById('quickHistory');
+            const list = document.getElementById('quickHistoryList');
+
+            if (history.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+
+            container.style.display = 'block';
+            list.innerHTML = history.map((p, i) => {
+                const shortText = p.length > 40 ? p.substring(0, 40) + '...' : p;
+                return `<button type="button" onclick="fillPrompt(${i})" style="
+                    background: rgba(255,255,255,0.1);
+                    border: 1px solid rgba(255,255,255,0.2);
+                    color: rgba(255,255,255,0.8);
+                    padding: 6px 12px;
+                    border-radius: 20px;
+                    font-size: 0.8rem;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                " onmouseover="this.style.background='rgba(255,149,0,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">${shortText}</button>`;
+            }).join('');
+        }
+
+        function fillPrompt(index) {
+            const history = JSON.parse(localStorage.getItem('quickPromptHistory') || '[]');
+            if (history[index]) {
+                document.getElementById('prompt').value = history[index];
+                document.getElementById('prompt').focus();
+            }
+        }
+
+        // Render on page load
+        renderQuickHistory();
     </script>
 </body>
 
