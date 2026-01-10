@@ -17,7 +17,7 @@ import { handleFeatureFast, handleBugFast } from './handlers/featureFast.js';
 import { handleFeaturePro, handleBugPro } from './handlers/featurePro.js';
 import { generateBotResponse } from './ai/suiteBot.js';
 import { canPerformAction, useAction, getNoCreditsMessage, getUserStats } from './credits.js';
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 
 // Deduplication: track processed interactions to prevent double-processing
@@ -455,6 +455,27 @@ const commands = [
             option.setName('bug_description')
                 .setDescription('Describe the bug in detail')
                 .setRequired(true)),
+    // 🔧 OWNER ONLY: /addition - Send coding prompts to PC
+    new SlashCommandBuilder()
+        .setName('addition')
+        .setDescription('🔧 Owner only: Send coding prompt to PC for auto-implementation')
+        .addStringOption(option =>
+            option.setName('prompt')
+                .setDescription('What do you want to add/change?')
+                .setRequired(true))
+        .addStringOption(option =>
+            option.setName('target')
+                .setDescription('Which project?')
+                .setRequired(false)
+                .addChoices(
+                    { name: 'SUITE Website', value: 'stuart-hollinger-landing' },
+                    { name: 'Cheshbon', value: 'cheshbon-reflections' },
+                    { name: 'FoodVitals', value: 'food-vitals-expo' },
+                    { name: 'TrueForm', value: 'trueform-ai-physiotherapist' },
+                    { name: 'LifeHub', value: 'life-hub-app' },
+                    { name: 'OpticRep', value: 'opticrep-ai-workout-trainer' },
+                    { name: 'REMcast', value: 'remcast' }
+                )),
 ];
 
 // Register slash commands
@@ -1505,6 +1526,65 @@ IMPORTANT: Verify app name is correct before archiving!
 
             case 'bug-pro': {
                 await handleBugPro(interaction);
+                break;
+            }
+
+            // 🔧 OWNER ONLY: /addition - Send prompts to PC for implementation
+            case 'addition': {
+                // Owner only check
+                if (interaction.user.id !== config.ownerId) {
+                    await interaction.reply({
+                        content: '❌ Only Stuart can use this command.',
+                        ephemeral: true
+                    });
+                    return;
+                }
+
+                const prompt = interaction.options.getString('prompt');
+                const target = interaction.options.getString('target') || 'stuart-hollinger-landing';
+
+                try {
+                    await interaction.deferReply({ ephemeral: true });
+
+                    // Save prompt to PC prompt-server folder
+                    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+                    const filename = `${timestamp}_addition.txt`;
+
+                    // Full prompt with context
+                    const fullPrompt = `[TARGET: ${target}]
+[FROM: Discord /addition command]
+[TIME: ${new Date().toLocaleString()}]
+
+${prompt}`;
+
+                    // Write to the prompt-server prompts folder
+                    // This path should match where PC watcher is watching
+                    const promptPath = path.join(process.cwd(), '../../prompt-server/prompts', filename);
+
+                    // Ensure prompts directory exists
+                    const promptsDir = path.join(process.cwd(), '../../prompt-server/prompts');
+                    await fs.mkdir(promptsDir, { recursive: true });
+
+                    await fs.writeFile(promptPath, fullPrompt, 'utf-8');
+
+                    await interaction.editReply({
+                        content: `✅ **Sent to PC!**
+
+📝 **Prompt:** ${prompt.slice(0, 100)}${prompt.length > 100 ? '...' : ''}
+🎯 **Target:** ${target}
+📁 **File:** ${filename}
+
+Your PC watcher will pick this up and Antigravity will implement it. Check back in ~1 minute!`
+                    });
+
+                    console.log(`[/addition] Owner sent prompt to PC: ${prompt.slice(0, 50)}...`);
+
+                } catch (error) {
+                    console.error('/addition error:', error);
+                    await interaction.editReply({
+                        content: `❌ Failed to save prompt: ${error.message}`
+                    });
+                }
                 break;
             }
         }
