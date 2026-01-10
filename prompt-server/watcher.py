@@ -231,16 +231,16 @@ def process_prompt(prompt_data):
         pyautogui.click(slot["chat_x"], slot["chat_y"])
         time.sleep(0.3)
         
-        # Save ALL files with Ctrl+K S (VS Code/Antigravity "Save All" chord)
-        print('[ACTION] Pressing Ctrl+K S to save ALL files...')
-        pyautogui.hotkey('ctrl', 'k')  # First part of chord
-        time.sleep(0.2)
-        pyautogui.press('s')  # Second part of chord
-        time.sleep(2)  # Wait for save to complete
-        
-        # Also try regular Ctrl+S just in case
-        pyautogui.hotkey('ctrl', 's')
+        # CRITICAL: Switch to Editor View first!
+        # Accept only writes to buffer, not disk. Must be in Editor View to save.
+        print('[ACTION] Pressing Ctrl+Shift+M to switch to Editor View...')
+        pyautogui.hotkey('ctrl', 'shift', 'm')
         time.sleep(1)
+        
+        # Now save with Ctrl+S
+        print('[ACTION] Pressing Ctrl+S to save to disk...')
+        pyautogui.hotkey('ctrl', 's')
+        time.sleep(2)  # Wait for save to complete
         
         # Git push
         git_push()
