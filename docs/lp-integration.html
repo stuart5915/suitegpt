@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liquidity Pool | SUITE Docs</title>
+    <link rel="icon" type="image/png" href="../assets/suite-mascot.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../suite-styles.css">
+    <link rel="stylesheet" href="../nav.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        html {
+            overflow-y: scroll;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fff5eb 0%, #ffe4d4 20%, #ffd4e3 50%, #e8d5f9 80%, #d4e5ff 100%);
+            min-height: 100vh;
+            color: #2d1b4e;
+            overflow-x: hidden;
+        }
+
+        .nav-links a:hover {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            color: white !important;
+        }
+
+        /* canvas-container styles now in docs.css */
+
+        .docs-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 32px;
+            box-shadow: 0 16px 80px rgba(0, 0, 0, 0.08);
+            padding: 30px;
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            gap: 30px;
+        }
+
+        .docs-sidebar {
+            width: 220px;
+            flex-shrink: 0;
+            border-right: 1px solid rgba(0, 0, 0, 0.06);
+            padding-right: 24px;
+        }
+
+        .docs-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .docs-content h1 {
+            font-size: 2rem;
+            font-weight: 900;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #ff9500 0%, #ff6b9d 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .docs-content .subtitle {
+            font-size: 1.1rem;
+            color: #5a4a6f;
+            margin-bottom: 32px;
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin: 32px 0 16px;
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, rgba(255, 149, 0, 0.1), rgba(255, 107, 157, 0.1));
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .info-box h4 {
+            font-weight: 700;
+            color: #ff9500;
+            margin-bottom: 8px;
+        }
+
+        .info-box p {
+            color: #5a4a6f;
+            font-size: 0.95rem;
+            margin: 0;
+        }
+
+        .compare-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin: 24px 0;
+        }
+
+        .compare-card {
+            background: white;
+            border: 2px solid rgba(0, 0, 0, 0.06);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .compare-card h4 {
+            font-weight: 700;
+            color: #2d1b4e;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .compare-card ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .compare-card li {
+            padding: 8px 0;
+            color: #5a4a6f;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .step-card {
+            background: white;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 12px;
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+
+        .step-number {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 800;
+            flex-shrink: 0;
+        }
+
+        .step-content h4 {
+            font-weight: 700;
+            color: #2d1b4e;
+            margin-bottom: 4px;
+        }
+
+        .step-content p {
+            color: #5a4a6f;
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        .warning-box {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(249, 115, 22, 0.1));
+            border: 2px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .warning-box h4 {
+            font-weight: 700;
+            color: #dc2626;
+            margin-bottom: 8px;
+        }
+
+        .warning-box p {
+            color: #5a4a6f;
+            font-size: 0.95rem;
+            margin: 0;
+        }
+
+        @media (max-width: 768px) {
+            .docs-container {
+                flex-direction: column;
+                padding: 20px;
+            }
+
+            .docs-sidebar {
+                width: 100%;
+                border-right: none;
+                padding-right: 0;
+            }
+
+            .compare-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="../index.html" class="nav-logo">
+                <img src="../assets/suite-token.png" alt="SUITE" class="nav-logo-img">
+                SUITE
+            </a>
+            <div class="nav-links">
+                <a href="../apps.html">Apps</a>
+                <a href="../developer-portal.html">Build</a>
+                <a href="../discuss.html">Discuss</a>
+                <a href="../incubate.html">Incubate</a>
+                <a href="index.html">Docs</a>
+                <a href="../start-building.html" class="nav-cta">🚀 Start Building</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="canvas-container">
+        <div class="docs-container">
+            <aside class="docs-sidebar"></aside>
+
+            <main class="docs-content">
+                <h1>💧 Liquidity Pool</h1>
+                <p class="subtitle">SUITE/ETH liquidity on Aerodrome (Base) enables price discovery and trading.</p>
+
+                <div class="info-box">
+                    <h4>📊 Current Pool</h4>
+                    <p><strong>SUITE/ETH</strong> on Aerodrome DEX (Base chain). 0.3% swap fee. Treasury seeds initial
+                        liquidity.</p>
+                </div>
+
+                <h2 class="section-title">Treasury vs DEX</h2>
+
+                <div class="compare-grid">
+                    <div class="compare-card">
+                        <h4>🏦 Treasury</h4>
+                        <ul>
+                            <li>✅ Guaranteed floor price</li>
+                            <li>✅ Always available liquidity</li>
+                            <li>✅ 0.5% fee (goes to Treasury)</li>
+                            <li>✅ Best for redeeming SUITE</li>
+                            <li>⚠️ Can only sell, not buy above floor</li>
+                        </ul>
+                    </div>
+                    <div class="compare-card">
+                        <h4>📈 DEX (Aerodrome)</h4>
+                        <ul>
+                            <li>✅ Market price (can be above floor)</li>
+                            <li>✅ Buy AND sell</li>
+                            <li>✅ 0.3% swap fee</li>
+                            <li>✅ Best for trading/speculation</li>
+                            <li>⚠️ Subject to slippage on large orders</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h2 class="section-title">How Price Works</h2>
+
+                <p style="color: #5a4a6f; line-height: 1.8;">
+                    SUITE has a <strong>floor price</strong> guaranteed by the Treasury (Treasury Value ÷ Total Supply).
+                    The DEX price floats based on supply and demand:
+                </p>
+
+                <ul style="color: #5a4a6f; line-height: 2; margin-left: 20px;">
+                    <li>📈 <strong>DEX > Floor</strong> - Buy from Treasury, sell on DEX = Profit (arbitrage)</li>
+                    <li>📊 <strong>DEX = Floor</strong> - Markets are in equilibrium</li>
+                    <li>📉 <strong>DEX < Floor</strong> - Can't happen! Arbitrageurs would buy DEX, redeem at Treasury
+                    </li>
+                </ul>
+
+                <div class="info-box"
+                    style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(16, 185, 129, 0.1));">
+                    <h4 style="color: #22c55e;">⚡ Community Arbitrage</h4>
+                    <p>When DEX price is above floor, anyone can execute arbitrage through the Vault. Buy from Treasury
+                        at floor, sell on DEX at market price. You keep 50% of the spread, 50% goes to Treasury!</p>
+                </div>
+
+                <h2 class="section-title">Providing Liquidity</h2>
+
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4>Go to Aerodrome</h4>
+                        <p>Visit <a href="https://aerodrome.finance" target="_blank">aerodrome.finance</a> and connect
+                            your wallet on Base.</p>
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4>Find SUITE/ETH Pool</h4>
+                        <p>Navigate to Pools and search for SUITE/ETH. If not listed, add SUITE by contract address.</p>
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4>Add Liquidity</h4>
+                        <p>Deposit equal value of SUITE and ETH. You'll receive LP tokens representing your share.</p>
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h4>Earn Fees</h4>
+                        <p>As people trade, you earn 0.3% of every swap proportional to your LP share.</p>
+                    </div>
+                </div>
+
+                <div class="warning-box">
+                    <h4>⚠️ Impermanent Loss</h4>
+                    <p>Providing liquidity carries risk. If SUITE price changes significantly vs ETH, you may end up
+                        with less value than if you just held. Research IL before LPing.</p>
+                </div>
+
+                <h2 class="section-title">When to Use What</h2>
+
+                <ul style="color: #5a4a6f; line-height: 2; margin-left: 20px;">
+                    <li>🟢 <strong>Buying SUITE</strong> - Check DEX price first. If it's at floor, use Treasury. If
+                        above floor, Treasury is better.</li>
+                    <li>🟢 <strong>Selling SUITE</strong> - Check DEX price. If above floor, sell on DEX. Otherwise,
+                        redeem at Treasury.</li>
+                    <li>🟢 <strong>Quick trades</strong> - DEX is faster (no mint/burn, just swap)</li>
+                    <li>🟢 <strong>Large amounts</strong> - Treasury has unlimited liquidity at floor price</li>
+                </ul>
+
+                <div
+                    style="margin-top: 32px; padding: 20px; background: rgba(59, 130, 246, 0.1); border-radius: 16px; text-align: center;">
+                    <a href="https://aerodrome.finance" target="_blank"
+                        style="display: inline-block; padding: 14px 28px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; text-decoration: none; border-radius: 14px; font-weight: 700;">Trade
+                        on Aerodrome →</a>
+                </div>
+            </main>
+        </div>
+    </div>
+    <script src="sidebar.js"></script>
+    <script src="docs-nav.js"></script></body>
+
+</html>
