@@ -322,120 +322,15 @@ def process_prompt(prompt_data):
         # Step 3: Send with Enter
         print(f'[W{slot_index}] Pressing Enter to send...')
         pyautogui.press('enter')
-        print(f'[W{slot_index}] Sent prompt to Antigravity')
+        print(f'[W{slot_index}] ✅ Prompt dispatched to Antigravity')
         
         # MARK TYPING COMPLETE - safe to click accept on this slot now
         slot_typing[slot_index] = False
         
-        # Wait for agent to finish using IDLE DETECTION
-        # If no files have been modified for 30 seconds, agent is done
-        max_wait = 300  # 5 minute max (safety timeout)
-        idle_threshold = 30  # 30 seconds of no changes = done
-        check_interval = 2  # Check every 2 seconds
-        accept_interval = 5  # Click Accept every 5 seconds
-        
-        print(f'[W{slot_index}] Waiting for agent... (idle detection: {idle_threshold}s of no changes)')
-        
-        start_time = time.time()
-        last_accept_time = 0
-        last_change_time = time.time()  # Track when files last changed
-        initial_mtime = get_latest_file_mtime()  # Baseline to detect ANY changes
-        last_mtime = initial_mtime
-        agent_done = False
-        had_activity = False  # Track if ANY file changes occurred
-        
-        while time.time() - start_time < max_wait:
-            # Check if files have been modified
-            current_mtime = get_latest_file_mtime()
-            if current_mtime > last_mtime:
-                # Files changed - reset idle timer and mark activity
-                last_mtime = current_mtime
-                last_change_time = time.time()
-                had_activity = True
-            
-            # Check if we've been idle long enough
-            idle_time = time.time() - last_change_time
-            if idle_time >= idle_threshold:
-                if had_activity:
-                    print(f'[W{slot_index}] Agent idle for {int(idle_time)}s - changes detected, done!')
-                    agent_done = True
-                    break
-                else:
-                    # No file changes at all - AI might be asking questions
-                    print(f'[W{slot_index}] Idle but NO file changes - AI may be waiting for input')
-            
-            # Click Accept button periodically + press Alt+Enter for command approvals
-            elapsed = time.time() - start_time
-            if elapsed - last_accept_time >= accept_interval:
-                try:
-                    # Click the main Accept button
-                    pyautogui.click(slot["accept_x"], slot["accept_y"])
-                    # Also press Alt+Enter to approve any command dialogs
-                    pyautogui.hotkey('alt', 'Return')
-                    # Scroll down to keep chat visible (prevents getting stuck)
-                    pyautogui.scroll(-3)  # Negative = scroll down
-                    print(f'[W{slot_index}] Auto-Accept + Alt+Enter + Scroll - {int(elapsed)}s elapsed, idle: {int(idle_time)}s')
-                    last_accept_time = elapsed
-                except:
-                    pass
-            
-            time.sleep(check_interval)
-        
-        if agent_done:
-            print(f'[W{slot_index}] Agent signaled completion!')
-        else:
-            print(f'[W{slot_index}] Timeout ({max_wait}s) reached, proceeding anyway...')
-        
-        # Click in the window to ensure focus
-        pyautogui.click(slot["chat_x"], slot["chat_y"])
-        time.sleep(0.3)
-        
-        # Save with Ctrl+S
-        print(f'[W{slot_index}] Pressing Ctrl+S to save...')
-        pyautogui.hotkey('ctrl', 's')
-        time.sleep(2)
-        
-        # ACCEPT ALL WINDOWS - sweep through all windows EXCEPT ones currently typing
-        print(f'[W{slot_index}] Accept-all sweep before push (skipping typing slots)...')
-        for i, s in enumerate(WINDOW_SLOTS):
-            if slot_typing[i]:
-                print(f'[W{slot_index}] Skipping slot {i} - currently typing')
-                continue
-            try:
-                # Click Accept button
-                pyautogui.click(s["accept_x"], s["accept_y"])
-                time.sleep(0.1)
-                # Press Alt+Enter for command dialogs
-                pyautogui.hotkey('alt', 'Return')
-                time.sleep(0.1)
-            except:
-                pass
-        time.sleep(1)
-        
-        # Git operations (serialized with lock)
-        with git_lock:
-            git_pull()
-            git_push()
-        
-        # Mark completed (or needs-review if no changes were made)
-        if had_activity:
-            supabase.update_status(prompt_id, 'completed', 'Successfully processed')
-            print(f'[W{slot_index}] ✅ Prompt {prompt_id[:8]} completed!')
-        else:
-            # Take a screenshot of the window to show what AI responded
-            screenshot_filename = f'{prompt_id}.png'
-            screenshot_path = os.path.join(SCREENSHOTS_DIR, screenshot_filename)
-            try:
-                region = slot.get('region')
-                if region:
-                    screenshot = pyautogui.screenshot(region=region)
-                    screenshot.save(screenshot_path)
-                    print(f'[W{slot_index}] 📸 Screenshot saved: {screenshot_filename}')
-            except Exception as e:
-                print(f'[W{slot_index}] Could not capture screenshot: {e}')
-            
-            supabase.update_status(prompt_id, 'needs-review', 'No file changes detected - AI may have asked questions', slot_index=slot_index)
-            print(f'[W{slot_index}] ⚠️ Prompt {prompt_id[:8]} needs review - no code changes detected')
+        # INSTANT DISPATCH - Don't wait! Just mark as sent and return
+        # Background push thread will handle git sync
+        supabase.update_status(prompt_id, 'sent', 'Dispatched to Antigravity')
+        print(f'[W{slot_index}] Prompt {prompt_id[:8]} dispatched - background push will sync')
         
     except Exception as e:
         print(f'[W{slot_index}] ❌ Failed: {e}')
@@ -443,6 +338,7 @@ def process_prompt(prompt_data):
     
     finally:
         # ALWAYS release the slot when done
+        slot_typing[slot_index] = False  # Ensure typing flag is cleared
         release_slot(slot_index)
         print(f'[W{slot_index}] Slot released. {get_slot_status()}')
 
@@ -550,6 +446,61 @@ def send_response(response_data):
         supabase.update_status(prompt_id, 'needs-review', f'Response failed: {e}')
 
 
+# ═══ BACKGROUND PUSH THREAD ═══
+# Runs continuously - handles accept sweeps and git push every 60s when idle
+
+def background_push_worker():
+    """Background thread that handles Accept sweeps and periodic git push"""
+    push_interval = 60  # Push every 60 seconds
+    accept_interval = 5  # Accept sweep every 5 seconds
+    idle_threshold = 15  # Only push if no typing for 15 seconds
+    
+    last_push_time = time.time()
+    last_accept_time = 0
+    
+    print('[BACKGROUND] Push worker started - will sync every 60s when idle')
+    
+    while True:
+        try:
+            current_time = time.time()
+            
+            # Accept sweep every 5 seconds (skip slots that are typing)
+            if current_time - last_accept_time >= accept_interval:
+                for i, slot in enumerate(WINDOW_SLOTS):
+                    if slot_typing[i]:
+                        continue  # Skip slots that are typing
+                    try:
+                        pyautogui.click(slot["accept_x"], slot["accept_y"])
+                        time.sleep(0.05)
+                        pyautogui.hotkey('alt', 'Return')
+                        time.sleep(0.05)
+                        pyautogui.scroll(-2)
+                    except:
+                        pass
+                last_accept_time = current_time
+            
+            # Push every 60 seconds if no slots are typing
+            if current_time - last_push_time >= push_interval:
+                # Check if any slot is typing
+                if any(slot_typing):
+                    # Wait for typing to finish
+                    pass
+                else:
+                    # Safe to push
+                    print('[BACKGROUND] 60s passed - syncing to GitHub...')
+                    with git_lock:
+                        git_pull()
+                        git_push()
+                    last_push_time = current_time
+                    print('[BACKGROUND] ✅ Sync complete')
+            
+            time.sleep(1)  # Check every second
+            
+        except Exception as e:
+            print(f'[BACKGROUND] Error: {e}')
+            time.sleep(5)
+
+
 def main():
     global supabase
     
@@ -584,6 +535,10 @@ def main():
     if count == 0:
         print('\n⚠️  WARNING: No Antigravity windows detected!')
         print('    Open Antigravity IDE to start processing.\n')
+    
+    # Start background push thread (handles accept sweeps + periodic git sync)
+    push_thread = threading.Thread(target=background_push_worker, daemon=True)
+    push_thread.start()
     
     try:
         while True:
