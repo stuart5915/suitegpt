@@ -188,19 +188,33 @@ def process_prompt(prompt_data):
         # Git pull first
         git_pull()
         
-        # Wait for window to be ready
-        time.sleep(1)
-        
-        # Type the prompt directly (like auto-prompt-runner.py)
-        # typewrite is more reliable than paste
-        print('[ACTION] Typing prompt into Antigravity...')
-        pyautogui.typewrite(prompt_text, interval=0.03)
-        time.sleep(0.5)
-        
-        # Send with Enter
-        print('[ACTION] Pressing Enter to send...')
-        pyautogui.press('enter')
-        print('[ACTION] Sent prompt to Antigravity')
+        try:
+            # Copy prompt to clipboard first
+            pyperclip.copy(prompt_text)
+            print('[ACTION] Copied prompt to clipboard')
+            
+            # Wait for window to be ready
+            time.sleep(0.5)
+            
+            # Focus chat with Ctrl+L
+            print('[ACTION] Pressing Ctrl+L to focus chat...')
+            pyautogui.hotkey('ctrl', 'l')
+            time.sleep(2.0)  # Longer wait for chat to fully open
+            
+            # Paste the prompt
+            print('[ACTION] Pasting prompt (Ctrl+V)...')
+            pyautogui.hotkey('ctrl', 'v')
+            time.sleep(1.0)
+            
+            # Send with Enter
+            print('[ACTION] Pressing Enter to send...')
+            pyautogui.press('enter')
+            print('[ACTION] Sent prompt to Antigravity')
+        except Exception as e:
+            print(f'[ERROR] Failed to inject prompt: {e}')
+            supabase.update_status(prompt_id, 'failed', str(e))
+            window_manager.mark_available(window)
+            return
         
         # Wait for AI
         print(f'[WAITING] {WAIT_TIME_AFTER_PROMPT}s for AI response...')
