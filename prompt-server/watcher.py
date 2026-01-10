@@ -219,17 +219,31 @@ def process_prompt(prompt_data):
         pyperclip.copy(prompt_text)
         print('[ACTION] Copied prompt to clipboard')
         
-        # Click directly into the chat input area for this window slot
-        print(f'[ACTION] Clicking chat input at ({slot["x"]}, {slot["y"]})...')
-        pyautogui.click(slot["x"], slot["y"])
-        time.sleep(0.5)
+        # Step 1: Right-click to focus the window (without triggering anything)
+        print(f'[ACTION] Right-click to focus window at ({slot["x"]}, {slot["y"]})...')
+        pyautogui.click(slot["x"], slot["y"], button='right')
+        time.sleep(0.3)
         
-        # Paste the prompt
+        # Step 2: Left-click to dismiss context menu and confirm focus  
+        print('[ACTION] Left-click to dismiss context menu...')
+        pyautogui.click(slot["x"], slot["y"])
+        time.sleep(0.3)
+        
+        # Step 3: Press Escape to close any menu that might have opened
+        pyautogui.press('escape')
+        time.sleep(0.2)
+        
+        # Step 4: Ctrl+L to focus the chat input
+        print('[ACTION] Pressing Ctrl+L to focus chat...')
+        pyautogui.hotkey('ctrl', 'l')
+        time.sleep(1.0)  # Wait for chat to focus
+        
+        # Step 5: Paste the prompt
         print('[ACTION] Pasting prompt (Ctrl+V)...')
         pyautogui.hotkey('ctrl', 'v')
         time.sleep(0.5)
         
-        # Send with Enter
+        # Step 6: Send with Enter
         print('[ACTION] Pressing Enter to send...')
         pyautogui.press('enter')
         print('[ACTION] Sent prompt to Antigravity')
@@ -242,15 +256,13 @@ def process_prompt(prompt_data):
         
         while time.time() < accept_end:
             try:
-                # Click in the window area to keep focus
-                pyautogui.click(slot["x"] - 100, slot["y"] - 50)
-                time.sleep(0.2)
-                # Press Alt+Return to accept any pending changes
+                # Just press Alt+Return to accept any pending changes
+                # (No click needed - Antigravity will respond to hotkey)
                 pyautogui.hotkey('alt', 'Return')
                 accept_count += 1
             except:
                 pass
-            time.sleep(3)  # Every 3 seconds
+            time.sleep(5)  # Every 5 seconds is enough
         
         print(f'[AUTO-ACCEPT] Pressed Accept {accept_count} times')
         
