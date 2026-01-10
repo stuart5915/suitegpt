@@ -50,13 +50,13 @@ PROMPT_PREFIX = "[NO QUESTIONS - just make your best attempt. DO NOT open browse
 
 WINDOW_SLOTS = [
     # Slot 0: Top-left window
-    {"chat_x": 3228, "chat_y": 585, "accept_x": 3438, "accept_y": 553, "region": (2560, 0, 960, 540)},
+    {"chat_x": 3228, "chat_y": 585, "accept_x": 3438, "accept_y": 553, "retry_x": 3480, "retry_y": 510, "region": (2560, 0, 960, 540)},
     # Slot 1: Top-right window  
-    {"chat_x": 4227, "chat_y": 594, "accept_x": 4415, "accept_y": 560, "region": (3520, 0, 960, 540)},
+    {"chat_x": 4227, "chat_y": 594, "accept_x": 4415, "accept_y": 560, "retry_x": 4457, "retry_y": 517, "region": (3520, 0, 960, 540)},
     # Slot 2: Bottom-left window
-    {"chat_x": 3207, "chat_y": 1154, "accept_x": 3441, "accept_y": 1119, "region": (2560, 540, 960, 540)},
+    {"chat_x": 3207, "chat_y": 1154, "accept_x": 3441, "accept_y": 1119, "retry_x": 3483, "retry_y": 1076, "region": (2560, 540, 960, 540)},
     # Slot 3: Bottom-right window
-    {"chat_x": 4226, "chat_y": 1151, "accept_x": 4415, "accept_y": 1119, "region": (3520, 540, 960, 540)},
+    {"chat_x": 4226, "chat_y": 1151, "accept_x": 4415, "accept_y": 1119, "retry_x": 4457, "retry_y": 1076, "region": (3520, 540, 960, 540)},
 ]
 
 # Screenshots directory
@@ -480,6 +480,9 @@ def background_push_worker():
                         try:
                             # Click Accept button
                             pyautogui.click(slot["accept_x"], slot["accept_y"])
+                            time.sleep(0.05)
+                            # Click Retry button (in case of error)
+                            pyautogui.click(slot["retry_x"], slot["retry_y"])
                             time.sleep(0.05)
                             # Press Alt+Enter for command dialogs
                             pyautogui.hotkey('alt', 'Return')
