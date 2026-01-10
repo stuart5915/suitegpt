@@ -188,21 +188,14 @@ def process_prompt(prompt_data):
         # Git pull first
         git_pull()
         
-        # Copy prompt to clipboard
-        pyperclip.copy(prompt_text)
-        
         # Wait for window to be ready
         time.sleep(1)
         
-        # Focus chat with Ctrl+L first (critical!)
-        print('[ACTION] Pressing Ctrl+L to focus chat...')
-        pyautogui.hotkey('ctrl', 'l')
-        time.sleep(1.5)  # Wait for chat to fully open
-        
-        # Now paste the prompt (clipboard already has it)
-        print('[ACTION] Pasting prompt...')
-        pyautogui.hotkey('ctrl', 'v')
-        time.sleep(1.0)
+        # Type the prompt directly (like auto-prompt-runner.py)
+        # typewrite is more reliable than paste
+        print('[ACTION] Typing prompt into Antigravity...')
+        pyautogui.typewrite(prompt_text, interval=0.03)
+        time.sleep(0.5)
         
         # Send with Enter
         print('[ACTION] Pressing Enter to send...')
