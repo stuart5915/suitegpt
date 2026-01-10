@@ -36,39 +36,18 @@ REPO_DIR = r'C:\Users\Stuart\stuart-hollinger-landing'
 POLL_INTERVAL = 5  # seconds
 WAIT_TIME_AFTER_PROMPT = 45  # 45 seconds to wait for AI
 
-# ═══ WINDOW SLOTS (4 windows in 2x2 grid on SECOND MONITOR) ═══
-# Adjust these values based on your monitor setup!
+# ═══ WINDOW SLOTS - EXACT COORDINATES ═══
+# Measured using get_coords.py on Stuart's PC
 
-# Second monitor offset (if Antigravity is on monitor 2, add monitor 1's width)
-MONITOR_X_OFFSET = 1920  # Width of monitor 1 (set to 0 if using primary monitor)
-
-# Second monitor dimensions
-MONITOR_WIDTH = 1920
-MONITOR_HEIGHT = 1080
-
-# Each window is 1/4 of the screen
-HALF_WIDTH = MONITOR_WIDTH // 2
-HALF_HEIGHT = MONITOR_HEIGHT // 2
-
-# Chat input is on the right side of each Antigravity window, near bottom
-# These are offsets from the RIGHT and BOTTOM edges of each window
-CHAT_FROM_RIGHT = 180  # pixels from right edge of window
-CHAT_FROM_BOTTOM = 70  # pixels from bottom of window
-
-# Click positions for each of the 4 windows (2x2 grid)
 WINDOW_SLOTS = [
     # Slot 0: Top-left window
-    {"x": MONITOR_X_OFFSET + HALF_WIDTH - CHAT_FROM_RIGHT, 
-     "y": HALF_HEIGHT - CHAT_FROM_BOTTOM},
+    {"chat_x": 3228, "chat_y": 585, "accept_x": 3438, "accept_y": 553},
     # Slot 1: Top-right window  
-    {"x": MONITOR_X_OFFSET + MONITOR_WIDTH - CHAT_FROM_RIGHT, 
-     "y": HALF_HEIGHT - CHAT_FROM_BOTTOM},
+    {"chat_x": 4227, "chat_y": 594, "accept_x": 4415, "accept_y": 560},
     # Slot 2: Bottom-left window
-    {"x": MONITOR_X_OFFSET + HALF_WIDTH - CHAT_FROM_RIGHT, 
-     "y": MONITOR_HEIGHT - CHAT_FROM_BOTTOM},
+    {"chat_x": 3207, "chat_y": 1154, "accept_x": 3441, "accept_y": 1119},
     # Slot 3: Bottom-right window
-    {"x": MONITOR_X_OFFSET + MONITOR_WIDTH - CHAT_FROM_RIGHT, 
-     "y": MONITOR_HEIGHT - CHAT_FROM_BOTTOM},
+    {"chat_x": 4226, "chat_y": 1151, "accept_x": 4415, "accept_y": 1119},
 ]
 
 current_slot = 0  # Track which slot to use next
@@ -220,47 +199,40 @@ def process_prompt(prompt_data):
         print('[ACTION] Copied prompt to clipboard')
         
         # Step 1: Right-click to focus the window (without triggering anything)
-        print(f'[ACTION] Right-click to focus window at ({slot["x"]}, {slot["y"]})...')
-        pyautogui.click(slot["x"], slot["y"], button='right')
+        print(f'[ACTION] Right-click to focus window at ({slot["chat_x"]}, {slot["chat_y"]})...')
+        pyautogui.click(slot["chat_x"], slot["chat_y"], button='right')
         time.sleep(0.3)
         
         # Step 2: Press Escape to close context menu
         pyautogui.press('escape')
         time.sleep(0.2)
         
-        # Step 4: Ctrl+L to focus the chat input
+        # Step 3: Ctrl+L to focus the chat input
         print('[ACTION] Pressing Ctrl+L to focus chat...')
         pyautogui.hotkey('ctrl', 'l')
         time.sleep(1.0)  # Wait for chat to focus
         
-        # Step 5: Paste the prompt
+        # Step 4: Paste the prompt
         print('[ACTION] Pasting prompt (Ctrl+V)...')
         pyautogui.hotkey('ctrl', 'v')
         time.sleep(0.5)
         
-        # Step 6: Send with Enter
+        # Step 5: Send with Enter
         print('[ACTION] Pressing Enter to send...')
         pyautogui.press('enter')
         print('[ACTION] Sent prompt to Antigravity')
         
-        # Auto-accept loop - click Accept all button periodically
-        # The Accept all button is at the bottom of the Agent panel
-        # We'll click where the button should be in each window
+        # Auto-accept loop - click Accept all button at exact coordinates
         print(f'[AUTO-ACCEPT] Running for {WAIT_TIME_AFTER_PROMPT}s...')
         accept_end = time.time() + WAIT_TIME_AFTER_PROMPT
         accept_count = 0
         
-        # Accept button is typically near bottom-right of the Agent panel
-        # Slightly above the chat input
-        accept_x = slot["x"] + 50  # A bit right of chat input
-        accept_y = slot["y"] - 30  # A bit above chat input (where Accept all is)
-        
         while time.time() < accept_end:
             try:
-                # Click the Accept all button location
-                pyautogui.click(accept_x, accept_y)
+                # Click the Accept all button at exact coordinates
+                pyautogui.click(slot["accept_x"], slot["accept_y"])
                 accept_count += 1
-                print(f'[AUTO-ACCEPT] Clicked Accept ({accept_count})')
+                print(f'[AUTO-ACCEPT] Clicked Accept at ({slot["accept_x"]}, {slot["accept_y"]})')
             except:
                 pass
             time.sleep(5)  # Every 5 seconds
