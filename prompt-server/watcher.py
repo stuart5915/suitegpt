@@ -52,24 +52,25 @@ WINDOW_SLOTS = [
 
 # ═══ PARALLEL PROCESSING STATE ═══
 # Thread-safe slot management for multi-window processing
-slot_busy = [False, False, False, False]  # Track which slots are processing
+slot_busy = [False, False, False, False]  # Track which slots are processing (for status)
 slot_locks = [threading.Lock() for _ in range(4)]  # Per-slot locks
 git_lock = threading.Lock()  # Serialize git operations
 slot_allocation_lock = threading.Lock()  # Lock for picking next slot
+current_slot_index = 0  # Round-robin counter
 
 
-def get_available_slot():
-    """Get the next available slot (thread-safe). Returns slot index or -1 if all busy."""
+def get_next_slot():
+    """Get the next slot round-robin style (thread-safe). Always returns a slot - Antigravity queues messages."""
+    global current_slot_index
     with slot_allocation_lock:
-        for i, busy in enumerate(slot_busy):
-            if not busy:
-                slot_busy[i] = True
-                return i
-        return -1  # All slots busy
+        slot = current_slot_index
+        current_slot_index = (current_slot_index + 1) % len(WINDOW_SLOTS)
+        slot_busy[slot] = True  # Mark as busy for status display
+        return slot
 
 
 def release_slot(slot_index):
-    """Mark a slot as available again."""
+    """Mark a slot as available again (for status display)."""
     with slot_allocation_lock:
         if 0 <= slot_index < len(slot_busy):
             slot_busy[slot_index] = False
@@ -209,13 +210,8 @@ def process_prompt(prompt_data):
     prompt_text = prompt_data['prompt']
     target = prompt_data.get('target', 'stuart-hollinger-landing')
     
-    # Get an available slot (thread-safe)
-    slot_index = get_available_slot()
-    if slot_index == -1:
-        print(f'[QUEUED] All windows busy, prompt {prompt_id[:8]} will retry...')
-        supabase.update_status(prompt_id, 'pending')  # Keep as pending to retry
-        return
-    
+    # Get next slot round-robin (Antigravity queues messages, so we keep going)
+    slot_index = get_next_slot()
     slot = WINDOW_SLOTS[slot_index]
     
     print(f'\n{"="*60}')
