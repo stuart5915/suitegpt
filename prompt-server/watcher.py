@@ -112,14 +112,7 @@ class WindowManager:
             except:
                 pass
         
-        # Remove duplicates
-        seen = set()
-        unique = []
-        for w in self.windows:
-            if w.title not in seen:
-                seen.add(w.title)
-                unique.append(w)
-        self.windows = unique
+        # Don't deduplicate - keep all windows even with same title
         return len(self.windows)
     
     def get_next_window(self):
