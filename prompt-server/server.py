@@ -21,10 +21,11 @@ os.makedirs(PROMPTS_DIR, exist_ok=True)
 auto_pull_enabled = False
 auto_push_enabled = False
 last_completed_id = None
+pull_count = 0  # Track how many auto-pulls have happened
 
 def auto_pull_worker():
     """Background thread that polls Supabase for completed prompts and auto-pulls"""
-    global last_completed_id
+    global last_completed_id, pull_count
     while True:
         if auto_pull_enabled and SUPABASE_KEY:
             try:
@@ -46,7 +47,8 @@ def auto_pull_worker():
                             cwd=os.path.dirname(os.path.dirname(__file__)),
                             capture_output=True, text=True
                         )
-                        print(f'[AUTO-PULL] {result.stdout.strip()}')
+                        pull_count += 1
+                        print(f'[AUTO-PULL #{pull_count}] {result.stdout.strip()}')
             except Exception as e:
                 print(f'[AUTO-PULL] Error: {e}')
         time.sleep(10)
@@ -152,7 +154,8 @@ def status():
         'status': 'running',
         'pending_prompts': len(os.listdir(PROMPTS_DIR)),
         'auto_pull': auto_pull_enabled,
-        'auto_push': auto_push_enabled
+        'auto_push': auto_push_enabled,
+        'pull_count': pull_count
     })
 
 @app.route('/needs-review', methods=['GET'])
