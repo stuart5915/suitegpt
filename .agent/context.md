@@ -201,6 +201,46 @@ git push
 
 ---
 
+## 🛡️ Edge Cases Our Setup Handles
+
+### Accept Sweep Stealing Focus
+**Problem:** Clicking Accept on window 2 while typing to window 1 breaks the typewrite.
+**Solution:** `slot_typing` flag - when ANY slot is typing, the background thread skips ALL clicking.
+
+### AI Asks Questions Instead of Coding
+**Problem:** AI replies with questions but makes no file changes - watcher doesn't know when it's "done".
+**Solution:** If idle with NO file changes, prompt is marked `needs-review` with a screenshot for user to respond from laptop.
+
+### Command Approval Dialogs
+**Problem:** AI triggers "Run command?" dialogs that need approval.
+**Solution:** Background thread presses `Alt+Enter` every 5 seconds to auto-approve.
+
+### Chat Gets Stuck / Doesn't Scroll
+**Problem:** Antigravity chat sometimes sticks and doesn't auto-scroll.
+**Solution:** `pyautogui.scroll(-2)` after each Accept click to force scroll down.
+
+### Git Push Conflicts
+**Problem:** Laptop and PC both push - one fails with "remote is ahead".
+**Solution:** Retry logic with `git pull --rebase` up to 3 times before giving up.
+
+### Watcher Restart Loses Slot State
+**Problem:** Restarting watcher forgets which slots are busy.
+**Solution:** Slot state persisted to `.slot_state.json` file, loaded on startup.
+
+### Need to Pause Bot Temporarily
+**Problem:** User wants to manually use a window without interference.
+**Solution:** Create `.pause` file to pause watcher, delete to resume.
+
+### AI Opens Browsers / Dev Servers
+**Problem:** AI starts browsers or servers that interfere with workflow.
+**Solution:** Prompt prefix includes "DO NOT open browser or run dev servers."
+
+### Multiple Prompts Blocking Each Other
+**Problem:** Old approach waited 30s per prompt, blocking queue.
+**Solution:** Instant dispatch - just type and return, background thread handles git sync every 60s.
+
+---
+
 ## 📋 Recent Session Log
 
 *Update this section with what was accomplished in recent sessions:*
