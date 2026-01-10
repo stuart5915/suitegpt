@@ -36,6 +36,43 @@ REPO_DIR = r'C:\Users\Stuart\stuart-hollinger-landing'
 POLL_INTERVAL = 5  # seconds
 WAIT_TIME_AFTER_PROMPT = 120  # 2 min to wait for AI to finish
 
+# ═══ WINDOW SLOTS (4 windows in 2x2 grid on SECOND MONITOR) ═══
+# Adjust these values based on your monitor setup!
+
+# Second monitor offset (if Antigravity is on monitor 2, add monitor 1's width)
+MONITOR_X_OFFSET = 1920  # Width of monitor 1 (set to 0 if using primary monitor)
+
+# Second monitor dimensions
+MONITOR_WIDTH = 1920
+MONITOR_HEIGHT = 1080
+
+# Each window is 1/4 of the screen
+HALF_WIDTH = MONITOR_WIDTH // 2
+HALF_HEIGHT = MONITOR_HEIGHT // 2
+
+# Chat input is on the right side of each Antigravity window, near bottom
+# These are offsets from the RIGHT and BOTTOM edges of each window
+CHAT_FROM_RIGHT = 180  # pixels from right edge of window
+CHAT_FROM_BOTTOM = 70  # pixels from bottom of window
+
+# Click positions for each of the 4 windows (2x2 grid)
+WINDOW_SLOTS = [
+    # Slot 0: Top-left window
+    {"x": MONITOR_X_OFFSET + HALF_WIDTH - CHAT_FROM_RIGHT, 
+     "y": HALF_HEIGHT - CHAT_FROM_BOTTOM},
+    # Slot 1: Top-right window  
+    {"x": MONITOR_X_OFFSET + MONITOR_WIDTH - CHAT_FROM_RIGHT, 
+     "y": HALF_HEIGHT - CHAT_FROM_BOTTOM},
+    # Slot 2: Bottom-left window
+    {"x": MONITOR_X_OFFSET + HALF_WIDTH - CHAT_FROM_RIGHT, 
+     "y": MONITOR_HEIGHT - CHAT_FROM_BOTTOM},
+    # Slot 3: Bottom-right window
+    {"x": MONITOR_X_OFFSET + MONITOR_WIDTH - CHAT_FROM_RIGHT, 
+     "y": MONITOR_HEIGHT - CHAT_FROM_BOTTOM},
+]
+
+current_slot = 0  # Track which slot to use next
+
 # PyAutoGUI settings
 pyautogui.FAILSAFE = True
 pyautogui.PAUSE = 0.1
@@ -167,70 +204,53 @@ def process_prompt(prompt_data):
     # Mark as processing
     supabase.update_status(prompt_id, 'processing')
     
-    # Get a window
-    window = window_manager.get_next_window()
-    if not window:
-        print('[ERROR] No Antigravity windows found!')
-        supabase.update_status(prompt_id, 'failed', 'No Antigravity windows available')
-        return
+    # Get next slot (round-robin through 4 windows)
+    global current_slot
+    slot = WINDOW_SLOTS[current_slot]
+    current_slot = (current_slot + 1) % len(WINDOW_SLOTS)
     
-    window_manager.mark_busy(window)
+    print(f'[SLOT] Using window slot {current_slot}: click at ({slot["x"]}, {slot["y"]})')
     
     try:
-        # Activate window (but don't maximize - preserve tiled layout)
-        try:
-            window.activate()
-            time.sleep(0.5)
-            print(f'[WINDOW] Activated: {window.title[:40]}...')
-        except Exception as e:
-            print(f'[WARNING] Could not activate window: {e}')
-        
         # Git pull first
         git_pull()
         
-        try:
-            # Copy prompt to clipboard first
-            pyperclip.copy(prompt_text)
-            print('[ACTION] Copied prompt to clipboard')
-            
-            # Wait for window to be ready
-            time.sleep(0.5)
-            
-            # Focus chat with Ctrl+L
-            print('[ACTION] Pressing Ctrl+L to focus chat...')
-            pyautogui.hotkey('ctrl', 'l')
-            time.sleep(2.0)  # Longer wait for chat to fully open
-            
-            # Paste the prompt
-            print('[ACTION] Pasting prompt (Ctrl+V)...')
-            pyautogui.hotkey('ctrl', 'v')
-            time.sleep(1.0)
-            
-            # Send with Enter
-            print('[ACTION] Pressing Enter to send...')
-            pyautogui.press('enter')
-            print('[ACTION] Sent prompt to Antigravity')
-        except Exception as e:
-            print(f'[ERROR] Failed to inject prompt: {e}')
-            supabase.update_status(prompt_id, 'failed', str(e))
-            window_manager.mark_available(window)
-            return
+        # Copy prompt to clipboard
+        pyperclip.copy(prompt_text)
+        print('[ACTION] Copied prompt to clipboard')
+        
+        # Click directly into the chat input area for this window slot
+        print(f'[ACTION] Clicking chat input at ({slot["x"]}, {slot["y"]})...')
+        pyautogui.click(slot["x"], slot["y"])
+        time.sleep(0.5)
+        
+        # Paste the prompt
+        print('[ACTION] Pasting prompt (Ctrl+V)...')
+        pyautogui.hotkey('ctrl', 'v')
+        time.sleep(0.5)
+        
+        # Send with Enter
+        print('[ACTION] Pressing Enter to send...')
+        pyautogui.press('enter')
+        print('[ACTION] Sent prompt to Antigravity')
         
         # Auto-accept loop - press Alt+Return periodically to accept changes
-        # (Same approach as auto-prompt-runner.py)
+        # Click in the window first to make sure it's focused, then Alt+Return
         print(f'[AUTO-ACCEPT] Running for {WAIT_TIME_AFTER_PROMPT}s...')
         accept_end = time.time() + WAIT_TIME_AFTER_PROMPT
         accept_count = 0
         
         while time.time() < accept_end:
             try:
-                # Make sure our window is still active
-                if window.isActive:
-                    pyautogui.hotkey('alt', 'Return')  # Accept changes shortcut
-                    accept_count += 1
+                # Click in the window area to keep focus
+                pyautogui.click(slot["x"] - 100, slot["y"] - 50)
+                time.sleep(0.2)
+                # Press Alt+Return to accept any pending changes
+                pyautogui.hotkey('alt', 'Return')
+                accept_count += 1
             except:
                 pass
-            time.sleep(3)  # Press every 3 seconds
+            time.sleep(3)  # Every 3 seconds
         
         print(f'[AUTO-ACCEPT] Pressed Accept {accept_count} times')
         
@@ -244,8 +264,6 @@ def process_prompt(prompt_data):
     except Exception as e:
         print(f'[ERROR] Failed to process prompt: {e}')
         supabase.update_status(prompt_id, 'failed', str(e))
-    finally:
-        window_manager.mark_available(window)
 
 
 def git_pull():
