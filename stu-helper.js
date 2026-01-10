@@ -112,7 +112,7 @@ Keep responses short, friendly, and helpful. Use emojis sparingly. If you don't 
             </div>
             <div class="stu-panel">
                 <div class="stu-header">
-                    <div class="suite-coin-icon">$</div>
+                    <img src="/assets/suite-token-clay.png" alt="SUITE" class="suite-coin-icon-img">
                     <div class="stu-header-text">
                         <h3>SUITE Help</h3>
                         <p>AI-powered assistance</p>
