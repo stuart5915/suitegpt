@@ -2787,6 +2787,84 @@
                         loadMarketplaceBounties();
                     }, 500);
 
+                    // ═══ SIDEBAR NAVIGATION ═══
+                    function showSection(sectionId) {
+                        // Hide all panels
+                        document.querySelectorAll('.section-panel').forEach(panel => {
+                            panel.classList.remove('active');
+                        });
+
+                        // Show selected panel
+                        const panel = document.getElementById('panel-' + sectionId);
+                        if (panel) {
+                            panel.classList.add('active');
+                        }
+
+                        // Update sidebar active state
+                        document.querySelectorAll('.sidebar-link').forEach(link => {
+                            link.classList.remove('active');
+                        });
+
+                        // Find and activate clicked link
+                        document.querySelectorAll('.sidebar-link').forEach(link => {
+                            if (link.textContent.toLowerCase().includes(sectionId) ||
+                                (sectionId === 'overview' && link.textContent.includes('Overview')) ||
+                                (sectionId === 'apps' && link.textContent.includes('Your Apps')) ||
+                                (sectionId === 'studio' && link.textContent.includes('Content Studio')) ||
+                                (sectionId === 'prompt-server' && link.textContent.includes('PC Prompt'))) {
+                                link.classList.add('active');
+                            }
+                        });
+
+                        // Save to localStorage
+                        localStorage.setItem('dashboardSection', sectionId);
+
+                        // Update URL hash
+                        history.replaceState(null, '', '#' + sectionId);
+                    }
+
+                    // Update sidebar user info when logged in
+                    function updateSidebarUser(user) {
+                        if (user) {
+                            document.getElementById('sidebarUser').style.display = 'flex';
+                            document.getElementById('sidebarLoginPrompt').style.display = 'none';
+                            document.getElementById('sidebarAvatar').src = user.avatar || 'assets/suite-mascot.png';
+                            document.getElementById('sidebarUserName').textContent = user.username || 'Developer';
+
+                            // Show admin section for owner
+                            const isOwner = user.id === OWNER_DISCORD_ID;
+                            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                            if (isOwner || isLocalhost) {
+                                document.getElementById('adminSection').style.display = 'block';
+                            }
+                        } else {
+                            document.getElementById('sidebarUser').style.display = 'none';
+                            document.getElementById('sidebarLoginPrompt').style.display = 'block';
+                        }
+                    }
+
+                    // Restore last section or check URL hash
+                    function initSidebarNavigation() {
+                        const hash = window.location.hash.slice(1);
+                        const savedSection = localStorage.getItem('dashboardSection');
+
+                        if (hash && document.getElementById('panel-' + hash)) {
+                            showSection(hash);
+                        } else if (savedSection && document.getElementById('panel-' + savedSection)) {
+                            showSection(savedSection);
+                        }
+
+                        // Check if user is logged in and update sidebar
+                        const savedUser = localStorage.getItem('suiteDev');
+                        if (savedUser) {
+                            const user = JSON.parse(savedUser);
+                            updateSidebarUser(user);
+                        }
+                    }
+
+                    // Initialize navigation on load
+                    setTimeout(initSidebarNavigation, 200);
+
                     // Check owner access on load
                     setTimeout(checkOwnerAccess, 1000);
                 </script>
