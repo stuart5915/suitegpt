@@ -192,23 +192,16 @@ def process_prompt(prompt_data):
         pyperclip.copy(prompt_text)
         print('[ACTION] Copied prompt to clipboard')
         
-        # Click in chat area (use window position, not screen center)
-        try:
-            # Click near bottom of the active window
-            chat_x = window.left + (window.width // 2)
-            chat_y = window.top + window.height - 80
-        except:
-            # Fallback to screen center
-            screen_width, screen_height = pyautogui.size()
-            chat_x = screen_width // 2
-            chat_y = screen_height - 120
-        
-        pyautogui.click(chat_x, chat_y)
+        # Focus chat input using keyboard shortcut (more reliable than clicking)
+        # Try Ctrl+L first (common focus chat shortcut), then fallback to clicking
+        pyautogui.hotkey('ctrl', 'l')  # Focus chat input in Antigravity
         time.sleep(0.3)
         
-        # Paste and send
+        # Paste prompt
         pyautogui.hotkey('ctrl', 'v')
-        time.sleep(0.2)
+        time.sleep(0.3)
+        
+        # Send with Enter
         pyautogui.press('enter')
         print('[ACTION] Sent prompt to Antigravity')
         
