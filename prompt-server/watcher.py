@@ -379,8 +379,12 @@ def process_prompt(prompt_data):
                 print(f'[W{slot_index}] Skipping slot {i} - currently typing')
                 continue
             try:
+                # Click Accept button
                 pyautogui.click(s["accept_x"], s["accept_y"])
-                time.sleep(0.2)
+                time.sleep(0.1)
+                # Press Alt+Enter for command dialogs
+                pyautogui.hotkey('alt', 'Return')
+                time.sleep(0.1)
             except:
                 pass
         time.sleep(1)
