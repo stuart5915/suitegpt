@@ -843,7 +843,121 @@
             </div>
         </div>
 
-        <!-- Edit App Modal -->
+        <!-- LP Incentives Section (Admin Only) -->
+        <div class="section" id="lpIncentivesSection" style="display: none;">
+            <div class="section-header" onclick="toggleSection('lpIncentivesSection')">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <span class="section-icon">💧</span>
+                    <div>
+                        <div class="section-title">LP Incentives</div>
+                        <div class="section-subtitle">Manage liquidity pool rewards allocation</div>
+                    </div>
+                </div>
+                <span class="section-toggle">▼</span>
+            </div>
+            <div class="section-content">
+                <!-- Current Pool Stats -->
+                <div
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                    <div
+                        style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(22, 163, 74, 0.05)); padding: 20px; border-radius: 16px; border-left: 4px solid #22c55e;">
+                        <div style="font-size: 0.9rem; color: #666;">Pool TVL</div>
+                        <div style="font-size: 1.5rem; font-weight: 800; color: #22c55e;" id="poolTvl">$0</div>
+                    </div>
+                    <div
+                        style="background: linear-gradient(135deg, rgba(255, 149, 0, 0.1), rgba(255, 107, 157, 0.05)); padding: 20px; border-radius: 16px; border-left: 4px solid #ff9500;">
+                        <div style="font-size: 0.9rem; color: #666;">Current APY</div>
+                        <div style="font-size: 1.5rem; font-weight: 800; color: #ff9500;" id="poolApy">0%</div>
+                    </div>
+                    <div
+                        style="background: rgba(139, 92, 246, 0.1); padding: 20px; border-radius: 16px; border-left: 4px solid #8b5cf6;">
+                        <div style="font-size: 0.9rem; color: #666;">Allocated for Rewards</div>
+                        <div style="font-size: 1.5rem; font-weight: 800; color: #8b5cf6;" id="allocatedSuite">0 SUITE
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Allocation Form -->
+                <div style="background: #f8f9fa; padding: 24px; border-radius: 16px;">
+                    <h4 style="font-weight: 700; margin: 0 0 16px 0;">📊 Allocate LP Incentives</h4>
+                    <p style="color: #666; font-size: 0.9rem; margin-bottom: 16px;">
+                        Allocate SUITE from your balance to LP rewards. These will be distributed to liquidity providers
+                        over the specified duration.
+                    </p>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Amount (SUITE)</label>
+                            <input type="number" id="lpIncentiveAmount" placeholder="350000" min="1000">
+                        </div>
+                        <div class="form-group">
+                            <label>Duration (months)</label>
+                            <select id="lpIncentiveDuration">
+                                <option value="3">3 months</option>
+                                <option value="6">6 months</option>
+                                <option value="12" selected>12 months</option>
+                                <option value="24">24 months</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="background: white; padding: 16px; border-radius: 12px; margin-top: 16px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: #666;">Monthly emission:</span>
+                            <span style="font-weight: 700;" id="monthlyEmission">0 SUITE</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #666;">Estimated APY (at current TVL):</span>
+                            <span style="font-weight: 700; color: #22c55e;" id="estimatedApy">0%</span>
+                        </div>
+                    </div>
+
+                    <button class="btn-primary" style="width: 100%; margin-top: 16px;" onclick="allocateLpIncentives()">
+                        💧 Allocate to LP Rewards
+                    </button>
+                </div>
+
+                <!-- Active Incentive Campaigns -->
+                <div style="margin-top: 24px;">
+                    <h4 style="font-weight: 700; margin-bottom: 12px;">Active Incentive Campaigns</h4>
+                    <div id="incentiveCampaigns" class="campaigns-list">
+                        <div class="empty-state">
+                            <p>No active LP incentive campaigns. Allocate SUITE above to start rewarding LPs.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Show LP Incentives section only for admin (Stuart)
+            const isAdmin = true; // TODO: Check actual admin status
+            if (isAdmin) {
+                document.getElementById('lpIncentivesSection').style.display = 'block';
+            }
+
+            // Calculate estimated APY when inputs change
+            function updateApyEstimate() {
+                const amount = parseFloat(document.getElementById('lpIncentiveAmount').value) || 0;
+                const months = parseInt(document.getElementById('lpIncentiveDuration').value);
+                const monthlyAmount = amount / months;
+
+                document.getElementById('monthlyEmission').textContent = monthlyAmount.toLocaleString() + ' SUITE';
+
+                // Assuming pool TVL and SUITE price - this would be dynamic in prod
+                const poolTvl = 3500; // $3500 example
+                const yearlyRewards = monthlyAmount * 12;
+                const apy = (yearlyRewards / poolTvl) * 100;
+                document.getElementById('estimatedApy').textContent = apy.toFixed(1) + '%';
+            }
+
+            document.getElementById('lpIncentiveAmount')?.addEventListener('input', updateApyEstimate);
+            document.getElementById('lpIncentiveDuration')?.addEventListener('change', updateApyEstimate);
+
+            function allocateLpIncentives() {
+                alert('LP Incentive allocation will be connected to smart contract. Coming soon!');
+            }
+        </script>
         <div id="editAppModal"
             style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
             <div
