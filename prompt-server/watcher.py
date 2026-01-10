@@ -231,13 +231,7 @@ def process_prompt(prompt_data):
         pyautogui.click(slot["chat_x"], slot["chat_y"])
         time.sleep(0.3)
         
-        # CRITICAL: Switch to Editor View first!
-        # Accept only writes to buffer, not disk. Must be in Editor View to save.
-        print('[ACTION] Pressing Ctrl+Shift+M to switch to Editor View...')
-        pyautogui.hotkey('ctrl', 'shift', 'm')
-        time.sleep(1)
-        
-        # Now save with Ctrl+S
+        # Save with Ctrl+S (relies on Auto Save being enabled in Antigravity settings)
         print('[ACTION] Pressing Ctrl+S to save to disk...')
         pyautogui.hotkey('ctrl', 's')
         time.sleep(2)  # Wait for save to complete

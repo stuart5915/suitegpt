@@ -589,6 +589,94 @@
                 </div>
             </div>
 
+            <!-- PC Prompt Server (Owner Only - Stuart) -->
+            <div class="section" id="section-prompt-server" data-section="prompt-server"
+                style="border: 2px solid rgba(34, 197, 94, 0.3); background: linear-gradient(135deg, rgba(34, 197, 94, 0.05), rgba(22, 163, 74, 0.05)); display: none;">
+                <div class="section-header" onclick="toggleSection('prompt-server')">
+                    <div class="section-info">
+                        <h3 class="section-title">🖥️ PC Prompt Server</h3>
+                        <div class="section-desc">Remote coding system - send prompts to PC Antigravity (Owner only)
+                        </div>
+                    </div>
+                    <div class="section-toggle">▼</div>
+                </div>
+                <div class="section-content">
+                    <!-- Status -->
+                    <div
+                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                        <div style="background: white; border-radius: 16px; padding: 20px; text-align: center;">
+                            <div style="font-size: 0.8rem; color: #6b7280; margin-bottom: 4px;">PC Status</div>
+                            <div id="pcStatus" style="font-size: 1.2rem; font-weight: 900; color: #22c55e;">Checking...
+                            </div>
+                        </div>
+                        <div style="background: white; border-radius: 16px; padding: 20px; text-align: center;">
+                            <div style="font-size: 0.8rem; color: #6b7280; margin-bottom: 4px;">Auto-Pull</div>
+                            <div id="autoPullStatus" style="font-size: 1.2rem; font-weight: 900; color: #6b7280;">OFF
+                            </div>
+                        </div>
+                        <div style="background: white; border-radius: 16px; padding: 20px; text-align: center;">
+                            <div style="font-size: 0.8rem; color: #6b7280; margin-bottom: 4px;">Pending</div>
+                            <div id="pendingPrompts" style="font-size: 1.2rem; font-weight: 900; color: #ff9500;">0
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Send Prompt -->
+                    <h4 style="font-weight: 700; margin-bottom: 12px;">📤 Send Prompt to PC</h4>
+                    <textarea id="pcPrompt"
+                        placeholder="Type your coding prompt... e.g., Add a testimonials section to the homepage"
+                        style="width: 100%; height: 100px; padding: 14px; border: 2px solid #eee; border-radius: 12px; font-size: 1rem; resize: vertical; margin-bottom: 12px;"></textarea>
+
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px;">
+                        <button onclick="sendPcPrompt()" style="
+                            padding: 14px 24px;
+                            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+                            border: none;
+                            border-radius: 12px;
+                            color: white;
+                            font-weight: 700;
+                            cursor: pointer;
+                            flex: 1;
+                        ">🚀 Send to PC</button>
+                        <button onclick="gitPullNow()" style="
+                            padding: 14px 24px;
+                            background: linear-gradient(135deg, #22c55e, #16a34a);
+                            border: none;
+                            border-radius: 12px;
+                            color: white;
+                            font-weight: 700;
+                            cursor: pointer;
+                        ">📥 Pull Now</button>
+                        <button onclick="toggleAutoPull()" id="autoPullBtn" style="
+                            padding: 14px 24px;
+                            background: #f3f4f6;
+                            border: none;
+                            border-radius: 12px;
+                            color: #5a4a6f;
+                            font-weight: 700;
+                            cursor: pointer;
+                        ">⏸️ Auto-Pull: OFF</button>
+                    </div>
+
+                    <div id="pcResponse" style="display: none; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <h4 style="font-weight: 700; margin-bottom: 12px;">⚡ Quick Actions</h4>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button onclick="sendQuickPrompt('Add emojis to the nav bar')" class="quick-prompt-btn"
+                            style="padding: 8px 16px; background: rgba(255, 149, 0, 0.1); border: 1px solid rgba(255, 149, 0, 0.3); border-radius: 100px; color: #ff9500; font-weight: 600; cursor: pointer;">🎨
+                            Add emojis</button>
+                        <button onclick="sendQuickPrompt('Fix any CSS issues on the page')" class="quick-prompt-btn"
+                            style="padding: 8px 16px; background: rgba(255, 149, 0, 0.1); border: 1px solid rgba(255, 149, 0, 0.3); border-radius: 100px; color: #ff9500; font-weight: 600; cursor: pointer;">🔧
+                            Fix CSS</button>
+                        <button onclick="sendQuickPrompt('Improve mobile responsiveness')" class="quick-prompt-btn"
+                            style="padding: 8px 16px; background: rgba(255, 149, 0, 0.1); border: 1px solid rgba(255, 149, 0, 0.3); border-radius: 100px; color: #ff9500; font-weight: 600; cursor: pointer;">📱
+                            Mobile fix</button>
+                    </div>
+                </div>
+            </div>
+
             <div class="section collapsed" id="section-campaigns" data-section="campaigns">
                 <div class="section-header" onclick="toggleSection('campaigns')">
                     <div class="section-info">
@@ -1673,6 +1761,130 @@
                     closeEditAppModal();
                 }
             });
+
+            // ═══ PC PROMPT SERVER FUNCTIONS (Owner Only) ═══
+            const PC_SERVER_URL = 'http://10.0.0.142:3000';  // Stuart's PC
+            const OWNER_DISCORD_ID = '1135315153824993402';  // Stuart's Discord ID
+
+            // Show prompt server section only for owner
+            function checkOwnerAccess() {
+                const userId = localStorage.getItem('discord_user_id');
+                if (userId === OWNER_DISCORD_ID) {
+                    document.getElementById('section-prompt-server').style.display = 'block';
+                    checkPcStatus();
+                    setInterval(checkPcStatus, 10000); // Check every 10 sec
+                }
+            }
+
+            async function checkPcStatus() {
+                try {
+                    const res = await fetch(`${PC_SERVER_URL}/status`);
+                    const data = await res.json();
+                    document.getElementById('pcStatus').textContent = '🟢 Connected';
+                    document.getElementById('pcStatus').style.color = '#22c55e';
+                    document.getElementById('pendingPrompts').textContent = data.pending_prompts || 0;
+
+                    // Update auto-pull status
+                    if (data.auto_pull) {
+                        document.getElementById('autoPullStatus').textContent = 'ON';
+                        document.getElementById('autoPullStatus').style.color = '#22c55e';
+                        document.getElementById('autoPullBtn').innerHTML = '▶️ Auto-Pull: ON';
+                        document.getElementById('autoPullBtn').style.background = 'linear-gradient(135deg, #22c55e, #16a34a)';
+                        document.getElementById('autoPullBtn').style.color = 'white';
+                    } else {
+                        document.getElementById('autoPullStatus').textContent = 'OFF';
+                        document.getElementById('autoPullStatus').style.color = '#6b7280';
+                        document.getElementById('autoPullBtn').innerHTML = '⏸️ Auto-Pull: OFF';
+                        document.getElementById('autoPullBtn').style.background = '#f3f4f6';
+                        document.getElementById('autoPullBtn').style.color = '#5a4a6f';
+                    }
+                } catch (err) {
+                    document.getElementById('pcStatus').textContent = '🔴 Offline';
+                    document.getElementById('pcStatus').style.color = '#ef4444';
+                }
+            }
+
+            async function sendPcPrompt() {
+                const prompt = document.getElementById('pcPrompt').value.trim();
+                const responseEl = document.getElementById('pcResponse');
+
+                if (!prompt) {
+                    responseEl.style.display = 'block';
+                    responseEl.style.background = 'rgba(239, 68, 68, 0.1)';
+                    responseEl.style.color = '#ef4444';
+                    responseEl.textContent = '❌ Please enter a prompt';
+                    return;
+                }
+
+                try {
+                    const res = await fetch(`${PC_SERVER_URL}/send`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ prompt })
+                    });
+                    const data = await res.json();
+
+                    responseEl.style.display = 'block';
+                    if (data.success) {
+                        responseEl.style.background = 'rgba(34, 197, 94, 0.1)';
+                        responseEl.style.color = '#22c55e';
+                        responseEl.textContent = '✅ Sent to PC! Watcher will process it.';
+                        document.getElementById('pcPrompt').value = '';
+                        checkPcStatus();
+                    } else {
+                        responseEl.style.background = 'rgba(239, 68, 68, 0.1)';
+                        responseEl.style.color = '#ef4444';
+                        responseEl.textContent = '❌ ' + (data.error || 'Failed to send');
+                    }
+                } catch (err) {
+                    responseEl.style.display = 'block';
+                    responseEl.style.background = 'rgba(239, 68, 68, 0.1)';
+                    responseEl.style.color = '#ef4444';
+                    responseEl.textContent = '❌ PC offline or not reachable';
+                }
+            }
+
+            async function gitPullNow() {
+                const responseEl = document.getElementById('pcResponse');
+                try {
+                    const res = await fetch(`${PC_SERVER_URL}/pull`, { method: 'POST' });
+                    const data = await res.json();
+
+                    responseEl.style.display = 'block';
+                    if (data.success) {
+                        responseEl.style.background = 'rgba(34, 197, 94, 0.1)';
+                        responseEl.style.color = '#22c55e';
+                        responseEl.textContent = '📥 ' + (data.output || 'Already up to date');
+                    } else {
+                        responseEl.style.background = 'rgba(239, 68, 68, 0.1)';
+                        responseEl.style.color = '#ef4444';
+                        responseEl.textContent = '❌ Pull failed: ' + data.error;
+                    }
+                } catch (err) {
+                    responseEl.style.display = 'block';
+                    responseEl.style.background = 'rgba(239, 68, 68, 0.1)';
+                    responseEl.style.color = '#ef4444';
+                    responseEl.textContent = '❌ Could not reach PC';
+                }
+            }
+
+            async function toggleAutoPull() {
+                try {
+                    const res = await fetch(`${PC_SERVER_URL}/auto-pull`, { method: 'POST' });
+                    const data = await res.json();
+                    checkPcStatus(); // Refresh status
+                } catch (err) {
+                    console.error('Failed to toggle auto-pull:', err);
+                }
+            }
+
+            function sendQuickPrompt(prompt) {
+                document.getElementById('pcPrompt').value = prompt;
+                sendPcPrompt();
+            }
+
+            // Check owner access on load
+            setTimeout(checkOwnerAccess, 1000);
         </script>
 
         <!-- Stu Helper Widget -->

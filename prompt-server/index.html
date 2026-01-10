@@ -360,7 +360,15 @@ Example: Update the footer on all pages"></textarea>
                 <div id="response"></div>
             </div>
             <div class="card">
-                <h2>📝 Recent Prompts</h2>
+                <h2>🔄 Sync Controls</h2>
+                <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                    <button onclick="gitPull()" id="pullBtn" style="flex: 1;">📥 Pull Now</button>
+                    <button onclick="toggleAutoPull()" id="autoPullBtn"
+                        style="flex: 1; background: rgba(255,255,255,0.1);">⏸️ Auto-Pull: OFF</button>
+                </div>
+                <div id="pullResponse" style="color: rgba(255,255,255,0.6); font-size: 0.85rem;"></div>
+
+                <h2 style="margin-top: 20px;">📝 Recent Prompts</h2>
                 <div id="history" style="color: rgba(255,255,255,0.6);">Loading...</div>
             </div>
         </div>
@@ -733,9 +741,55 @@ Example: Update the footer on all pages"></textarea>
             try {
                 const res = await fetch('/status');
                 const data = await res.json();
-                document.getElementById('serverStatus').textContent = `PC Connected • ${data.pending_prompts} pending`;
+                const autoPull = data.auto_pull ? ' • Auto-Pull ON' : '';
+                document.getElementById('serverStatus').textContent = `PC Connected • ${data.pending_prompts} pending${autoPull}`;
+
+                // Update auto-pull button
+                const btn = document.getElementById('autoPullBtn');
+                if (data.auto_pull) {
+                    btn.textContent = '▶️ Auto-Pull: ON';
+                    btn.style.background = 'linear-gradient(135deg, #22c55e, #16a34a)';
+                    btn.style.color = 'white';
+                } else {
+                    btn.textContent = '⏸️ Auto-Pull: OFF';
+                    btn.style.background = 'rgba(255,255,255,0.1)';
+                    btn.style.color = 'inherit';
+                }
             } catch (err) {
                 document.getElementById('serverStatus').textContent = 'Connection Lost';
+            }
+        }
+
+        async function gitPull() {
+            const pullBtn = document.getElementById('pullBtn');
+            const responseEl = document.getElementById('pullResponse');
+            pullBtn.disabled = true;
+            pullBtn.textContent = 'Pulling...';
+
+            try {
+                const res = await fetch('/pull', { method: 'POST' });
+                const data = await res.json();
+                responseEl.textContent = data.success ? `✅ ${data.output}` : `❌ ${data.error}`;
+                responseEl.style.color = data.success ? '#22c55e' : '#ef4444';
+            } catch (err) {
+                responseEl.textContent = '❌ Pull failed';
+                responseEl.style.color = '#ef4444';
+            }
+
+            pullBtn.disabled = false;
+            pullBtn.textContent = '📥 Pull Now';
+        }
+
+        async function toggleAutoPull() {
+            try {
+                const res = await fetch('/auto-pull', { method: 'POST' });
+                const data = await res.json();
+                document.getElementById('pullResponse').textContent = data.message;
+                document.getElementById('pullResponse').style.color = '#22c55e';
+                checkStatus();
+            } catch (err) {
+                document.getElementById('pullResponse').textContent = '❌ Failed to toggle';
+                document.getElementById('pullResponse').style.color = '#ef4444';
             }
         }
 
