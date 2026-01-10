@@ -1546,38 +1546,51 @@ IMPORTANT: Verify app name is correct before archiving!
                 try {
                     await interaction.deferReply({ ephemeral: true });
 
-                    // Save prompt to PC prompt-server folder
-                    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-                    const filename = `${timestamp}_addition.txt`;
+                    // Insert prompt into Supabase for PC watcher to pick up
+                    const SUPABASE_URL = process.env.SUPABASE_URL || 'https://rdsmdywbdiskxknluiym.supabase.co';
+                    const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
-                    // Full prompt with context
-                    const fullPrompt = `[TARGET: ${target}]
-[FROM: Discord /addition command]
-[TIME: ${new Date().toLocaleString()}]
+                    if (!SUPABASE_SERVICE_KEY) {
+                        await interaction.editReply({
+                            content: '❌ SUPABASE_SERVICE_KEY not configured.'
+                        });
+                        return;
+                    }
 
-${prompt}`;
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/prompts`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'apikey': SUPABASE_SERVICE_KEY,
+                            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+                            'Prefer': 'return=representation'
+                        },
+                        body: JSON.stringify({
+                            prompt: prompt,
+                            target: target,
+                            status: 'pending'
+                        })
+                    });
 
-                    // Write to the prompt-server prompts folder
-                    // This path should match where PC watcher is watching
-                    const promptPath = path.join(process.cwd(), '../../prompt-server/prompts', filename);
-
-                    // Ensure prompts directory exists
-                    const promptsDir = path.join(process.cwd(), '../../prompt-server/prompts');
-                    await fs.mkdir(promptsDir, { recursive: true });
-
-                    await fs.writeFile(promptPath, fullPrompt, 'utf-8');
-
-                    await interaction.editReply({
-                        content: `✅ **Sent to PC!**
+                    if (response.ok) {
+                        const [newPrompt] = await response.json();
+                        await interaction.editReply({
+                            content: `✅ **Sent to PC via Supabase!**
 
 📝 **Prompt:** ${prompt.slice(0, 100)}${prompt.length > 100 ? '...' : ''}
 🎯 **Target:** ${target}
-📁 **File:** ${filename}
+🆔 **ID:** ${newPrompt.id.slice(0, 8)}...
 
 Your PC watcher will pick this up and Antigravity will implement it. Check back in ~1 minute!`
-                    });
-
-                    console.log(`[/addition] Owner sent prompt to PC: ${prompt.slice(0, 50)}...`);
+                        });
+                        console.log(`[/addition] Owner sent prompt to Supabase: ${prompt.slice(0, 50)}...`);
+                    } else {
+                        const errorText = await response.text();
+                        console.error('Supabase error:', errorText);
+                        await interaction.editReply({
+                            content: `❌ Failed to save prompt: ${errorText.slice(0, 200)}`
+                        });
+                    }
 
                 } catch (error) {
                     console.error('/addition error:', error);
