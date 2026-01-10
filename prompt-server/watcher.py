@@ -188,7 +188,7 @@ def process_prompt(prompt_data):
     slot = WINDOW_SLOTS[current_slot]
     current_slot = (current_slot + 1) % len(WINDOW_SLOTS)
     
-    print(f'[SLOT] Using window slot {current_slot}: click at ({slot["x"]}, {slot["y"]})')
+    print(f'[SLOT] Using window slot {current_slot}: click at ({slot["chat_x"]}, {slot["chat_y"]})')
     
     try:
         # Git pull first
