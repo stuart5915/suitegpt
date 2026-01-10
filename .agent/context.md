@@ -54,13 +54,39 @@ This is Stuart's custom dual-machine coding workflow:
 
 ### Key Components:
 
-#### `watcher.py` (PC only)
-- **Multi-slot processing:** 4 window slots (2x2 grid on monitor 2)
-- **Coordinates:** Hard-coded click positions for chat input and accept button
-- **Idle detection:** 30s of no file changes = done
-- **slot_typing flag:** Prevents accept-sweep from stealing focus mid-type
-- **Screenshot capture:** Takes screenshot when AI asks questions (no code changes)
-- **Response handling:** Can receive and type responses from laptop
+#### `watcher.py` (PC only) - Instant Dispatch Architecture
+
+**Main Thread (Prompt Dispatcher):**
+1. Polls Supabase every 5 seconds for pending prompts
+2. **Instant dispatch** - Types prompt to window, presses Enter, returns immediately
+3. Marks prompt as "sent" (no waiting for completion)
+4. Round-robin across 4 window slots
+
+**Background Thread (Accept Sweep + Git Sync):**
+Runs continuously in parallel:
+- **Every 5 seconds:** Sweeps ALL windows with Accept click + Alt+Enter + Scroll
+- **ONLY if no slot is typing** (waits if text is being output)
+- **Every 60 seconds:** Does git pull + git push to sync with GitHub
+
+**Flow Diagram:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    MAIN THREAD                              │
+│  Poll Supabase → Get Prompt → Type to Window → Return       │
+│                (instant, no waiting)                         │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                 BACKGROUND THREAD                           │
+│  Every 5s: Accept sweep (if not typing)                     │
+│  Every 60s: Git pull + push (if not typing)                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Key Flags:**
+- `slot_typing[i]` - True while pyautogui is typing to slot i
+- `slot_busy[i]` - True while prompt is active in slot i (persisted to file)
 
 #### `server.py` (Both machines)
 - **On PC (10.0.0.142:3000):** Receives prompts, serves portal
@@ -70,10 +96,12 @@ This is Stuart's custom dual-machine coding workflow:
   - GET /needs-review - Get prompts where AI asked questions
   - POST /respond - Send response to AI
   - POST /dismiss-prompt - Dismiss a needs-review prompt
+  - POST /upload-image - Upload image attachment
   - GET /screenshots/<id>.png - Serve captured screenshots
 
 #### `index.html` (Portal UI)
 - **Smart Prompt Builder:** Project pills, type pills, page/section selectors
+- **Image Attachment:** Paste (Ctrl+V) or click to attach screenshots
 - **Needs Attention section:** Shows prompts where AI asked questions with screenshots
 - **Response input:** Type and send responses directly to specific window slots
 - **Sync controls:** Pull, push, auto-pull toggle
