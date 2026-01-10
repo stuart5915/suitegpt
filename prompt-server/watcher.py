@@ -34,7 +34,7 @@ SUPABASE_KEY = os.environ.get('SUPABASE_SERVICE_KEY', '')  # Set this!
 
 REPO_DIR = r'C:\Users\Stuart\stuart-hollinger-landing'
 POLL_INTERVAL = 5  # seconds
-WAIT_TIME_AFTER_PROMPT = 120  # 2 min to wait for AI to finish
+WAIT_TIME_AFTER_PROMPT = 45  # 45 seconds to wait for AI
 
 # ═══ WINDOW SLOTS (4 windows in 2x2 grid on SECOND MONITOR) ═══
 # Adjust these values based on your monitor setup!
@@ -243,21 +243,27 @@ def process_prompt(prompt_data):
         pyautogui.press('enter')
         print('[ACTION] Sent prompt to Antigravity')
         
-        # Auto-accept loop - press Alt+Return periodically to accept changes
-        # Click in the window first to make sure it's focused, then Alt+Return
+        # Auto-accept loop - click Accept all button periodically
+        # The Accept all button is at the bottom of the Agent panel
+        # We'll click where the button should be in each window
         print(f'[AUTO-ACCEPT] Running for {WAIT_TIME_AFTER_PROMPT}s...')
         accept_end = time.time() + WAIT_TIME_AFTER_PROMPT
         accept_count = 0
         
+        # Accept button is typically near bottom-right of the Agent panel
+        # Slightly above the chat input
+        accept_x = slot["x"] + 50  # A bit right of chat input
+        accept_y = slot["y"] - 30  # A bit above chat input (where Accept all is)
+        
         while time.time() < accept_end:
             try:
-                # Just press Alt+Return to accept any pending changes
-                # (No click needed - Antigravity will respond to hotkey)
-                pyautogui.hotkey('alt', 'Return')
+                # Click the Accept all button location
+                pyautogui.click(accept_x, accept_y)
                 accept_count += 1
+                print(f'[AUTO-ACCEPT] Clicked Accept ({accept_count})')
             except:
                 pass
-            time.sleep(5)  # Every 5 seconds is enough
+            time.sleep(5)  # Every 5 seconds
         
         print(f'[AUTO-ACCEPT] Pressed Accept {accept_count} times')
         
