@@ -194,28 +194,18 @@ def process_prompt(prompt_data):
         # Git pull first
         git_pull()
         
-        # Step 1: Right-click to focus the window (without triggering anything)
-        print(f'[ACTION] Right-click to focus window at ({slot["chat_x"]}, {slot["chat_y"]})...')
-        pyautogui.click(slot["chat_x"], slot["chat_y"], button='right')
-        time.sleep(0.3)
+        # Step 1: Left-click to focus the chat input
+        print(f'[ACTION] Clicking chat at ({slot["chat_x"]}, {slot["chat_y"]})...')
+        pyautogui.click(slot["chat_x"], slot["chat_y"])
+        time.sleep(0.5)
         
-        # Step 2: Press Escape to close context menu
-        pyautogui.press('escape')
-        time.sleep(0.2)
-        
-        # Step 3: Ctrl+L to focus the chat input
-        print('[ACTION] Pressing Ctrl+L to focus chat...')
-        pyautogui.hotkey('ctrl', 'l')
-        time.sleep(1.0)  # Wait for chat to focus
-        
-        # Step 4: Type the prompt using typewrite (more reliable than paste)
+        # Step 2: Type the prompt
         print('[ACTION] Typing prompt...')
-        # Filter to ASCII-safe characters only
         safe_text = ''.join(c if c.isascii() and c.isprintable() else ' ' for c in prompt_text)
         pyautogui.typewrite(safe_text, interval=0.02)
         time.sleep(0.3)
         
-        # Step 5: Send with Enter
+        # Step 3: Send with Enter
         print('[ACTION] Pressing Enter to send...')
         pyautogui.press('enter')
         print('[ACTION] Sent prompt to Antigravity')
