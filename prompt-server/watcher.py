@@ -210,22 +210,47 @@ def process_prompt(prompt_data):
         pyautogui.press('enter')
         print('[ACTION] Sent prompt to Antigravity')
         
-        # Auto-accept loop - click Accept all button at exact coordinates
-        print(f'[AUTO-ACCEPT] Running for {WAIT_TIME_AFTER_PROMPT}s...')
-        accept_end = time.time() + WAIT_TIME_AFTER_PROMPT
-        accept_count = 0
+        # Wait for agent to finish - watch for .agent-done signal file
+        signal_file = os.path.join(REPO_DIR, '.agent-done')
+        max_wait = 300  # 5 minute max (safety timeout)
+        check_interval = 2  # Check every 2 seconds
+        accept_interval = 5  # Click Accept every 5 seconds
         
-        while time.time() < accept_end:
-            try:
-                # Click the Accept all button at exact coordinates
-                pyautogui.click(slot["accept_x"], slot["accept_y"])
-                accept_count += 1
-                print(f'[AUTO-ACCEPT] Clicked Accept at ({slot["accept_x"]}, {slot["accept_y"]})')
-            except:
-                pass
-            time.sleep(5)  # Every 5 seconds
+        print(f'[WAITING] Watching for signal file: {signal_file}')
+        print(f'[WAITING] Max wait time: {max_wait}s, will click Accept every {accept_interval}s')
         
-        print(f'[AUTO-ACCEPT] Pressed Accept {accept_count} times')
+        start_time = time.time()
+        last_accept_time = 0
+        agent_done = False
+        
+        while time.time() - start_time < max_wait:
+            # Check for signal file
+            if os.path.exists(signal_file):
+                print('[SIGNAL] Agent done file detected!')
+                try:
+                    os.remove(signal_file)
+                    print('[SIGNAL] Deleted signal file')
+                except:
+                    pass
+                agent_done = True
+                break
+            
+            # Click Accept button periodically
+            elapsed = time.time() - start_time
+            if elapsed - last_accept_time >= accept_interval:
+                try:
+                    pyautogui.click(slot["accept_x"], slot["accept_y"])
+                    print(f'[AUTO-ACCEPT] Clicked Accept at ({slot["accept_x"]}, {slot["accept_y"]}) - {int(elapsed)}s elapsed')
+                    last_accept_time = elapsed
+                except:
+                    pass
+            
+            time.sleep(check_interval)
+        
+        if agent_done:
+            print('[DONE] Agent signaled completion!')
+        else:
+            print(f'[TIMEOUT] Max wait time ({max_wait}s) reached, proceeding anyway...')
         
         # Click in the window to ensure focus
         pyautogui.click(slot["chat_x"], slot["chat_y"])

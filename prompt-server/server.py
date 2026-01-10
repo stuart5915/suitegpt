@@ -19,6 +19,7 @@ os.makedirs(PROMPTS_DIR, exist_ok=True)
 
 # Auto-pull state
 auto_pull_enabled = False
+auto_push_enabled = False
 last_completed_id = None
 
 def auto_pull_worker():
@@ -114,7 +115,8 @@ def status():
     return jsonify({
         'status': 'running',
         'pending_prompts': len(os.listdir(PROMPTS_DIR)),
-        'auto_pull': auto_pull_enabled
+        'auto_pull': auto_pull_enabled,
+        'auto_push': auto_push_enabled
     })
 
 @app.route('/pull', methods=['POST'])
@@ -144,6 +146,78 @@ def toggle_auto_pull():
         'success': True,
         'auto_pull': auto_pull_enabled,
         'message': f'Auto-pull is now {status}'
+    })
+
+# Auto-push worker thread
+def auto_push_worker():
+    """Background thread that auto-pushes local changes every 30 seconds"""
+    while True:
+        if auto_push_enabled:
+            try:
+                repo_dir = os.path.dirname(os.path.dirname(__file__))
+                # Check if there are changes to push
+                status = subprocess.run(
+                    ['git', 'status', '--porcelain'],
+                    cwd=repo_dir, capture_output=True, text=True
+                )
+                if status.stdout.strip():
+                    # There are changes - commit and push
+                    subprocess.run(['git', 'add', '-A'], cwd=repo_dir)
+                    subprocess.run(
+                        ['git', 'commit', '-m', 'Auto-commit from laptop'],
+                        cwd=repo_dir, capture_output=True
+                    )
+                    result = subprocess.run(
+                        ['git', 'push'],
+                        cwd=repo_dir, capture_output=True, text=True
+                    )
+                    if result.returncode == 0:
+                        print(f'[AUTO-PUSH] Pushed changes to GitHub')
+            except Exception as e:
+                print(f'[AUTO-PUSH] Error: {e}')
+        time.sleep(30)
+
+# Start auto-push thread
+threading.Thread(target=auto_push_worker, daemon=True).start()
+
+@app.route('/push', methods=['POST'])
+def git_push():
+    """Manual git push"""
+    try:
+        repo_dir = os.path.dirname(os.path.dirname(__file__))
+        # Add all changes
+        subprocess.run(['git', 'add', '-A'], cwd=repo_dir)
+        # Commit
+        commit_result = subprocess.run(
+            ['git', 'commit', '-m', 'Manual push from laptop'],
+            cwd=repo_dir, capture_output=True, text=True
+        )
+        # Push
+        result = subprocess.run(
+            ['git', 'push'],
+            cwd=repo_dir, capture_output=True, text=True
+        )
+        output = result.stdout.strip() or result.stderr.strip() or 'Already up to date'
+        if 'nothing to commit' in commit_result.stdout:
+            output = 'Nothing to push - no changes'
+        return jsonify({
+            'success': True,
+            'output': output
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/auto-push', methods=['POST'])
+def toggle_auto_push():
+    """Toggle auto-push on/off"""
+    global auto_push_enabled
+    auto_push_enabled = not auto_push_enabled
+    status = 'ON' if auto_push_enabled else 'OFF'
+    print(f'[AUTO-PUSH] Toggled {status}')
+    return jsonify({
+        'success': True,
+        'auto_push': auto_push_enabled,
+        'message': f'Auto-push is now {status}'
     })
 
 if __name__ == '__main__':

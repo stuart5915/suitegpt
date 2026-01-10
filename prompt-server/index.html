@@ -361,10 +361,18 @@ Example: Update the footer on all pages"></textarea>
             </div>
             <div class="card">
                 <h2>🔄 Sync Controls</h2>
-                <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                <p style="font-size: 0.85rem; color: rgba(255,255,255,0.5); margin-bottom: 12px;">Pull = Get PC changes
+                    | Push = Send laptop changes</p>
+                <div style="display: flex; gap: 12px; margin-bottom: 12px;">
                     <button onclick="gitPull()" id="pullBtn" style="flex: 1;">📥 Pull Now</button>
                     <button onclick="toggleAutoPull()" id="autoPullBtn"
                         style="flex: 1; background: rgba(255,255,255,0.1);">⏸️ Auto-Pull: OFF</button>
+                </div>
+                <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                    <button onclick="gitPush()" id="pushBtn"
+                        style="flex: 1; background: linear-gradient(135deg, #3b82f6, #6366f1);">📤 Push Now</button>
+                    <button onclick="toggleAutoPush()" id="autoPushBtn"
+                        style="flex: 1; background: rgba(255,255,255,0.1);">⏸️ Auto-Push: OFF</button>
                 </div>
                 <div id="pullResponse" style="color: rgba(255,255,255,0.6); font-size: 0.85rem;"></div>
 
@@ -812,8 +820,53 @@ Example: Update the footer on all pages"></textarea>
                     btn.style.background = 'rgba(255,255,255,0.1)';
                     btn.style.color = 'inherit';
                 }
+
+                // Update auto-push button
+                const pushBtn = document.getElementById('autoPushBtn');
+                if (data.auto_push) {
+                    pushBtn.textContent = '▶️ Auto-Push: ON';
+                    pushBtn.style.background = 'linear-gradient(135deg, #3b82f6, #6366f1)';
+                    pushBtn.style.color = 'white';
+                } else {
+                    pushBtn.textContent = '⏸️ Auto-Push: OFF';
+                    pushBtn.style.background = 'rgba(255,255,255,0.1)';
+                    pushBtn.style.color = 'inherit';
+                }
             } catch (err) {
                 // Laptop server not running - that's OK
+            }
+        }
+
+        async function gitPush() {
+            const pushBtn = document.getElementById('pushBtn');
+            const responseEl = document.getElementById('pullResponse');
+            pushBtn.disabled = true;
+            pushBtn.textContent = 'Pushing...';
+
+            try {
+                const res = await fetch('http://localhost:3000/push', { method: 'POST' });
+                const data = await res.json();
+                responseEl.textContent = data.success ? `📤 ${data.output}` : `❌ ${data.error}`;
+                responseEl.style.color = data.success ? '#3b82f6' : '#ef4444';
+            } catch (err) {
+                responseEl.textContent = '❌ Laptop server not running (localhost:3000)';
+                responseEl.style.color = '#ef4444';
+            }
+
+            pushBtn.disabled = false;
+            pushBtn.textContent = '📤 Push Now';
+        }
+
+        async function toggleAutoPush() {
+            try {
+                const res = await fetch('http://localhost:3000/auto-push', { method: 'POST' });
+                const data = await res.json();
+                document.getElementById('pullResponse').textContent = data.message;
+                document.getElementById('pullResponse').style.color = '#3b82f6';
+                checkLaptopStatus();
+            } catch (err) {
+                document.getElementById('pullResponse').textContent = '❌ Laptop server not running';
+                document.getElementById('pullResponse').style.color = '#ef4444';
             }
         }
 
