@@ -2148,7 +2148,7 @@
         // Store apps data for modal
         let carouselAppsData = [];
 
-        // Dynamic Apps Carousel Loading
+        // Dynamic Apps Carousel Loading with TRUE infinite loop
         (async function loadAppsCarousel() {
             const container = document.getElementById('appsCarousel');
             const modal = document.getElementById('appExpandModal');
@@ -2178,9 +2178,13 @@
                     return;
                 }
 
-                // Duplicate apps to create infinite scroll effect
-                const duplicatedApps = [...liveApps, ...liveApps, ...liveApps];
+                // Duplicate apps exactly 2x for seamless infinite loop (translateX -50%)
+                const duplicatedApps = [...liveApps, ...liveApps];
                 container.innerHTML = duplicatedApps.map((app, index) => renderCarouselCard(app, index % liveApps.length)).join('');
+
+                // Calculate dynamic animation duration based on app count (5s per app, minimum 20s)
+                const animationDuration = Math.max(liveApps.length * 5, 20);
+                container.style.animationDuration = animationDuration + 's';
 
                 // Add click handlers for expand
                 container.querySelectorAll('.carousel-card').forEach((card, i) => {
