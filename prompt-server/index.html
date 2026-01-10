@@ -327,6 +327,137 @@
             color: rgba(255, 255, 255, 0.6);
             margin-top: 4px;
         }
+
+        /* ═══ SMART PROMPT BUILDER ═══ */
+        .prompt-builder {
+            background: rgba(255, 149, 0, 0.08);
+            border: 1px solid rgba(255, 149, 0, 0.25);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .prompt-builder summary {
+            cursor: pointer;
+            font-weight: 700;
+            color: #ff9500;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .prompt-builder summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .prompt-builder[open] summary::after {
+            content: '▼';
+            font-size: 0.7rem;
+            margin-left: auto;
+        }
+
+        .prompt-builder:not([open]) summary::after {
+            content: '▶';
+            font-size: 0.7rem;
+            margin-left: auto;
+        }
+
+        .builder-content {
+            margin-top: 16px;
+        }
+
+        .builder-row {
+            margin-bottom: 14px;
+        }
+
+        .builder-label {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .pill-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .pill {
+            padding: 8px 14px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 100px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: rgba(255, 255, 255, 0.75);
+            font-size: 0.85rem;
+            user-select: none;
+        }
+
+        .pill:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .pill.selected {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            border-color: transparent;
+            color: white;
+            font-weight: 600;
+        }
+
+        .builder-input {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 0.9rem;
+        }
+
+        .builder-input:focus {
+            outline: none;
+            border-color: #ff9500;
+        }
+
+        .builder-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .context-section {
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .generate-btn {
+            margin-top: 8px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            width: auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .generate-btn:hover {
+            box-shadow: 0 6px 20px rgba(34, 197, 94, 0.3);
+        }
     </style>
 </head>
 
@@ -346,12 +477,109 @@
 
     <!-- SEND PROMPT PANEL -->
     <div id="send" class="panel active">
+        <!-- Needs Attention Card - Shows prompts where AI asked questions -->
+        <div class="card" id="needsAttentionCard"
+            style="margin-bottom: 20px; display: none; border: 2px solid #fbbf24; background: rgba(251, 191, 36, 0.1);">
+            <h2 style="color: #fbbf24;">⚠️ Needs Your Attention</h2>
+            <p style="color: rgba(255,255,255,0.6); font-size: 0.85rem; margin-bottom: 12px;">
+                The AI asked questions instead of making changes. Review and respond below.
+            </p>
+            <div id="needsAttentionList"></div>
+        </div>
+
         <!-- Send Prompt Card - Hidden on localhost, shown on PC -->
         <div class="card" id="sendPromptCard" style="margin-bottom: 20px;">
             <h2>📤 Send Prompt to PC</h2>
             <div class="status" id="serverStatus">PC Server Connected</div>
             <br><br>
-            <textarea id="prompt" style="height: 200px;" placeholder="Type your coding prompt...
+
+            <!-- ═══ SMART PROMPT BUILDER ═══ -->
+            <details class="prompt-builder" id="promptBuilder" open>
+                <summary>⚡ Quick Prompt Builder</summary>
+                <div class="builder-content">
+
+                    <!-- Project Selector -->
+                    <div class="builder-row">
+                        <div class="builder-label">🎯 Project</div>
+                        <div class="pill-group" id="projectPills">
+                            <span class="pill selected" data-project="website" onclick="selectProject(this)">🌐
+                                Website</span>
+                            <span class="pill" data-project="foodvitals" onclick="selectProject(this)">🍎
+                                FoodVitals</span>
+                            <span class="pill" data-project="cheshbon" onclick="selectProject(this)">📖 Cheshbon</span>
+                            <span class="pill" data-project="trueform" onclick="selectProject(this)">💪 TrueForm</span>
+                            <span class="pill" data-project="lifehub" onclick="selectProject(this)">🏠 LifeHub</span>
+                            <span class="pill" data-project="opticrep" onclick="selectProject(this)">🏋️ OpticRep</span>
+                            <span class="pill" data-project="remcast" onclick="selectProject(this)">🎙️ REMcast</span>
+                        </div>
+                    </div>
+
+                    <!-- Type Selector -->
+                    <div class="builder-row">
+                        <div class="builder-label">📋 Type</div>
+                        <div class="pill-group" id="typePills">
+                            <span class="pill" data-type="bug" onclick="selectType(this)">🐛 Bug Fix</span>
+                            <span class="pill" data-type="feature" onclick="selectType(this)">✨ Feature</span>
+                            <span class="pill" data-type="update" onclick="selectType(this)">📝 Update</span>
+                            <span class="pill" data-type="style" onclick="selectType(this)">🎨 Style</span>
+                            <span class="pill" data-type="refactor" onclick="selectType(this)">🔧 Refactor</span>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Context: Website -->
+                    <div id="websiteContext" class="context-section">
+                        <div class="builder-row">
+                            <div class="builder-label">📍 Page</div>
+                            <div class="pill-group" id="pagePills">
+                                <span class="pill" data-page="home" onclick="togglePill(this)">Home</span>
+                                <span class="pill" data-page="docs" onclick="togglePill(this)">Docs</span>
+                                <span class="pill" data-page="apps" onclick="togglePill(this)">Apps</span>
+                                <span class="pill" data-page="wallet" onclick="togglePill(this)">Wallet</span>
+                                <span class="pill" data-page="treasury" onclick="togglePill(this)">Treasury</span>
+                                <span class="pill" data-page="dashboard" onclick="togglePill(this)">Dashboard</span>
+                                <span class="pill" data-page="all" onclick="togglePill(this)">All Pages</span>
+                            </div>
+                        </div>
+                        <div class="builder-row">
+                            <div class="builder-label">📂 Section</div>
+                            <div class="pill-group" id="sectionPills">
+                                <span class="pill" data-section="header" onclick="togglePill(this)">Header</span>
+                                <span class="pill" data-section="nav" onclick="togglePill(this)">Nav</span>
+                                <span class="pill" data-section="footer" onclick="togglePill(this)">Footer</span>
+                                <span class="pill" data-section="sidebar" onclick="togglePill(this)">Sidebar</span>
+                                <span class="pill" data-section="content" onclick="togglePill(this)">Content</span>
+                                <span class="pill" data-section="modal" onclick="togglePill(this)">Modal</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Context: Apps -->
+                    <div id="appContext" class="context-section" style="display: none;">
+                        <div class="builder-row">
+                            <div class="builder-label">📱 Screen</div>
+                            <input type="text" class="builder-input" id="screenInput"
+                                placeholder="e.g., Home, Profile, Settings...">
+                        </div>
+                        <div class="builder-row">
+                            <div class="builder-label">🧩 Component</div>
+                            <input type="text" class="builder-input" id="componentInput"
+                                placeholder="e.g., Button, Card, Header...">
+                        </div>
+                    </div>
+
+                    <!-- Description Input -->
+                    <div class="builder-row">
+                        <div class="builder-label">📝 What to do</div>
+                        <input type="text" class="builder-input" id="descriptionInput"
+                            placeholder="Describe the change (e.g., Fix emoji display in footer)">
+                    </div>
+
+                    <!-- Generate Button -->
+                    <button class="generate-btn" onclick="generatePrompt()">⚡ Fill Prompt</button>
+                </div>
+            </details>
+
+            <textarea id="prompt" style="height: 200px;" placeholder="Type your coding prompt or use the builder above...
 
 Example: Fix the nav bar emojis on the SUITE website
 Example: Add a new Learn page with documentation links
@@ -762,6 +990,106 @@ Example: Update the footer on all pages"></textarea>
             event.target.classList.add('active');
         }
 
+        // ═══ SMART PROMPT BUILDER ═══
+        const projectNames = {
+            website: 'SUITE Website',
+            foodvitals: 'FoodVitals',
+            cheshbon: 'Cheshbon',
+            trueform: 'TrueForm',
+            lifehub: 'LifeHub',
+            opticrep: 'OpticRep',
+            remcast: 'REMcast'
+        };
+
+        let selectedProject = 'website';
+        let selectedType = null;
+
+        function selectProject(el) {
+            // Remove selected from all project pills
+            document.querySelectorAll('#projectPills .pill').forEach(p => p.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedProject = el.dataset.project;
+
+            // Toggle context sections
+            const websiteContext = document.getElementById('websiteContext');
+            const appContext = document.getElementById('appContext');
+
+            if (selectedProject === 'website') {
+                websiteContext.style.display = 'block';
+                appContext.style.display = 'none';
+            } else {
+                websiteContext.style.display = 'none';
+                appContext.style.display = 'block';
+            }
+        }
+
+        function selectType(el) {
+            // Toggle - if already selected, deselect
+            if (el.classList.contains('selected')) {
+                el.classList.remove('selected');
+                selectedType = null;
+            } else {
+                document.querySelectorAll('#typePills .pill').forEach(p => p.classList.remove('selected'));
+                el.classList.add('selected');
+                selectedType = el.textContent.trim();
+            }
+        }
+
+        function togglePill(el) {
+            // Multi-select toggle for page/section pills
+            el.classList.toggle('selected');
+        }
+
+        function generatePrompt() {
+            const parts = [];
+
+            // Project
+            parts.push(`[${projectNames[selectedProject] || selectedProject}]`);
+
+            // Type
+            if (selectedType) {
+                parts.push(`[${selectedType}]`);
+            }
+
+            if (selectedProject === 'website') {
+                // Pages
+                const selectedPages = Array.from(document.querySelectorAll('#pagePills .pill.selected'))
+                    .map(p => p.textContent.trim());
+                if (selectedPages.length > 0) {
+                    parts.push(`[Page: ${selectedPages.join(', ')}]`);
+                }
+
+                // Sections
+                const selectedSections = Array.from(document.querySelectorAll('#sectionPills .pill.selected'))
+                    .map(p => p.textContent.trim());
+                if (selectedSections.length > 0) {
+                    parts.push(`[Section: ${selectedSections.join(', ')}]`);
+                }
+            } else {
+                // App context
+                const screen = document.getElementById('screenInput').value.trim();
+                const component = document.getElementById('componentInput').value.trim();
+                if (screen) parts.push(`[Screen: ${screen}]`);
+                if (component) parts.push(`[Component: ${component}]`);
+            }
+
+            // Description
+            const description = document.getElementById('descriptionInput').value.trim();
+
+            // Build final prompt
+            let prompt = parts.join(' ');
+            if (description) {
+                prompt += '\n' + description;
+            }
+
+            // Fill textarea
+            document.getElementById('prompt').value = prompt;
+            document.getElementById('prompt').focus();
+
+            // Clear the description input for next use
+            document.getElementById('descriptionInput').value = '';
+        }
+
         async function sendPrompt() {
             const prompt = document.getElementById('prompt').value.trim();
             const btn = document.getElementById('sendBtn');
@@ -964,9 +1292,119 @@ Example: Update the footer on all pages"></textarea>
         loadHistory();
         checkStatus();
         checkLaptopStatus();
+        checkNeedsReview();
         setInterval(checkStatus, 5000);
         setInterval(checkLaptopStatus, 5000);
         setInterval(loadHistory, 10000);
+        setInterval(checkNeedsReview, 10000);
+
+        // ═══ NEEDS REVIEW PROMPTS ═══
+        async function checkNeedsReview() {
+            try {
+                const res = await fetch('/needs-review');
+                const data = await res.json();
+                const card = document.getElementById('needsAttentionCard');
+                const list = document.getElementById('needsAttentionList');
+
+                if (data.prompts && data.prompts.length > 0) {
+                    card.style.display = 'block';
+                    list.innerHTML = data.prompts.map(p => `
+                        <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 16px; margin-bottom: 12px;">
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.4); margin-bottom: 6px;">
+                                ${new Date(p.created_at).toLocaleString()}
+                            </div>
+                            <div style="font-size: 0.85rem; color: rgba(255,255,255,0.6); margin-bottom: 8px;">
+                                <strong>Your prompt:</strong> ${escapeHtml(p.prompt).substring(0, 100)}${p.prompt.length > 100 ? '...' : ''}
+                            </div>
+                            <div style="margin-bottom: 12px;">
+                                <img src="/screenshots/${p.id}.png" 
+                                     alt="AI Response" 
+                                     style="width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);"
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                <div style="display: none; color: rgba(255,255,255,0.4); font-size: 0.8rem; padding: 20px; text-align: center; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                                    📷 Screenshot not available - check PC screen
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <input type="text" id="response-${p.id}" 
+                                    placeholder="Type your response to the AI..." 
+                                    style="flex: 1; min-width: 200px; padding: 10px 14px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff; font-size: 0.9rem;">
+                                <button onclick="sendResponseToAI('${p.id}')" 
+                                    style="background: linear-gradient(135deg, #22c55e, #16a34a); white-space: nowrap;">
+                                    📤 Send Response
+                                </button>
+                                <button onclick="dismissPrompt('${p.id}')" 
+                                    style="width: auto; padding: 12px 16px; background: rgba(255,255,255,0.1);">
+                                    ✓ Dismiss
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    card.style.display = 'none';
+                }
+            } catch (err) {
+                console.log('Could not check needs-review:', err);
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        async function sendResponseToAI(promptId) {
+            const input = document.getElementById(`response-${promptId}`);
+            const response = input.value.trim();
+
+            if (!response) {
+                alert('Please enter a response');
+                return;
+            }
+
+            try {
+                const res = await fetch('/respond', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: promptId, response: response })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    input.value = '';
+                    input.placeholder = '✅ Response sent! Watcher will type it...';
+                    setTimeout(() => checkNeedsReview(), 2000);
+                } else {
+                    alert('Failed to send: ' + (data.error || 'Unknown error'));
+                }
+            } catch (err) {
+                alert('Error sending response');
+            }
+        }
+
+        function replyToPrompt(promptId, originalPrompt) {
+            // Pre-fill the textarea with context
+            const textarea = document.getElementById('prompt');
+            textarea.value = `[Follow-up to previous prompt]\n\n${originalPrompt}\n\n---\nMy response: `;
+            textarea.focus();
+            textarea.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function dismissPrompt(promptId) {
+            try {
+                // Mark as dismissed (change status to completed)
+                const res = await fetch('/dismiss-prompt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: promptId })
+                });
+                if (res.ok) {
+                    checkNeedsReview(); // Refresh the list
+                }
+            } catch (err) {
+                console.log('Could not dismiss:', err);
+            }
+        }
 
         // Hide prompt box on localhost (user only needs sync controls there)
         const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';

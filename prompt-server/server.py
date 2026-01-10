@@ -58,6 +58,12 @@ threading.Thread(target=auto_pull_worker, daemon=True).start()
 def index():
     return send_from_directory('.', 'index.html')
 
+@app.route('/screenshots/<filename>')
+def serve_screenshot(filename):
+    """Serve screenshot images"""
+    screenshots_dir = os.path.join(os.path.dirname(__file__), 'screenshots')
+    return send_from_directory(screenshots_dir, filename)
+
 @app.route('/send', methods=['POST'])
 def send_prompt():
     data = request.json
@@ -118,6 +124,84 @@ def status():
         'auto_pull': auto_pull_enabled,
         'auto_push': auto_push_enabled
     })
+
+@app.route('/needs-review', methods=['GET'])
+def needs_review():
+    """Get prompts that need attention (AI asked questions instead of making changes)"""
+    if not SUPABASE_KEY:
+        return jsonify({'prompts': [], 'error': 'No Supabase key'})
+    
+    try:
+        response = requests.get(
+            f'{SUPABASE_URL}/rest/v1/prompts?status=eq.needs-review&order=updated_at.desc&limit=5',
+            headers={
+                'apikey': SUPABASE_KEY,
+                'Authorization': f'Bearer {SUPABASE_KEY}'
+            }
+        )
+        if response.ok:
+            return jsonify({'prompts': response.json()})
+        else:
+            return jsonify({'prompts': [], 'error': response.text})
+    except Exception as e:
+        return jsonify({'prompts': [], 'error': str(e)})
+
+@app.route('/dismiss-prompt', methods=['POST'])
+def dismiss_prompt():
+    """Mark a needs-review prompt as dismissed"""
+    if not SUPABASE_KEY:
+        return jsonify({'success': False, 'error': 'No Supabase key'})
+    
+    data = request.json
+    prompt_id = data.get('id')
+    if not prompt_id:
+        return jsonify({'success': False, 'error': 'No prompt ID'})
+    
+    try:
+        response = requests.patch(
+            f'{SUPABASE_URL}/rest/v1/prompts?id=eq.{prompt_id}',
+            headers={
+                'apikey': SUPABASE_KEY,
+                'Authorization': f'Bearer {SUPABASE_KEY}',
+                'Content-Type': 'application/json'
+            },
+            json={'status': 'dismissed'}
+        )
+        return jsonify({'success': response.ok})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/respond', methods=['POST'])
+def respond_to_prompt():
+    """Send a response to a needs-review prompt"""
+    if not SUPABASE_KEY:
+        return jsonify({'success': False, 'error': 'No Supabase key'})
+    
+    data = request.json
+    prompt_id = data.get('id')
+    response_text = data.get('response', '').strip()
+    
+    if not prompt_id or not response_text:
+        return jsonify({'success': False, 'error': 'Missing prompt ID or response'})
+    
+    try:
+        # Update prompt with response and set status to 'responding'
+        # Watcher will pick this up and type it into the correct window
+        response = requests.patch(
+            f'{SUPABASE_URL}/rest/v1/prompts?id=eq.{prompt_id}',
+            headers={
+                'apikey': SUPABASE_KEY,
+                'Authorization': f'Bearer {SUPABASE_KEY}',
+                'Content-Type': 'application/json'
+            },
+            json={
+                'response': response_text,
+                'status': 'responding'
+            }
+        )
+        return jsonify({'success': response.ok})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/pull', methods=['POST'])
 def git_pull():

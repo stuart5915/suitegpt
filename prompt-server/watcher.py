@@ -38,21 +38,27 @@ WAIT_TIME_AFTER_PROMPT = 45  # 45 seconds to wait for AI
 
 # ═══ WINDOW SLOTS - EXACT COORDINATES ═══
 # Measured using get_coords.py on Stuart's PC
+# Each slot has: chat input coords, accept button coords, and window region for screenshots
 
 WINDOW_SLOTS = [
     # Slot 0: Top-left window
-    {"chat_x": 3228, "chat_y": 585, "accept_x": 3438, "accept_y": 553},
+    {"chat_x": 3228, "chat_y": 585, "accept_x": 3438, "accept_y": 553, "region": (2560, 0, 960, 540)},
     # Slot 1: Top-right window  
-    {"chat_x": 4227, "chat_y": 594, "accept_x": 4415, "accept_y": 560},
+    {"chat_x": 4227, "chat_y": 594, "accept_x": 4415, "accept_y": 560, "region": (3520, 0, 960, 540)},
     # Slot 2: Bottom-left window
-    {"chat_x": 3207, "chat_y": 1154, "accept_x": 3441, "accept_y": 1119},
+    {"chat_x": 3207, "chat_y": 1154, "accept_x": 3441, "accept_y": 1119, "region": (2560, 540, 960, 540)},
     # Slot 3: Bottom-right window
-    {"chat_x": 4226, "chat_y": 1151, "accept_x": 4415, "accept_y": 1119},
+    {"chat_x": 4226, "chat_y": 1151, "accept_x": 4415, "accept_y": 1119, "region": (3520, 540, 960, 540)},
 ]
+
+# Screenshots directory
+SCREENSHOTS_DIR = os.path.join(os.path.dirname(__file__), 'screenshots')
+os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
 
 # ═══ PARALLEL PROCESSING STATE ═══
 # Thread-safe slot management for multi-window processing
 slot_busy = [False, False, False, False]  # Track which slots are processing (for status)
+slot_typing = [False, False, False, False]  # Track which slots are actively typing (DO NOT CLICK)
 slot_locks = [threading.Lock() for _ in range(4)]  # Per-slot locks
 git_lock = threading.Lock()  # Serialize git operations
 slot_allocation_lock = threading.Lock()  # Lock for picking next slot
@@ -144,7 +150,7 @@ class SupabaseClient:
             print(f'[ERROR] Supabase connection failed: {e}')
             return []
     
-    def update_status(self, prompt_id, status, result=None):
+    def update_status(self, prompt_id, status, result=None, slot_index=None):
         """Update prompt status"""
         try:
             data = {'status': status}
@@ -152,6 +158,8 @@ class SupabaseClient:
                 data['processed_at'] = 'now()'
             if result:
                 data['result'] = result
+            if slot_index is not None:
+                data['slot_index'] = slot_index
             
             response = requests.patch(
                 f'{self.url}/rest/v1/prompts?id=eq.{prompt_id}',
@@ -162,6 +170,19 @@ class SupabaseClient:
         except Exception as e:
             print(f'[ERROR] Failed to update status: {e}')
             return False
+    
+    def get_pending_responses(self):
+        """Get prompts that have a response ready to send"""
+        try:
+            response = requests.get(
+                f'{self.url}/rest/v1/prompts?status=eq.responding&order=updated_at.asc',
+                headers=self.headers
+            )
+            if response.ok:
+                return response.json()
+            return []
+        except:
+            return []
 
 
 class WindowManager:
@@ -252,6 +273,9 @@ def process_prompt(prompt_data):
         with git_lock:
             git_pull()
         
+        # MARK SLOT AS TYPING - prevents other threads from clicking accept on this slot
+        slot_typing[slot_index] = True
+        
         # Step 1: Left-click to focus the chat input
         print(f'[W{slot_index}] Clicking chat at ({slot["chat_x"]}, {slot["chat_y"]})...')
         pyautogui.click(slot["chat_x"], slot["chat_y"])
@@ -268,6 +292,9 @@ def process_prompt(prompt_data):
         pyautogui.press('enter')
         print(f'[W{slot_index}] Sent prompt to Antigravity')
         
+        # MARK TYPING COMPLETE - safe to click accept on this slot now
+        slot_typing[slot_index] = False
+        
         # Wait for agent to finish using IDLE DETECTION
         # If no files have been modified for 30 seconds, agent is done
         max_wait = 300  # 5 minute max (safety timeout)
@@ -280,23 +307,30 @@ def process_prompt(prompt_data):
         start_time = time.time()
         last_accept_time = 0
         last_change_time = time.time()  # Track when files last changed
-        last_mtime = get_latest_file_mtime()
+        initial_mtime = get_latest_file_mtime()  # Baseline to detect ANY changes
+        last_mtime = initial_mtime
         agent_done = False
+        had_activity = False  # Track if ANY file changes occurred
         
         while time.time() - start_time < max_wait:
             # Check if files have been modified
             current_mtime = get_latest_file_mtime()
             if current_mtime > last_mtime:
-                # Files changed - reset idle timer
+                # Files changed - reset idle timer and mark activity
                 last_mtime = current_mtime
                 last_change_time = time.time()
+                had_activity = True
             
             # Check if we've been idle long enough
             idle_time = time.time() - last_change_time
             if idle_time >= idle_threshold:
-                print(f'[W{slot_index}] Agent idle for {int(idle_time)}s - considering done!')
-                agent_done = True
-                break
+                if had_activity:
+                    print(f'[W{slot_index}] Agent idle for {int(idle_time)}s - changes detected, done!')
+                    agent_done = True
+                    break
+                else:
+                    # No file changes at all - AI might be asking questions
+                    print(f'[W{slot_index}] Idle but NO file changes - AI may be waiting for input')
             
             # Click Accept button periodically
             elapsed = time.time() - start_time
@@ -324,9 +358,12 @@ def process_prompt(prompt_data):
         pyautogui.hotkey('ctrl', 's')
         time.sleep(2)
         
-        # ACCEPT ALL WINDOWS - sweep through all windows to catch any completed ones
-        print(f'[W{slot_index}] Accept-all sweep before push...')
+        # ACCEPT ALL WINDOWS - sweep through all windows EXCEPT ones currently typing
+        print(f'[W{slot_index}] Accept-all sweep before push (skipping typing slots)...')
         for i, s in enumerate(WINDOW_SLOTS):
+            if slot_typing[i]:
+                print(f'[W{slot_index}] Skipping slot {i} - currently typing')
+                continue
             try:
                 pyautogui.click(s["accept_x"], s["accept_y"])
                 time.sleep(0.2)
@@ -339,9 +376,25 @@ def process_prompt(prompt_data):
             git_pull()
             git_push()
         
-        # Mark completed
-        supabase.update_status(prompt_id, 'completed', 'Successfully processed')
-        print(f'[W{slot_index}] ✅ Prompt {prompt_id[:8]} completed!')
+        # Mark completed (or needs-review if no changes were made)
+        if had_activity:
+            supabase.update_status(prompt_id, 'completed', 'Successfully processed')
+            print(f'[W{slot_index}] ✅ Prompt {prompt_id[:8]} completed!')
+        else:
+            # Take a screenshot of the window to show what AI responded
+            screenshot_filename = f'{prompt_id}.png'
+            screenshot_path = os.path.join(SCREENSHOTS_DIR, screenshot_filename)
+            try:
+                region = slot.get('region')
+                if region:
+                    screenshot = pyautogui.screenshot(region=region)
+                    screenshot.save(screenshot_path)
+                    print(f'[W{slot_index}] 📸 Screenshot saved: {screenshot_filename}')
+            except Exception as e:
+                print(f'[W{slot_index}] Could not capture screenshot: {e}')
+            
+            supabase.update_status(prompt_id, 'needs-review', 'No file changes detected - AI may have asked questions', slot_index=slot_index)
+            print(f'[W{slot_index}] ⚠️ Prompt {prompt_id[:8]} needs review - no code changes detected')
         
     except Exception as e:
         print(f'[W{slot_index}] ❌ Failed: {e}')
@@ -403,6 +456,59 @@ def git_push():
     print('[GIT] Push failed after all retries')
 
 
+def send_response(response_data):
+    """Send a user's response to a specific Antigravity window slot"""
+    prompt_id = response_data['id']
+    response_text = response_data.get('response', '')
+    slot_index = response_data.get('slot_index', 0)
+    
+    if not response_text:
+        print(f'[RESPONSE] No response text for {prompt_id[:8]}')
+        return
+    
+    if slot_index is None or slot_index < 0 or slot_index >= len(WINDOW_SLOTS):
+        slot_index = 0  # Default to first slot
+    
+    slot = WINDOW_SLOTS[slot_index]
+    
+    print(f'\n{"="*60}')
+    print(f'[RESPONSE] Sending to Window {slot_index}')
+    print(f'{"="*60}')
+    print(f'{response_text[:100]}...' if len(response_text) > 100 else response_text)
+    print(f'{"="*60}\n')
+    
+    try:
+        # Mark as processing
+        supabase.update_status(prompt_id, 'response-sending')
+        
+        # Mark slot as typing
+        slot_typing[slot_index] = True
+        
+        # Click chat input
+        pyautogui.click(slot["chat_x"], slot["chat_y"])
+        time.sleep(0.5)
+        
+        # Type the response
+        safe_text = ''.join(c if c.isascii() and c.isprintable() else ' ' for c in response_text)
+        pyautogui.typewrite(safe_text, interval=0.02)
+        time.sleep(0.3)
+        
+        # Send with Enter
+        pyautogui.press('enter')
+        
+        # Done typing
+        slot_typing[slot_index] = False
+        
+        # Mark as back to processing (now waiting for AI again)
+        supabase.update_status(prompt_id, 'processing', 'Response sent, waiting for AI')
+        print(f'[RESPONSE] ✅ Response sent to Window {slot_index}!')
+        
+    except Exception as e:
+        slot_typing[slot_index] = False
+        print(f'[RESPONSE] ❌ Failed: {e}')
+        supabase.update_status(prompt_id, 'needs-review', f'Response failed: {e}')
+
+
 def main():
     global supabase
     
@@ -448,7 +554,15 @@ def main():
                 for prompt_data in prompts:
                     threading.Thread(target=process_prompt, args=(prompt_data,)).start()
                     time.sleep(1)  # Stagger launches
-            else:
+            
+            # Poll for pending responses (user replied to AI question)
+            responses = supabase.get_pending_responses()
+            if responses:
+                for resp in responses:
+                    threading.Thread(target=send_response, args=(resp,)).start()
+                    time.sleep(0.5)
+            
+            if not prompts and not responses:
                 status = window_manager.status()
                 print(f'\r[POLL] No pending prompts | {status}', end='', flush=True)
             
