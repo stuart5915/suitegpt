@@ -372,7 +372,9 @@ def process_prompt(prompt_data):
                     pyautogui.click(slot["accept_x"], slot["accept_y"])
                     # Also press Alt+Enter to approve any command dialogs
                     pyautogui.hotkey('alt', 'Return')
-                    print(f'[W{slot_index}] Auto-Accept + Alt+Enter - {int(elapsed)}s elapsed, idle: {int(idle_time)}s')
+                    # Scroll down to keep chat visible (prevents getting stuck)
+                    pyautogui.scroll(-3)  # Negative = scroll down
+                    print(f'[W{slot_index}] Auto-Accept + Alt+Enter + Scroll - {int(elapsed)}s elapsed, idle: {int(idle_time)}s')
                     last_accept_time = elapsed
                 except:
                     pass
