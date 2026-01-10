@@ -89,6 +89,28 @@ def get_slot_status():
     return ' '.join(status)
 
 
+def get_latest_file_mtime():
+    """Get the most recent modification time of any file in the repo (for idle detection)."""
+    latest_mtime = 0
+    try:
+        for root, dirs, files in os.walk(REPO_DIR):
+            # Skip hidden folders and node_modules
+            dirs[:] = [d for d in dirs if not d.startswith('.') and d != 'node_modules']
+            for f in files:
+                if f.startswith('.'):
+                    continue
+                try:
+                    fpath = os.path.join(root, f)
+                    mtime = os.path.getmtime(fpath)
+                    if mtime > latest_mtime:
+                        latest_mtime = mtime
+                except:
+                    pass
+    except:
+        pass
+    return latest_mtime
+
+
 # PyAutoGUI settings
 pyautogui.FAILSAFE = True
 pyautogui.PAUSE = 0.1
@@ -246,33 +268,34 @@ def process_prompt(prompt_data):
         pyautogui.press('enter')
         print(f'[W{slot_index}] Sent prompt to Antigravity')
         
-        # Wait for agent to finish - watch for PER-SLOT signal file
-        signal_file = get_signal_file(slot_index)
+        # Wait for agent to finish using IDLE DETECTION
+        # If no files have been modified for 30 seconds, agent is done
         max_wait = 300  # 5 minute max (safety timeout)
+        idle_threshold = 30  # 30 seconds of no changes = done
         check_interval = 2  # Check every 2 seconds
         accept_interval = 5  # Click Accept every 5 seconds
         
-        print(f'[W{slot_index}] Watching for signal file: {signal_file}')
-        
-        # Also check for the generic .agent-done file (Antigravity creates this one)
-        generic_signal_file = os.path.join(REPO_DIR, '.agent-done')
+        print(f'[W{slot_index}] Waiting for agent... (idle detection: {idle_threshold}s of no changes)')
         
         start_time = time.time()
         last_accept_time = 0
+        last_change_time = time.time()  # Track when files last changed
+        last_mtime = get_latest_file_mtime()
         agent_done = False
         
         while time.time() - start_time < max_wait:
-            # Check for BOTH per-slot signal file AND generic signal file
-            for sf in [signal_file, generic_signal_file]:
-                if os.path.exists(sf):
-                    print(f'[W{slot_index}] Agent done file detected: {sf}')
-                    try:
-                        os.remove(sf)
-                    except:
-                        pass
-                    agent_done = True
-                    break
-            if agent_done:
+            # Check if files have been modified
+            current_mtime = get_latest_file_mtime()
+            if current_mtime > last_mtime:
+                # Files changed - reset idle timer
+                last_mtime = current_mtime
+                last_change_time = time.time()
+            
+            # Check if we've been idle long enough
+            idle_time = time.time() - last_change_time
+            if idle_time >= idle_threshold:
+                print(f'[W{slot_index}] Agent idle for {int(idle_time)}s - considering done!')
+                agent_done = True
                 break
             
             # Click Accept button periodically
@@ -280,7 +303,7 @@ def process_prompt(prompt_data):
             if elapsed - last_accept_time >= accept_interval:
                 try:
                     pyautogui.click(slot["accept_x"], slot["accept_y"])
-                    print(f'[W{slot_index}] Auto-Accept clicked - {int(elapsed)}s elapsed')
+                    print(f'[W{slot_index}] Auto-Accept - {int(elapsed)}s elapsed, idle: {int(idle_time)}s')
                     last_accept_time = elapsed
                 except:
                     pass
