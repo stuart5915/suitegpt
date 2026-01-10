@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PC Prompt Server</title>
+    <title>PC Prompt Server | Dual-Machine Coding</title>
     <style>
         * {
             box-sizing: border-box;
@@ -16,34 +16,91 @@
             font-family: 'Segoe UI', sans-serif;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             padding: 20px;
+            color: #fff;
         }
 
-        .container {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 24px;
-            padding: 40px;
-            width: 100%;
-            max-width: 600px;
+        .header {
+            text-align: center;
+            padding: 20px 0 30px;
+            max-width: 800px;
+            margin: 0 auto;
         }
 
         h1 {
-            color: #fff;
-            font-size: 1.8rem;
+            font-size: 2rem;
             margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
         }
 
         .subtitle {
             color: rgba(255, 255, 255, 0.6);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
             margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 100px;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .tab:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            border-color: transparent;
+            color: white;
+        }
+
+        .panel {
+            display: none;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            font-size: 1.2rem;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         .status {
@@ -54,8 +111,7 @@
             color: #22c55e;
             padding: 6px 12px;
             border-radius: 100px;
-            font-size: 0.85rem;
-            margin-bottom: 24px;
+            font-size: 0.8rem;
         }
 
         .status::before {
@@ -81,15 +137,15 @@
 
         textarea {
             width: 100%;
-            height: 150px;
+            height: 120px;
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 16px;
-            padding: 16px;
+            border-radius: 12px;
+            padding: 14px;
             color: #fff;
-            font-size: 1rem;
+            font-size: 0.95rem;
             resize: vertical;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
 
         textarea:focus {
@@ -102,16 +158,16 @@
         }
 
         button {
-            width: 100%;
-            padding: 16px;
+            padding: 12px 20px;
             background: linear-gradient(135deg, #ff9500, #ff6b9d);
             border: none;
-            border-radius: 12px;
+            border-radius: 10px;
             color: white;
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s;
+            width: 100%;
         }
 
         button:hover {
@@ -119,17 +175,11 @@
             box-shadow: 0 8px 24px rgba(255, 149, 0, 0.3);
         }
 
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
         .response {
-            margin-top: 16px;
-            padding: 12px 16px;
-            border-radius: 12px;
-            font-size: 0.9rem;
+            margin-top: 12px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 0.85rem;
         }
 
         .response.success {
@@ -142,50 +192,396 @@
             color: #ef4444;
         }
 
-        .history {
-            margin-top: 24px;
-            padding-top: 24px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .history h3 {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.9rem;
-            margin-bottom: 12px;
-        }
-
-        .history-item {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 10px 14px;
-            border-radius: 8px;
-            color: rgba(255, 255, 255, 0.6);
+        /* Diagram Styles */
+        .diagram {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
+            padding: 24px;
+            margin: 20px 0;
+            font-family: 'Consolas', monospace;
             font-size: 0.85rem;
-            margin-bottom: 8px;
+            line-height: 1.6;
+            overflow-x: auto;
+            white-space: pre;
+        }
+
+        .diagram .highlight {
+            color: #ff9500;
+            font-weight: bold;
+        }
+
+        .diagram .comment {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Steps */
+        .steps {
+            list-style: none;
+        }
+
+        .steps li {
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .steps li:last-child {
+            border-bottom: none;
+        }
+
+        .step-num {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-content strong {
+            color: #ff9500;
+        }
+
+        code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.8rem;
+        }
+
+        .code-block {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 12px;
+            border-radius: 8px;
+            margin: 8px 0;
+            font-family: 'Consolas', monospace;
+            font-size: 0.8rem;
+            overflow-x: auto;
+        }
+
+        .copy-btn {
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            width: auto;
+            display: inline-block;
+            margin-top: 8px;
+        }
+
+        /* Flow boxes */
+        .flow-visual {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin: 20px 0;
+        }
+
+        .flow-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .flow-box {
+            background: rgba(255, 149, 0, 0.15);
+            border: 1px solid rgba(255, 149, 0, 0.3);
+            padding: 12px 18px;
+            border-radius: 12px;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .flow-box.laptop {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.15);
+        }
+
+        .flow-box.pc {
+            border-color: #22c55e;
+            background: rgba(34, 197, 94, 0.15);
+        }
+
+        .flow-box.github {
+            border-color: #a855f7;
+            background: rgba(168, 85, 247, 0.15);
+        }
+
+        .flow-arrow {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 1.5rem;
+        }
+
+        .flow-label {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 4px;
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <h1>🖥️ PC Prompt Server</h1>
-        <p class="subtitle">Send coding prompts to your PC's Antigravity</p>
+    <div class="header">
+        <h1>🖥️ Stuart's Dual-Machine Coding System</h1>
+        <p class="subtitle">Code on your laptop, let your PC do the heavy AI lifting</p>
+    </div>
 
-        <div class="status">Connected to PC</div>
+    <div class="tabs">
+        <div class="tab active" onclick="showPanel('send')">📤 Send Prompt</div>
+        <div class="tab" onclick="showPanel('diagram')">🔄 System Diagram</div>
+        <div class="tab" onclick="showPanel('setup')">⚙️ Setup Guide</div>
+        <div class="tab" onclick="showPanel('how')">📖 How It Works</div>
+    </div>
 
-        <textarea id="prompt" placeholder="Type your coding prompt here...
+    <!-- SEND PROMPT PANEL -->
+    <div id="send" class="panel active">
+        <div class="grid">
+            <div class="card">
+                <h2>📤 Send Prompt to PC</h2>
+                <div class="status" id="serverStatus">PC Server Connected</div>
+                <br><br>
+                <textarea id="prompt" placeholder="Type your coding prompt...
 
-Example: Fix the nav bar emojis on the SUITE website"></textarea>
+Example: Fix the nav bar emojis on the SUITE website
+Example: Add a new Learn page with documentation links
+Example: Update the footer on all pages"></textarea>
+                <button onclick="sendPrompt()" id="sendBtn">🚀 Send to PC (Ctrl+Enter)</button>
+                <div id="response"></div>
+            </div>
+            <div class="card">
+                <h2>📝 Recent Prompts</h2>
+                <div id="history" style="color: rgba(255,255,255,0.6);">Loading...</div>
+            </div>
+        </div>
+    </div>
 
-        <button onclick="sendPrompt()" id="sendBtn">🚀 Send to PC</button>
+    <!-- SYSTEM DIAGRAM PANEL -->
+    <div id="diagram" class="panel">
+        <div class="card">
+            <h2>🔄 Complete System Architecture</h2>
 
-        <div id="response"></div>
+            <div class="diagram">
+                <span
+                    class="comment">╔══════════════════════════════════════════════════════════════════════════════╗</span>
+                <span class="comment">║</span> <span class="highlight">STUART'S DUAL-MACHINE CODING SYSTEM</span> <span
+                    class="comment">║</span>
+                <span
+                    class="comment">╠══════════════════════════════════════════════════════════════════════════════╣</span>
+                <span class="comment">║</span> <span class="comment">║</span>
+                <span class="comment">║</span> <span class="highlight">💻 LAPTOP</span> (You work here) <span
+                    class="comment">║</span>
+                <span class="comment">║</span> ├── Antigravity IDE (light coding, reviewing) <span
+                    class="comment">║</span>
+                <span class="comment">║</span> ├── Browser → http://10.0.0.142:3000 (this page - send prompts) <span
+                    class="comment">║</span>
+                <span class="comment">║</span> ├── Auto-Pull Script (syncs changes every 10 seconds) <span
+                    class="comment">║</span>
+                <span class="comment">║</span> └── Dev Server (npm run dev - sees changes instantly) <span
+                    class="comment">║</span>
+                <span class="comment">║</span> │ <span class="comment">║</span>
+                <span class="comment">║</span> │ 1. You send prompt <span class="comment">║</span>
+                <span class="comment">║</span> ▼ <span class="comment">║</span>
+                <span class="comment">║</span> ═══════════════════════════════════════════════════════════════════════
+                <span class="comment">║</span>
+                <span class="comment">║</span> │ <span class="comment">║</span>
+                <span class="comment">║</span> ▼ <span class="comment">║</span>
+                <span class="comment">║</span> <span class="highlight">🖥️ PC</span> (Heavy lifting - 32GB RAM) <span
+                    class="comment">║</span>
+                <span class="comment">║</span> ├── Prompt Server (server.py - receives prompts, port 3000) <span
+                    class="comment">║</span>
+                <span class="comment">║</span> ├── Prompt Watcher (watcher.py - auto-injects into Antigravity) <span
+                    class="comment">║</span>
+                <span class="comment">║</span> ├── Antigravity IDE (2-3 windows - cycles between them!) <span
+                    class="comment">║</span>
+                <span class="comment">║</span> │ ├── Window 1 ← Prompt 1, Prompt 4, Prompt 7... <span
+                    class="comment">║</span>
+                <span class="comment">║</span> │ ├── Window 2 ← Prompt 2, Prompt 5, Prompt 8... <span
+                    class="comment">║</span>
+                <span class="comment">║</span> │ └── Window 3 ← Prompt 3, Prompt 6, Prompt 9... <span
+                    class="comment">║</span>
+                <span class="comment">║</span> └── Auto Git Push (commits changes after each prompt) <span
+                    class="comment">║</span>
+                <span class="comment">║</span> │ <span class="comment">║</span>
+                <span class="comment">║</span> │ 2. PC codes & pushes <span class="comment">║</span>
+                <span class="comment">║</span> ▼ <span class="comment">║</span>
+                <span class="comment">║</span> ═══════════════════════════════════════════════════════════════════════
+                <span class="comment">║</span>
+                <span class="comment">║</span> │ <span class="comment">║</span>
+                <span class="comment">║</span> ▼ <span class="comment">║</span>
+                <span class="comment">║</span> <span class="highlight">📦 GITHUB</span> (Central sync point) <span
+                    class="comment">║</span>
+                <span class="comment">║</span> └── stuart-hollinger-landing repo <span class="comment">║</span>
+                <span class="comment">║</span> │ <span class="comment">║</span>
+                <span class="comment">║</span> │ 3. Auto-pull (every 10 sec) <span class="comment">║</span>
+                <span class="comment">║</span> ▼ <span class="comment">║</span>
+                <span class="comment">║</span> ═══════════════════════════════════════════════════════════════════════
+                <span class="comment">║</span>
+                <span class="comment">║</span> │ <span class="comment">║</span>
+                <span class="comment">║</span> ▼ <span class="comment">║</span>
+                <span class="comment">║</span> <span class="highlight">💻 LAPTOP</span> (Changes appear automatically!)
+                <span class="comment">║</span>
+                <span class="comment">║</span> └── Dev server refreshes → You see the result <span
+                    class="comment">║</span>
+                <span class="comment">║</span> <span class="comment">║</span>
+                <span
+                    class="comment">╚══════════════════════════════════════════════════════════════════════════════╝</span>
 
-        <div class="history" id="history">
-            <h3>Recent Prompts</h3>
+                <span class="highlight">MULTI-WINDOW CYCLING:</span>
+                ┌─────────┐ ┌─────────┐ ┌─────────┐
+                │ Window 1│ │ Window 2│ │ Window 3│
+                │ (busy) │ │ (ready) │ │ (ready) │
+                └────┬────┘ └────┬────┘ └────┬────┘
+                │ │ │
+                └──────────────┼──────────────┘
+                │
+                ┌───────┴───────┐
+                │ Prompt Queue │
+                │ ─────────────│
+                │ 1. Fix nav │ ──► Window 1
+                │ 2. Add page │ ──► Window 2
+                │ 3. Update CSS │ ──► Window 3
+                │ 4. Fix bug │ ──► Window 1 (cycles back)
+                └───────────────┘
+            </div>
+        </div>
+    </div>
+
+    <!-- SETUP GUIDE PANEL -->
+    <div id="setup" class="panel">
+        <div class="grid">
+            <div class="card">
+                <h2>🖥️ PC Setup (Your Desktop)</h2>
+                <ul class="steps">
+                    <li>
+                        <span class="step-num">1</span>
+                        <div class="step-content">
+                            <strong>Clone Repository</strong>
+                            <div class="code-block">cd C:\Users\Stuart<br>git clone
+                                https://github.com/stuart5915/stuart-hollinger-landing.git</div>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="step-num">2</span>
+                        <div class="step-content">
+                            <strong>Start Prompt Server</strong> (Terminal 1)
+                            <div class="code-block">cd stuart-hollinger-landing\prompt-server<br>pip install flask
+                                flask-cors<br>py -3.12 server.py</div>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="step-num">3</span>
+                        <div class="step-content">
+                            <strong>Start Watcher</strong> (Terminal 2)
+                            <div class="code-block">cd stuart-hollinger-landing\prompt-server<br>pip install pyautogui
+                                pyperclip watchdog pygetwindow<br>py -3.12 watcher.py</div>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="step-num">4</span>
+                        <div class="step-content">
+                            <strong>Open Antigravity IDE</strong><br>
+                            Open 2-3 windows with the same repo folder.<br>
+                            The watcher will cycle between them!
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h2>💻 Laptop Setup (This Machine)</h2>
+                <ul class="steps">
+                    <li>
+                        <span class="step-num">1</span>
+                        <div class="step-content">
+                            <strong>Bookmark This Page</strong><br>
+                            <code>http://10.0.0.142:3000</code>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="step-num">2</span>
+                        <div class="step-content">
+                            <strong>Run Auto-Pull Script</strong> (keeps files synced)
+                            <div class="code-block">while ($true) { git -C
+                                "c:\Users\info\.gemini\antigravity\scratch\stuart-hollinger-landing" pull --rebase
+                                2>$null; Start-Sleep 10 }</div>
+                            <button class="copy-btn" onclick="copyScript('laptop')">📋 Copy Command</button>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="step-num">3</span>
+                        <div class="step-content">
+                            <strong>Run Dev Server</strong><br>
+                            Your usual <code>npm run dev</code> or Live Server
+                        </div>
+                    </li>
+                    <li>
+                        <span class="step-num">4</span>
+                        <div class="step-content">
+                            <strong>Code as normal!</strong><br>
+                            Send heavy AI tasks to PC via this page.
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- HOW IT WORKS PANEL -->
+    <div id="how" class="panel">
+        <div class="card">
+            <h2>📖 How the System Works</h2>
+
+            <h3 style="margin: 20px 0 12px; color: #ff9500;">The Problem:</h3>
+            <p style="color: rgba(255,255,255,0.7); margin-bottom: 20px;">
+                AI coding tasks can be slow and resource-intensive. Your laptop works hard,
+                and you can only do one thing at a time.
+            </p>
+
+            <h3 style="margin: 20px 0 12px; color: #ff9500;">The Solution:</h3>
+            <p style="color: rgba(255,255,255,0.7); margin-bottom: 20px;">
+                Offload heavy AI work to your beefy PC (32GB RAM!) while your laptop stays
+                light for browsing, reviewing, and quick edits.
+            </p>
+
+            <h3 style="margin: 20px 0 12px; color: #ff9500;">Key Features:</h3>
+            <ul style="color: rgba(255,255,255,0.7); margin-left: 20px; line-height: 2;">
+                <li><strong>Multi-Window Cycling</strong> - PC runs 2-3 Antigravity windows, prompts get distributed
+                </li>
+                <li><strong>Automatic Git Sync</strong> - Changes push to GitHub, laptop auto-pulls</li>
+                <li><strong>Two-Way Sync</strong> - Code on laptop OR PC, both stay in sync</li>
+                <li><strong>Queue System</strong> - Send multiple prompts, they queue up and process in order</li>
+                <li><strong>No Manual Steps</strong> - Everything is automated after initial setup</li>
+            </ul>
+
+            <h3 style="margin: 20px 0 12px; color: #ff9500;">Typical Workflow:</h3>
+            <ol style="color: rgba(255,255,255,0.7); margin-left: 20px; line-height: 2;">
+                <li>You're coding on laptop, need a complex change</li>
+                <li>Type prompt here, hit Send</li>
+                <li>Continue working on something else</li>
+                <li>~45 seconds later, changes appear in your folder</li>
+                <li>Dev server hot-reloads, you see the result!</li>
+            </ol>
         </div>
     </div>
 
     <script>
+        function showPanel(id) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            event.target.classList.add('active');
+        }
+
         async function sendPrompt() {
             const prompt = document.getElementById('prompt').value.trim();
             const btn = document.getElementById('sendBtn');
@@ -206,12 +602,11 @@ Example: Fix the nav bar emojis on the SUITE website"></textarea>
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ prompt })
                 });
-
                 const data = await res.json();
 
                 if (data.success) {
                     response.className = 'response success';
-                    response.textContent = '✅ ' + data.message;
+                    response.textContent = '✅ Sent to PC! Watcher will process it.';
                     document.getElementById('prompt').value = '';
                     loadHistory();
                 } else {
@@ -220,11 +615,11 @@ Example: Fix the nav bar emojis on the SUITE website"></textarea>
                 }
             } catch (err) {
                 response.className = 'response error';
-                response.textContent = '❌ Connection error: ' + err.message;
+                response.textContent = '❌ Connection error - is PC server running?';
             }
 
             btn.disabled = false;
-            btn.textContent = '🚀 Send to PC';
+            btn.textContent = '🚀 Send to PC (Ctrl+Enter)';
         }
 
         async function loadHistory() {
@@ -234,27 +629,43 @@ Example: Fix the nav bar emojis on the SUITE website"></textarea>
                 const history = document.getElementById('history');
 
                 if (data.prompts.length === 0) {
-                    history.innerHTML = '<h3>Recent Prompts</h3><p style="color: rgba(255,255,255,0.4);">No prompts yet</p>';
+                    history.innerHTML = '<p>No prompts yet - send one!</p>';
                 } else {
-                    history.innerHTML = '<h3>Recent Prompts</h3>' +
-                        data.prompts.slice(0, 5).map(p =>
-                            `<div class="history-item">📝 ${p}</div>`
-                        ).join('');
+                    history.innerHTML = data.prompts.slice(0, 8).map(p =>
+                        `<div style="background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; font-size: 0.85rem;">📝 ${p}</div>`
+                    ).join('');
                 }
             } catch (err) {
-                console.error('Error loading history:', err);
+                document.getElementById('history').innerHTML = '<p>Could not load history</p>';
             }
         }
 
-        // Allow Ctrl+Enter to send
+        function copyScript(type) {
+            const scripts = {
+                laptop: 'while ($true) { git -C "c:\\Users\\info\\.gemini\\antigravity\\scratch\\stuart-hollinger-landing" pull --rebase 2>$null; Start-Sleep 10 }'
+            };
+            navigator.clipboard.writeText(scripts[type]);
+            alert('Copied! Paste into PowerShell.');
+        }
+
         document.getElementById('prompt').addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key === 'Enter') {
-                sendPrompt();
-            }
+            if (e.ctrlKey && e.key === 'Enter') sendPrompt();
         });
 
-        // Load history on page load
+        async function checkStatus() {
+            try {
+                const res = await fetch('/status');
+                const data = await res.json();
+                document.getElementById('serverStatus').textContent = `PC Connected • ${data.pending_prompts} pending`;
+            } catch (err) {
+                document.getElementById('serverStatus').textContent = 'Connection Lost';
+            }
+        }
+
         loadHistory();
+        checkStatus();
+        setInterval(checkStatus, 5000);
+        setInterval(loadHistory, 10000);
     </script>
 </body>
 
