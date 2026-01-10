@@ -61,12 +61,37 @@ os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
 
 # ═══ PARALLEL PROCESSING STATE ═══
 # Thread-safe slot management for multi-window processing
-slot_busy = [False, False, False, False]  # Track which slots are processing (for status)
+SLOT_STATE_FILE = os.path.join(os.path.dirname(__file__), '.slot_state.json')
+
+def load_slot_state():
+    """Load slot state from file (persists across restarts)"""
+    try:
+        if os.path.exists(SLOT_STATE_FILE):
+            with open(SLOT_STATE_FILE, 'r') as f:
+                import json
+                state = json.load(f)
+                return state.get('busy', [False]*4), state.get('index', 0)
+    except:
+        pass
+    return [False, False, False, False], 0
+
+def save_slot_state():
+    """Save slot state to file"""
+    try:
+        import json
+        with open(SLOT_STATE_FILE, 'w') as f:
+            json.dump({'busy': slot_busy, 'index': current_slot_index}, f)
+    except:
+        pass
+
+# Load previous state on startup
+_loaded_busy, _loaded_index = load_slot_state()
+slot_busy = _loaded_busy  # Track which slots are processing
 slot_typing = [False, False, False, False]  # Track which slots are actively typing (DO NOT CLICK)
 slot_locks = [threading.Lock() for _ in range(4)]  # Per-slot locks
 git_lock = threading.Lock()  # Serialize git operations
 slot_allocation_lock = threading.Lock()  # Lock for picking next slot
-current_slot_index = 0  # Round-robin counter
+current_slot_index = _loaded_index  # Round-robin counter (persisted)
 
 
 def get_next_slot():
@@ -76,6 +101,7 @@ def get_next_slot():
         slot = current_slot_index
         current_slot_index = (current_slot_index + 1) % len(WINDOW_SLOTS)
         slot_busy[slot] = True  # Mark as busy for status display
+        save_slot_state()  # Persist state
         return slot
 
 
@@ -84,6 +110,7 @@ def release_slot(slot_index):
     with slot_allocation_lock:
         if 0 <= slot_index < len(slot_busy):
             slot_busy[slot_index] = False
+            save_slot_state()  # Persist state
 
 
 def get_signal_file(slot_index):
