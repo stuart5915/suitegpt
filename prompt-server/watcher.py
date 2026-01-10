@@ -364,22 +364,43 @@ def git_pull():
 
 
 def git_push():
-    """Push changes to GitHub"""
+    """Push changes to GitHub with retry logic"""
     print('[GIT] Pushing changes...')
-    try:
-        os.chdir(REPO_DIR)
-        subprocess.run(['git', 'add', '-A'], check=True)
-        result = subprocess.run(
-            ['git', 'commit', '-m', 'Auto-commit from PC watcher'],
-            capture_output=True, text=True
-        )
-        if 'nothing to commit' not in result.stdout:
-            subprocess.run(['git', 'push', 'origin', 'master'], check=True)
-            print('[GIT] Push successful!')
-        else:
-            print('[GIT] Nothing to commit')
-    except Exception as e:
-        print(f'[GIT] Push error: {e}')
+    max_retries = 3
+    
+    for attempt in range(max_retries):
+        try:
+            os.chdir(REPO_DIR)
+            subprocess.run(['git', 'add', '-A'], check=True)
+            result = subprocess.run(
+                ['git', 'commit', '-m', 'Auto-commit from PC watcher'],
+                capture_output=True, text=True
+            )
+            
+            if 'nothing to commit' in result.stdout:
+                print('[GIT] Nothing to commit')
+                return
+            
+            # Try to push
+            push_result = subprocess.run(
+                ['git', 'push', 'origin', 'master'],
+                capture_output=True, text=True
+            )
+            
+            if push_result.returncode == 0:
+                print('[GIT] Push successful!')
+                return
+            else:
+                # Push failed - likely remote is ahead, pull and retry
+                print(f'[GIT] Push failed (attempt {attempt + 1}), pulling and retrying...')
+                subprocess.run(['git', 'pull', '--rebase'], capture_output=True)
+                
+        except Exception as e:
+            print(f'[GIT] Push error (attempt {attempt + 1}): {e}')
+            if attempt < max_retries - 1:
+                subprocess.run(['git', 'pull', '--rebase'], capture_output=True)
+    
+    print('[GIT] Push failed after all retries')
 
 
 def main():
