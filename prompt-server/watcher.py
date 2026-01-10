@@ -50,7 +50,43 @@ WINDOW_SLOTS = [
     {"chat_x": 4226, "chat_y": 1151, "accept_x": 4415, "accept_y": 1119},
 ]
 
-current_slot = 0  # Track which slot to use next
+# ═══ PARALLEL PROCESSING STATE ═══
+# Thread-safe slot management for multi-window processing
+slot_busy = [False, False, False, False]  # Track which slots are processing
+slot_locks = [threading.Lock() for _ in range(4)]  # Per-slot locks
+git_lock = threading.Lock()  # Serialize git operations
+slot_allocation_lock = threading.Lock()  # Lock for picking next slot
+
+
+def get_available_slot():
+    """Get the next available slot (thread-safe). Returns slot index or -1 if all busy."""
+    with slot_allocation_lock:
+        for i, busy in enumerate(slot_busy):
+            if not busy:
+                slot_busy[i] = True
+                return i
+        return -1  # All slots busy
+
+
+def release_slot(slot_index):
+    """Mark a slot as available again."""
+    with slot_allocation_lock:
+        if 0 <= slot_index < len(slot_busy):
+            slot_busy[slot_index] = False
+
+
+def get_signal_file(slot_index):
+    """Get the signal file path for a specific slot."""
+    return os.path.join(REPO_DIR, f'.agent-done-{slot_index}')
+
+
+def get_slot_status():
+    """Get a status string showing which slots are busy."""
+    status = []
+    for i, busy in enumerate(slot_busy):
+        status.append(f"W{i}:{'🔴' if busy else '🟢'}")
+    return ' '.join(status)
+
 
 # PyAutoGUI settings
 pyautogui.FAILSAFE = True
@@ -168,14 +204,24 @@ window_manager = WindowManager()
 
 
 def process_prompt(prompt_data):
-    """Process a single prompt from Supabase"""
+    """Process a single prompt from Supabase (thread-safe for parallel execution)"""
     prompt_id = prompt_data['id']
     prompt_text = prompt_data['prompt']
     target = prompt_data.get('target', 'stuart-hollinger-landing')
     
+    # Get an available slot (thread-safe)
+    slot_index = get_available_slot()
+    if slot_index == -1:
+        print(f'[QUEUED] All windows busy, prompt {prompt_id[:8]} will retry...')
+        supabase.update_status(prompt_id, 'pending')  # Keep as pending to retry
+        return
+    
+    slot = WINDOW_SLOTS[slot_index]
+    
     print(f'\n{"="*60}')
-    print(f'[NEW PROMPT] {prompt_id[:8]}...')
+    print(f'[NEW PROMPT] {prompt_id[:8]}... → Window {slot_index}')
     print(f'[TARGET] {target}')
+    print(f'[STATUS] {get_slot_status()}')
     print(f'{"="*60}')
     print(f'{prompt_text[:200]}...' if len(prompt_text) > 200 else prompt_text)
     print(f'{"="*60}\n')
@@ -183,41 +229,34 @@ def process_prompt(prompt_data):
     # Mark as processing
     supabase.update_status(prompt_id, 'processing')
     
-    # Get next slot (round-robin through 4 windows)
-    global current_slot
-    slot = WINDOW_SLOTS[current_slot]
-    current_slot = (current_slot + 1) % len(WINDOW_SLOTS)
-    
-    print(f'[SLOT] Using window slot {current_slot}: click at ({slot["chat_x"]}, {slot["chat_y"]})')
-    
     try:
-        # Git pull first
-        git_pull()
+        # Git pull first (with lock to serialize)
+        with git_lock:
+            git_pull()
         
         # Step 1: Left-click to focus the chat input
-        print(f'[ACTION] Clicking chat at ({slot["chat_x"]}, {slot["chat_y"]})...')
+        print(f'[W{slot_index}] Clicking chat at ({slot["chat_x"]}, {slot["chat_y"]})...')
         pyautogui.click(slot["chat_x"], slot["chat_y"])
         time.sleep(0.5)
         
         # Step 2: Type the prompt
-        print('[ACTION] Typing prompt...')
+        print(f'[W{slot_index}] Typing prompt...')
         safe_text = ''.join(c if c.isascii() and c.isprintable() else ' ' for c in prompt_text)
         pyautogui.typewrite(safe_text, interval=0.02)
         time.sleep(0.3)
         
         # Step 3: Send with Enter
-        print('[ACTION] Pressing Enter to send...')
+        print(f'[W{slot_index}] Pressing Enter to send...')
         pyautogui.press('enter')
-        print('[ACTION] Sent prompt to Antigravity')
+        print(f'[W{slot_index}] Sent prompt to Antigravity')
         
-        # Wait for agent to finish - watch for .agent-done signal file
-        signal_file = os.path.join(REPO_DIR, '.agent-done')
+        # Wait for agent to finish - watch for PER-SLOT signal file
+        signal_file = get_signal_file(slot_index)
         max_wait = 300  # 5 minute max (safety timeout)
         check_interval = 2  # Check every 2 seconds
         accept_interval = 5  # Click Accept every 5 seconds
         
-        print(f'[WAITING] Watching for signal file: {signal_file}')
-        print(f'[WAITING] Max wait time: {max_wait}s, will click Accept every {accept_interval}s')
+        print(f'[W{slot_index}] Watching for signal file: {signal_file}')
         
         start_time = time.time()
         last_accept_time = 0
@@ -226,10 +265,9 @@ def process_prompt(prompt_data):
         while time.time() - start_time < max_wait:
             # Check for signal file
             if os.path.exists(signal_file):
-                print('[SIGNAL] Agent done file detected!')
+                print(f'[W{slot_index}] Agent done file detected!')
                 try:
                     os.remove(signal_file)
-                    print('[SIGNAL] Deleted signal file')
                 except:
                     pass
                 agent_done = True
@@ -240,7 +278,7 @@ def process_prompt(prompt_data):
             if elapsed - last_accept_time >= accept_interval:
                 try:
                     pyautogui.click(slot["accept_x"], slot["accept_y"])
-                    print(f'[AUTO-ACCEPT] Clicked Accept at ({slot["accept_x"]}, {slot["accept_y"]}) - {int(elapsed)}s elapsed')
+                    print(f'[W{slot_index}] Auto-Accept clicked - {int(elapsed)}s elapsed')
                     last_accept_time = elapsed
                 except:
                     pass
@@ -248,32 +286,36 @@ def process_prompt(prompt_data):
             time.sleep(check_interval)
         
         if agent_done:
-            print('[DONE] Agent signaled completion!')
+            print(f'[W{slot_index}] Agent signaled completion!')
         else:
-            print(f'[TIMEOUT] Max wait time ({max_wait}s) reached, proceeding anyway...')
+            print(f'[W{slot_index}] Timeout ({max_wait}s) reached, proceeding anyway...')
         
         # Click in the window to ensure focus
         pyautogui.click(slot["chat_x"], slot["chat_y"])
         time.sleep(0.3)
         
-        # Save with Ctrl+S (relies on Auto Save being enabled in Antigravity settings)
-        print('[ACTION] Pressing Ctrl+S to save to disk...')
+        # Save with Ctrl+S
+        print(f'[W{slot_index}] Pressing Ctrl+S to save...')
         pyautogui.hotkey('ctrl', 's')
-        time.sleep(2)  # Wait for save to complete
+        time.sleep(2)
         
-        # Git pull first (in case laptop pushed while we were working)
-        git_pull()
-        
-        # Git push
-        git_push()
+        # Git operations (serialized with lock)
+        with git_lock:
+            git_pull()
+            git_push()
         
         # Mark completed
         supabase.update_status(prompt_id, 'completed', 'Successfully processed')
-        print(f'[DONE] Prompt {prompt_id[:8]} completed!')
+        print(f'[W{slot_index}] ✅ Prompt {prompt_id[:8]} completed!')
         
     except Exception as e:
-        print(f'[ERROR] Failed to process prompt: {e}')
+        print(f'[W{slot_index}] ❌ Failed: {e}')
         supabase.update_status(prompt_id, 'failed', str(e))
+    
+    finally:
+        # ALWAYS release the slot when done
+        release_slot(slot_index)
+        print(f'[W{slot_index}] Slot released. {get_slot_status()}')
 
 
 def git_pull():
