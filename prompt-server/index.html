@@ -1207,6 +1207,33 @@ Example: Update the footer on all pages"></textarea>
             prompt.value = prompt.value.replace(/\n\n\[Image:.*?\]/g, '');
         }
 
+        // Handle Ctrl+V paste for images in textarea
+        document.getElementById('prompt').addEventListener('paste', function (e) {
+            const items = e.clipboardData?.items;
+            if (!items) return;
+
+            for (let item of items) {
+                if (item.type.startsWith('image/')) {
+                    e.preventDefault();  // Prevent default paste behavior for images
+                    const file = item.getAsFile();
+                    if (file) {
+                        // Show preview
+                        const preview = document.getElementById('imagePreview');
+                        const img = document.getElementById('previewImg');
+                        const name = document.getElementById('imageName');
+
+                        img.src = URL.createObjectURL(file);
+                        name.textContent = 'Pasted image...';
+                        preview.style.display = 'flex';
+
+                        // Upload
+                        uploadImage(file);
+                    }
+                    break;
+                }
+            }
+        });
+
         async function loadHistory() {
             try {
                 const res = await fetch('/prompts');
