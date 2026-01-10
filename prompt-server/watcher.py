@@ -227,8 +227,18 @@ def process_prompt(prompt_data):
         
         print(f'[AUTO-ACCEPT] Pressed Accept {accept_count} times')
         
-        # Save all files with Ctrl+S (Antigravity might not auto-save)
-        print('[ACTION] Pressing Ctrl+S to save files...')
+        # Click in the window to ensure focus
+        pyautogui.click(slot["chat_x"], slot["chat_y"])
+        time.sleep(0.3)
+        
+        # Save ALL files with Ctrl+K S (VS Code/Antigravity "Save All" chord)
+        print('[ACTION] Pressing Ctrl+K S to save ALL files...')
+        pyautogui.hotkey('ctrl', 'k')  # First part of chord
+        time.sleep(0.2)
+        pyautogui.press('s')  # Second part of chord
+        time.sleep(2)  # Wait for save to complete
+        
+        # Also try regular Ctrl+S just in case
         pyautogui.hotkey('ctrl', 's')
         time.sleep(1)
         
