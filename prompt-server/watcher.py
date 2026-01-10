@@ -464,20 +464,24 @@ def background_push_worker():
         try:
             current_time = time.time()
             
-            # Accept sweep every 5 seconds (skip slots that are typing)
+            # Accept sweep every 5 seconds - BUT ONLY if NO slots are typing
+            # Clicking any window steals focus, which breaks typewrite
             if current_time - last_accept_time >= accept_interval:
-                for i, slot in enumerate(WINDOW_SLOTS):
-                    if slot_typing[i]:
-                        continue  # Skip slots that are typing
-                    try:
-                        pyautogui.click(slot["accept_x"], slot["accept_y"])
-                        time.sleep(0.05)
-                        pyautogui.hotkey('alt', 'Return')
-                        time.sleep(0.05)
-                        pyautogui.scroll(-2)
-                    except:
-                        pass
-                last_accept_time = current_time
+                if any(slot_typing):
+                    # Someone is typing - don't click anything!
+                    pass
+                else:
+                    # Safe to sweep all windows
+                    for i, slot in enumerate(WINDOW_SLOTS):
+                        try:
+                            pyautogui.click(slot["accept_x"], slot["accept_y"])
+                            time.sleep(0.05)
+                            pyautogui.hotkey('alt', 'Return')
+                            time.sleep(0.05)
+                            pyautogui.scroll(-2)
+                        except:
+                            pass
+                    last_accept_time = current_time
             
             # Push every 60 seconds if no slots are typing
             if current_time - last_push_time >= push_interval:
