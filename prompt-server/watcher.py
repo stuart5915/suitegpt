@@ -261,6 +261,9 @@ def process_prompt(prompt_data):
         pyautogui.hotkey('ctrl', 's')
         time.sleep(2)  # Wait for save to complete
         
+        # Git pull first (in case laptop pushed while we were working)
+        git_pull()
+        
         # Git push
         git_push()
         
