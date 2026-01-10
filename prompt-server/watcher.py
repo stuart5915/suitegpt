@@ -34,7 +34,7 @@ SUPABASE_KEY = os.environ.get('SUPABASE_SERVICE_KEY', '')  # Set this!
 
 REPO_DIR = r'C:\Users\Stuart\stuart-hollinger-landing'
 POLL_INTERVAL = 5  # seconds
-WAIT_TIME_AFTER_PROMPT = 45  # seconds to wait for AI
+WAIT_TIME_AFTER_PROMPT = 120  # 2 min to wait for AI to finish
 
 # PyAutoGUI settings
 pyautogui.FAILSAFE = True
@@ -216,9 +216,23 @@ def process_prompt(prompt_data):
             window_manager.mark_available(window)
             return
         
-        # Wait for AI
-        print(f'[WAITING] {WAIT_TIME_AFTER_PROMPT}s for AI response...')
-        time.sleep(WAIT_TIME_AFTER_PROMPT)
+        # Auto-accept loop - press Alt+Return periodically to accept changes
+        # (Same approach as auto-prompt-runner.py)
+        print(f'[AUTO-ACCEPT] Running for {WAIT_TIME_AFTER_PROMPT}s...')
+        accept_end = time.time() + WAIT_TIME_AFTER_PROMPT
+        accept_count = 0
+        
+        while time.time() < accept_end:
+            try:
+                # Make sure our window is still active
+                if window.isActive:
+                    pyautogui.hotkey('alt', 'Return')  # Accept changes shortcut
+                    accept_count += 1
+            except:
+                pass
+            time.sleep(3)  # Press every 3 seconds
+        
+        print(f'[AUTO-ACCEPT] Pressed Accept {accept_count} times')
         
         # Git push
         git_push()
