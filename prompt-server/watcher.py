@@ -36,6 +36,16 @@ REPO_DIR = r'C:\Users\Stuart\stuart-hollinger-landing'
 POLL_INTERVAL = 5  # seconds
 WAIT_TIME_AFTER_PROMPT = 45  # 45 seconds to wait for AI
 
+# ═══ PROMPT PREFIX ═══
+# Added to every prompt to give context and prevent AI from asking questions
+PROMPT_PREFIX = """[SUITE Ecosystem - Stuart's Projects]
+IMPORTANT: Do NOT ask clarifying questions. Make your best attempt with reasonable assumptions.
+If something is unclear, make a sensible choice and proceed. Add a code comment if you made an assumption.
+For full project context, read .agent/context.md
+
+---
+"""
+
 # ═══ WINDOW SLOTS - EXACT COORDINATES ═══
 # Measured using get_coords.py on Stuart's PC
 # Each slot has: chat input coords, accept button coords, and window region for screenshots
@@ -281,9 +291,10 @@ def process_prompt(prompt_data):
         pyautogui.click(slot["chat_x"], slot["chat_y"])
         time.sleep(0.5)
         
-        # Step 2: Type the prompt
+        # Step 2: Type the prompt (with prefix)
         print(f'[W{slot_index}] Typing prompt...')
-        safe_text = ''.join(c if c.isascii() and c.isprintable() else ' ' for c in prompt_text)
+        full_prompt = PROMPT_PREFIX + prompt_text
+        safe_text = ''.join(c if c.isascii() and c.isprintable() else ' ' for c in full_prompt)
         pyautogui.typewrite(safe_text, interval=0.02)
         time.sleep(0.3)
         
