@@ -36,9 +36,13 @@ REPO_DIR = r'C:\Users\Stuart\stuart-hollinger-landing'
 POLL_INTERVAL = 5  # seconds
 WAIT_TIME_AFTER_PROMPT = 45  # 45 seconds to wait for AI
 
+# ═══ PAUSE FILE ═══
+# Create this file to pause the watcher, delete to resume
+PAUSE_FILE = os.path.join(os.path.dirname(__file__), '.pause')
+
 # ═══ PROMPT PREFIX ═══
-# Added to every prompt to prevent AI from asking questions
-PROMPT_PREFIX = "[NO QUESTIONS - just make your best attempt] "
+# Added to every prompt to prevent AI from asking questions and opening browsers
+PROMPT_PREFIX = "[NO QUESTIONS - just make your best attempt. DO NOT open browser or run dev servers.] "
 
 # ═══ WINDOW SLOTS - EXACT COORDINATES ═══
 # Measured using get_coords.py on Stuart's PC
@@ -546,6 +550,12 @@ def main():
     
     try:
         while True:
+            # Check for pause file
+            if os.path.exists(PAUSE_FILE):
+                print('[PAUSED] Create prompt-server/.pause file detected. Delete to resume.')
+                time.sleep(5)
+                continue
+            
             # Poll for pending prompts
             prompts = supabase.get_pending_prompts()
             
