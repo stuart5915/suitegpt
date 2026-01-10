@@ -192,16 +192,18 @@ def process_prompt(prompt_data):
         pyperclip.copy(prompt_text)
         print('[ACTION] Copied prompt to clipboard')
         
-        # Focus chat input using keyboard shortcut (more reliable than clicking)
-        # Try Ctrl+L first (common focus chat shortcut), then fallback to clicking
+        # Focus chat input using keyboard shortcut
+        print('[ACTION] Pressing Ctrl+L to open chat...')
         pyautogui.hotkey('ctrl', 'l')  # Focus chat input in Antigravity
-        time.sleep(0.3)
+        time.sleep(1.0)  # Wait for chat panel to fully open
         
-        # Paste prompt
+        # Type the prompt directly (more reliable than paste sometimes)
+        print('[ACTION] Pasting prompt...')
         pyautogui.hotkey('ctrl', 'v')
-        time.sleep(0.3)
+        time.sleep(0.5)  # Wait for paste to complete
         
         # Send with Enter
+        print('[ACTION] Pressing Enter to send...')
         pyautogui.press('enter')
         print('[ACTION] Sent prompt to Antigravity')
         
