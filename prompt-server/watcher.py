@@ -227,6 +227,11 @@ def process_prompt(prompt_data):
         
         print(f'[AUTO-ACCEPT] Pressed Accept {accept_count} times')
         
+        # Save all files with Ctrl+S (Antigravity might not auto-save)
+        print('[ACTION] Pressing Ctrl+S to save files...')
+        pyautogui.hotkey('ctrl', 's')
+        time.sleep(1)
+        
         # Git push
         git_push()
         
