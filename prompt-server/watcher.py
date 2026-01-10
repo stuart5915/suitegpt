@@ -108,6 +108,7 @@ slot_locks = [threading.Lock() for _ in range(4)]  # Per-slot locks
 git_lock = threading.Lock()  # Serialize git operations
 slot_allocation_lock = threading.Lock()  # Lock for picking next slot
 current_slot_index = _loaded_index  # Round-robin counter (persisted)
+prompt_incoming = False  # Signal background thread to stop sweep when prompt arrives
 
 
 def get_next_slot():
@@ -300,6 +301,11 @@ def process_prompt(prompt_data):
     prompt_text = prompt_data['prompt']
     target = prompt_data.get('target', 'stuart-hollinger-landing')
     
+    # SIGNAL BACKGROUND THREAD TO STOP - prevents sweep from clicking while we prepare
+    global prompt_incoming
+    prompt_incoming = True
+    time.sleep(0.3)  # Give background thread time to finish current action
+    
     # Get next slot round-robin (Antigravity queues messages, so we keep going)
     slot_index = get_next_slot()
     slot = WINDOW_SLOTS[slot_index]
@@ -322,6 +328,9 @@ def process_prompt(prompt_data):
         
         # MARK SLOT AS TYPING - prevents other threads from clicking accept on this slot
         slot_typing[slot_index] = True
+        
+        # Clear incoming flag - now slot_typing protects us
+        prompt_incoming = False
         
         # Step 1: Left-click to focus the chat input
         print(f'[W{slot_index}] Clicking chat at ({slot["chat_x"]}, {slot["chat_y"]})...')
@@ -483,12 +492,15 @@ def background_push_worker():
             # Accept sweep every 5 seconds - BUT ONLY if NO slots are typing AND not paused
             # Clicking any window steals focus, which breaks typewrite
             if current_time - last_accept_time >= accept_interval:
-                if paused or any(slot_typing):
-                    # Paused or someone is typing - don't click anything!
+                if paused or prompt_incoming or any(slot_typing):
+                    # Paused, prompt incoming, or someone is typing - don't click anything!
                     pass
                 else:
                     # Safe to sweep all windows
                     for i, slot in enumerate(WINDOW_SLOTS):
+                        # Check if prompt arrived mid-sweep - ABORT immediately
+                        if prompt_incoming:
+                            break
                         try:
                             # Click Accept button
                             pyautogui.click(slot["accept_x"], slot["accept_y"])
