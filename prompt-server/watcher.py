@@ -299,6 +299,16 @@ def process_prompt(prompt_data):
         pyautogui.hotkey('ctrl', 's')
         time.sleep(2)
         
+        # ACCEPT ALL WINDOWS - sweep through all windows to catch any completed ones
+        print(f'[W{slot_index}] Accept-all sweep before push...')
+        for i, s in enumerate(WINDOW_SLOTS):
+            try:
+                pyautogui.click(s["accept_x"], s["accept_y"])
+                time.sleep(0.2)
+            except:
+                pass
+        time.sleep(1)
+        
         # Git operations (serialized with lock)
         with git_lock:
             git_pull()
