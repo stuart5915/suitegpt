@@ -254,19 +254,25 @@ def process_prompt(prompt_data):
         
         print(f'[W{slot_index}] Watching for signal file: {signal_file}')
         
+        # Also check for the generic .agent-done file (Antigravity creates this one)
+        generic_signal_file = os.path.join(REPO_DIR, '.agent-done')
+        
         start_time = time.time()
         last_accept_time = 0
         agent_done = False
         
         while time.time() - start_time < max_wait:
-            # Check for signal file
-            if os.path.exists(signal_file):
-                print(f'[W{slot_index}] Agent done file detected!')
-                try:
-                    os.remove(signal_file)
-                except:
-                    pass
-                agent_done = True
+            # Check for BOTH per-slot signal file AND generic signal file
+            for sf in [signal_file, generic_signal_file]:
+                if os.path.exists(sf):
+                    print(f'[W{slot_index}] Agent done file detected: {sf}')
+                    try:
+                        os.remove(sf)
+                    except:
+                        pass
+                    agent_done = True
+                    break
+            if agent_done:
                 break
             
             # Click Accept button periodically
