@@ -37,14 +37,8 @@ POLL_INTERVAL = 5  # seconds
 WAIT_TIME_AFTER_PROMPT = 45  # 45 seconds to wait for AI
 
 # ═══ PROMPT PREFIX ═══
-# Added to every prompt to give context and prevent AI from asking questions
-PROMPT_PREFIX = """[SUITE Ecosystem - Stuart's Projects]
-IMPORTANT: Do NOT ask clarifying questions. Make your best attempt with reasonable assumptions.
-If something is unclear, make a sensible choice and proceed. Add a code comment if you made an assumption.
-For full project context, read .agent/context.md
-
----
-"""
+# Added to every prompt to prevent AI from asking questions
+PROMPT_PREFIX = "[NO QUESTIONS - just make your best attempt] "
 
 # ═══ WINDOW SLOTS - EXACT COORDINATES ═══
 # Measured using get_coords.py on Stuart's PC
