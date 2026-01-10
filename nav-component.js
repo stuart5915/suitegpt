@@ -21,8 +21,13 @@
                 <span class="nav-dropdown-trigger">SUITE</span>
                 <div class="nav-dropdown-menu">
                     <a href="${basePath}wallet.html">🏦 Vault</a>
-                    <a href="${basePath}dashboard.html">💼 Dashboard</a>
-                    <a href="${basePath}learn.html">📚 Learn</a>
+                    <a href="${basePath}dashboard.html#earn">💰 Earn</a>
+                    <a href="${basePath}dashboard.html#store">🛒 Store</a>
+                    <a href="${basePath}dashboard.html#giving">💝 Giving</a>
+                    <a href="${basePath}dashboard.html#studio">📺 Content</a>
+                    <a href="${basePath}dashboard.html#cadence">🎯 Cadence</a>
+                    <a href="${basePath}dashboard.html#suitehub">🏠 Hub</a>
+                    <a href="${basePath}dashboard.html">⚙️ Dashboard</a>
                 </div>
             </div>
             <a href="${basePath}start-building.html" class="nav-cta">🚀 Start Building</a>
