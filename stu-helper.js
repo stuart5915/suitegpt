@@ -142,7 +142,7 @@ Keep responses short, friendly, and helpful. Use emojis sparingly. If you don't 
                 </a>
             </div>
             <button class="stu-button" aria-label="Open help chat">
-                <img src="/assets/suite-token.png" alt="SUITE" class="suite-coin-btn-img">
+                <img src="/assets/suite-token-clay.png" alt="SUITE" class="suite-coin-btn-img">
                 <span class="stu-close">✕</span>
             </button>
         `;
