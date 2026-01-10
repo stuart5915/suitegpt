@@ -64,6 +64,36 @@ def serve_screenshot(filename):
     screenshots_dir = os.path.join(os.path.dirname(__file__), 'screenshots')
     return send_from_directory(screenshots_dir, filename)
 
+# Images upload directory
+IMAGES_DIR = os.path.join(os.path.dirname(__file__), 'images')
+os.makedirs(IMAGES_DIR, exist_ok=True)
+
+@app.route('/images/<filename>')
+def serve_image(filename):
+    """Serve uploaded images"""
+    return send_from_directory(IMAGES_DIR, filename)
+
+@app.route('/upload-image', methods=['POST'])
+def upload_image():
+    """Upload an image to attach to prompts"""
+    if 'image' not in request.files:
+        return jsonify({'success': False, 'error': 'No image provided'})
+    
+    file = request.files['image']
+    if file.filename == '':
+        return jsonify({'success': False, 'error': 'No file selected'})
+    
+    # Save with timestamp
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    ext = os.path.splitext(file.filename)[1] or '.png'
+    filename = f'{timestamp}{ext}'
+    filepath = os.path.join(IMAGES_DIR, filename)
+    file.save(filepath)
+    
+    # Return path that works on PC (they share the repo)
+    relative_path = f'prompt-server/images/{filename}'
+    return jsonify({'success': True, 'path': relative_path, 'filename': filename})
+
 @app.route('/send', methods=['POST'])
 def send_prompt():
     data = request.json

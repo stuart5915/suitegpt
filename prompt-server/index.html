@@ -584,6 +584,24 @@
 Example: Fix the nav bar emojis on the SUITE website
 Example: Add a new Learn page with documentation links
 Example: Update the footer on all pages"></textarea>
+
+            <!-- Image Attachment -->
+            <div style="margin: 12px 0; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <label for="imageInput"
+                    style="cursor: pointer; padding: 10px 16px; background: rgba(255,255,255,0.1); border-radius: 8px; font-size: 0.9rem;">
+                    📷 Attach Image
+                </label>
+                <input type="file" id="imageInput" accept="image/*" style="display: none;"
+                    onchange="previewImage(this)">
+                <div id="imagePreview" style="display: none; align-items: center; gap: 8px;">
+                    <img id="previewImg"
+                        style="max-height: 60px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);">
+                    <span id="imageName" style="font-size: 0.85rem; color: rgba(255,255,255,0.6);"></span>
+                    <button onclick="clearImage()"
+                        style="padding: 6px 10px; background: rgba(255,0,0,0.3); font-size: 0.8rem;">✕</button>
+                </div>
+            </div>
+
             <button onclick="sendPrompt()" id="sendBtn">🚀 Send to PC (Ctrl+Enter)</button>
             <div id="response"></div>
 
@@ -1119,6 +1137,7 @@ Example: Update the footer on all pages"></textarea>
                     response.className = 'response success';
                     response.textContent = '✅ Sent to PC! Watcher will process it.';
                     document.getElementById('prompt').value = '';
+                    clearImage();  // Clear attached image
                     loadHistory();
                     renderQuickHistory();
                 } else {
@@ -1132,6 +1151,60 @@ Example: Update the footer on all pages"></textarea>
 
             btn.disabled = false;
             btn.textContent = '🚀 Send to PC (Ctrl+Enter)';
+        }
+
+        // ═══ IMAGE ATTACHMENT ═══
+        let attachedImagePath = null;
+
+        function previewImage(input) {
+            const file = input.files[0];
+            if (file) {
+                const preview = document.getElementById('imagePreview');
+                const img = document.getElementById('previewImg');
+                const name = document.getElementById('imageName');
+
+                img.src = URL.createObjectURL(file);
+                name.textContent = file.name;
+                preview.style.display = 'flex';
+
+                // Upload to server immediately
+                uploadImage(file);
+            }
+        }
+
+        async function uploadImage(file) {
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const res = await fetch('/upload-image', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    attachedImagePath = data.path;
+                    document.getElementById('imageName').textContent = `✅ ${file.name} (ready)`;
+                    // Append to prompt
+                    const prompt = document.getElementById('prompt');
+                    if (!prompt.value.includes('[Image:')) {
+                        prompt.value += `\n\n[Image: ${data.path}]`;
+                    }
+                } else {
+                    document.getElementById('imageName').textContent = `❌ Upload failed`;
+                }
+            } catch (err) {
+                document.getElementById('imageName').textContent = `❌ Upload error`;
+            }
+        }
+
+        function clearImage() {
+            document.getElementById('imageInput').value = '';
+            document.getElementById('imagePreview').style.display = 'none';
+            attachedImagePath = null;
+            // Remove image reference from prompt
+            const prompt = document.getElementById('prompt');
+            prompt.value = prompt.value.replace(/\n\n\[Image:.*?\]/g, '');
         }
 
         async function loadHistory() {
