@@ -341,7 +341,7 @@ def process_prompt(prompt_data):
         print(f'[W{slot_index}] Typing prompt...')
         full_prompt = PROMPT_PREFIX + prompt_text
         safe_text = ''.join(c if c.isascii() and c.isprintable() else ' ' for c in full_prompt)
-        pyautogui.typewrite(safe_text, interval=0.02)
+        pyautogui.typewrite(safe_text, interval=0.01)  # 0.01 = 100 chars/sec (fast but reliable)
         time.sleep(0.3)
         
         # Step 3: Send with Enter
