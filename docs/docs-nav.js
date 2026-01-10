@@ -27,12 +27,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             <span class="nav-dropdown-trigger">SUITE ▾</span>
                             <div class="nav-dropdown-menu">
                                 <a href="../wallet.html">🏦 Vault</a>
-                                <a href="../earn.html">💰 Earn</a>
                                 <a href="../boost.html">🛒 Store</a>
-                                <a href="../giving.html">💝 Giving</a>
-                                <a href="../content.html">📚 Content</a>
-                                <a href="../cadence.html">🎯 Cadence</a>
-                                <a href="../suitehub.html">🏠 Hub</a>
                                 <a href="../dashboard.html">⚙️ Dashboard</a>
                             </div>
                         </div>
