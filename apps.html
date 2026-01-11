@@ -1209,6 +1209,7 @@
                         <button class="category-tab"> AI Tools</button>
                         <button class="category-tab"> Health</button>
                         <button class="category-tab">? Productivity</button>
+                        <button class="category-tab" data-category="extensions">🧩 Extensions</button>
                     </div>
                 </div>
 
@@ -1243,6 +1244,105 @@
 
                     <div class="apps-grid" id="appsGrid">
                         <!-- Apps rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Extensions Section (hidden by default, shown when Extensions tab is clicked) -->
+                <div class="apps-container" id="extensionsContainer" style="padding: 0; display: none;">
+                    <div class="section-header">
+                        <h2 class="section-title">🧩 Extensions & Tools</h2>
+                        <span class="results-count">Showing <strong>4</strong> extensions</span>
+                    </div>
+
+                    <div class="apps-grid">
+                        <!-- Visual Feedback -->
+                        <div class="app-card featured">
+                            <div class="app-row">
+                                <div class="app-icon" style="background: linear-gradient(135deg, #fef3c7, #fde68a);">🎯
+                                </div>
+                                <div class="app-content">
+                                    <div class="app-name">Visual Feedback</div>
+                                    <div class="app-meta">
+                                        <span>Browser Extension</span>
+                                        <span class="dot"></span>
+                                        <span class="app-rating">⭐ New</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="app-description">Click any element on your website, describe what you want
+                                changed, and send directly to AI with screenshots + CSS selectors.</p>
+                            <div class="app-footer">
+                                <span class="app-status coming">🔜 Coming Soon</span>
+                                <a href="docs/extensions/visual-feedback.html" class="app-price">Learn More</a>
+                            </div>
+                        </div>
+
+                        <!-- PC Watcher -->
+                        <div class="app-card">
+                            <div class="app-row">
+                                <div class="app-icon" style="background: linear-gradient(135deg, #dcfce7, #bbf7d0);">📡
+                                </div>
+                                <div class="app-content">
+                                    <div class="app-name">PC Watcher</div>
+                                    <div class="app-meta">
+                                        <span>Desktop Tool</span>
+                                        <span class="dot"></span>
+                                        <span class="app-rating">⭐ Core</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="app-description">Python automation daemon that polls Supabase for prompts and
+                                injects them into Antigravity IDE windows. Auto-syncs via Git.</p>
+                            <div class="app-footer">
+                                <span class="app-status live">Live</span>
+                                <a href="docs/systems-view.html#watcher-bot" class="app-price">View Docs</a>
+                            </div>
+                        </div>
+
+                        <!-- FORGE Bot -->
+                        <div class="app-card">
+                            <div class="app-row">
+                                <div class="app-icon" style="background: linear-gradient(135deg, #fce7f3, #fbcfe8);">🤖
+                                </div>
+                                <div class="app-content">
+                                    <div class="app-name">FORGE Discord Bot</div>
+                                    <div class="app-meta">
+                                        <span>Discord Bot</span>
+                                        <span class="dot"></span>
+                                        <span class="app-rating">⭐ Core</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="app-description">Queue prompts with /addition, create apps, check status, and get
+                                DM notifications when prompts complete.</p>
+                            <div class="app-footer">
+                                <span class="app-status live">Live</span>
+                                <a href="https://discord.gg/suite" target="_blank" class="app-price">Join Discord</a>
+                            </div>
+                        </div>
+
+                        <!-- SUITE CLI -->
+                        <div class="app-card">
+                            <div class="app-row">
+                                <div class="app-icon" style="background: linear-gradient(135deg, #1a1a2e, #2d1b4e);">
+                                    <span style="color: #10b981;">⌨️</span>
+                                </div>
+                                <div class="app-content">
+                                    <div class="app-name">SUITE CLI</div>
+                                    <div class="app-meta">
+                                        <span>Developer Tool</span>
+                                        <span class="dot"></span>
+                                        <span class="app-rating">📦 npm</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="app-description">npx create-suite-app to scaffold new projects. suite deploy to
+                                push to the app store from terminal.</p>
+                            <div class="app-footer">
+                                <span class="app-status coming">🔜 Coming Soon</span>
+                                <a href="developer-portal.html" class="app-price">Dev Portal</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1899,6 +1999,38 @@
 
         // Setup origin filters after page loads
         document.addEventListener('DOMContentLoaded', setupOriginFilters);
+
+        // Extensions tab toggle
+        document.addEventListener('DOMContentLoaded', () => {
+            const categoryTabs = document.querySelectorAll('.category-tab');
+            const appsContainer = document.querySelector('.apps-container:not(#extensionsContainer)');
+            const extensionsContainer = document.getElementById('extensionsContainer');
+            const topCharts = document.querySelector('.top-charts');
+            const searchBar = document.querySelector('.search-bar')?.parentElement;
+
+            categoryTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Update active state
+                    categoryTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+
+                    // Toggle sections based on which tab
+                    if (tab.dataset.category === 'extensions') {
+                        // Show extensions, hide apps
+                        if (appsContainer) appsContainer.style.display = 'none';
+                        if (extensionsContainer) extensionsContainer.style.display = 'block';
+                        if (topCharts) topCharts.style.display = 'none';
+                        if (searchBar) searchBar.style.display = 'none';
+                    } else {
+                        // Show apps, hide extensions
+                        if (appsContainer) appsContainer.style.display = 'block';
+                        if (extensionsContainer) extensionsContainer.style.display = 'none';
+                        if (topCharts) topCharts.style.display = 'block';
+                        if (searchBar) searchBar.style.display = 'block';
+                    }
+                });
+            });
+        });
     </script>
 
     <!-- Stu Helper Widget -->
