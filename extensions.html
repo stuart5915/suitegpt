@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extensions & Tools | SUITE</title>
+    <link rel="icon" type="image/png" href="assets/suite-mascot.png">
+    <meta name="description"
+        content="Browser extensions, desktop tools, and developer utilities for the SUITE ecosystem.">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="nav.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(180deg, #e8d5f9 0%, #ffd4e3 25%, #ffe4d4 50%, #fff5eb 75%, #e8f4f8 100%);
+            min-height: 100vh;
+            color: #2d1b4e;
+        }
+
+        /* Page Layout */
+        .extensions-page {
+            padding-top: 90px;
+            padding-bottom: 60px;
+        }
+
+        .canvas-container {
+            width: 100%;
+            padding: 0 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Main Container */
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 32px;
+            box-shadow: 0 16px 80px rgba(0, 0, 0, 0.08);
+            padding: 40px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        /* Header */
+        .page-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .page-title {
+            font-size: 2.8rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 50%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+        }
+
+        .page-subtitle {
+            font-size: 1.15rem;
+            color: #5a4a6f;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Category Section */
+        .category-section {
+            margin-bottom: 48px;
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(139, 92, 246, 0.2);
+        }
+
+        .category-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .category-icon.browser {
+            background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+        }
+
+        .category-icon.desktop {
+            background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+        }
+
+        .category-icon.developer {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+        }
+
+        .category-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #2d1b4e;
+        }
+
+        .category-count {
+            background: rgba(139, 92, 246, 0.1);
+            color: #8b5cf6;
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        /* Extensions Grid */
+        .extensions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 20px;
+        }
+
+        /* Extension Card */
+        .extension-card {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .extension-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
+            border-color: #8b5cf6;
+        }
+
+        .extension-card.featured {
+            border: 2px solid #8b5cf6;
+            background: linear-gradient(135deg, #fff 0%, #f5f3ff 100%);
+        }
+
+        .extension-card.featured::before {
+            content: '⭐ Featured';
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: linear-gradient(135deg, #8b5cf6, #6366f1);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .extension-card.coming-soon {
+            opacity: 0.7;
+        }
+
+        .extension-card.coming-soon::after {
+            content: 'Coming Soon';
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(0, 0, 0, 0.1);
+            color: #666;
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .ext-header {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .ext-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            flex-shrink: 0;
+        }
+
+        .ext-info {
+            flex: 1;
+        }
+
+        .ext-name {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin-bottom: 4px;
+        }
+
+        .ext-tagline {
+            font-size: 0.9rem;
+            color: #5a4a6f;
+        }
+
+        .ext-description {
+            font-size: 0.95rem;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .ext-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .ext-feature {
+            background: rgba(139, 92, 246, 0.08);
+            color: #6366f1;
+            padding: 6px 12px;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .ext-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .ext-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        .ext-btn.primary {
+            background: linear-gradient(135deg, #8b5cf6, #6366f1);
+            color: white;
+        }
+
+        .ext-btn.primary:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.3);
+        }
+
+        .ext-btn.secondary {
+            background: rgba(0, 0, 0, 0.05);
+            color: #2d1b4e;
+        }
+
+        .ext-btn.secondary:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .ext-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 24px;
+            }
+
+            .page-title {
+                font-size: 2rem;
+            }
+
+            .extensions-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-logo">
+                <img src="assets/suite-token.png" alt="SUITE">SUITE
+            </a>
+            <div class="nav-links">
+                <a href="apps.html">Apps</a>
+                <a href="developer-portal.html">Build</a>
+                <a href="discuss.html">Discuss</a>
+                <a href="incubate.html">Incubate</a>
+                <a href="docs/index.html">Docs</a>
+                <div class="nav-dropdown">
+                    <a href="#" class="nav-dropdown-trigger">SUITE ▾</a>
+                    <div class="nav-dropdown-content">
+                        <a href="wallet.html">💰 Wallet</a>
+                        <a href="ecosystem.html">🌐 Ecosystem</a>
+                        <a href="extensions.html" class="active">🧩 Extensions</a>
+                    </div>
+                </div>
+                <a href="start-building.html" class="nav-cta">🚀 Start Building</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="extensions-page">
+        <div class="canvas-container">
+            <div class="main-container">
+                <!-- Header -->
+                <header class="page-header">
+                    <h1 class="page-title">🧩 Extensions & Tools</h1>
+                    <p class="page-subtitle">
+                        Browser extensions, desktop automation, and developer tools that supercharge your SUITE
+                        experience.
+                    </p>
+                </header>
+
+                <!-- Browser Extensions -->
+                <section class="category-section">
+                    <div class="category-header">
+                        <div class="category-icon browser">🌐</div>
+                        <h2 class="category-title">Browser Extensions</h2>
+                        <span class="category-count">2 tools</span>
+                    </div>
+                    <div class="extensions-grid">
+                        <!-- Visual Feedback Tool -->
+                        <div class="extension-card featured">
+                            <div class="ext-header">
+                                <div class="ext-icon" style="background: linear-gradient(135deg, #fef3c7, #fde68a);">🎯
+                                </div>
+                                <div class="ext-info">
+                                    <h3 class="ext-name">Visual Feedback</h3>
+                                    <p class="ext-tagline">Click → Describe → See changes</p>
+                                </div>
+                            </div>
+                            <p class="ext-description">
+                                Click any element on your website, describe what you want changed, and send directly to
+                                AI.
+                                Screenshots + CSS selectors included automatically.
+                            </p>
+                            <div class="ext-features">
+                                <span class="ext-feature">Click Mode</span>
+                                <span class="ext-feature">Drag Selection</span>
+                                <span class="ext-feature">Voice Input</span>
+                                <span class="ext-feature">Auto Screenshots</span>
+                            </div>
+                            <div class="ext-actions">
+                                <a href="#" class="ext-btn primary" disabled>Coming Soon</a>
+                                <a href="docs/extensions/visual-feedback.html" class="ext-btn secondary">Learn More</a>
+                            </div>
+                        </div>
+
+                        <!-- SUITE Quick Connect -->
+                        <div class="extension-card coming-soon">
+                            <div class="ext-header">
+                                <div class="ext-icon" style="background: linear-gradient(135deg, #dbeafe, #bfdbfe);">🔐
+                                </div>
+                                <div class="ext-info">
+                                    <h3 class="ext-name">SUITE Connect</h3>
+                                    <p class="ext-tagline">One-click login across all apps</p>
+                                </div>
+                            </div>
+                            <p class="ext-description">
+                                Automatically log into any SUITE-powered app with your Discord or wallet.
+                                See your $SUITE balance and gov points from the toolbar.
+                            </p>
+                            <div class="ext-features">
+                                <span class="ext-feature">Discord OAuth</span>
+                                <span class="ext-feature">Wallet Connect</span>
+                                <span class="ext-feature">Balance View</span>
+                            </div>
+                            <div class="ext-actions">
+                                <button class="ext-btn primary" disabled>Coming Soon</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Desktop Tools -->
+                <section class="category-section">
+                    <div class="category-header">
+                        <div class="category-icon desktop">🖥️</div>
+                        <h2 class="category-title">Desktop Tools</h2>
+                        <span class="category-count">3 tools</span>
+                    </div>
+                    <div class="extensions-grid">
+                        <!-- PC Watcher -->
+                        <div class="extension-card">
+                            <div class="ext-header">
+                                <div class="ext-icon" style="background: linear-gradient(135deg, #dcfce7, #bbf7d0);">📡
+                                </div>
+                                <div class="ext-info">
+                                    <h3 class="ext-name">PC Watcher</h3>
+                                    <p class="ext-tagline">Antigravity automation daemon</p>
+                                </div>
+                            </div>
+                            <p class="ext-description">
+                                Python script that polls Supabase for prompts and injects them into Antigravity IDE
+                                windows.
+                                Auto-syncs via Git and handles background clicks.
+                            </p>
+                            <div class="ext-features">
+                                <span class="ext-feature">Prompt Queue</span>
+                                <span class="ext-feature">Multi-Window</span>
+                                <span class="ext-feature">Git Sync</span>
+                            </div>
+                            <div class="ext-actions">
+                                <a href="https://github.com/stuarthollinger/watcher" class="ext-btn primary"
+                                    target="_blank">View on GitHub</a>
+                                <a href="docs/systems-view.html#watcher-bot" class="ext-btn secondary">Docs</a>
+                            </div>
+                        </div>
+
+                        <!-- Auto-Sync -->
+                        <div class="extension-card">
+                            <div class="ext-header">
+                                <div class="ext-icon" style="background: linear-gradient(135deg, #e0e7ff, #c7d2fe);">🔄
+                                </div>
+                                <div class="ext-info">
+                                    <h3 class="ext-name">PC-Laptop Sync</h3>
+                                    <p class="ext-tagline">Bidirectional file sync</p>
+                                </div>
+                            </div>
+                            <p class="ext-description">
+                                Keep your PC and laptop in perfect sync via GitHub. Auto-push from PC, pull on laptop
+                                manually or automatically when prompts complete.
+                            </p>
+                            <div class="ext-features">
+                                <span class="ext-feature">Auto Push</span>
+                                <span class="ext-feature">Pull on Complete</span>
+                                <span class="ext-feature">Conflict Resolution</span>
+                            </div>
+                            <div class="ext-actions">
+                                <a href="docs/systems-view.html#pc-laptop-sync" class="ext-btn primary">View Docs</a>
+                            </div>
+                        </div>
+
+                        <!-- FORGE Bot -->
+                        <div class="extension-card">
+                            <div class="ext-header">
+                                <div class="ext-icon" style="background: linear-gradient(135deg, #fce7f3, #fbcfe8);">🤖
+                                </div>
+                                <div class="ext-info">
+                                    <h3 class="ext-name">FORGE Discord Bot</h3>
+                                    <p class="ext-tagline">Queue prompts from Discord</p>
+                                </div>
+                            </div>
+                            <p class="ext-description">
+                                Use /addition to queue prompts, /create-app to start new projects, /status to check the
+                                watcher.
+                                Get DM notifications when prompts complete.
+                            </p>
+                            <div class="ext-features">
+                                <span class="ext-feature">/addition</span>
+                                <span class="ext-feature">/create-app</span>
+                                <span class="ext-feature">DM Alerts</span>
+                            </div>
+                            <div class="ext-actions">
+                                <a href="https://discord.gg/suite" class="ext-btn primary" target="_blank">Join
+                                    Discord</a>
+                                <a href="docs/systems-view.html#discord-integration" class="ext-btn secondary">Docs</a>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Developer Tools -->
+                <section class="category-section">
+                    <div class="category-header">
+                        <div class="category-icon developer">🛠️</div>
+                        <h2 class="category-title">Developer Tools</h2>
+                        <span class="category-count">2 tools</span>
+                    </div>
+                    <div class="extensions-grid">
+                        <!-- SUITE CLI -->
+                        <div class="extension-card coming-soon">
+                            <div class="ext-header">
+                                <div class="ext-icon" style="background: linear-gradient(135deg, #1a1a2e, #2d1b4e);">
+                                    <span style="color: #10b981;">⌨️</span>
+                                </div>
+                                <div class="ext-info">
+                                    <h3 class="ext-name">SUITE CLI</h3>
+                                    <p class="ext-tagline">Create & deploy from terminal</p>
+                                </div>
+                            </div>
+                            <p class="ext-description">
+                                npx create-suite-app to scaffold new projects. suite deploy to push to the app store.
+                                Manage your apps from the command line.
+                            </p>
+                            <div class="ext-features">
+                                <span class="ext-feature">npx create-suite-app</span>
+                                <span class="ext-feature">suite deploy</span>
+                                <span class="ext-feature">Templates</span>
+                            </div>
+                            <div class="ext-actions">
+                                <button class="ext-btn primary" disabled>Coming Soon</button>
+                            </div>
+                        </div>
+
+                        <!-- App Templates -->
+                        <div class="extension-card">
+                            <div class="ext-header">
+                                <div class="ext-icon" style="background: linear-gradient(135deg, #fef3c7, #fde68a);">📦
+                                </div>
+                                <div class="ext-info">
+                                    <h3 class="ext-name">App Templates</h3>
+                                    <p class="ext-tagline">Starter kits for common app types</p>
+                                </div>
+                            </div>
+                            <p class="ext-description">
+                                Pre-built templates for health apps, productivity tools, AI integrations, and more.
+                                Expo + Supabase + SUITE integration out of the box.
+                            </p>
+                            <div class="ext-features">
+                                <span class="ext-feature">Expo Ready</span>
+                                <span class="ext-feature">Supabase Auth</span>
+                                <span class="ext-feature">$SUITE Payments</span>
+                            </div>
+                            <div class="ext-actions">
+                                <a href="developer-portal.html" class="ext-btn primary">Browse Templates</a>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
