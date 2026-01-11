@@ -1,5 +1,6 @@
 /**
  * SUITE Visual Feedback - Popup Script
+ * Handles destination selection, settings, and activation
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -8,11 +9,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const supabaseKeyInput = document.getElementById('supabaseKey');
     const userIdInput = document.getElementById('userId');
     const saveBtn = document.getElementById('saveBtn');
+    const destinationOptions = document.querySelectorAll('.destination-option:not(.disabled)');
 
     // Load saved settings
-    chrome.storage.sync.get(['supabaseKey', 'userId'], (result) => {
+    chrome.storage.sync.get(['supabaseKey', 'userId', 'destination'], (result) => {
         if (result.supabaseKey) supabaseKeyInput.value = result.supabaseKey;
         if (result.userId) userIdInput.value = result.userId;
+        if (result.destination) {
+            updateDestinationUI(result.destination);
+        }
     });
 
     // Check current status
@@ -20,7 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (tabs[0]) {
             chrome.tabs.sendMessage(tabs[0].id, { action: 'getStatus' }, (response) => {
                 if (chrome.runtime.lastError) {
-                    // Content script not loaded yet
                     updateStatus(false);
                 } else if (response) {
                     updateStatus(response.active);
@@ -41,6 +45,26 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+
+    // Destination selection
+    destinationOptions.forEach(option => {
+        option.addEventListener('click', () => {
+            const dest = option.dataset.dest;
+            updateDestinationUI(dest);
+            chrome.storage.sync.set({ destination: dest });
+        });
+    });
+
+    function updateDestinationUI(dest) {
+        document.querySelectorAll('.destination-option').forEach(opt => {
+            opt.classList.remove('selected');
+            if (opt.dataset.dest === dest) {
+                opt.classList.add('selected');
+                const input = opt.querySelector('input');
+                if (input) input.checked = true;
+            }
+        });
+    }
 
     // Save settings
     saveBtn.addEventListener('click', () => {
