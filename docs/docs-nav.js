@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 <a href="../dashboard.html">⚙️ Dashboard</a>
                             </div>
                         </div>
-                        <a href="../start-building.html" class="nav-cta">🚀 Start Building</a>
+                        <a href="../start-building.html" class="nav-cta"><img src="../assets/emojis/clay-rocket.png" alt="" class="nav-cta-emoji"> Start Building</a>
                     </div>
                     <button class="mobile-menu-btn">
                         <span></span>

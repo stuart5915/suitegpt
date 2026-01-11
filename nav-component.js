@@ -26,7 +26,7 @@
                     <a href="${basePath}learn.html">📚 Learn</a>
                 </div>
             </div>
-            <a href="${basePath}start-building.html" class="nav-cta">🚀 Start Building</a>
+            <a href="${basePath}start-building.html" class="nav-cta"><img src="${basePath}assets/emojis/clay-rocket.png" alt="" class="nav-cta-emoji"> Start Building</a>
         </div>
         <button class="mobile-menu-btn" onclick="this.classList.toggle('active'); document.querySelector('.nav-links').classList.toggle('mobile-open');">
             <span></span>
