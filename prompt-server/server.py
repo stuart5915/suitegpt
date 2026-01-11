@@ -23,6 +23,19 @@ auto_push_enabled = False
 last_completed_id = None
 pull_count = 0  # Track how many auto-pulls have happened
 
+# Push tracking - watcher.py writes to this file when it pushes
+PUSH_STATUS_FILE = os.path.join(os.path.dirname(__file__), '.last_push')
+
+def get_last_push_time():
+    """Read last push timestamp from file (written by watcher.py)"""
+    try:
+        if os.path.exists(PUSH_STATUS_FILE):
+            with open(PUSH_STATUS_FILE, 'r') as f:
+                return f.read().strip()
+    except:
+        pass
+    return None
+
 def auto_pull_worker():
     """Background thread that polls Supabase for completed prompts and auto-pulls"""
     global last_completed_id, pull_count
@@ -150,12 +163,14 @@ def list_prompts():
 
 @app.route('/status', methods=['GET'])
 def status():
+    last_push = get_last_push_time()
     return jsonify({
         'status': 'running',
         'pending_prompts': len(os.listdir(PROMPTS_DIR)),
         'auto_pull': auto_pull_enabled,
         'auto_push': auto_push_enabled,
-        'pull_count': pull_count
+        'pull_count': pull_count,
+        'last_push': last_push
     })
 
 @app.route('/needs-review', methods=['GET'])
