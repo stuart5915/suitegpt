@@ -510,11 +510,12 @@ def background_push_worker():
                             time.sleep(0.05)
                             # Press Alt+Enter for command dialogs
                             pyautogui.hotkey('alt', 'Return')
-                            time.sleep(0.05)
-                            # Click in chat area then scroll (scroll works at mouse position)
-                            pyautogui.click(slot["chat_x"], slot["chat_y"])
-                            time.sleep(0.05)
-                            pyautogui.scroll(-3)  # Scroll down in chat
+                            time.sleep(0.1)
+                            # Click HIGHER in chat area (200px above input) to focus scrollable area
+                            scroll_y = slot["chat_y"] - 200
+                            pyautogui.click(slot["chat_x"], scroll_y)
+                            time.sleep(0.15)  # Longer delay for focus to register
+                            pyautogui.scroll(-10)  # Bigger scroll amount
                         except:
                             pass
                     last_accept_time = current_time
