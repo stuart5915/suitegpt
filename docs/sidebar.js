@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <a href="roadmap.html" class="sidebar-link ${isActive('roadmap.html')}">🗺️ Roadmap</a>
             <a href="systems-view.html" class="sidebar-link ${isActive('systems-view.html')}">🏗️ Systems View</a>
             <a href="glossary.html" class="sidebar-link ${isActive('glossary.html')}">🗣️ SUITE Lingo</a>
-            <a href="codex.html" class="sidebar-link ${isActive('codex.html')}">📜 The Codex</a>
+            <a href="codex.html" class="sidebar-link ${isActive('codex.html')}">📖 The SUITE Bible</a>
         </div>
 
         <div class="sidebar-section">
