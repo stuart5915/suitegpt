@@ -1136,6 +1136,48 @@
     </div>
 
     <script src="sidebar.js"></script>
+    <script>
+        // JavaScript tooltip handler - creates floating tooltip that works with scrollable containers
+        (function () {
+            const tooltip = document.createElement('div');
+            tooltip.id = 'floating-tooltip';
+            tooltip.style.cssText = `
+                position: fixed;
+                background: #1a1a2e;
+                color: white;
+                padding: 12px 16px;
+                border-radius: 10px;
+                font-size: 0.85rem;
+                font-weight: 500;
+                max-width: 300px;
+                text-align: center;
+                z-index: 999999;
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+                pointer-events: none;
+                opacity: 0;
+                transition: opacity 0.15s ease;
+            `;
+            document.body.appendChild(tooltip);
+
+            document.querySelectorAll('.term-tooltip').forEach(el => {
+                el.addEventListener('mouseenter', (e) => {
+                    const text = el.getAttribute('data-tooltip');
+                    if (!text) return;
+
+                    tooltip.textContent = text;
+                    tooltip.style.opacity = '1';
+
+                    const rect = el.getBoundingClientRect();
+                    tooltip.style.left = (rect.left + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
+                    tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
+                });
+
+                el.addEventListener('mouseleave', () => {
+                    tooltip.style.opacity = '0';
+                });
+            });
+        })();
+    </script>
 </body>
 
 </html>
