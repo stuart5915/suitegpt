@@ -1187,6 +1187,18 @@
                     </div>
                 </div>
 
+                <!-- Marketplace Panel -->
+                <div id="panel-marketplace" class="section-panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">📸 Content Marketplace</h2>
+                        <p class="panel-desc">Post bounties for content, submit work, earn SUITE from the community.</p>
+                    </div>
+                    <div class="iframe-container"
+                        style="background: white; border-radius: 20px; overflow: hidden; height: calc(100vh - 200px); min-height: 500px;">
+                        <iframe src="content.html" style="width: 100%; height: 100%; border: none;"></iframe>
+                    </div>
+                </div>
+
                 <!-- SUITEHub Panel -->
                 <div id="panel-suitehub" class="section-panel">
                     <div class="panel-header">
@@ -1878,10 +1890,15 @@
 
     <!-- AI Fleet Panel (Admin) -->
     <div id="panel-ai-fleet" class="section-panel">
-        <div class="panel-header">
-            <h2 class="panel-title">🤖 AI Fleet Dashboard</h2>
-            <p class="panel-desc">Monitor and configure the autonomous AI app factory. Watch apps being created in
-                real-time.</p>
+        <div class="panel-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <h2 class="panel-title">🤖 AI Fleet Dashboard</h2>
+                <p class="panel-desc">Monitor and configure the autonomous AI app factory. Watch apps being created in
+                    real-time.</p>
+            </div>
+            <a href="docs/ai-fleet.html"
+                style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 10px 18px; border-radius: 100px; font-size: 0.85rem; font-weight: 600; text-decoration: none; white-space: nowrap;">📚
+                Learn More</a>
         </div>
 
         <!-- System Status -->
@@ -3107,6 +3124,81 @@
 
         // Check owner access on load
         setTimeout(checkOwnerAccess, 1000);
+
+        // ═══ AI FLEET FUNCTIONS ═══
+        async function saveAIConfig() {
+            const config = {
+                iterations_per_app: document.getElementById('configIterations').value,
+                max_apps_per_day: document.getElementById('configMaxApps').value,
+                auto_deploy: document.getElementById('configAutoDeploy').checked.toString(),
+                telos_enabled: document.getElementById('configTelosEnabled').checked.toString()
+            };
+
+            try {
+                // Save each config value
+                for (const [key, value] of Object.entries(config)) {
+                    await fetch(`${SUPABASE_URL}/rest/v1/ai_config?key=eq.${key}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({ value: value, updated_at: new Date().toISOString() })
+                    });
+                }
+                alert('✅ AI Fleet configuration saved!');
+            } catch (error) {
+                console.error('Error saving AI config:', error);
+                alert('❌ Failed to save configuration');
+            }
+        }
+
+        async function loadAIFleetStats() {
+            try {
+                // Get AI apps count
+                const aiAppsResponse = await fetch(`${SUPABASE_URL}/rest/v1/suite_apps?origin=eq.ai&select=id`, {
+                    headers: { 'apikey': SUPABASE_ANON_KEY }
+                });
+                const aiApps = await aiAppsResponse.json();
+                document.getElementById('aiFleetTotalApps').textContent = Array.isArray(aiApps) ? aiApps.length : 0;
+
+                // Get today's apps (created today with origin=ai)
+                const today = new Date().toISOString().split('T')[0];
+                const todayAppsResponse = await fetch(`${SUPABASE_URL}/rest/v1/suite_apps?origin=eq.ai&created_at=gte.${today}&select=id`, {
+                    headers: { 'apikey': SUPABASE_ANON_KEY }
+                });
+                const todayApps = await todayAppsResponse.json();
+                document.getElementById('aiFleetToday').textContent = Array.isArray(todayApps) ? todayApps.length : 0;
+
+                // Load config values
+                const configResponse = await fetch(`${SUPABASE_URL}/rest/v1/ai_config?select=key,value`, {
+                    headers: { 'apikey': SUPABASE_ANON_KEY }
+                });
+                const configs = await configResponse.json();
+
+                if (Array.isArray(configs)) {
+                    configs.forEach(c => {
+                        if (c.key === 'iterations_per_app') document.getElementById('configIterations').value = c.value;
+                        if (c.key === 'max_apps_per_day') document.getElementById('configMaxApps').value = c.value;
+                        if (c.key === 'auto_deploy') document.getElementById('configAutoDeploy').checked = c.value === 'true';
+                        if (c.key === 'telos_enabled') document.getElementById('configTelosEnabled').checked = c.value === 'true';
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading AI Fleet stats:', error);
+            }
+        }
+
+        // Load AI Fleet stats when the panel is shown
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check if AI Fleet panel exists (admin only)
+            if (document.getElementById('panel-ai-fleet')) {
+                loadAIFleetStats();
+            }
+        });
+
     </script>
 
     <!-- Stu Helper Widget -->

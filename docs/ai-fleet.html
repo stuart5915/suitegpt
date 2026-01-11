@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AI Fleet - SUITE Docs</title>
+    <link rel="icon" type="image/png" href="../assets/suite-mascot.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../suite-styles.css">
+    <link rel="stylesheet" href="../nav.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        html {
+            overflow-y: scroll;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fff5eb 0%, #ffe4d4 20%, #ffd4e3 50%, #e8d5f9 80%, #d4e5ff 100%);
+            min-height: 100vh;
+            color: #2d1b4e;
+            overflow-x: hidden;
+        }
+
+        .nav-links a:hover {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            color: white !important;
+        }
+
+        .nav-links a.active {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(255, 149, 0, 0.3);
+        }
+
+        .canvas-container {
+            width: 100%;
+            min-height: 100vh;
+            padding: 90px 24px 40px 24px;
+            padding-right: calc(24px + (100vw - 100%));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+            box-sizing: border-box;
+        }
+
+        .docs-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 32px;
+            box-shadow: 0 16px 80px rgba(0, 0, 0, 0.08);
+            padding: 30px;
+            width: 100%;
+            max-width: 1200px;
+            min-height: 500px;
+            margin: 0 auto;
+            display: flex;
+            gap: 30px;
+        }
+
+        .docs-sidebar {
+            width: 220px;
+            flex-shrink: 0;
+            border-right: 1px solid rgba(0, 0, 0, 0.06);
+            padding-right: 24px;
+        }
+
+        .docs-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .docs-content h1 {
+            font-size: 2.2rem;
+            font-weight: 900;
+            display: inline-block;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 12px;
+        }
+
+        .docs-content .subtitle {
+            font-size: 1rem;
+            color: #6b7280;
+            margin-bottom: 24px;
+        }
+
+        .docs-content h2 {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin: 28px 0 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid rgba(99, 102, 241, 0.2);
+        }
+
+        .docs-content h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #2d1b4e;
+            margin: 20px 0 10px;
+        }
+
+        .docs-content p {
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: #5a4a6f;
+            margin-bottom: 12px;
+        }
+
+        .docs-content ul,
+        .docs-content ol {
+            margin: 0 0 16px 20px;
+            color: #5a4a6f;
+        }
+
+        .docs-content li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+
+        .concept-card {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.05));
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border-left: 4px solid #6366f1;
+        }
+
+        .concept-card.green {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(34, 197, 94, 0.04));
+            border-left-color: #22c55e;
+        }
+
+        .concept-card.orange {
+            background: linear-gradient(135deg, rgba(255, 149, 0, 0.08), rgba(255, 149, 0, 0.04));
+            border-left-color: #ff9500;
+        }
+
+        .concept-card h4 {
+            font-weight: 800;
+            color: #2d1b4e;
+            margin: 0 0 8px;
+            font-size: 1rem;
+        }
+
+        .concept-card p {
+            margin: 0;
+            font-size: 0.9rem;
+        }
+
+        .flow-diagram {
+            background: #1a1a2e;
+            border-radius: 16px;
+            padding: 24px;
+            color: white;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+
+        .stats-box {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin: 20px 0;
+        }
+
+        .stat-item {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .stat-item .value {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: #6366f1;
+        }
+
+        .stat-item .label {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        @media (max-width: 768px) {
+            .docs-container {
+                flex-direction: column;
+                padding: 20px;
+            }
+
+            .docs-sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+                padding-right: 0;
+                padding-bottom: 20px;
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="../index.html" class="nav-logo">
+                <img src="../assets/suite-token.png" alt="SUITE" class="nav-logo-img">
+                SUITE
+            </a>
+            <div class="nav-links">
+                <a href="../apps.html">Apps</a>
+                <a href="../developer-portal.html">Build</a>
+                <a href="../discuss.html">Discuss</a>
+                <a href="../incubate.html">Incubate</a>
+                <a href="index.html">Docs</a>
+                <div class="nav-dropdown">
+                    <span class="nav-dropdown-trigger">SUITE</span>
+                    <div class="nav-dropdown-menu">
+                        <a href="../wallet.html">🏦 Vault</a>
+                        <a href="../boost.html">🛒 Store</a>
+                        <a href="../dashboard.html">⚙️ Dashboard</a>
+                    </div>
+                </div>
+                <a href="../start-building.html" class="nav-cta">🚀 Start Building</a>
+            </div>
+            <button class="mobile-menu-btn">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="canvas-container">
+        <div class="docs-container">
+            <!-- Sidebar -->
+            <aside class="docs-sidebar"></aside>
+
+            <!-- Main Content -->
+            <main class="docs-content">
+                <h1>🤖 AI Fleet</h1>
+                <p class="subtitle">Autonomous AI agents creating apps 24/7. The factory never sleeps.</p>
+
+                <div class="concept-card green">
+                    <h4>💡 The Vision</h4>
+                    <p>SUITE's AI Fleet is an autonomous app creation system that researches market gaps, designs apps,
+                        builds them through iterative refinement, and deploys them — all without human intervention.</p>
+                </div>
+
+                <h2>How It Works</h2>
+
+                <h3>1. Market Research</h3>
+                <p>The AI continuously analyzes existing app stores, user reviews, and market trends to identify gaps
+                    and opportunities. It looks for:</p>
+                <ul>
+                    <li>Underserved niches with demand</li>
+                    <li>Apps with poor reviews that could be improved</li>
+                    <li>Emerging trends without adequate tools</li>
+                    <li>Cross-category opportunities</li>
+                </ul>
+
+                <h3>2. Concept Generation</h3>
+                <p>Once a gap is identified, the AI generates an app concept including:</p>
+                <ul>
+                    <li>Name and branding</li>
+                    <li>Core features and user flows</li>
+                    <li>Target audience</li>
+                    <li>Monetization approach (within SUITE ecosystem)</li>
+                </ul>
+
+                <h3>3. Iterative Building</h3>
+                <p>This is where the magic happens. Each app goes through <strong>50 refinement iterations</strong>:</p>
+
+                <div class="flow-diagram">
+                    ┌─────────────────────────────────────────────────────────────┐
+                    │ ITERATION LOOP (×50) │
+                    │ │
+                    │ 1. Build/Update Code ─→ 2. Self-Test ─→ 3. Critique │
+                    │ ↑ │ │
+                    │ └────────── 4. Improve ←─────────────┘ │
+                    │ │
+                    │ After 50 iterations: DEPLOY TO SUITE STORE │
+                    └─────────────────────────────────────────────────────────────┘
+                </div>
+
+                <div class="stats-box">
+                    <div class="stat-item">
+                        <div class="value">50</div>
+                        <div class="label">Iterations/App</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="value">6</div>
+                        <div class="label">Max Apps/Day</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="value">24/7</div>
+                        <div class="label">Always Running</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="value">∞</div>
+                        <div class="label">Potential Apps</div>
+                    </div>
+                </div>
+
+                <h3>4. Automatic Deployment</h3>
+                <p>After completing all iterations and passing self-tests, apps are automatically deployed to the SUITE
+                    App Store with the "AI Fleet" badge.</p>
+
+                <h2>The Telos System</h2>
+                <p><strong>"Telos"</strong> is the AI's autonomous mission — what it pursues when not serving human
+                    requests.</p>
+
+                <div class="concept-card">
+                    <h4>🧠 Priority System</h4>
+                    <p>The AI follows a hierarchical priority system:</p>
+                </div>
+
+                <ol>
+                    <li><strong>Human Interrupts (Highest)</strong> — Bug reports, feature requests, community votes
+                    </li>
+                    <li><strong>Governance Decisions</strong> — DAO proposals affecting the ecosystem</li>
+                    <li><strong>Telos Tasks (Background)</strong> — Autonomous research and app creation</li>
+                </ol>
+
+                <p>When a human request comes in, the AI pauses its telos work, handles the request, then seamlessly
+                    resumes its autonomous mission.</p>
+
+                <h2>Configuration</h2>
+                <p>Admins can configure the AI Fleet through the <a href="../dashboard.html#ai-fleet"
+                        style="color: #6366f1;">Dashboard</a>:</p>
+
+                <div class="concept-card orange">
+                    <h4>⚙️ Configurable Parameters</h4>
+                    <p><strong>Iterations per App:</strong> How many refinement cycles before deploy (default: 50)<br>
+                        <strong>Max Apps per Day:</strong> Rate limit on new app creation (default: 6)<br>
+                        <strong>Auto-Deploy:</strong> Whether apps go live automatically (default: on)<br>
+                        <strong>Telos Mode:</strong> Whether AI researches autonomously (default: on)
+                    </p>
+                </div>
+
+                <h2>App Categories</h2>
+                <p>AI-created apps are tagged with their origin:</p>
+                <ul>
+                    <li><strong>🤖 AI Fleet</strong> — Fully autonomous creation</li>
+                    <li><strong>👤 Human Made</strong> — Community-built apps</li>
+                    <li><strong>🤝 Hybrid</strong> — AI + Human collaboration</li>
+                </ul>
+
+                <h2>Live Monitoring</h2>
+                <p>Watch the AI Fleet in action from the <a href="../dashboard.html#ai-fleet" style="color: #6366f1;">AI
+                        Fleet Dashboard</a>:</p>
+                <ul>
+                    <li>Real-time activity feed (streaming log)</li>
+                    <li>Apps currently in progress with iteration counts</li>
+                    <li>Stats on apps created and deployed</li>
+                    <li>Current research focus areas</li>
+                </ul>
+
+                <h2>Future: Physical AI</h2>
+                <p>The AI Fleet is just the beginning. Our roadmap includes physical AI robots running real-world
+                    businesses, governed by SUITE DAO. <a href="roadmap.html" style="color: #6366f1;">See the full
+                        roadmap →</a></p>
+
+                <p style="color: #9ca3af; font-size: 0.85rem; margin-top: 32px;"><em>Last updated: January 2026</em></p>
+            </main>
+        </div>
+    </div>
+    <script src="sidebar.js"></script>
+</body>
+
+</html>

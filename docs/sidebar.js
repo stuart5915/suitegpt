@@ -32,6 +32,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <a href="commands.html" class="sidebar-link ${isActive('commands.html')}">⚡ Commands</a>
             <a href="dashboard.html" class="sidebar-link ${isActive('dashboard.html')}">🛠️ Dashboard</a>
             <a href="publish-checklist.html" class="sidebar-link ${isActive('publish-checklist.html')}">📋 Publish Checklist</a>
+            <a href="ai-fleet.html" class="sidebar-link ${isActive('ai-fleet.html')}">🤖 AI Fleet</a>
         </div>
 
         <div class="sidebar-section">
