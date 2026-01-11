@@ -1478,7 +1478,8 @@
             { id: 'pays-review', name: 'Pays to Review', emoji: '' },
             { id: 'published', name: 'Live', emoji: '' },
             { id: 'development', name: 'In Development', emoji: '' },
-            { id: 'beta', name: 'Beta', emoji: '' }
+            { id: 'beta', name: 'Beta', emoji: '' },
+            { id: 'extensions', name: 'Extensions', emoji: '🧩' }
         ];
 
         let apps = [];
@@ -1613,7 +1614,8 @@
                 'pays-review': apps.filter(app => activeReviews[app.id]).length,
                 published: stats.published || 0,
                 development: stats.development || 0,
-                beta: stats.beta || 0
+                beta: stats.beta || 0,
+                extensions: 4 // Always show extensions tab
             };
 
             const tabsHtml = statusCategories
@@ -1630,8 +1632,29 @@
             document.querySelectorAll('.category-tab').forEach(tab => {
                 tab.addEventListener('click', () => {
                     currentStatus = tab.dataset.category;
+
+                    // Toggle sections based on whether Extensions is selected
+                    const appsMainContainer = document.getElementById('appsMainContainer');
+                    const extensionsContainer = document.getElementById('extensionsContainer');
+                    const topCharts = document.querySelector('.top-charts');
+                    const searchBarParent = document.querySelector('.search-bar')?.parentElement;
+
+                    if (currentStatus === 'extensions') {
+                        if (appsMainContainer) appsMainContainer.style.display = 'none';
+                        if (extensionsContainer) extensionsContainer.style.display = 'block';
+                        if (topCharts) topCharts.style.display = 'none';
+                        if (searchBarParent) searchBarParent.style.display = 'none';
+                    } else {
+                        if (appsMainContainer) appsMainContainer.style.display = 'block';
+                        if (extensionsContainer) extensionsContainer.style.display = 'none';
+                        if (topCharts) topCharts.style.display = 'block';
+                        if (searchBarParent) searchBarParent.style.display = 'block';
+                    }
+
                     renderTabs();
-                    renderApps();
+                    if (currentStatus !== 'extensions') {
+                        renderApps();
+                    }
                 });
             });
         }

@@ -146,6 +146,7 @@
             min-width: 280px;
             max-height: 500px;
             overflow-y: auto;
+            overflow-x: visible;
         }
 
         .diagram-img {
@@ -165,31 +166,30 @@
 
         .term-tooltip::after {
             content: attr(data-tooltip);
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
+            position: fixed;
             background: #1a1a2e;
             color: white;
             padding: 10px 14px;
             border-radius: 10px;
             font-size: 0.85rem;
             font-weight: 500;
-            white-space: nowrap;
             max-width: 280px;
             white-space: normal;
             text-align: center;
             opacity: 0;
             visibility: hidden;
-            transition: all 0.2s ease;
-            z-index: 100;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            transition: opacity 0.2s ease;
+            z-index: 99999;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+            pointer-events: none;
+            transform: translateX(-50%) translateY(-100%);
+            left: 50%;
+            top: 0;
         }
 
         .term-tooltip:hover::after {
             opacity: 1;
             visibility: visible;
-            bottom: calc(100% + 8px);
         }
 
         /* Stack on mobile */
@@ -556,35 +556,65 @@
                         </div>
                         <div class="system-details">
                             <details class="expand-section">
-                                <summary>📤 PC auto-push (watcher.py)</summary>
+                                <summary>Laptop (You code)</summary>
                                 <div class="expand-content">
-                                    <pre>
-Every 60 seconds (when no slots typing):
-  if git status --porcelain has changes:
-    git add -A
-    git commit -m "Auto-commit from PC watcher"
-    git push origin master
-    
-    # Write timestamp for UI display
-    echo "2026-01-11 03:30:00" > .last_push</pre>
+                                    <p>Your laptop where you manually code and review changes.</p>
                                 </div>
                             </details>
 
                             <details class="expand-section">
-                                <summary>📥 Laptop pull options</summary>
+                                <summary>PC (AI codes)</summary>
                                 <div class="expand-content">
-                                    <p><strong>Option 1: Manual</strong></p>
-                                    <pre>Click "Pull Latest from GitHub" button on localhost:3000</pre>
+                                    <p>Your PC running the AI agent that automatically writes code.</p>
+                                </div>
+                            </details>
 
-                                    <p><strong>Option 2: Auto-pull loop</strong></p>
-                                    <pre>
-while ($true) { 
-  git pull --rebase 
-  Start-Sleep 10 
-}</pre>
+                            <details class="expand-section">
+                                <summary>git push (from Laptop)</summary>
+                                <div class="expand-content">
+                                    <p>Push your manual changes from laptop to GitHub.</p>
+                                </div>
+                            </details>
 
-                                    <p><strong>Option 3: Auto-pull toggle</strong></p>
-                                    <pre>Enable in server.py UI - polls Supabase for completed prompts</pre>
+                            <details class="expand-section">
+                                <summary>git push (from PC)</summary>
+                                <div class="expand-content">
+                                    <p>watcher.py auto-pushes AI changes every 60 seconds.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>GitHub (stuart-hollinger-landing)</summary>
+                                <div class="expand-content">
+                                    <p>Central repository that syncs changes between your machines.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>git pull (to Laptop)</summary>
+                                <div class="expand-content">
+                                    <p>Pull latest AI changes to your laptop via server.py.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>git pull (to PC)</summary>
+                                <div class="expand-content">
+                                    <p>watcher.py auto-pulls your manual changes to the PC.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>server.py - Manual pull / Auto-pull toggle</summary>
+                                <div class="expand-content">
+                                    <p>Control laptop sync via localhost:3000 UI with manual or auto-pull options.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>watcher.py - Auto push/pull every 60s</summary>
+                                <div class="expand-content">
+                                    <p>Background worker on PC that automatically syncs every 60 seconds.</p>
                                 </div>
                             </details>
                         </div>
