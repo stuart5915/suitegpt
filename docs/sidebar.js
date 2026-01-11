@@ -45,6 +45,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="sidebar-title">Admin</div>
             <a href="governance.html" class="sidebar-link ${isActive('governance.html')}">🗳️ Governance</a>
             <a href="admin-flows.html" class="sidebar-link ${isActive('admin-flows.html')}">⚙️ Admin Flows</a>
+            <a href="content-policy.html" class="sidebar-link ${isActive('content-policy.html')}">📜 Content Policy</a>
         </div>
     `;
 });
