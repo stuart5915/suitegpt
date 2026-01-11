@@ -918,33 +918,107 @@
                     <h2 class="system-title">💬 FORGE Discord Bot</h2>
                     <p class="system-desc">Queue prompts, manage apps, and get notifications - all from Discord.</p>
 
-                    <img src="diagrams/forge-discord-bot.png" alt="FORGE Discord Bot System Diagram"
-                        class="diagram-img">
-
-                    <details class="expand-section">
-                        <summary>🤖 Bot Commands</summary>
-                        <div class="expand-content">
-                            <pre>
-/addition {prompt}     → Queue prompt for AI processing
-/create-app {name}     → Start new app project  
-/delete-app {name}     → Remove app from ecosystem
-/status                → Check watcher/server status
-/balance               → Check your SUITE balance</pre>
+                    <div class="system-layout">
+                        <div class="system-diagram">
+                            <img src="diagrams/forge-discord-bot.png" alt="FORGE Discord Bot System Diagram"
+                                class="diagram-img">
                         </div>
-                    </details>
+                        <div class="system-details">
+                            <details class="expand-section">
+                                <summary>FORGE BOT (Discord)</summary>
+                                <div class="expand-content">
+                                    <p>The central Discord bot that bridges community commands to the SUITE AI pipeline.
+                                        Runs 24/7 listening for slash commands.</p>
+                                </div>
+                            </details>
 
-                    <details class="expand-section">
-                        <summary>🔔 Notifications</summary>
-                        <div class="expand-content">
-                            <p>FORGE sends DMs for:</p>
-                            <ul>
-                                <li>✅ Prompt completed (with git commit link)</li>
-                                <li>❓ AI asked a question (with screenshot)</li>
-                                <li>❌ Error occurred (with details)</li>
-                                <li>📊 Daily summary stats</li>
-                            </ul>
+                            <details class="expand-section">
+                                <summary>Discord Server (SUITE Community)</summary>
+                                <div class="expand-content">
+                                    <p>The main hub where users interact with FORGE. Includes channels for #prompts,
+                                        #new-apps, #support, and #announcements.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>/addition {prompt} → Queue for AI</summary>
+                                <div class="expand-content">
+                                    <p>Main command to submit work. User types their request and FORGE inserts it into
+                                        the Supabase prompts table with status='pending'.</p>
+                                    <pre>/addition Fix the login button on FoodVitals</pre>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>/create-app {name} → Start new project</summary>
+                                <div class="expand-content">
+                                    <p>Creates a new app scaffold in the ecosystem. Initializes repo, adds to suite_apps
+                                        table, and sets up basic structure.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>/status → Check watcher/server status</summary>
+                                <div class="expand-content">
+                                    <p>Returns live status of the PC watcher, available IDE slots, and pending prompt
+                                        count. Shows last sync time.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>/balance → Check SUITE balance</summary>
+                                <div class="expand-content">
+                                    <p>Queries the user's wallet balance and governance points directly from Discord.
+                                    </p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>prompts table (Supabase)</summary>
+                                <div class="expand-content">
+                                    <p>Central queue where all prompts are stored. Fields include: prompt, status,
+                                        discord_user_id, discord_channel_id, target (app slug), created_at.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>watcher.py polls for pending prompts</summary>
+                                <div class="expand-content">
+                                    <p>PC Watcher queries Supabase every 5 seconds for prompts with status='pending'.
+                                        Human requests (bugs, features) get priority over TELOS tasks.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Inject into Antigravity IDE</summary>
+                                <div class="expand-content">
+                                    <p>Watcher uses pyautogui to type the prompt into the chat input of an available IDE
+                                        window, then presses Enter to submit.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Git push → Notify user via DM</summary>
+                                <div class="expand-content">
+                                    <p>After AI completes the task, changes are pushed to GitHub. FORGE sends a DM to
+                                        the original requester with commit link and summary.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>🔔 DM Notifications</summary>
+                                <div class="expand-content">
+                                    <p>FORGE sends DMs for:</p>
+                                    <ul>
+                                        <li>✅ Prompt completed (with git commit link)</li>
+                                        <li>❓ AI asked a question (with screenshot)</li>
+                                        <li>❌ Error occurred (with details)</li>
+                                        <li>📊 Daily summary stats</li>
+                                    </ul>
+                                </div>
+                            </details>
                         </div>
-                    </details>
+                    </div>
                 </div>
 
                 <!-- AUTHENTICATION -->
@@ -952,26 +1026,56 @@
                     <h2 class="system-title">🔐 SUITE Authentication</h2>
                     <p class="system-desc">Multi-method login with unified user profiles and encrypted data.</p>
 
-                    <img src="diagrams/suite-authentication.png" alt="SUITE Authentication System Diagram"
-                        class="diagram-img">
-
-                    <details class="expand-section">
-                        <summary>🔑 Login Methods</summary>
-                        <div class="expand-content">
-                            <ul>
-                                <li><strong>Discord OAuth:</strong> Primary method for FORGE users</li>
-                                <li><strong>Wallet Connect:</strong> MetaMask/WalletConnect for token holders</li>
-                                <li><strong>Email:</strong> Supabase magic link for general users</li>
-                            </ul>
-                            <p>All methods link to a unified user profile.</p>
+                    <div class="system-layout">
+                        <div class="system-diagram">
+                            <img src="diagrams/suite-authentication.png" alt="SUITE Authentication System Diagram"
+                                class="diagram-img">
                         </div>
-                    </details>
+                        <div class="system-details">
+                            <details class="expand-section">
+                                <summary>SUITE AUTHENTICATION</summary>
+                                <div class="expand-content">
+                                    <p>Unified auth system that connects Discord, wallet, and email identities into a
+                                        single user profile.</p>
+                                </div>
+                            </details>
 
-                    <details class="expand-section">
-                        <summary>👤 User Profile Data</summary>
-                        <div class="expand-content">
-                            <pre>
-{
+                            <details class="expand-section">
+                                <summary>🎮 Discord OAuth</summary>
+                                <div class="expand-content">
+                                    <p>Primary login method for FORGE users. Uses Discord OAuth2 to authenticate,
+                                        fetching user ID, username, and avatar.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>💳 Wallet Connect</summary>
+                                <div class="expand-content">
+                                    <p>Connect MetaMask or WalletConnect for token holders. Links wallet address to
+                                        profile for on-chain SUITE balance tracking.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>📧 Email (Magic Link)</summary>
+                                <div class="expand-content">
+                                    <p>Supabase magic link for general users without Discord or crypto wallet. Sends
+                                        one-time login link to email.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>→ Unified User Profile (suite_users)</summary>
+                                <div class="expand-content">
+                                    <p>All auth methods merge into one profile. Links discord_id, wallet_address, and
+                                        email to a single user record.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>👤 User Profile Data</summary>
+                                <div class="expand-content">
+                                    <pre>{
   "discord_id": "123456789",
   "wallet_address": "0x...",
   "email": "user@example.com",
@@ -980,8 +1084,42 @@
   "owned_apps": ["FoodVitals", "LifeHub"],
   "role": "contributor"
 }</pre>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>💰 SUITE Balance</summary>
+                                <div class="expand-content">
+                                    <p>User's current $SUITE token balance. Synced from on-chain wallet or earned
+                                        through platform activities (watching ads, referrals).</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>🗳️ Governance Points</summary>
+                                <div class="expand-content">
+                                    <p>Non-transferable points earned by contributing to the ecosystem. Used for voting
+                                        on Giving Fund allocations and platform decisions.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>🔒 Session Management</summary>
+                                <div class="expand-content">
+                                    <p>JWT tokens stored in localStorage. Sessions auto-refresh and persist across page
+                                        loads. Logout clears all stored credentials.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>👑 Role-Based Access</summary>
+                                <div class="expand-content">
+                                    <p>Roles: user, contributor, developer, admin, owner. Higher roles unlock features
+                                        like Treasury dashboard and AI Fleet config.</p>
+                                </div>
+                            </details>
                         </div>
-                    </details>
+                    </div>
                 </div>
 
             </main>
