@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUITE Visual Feedback</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            width: 320px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f3ff 0%, #fff 100%);
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #8b5cf6, #6366f1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+        }
+
+        .title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #2d1b4e;
+        }
+
+        .subtitle {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .status-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border: 1px solid #e0e0e5;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status-badge.active {
+            color: #10b981;
+        }
+
+        .status-badge.inactive {
+            color: #9ca3af;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-dot.active {
+            background: #10b981;
+        }
+
+        .status-dot.inactive {
+            background: #9ca3af;
+        }
+
+        .activate-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #8b5cf6, #6366f1);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 12px;
+        }
+
+        .activate-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.3);
+        }
+
+        .activate-btn.deactivate {
+            background: #f0f0f5;
+            color: #666;
+        }
+
+        .shortcut-hint {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+
+        .shortcut-hint kbd {
+            background: #f0f0f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        .settings-section {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid #e0e0e5;
+        }
+
+        .settings-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #2d1b4e;
+            margin-bottom: 12px;
+        }
+
+        .input-group {
+            margin-bottom: 12px;
+        }
+
+        .input-label {
+            display: block;
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e0e0e5;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            transition: border-color 0.2s ease;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #8b5cf6;
+        }
+
+        .save-btn {
+            width: 100%;
+            padding: 10px;
+            background: #f0f0f5;
+            color: #2d1b4e;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .save-btn:hover {
+            background: #e5e5ea;
+        }
+
+        .save-success {
+            background: #dcfce7;
+            color: #10b981;
+        }
+
+        /* Destination Grid */
+        .destination-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .destination-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: white;
+            border: 2px solid #e0e0e5;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .destination-option input {
+            display: none;
+        }
+
+        .destination-option:hover:not(.disabled) {
+            border-color: #8b5cf6;
+            background: #f5f3ff;
+        }
+
+        .destination-option.selected {
+            border-color: #8b5cf6;
+            background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+        }
+
+        .destination-option.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .dest-icon {
+            font-size: 1.2rem;
+        }
+
+        .dest-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .dest-name {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #2d1b4e;
+        }
+
+        .dest-desc {
+            font-size: 0.7rem;
+            color: #9ca3af;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <div class="logo">🎯</div>
+        <div>
+            <div class="title">Visual Feedback</div>
+            <div class="subtitle">Click → Describe → Send</div>
+        </div>
+    </div>
+
+    <div class="status-card">
+        <div class="status-row">
+            <span class="status-label">Status</span>
+            <span class="status-badge inactive" id="status">
+                <span class="status-dot inactive"></span>
+                Inactive
+            </span>
+        </div>
+    </div>
+
+    <button class="activate-btn" id="activateBtn">
+        🎯 Activate on This Page
+    </button>
+
+    <div class="shortcut-hint">
+        Or press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>F</kbd>
+    </div>
+
+    <div class="settings-section">
+        <div class="settings-title">🎯 Send To</div>
+
+        <div class="destination-grid">
+            <label class="destination-option selected" data-dest="antigravity">
+                <input type="radio" name="destination" value="antigravity" checked>
+                <div class="dest-icon">🚀</div>
+                <div class="dest-info">
+                    <div class="dest-name">Antigravity</div>
+                    <div class="dest-desc">PC Watcher → AI</div>
+                </div>
+            </label>
+            <label class="destination-option disabled" data-dest="claude">
+                <input type="radio" name="destination" value="claude" disabled>
+                <div class="dest-icon">🤖</div>
+                <div class="dest-info">
+                    <div class="dest-name">Claude.ai</div>
+                    <div class="dest-desc">Coming soon</div>
+                </div>
+            </label>
+            <label class="destination-option disabled" data-dest="chatgpt">
+                <input type="radio" name="destination" value="chatgpt" disabled>
+                <div class="dest-icon">💬</div>
+                <div class="dest-info">
+                    <div class="dest-name">ChatGPT</div>
+                    <div class="dest-desc">Coming soon</div>
+                </div>
+            </label>
+            <label class="destination-option" data-dest="clipboard">
+                <input type="radio" name="destination" value="clipboard">
+                <div class="dest-icon">📋</div>
+                <div class="dest-info">
+                    <div class="dest-name">Clipboard</div>
+                    <div class="dest-desc">Copy prompt</div>
+                </div>
+            </label>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <div class="settings-title">⚙️ Antigravity Settings</div>
+
+        <div class="input-group">
+            <label class="input-label">Supabase Anon Key</label>
+            <input type="password" class="input-field" id="supabaseKey" placeholder="eyJhbG...">
+        </div>
+
+        <div class="input-group">
+            <label class="input-label">User ID (optional)</label>
+            <input type="text" class="input-field" id="userId" placeholder="Your Discord ID">
+        </div>
+
+        <button class="save-btn" id="saveBtn">Save Settings</button>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>
