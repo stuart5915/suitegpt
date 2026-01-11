@@ -491,6 +491,10 @@
         <div class="card" id="sendPromptCard" style="margin-bottom: 20px;">
             <h2>📤 Send Prompt to PC</h2>
             <div class="status" id="serverStatus">PC Server Connected</div>
+            <div id="lastPushStatus"
+                style="margin-top: 8px; padding: 10px 14px; background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.4); border-radius: 8px; font-size: 0.9rem; display: none;">
+                📤 <strong>Last PC Push:</strong> <span id="lastPushTime">--</span>
+            </div>
             <br><br>
 
             <!-- ═══ SMART PROMPT BUILDER ═══ -->
@@ -1567,6 +1571,39 @@ Example: Update the footer on all pages"></textarea>
 
         // Render on page load
         renderQuickHistory();
+
+        // ═══ LAST PUSH STATUS POLLING ═══
+        async function checkLastPush() {
+            try {
+                const res = await fetch('/status');
+                const data = await res.json();
+                if (data.last_push) {
+                    const lastPushDiv = document.getElementById('lastPushStatus');
+                    const lastPushTime = document.getElementById('lastPushTime');
+                    lastPushDiv.style.display = 'block';
+
+                    // Calculate relative time
+                    const pushDate = new Date(data.last_push.replace(' ', 'T'));
+                    const now = new Date();
+                    const diffMs = now - pushDate;
+                    const diffMins = Math.floor(diffMs / 60000);
+
+                    let relativeTime;
+                    if (diffMins < 1) relativeTime = 'Just now';
+                    else if (diffMins < 60) relativeTime = `${diffMins} min ago`;
+                    else if (diffMins < 1440) relativeTime = `${Math.floor(diffMins / 60)} hr ago`;
+                    else relativeTime = data.last_push;
+
+                    lastPushTime.textContent = relativeTime;
+                }
+            } catch (err) {
+                // Server not connected - hide the push status
+            }
+        }
+
+        // Check on load and every 30 seconds
+        checkLastPush();
+        setInterval(checkLastPush, 30000);
     </script>
 </body>
 

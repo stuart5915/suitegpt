@@ -404,6 +404,11 @@ def git_push():
             
             if push_result.returncode == 0:
                 print('[GIT] Push successful!')
+                # Write timestamp to file for server.py to read
+                push_time_file = os.path.join(os.path.dirname(__file__), '.last_push')
+                with open(push_time_file, 'w') as f:
+                    from datetime import datetime
+                    f.write(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
                 return
             else:
                 # Push failed - likely remote is ahead, pull and retry
