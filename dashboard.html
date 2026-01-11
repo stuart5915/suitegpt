@@ -2103,143 +2103,32 @@
 
     <script>
 
+        const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
+        const DISCORD_CLIENT_ID = '1457474266390986865';
+        const REDIRECT_URI = window.location.origin + '/dashboard.html';
 
+        let currentUser = null;
 
-                <div style="margin-bottom: 16px;">
-                    <label
-                        style="font-size: 0.85rem; font-weight: 600; color: #555; display: block; margin-bottom: 6px;">Iterations
-                        per App</label>
-                    <input type="number" id="configIterations" value="50" min="10" max="100"
-                        style="width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 10px; font-size: 1rem; font-weight: 700;">
-                </div>
-
-                <div style="margin-bottom: 16px;">
-                    <label
-                        style="font-size: 0.85rem; font-weight: 600; color: #555; display: block; margin-bottom: 6px;">Max
-                        Apps per Day</label>
-                    <input type="number" id="configMaxApps" value="6" min="1" max="20"
-                        style="width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 10px; font-size: 1rem; font-weight: 700;">
-                </div>
-
-                <div style="margin-bottom: 16px;">
-                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                        <input type="checkbox" id="configAutoDeploy" checked
-                            style="width: 20px; height: 20px; accent-color: #22c55e;">
-                            <span style="font-weight: 600;">Auto-Deploy</span>
-                    </label>
-                    <p style="margin: 4px 0 0 30px; font-size: 0.8rem; color: #888;">Apps go live after iterations
-                        complete</p>
-                </div>
-
-                <div style="margin-bottom: 20px;">
-                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                        <input type="checkbox" id="configTelosEnabled" checked
-                            style="width: 20px; height: 20px; accent-color: #6366f1;">
-                            <span style="font-weight: 600;">Telos Mode</span>
-                    </label>
-                    <p style="margin: 4px 0 0 30px; font-size: 0.8rem; color: #888;">AI picks next project autonomously
-                    </p>
-                </div>
-
-                <button onclick="saveAIConfig()" class="btn-primary"
-                    style="width: 100%; background: linear-gradient(135deg, #6366f1, #8b5cf6);">
-                    💾 Save Configuration
-                </button>
-            </div >
-    </div >
-
-    < !--Apps In Progress-- >
-    <div style="margin-top: 24px;">
-        <h4 style="margin: 0 0 16px 0; font-weight: 700;">🚧 Apps In Progress</h4>
-        <div id="aiAppsInProgress"
-            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px;">
-            <!-- Example cards - will be dynamically populated -->
-    <div style="background: white; border-radius: 16px; padding: 16px; border: 2px solid rgba(99, 102, 241, 0.2);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <span style="font-weight: 700;">FocusFlow</span>
-            <span style="font-size: 0.8rem; color: #6366f1; font-weight: 600;">48/50</span>
-        </div>
-        <div style="background: #eee; border-radius: 100px; height: 8px; overflow: hidden;">
-            <div style="background: linear-gradient(90deg, #6366f1, #8b5cf6); height: 100%; width: 96%;">
-            </div>
-        </div>
-        <p style="margin: 8px 0 0; font-size: 0.8rem; color: #888;">Productivity • Final polish</p>
-    </div>
-    <div style="background: white; border-radius: 16px; padding: 16px; border: 2px solid rgba(255, 149, 0, 0.2);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <span style="font-weight: 700;">BudgetBuddy</span>
-            <span style="font-size: 0.8rem; color: #ff9500; font-weight: 600;">22/50</span>
-        </div>
-        <div style="background: #eee; border-radius: 100px; height: 8px; overflow: hidden;">
-            <div style="background: linear-gradient(90deg, #ff9500, #ff6b9d); height: 100%; width: 44%;">
-            </div>
-        </div>
-        <p style="margin: 8px 0 0; font-size: 0.8rem; color: #888;">Finance • Adding features</p>
-    </div>
-    <div style="background: white; border-radius: 16px; padding: 16px; border: 2px solid rgba(139, 92, 246, 0.2);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <span style="font-weight: 700;">MealMind</span>
-            <span style="font-size: 0.8rem; color: #8b5cf6; font-weight: 600;">2/50</span>
-        </div>
-        <div style="background: #eee; border-radius: 100px; height: 8px; overflow: hidden;">
-            <div style="background: linear-gradient(90deg, #8b5cf6, #a78bfa); height: 100%; width: 4%;">
-            </div>
-        </div>
-        <p style="margin: 8px 0 0; font-size: 0.8rem; color: #888;">Health • Initial build</p>
-    </div>
-    </div >
-    </div >
-
-    < !--Research Focus-- >
-            <div
-                style="margin-top: 24px; background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.05)); border-radius: 16px; padding: 20px; border: 1px solid rgba(251, 191, 36, 0.3);">
-                <h4 style="margin: 0 0 12px 0; font-weight: 700;">🔍 Current Research Focus</h4>
-                <p style="margin: 0 0 12px; color: #5a4a6f; font-size: 0.9rem;">The AI is currently exploring these market
-                    categories for new app ideas:</p>
-                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                    <span
-                        style="background: white; padding: 8px 14px; border-radius: 100px; font-size: 0.85rem; font-weight: 600;">📊
-                        Productivity</span>
-                    <span
-                        style="background: white; padding: 8px 14px; border-radius: 100px; font-size: 0.85rem; font-weight: 600;">💪
-                        Health</span>
-                    <span
-                        style="background: white; padding: 8px 14px; border-radius: 100px; font-size: 0.85rem; font-weight: 600;">💰
-                        Finance</span>
-                    <span
-                        style="background: white; padding: 8px 14px; border-radius: 100px; font-size: 0.85rem; font-weight: 600;">🎨
-                        Creativity</span>
-                </div>
-            </div>
-    </div >
-
-            <script>
-                const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
-                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
-                const DISCORD_CLIENT_ID = '1457474266390986865';
-                const REDIRECT_URI = window.location.origin + '/dashboard.html';
-
-                let currentUser = null;
-
-                // ========== COLLAPSIBLE SECTIONS ==========
-                function toggleSection(sectionName) {
+        // ========== COLLAPSIBLE SECTIONS ==========
+        function toggleSection(sectionName) {
             const section = document.getElementById(`section-${sectionName}`);
-                if (!section) return;
+            if (!section) return;
 
-                section.classList.toggle('collapsed');
+            section.classList.toggle('collapsed');
 
-                // Save state to localStorage
-                const states = JSON.parse(localStorage.getItem('dashboardSections') || '{ }');
-                states[sectionName] = section.classList.contains('collapsed');
-                localStorage.setItem('dashboardSections', JSON.stringify(states));
+            // Save state to localStorage
+            const states = JSON.parse(localStorage.getItem('dashboardSections') || '{ }');
+            states[sectionName] = section.classList.contains('collapsed');
+            localStorage.setItem('dashboardSections', JSON.stringify(states));
         }
 
-                function initSectionStates() {
+        function initSectionStates() {
             const states = JSON.parse(localStorage.getItem('dashboardSections') || '{ }');
 
-                // Default: apps open, others collapsed
-                const defaults = {
-                    'campaigns': true,
+            // Default: apps open, others collapsed
+            const defaults = {
+                'campaigns': true,
                 'my-campaigns': true,
                 'apps': false,  // Open by default
                 'reviews': true,
@@ -2260,72 +2149,72 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-                    // Initialize collapsible sections
-                    initSectionStates();
+            // Initialize collapsible sections
+            initSectionStates();
 
-                const hash = window.location.hash.substring(1);
-                const params = new URLSearchParams(hash);
-                const accessToken = params.get('access_token');
+            const hash = window.location.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            const accessToken = params.get('access_token');
 
-                if (accessToken) {
-                    handleOAuthCallback(accessToken);
+            if (accessToken) {
+                handleOAuthCallback(accessToken);
             } else {
                 const savedUser = localStorage.getItem('suiteDev');
                 if (savedUser) {
                     currentUser = JSON.parse(savedUser);
-                showDashboard();
+                    showDashboard();
                 }
             }
         });
 
-                function loginWithDiscord() {
+        function loginWithDiscord() {
             const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=identify`;
-                window.location.href = authUrl;
+            window.location.href = authUrl;
         }
 
-                async function handleOAuthCallback(accessToken) {
+        async function handleOAuthCallback(accessToken) {
             try {
                 const response = await fetch('https://discord.com/api/users/@me', {
-                    headers: {'Authorization': `Bearer ${accessToken}` }
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
                 });
                 const user = await response.json();
 
                 currentUser = {
                     id: user.id,
-                username: user.username,
-                avatar: user.avatar
-                ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
-                : `https://cdn.discordapp.com/embed/avatars/${parseInt(user.discriminator || '0') % 5}.png`
+                    username: user.username,
+                    avatar: user.avatar
+                        ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
+                        : `https://cdn.discordapp.com/embed/avatars/${parseInt(user.discriminator || '0') % 5}.png`
                 };
 
                 localStorage.setItem('suiteDev', JSON.stringify(currentUser));
                 history.replaceState(null, '', window.location.pathname);
                 showDashboard();
             } catch (error) {
-                    console.error('OAuth error:', error);
+                console.error('OAuth error:', error);
                 alert('Login failed. Please try again.');
             }
         }
 
-                function showDashboard() {
-                    // Hide login banner, show user pill
-                    document.getElementById('loginBanner').style.display = 'none';
-                document.getElementById('userPill').style.display = 'flex';
-                document.getElementById('userName').textContent = currentUser.username;
-                document.getElementById('userAvatar').src = currentUser.avatar;
+        function showDashboard() {
+            // Hide login banner, show user pill
+            document.getElementById('loginBanner').style.display = 'none';
+            document.getElementById('userPill').style.display = 'flex';
+            document.getElementById('userName').textContent = currentUser.username;
+            document.getElementById('userAvatar').src = currentUser.avatar;
 
-                loadDevData();
+            loadDevData();
         }
 
-                async function loadDevData() {
-                    await Promise.all([
-                        loadApps(),
-                        loadCampaigns(),
-                        loadBalance()
-                    ]);
+        async function loadDevData() {
+            await Promise.all([
+                loadApps(),
+                loadCampaigns(),
+                loadBalance()
+            ]);
         }
 
-                async function loadApps() {
+        async function loadApps() {
             try {
                 // Query suite_apps table for apps created by this user
                 const url = `${SUPABASE_URL}/rest/v1/suite_apps?creator_discord_id=eq.${currentUser.id}&select=*`;
@@ -2333,7 +2222,7 @@
                 console.log('?? API URL:', url);
 
                 const response = await fetch(url, {
-                    headers: {'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
                 });
                 const apps = await response.json();
 
@@ -2382,23 +2271,23 @@
                     `).join('');
                 }
             } catch (error) {
-                    console.error('Error loading apps:', error);
+                console.error('Error loading apps:', error);
                 document.getElementById('totalApps').textContent = '0';
             }
         }
 
-                async function loadCampaigns() {
+        async function loadCampaigns() {
             try {
                 // Note: app_campaigns references suite_apps via app_id
                 const response = await fetch(`${SUPABASE_URL}/rest/v1/app_campaigns?developer_discord_id=eq.${currentUser.id}&select=*,suite_apps(name,icon_url)`, {
-                    headers: {'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
                 });
                 const campaigns = await response.json();
 
                 if (!Array.isArray(campaigns)) {
                     document.getElementById('totalCampaigns').textContent = '0';
-                document.getElementById('totalClaims').textContent = '0';
-                return;
+                    document.getElementById('totalClaims').textContent = '0';
+                    return;
                 }
 
                 const active = campaigns.filter(c => c.status === 'active');
@@ -2427,73 +2316,73 @@
                     `).join('');
                 }
             } catch (error) {
-                    console.error('Error loading campaigns:', error);
+                console.error('Error loading campaigns:', error);
                 document.getElementById('totalCampaigns').textContent = '0';
                 document.getElementById('totalClaims').textContent = '0';
             }
         }
 
-                async function loadBalance() {
+        async function loadBalance() {
             try {
                 const response = await fetch(`${SUPABASE_URL}/rest/v1/user_credits?discord_id=eq.${currentUser.id}&select=suite_balance`, {
-                    headers: {'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
                 });
                 const data = await response.json();
                 const balance = data[0]?.suite_balance || 0;
                 document.getElementById('suiteBalance').textContent = balance;
             } catch (error) {
-                    console.error('Error loading balance:', error);
+                console.error('Error loading balance:', error);
             }
         }
 
         // Update cost display
         document.getElementById('totalBudget').addEventListener('input', (e) => {
-                    document.getElementById('campaignCost').textContent = parseInt(e.target.value || 0).toLocaleString() + ' SUITE';
+            document.getElementById('campaignCost').textContent = parseInt(e.target.value || 0).toLocaleString() + ' SUITE';
         });
 
         // Form submission
         document.getElementById('campaignForm').addEventListener('submit', async (e) => {
-                    e.preventDefault();
+            e.preventDefault();
 
-                const appId = document.getElementById('appSelect').value;
-                const rewardAmount = parseInt(document.getElementById('rewardAmount').value);
-                const totalBudget = parseInt(document.getElementById('totalBudget').value);
-                const maxClaims = document.getElementById('maxClaims').value ? parseInt(document.getElementById('maxClaims').value) : null;
-                const requireTime = document.getElementById('requireTime').checked;
-                const minTime = requireTime ? parseInt(document.getElementById('minTime').value || 10) * 60 : 0;
-                const requireActions = document.getElementById('requireActions').checked;
-                const minActions = requireActions ? parseInt(document.getElementById('minActions').value || 50) : 0;
+            const appId = document.getElementById('appSelect').value;
+            const rewardAmount = parseInt(document.getElementById('rewardAmount').value);
+            const totalBudget = parseInt(document.getElementById('totalBudget').value);
+            const maxClaims = document.getElementById('maxClaims').value ? parseInt(document.getElementById('maxClaims').value) : null;
+            const requireTime = document.getElementById('requireTime').checked;
+            const minTime = requireTime ? parseInt(document.getElementById('minTime').value || 10) * 60 : 0;
+            const requireActions = document.getElementById('requireActions').checked;
+            const minActions = requireActions ? parseInt(document.getElementById('minActions').value || 50) : 0;
 
-                if (!appId) {
-                    alert('Please select an app');
+            if (!appId) {
+                alert('Please select an app');
                 return;
             }
 
-                // Check balance
-                const balance = parseInt(document.getElementById('suiteBalance').textContent);
-                if (balance < totalBudget) {
-                    alert(`Insufficient SUITE balance. You have ${balance} but need ${totalBudget}.`);
+            // Check balance
+            const balance = parseInt(document.getElementById('suiteBalance').textContent);
+            if (balance < totalBudget) {
+                alert(`Insufficient SUITE balance. You have ${balance} but need ${totalBudget}.`);
                 return;
             }
 
-                try {
+            try {
                 const btn = document.getElementById('createCampaignBtn');
                 btn.disabled = true;
                 btn.textContent = 'Creating...';
 
                 const response = await fetch('/api/create-campaign', {
                     method: 'POST',
-                headers: {'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    app_id: appId,
-                developer_discord_id: currentUser.id,
-                suite_per_claim: rewardAmount,
-                total_budget: totalBudget,
-                max_claims: maxClaims,
-                require_time: requireTime,
-                min_time_seconds: minTime,
-                require_actions: requireActions,
-                min_actions: minActions
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        app_id: appId,
+                        developer_discord_id: currentUser.id,
+                        suite_per_claim: rewardAmount,
+                        total_budget: totalBudget,
+                        max_claims: maxClaims,
+                        require_time: requireTime,
+                        min_time_seconds: minTime,
+                        require_actions: requireActions,
+                        min_actions: minActions
                     })
                 });
 
@@ -2501,8 +2390,8 @@
 
                 if (result.success) {
                     alert('Campaign created successfully!');
-                await loadDevData();
-                document.getElementById('campaignForm').reset();
+                    await loadDevData();
+                    document.getElementById('campaignForm').reset();
                 } else {
                     alert(result.error || 'Failed to create campaign');
                 }
@@ -2510,32 +2399,32 @@
                 btn.disabled = false;
                 btn.textContent = '🚀 Launch Campaign';
             } catch (error) {
-                    console.error('Error creating campaign:', error);
+                console.error('Error creating campaign:', error);
                 alert('Error creating campaign');
             }
         });
 
-                function logout() {
-                    localStorage.removeItem('suiteDev');
-                currentUser = null;
-                // Show login banner, hide user pill, reset to dashes
-                document.getElementById('loginBanner').style.display = 'flex';
-                document.getElementById('userPill').style.display = 'none';
-                // Reset to dashes (not logged in state)
-                document.getElementById('totalApps').textContent = '-';
-                document.getElementById('totalCampaigns').textContent = '-';
-                document.getElementById('totalClaims').textContent = '-';
-                document.getElementById('suiteBalance').textContent = '-';
+        function logout() {
+            localStorage.removeItem('suiteDev');
+            currentUser = null;
+            // Show login banner, hide user pill, reset to dashes
+            document.getElementById('loginBanner').style.display = 'flex';
+            document.getElementById('userPill').style.display = 'none';
+            // Reset to dashes (not logged in state)
+            document.getElementById('totalApps').textContent = '-';
+            document.getElementById('totalCampaigns').textContent = '-';
+            document.getElementById('totalClaims').textContent = '-';
+            document.getElementById('suiteBalance').textContent = '-';
         }
 
-                // ========== POWER-UP FUNCTIONS ==========
+        // ========== POWER-UP FUNCTIONS ==========
 
-                let userApps = []; // Store apps for power-up dropdown
+        let userApps = []; // Store apps for power-up dropdown
 
-                async function loadPowerups() {
+        async function loadPowerups() {
             try {
                 const response = await fetch(`${SUPABASE_URL}/rest/v1/store_powerups?creator_discord_id=eq.${currentUser.id}&select=*`, {
-                    headers: {'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
                 });
                 const powerups = await response.json();
 
@@ -2561,70 +2450,70 @@
                     `).join('');
                 }
             } catch (error) {
-                    console.error('Error loading power-ups:', error);
+                console.error('Error loading power-ups:', error);
             }
         }
 
-                function populatePowerupAppSelect(apps) {
-                    userApps = apps;
-                const select = document.getElementById('powerupAppSelect');
-                select.innerHTML = '<option value="">Choose an app...</option>';
+        function populatePowerupAppSelect(apps) {
+            userApps = apps;
+            const select = document.getElementById('powerupAppSelect');
+            select.innerHTML = '<option value="">Choose an app...</option>';
             apps.forEach(app => {
-                    select.innerHTML += `<option value="${app.id}">${app.name}</option>`;
+                select.innerHTML += `<option value="${app.id}">${app.name}</option>`;
             });
         }
 
         // Power-up form submission
         document.getElementById('powerupForm').addEventListener('submit', async (e) => {
-                    e.preventDefault();
+            e.preventDefault();
 
-                const appId = document.getElementById('powerupAppSelect').value;
-                const name = document.getElementById('powerupName').value;
-                const description = document.getElementById('powerupDesc').value;
-                const icon = document.getElementById('powerupIcon').value || '?';
-                const price = parseInt(document.getElementById('powerupPrice').value);
-                const duration = parseInt(document.getElementById('powerupDuration').value);
+            const appId = document.getElementById('powerupAppSelect').value;
+            const name = document.getElementById('powerupName').value;
+            const description = document.getElementById('powerupDesc').value;
+            const icon = document.getElementById('powerupIcon').value || '?';
+            const price = parseInt(document.getElementById('powerupPrice').value);
+            const duration = parseInt(document.getElementById('powerupDuration').value);
 
-                if (!appId) {
-                    alert('Please select an app');
+            if (!appId) {
+                alert('Please select an app');
                 return;
             }
 
             const selectedApp = userApps.find(a => a.id == appId);
 
-                try {
+            try {
                 const btn = document.getElementById('createPowerupBtn');
                 btn.disabled = true;
                 btn.textContent = 'Creating...';
 
                 const response = await fetch(`${SUPABASE_URL}/rest/v1/store_powerups`, {
                     method: 'POST',
-                headers: {
-                    'apikey': SUPABASE_ANON_KEY,
-                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                'Content-Type': 'application/json',
-                'Prefer': 'return=minimal'
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
                     },
-                body: JSON.stringify({
-                    creator_discord_id: currentUser.id,
-                app_id: appId,
-                app_name: selectedApp?.name || 'Unknown',
-                name: name,
-                description: description,
-                icon: icon,
-                price: price,
-                duration_days: duration,
-                status: 'pending', // Requires approval
-                total_sales: 0,
-                revenue_earned: 0
+                    body: JSON.stringify({
+                        creator_discord_id: currentUser.id,
+                        app_id: appId,
+                        app_name: selectedApp?.name || 'Unknown',
+                        name: name,
+                        description: description,
+                        icon: icon,
+                        price: price,
+                        duration_days: duration,
+                        status: 'pending', // Requires approval
+                        total_sales: 0,
+                        revenue_earned: 0
                     })
                 });
 
                 if (response.ok) {
                     alert('Power-up submitted for review! It will appear in the Store once approved.');
-                document.getElementById('powerupForm').reset();
-                document.getElementById('powerupIcon').value = '??';
-                await loadPowerups();
+                    document.getElementById('powerupForm').reset();
+                    document.getElementById('powerupIcon').value = '??';
+                    await loadPowerups();
                 } else {
                     throw new Error('Failed to create power-up');
                 }
@@ -2632,55 +2521,55 @@
                 btn.disabled = false;
                 btn.textContent = '? Create Power-Up';
             } catch (error) {
-                    console.error('Error creating power-up:', error);
+                console.error('Error creating power-up:', error);
                 alert('Error creating power-up. Please try again.');
                 document.getElementById('createPowerupBtn').disabled = false;
                 document.getElementById('createPowerupBtn').textContent = '? Create Power-Up';
             }
         });
 
-                // Update loadApps to also populate power-up dropdown
-                const originalLoadApps = loadApps;
-                loadApps = async function () {
-                    await originalLoadApps();
-                // Get apps for power-up select
-                try {
+        // Update loadApps to also populate power-up dropdown
+        const originalLoadApps = loadApps;
+        loadApps = async function () {
+            await originalLoadApps();
+            // Get apps for power-up select
+            try {
                 const response = await fetch(`${SUPABASE_URL}/rest/v1/apps?creator_discord_id=eq.${currentUser.id}&select=*`, {
-                    headers: {'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
                 });
                 const apps = await response.json();
                 populatePowerupAppSelect(apps);
-            } catch (e) {console.error('Error populating power-up select:', e); }
+            } catch (e) { console.error('Error populating power-up select:', e); }
         };
 
-                // Load power-ups when dashboard loads
-                const originalLoadDevData = loadDevData;
-                loadDevData = async function () {
-                    await originalLoadDevData();
-                await loadPowerups();
-                await loadReviewCampaigns();
+        // Load power-ups when dashboard loads
+        const originalLoadDevData = loadDevData;
+        loadDevData = async function () {
+            await originalLoadDevData();
+            await loadPowerups();
+            await loadReviewCampaigns();
         };
 
-                // ========== REVIEW CAMPAIGN FUNCTIONS ==========
+        // ========== REVIEW CAMPAIGN FUNCTIONS ==========
 
-                // Update review count estimate
-                function updateReviewEstimate() {
+        // Update review count estimate
+        function updateReviewEstimate() {
             const budget = parseInt(document.getElementById('reviewBudget').value) || 500;
-                const reward = parseInt(document.getElementById('reviewReward').value) || 50;
-                const estimate = Math.floor(budget / reward);
-                document.getElementById('reviewCountEstimate').textContent = estimate;
+            const reward = parseInt(document.getElementById('reviewReward').value) || 50;
+            const estimate = Math.floor(budget / reward);
+            document.getElementById('reviewCountEstimate').textContent = estimate;
         }
 
-                document.getElementById('reviewBudget')?.addEventListener('input', updateReviewEstimate);
-                document.getElementById('reviewReward')?.addEventListener('input', updateReviewEstimate);
+        document.getElementById('reviewBudget')?.addEventListener('input', updateReviewEstimate);
+        document.getElementById('reviewReward')?.addEventListener('input', updateReviewEstimate);
 
-                // Load existing review campaigns
-                async function loadReviewCampaigns() {
+        // Load existing review campaigns
+        async function loadReviewCampaigns() {
             if (!currentUser) return;
 
-                try {
+            try {
                 const response = await fetch(`${SUPABASE_URL}/rest/v1/review_campaigns?developer_discord_id=eq.${currentUser.id}&select=*,suite_apps(name,icon_url)`, {
-                    headers: {'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
                 });
                 const campaigns = await response.json();
 
@@ -2708,150 +2597,150 @@
                     `}).join('');
                 }
             } catch (error) {
-                    console.error('Error loading review campaigns:', error);
+                console.error('Error loading review campaigns:', error);
             }
         }
 
         // Create review campaign form handler
         document.getElementById('reviewCampaignForm')?.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                if (!currentUser) {
-                    alert('Please log in first');
+            e.preventDefault();
+            if (!currentUser) {
+                alert('Please log in first');
                 return;
             }
 
-                const appId = document.getElementById('reviewAppSelect').value;
-                const suitePerReview = parseInt(document.getElementById('reviewReward').value);
-                const minUsageSeconds = parseInt(document.getElementById('reviewMinTime').value);
-                const totalBudget = parseInt(document.getElementById('reviewBudget').value);
+            const appId = document.getElementById('reviewAppSelect').value;
+            const suitePerReview = parseInt(document.getElementById('reviewReward').value);
+            const minUsageSeconds = parseInt(document.getElementById('reviewMinTime').value);
+            const totalBudget = parseInt(document.getElementById('reviewBudget').value);
 
-                if (!appId) {
-                    alert('Please select an app');
+            if (!appId) {
+                alert('Please select an app');
                 return;
             }
 
-                // Check balance
-                const balance = parseInt(document.getElementById('suiteBalance').textContent.replace(/,/g, '')) || 0;
-                if (balance < totalBudget) {
-                    alert(`Insufficient SUITE balance. You have ${balance} but need ${totalBudget}.`);
+            // Check balance
+            const balance = parseInt(document.getElementById('suiteBalance').textContent.replace(/,/g, '')) || 0;
+            if (balance < totalBudget) {
+                alert(`Insufficient SUITE balance. You have ${balance} but need ${totalBudget}.`);
                 return;
             }
 
-                const btn = document.getElementById('createReviewCampaignBtn');
-                btn.disabled = true;
-                btn.textContent = 'Creating...';
+            const btn = document.getElementById('createReviewCampaignBtn');
+            btn.disabled = true;
+            btn.textContent = 'Creating...';
 
-                try {
+            try {
                 const response = await fetch(`${SUPABASE_URL}/rest/v1/review_campaigns`, {
                     method: 'POST',
-                headers: {
-                    'apikey': SUPABASE_ANON_KEY,
-                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                'Content-Type': 'application/json',
-                'Prefer': 'return=minimal'
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
                     },
-                body: JSON.stringify({
-                    app_id: appId,
-                developer_discord_id: currentUser.id,
-                suite_per_review: suitePerReview,
-                min_usage_seconds: minUsageSeconds,
-                total_budget: totalBudget,
-                remaining_budget: totalBudget,
-                status: 'active'
+                    body: JSON.stringify({
+                        app_id: appId,
+                        developer_discord_id: currentUser.id,
+                        suite_per_review: suitePerReview,
+                        min_usage_seconds: minUsageSeconds,
+                        total_budget: totalBudget,
+                        remaining_budget: totalBudget,
+                        status: 'active'
                     })
                 });
 
                 if (response.ok) {
                     alert('Review campaign created! Users can now earn SUITE by reviewing your app.');
-                document.getElementById('reviewCampaignForm').reset();
-                document.getElementById('reviewReward').value = '50';
-                document.getElementById('reviewBudget').value = '500';
-                updateReviewEstimate();
-                await loadReviewCampaigns();
+                    document.getElementById('reviewCampaignForm').reset();
+                    document.getElementById('reviewReward').value = '50';
+                    document.getElementById('reviewBudget').value = '500';
+                    updateReviewEstimate();
+                    await loadReviewCampaigns();
                 } else {
                     const err = await response.json();
-                throw new Error(err.message || 'Failed to create campaign');
+                    throw new Error(err.message || 'Failed to create campaign');
                 }
             } catch (error) {
-                    console.error('Error creating review campaign:', error);
+                console.error('Error creating review campaign:', error);
                 alert('Error creating review campaign: ' + error.message);
             }
 
-                btn.disabled = false;
-                btn.textContent = '🌟 Start Review Campaign';
+            btn.disabled = false;
+            btn.textContent = '🌟 Start Review Campaign';
         });
 
-                // ========== EDIT APP MODAL ==========
-                function openEditAppModal(id, name, iconUrl, description, category) {
-                    document.getElementById('editAppId').value = id;
-                document.getElementById('editAppName').value = name;
-                document.getElementById('editAppIconUrl').value = iconUrl;
-                document.getElementById('editAppDescription').value = description;
-                document.getElementById('editAppCategory').value = category || 'productivity';
+        // ========== EDIT APP MODAL ==========
+        function openEditAppModal(id, name, iconUrl, description, category) {
+            document.getElementById('editAppId').value = id;
+            document.getElementById('editAppName').value = name;
+            document.getElementById('editAppIconUrl').value = iconUrl;
+            document.getElementById('editAppDescription').value = description;
+            document.getElementById('editAppCategory').value = category || 'productivity';
 
-                // Show icon preview
-                updateIconPreview(iconUrl);
+            // Show icon preview
+            updateIconPreview(iconUrl);
 
-                document.getElementById('editAppModal').style.display = 'flex';
+            document.getElementById('editAppModal').style.display = 'flex';
         }
 
-                function closeEditAppModal() {
-                    document.getElementById('editAppModal').style.display = 'none';
+        function closeEditAppModal() {
+            document.getElementById('editAppModal').style.display = 'none';
         }
 
-                function updateIconPreview(url) {
+        function updateIconPreview(url) {
             const preview = document.getElementById('iconPreview');
-                if (url) {
-                    preview.innerHTML = `<img src="${url}" alt="Preview" style="width: 80px; height: 80px; border-radius: 16px; object-fit: cover;" onerror="this.outerHTML='<span style=\\'color: red; font-size: 0.9rem;\\'>⚠️ Invalid image URL</span>'">`;
+            if (url) {
+                preview.innerHTML = `<img src="${url}" alt="Preview" style="width: 80px; height: 80px; border-radius: 16px; object-fit: cover;" onerror="this.outerHTML='<span style=\\'color: red; font-size: 0.9rem;\\'>⚠️ Invalid image URL</span>'">`;
             } else {
-                    preview.innerHTML = '';
+                preview.innerHTML = '';
             }
         }
 
         // Live preview as user types icon URL
         document.getElementById('editAppIconUrl').addEventListener('input', (e) => {
-                    updateIconPreview(e.target.value);
+            updateIconPreview(e.target.value);
         });
 
         // Save app changes
         document.getElementById('editAppForm').addEventListener('submit', async (e) => {
-                    e.preventDefault();
+            e.preventDefault();
 
-                const id = document.getElementById('editAppId').value;
-                const iconUrl = document.getElementById('editAppIconUrl').value;
-                const description = document.getElementById('editAppDescription').value;
-                const category = document.getElementById('editAppCategory').value;
+            const id = document.getElementById('editAppId').value;
+            const iconUrl = document.getElementById('editAppIconUrl').value;
+            const description = document.getElementById('editAppDescription').value;
+            const category = document.getElementById('editAppCategory').value;
 
-                try {
-                    // Try updating suite_apps first
-                    let response = await fetch(`${SUPABASE_URL}/rest/v1/suite_apps?id=eq.${id}`, {
+            try {
+                // Try updating suite_apps first
+                let response = await fetch(`${SUPABASE_URL}/rest/v1/suite_apps?id=eq.${id}`, {
                     method: 'PATCH',
-                headers: {
-                    'apikey': SUPABASE_ANON_KEY,
-                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                'Content-Type': 'application/json',
-                'Prefer': 'return=minimal'
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
                     },
-                body: JSON.stringify({
-                    icon_url: iconUrl || null,
-                description: description,
-                category: category
+                    body: JSON.stringify({
+                        icon_url: iconUrl || null,
+                        description: description,
+                        category: category
                     })
                 });
 
                 // Also try updating the apps table (for apps there)
                 await fetch(`${SUPABASE_URL}/rest/v1/apps?id=eq.${id}`, {
                     method: 'PATCH',
-                headers: {
-                    'apikey': SUPABASE_ANON_KEY,
-                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                'Content-Type': 'application/json',
-                'Prefer': 'return=minimal'
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
                     },
-                body: JSON.stringify({
-                    icon_url: iconUrl || null,
-                description: description,
-                category: category
+                    body: JSON.stringify({
+                        icon_url: iconUrl || null,
+                        description: description,
+                        category: category
                     })
                 });
 
@@ -2859,7 +2748,7 @@
                 closeEditAppModal();
                 loadApps(); // Reload apps list
             } catch (error) {
-                    console.error('Error updating app:', error);
+                console.error('Error updating app:', error);
                 alert('Error updating app: ' + error.message);
             }
         });
@@ -2867,34 +2756,34 @@
         // Close modal when clicking outside
         document.getElementById('editAppModal').addEventListener('click', (e) => {
             if (e.target.id === 'editAppModal') {
-                    closeEditAppModal();
+                closeEditAppModal();
             }
         });
 
-                // ═══ PC PROMPT SERVER FUNCTIONS (Owner Only) ═══
-                const PC_SERVER_URL = 'http://10.0.0.142:3000';  // Stuart's PC
-                const OWNER_DISCORD_ID = '1135315153824993402';  // Stuart's Discord ID
+        // ═══ PC PROMPT SERVER FUNCTIONS (Owner Only) ═══
+        const PC_SERVER_URL = 'http://10.0.0.142:3000';  // Stuart's PC
+        const OWNER_DISCORD_ID = '1135315153824993402';  // Stuart's Discord ID
 
-                // Show prompt server section only for owner
-                function checkOwnerAccess() {
+        // Show prompt server section only for owner
+        function checkOwnerAccess() {
             const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-                const savedUser = localStorage.getItem('suiteDev');
-                let isOwner = false;
+            const savedUser = localStorage.getItem('suiteDev');
+            let isOwner = false;
 
-                if (savedUser) {
+            if (savedUser) {
                 const user = JSON.parse(savedUser);
                 isOwner = user.id === OWNER_DISCORD_ID;
             }
 
-                // Show on localhost (for testing) OR if logged in as Stuart
-                if (isLocalhost || isOwner) {
-                    document.getElementById('section-prompt-server').style.display = 'block';
+            // Show on localhost (for testing) OR if logged in as Stuart
+            if (isLocalhost || isOwner) {
+                document.getElementById('section-prompt-server').style.display = 'block';
                 checkPcStatus();
                 setInterval(checkPcStatus, 10000); // Check every 10 sec
             }
         }
 
-                async function checkPcStatus() {
+        async function checkPcStatus() {
             try {
                 const res = await fetch(`${PC_SERVER_URL}/status`);
                 const data = await res.json();
@@ -2905,119 +2794,119 @@
                 // Update auto-pull status
                 if (data.auto_pull) {
                     document.getElementById('autoPullStatus').textContent = 'ON';
-                document.getElementById('autoPullStatus').style.color = '#22c55e';
-                document.getElementById('autoPullBtn').innerHTML = '▶️ Auto-Pull: ON';
-                document.getElementById('autoPullBtn').style.background = 'linear-gradient(135deg, #22c55e, #16a34a)';
-                document.getElementById('autoPullBtn').style.color = 'white';
+                    document.getElementById('autoPullStatus').style.color = '#22c55e';
+                    document.getElementById('autoPullBtn').innerHTML = '▶️ Auto-Pull: ON';
+                    document.getElementById('autoPullBtn').style.background = 'linear-gradient(135deg, #22c55e, #16a34a)';
+                    document.getElementById('autoPullBtn').style.color = 'white';
                 } else {
                     document.getElementById('autoPullStatus').textContent = 'OFF';
-                document.getElementById('autoPullStatus').style.color = '#6b7280';
-                document.getElementById('autoPullBtn').innerHTML = '⏸️ Auto-Pull: OFF';
-                document.getElementById('autoPullBtn').style.background = '#f3f4f6';
-                document.getElementById('autoPullBtn').style.color = '#5a4a6f';
+                    document.getElementById('autoPullStatus').style.color = '#6b7280';
+                    document.getElementById('autoPullBtn').innerHTML = '⏸️ Auto-Pull: OFF';
+                    document.getElementById('autoPullBtn').style.background = '#f3f4f6';
+                    document.getElementById('autoPullBtn').style.color = '#5a4a6f';
                 }
             } catch (err) {
-                    document.getElementById('pcStatus').textContent = '🔴 Offline';
+                document.getElementById('pcStatus').textContent = '🔴 Offline';
                 document.getElementById('pcStatus').style.color = '#ef4444';
             }
         }
 
-                async function sendPcPrompt() {
+        async function sendPcPrompt() {
             const prompt = document.getElementById('pcPrompt').value.trim();
-                const responseEl = document.getElementById('pcResponse');
+            const responseEl = document.getElementById('pcResponse');
 
-                if (!prompt) {
-                    responseEl.style.display = 'block';
+            if (!prompt) {
+                responseEl.style.display = 'block';
                 responseEl.style.background = 'rgba(239, 68, 68, 0.1)';
                 responseEl.style.color = '#ef4444';
                 responseEl.textContent = '❌ Please enter a prompt';
                 return;
             }
 
-                try {
+            try {
                 const res = await fetch(`${PC_SERVER_URL}/send`, {
                     method: 'POST',
-                headers: {'Content-Type': 'application/json' },
-                body: JSON.stringify({prompt})
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt })
                 });
                 const data = await res.json();
 
                 responseEl.style.display = 'block';
                 if (data.success) {
                     responseEl.style.background = 'rgba(34, 197, 94, 0.1)';
-                responseEl.style.color = '#22c55e';
-                responseEl.textContent = '✅ Sent to PC! Watcher will process it.';
-                document.getElementById('pcPrompt').value = '';
-                checkPcStatus();
+                    responseEl.style.color = '#22c55e';
+                    responseEl.textContent = '✅ Sent to PC! Watcher will process it.';
+                    document.getElementById('pcPrompt').value = '';
+                    checkPcStatus();
                 } else {
                     responseEl.style.background = 'rgba(239, 68, 68, 0.1)';
-                responseEl.style.color = '#ef4444';
-                responseEl.textContent = '❌ ' + (data.error || 'Failed to send');
+                    responseEl.style.color = '#ef4444';
+                    responseEl.textContent = '❌ ' + (data.error || 'Failed to send');
                 }
             } catch (err) {
-                    responseEl.style.display = 'block';
+                responseEl.style.display = 'block';
                 responseEl.style.background = 'rgba(239, 68, 68, 0.1)';
                 responseEl.style.color = '#ef4444';
                 responseEl.textContent = '❌ PC offline or not reachable';
             }
         }
 
-                async function gitPullNow() {
+        async function gitPullNow() {
             const responseEl = document.getElementById('pcResponse');
-                try {
-                const res = await fetch(`${PC_SERVER_URL}/pull`, {method: 'POST' });
+            try {
+                const res = await fetch(`${PC_SERVER_URL}/pull`, { method: 'POST' });
                 const data = await res.json();
 
                 responseEl.style.display = 'block';
                 if (data.success) {
                     responseEl.style.background = 'rgba(34, 197, 94, 0.1)';
-                responseEl.style.color = '#22c55e';
-                responseEl.textContent = '📥 ' + (data.output || 'Already up to date');
+                    responseEl.style.color = '#22c55e';
+                    responseEl.textContent = '📥 ' + (data.output || 'Already up to date');
                 } else {
                     responseEl.style.background = 'rgba(239, 68, 68, 0.1)';
-                responseEl.style.color = '#ef4444';
-                responseEl.textContent = '❌ Pull failed: ' + data.error;
+                    responseEl.style.color = '#ef4444';
+                    responseEl.textContent = '❌ Pull failed: ' + data.error;
                 }
             } catch (err) {
-                    responseEl.style.display = 'block';
+                responseEl.style.display = 'block';
                 responseEl.style.background = 'rgba(239, 68, 68, 0.1)';
                 responseEl.style.color = '#ef4444';
                 responseEl.textContent = '❌ Could not reach PC';
             }
         }
 
-                async function toggleAutoPull() {
+        async function toggleAutoPull() {
             try {
-                const res = await fetch(`${PC_SERVER_URL}/auto-pull`, {method: 'POST' });
+                const res = await fetch(`${PC_SERVER_URL}/auto-pull`, { method: 'POST' });
                 const data = await res.json();
                 checkPcStatus(); // Refresh status
             } catch (err) {
-                    console.error('Failed to toggle auto-pull:', err);
+                console.error('Failed to toggle auto-pull:', err);
             }
         }
 
-                function sendQuickPrompt(prompt) {
-                    document.getElementById('pcPrompt').value = prompt;
-                sendPcPrompt();
+        function sendQuickPrompt(prompt) {
+            document.getElementById('pcPrompt').value = prompt;
+            sendPcPrompt();
         }
 
-                // ═══ CONTENT STUDIO FUNCTIONS ═══
-                const OWNER_USER_ID = OWNER_DISCORD_ID;
-                let isOwnerUser = false;
+        // ═══ CONTENT STUDIO FUNCTIONS ═══
+        const OWNER_USER_ID = OWNER_DISCORD_ID;
+        let isOwnerUser = false;
 
-                // Check if user is owner for free access
-                function checkContentStudioOwner() {
+        // Check if user is owner for free access
+        function checkContentStudioOwner() {
             const savedUser = localStorage.getItem('suiteDev');
-                const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
-                if (savedUser) {
+            if (savedUser) {
                 const user = JSON.parse(savedUser);
                 isOwnerUser = user.id === OWNER_USER_ID;
             }
 
-                if (isLocalhost || isOwnerUser) {
-                    // Show owner badge and set free pricing
-                    document.getElementById('studioOwnerBadge').style.display = 'flex';
+            if (isLocalhost || isOwnerUser) {
+                // Show owner badge and set free pricing
+                document.getElementById('studioOwnerBadge').style.display = 'flex';
                 document.getElementById('videoPricingBadge').innerHTML = '<span style="text-decoration: line-through; opacity: 0.6;">100 SUITE</span> FREE';
                 document.getElementById('batchPrice').innerHTML = '<span style="text-decoration: line-through;">50</span> FREE';
                 document.getElementById('priorityPrice').innerHTML = '<span style="text-decoration: line-through;">100</span> FREE';
@@ -3028,103 +2917,103 @@
 
         // Template selection handling
         document.querySelectorAll('input[name="videoTemplate"]').forEach(radio => {
-                    radio.addEventListener('change', function () {
-                        // Update visual selection
-                        document.querySelectorAll('.template-option').forEach(opt => {
-                            opt.style.background = '#f8f9fa';
-                            opt.style.borderColor = 'transparent';
-                        });
-                        this.nextElementSibling.style.background = 'rgba(255, 149, 0, 0.1)';
-                        this.nextElementSibling.style.borderColor = '#ff9500';
+            radio.addEventListener('change', function () {
+                // Update visual selection
+                document.querySelectorAll('.template-option').forEach(opt => {
+                    opt.style.background = '#f8f9fa';
+                    opt.style.borderColor = 'transparent';
+                });
+                this.nextElementSibling.style.background = 'rgba(255, 149, 0, 0.1)';
+                this.nextElementSibling.style.borderColor = '#ff9500';
 
-                        // Show/hide custom prompt
-                        const customSection = document.getElementById('customPromptSection');
-                        customSection.style.display = this.value === 'custom' ? 'block' : 'none';
-                    });
+                // Show/hide custom prompt
+                const customSection = document.getElementById('customPromptSection');
+                customSection.style.display = this.value === 'custom' ? 'block' : 'none';
+            });
         });
 
         // Priority selection handling for video
         document.querySelectorAll('input[name="videoPriority"]').forEach(radio => {
-                    radio.addEventListener('change', function () {
-                        document.querySelectorAll('input[name="videoPriority"]').forEach(r => {
-                            const div = r.nextElementSibling;
-                            if (r.checked) {
-                                div.style.background = 'rgba(255, 149, 0, 0.1)';
-                                div.style.borderColor = '#ff9500';
-                            } else {
-                                div.style.background = '#f8f9fa';
-                                div.style.borderColor = 'transparent';
-                            }
-                        });
-                    });
+            radio.addEventListener('change', function () {
+                document.querySelectorAll('input[name="videoPriority"]').forEach(r => {
+                    const div = r.nextElementSibling;
+                    if (r.checked) {
+                        div.style.background = 'rgba(255, 149, 0, 0.1)';
+                        div.style.borderColor = '#ff9500';
+                    } else {
+                        div.style.background = '#f8f9fa';
+                        div.style.borderColor = 'transparent';
+                    }
+                });
+            });
         });
 
         // Voice selection handling
         document.querySelectorAll('input[name="voiceSelect"]').forEach(radio => {
-                    radio.addEventListener('change', function () {
-                        document.querySelectorAll('.voice-option').forEach(opt => {
-                            opt.style.background = '#f8f9fa';
-                            opt.style.borderColor = 'transparent';
-                        });
-                        this.nextElementSibling.style.background = 'rgba(99, 102, 241, 0.1)';
-                        this.nextElementSibling.style.borderColor = '#6366f1';
-                    });
+            radio.addEventListener('change', function () {
+                document.querySelectorAll('.voice-option').forEach(opt => {
+                    opt.style.background = '#f8f9fa';
+                    opt.style.borderColor = 'transparent';
+                });
+                this.nextElementSibling.style.background = 'rgba(99, 102, 241, 0.1)';
+                this.nextElementSibling.style.borderColor = '#6366f1';
+            });
         });
 
-                // Voice script character counter
-                document.getElementById('voiceScript')?.addEventListener('input', function () {
+        // Voice script character counter
+        document.getElementById('voiceScript')?.addEventListener('input', function () {
             const count = this.value.length;
-                document.getElementById('voiceCharCount').textContent = `${count} / 500 chars`;
+            document.getElementById('voiceCharCount').textContent = `${count} / 500 chars`;
         });
 
-                // Generate video function
-                function generateVideo() {
+        // Generate video function
+        function generateVideo() {
             const template = document.querySelector('input[name="videoTemplate"]:checked').value;
-                const priority = document.querySelector('input[name="videoPriority"]:checked').value;
-                const app = document.getElementById('videoAppSelect').value;
-                const customPrompt = document.getElementById('customVideoPrompt')?.value || '';
+            const priority = document.querySelector('input[name="videoPriority"]:checked').value;
+            const app = document.getElementById('videoAppSelect').value;
+            const customPrompt = document.getElementById('customVideoPrompt')?.value || '';
 
-                const cost = isOwnerUser ? 0 : (priority === 'batch' ? 50 : 100);
+            const cost = isOwnerUser ? 0 : (priority === 'batch' ? 50 : 100);
 
             if (cost > 0) {
                 const confirm = window.confirm(`This will cost ${cost} SUITE. Proceed?`);
                 if (!confirm) return;
             }
 
-                // For now, show confirmation
-                alert(`🎬 Video generation request submitted!\n\nTemplate: ${template}\nPriority: ${priority}\nCost: ${cost === 0 ? 'FREE (Owner)' : cost + ' SUITE'}\n\nYou'll receive your clips within ${priority === 'batch' ? '24 hours' : '1-2 hours'}.`);
+            // For now, show confirmation
+            alert(`🎬 Video generation request submitted!\n\nTemplate: ${template}\nPriority: ${priority}\nCost: ${cost === 0 ? 'FREE (Owner)' : cost + ' SUITE'}\n\nYou'll receive your clips within ${priority === 'batch' ? '24 hours' : '1-2 hours'}.`);
         }
 
-                // Generate voice function
-                function generateVoice() {
+        // Generate voice function
+        function generateVoice() {
             const voice = document.querySelector('input[name="voiceSelect"]:checked').value;
-                const priority = document.querySelector('input[name="voicePriority"]:checked').value;
-                const script = document.getElementById('voiceScript').value;
+            const priority = document.querySelector('input[name="voicePriority"]:checked').value;
+            const script = document.getElementById('voiceScript').value;
 
-                if (!script.trim()) {
-                    alert('Please enter a script to generate voiceover.');
+            if (!script.trim()) {
+                alert('Please enter a script to generate voiceover.');
                 return;
             }
 
-                const cost = isOwnerUser ? 0 : (priority === 'clone' ? 200 : 50);
+            const cost = isOwnerUser ? 0 : (priority === 'clone' ? 200 : 50);
 
             if (cost > 0) {
                 const confirm = window.confirm(`This will cost ${cost} SUITE. Proceed?`);
                 if (!confirm) return;
             }
 
-                alert(`🎙️ Voiceover generation submitted!\n\nVoice: ${voice}\nType: ${priority === 'clone' ? 'Voice Clone' : 'Standard'}\nCost: ${cost === 0 ? 'FREE (Owner)' : cost + ' SUITE'}\n\nYour audio will be ready shortly.`);
+            alert(`🎙️ Voiceover generation submitted!\n\nVoice: ${voice}\nType: ${priority === 'clone' ? 'Voice Clone' : 'Standard'}\nCost: ${cost === 0 ? 'FREE (Owner)' : cost + ' SUITE'}\n\nYour audio will be ready shortly.`);
         }
 
-                // ═══ CONTENT MARKETPLACE FUNCTIONS ═══
-                async function loadMarketplaceBounties() {
+        // ═══ CONTENT MARKETPLACE FUNCTIONS ═══
+        async function loadMarketplaceBounties() {
             try {
-                const {data: bounties, error } = await supabase
-                .from('content_bounties')
-                .select('*')
-                .eq('status', 'open')
-                .order('reward_amount', {ascending: false })
-                .limit(3);
+                const { data: bounties, error } = await supabase
+                    .from('content_bounties')
+                    .select('*')
+                    .eq('status', 'open')
+                    .order('reward_amount', { ascending: false })
+                    .limit(3);
 
                 if (error) throw error;
 
@@ -3133,10 +3022,10 @@
                 document.getElementById('dashboardOpenBounties').textContent = openCount;
 
                 // Get total paid
-                const {data: completed } = await supabase
-                .from('content_bounties')
-                .select('reward_amount')
-                .eq('status', 'completed');
+                const { data: completed } = await supabase
+                    .from('content_bounties')
+                    .select('reward_amount')
+                    .eq('status', 'completed');
 
                 const totalPaid = (completed || []).reduce((sum, b) => sum + b.reward_amount, 0);
                 document.getElementById('dashboardTotalPaid').textContent = totalPaid > 0 ? totalPaid.toLocaleString() : '0';
@@ -3160,14 +3049,14 @@
                     container.innerHTML = '<div style="background: white; border-radius: 16px; padding: 24px; text-align: center; color: #888; grid-column: 1/-1;">No open bounties right now. Post the first one!</div>';
                 }
             } catch (err) {
-                    console.error('Error loading marketplace:', err);
+                console.error('Error loading marketplace:', err);
                 document.getElementById('featuredBounties').innerHTML = '<div style="background: white; border-radius: 16px; padding: 24px; text-align: center; color: #888;">Unable to load bounties</div>';
             }
         }
 
-                function escapeHtml(str) {
+        function escapeHtml(str) {
             if (!str) return '';
-                return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         }
 
         function openBountyModal() {
