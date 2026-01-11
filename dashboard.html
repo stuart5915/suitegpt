@@ -1919,8 +1919,8 @@
                     <p id="telosStatusText" style="margin: 0; color: #5a4a6f; font-size: 0.95rem;">AI creates apps
                         autonomously 24/7</p>
                 </div>
-                <!-- Big Toggle Switch -->
-                <div style="display: flex; align-items: center; gap: 12px;">
+                <!-- Big Toggle Switch (Owner Only) -->
+                <div id="telosToggleControls" style="display: flex; align-items: center; gap: 12px;">
                     <span id="telosOffLabel" style="font-size: 0.9rem; font-weight: 600; color: #888;">OFF</span>
                     <label class="telos-switch"
                         style="position: relative; display: inline-block; width: 80px; height: 40px; cursor: pointer;">
@@ -1932,6 +1932,11 @@
                             style="position: absolute; height: 32px; width: 32px; left: 44px; bottom: 4px; background: white; border-radius: 50%; transition: 0.4s; box-shadow: 0 2px 6px rgba(0,0,0,0.2);"></span>
                     </label>
                     <span id="telosOnLabel" style="font-size: 0.9rem; font-weight: 700; color: #22c55e;">ON</span>
+                </div>
+                <!-- Status Badge (For Non-Owners) -->
+                <div id="telosStatusBadge"
+                    style="display: none; padding: 10px 20px; background: rgba(34, 197, 94, 0.15); border-radius: 100px;">
+                    <span style="font-weight: 700; color: #22c55e;">🟢 ACTIVE</span>
                 </div>
             </div>
             <!-- Status Explanation -->
@@ -2018,9 +2023,11 @@
                 </div>
             </div>
 
-            <!-- Configuration Panel -->
-            <div style="background: white; border-radius: 16px; padding: 20px; border: 1px solid rgba(0,0,0,0.06);">
+            <!-- Configuration Panel (Owner Only) -->
+            <div id="aiFleetConfigPanel"
+                style="background: white; border-radius: 16px; padding: 20px; border: 1px solid rgba(0,0,0,0.06);">
                 <h4 style="margin: 0 0 20px 0; font-weight: 700;">⚙️ Configuration</h4>
+
 
                 <div style="margin-bottom: 16px;">
                     <label
@@ -3385,9 +3392,10 @@
 
         // Load AI Fleet stats when the panel is shown
         document.addEventListener('DOMContentLoaded', () => {
-            // Check if AI Fleet panel exists (admin only)
+            // Check if AI Fleet panel exists
             if (document.getElementById('panel-ai-fleet')) {
                 loadAIFleetStats();
+                setupAIFleetPermissions();
 
                 // Refresh every 30 seconds
                 setInterval(() => {
@@ -3395,6 +3403,48 @@
                 }, 30000);
             }
         });
+
+        // Setup owner-only permissions for AI Fleet controls
+        function setupAIFleetPermissions() {
+            const isOwner = checkIfOwner();
+            const toggleControls = document.getElementById('telosToggleControls');
+            const statusBadge = document.getElementById('telosStatusBadge');
+            const configPanel = document.getElementById('aiFleetConfigPanel');
+
+            if (isOwner) {
+                // Owner: show toggle controls, hide status badge
+                if (toggleControls) toggleControls.style.display = 'flex';
+                if (statusBadge) statusBadge.style.display = 'none';
+                if (configPanel) configPanel.style.display = 'block';
+            } else {
+                // Non-owner: hide toggle controls, show status badge, hide config
+                if (toggleControls) toggleControls.style.display = 'none';
+                if (statusBadge) statusBadge.style.display = 'block';
+                if (configPanel) configPanel.style.display = 'none';
+            }
+        }
+
+        // Check if current user is the owner
+        function checkIfOwner() {
+            // Check if logged in as owner via localStorage
+            const savedUser = localStorage.getItem('suite_user');
+            if (savedUser) {
+                try {
+                    const user = JSON.parse(savedUser);
+                    // Replace with your actual Discord ID
+                    const OWNER_ID = '287364619419049984';
+                    if (user.id === OWNER_ID) return true;
+                } catch (e) { }
+            }
+
+            // Also allow on localhost for testing
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                return true;
+            }
+
+            return false;
+        }
+
 
 
     </script>
