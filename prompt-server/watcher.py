@@ -329,8 +329,8 @@ def process_prompt(prompt_data):
         # MARK SLOT AS TYPING - prevents other threads from clicking accept on this slot
         slot_typing[slot_index] = True
         
-        # Clear incoming flag - now slot_typing protects us
-        prompt_incoming = False
+        # NOTE: prompt_incoming stays True until after typing completes
+        # This provides double protection with slot_typing
         
         # Step 1: Left-click to focus the chat input
         print(f'[W{slot_index}] Clicking chat at ({slot["chat_x"]}, {slot["chat_y"]})...')
@@ -348,6 +348,9 @@ def process_prompt(prompt_data):
         print(f'[W{slot_index}] Pressing Enter to send...')
         pyautogui.press('enter')
         print(f'[W{slot_index}] ✅ Prompt dispatched to Antigravity')
+        
+        # NOW it's safe to clear prompt_incoming - typing is done
+        prompt_incoming = False
         
         # MARK TYPING COMPLETE - safe to click accept on this slot now
         slot_typing[slot_index] = False
