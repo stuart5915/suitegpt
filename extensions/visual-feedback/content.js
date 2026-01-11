@@ -432,12 +432,12 @@
         });
     }
 
-    function showSuccess() {
+    function showSuccess(customMessage = 'Sent to AI!') {
         if (popup) {
             popup.innerHTML = `
                 <div style="text-align: center; padding: 20px;">
                     <div style="font-size: 3rem; margin-bottom: 16px;">✅</div>
-                    <div style="font-weight: 700; font-size: 1.1rem; color: #10b981;">Sent to AI!</div>
+                    <div style="font-weight: 700; font-size: 1.1rem; color: #10b981;">${customMessage}</div>
                     <div style="color: #666; margin-top: 8px;">Your request is queued for processing</div>
                 </div>
             `;
