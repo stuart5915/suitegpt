@@ -861,6 +861,98 @@
             margin-bottom: 20px;
         }
 
+        /* Symbiosis Section */
+        .symbiosis-section {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            border-radius: 20px;
+            padding: 24px 28px;
+            margin: 32px 0;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .symbiosis-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .symbiosis-icon {
+            font-size: 2.5rem;
+            flex-shrink: 0;
+        }
+
+        .symbiosis-text h3 {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin-bottom: 6px;
+        }
+
+        .symbiosis-text p {
+            font-size: 0.9rem;
+            color: #5a4a6f;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .origin-filters {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .origin-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #5a4a6f;
+        }
+
+        .origin-btn {
+            padding: 8px 16px;
+            border-radius: 100px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.8);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #5a4a6f;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .origin-btn:hover {
+            background: white;
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .origin-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .symbiosis-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #667eea;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .symbiosis-link:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .store-title-row {
@@ -1148,6 +1240,26 @@
                         <!-- Apps rendered by JS -->
                     </div>
                 </div>
+            </div>
+
+            <!-- Symbiosis Explainer Section -->
+            <div class="symbiosis-section">
+                <div class="symbiosis-content">
+                    <div class="symbiosis-icon">🤝</div>
+                    <div class="symbiosis-text">
+                        <h3>AI + Human Symbiosis</h3>
+                        <p>Every app here can evolve through community requests. Some started from AI prompts, others
+                            from human developers — all grow together through continuous AI-powered improvements.</p>
+                    </div>
+                </div>
+                <div class="origin-filters">
+                    <span class="origin-label">Filter by origin:</span>
+                    <button class="origin-btn active" data-origin="all">🌐 All Apps</button>
+                    <button class="origin-btn" data-origin="ai">🤖 AI Fleet</button>
+                    <button class="origin-btn" data-origin="human">👤 Human Made</button>
+                    <button class="origin-btn" data-origin="hybrid">🤝 Hybrid</button>
+                </div>
+                <a href="docs/how-it-works.html" class="symbiosis-link">Learn how the AI pipeline works →</a>
             </div>
 
             <!-- Creator Banner - outside main container for visual separation -->
@@ -1625,6 +1737,120 @@
                 alert(`❌ Failed to submit. Please try again or use Discord.\n\nError: ${err.message}`);
             }
         }
+
+        // ════════════════════════════════════════════════════════════
+        // ORIGIN FILTERS: All / AI Fleet / Human Made / Hybrid
+        // ════════════════════════════════════════════════════════════
+
+        let currentOrigin = 'all';
+
+        function setupOriginFilters() {
+            document.querySelectorAll('.origin-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Update active state
+                    document.querySelectorAll('.origin-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    // Set filter and re-render
+                    currentOrigin = btn.dataset.origin;
+                    renderApps();
+                });
+            });
+        }
+
+        // Override renderApps to include origin filtering
+        const originalRenderApps = renderApps;
+        renderApps = function () {
+            let filtered;
+
+            if (currentStatus === 'all') {
+                filtered = [...apps];
+            } else if (currentStatus === 'pays-review') {
+                filtered = apps.filter(app => activeReviews[app.id]);
+            } else {
+                filtered = apps.filter(app => app.status === currentStatus);
+            }
+
+            // Apply origin filter
+            if (currentOrigin !== 'all') {
+                filtered = filtered.filter(app => {
+                    const origin = app.origin || 'human'; // Default to human if not set
+                    return origin === currentOrigin;
+                });
+            }
+
+            if (searchQuery) {
+                filtered = filtered.filter(app =>
+                    app.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    (app.tagline && app.tagline.toLowerCase().includes(searchQuery.toLowerCase()))
+                );
+            }
+
+            // Sort: published first, then by name
+            filtered.sort((a, b) => {
+                const aLive = a.displayStatus === 'published' || a.status === 'approved' || a.status === 'featured';
+                const bLive = b.displayStatus === 'published' || b.status === 'approved' || b.status === 'featured';
+                if (aLive && !bLive) return -1;
+                if (!aLive && bLive) return 1;
+                return a.name.localeCompare(b.name);
+            });
+
+            // Update count
+            document.getElementById('resultsCount').innerHTML = `Showing <strong>${filtered.length}</strong> app${filtered.length !== 1 ? 's' : ''}`;
+
+            if (filtered.length === 0) {
+                document.getElementById('appsGrid').innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">🔍</div>
+                        <p>No apps found with this filter. Try a different selection.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const html = filtered.map(app => {
+                let features = [];
+                if (app.features) {
+                    try {
+                        features = typeof app.features === 'string' ? JSON.parse(app.features) : app.features;
+                    } catch (e) { }
+                }
+
+                const description = app.tagline || (features.length > 0 ? features[0] : 'A SUITE ecosystem app');
+                const isLive = app.displayStatus === 'published' || app.status === 'approved' || app.status === 'featured';
+                const originBadge = app.origin === 'ai' ? '🤖' : app.origin === 'hybrid' ? '🤝' : '👤';
+
+                return `
+                <div class="app-card ${isLive ? 'featured' : ''}" data-slug="${app.slug}">
+                    <div class="app-row" onclick="window.location.href='app.html?slug=${app.slug}'">
+                        <div class="app-icon">${getAppIcon(app)}</div>
+                        <div class="app-content">
+                            <div class="app-name">${originBadge} ${app.name}</div>
+                            <div class="app-meta">
+                                ${app.published_at ? `<span>Published ${formatDate(app.published_at)}</span>` : ''}
+                            </div>
+                            <p class="app-description">${description}</p>
+                            ${getEarningBadges(app)}
+                        </div>
+                    </div>
+                    <div class="app-footer" style="flex-wrap: wrap; gap: 8px;">
+                        <span class="app-status ${isLive ? 'live' : 'coming'}">${getStatusLabel(app.status)}</span>
+                        <div class="app-actions" style="display: flex; gap: 6px; margin-left: auto;">
+                            <button onclick="event.stopPropagation(); requestFeature('${app.slug}', '${app.name}')" class="action-btn feature-btn" title="Request a Feature">
+                                ✨ Request
+                            </button>
+                            <button onclick="event.stopPropagation(); reportBug('${app.slug}', '${app.name}')" class="action-btn bug-btn" title="Report a Bug">
+                                🐛 Bug
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `}).join('');
+            document.getElementById('appsGrid').innerHTML = html;
+        };
+
+        // Setup origin filters after page loads
+        document.addEventListener('DOMContentLoaded', setupOriginFilters);
     </script>
 
     <!-- Stu Helper Widget -->
