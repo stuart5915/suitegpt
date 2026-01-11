@@ -1,97 +1,79 @@
 import re
-import os
 
-def fix_file(filepath):
-    print(f"Processing {filepath}...")
-    
-    with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
-        content = f.read()
-    
-    original = content
-    
-    # Fix earn-icon spans based on following label
-    content = re.sub(
-        r'<span class="earn-icon"></span>\s*<span class="earn-label">Watch Ads',
-        '<span class="earn-icon">📺</span>\n                            <span class="earn-label">Watch Ads',
-        content
-    )
-    content = re.sub(
-        r'<span class="earn-icon"></span>\s*<span class="earn-label">Try Apps',
-        '<span class="earn-icon">📱</span>\n                            <span class="earn-label">Try Apps',
-        content
-    )
-    content = re.sub(
-        r'<span class="earn-icon"></span>\s*<span class="earn-label">Refer Friends',
-        '<span class="earn-icon">👥</span>\n                            <span class="earn-label">Refer Friends',
-        content
-    )
-    content = re.sub(
-        r'<span class="earn-icon"></span>\s*<span class="earn-label">Hold SUITE',
-        '<span class="earn-icon">💎</span>\n                            <span class="earn-label">Hold SUITE',
-        content
-    )
-    
-    # Fix ?? Value to 📈 Value
-    content = content.replace('?? Value', '📈 Value')
-    content = content.replace('>?? <', '>→ <')
-    
-    # Fix community quote avatars
-    content = re.sub(r'<div class="quote-avatar"></div>', '<div class="quote-avatar">😊</div>', content)
-    content = re.sub(r'<div class="quote-avatar">\s*</div>', '<div class="quote-avatar">😊</div>', content)
-    
-    # Fix option icons that are empty
-    content = re.sub(
-        r'<div class="option-icon"></div>\s*<div class="option-content">\s*<div class="option-title">Video Tutorials',
-        '<div class="option-icon">🎥</div>\n                    <div class="option-content">\n                        <div class="option-title">Video Tutorials',
-        content
-    )
-    content = re.sub(
-        r'<div class="option-icon"></div>\s*<div class="option-content">\s*<div class="option-title">Documentation',
-        '<div class="option-icon">📖</div>\n                    <div class="option-content">\n                        <div class="option-title">Documentation',
-        content
-    )
-    content = re.sub(
-        r'<div class="option-icon"></div>\s*<div class="option-content">\s*<div class="option-title">Dev Dashboard',
-        '<div class="option-icon">⚙️</div>\n                    <div class="option-content">\n                        <div class="option-title">Dev Dashboard',
-        content
-    )
-    content = re.sub(
-        r'<div class="option-icon"></div>\s*<div class="option-content">\s*<div class="option-title">Get Started',
-        '<div class="option-icon">🚀</div>\n                    <div class="option-content">\n                        <div class="option-title">Get Started',
-        content
-    )
-    
-    # Fix activity feed patterns
-    content = re.sub(r'<span class="activity-icon">\s*</span>', '<span class="activity-icon">✨</span>', content)
-    
-    # Fix See All Apps arrow
-    content = re.sub(r'See All Apps\s*\?', 'See All Apps →', content)
-    content = re.sub(r'See\s+All Apps \?', 'See All Apps →', content)
-    
-    # Fix Subscribe on YouTube
-    content = re.sub(r'\?\? Subscribe on YouTube', '▶️ Subscribe on YouTube', content)
-    
-    # Fix Connect Wallet
-    content = re.sub(r'\?\? Connect Wallet', '🔗 Connect Wallet', content)
-    
-    # Fix remaining stray question mark pairs
-    # Look for patterns like >??</span> and replace with nothing or proper content
-    
-    if content != original:
-        with open(filepath, 'w', encoding='utf-8') as f:
-            f.write(content)
-        print(f"  -> Fixed!")
-        return True
-    print(f"  -> No changes needed")
-    return False
+# Read the file
+with open('dashboard.html', 'r', encoding='utf-8', errors='replace') as f:
+    content = f.read()
 
-# Process all HTML files  
-files = ['index.html', 'earn.html', 'developer-portal.html', 'wallet.html', 'apps.html', 'boost.html', 'giving.html', 'start-building.html']
-fixed = 0
+# Define emoji to clay image mappings for sidebar icons
+sidebar_replacements = [
+    ("Earn\n", "clay-coins.png"),
+    ("Store\n", "clay-cart.png"),
+    ("Overview\n", "clay-gear.png"),
+    ("Your Apps\n", "clay-phone.png"),
+    ("Campaigns\n", "clay-rocket.png"),
+    ("Reviews\n", "clay-sparkles.png"),
+    ("Power-Ups\n", "clay-trophy.png"),
+    ("Content Studio\n", "clay-book.png"),
+    ("Marketplace\n", "clay-cart.png"),
+    ("Cadence\n", "clay-target.png"),
+    ("SUITEHub\n", "clay-house.png"),
+    ("Giving\n", "clay-heart-ribbon.png"),
+    ("AI Fleet\n", "clay-rocket.png"),
+    ("Treasury\n", "clay-vault.png"),
+]
 
-for f in files:
-    if os.path.exists(f):
-        if fix_file(f):
-            fixed += 1
+# Replace each sidebar icon based on context
+for name, img in sidebar_replacements:
+    # Match the ?? before each name
+    old_pattern = f'<span class="sidebar-link-icon">??</span>\n                        {name}'
+    new_html = f'<span class="sidebar-link-icon"><img src="assets/emojis/{img}" alt="" style="width:18px;height:18px;"></span>\n                        {name}'
+    content = content.replace(old_pattern, new_html)
+    
+    # Also try with single ?
+    old_pattern2 = f'<span class="sidebar-link-icon">?</span>\n                        {name}'
+    content = content.replace(old_pattern2, new_html)
 
-print(f"\n✅ Fixed {fixed} files")
+# Fix TELOS MODE header
+content = content.replace('?? TELOS MODE', '🎯 TELOS MODE')
+
+# Fix AI Fleet Dashboard header  
+content = content.replace('?? AI Fleet Dashboard', '🤖 AI Fleet Dashboard')
+
+# Fix Earn SUITE header
+content = content.replace('?? Earn SUITE', '💰 Earn SUITE')
+
+# Fix other common patterns
+replacements = [
+    ('??Open Full Earn Page', '➡️ Open Full Earn Page'),
+    ('?? Open Full Earn Page', '➡️ Open Full Earn Page'),
+    ('??Forge', '🔧 Forge'),
+    ('?? Forge', '🔧 Forge'),
+    ('?? Autonomous Behavior', '🧠 Autonomous Behavior'),
+    ('?? Health', '💪 Health'),
+    ('?? Productivity', '📊 Productivity'),
+    ('?? Finance', '💰 Finance'),
+    ('?? Creativity', '🎨 Creativity'),
+    ('?? Social', '👥 Social'),
+    ('?? Education', '📚 Education'),
+    ('?? Entertainment', '🎮 Entertainment'),
+    ('?? Consumers', '👤 Consumers'),
+    ('?? Business', '🏢 Business'),
+    ('?? Developers', '💻 Developers'),
+    ('?? Standard', '⚙️ Standard'),
+    ('? Scheduling', '⏰ Scheduling'),
+    ('?? Workflow', '🔄 Workflow'),
+    ('?? Constraints', '🚫 Constraints'),
+    ('? ACTIVE', '✅ ACTIVE'),
+    ('??? Forge', '🔧🖥️ Forge'),
+    ('??Learn More', '📖 Learn More'),
+    ('?? Learn More', '📖 Learn More'),
+]
+
+for old, new in replacements:
+    content = content.replace(old, new)
+
+# Write back
+with open('dashboard.html', 'w', encoding='utf-8') as f:
+    f.write(content)
+
+print('Fixed dashboard emojis!')
