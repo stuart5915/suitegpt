@@ -16,6 +16,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const isActive = (page) => currentPage === page ? 'active' : '';
 
     sidebar.innerHTML = `
+        <a href="codex.html" class="sidebar-link ${isActive('codex.html')}" style="font-size: 1.1rem; font-weight: 800; padding: 14px 16px; margin-bottom: 16px; background: linear-gradient(135deg, rgba(255, 149, 0, 0.15), rgba(168, 85, 247, 0.1)); border-radius: 12px; display: block;">📖 The SUITE Bible</a>
+
         <div class="sidebar-section">
             <div class="sidebar-title">Learn</div>
             <a href="index.html" class="sidebar-link ${isActive('index.html')}">📚 Introduction</a>
@@ -26,7 +28,6 @@ document.addEventListener('DOMContentLoaded', function () {
             <a href="roadmap.html" class="sidebar-link ${isActive('roadmap.html')}">🗺️ Roadmap</a>
             <a href="systems-view.html" class="sidebar-link ${isActive('systems-view.html')}">🏗️ Systems View</a>
             <a href="glossary.html" class="sidebar-link ${isActive('glossary.html')}">🗣️ SUITE Lingo</a>
-            <a href="codex.html" class="sidebar-link ${isActive('codex.html')}">📖 The SUITE Bible</a>
         </div>
 
         <div class="sidebar-section">
