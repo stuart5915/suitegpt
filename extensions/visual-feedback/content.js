@@ -20,7 +20,7 @@
     // Config (loaded from storage)
     let config = {
         supabaseUrl: 'https://rdsmdywbdiskxknluiym.supabase.co',
-        supabaseKey: null,
+        supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM',
         userId: null,
         destination: 'antigravity' // 'antigravity', 'clipboard', 'claude-api', 'openai-api'
     };
@@ -326,14 +326,6 @@
         sendBtn.disabled = true;
 
         try {
-            // Capture screenshot
-            let screenshotData = null;
-            try {
-                screenshotData = await captureScreenshot(dragBounds);
-            } catch (e) {
-                console.warn('Screenshot failed:', e);
-            }
-
             // Get element info
             const elementInfo = element ? {
                 tagName: element.tagName,
@@ -361,38 +353,40 @@
 
                 case 'antigravity':
                 default:
+                    // Check for Supabase key
+                    if (!config.supabaseKey) {
+                        throw new Error('No Supabase key! Click extension icon → enter key in Settings');
+                    }
+
                     // Send to Supabase for PC Watcher
+                    // Only send columns that exist in prompts table: prompt, status, target
                     const response = await fetch(`${config.supabaseUrl}/rest/v1/prompts`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'apikey': config.supabaseKey,
-                            'Authorization': `Bearer ${config.supabaseKey}`
+                            'Authorization': `Bearer ${config.supabaseKey}`,
+                            'Prefer': 'return=minimal'
                         },
                         body: JSON.stringify({
                             prompt: fullPrompt,
                             status: 'pending',
-                            user_id: config.userId || null,
-                            source: 'visual-feedback',
-                            metadata: JSON.stringify({
-                                url: window.location.href,
-                                selector: selector,
-                                timestamp: new Date().toISOString(),
-                                screenshot: screenshotData
-                            })
+                            target: 'stuart-hollinger-landing'
                         })
                     });
 
-                    if (response.ok) {
-                        showSuccess('Sent to Antigravity!');
+                    if (response.ok || response.status === 201) {
+                        showSuccess('Sent to PC Watcher!');
                     } else {
-                        throw new Error('Failed to send');
+                        const errorText = await response.text();
+                        console.error('Supabase error:', response.status, errorText);
+                        throw new Error(`Failed: ${response.status}`);
                     }
                     break;
             }
         } catch (error) {
             console.error('Send failed:', error);
-            sendBtn.textContent = 'Failed - Retry';
+            sendBtn.textContent = error.message.length < 30 ? error.message : 'Failed - Retry';
             sendBtn.disabled = false;
         }
     }
