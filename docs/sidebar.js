@@ -33,6 +33,13 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
 
         <div class="sidebar-section">
+            <div class="sidebar-title">School</div>
+            <a href="school.html" class="sidebar-link ${isActive('school.html')}">🎓 SUITE School</a>
+            <a href="apologetics.html" class="sidebar-link ${isActive('apologetics.html')}">🛡️ Apologetics Arena</a>
+            <a href="lab.html" class="sidebar-link ${isActive('lab.html')}">🔬 SUITE Lab</a>
+        </div>
+
+        <div class="sidebar-section">
             <div class="sidebar-title">Build</div>
             <a href="quickstart.html" class="sidebar-link ${isActive('quickstart.html')}">🚀 Quick Start</a>
             <a href="developer.html" class="sidebar-link ${isActive('developer.html')}">👨‍💻 Developer Guide</a>
