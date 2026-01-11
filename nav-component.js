@@ -17,7 +17,7 @@
             <a href="${basePath}developer-portal.html">Build</a>
             <a href="${basePath}discuss.html">Discuss</a>
             <a href="${basePath}incubate.html">Incubate</a>
-            <a href="${basePath}docs/index.html">Docs</a>
+            <a href="https://docs.getsuite.app">Docs</a>
             <div class="nav-dropdown">
                 <span class="nav-dropdown-trigger">SUITE</span>
                 <div class="nav-dropdown-menu">
@@ -51,3 +51,4 @@
         injectNav();
     }
 })();
+
