@@ -1901,15 +1901,67 @@
                 Learn More</a>
         </div>
 
-        <!-- System Status -->
-        <div
-            style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px; padding: 16px 20px; background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(16, 185, 129, 0.05)); border-radius: 16px; border: 1px solid rgba(34, 197, 94, 0.3);">
+        <!-- TELOS Mode Hero Toggle -->
+        <div id="telosHeroSection"
+            style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.05)); border-radius: 20px; padding: 24px; margin-bottom: 24px; border: 2px solid rgba(99, 102, 241, 0.2);">
             <div
-                style="width: 12px; height: 12px; background: #22c55e; border-radius: 50%; animation: pulse 2s infinite;">
+                style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                <div>
+                    <h3 style="margin: 0 0 8px 0; font-size: 1.3rem; font-weight: 800; color: #2d1b4e;">🎯 TELOS MODE
+                    </h3>
+                    <p id="telosStatusText" style="margin: 0; color: #5a4a6f; font-size: 0.95rem;">AI creates apps
+                        autonomously 24/7</p>
+                </div>
+                <!-- Big Toggle Switch -->
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span id="telosOffLabel" style="font-size: 0.9rem; font-weight: 600; color: #888;">OFF</span>
+                    <label class="telos-switch"
+                        style="position: relative; display: inline-block; width: 80px; height: 40px; cursor: pointer;">
+                        <input type="checkbox" id="telosMainToggle" onchange="toggleTelosMode()" checked
+                            style="opacity: 0; width: 0; height: 0;">
+                        <span id="telosSlider"
+                            style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, #22c55e, #16a34a); border-radius: 40px; transition: 0.4s; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);"></span>
+                        <span id="telosKnob"
+                            style="position: absolute; height: 32px; width: 32px; left: 44px; bottom: 4px; background: white; border-radius: 50%; transition: 0.4s; box-shadow: 0 2px 6px rgba(0,0,0,0.2);"></span>
+                    </label>
+                    <span id="telosOnLabel" style="font-size: 0.9rem; font-weight: 700; color: #22c55e;">ON</span>
+                </div>
             </div>
-            <span style="font-weight: 700; color: #22c55e;">System Active</span>
-            <span style="color: #5a4a6f; font-size: 0.9rem;">— AI agents are running</span>
+            <!-- Status Explanation -->
+            <div id="telosExplanation"
+                style="margin-top: 16px; padding: 12px 16px; background: rgba(34, 197, 94, 0.1); border-radius: 12px; border-left: 4px solid #22c55e;">
+                <p style="margin: 0; font-size: 0.9rem; color: #16a34a; font-weight: 600;">✅ ACTIVE: AI is researching
+                    markets, building apps, and deploying automatically.</p>
+            </div>
         </div>
+
+        <!-- Human Priority Banner (shown when human work is in progress) -->
+        <div id="humanPriorityBanner"
+            style="display: none; align-items: center; gap: 12px; margin-bottom: 24px; padding: 16px 20px; background: linear-gradient(135deg, rgba(255, 149, 0, 0.1), rgba(255, 107, 157, 0.05)); border-radius: 16px; border: 2px solid rgba(255, 149, 0, 0.3);">
+            <span style="font-size: 1.5rem;">👤</span>
+            <div style="flex: 1;">
+                <span style="font-weight: 700; color: #ff9500;">Human Request Active</span>
+                <p style="margin: 4px 0 0; font-size: 0.85rem; color: #5a4a6f;">TELOS paused — processing your request
+                    first</p>
+            </div>
+            <span id="humanRequestCount"
+                style="background: #ff9500; color: white; padding: 6px 12px; border-radius: 100px; font-size: 0.85rem; font-weight: 700;">1
+                in queue</span>
+        </div>
+
+        <!-- Forge Connection Status -->
+        <div id="forgeStatusBar"
+            style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px; padding: 12px 16px; background: white; border-radius: 12px; border: 1px solid rgba(0,0,0,0.06);">
+            <div id="forgeStatusDot"
+                style="width: 10px; height: 10px; background: #22c55e; border-radius: 50%; animation: pulse 2s infinite;">
+            </div>
+            <span id="forgeStatusText" style="font-weight: 600; color: #22c55e; font-size: 0.9rem;">🖥️ Forge (PC)
+                Connected</span>
+            <span style="color: #888; font-size: 0.85rem; margin-left: auto;">Last sync: <span id="forgeLastSync">Just
+                    now</span></span>
+        </div>
+
+
 
         <!-- Stats Grid -->
         <div
@@ -3155,6 +3207,7 @@
             }
         }
 
+
         async function loadAIFleetStats() {
             try {
                 // Get AI apps count
@@ -3183,11 +3236,143 @@
                         if (c.key === 'iterations_per_app') document.getElementById('configIterations').value = c.value;
                         if (c.key === 'max_apps_per_day') document.getElementById('configMaxApps').value = c.value;
                         if (c.key === 'auto_deploy') document.getElementById('configAutoDeploy').checked = c.value === 'true';
-                        if (c.key === 'telos_enabled') document.getElementById('configTelosEnabled').checked = c.value === 'true';
+                        if (c.key === 'telos_enabled') {
+                            const isEnabled = c.value === 'true';
+                            document.getElementById('configTelosEnabled').checked = isEnabled;
+                            document.getElementById('telosMainToggle').checked = isEnabled;
+                            updateTelosUI(isEnabled);
+                        }
                     });
                 }
+
+                // Check for pending human requests
+                await checkHumanPriority();
+
+                // Load activity feed
+                await loadActivityFeed();
+
             } catch (error) {
                 console.error('Error loading AI Fleet stats:', error);
+            }
+        }
+
+        // Toggle TELOS mode from the hero toggle
+        async function toggleTelosMode() {
+            const toggle = document.getElementById('telosMainToggle');
+            const isEnabled = toggle.checked;
+
+            // Sync with config checkbox
+            document.getElementById('configTelosEnabled').checked = isEnabled;
+
+            // Update UI
+            updateTelosUI(isEnabled);
+
+            // Save to Supabase
+            try {
+                await fetch(`${SUPABASE_URL}/rest/v1/ai_config?key=eq.telos_enabled`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({ value: isEnabled ? 'true' : 'false', updated_at: new Date().toISOString() })
+                });
+            } catch (error) {
+                console.error('Error saving TELOS state:', error);
+            }
+        }
+
+        // Update TELOS UI based on state
+        function updateTelosUI(isEnabled) {
+            const slider = document.getElementById('telosSlider');
+            const knob = document.getElementById('telosKnob');
+            const onLabel = document.getElementById('telosOnLabel');
+            const offLabel = document.getElementById('telosOffLabel');
+            const explanation = document.getElementById('telosExplanation');
+            const statusText = document.getElementById('telosStatusText');
+
+            if (isEnabled) {
+                slider.style.background = 'linear-gradient(135deg, #22c55e, #16a34a)';
+                slider.style.boxShadow = '0 4px 12px rgba(34, 197, 94, 0.3)';
+                knob.style.left = '44px';
+                onLabel.style.color = '#22c55e';
+                onLabel.style.fontWeight = '700';
+                offLabel.style.color = '#888';
+                offLabel.style.fontWeight = '600';
+                explanation.style.background = 'rgba(34, 197, 94, 0.1)';
+                explanation.style.borderLeftColor = '#22c55e';
+                explanation.innerHTML = '<p style="margin: 0; font-size: 0.9rem; color: #16a34a; font-weight: 600;">✅ ACTIVE: AI is researching markets, building apps, and deploying automatically.</p>';
+                statusText.textContent = 'AI creates apps autonomously 24/7';
+            } else {
+                slider.style.background = '#ccc';
+                slider.style.boxShadow = 'none';
+                knob.style.left = '4px';
+                onLabel.style.color = '#888';
+                onLabel.style.fontWeight = '600';
+                offLabel.style.color = '#6b7280';
+                offLabel.style.fontWeight = '700';
+                explanation.style.background = 'rgba(107, 114, 128, 0.1)';
+                explanation.style.borderLeftColor = '#6b7280';
+                explanation.innerHTML = '<p style="margin: 0; font-size: 0.9rem; color: #6b7280; font-weight: 600;">⏸️ PAUSED: AI only responds to human requests (bugs, features)</p>';
+                statusText.textContent = 'AI responds to human requests only';
+            }
+        }
+
+        // Check if there are pending human requests
+        async function checkHumanPriority() {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/prompts?status=eq.pending&select=id`, {
+                    headers: { 'apikey': SUPABASE_ANON_KEY }
+                });
+                const pending = await response.json();
+                const banner = document.getElementById('humanPriorityBanner');
+                const countEl = document.getElementById('humanRequestCount');
+
+                if (Array.isArray(pending) && pending.length > 0) {
+                    banner.style.display = 'flex';
+                    countEl.textContent = pending.length === 1 ? '1 in queue' : `${pending.length} in queue`;
+                } else {
+                    banner.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error checking human priority:', error);
+            }
+        }
+
+        // Load activity feed from ai_activity_log
+        async function loadActivityFeed() {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/ai_activity_log?order=timestamp.desc&limit=20`, {
+                    headers: { 'apikey': SUPABASE_ANON_KEY }
+                });
+                const logs = await response.json();
+                const feedContainer = document.getElementById('aiActivityFeed');
+
+                if (Array.isArray(logs) && logs.length > 0) {
+                    feedContainer.innerHTML = logs.map(log => {
+                        const time = new Date(log.timestamp).toLocaleTimeString('en-US', { hour12: false });
+                        let color = '#888';
+                        let emoji = '📝';
+
+                        switch (log.action_type) {
+                            case 'research': color = '#fbbf24'; emoji = '🔍'; break;
+                            case 'iteration': color = '#60a5fa'; emoji = '🔄'; break;
+                            case 'deploy': color = '#4ade80'; emoji = '✅'; break;
+                            case 'error': color = '#f87171'; emoji = '❌'; break;
+                            case 'start_build': color = '#a78bfa'; emoji = '💡'; break;
+                            case 'telos_on': color = '#22c55e'; emoji = '▶️'; break;
+                            case 'telos_off': color = '#6b7280'; emoji = '⏸️'; break;
+                        }
+
+                        return `<div style="color: ${color};">${time} ${emoji} ${log.message}</div>`;
+                    }).join('');
+                } else {
+                    feedContainer.innerHTML = '<div style="color: #888;">— No activity yet. Enable TELOS to start! —</div>';
+                }
+            } catch (error) {
+                console.error('Error loading activity feed:', error);
+                // Keep existing mock data if fetch fails
             }
         }
 
@@ -3196,8 +3381,14 @@
             // Check if AI Fleet panel exists (admin only)
             if (document.getElementById('panel-ai-fleet')) {
                 loadAIFleetStats();
+
+                // Refresh every 30 seconds
+                setInterval(() => {
+                    loadAIFleetStats();
+                }, 30000);
             }
         });
+
 
     </script>
 
