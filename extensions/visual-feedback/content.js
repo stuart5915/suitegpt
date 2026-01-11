@@ -50,9 +50,9 @@
             }
         });
 
-        // Keyboard shortcut: Ctrl+Shift+F to toggle
+        // Keyboard shortcut: Alt+X to toggle (configurable)
         document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.shiftKey && e.key === 'F') {
+            if (e.altKey && e.key.toLowerCase() === 'x') {
                 e.preventDefault();
                 toggleOverlay();
             }
@@ -62,7 +62,7 @@
             }
         });
 
-        console.log('🎯 SUITE Visual Feedback loaded. Press Ctrl+Shift+F to activate.');
+        console.log('🎯 SUITE Visual Feedback loaded. Press Alt+X to activate.');
     }
 
     function toggleOverlay() {
