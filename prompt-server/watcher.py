@@ -523,7 +523,7 @@ def background_push_worker():
                             scroll_y = slot["chat_y"] - 200
                             pyautogui.click(slot["chat_x"], scroll_y)
                             time.sleep(0.15)  # Longer delay for focus to register
-                            pyautogui.scroll(-10)  # Bigger scroll amount
+                            pyautogui.scroll(-500)  # 50x more scroll to see latest content
                         except:
                             pass
                     last_accept_time = current_time

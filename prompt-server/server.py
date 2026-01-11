@@ -37,34 +37,37 @@ def get_last_push_time():
     return None
 
 def auto_pull_worker():
-    """Background thread that polls Supabase for completed prompts and auto-pulls"""
-    global last_completed_id, pull_count
+    """Background thread that checks git remote for new commits and auto-pulls"""
+    global pull_count
+    
     while True:
-        if auto_pull_enabled and SUPABASE_KEY:
+        if auto_pull_enabled:
             try:
-                # Check for completed prompts
-                response = requests.get(
-                    f'{SUPABASE_URL}/rest/v1/prompts?status=eq.completed&order=updated_at.desc&limit=1',
-                    headers={
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': f'Bearer {SUPABASE_KEY}'
-                    }
+                repo_dir = os.path.dirname(os.path.dirname(__file__))
+                
+                # Fetch latest from remote (doesn't change working copy)
+                subprocess.run(['git', 'fetch'], cwd=repo_dir, capture_output=True)
+                
+                # Check if there are new commits on origin/master
+                result = subprocess.run(
+                    ['git', 'rev-list', 'HEAD..origin/master', '--count'],
+                    cwd=repo_dir, capture_output=True, text=True
                 )
-                if response.ok:
-                    prompts = response.json()
-                    if prompts and prompts[0]['id'] != last_completed_id:
-                        last_completed_id = prompts[0]['id']
-                        print(f'[AUTO-PULL] New completion detected, pulling...')
-                        result = subprocess.run(
-                            ['git', 'pull'],
-                            cwd=os.path.dirname(os.path.dirname(__file__)),
-                            capture_output=True, text=True
-                        )
-                        pull_count += 1
-                        print(f'[AUTO-PULL #{pull_count}] {result.stdout.strip()}')
+                
+                new_commits = int(result.stdout.strip() or '0')
+                
+                if new_commits > 0:
+                    print(f'[AUTO-PULL] {new_commits} new commit(s) detected, pulling...')
+                    pull_result = subprocess.run(
+                        ['git', 'pull'],
+                        cwd=repo_dir,
+                        capture_output=True, text=True
+                    )
+                    pull_count += 1
+                    print(f'[AUTO-PULL #{pull_count}] {pull_result.stdout.strip()}')
             except Exception as e:
                 print(f'[AUTO-PULL] Error: {e}')
-        time.sleep(10)
+        time.sleep(5)  # Check every 5 seconds
 
 # Start background thread
 threading.Thread(target=auto_pull_worker, daemon=True).start()
