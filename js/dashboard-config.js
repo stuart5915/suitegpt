@@ -8,11 +8,20 @@
 const DASHBOARD_CONFIG = {
     // Sidebar sections - grouped by category
     sections: [
+        // --- AI Factory (FIRST - Top Priority) ---
+        {
+            category: 'AI Factory',
+            items: [
+                { id: 'ai-fleet', label: 'AI Fleet', icon: '🤖', status: 'LIVE' },
+                { id: 'prompt-server', label: 'Prompt Server', icon: '💻', status: null },
+                { id: 'cadence', label: 'Cadence AI', icon: '🎯', status: null },
+            ]
+        },
         // --- Overview ---
         {
             category: 'Overview',
             items: [
-                { id: 'overview', label: 'Overview', icon: '🏠', status: null },
+                { id: 'overview', label: 'Dashboard', icon: '🏠', status: null },
             ]
         },
         // --- Build ---
@@ -20,9 +29,6 @@ const DASHBOARD_CONFIG = {
             category: 'Build',
             items: [
                 { id: 'apps', label: 'My Apps', icon: '📱', status: null },
-                { id: 'cadence', label: 'Cadence AI', icon: '🤖', status: null },
-                { id: 'ai-fleet', label: 'AI Fleet', icon: '🚀', status: null },
-                { id: 'prompt-server', label: 'Prompt Server', icon: '💻', status: null },
                 { id: 'studio', label: 'Studio', icon: '🎨', status: null },
             ]
         },
@@ -63,7 +69,7 @@ const DASHBOARD_CONFIG = {
     ],
 
     // Default section to show
-    defaultSection: 'overview',
+    defaultSection: 'ai-fleet',
 };
 
 /**
@@ -158,8 +164,8 @@ class DashboardNav {
             panel.classList.remove('active');
         });
 
-        // Show target panel
-        const targetPanel = document.getElementById(sectionId);
+        // Show target panel (panels use 'panel-' prefix)
+        const targetPanel = document.getElementById('panel-' + sectionId);
         if (targetPanel) {
             targetPanel.classList.add('active');
         }
