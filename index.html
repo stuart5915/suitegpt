@@ -1882,6 +1882,15 @@
 
         .apps-carousel:hover {
             animation-play-state: paused;
+            cursor: grab;
+        }
+
+        .apps-carousel:active {
+            cursor: grabbing;
+        }
+
+        .apps-carousel.dragging {
+            animation: none !important;
         }
 
         @keyframes carousel-scroll {
@@ -1890,7 +1899,7 @@
             }
 
             100% {
-                transform: translateX(-25%);
+                transform: translateX(-50%);
             }
         }
 
@@ -2211,7 +2220,97 @@
                     </div>
                 `;
             }
+
+            // Setup drag-to-scroll with momentum
+            setupCarouselDrag(container);
         })();
+
+        // Drag-to-scroll carousel with momentum/inertia
+        function setupCarouselDrag(carousel) {
+            let isDown = false;
+            let startX;
+            let scrollLeft;
+            let velocity = 0;
+            let momentumId = null;
+
+            const wrapper = carousel.parentElement;
+
+            carousel.addEventListener('mousedown', (e) => {
+                isDown = true;
+                carousel.classList.add('dragging');
+                startX = e.pageX;
+                scrollLeft = wrapper.scrollLeft;
+                cancelMomentum();
+                e.preventDefault();
+            });
+
+            carousel.addEventListener('mouseleave', () => {
+                if (isDown) {
+                    isDown = false;
+                    carousel.classList.remove('dragging');
+                    applyMomentum();
+                }
+            });
+
+            carousel.addEventListener('mouseup', () => {
+                isDown = false;
+                carousel.classList.remove('dragging');
+                applyMomentum();
+            });
+
+            carousel.addEventListener('mousemove', (e) => {
+                if (!isDown) return;
+                e.preventDefault();
+                const x = e.pageX;
+                const walk = (x - startX) * 2;
+                velocity = x - startX;
+                startX = x;
+                wrapper.scrollLeft = wrapper.scrollLeft - walk;
+            });
+
+            // Touch support
+            carousel.addEventListener('touchstart', (e) => {
+                isDown = true;
+                carousel.classList.add('dragging');
+                startX = e.touches[0].pageX;
+                scrollLeft = wrapper.scrollLeft;
+                cancelMomentum();
+            }, { passive: true });
+
+            carousel.addEventListener('touchend', () => {
+                isDown = false;
+                carousel.classList.remove('dragging');
+                applyMomentum();
+            });
+
+            carousel.addEventListener('touchmove', (e) => {
+                if (!isDown) return;
+                const x = e.touches[0].pageX;
+                const walk = (x - startX) * 2;
+                velocity = x - startX;
+                startX = x;
+                wrapper.scrollLeft = wrapper.scrollLeft - walk;
+            }, { passive: true });
+
+            function applyMomentum() {
+                if (Math.abs(velocity) > 1) {
+                    momentumId = requestAnimationFrame(function momentum() {
+                        velocity *= 0.95;
+                        wrapper.scrollLeft -= velocity;
+                        if (Math.abs(velocity) > 0.5) {
+                            momentumId = requestAnimationFrame(momentum);
+                        }
+                    });
+                }
+            }
+
+            function cancelMomentum() {
+                if (momentumId) {
+                    cancelAnimationFrame(momentumId);
+                    momentumId = null;
+                }
+            }
+        }
 
         function renderCarouselCard(app, index) {
             const iconUrl = app.icon_url && !app.icon_url.includes('example.com') ? app.icon_url : null;
