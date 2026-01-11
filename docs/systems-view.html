@@ -474,52 +474,70 @@
                         </div>
                         <div class="system-details">
                             <details class="expand-section">
-                                <summary>📥 Poll Supabase for prompts</summary>
+                                <summary>Poll Supabase for prompts</summary>
                                 <div class="expand-content">
-                                    <pre>
-Every 5 seconds:
-  SELECT * FROM prompts 
-  WHERE status = 'pending' 
-  ORDER BY created_at ASC
-
-If found:
-  - Set prompt_incoming = True (blocks background clicks)
-  - Allocate next available slot (round-robin)
-  - Update status to 'processing'</pre>
+                                    <p>Every 5 seconds, check for pending prompts in the database.</p>
                                 </div>
                             </details>
 
                             <details class="expand-section">
-                                <summary>⌨️ Type prompt into IDE</summary>
+                                <summary>Slot allocation (round-robin across 3 IDE windows)</summary>
                                 <div class="expand-content">
-                                    <pre>
-1. Click at (chat_x, chat_y) to focus input
-2. Wait 500ms for focus
-3. Prepend PROMPT_PREFIX (anti-browser, anti-question rules)
-4. Convert to ASCII-safe text
-5. pyautogui.typewrite(text, interval=0.01)
-6. Press Enter to send
-7. Mark slot_typing[i] = False</pre>
-                                    <p><strong>Speed:</strong> ~100 chars/second</p>
+                                    <p>Distribute prompts evenly across 3 Antigravity IDE windows to maximize
+                                        throughput.</p>
                                 </div>
                             </details>
 
                             <details class="expand-section">
-                                <summary>🔄 Background sync worker</summary>
+                                <summary>Click chat input</summary>
                                 <div class="expand-content">
-                                    <pre>
-Every 60 seconds (if no slots typing):
-  1. Loop through all 3 windows:
-     - Click Accept button location
-     - Click Retry button location  
-     - Press Alt+Enter (for dialogs)
-     - Scroll chat to see latest
-   
-  2. Git sync:
-     - git pull --rebase
-     - git add -A && git commit
-     - git push origin master
-     - Write timestamp to .last_push file</pre>
+                                    <p>Focus the chat input field in the target IDE window.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Type prompt (<span class="term-tooltip"
+                                        data-tooltip="Python library for GUI automation - simulates keyboard and mouse">pyautogui</span>)
+                                </summary>
+                                <div class="expand-content">
+                                    <p>Use pyautogui to type the prompt text into the IDE at ~100 chars/second.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Press Enter</summary>
+                                <div class="expand-content">
+                                    <p>Submit the prompt to the AI agent.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Mark slot as busy</summary>
+                                <div class="expand-content">
+                                    <p>Flag the slot so background workers don't interfere while the AI is processing.
+                                    </p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Click Accept buttons on all windows</summary>
+                                <div class="expand-content">
+                                    <p>Background worker clicks Accept buttons to approve AI changes every 60 seconds.
+                                    </p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Git pull + push to sync changes</summary>
+                                <div class="expand-content">
+                                    <p>Automatically sync code changes via Git between PC and laptop.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Update .last_push timestamp</summary>
+                                <div class="expand-content">
+                                    <p>Write timestamp to file so the UI can show when the last push occurred.</p>
                                 </div>
                             </details>
                         </div>
