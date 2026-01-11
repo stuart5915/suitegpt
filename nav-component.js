@@ -13,6 +13,7 @@
         </a>
         <div class="nav-links">
             <a href="${basePath}apps.html">Apps</a>
+            <a href="${basePath}ecosystem.html">Ecosystem</a>
             <a href="${basePath}developer-portal.html">Build</a>
             <a href="${basePath}discuss.html">Discuss</a>
             <a href="${basePath}incubate.html">Incubate</a>
