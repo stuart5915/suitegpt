@@ -144,6 +144,8 @@
         .system-details {
             flex: 1;
             min-width: 280px;
+            max-height: 500px;
+            overflow-y: auto;
         }
 
         .diagram-img {
@@ -152,10 +154,52 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
 
+        /* Tooltip for terms */
+        .term-tooltip {
+            position: relative;
+            color: #ff9500;
+            font-weight: 700;
+            cursor: help;
+            border-bottom: 1px dashed #ff9500;
+        }
+
+        .term-tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1a2e;
+            color: white;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            white-space: nowrap;
+            max-width: 280px;
+            white-space: normal;
+            text-align: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            z-index: 100;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .term-tooltip:hover::after {
+            opacity: 1;
+            visibility: visible;
+            bottom: calc(100% + 8px);
+        }
+
         /* Stack on mobile */
         @media (max-width: 900px) {
             .system-layout {
                 flex-direction: column;
+            }
+
+            .system-details {
+                max-height: none;
             }
         }
 
@@ -333,10 +377,14 @@
                             </details>
 
                             <details class="expand-section">
-                                <summary>Queue empty? → PROCEED TO TELOS</summary>
+                                <summary>Queue empty? → PROCEED TO <span class="term-tooltip"
+                                        data-tooltip="TELOS = Autonomous goal-seeking mode. The AI becomes self-directed, researching and building apps without human input.">TELOS</span>
+                                </summary>
                                 <div class="expand-content">
-                                    <p>If there are no pending human requests, enter autonomous TELOS mode to build new
-                                        apps.</p>
+                                    <p>If there are no pending human requests, enter autonomous <span
+                                            class="term-tooltip"
+                                            data-tooltip="TELOS = The AI's self-directed mode where it autonomously researches, builds, and deploys new apps.">TELOS</span>
+                                        mode to build new apps.</p>
                                 </div>
                             </details>
 
