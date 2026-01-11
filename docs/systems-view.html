@@ -129,13 +129,34 @@
             font-size: 1rem;
         }
 
+        /* Side-by-side layout: image left, dropdowns right */
+        .system-layout {
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+        }
+
+        .system-diagram {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .system-details {
+            flex: 1;
+            min-width: 280px;
+        }
+
         .diagram-img {
             width: 100%;
-            max-width: 700px;
-            margin: 0 auto 24px;
-            display: block;
             border-radius: 16px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Stack on mobile */
+        @media (max-width: 900px) {
+            .system-layout {
+                flex-direction: column;
+            }
         }
 
         .expand-section {
@@ -296,28 +317,31 @@
                     <p class="system-desc">Autonomous app creation system. Creates polished apps 24/7 without human
                         intervention.</p>
 
-                    <img src="diagrams/ai-fleet.png" alt="AI Fleet System Diagram" class="diagram-img">
-
-                    <details class="expand-section">
-                        <summary>📊 Analyze app store trends</summary>
-                        <div class="expand-content">
-                            <p>The AI scrapes and analyzes popular app stores to identify opportunities:</p>
-                            <pre>
+                    <div class="system-layout">
+                        <div class="system-diagram">
+                            <img src="diagrams/ai-fleet.png" alt="AI Fleet System Diagram" class="diagram-img">
+                        </div>
+                        <div class="system-details">
+                            <details class="expand-section">
+                                <summary>📊 Analyze app store trends</summary>
+                                <div class="expand-content">
+                                    <p>The AI scrapes and analyzes popular app stores to identify opportunities:</p>
+                                    <pre>
 1. Fetch top 100 apps from Product Hunt, App Store, Play Store
 2. Categorize by: productivity, health, finance, social, etc.
 3. Extract common features and pain points from reviews
 4. Identify underserved niches (high demand, low supply)
 5. Score each opportunity by: market size, competition, feasibility
 6. Select highest-scoring concept for next build</pre>
-                            <p><strong>Data stored in:</strong> <code>ai_research_log</code> table</p>
-                        </div>
-                    </details>
+                                    <p><strong>Data stored in:</strong> <code>ai_research_log</code> table</p>
+                                </div>
+                            </details>
 
-                    <details class="expand-section">
-                        <summary>💡 Generate app concept</summary>
-                        <div class="expand-content">
-                            <p>Based on research, AI generates a complete app specification:</p>
-                            <pre>
+                            <details class="expand-section">
+                                <summary>💡 Generate app concept</summary>
+                                <div class="expand-content">
+                                    <p>Based on research, AI generates a complete app specification:</p>
+                                    <pre>
 - App name and tagline
 - Core value proposition (1 sentence)
 - Target user persona
@@ -325,15 +349,15 @@
 - Tech stack recommendation
 - Monetization strategy
 - Success metrics</pre>
-                            <p><strong>Output:</strong> JSON spec saved to <code>ai_app_concepts</code></p>
-                        </div>
-                    </details>
+                                    <p><strong>Output:</strong> JSON spec saved to <code>ai_app_concepts</code></p>
+                                </div>
+                            </details>
 
-                    <details class="expand-section">
-                        <summary>🔄 Build iteration loop (50x)</summary>
-                        <div class="expand-content">
-                            <p>Each iteration follows this pattern:</p>
-                            <pre>
+                            <details class="expand-section">
+                                <summary>🔄 Build iteration loop (50x)</summary>
+                                <div class="expand-content">
+                                    <p>Each iteration follows this pattern:</p>
+                                    <pre>
 FOR i = 1 to 50:
   1. WRITE: Generate/update code based on spec + previous critiques
   2. TEST:  Run app, check for crashes, test core flows
@@ -343,18 +367,18 @@ FOR i = 1 to 50:
      - What's missing?
      - What could be better?
   4. IMPROVE: Plan fixes for next iteration
-  
+   
   IF iteration % 10 == 0:
      Save checkpoint to Supabase</pre>
-                            <p><strong>Timing:</strong> ~2-3 min per iteration, ~3 hours total</p>
-                        </div>
-                    </details>
+                                    <p><strong>Timing:</strong> ~2-3 min per iteration, ~3 hours total</p>
+                                </div>
+                            </details>
 
-                    <details class="expand-section">
-                        <summary>🚀 Deploy to app store</summary>
-                        <div class="expand-content">
-                            <p>Final deployment sequence:</p>
-                            <pre>
+                            <details class="expand-section">
+                                <summary>🚀 Deploy to app store</summary>
+                                <div class="expand-content">
+                                    <p>Final deployment sequence:</p>
+                                    <pre>
 1. Run comprehensive test suite
 2. Generate app icon (AI-generated)
 3. Write app store description
@@ -363,8 +387,10 @@ FOR i = 1 to 50:
 6. Upload to Expo/EAS
 7. Register in suite_apps table with origin='ai'
 8. Post announcement to Discord #new-apps</pre>
+                                </div>
+                            </details>
                         </div>
-                    </details>
+                    </div>
                 </div>
 
                 <!-- WATCHER BOT -->
@@ -373,12 +399,15 @@ FOR i = 1 to 50:
                     <p class="system-desc">Processes prompts from Discord/Supabase and injects them into Antigravity IDE
                         windows.</p>
 
-                    <img src="diagrams/watcher-bot.png" alt="Watcher Bot System Diagram" class="diagram-img">
-
-                    <details class="expand-section">
-                        <summary>📥 Poll Supabase for prompts</summary>
-                        <div class="expand-content">
-                            <pre>
+                    <div class="system-layout">
+                        <div class="system-diagram">
+                            <img src="diagrams/watcher-bot.png" alt="Watcher Bot System Diagram" class="diagram-img">
+                        </div>
+                        <div class="system-details">
+                            <details class="expand-section">
+                                <summary>📥 Poll Supabase for prompts</summary>
+                                <div class="expand-content">
+                                    <pre>
 Every 5 seconds:
   SELECT * FROM prompts 
   WHERE status = 'pending' 
@@ -388,13 +417,13 @@ If found:
   - Set prompt_incoming = True (blocks background clicks)
   - Allocate next available slot (round-robin)
   - Update status to 'processing'</pre>
-                        </div>
-                    </details>
+                                </div>
+                            </details>
 
-                    <details class="expand-section">
-                        <summary>⌨️ Type prompt into IDE</summary>
-                        <div class="expand-content">
-                            <pre>
+                            <details class="expand-section">
+                                <summary>⌨️ Type prompt into IDE</summary>
+                                <div class="expand-content">
+                                    <pre>
 1. Click at (chat_x, chat_y) to focus input
 2. Wait 500ms for focus
 3. Prepend PROMPT_PREFIX (anti-browser, anti-question rules)
@@ -402,28 +431,30 @@ If found:
 5. pyautogui.typewrite(text, interval=0.01)
 6. Press Enter to send
 7. Mark slot_typing[i] = False</pre>
-                            <p><strong>Speed:</strong> ~100 chars/second</p>
-                        </div>
-                    </details>
+                                    <p><strong>Speed:</strong> ~100 chars/second</p>
+                                </div>
+                            </details>
 
-                    <details class="expand-section">
-                        <summary>🔄 Background sync worker</summary>
-                        <div class="expand-content">
-                            <pre>
+                            <details class="expand-section">
+                                <summary>🔄 Background sync worker</summary>
+                                <div class="expand-content">
+                                    <pre>
 Every 60 seconds (if no slots typing):
   1. Loop through all 3 windows:
      - Click Accept button location
      - Click Retry button location  
      - Press Alt+Enter (for dialogs)
      - Scroll chat to see latest
-  
+   
   2. Git sync:
      - git pull --rebase
      - git add -A && git commit
      - git push origin master
      - Write timestamp to .last_push file</pre>
+                                </div>
+                            </details>
                         </div>
-                    </details>
+                    </div>
                 </div>
 
                 <!-- PC-LAPTOP SYNC -->
@@ -431,12 +462,16 @@ Every 60 seconds (if no slots typing):
                     <h2 class="system-title">🔄 PC-Laptop Sync</h2>
                     <p class="system-desc">Bidirectional file sync between your PC and laptop via GitHub.</p>
 
-                    <img src="diagrams/pc-laptop-sync.png" alt="PC-Laptop Sync System Diagram" class="diagram-img">
-
-                    <details class="expand-section">
-                        <summary>📤 PC auto-push (watcher.py)</summary>
-                        <div class="expand-content">
-                            <pre>
+                    <div class="system-layout">
+                        <div class="system-diagram">
+                            <img src="diagrams/pc-laptop-sync.png" alt="PC-Laptop Sync System Diagram"
+                                class="diagram-img">
+                        </div>
+                        <div class="system-details">
+                            <details class="expand-section">
+                                <summary>📤 PC auto-push (watcher.py)</summary>
+                                <div class="expand-content">
+                                    <pre>
 Every 60 seconds (when no slots typing):
   if git status --porcelain has changes:
     git add -A
@@ -445,26 +480,28 @@ Every 60 seconds (when no slots typing):
     
     # Write timestamp for UI display
     echo "2026-01-11 03:30:00" > .last_push</pre>
-                        </div>
-                    </details>
+                                </div>
+                            </details>
 
-                    <details class="expand-section">
-                        <summary>📥 Laptop pull options</summary>
-                        <div class="expand-content">
-                            <p><strong>Option 1: Manual</strong></p>
-                            <pre>Click "Pull Latest from GitHub" button on localhost:3000</pre>
+                            <details class="expand-section">
+                                <summary>📥 Laptop pull options</summary>
+                                <div class="expand-content">
+                                    <p><strong>Option 1: Manual</strong></p>
+                                    <pre>Click "Pull Latest from GitHub" button on localhost:3000</pre>
 
-                            <p><strong>Option 2: Auto-pull loop</strong></p>
-                            <pre>
+                                    <p><strong>Option 2: Auto-pull loop</strong></p>
+                                    <pre>
 while ($true) { 
   git pull --rebase 
   Start-Sleep 10 
 }</pre>
 
-                            <p><strong>Option 3: Auto-pull toggle</strong></p>
-                            <pre>Enable in server.py UI - polls Supabase for completed prompts</pre>
+                                    <p><strong>Option 3: Auto-pull toggle</strong></p>
+                                    <pre>Enable in server.py UI - polls Supabase for completed prompts</pre>
+                                </div>
+                            </details>
                         </div>
-                    </details>
+                    </div>
                 </div>
 
                 <!-- TREASURY & TOKENOMICS -->
@@ -473,13 +510,16 @@ while ($true) {
                     <p class="system-desc">$SUITE token economy: floor price guarantee, yield distribution, and giving.
                     </p>
 
-                    <img src="diagrams/treasury.png" alt="Treasury System Diagram" class="diagram-img">
-
-                    <details class="expand-section">
-                        <summary>💎 Floor Price Guarantee</summary>
-                        <div class="expand-content">
-                            <p>The treasury always backs the token with ETH:</p>
-                            <pre>
+                    <div class="system-layout">
+                        <div class="system-diagram">
+                            <img src="diagrams/treasury.png" alt="Treasury System Diagram" class="diagram-img">
+                        </div>
+                        <div class="system-details">
+                            <details class="expand-section">
+                                <summary>💎 Floor Price Guarantee</summary>
+                                <div class="expand-content">
+                                    <p>The treasury always backs the token with ETH:</p>
+                                    <pre>
 FLOOR_PRICE = Treasury ETH Balance / Total $SUITE Supply
 
 Example:
@@ -488,20 +528,22 @@ Example:
   Floor: 0.0001 ETH per token
 
 Users can ALWAYS withdraw at floor price.</pre>
-                        </div>
-                    </details>
+                                </div>
+                            </details>
 
-                    <details class="expand-section">
-                        <summary>📈 Allocation Strategy</summary>
-                        <div class="expand-content">
-                            <p><strong>Under $100k:</strong> 100% reinvested for growth</p>
-                            <p><strong>Over $100k:</strong></p>
-                            <ul>
-                                <li>90% reinvested (yield generation)</li>
-                                <li>10% to Giving Fund (charity votes)</li>
-                            </ul>
+                            <details class="expand-section">
+                                <summary>📈 Allocation Strategy</summary>
+                                <div class="expand-content">
+                                    <p><strong>Under $100k:</strong> 100% reinvested for growth</p>
+                                    <p><strong>Over $100k:</strong></p>
+                                    <ul>
+                                        <li>90% reinvested (yield generation)</li>
+                                        <li>10% to Giving Fund (charity votes)</li>
+                                    </ul>
+                                </div>
+                            </details>
                         </div>
-                    </details>
+                    </div>
                 </div>
 
                 <!-- APP STORE -->
@@ -509,32 +551,37 @@ Users can ALWAYS withdraw at floor price.</pre>
                     <h2 class="system-title">🏪 App Store</h2>
                     <p class="system-desc">Discovery, deployment, and distribution of SUITE apps.</p>
 
-                    <img src="diagrams/app-store.png" alt="App Store System Diagram" class="diagram-img">
-
-                    <details class="expand-section">
-                        <summary>📤 App Submission</summary>
-                        <div class="expand-content">
-                            <p>Developers submit via FORGE Discord command:</p>
-                            <pre>
+                    <div class="system-layout">
+                        <div class="system-diagram">
+                            <img src="diagrams/app-store.png" alt="App Store System Diagram" class="diagram-img">
+                        </div>
+                        <div class="system-details">
+                            <details class="expand-section">
+                                <summary>📤 App Submission</summary>
+                                <div class="expand-content">
+                                    <p>Developers submit via FORGE Discord command:</p>
+                                    <pre>
 /submit-app {name} {description} {price_in_suite}
 
 Bot creates listing in apps table:
   - Generates preview images
   - Sets status = "pending_review"
   - Notifies reviewers</pre>
-                        </div>
-                    </details>
+                                </div>
+                            </details>
 
-                    <details class="expand-section">
-                        <summary>💳 Revenue Split</summary>
-                        <div class="expand-content">
-                            <ul>
-                                <li><strong>70%</strong> → Developer</li>
-                                <li><strong>20%</strong> → Treasury (platform sustainability)</li>
-                                <li><strong>10%</strong> → Giving Fund (charitable causes)</li>
-                            </ul>
+                            <details class="expand-section">
+                                <summary>💳 Revenue Split</summary>
+                                <div class="expand-content">
+                                    <ul>
+                                        <li><strong>70%</strong> → Developer</li>
+                                        <li><strong>20%</strong> → Treasury (platform sustainability)</li>
+                                        <li><strong>10%</strong> → Giving Fund (charitable causes)</li>
+                                    </ul>
+                                </div>
+                            </details>
                         </div>
-                    </details>
+                    </div>
                 </div>
 
                 <!-- CONTENT MARKETPLACE -->
@@ -542,6 +589,9 @@ Bot creates listing in apps table:
                     <h2 class="system-title">📸 Content Marketplace</h2>
                     <p class="system-desc">Community-driven content creation. Post bounties, submit work, earn SUITE.
                     </p>
+
+                    <img src="diagrams/content-marketplace.png" alt="Content Marketplace System Diagram"
+                        class="diagram-img">
 
                     <details class="expand-section">
                         <summary>📋 How Bounties Work</summary>
@@ -570,8 +620,11 @@ Bot creates listing in apps table:
 
                 <!-- DISCORD INTEGRATION -->
                 <div class="system-card" id="discord-integration">
-                    <h2 class="system-title">💬 Discord Integration</h2>
-                    <p class="system-desc">FORGE bot commands, notifications, and community interaction.</p>
+                    <h2 class="system-title">💬 FORGE Discord Bot</h2>
+                    <p class="system-desc">Queue prompts, manage apps, and get notifications - all from Discord.</p>
+
+                    <img src="diagrams/forge-discord-bot.png" alt="FORGE Discord Bot System Diagram"
+                        class="diagram-img">
 
                     <details class="expand-section">
                         <summary>🤖 Bot Commands</summary>
@@ -601,8 +654,11 @@ Bot creates listing in apps table:
 
                 <!-- AUTHENTICATION -->
                 <div class="system-card" id="auth-system">
-                    <h2 class="system-title">🔐 Authentication</h2>
-                    <p class="system-desc">Multi-method login: Discord OAuth, wallet connect, or email.</p>
+                    <h2 class="system-title">🔐 SUITE Authentication</h2>
+                    <p class="system-desc">Multi-method login with unified user profiles and encrypted data.</p>
+
+                    <img src="diagrams/suite-authentication.png" alt="SUITE Authentication System Diagram"
+                        class="diagram-img">
 
                     <details class="expand-section">
                         <summary>🔑 Login Methods</summary>
