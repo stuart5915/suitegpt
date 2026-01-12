@@ -66,7 +66,7 @@ def check_telos_enabled():
     """Check if TELOS mode is enabled in ai_config table."""
     try:
         response = requests.get(
-            f'{SUPABASE_URL}/rest/v1/ai_config?key=eq.telos_mode&select=value',
+            f'{SUPABASE_URL}/rest/v1/ai_config?key=eq.telos_enabled&select=value',
             headers={'apikey': SUPABASE_KEY},
             timeout=10
         )
