@@ -13,6 +13,7 @@ const DASHBOARD_CONFIG = {
             category: 'AI Factory',
             items: [
                 { id: 'ai-fleet', label: 'AI Fleet', icon: '🤖', status: 'LIVE' },
+                { id: 'ventures', label: 'Ventures', icon: '💼', status: 'NEW' },
                 { id: 'prompt-server', label: 'Prompt Server', icon: '💻', status: null },
                 { id: 'cadence', label: 'Cadence AI', icon: '🎯', status: null },
             ]

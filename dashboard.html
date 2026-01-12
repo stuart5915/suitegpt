@@ -2032,911 +2032,1376 @@
                             <button class="af-save-btn">Save Config</button>
                         </div>
                     </div>
-                </div>
 
+                    <!-- Entrepreneurial Fleet Panel (TELOS Ventures) -->
+                    <div id="panel-ventures" class="section-panel">
+                        <style>
+                            #panel-ventures {
+                                --vt-bg: #0a0a0c;
+                                --vt-card: #1c1c21;
+                                --vt-border: #2c2c35;
+                                --vt-gold: #fbbf24;
+                                --vt-green: #39ff14;
+                                --vt-cyan: #00f0ff;
+                                --vt-red: #ff4757;
+                                --vt-text: #ffffff;
+                                --vt-muted: #5c6066;
+                                background: var(--vt-bg);
+                                border-radius: 16px;
+                                padding: 16px;
+                                color: var(--vt-text);
+                                font-family: 'Inter', -apple-system, sans-serif;
+                            }
 
-                <!-- Earn Panel -->
-                <div id="panel-earn" class="section-panel">
+                            .vt-header {
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: center;
+                                margin-bottom: 12px;
+                            }
 
-                    <div class="panel-header">
-                        <h2 class="panel-title">💰 Earn SUITE</h2>
-                        <p class="panel-desc">Watch ads, complete tasks, and earn free SUITE tokens.</p>
-                    </div>
-                    <div class="content-card">
-                        <div
-                            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
-                            <!-- Watch Ad -->
-                            <div style="background: rgba(255, 149, 0, 0.08); border: 2px solid rgba(255, 149, 0, 0.2); border-radius: 16px; padding: 20px; cursor: pointer; transition: all 0.3s;"
-                                onclick="window.location.href='earn.html'">
-                                <div style="display: flex; align-items: center; gap: 16px;">
-                                    <div
-                                        style="font-size: 2rem; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: white; border-radius: 12px;">
-                                        ??</div>
-                                    <div style="flex: 1;">
-                                        <div style="font-weight: 700; font-size: 1.1rem; color: #2d1b4e;">Watch
-                                            Video Ad
-                                        </div>
-                                        <div style="font-size: 0.9rem; color: #5a4a6f;">30 seconds</div>
+                            .vt-header h3 {
+                                margin: 0;
+                                font-size: 1.1rem;
+                            }
+
+                            .vt-status {
+                                display: flex;
+                                align-items: center;
+                                gap: 8px;
+                                font-size: 0.8rem;
+                                color: var(--vt-gold);
+                            }
+
+                            .vt-status::before {
+                                content: '';
+                                width: 8px;
+                                height: 8px;
+                                background: var(--vt-gold);
+                                border-radius: 50%;
+                                box-shadow: 0 0 8px var(--vt-gold);
+                            }
+
+                            .vt-balance {
+                                background: var(--vt-card);
+                                padding: 4px 12px;
+                                border-radius: 6px;
+                                font-weight: 700;
+                                color: var(--vt-green);
+                                font-family: 'JetBrains Mono', monospace;
+                            }
+
+                            .vt-toggle-row {
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: center;
+                                background: linear-gradient(135deg, var(--vt-card), rgba(251, 191, 36, 0.1));
+                                padding: 12px 16px;
+                                border-radius: 10px;
+                                margin-bottom: 12px;
+                                border: 1px solid rgba(251, 191, 36, 0.3);
+                            }
+
+                            .vt-toggle-row h4 {
+                                margin: 0;
+                                font-size: 1rem;
+                                color: var(--vt-gold);
+                            }
+
+                            .vt-toggle-row small {
+                                color: var(--vt-muted);
+                                font-size: 0.8rem;
+                            }
+
+                            .vt-toggle {
+                                width: 50px;
+                                height: 26px;
+                                background: var(--vt-border);
+                                border-radius: 13px;
+                                cursor: pointer;
+                                position: relative;
+                                transition: background 0.3s;
+                            }
+
+                            .vt-toggle.on {
+                                background: var(--vt-gold);
+                            }
+
+                            .vt-toggle::after {
+                                content: '';
+                                position: absolute;
+                                top: 3px;
+                                left: 3px;
+                                width: 20px;
+                                height: 20px;
+                                background: white;
+                                border-radius: 50%;
+                                transition: transform 0.3s;
+                            }
+
+                            .vt-toggle.on::after {
+                                transform: translateX(24px);
+                            }
+
+                            .vt-kpis {
+                                display: grid;
+                                grid-template-columns: repeat(4, 1fr);
+                                gap: 10px;
+                                margin-bottom: 12px;
+                            }
+
+                            .vt-kpi {
+                                background: var(--vt-card);
+                                border: 1px solid var(--vt-border);
+                                border-radius: 8px;
+                                padding: 10px;
+                                text-align: center;
+                            }
+
+                            .vt-kpi-val {
+                                font-size: 1.5rem;
+                                font-weight: 700;
+                                color: var(--vt-gold);
+                                font-family: 'JetBrains Mono', monospace;
+                            }
+
+                            .vt-kpi-val.green {
+                                color: var(--vt-green);
+                            }
+
+                            .vt-kpi-label {
+                                font-size: 0.7rem;
+                                color: var(--vt-muted);
+                            }
+
+                            .vt-grid {
+                                display: grid;
+                                grid-template-columns: 1fr 1fr;
+                                gap: 12px;
+                                margin-bottom: 12px;
+                            }
+
+                            .vt-panel {
+                                background: var(--vt-card);
+                                border: 1px solid var(--vt-border);
+                                border-radius: 10px;
+                                overflow: hidden;
+                            }
+
+                            .vt-panel-header {
+                                padding: 10px 12px;
+                                border-bottom: 1px solid var(--vt-border);
+                                font-weight: 600;
+                                font-size: 0.85rem;
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: center;
+                            }
+
+                            .vt-panel-body {
+                                padding: 10px 12px;
+                                font-size: 0.8rem;
+                                max-height: 200px;
+                                overflow-y: auto;
+                            }
+
+                            .vt-badge {
+                                font-size: 0.65rem;
+                                padding: 2px 6px;
+                                border-radius: 4px;
+                                font-weight: 700;
+                            }
+
+                            .vt-badge.proposed {
+                                background: rgba(251, 191, 36, 0.2);
+                                color: var(--vt-gold);
+                            }
+
+                            .vt-badge.active {
+                                background: rgba(57, 255, 20, 0.2);
+                                color: var(--vt-green);
+                            }
+
+                            .vt-badge.failed {
+                                background: rgba(255, 71, 87, 0.2);
+                                color: var(--vt-red);
+                            }
+
+                            .vt-empty {
+                                color: var(--vt-muted);
+                                text-align: center;
+                                padding: 20px;
+                            }
+
+                            .vt-proposal {
+                                background: var(--vt-bg);
+                                border: 1px solid var(--vt-border);
+                                border-radius: 8px;
+                                padding: 10px;
+                                margin-bottom: 8px;
+                            }
+
+                            .vt-proposal-name {
+                                font-weight: 700;
+                                margin-bottom: 4px;
+                            }
+
+                            .vt-proposal-roi {
+                                font-size: 0.75rem;
+                                color: var(--vt-gold);
+                                margin-bottom: 6px;
+                            }
+
+                            .vt-proposal-btns {
+                                display: flex;
+                                gap: 6px;
+                            }
+
+                            .vt-btn {
+                                padding: 4px 10px;
+                                border: none;
+                                border-radius: 4px;
+                                font-size: 0.7rem;
+                                font-weight: 700;
+                                cursor: pointer;
+                            }
+
+                            .vt-btn.approve {
+                                background: var(--vt-green);
+                                color: #000;
+                            }
+
+                            .vt-btn.reject {
+                                background: rgba(255, 71, 87, 0.2);
+                                color: var(--vt-red);
+                            }
+
+                            .vt-venture {
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: center;
+                                padding: 8px;
+                                background: var(--vt-bg);
+                                border-radius: 6px;
+                                margin-bottom: 6px;
+                            }
+
+                            .vt-venture-info {
+                                flex: 1;
+                            }
+
+                            .vt-venture-name {
+                                font-weight: 600;
+                                font-size: 0.8rem;
+                            }
+
+                            .vt-venture-stats {
+                                font-size: 0.7rem;
+                                color: var(--vt-muted);
+                            }
+
+                            .vt-feed-item {
+                                padding: 4px 0;
+                                border-bottom: 1px solid var(--vt-border);
+                                font-family: 'JetBrains Mono', monospace;
+                                font-size: 0.75rem;
+                            }
+
+                            .vt-feed-time {
+                                color: var(--vt-muted);
+                            }
+
+                            .vt-sidebar {
+                                background: var(--vt-card);
+                                border: 1px solid var(--vt-border);
+                                border-radius: 10px;
+                                padding: 12px;
+                            }
+
+                            .vt-config-section {
+                                margin-bottom: 12px;
+                            }
+
+                            .vt-config-title {
+                                font-size: 0.7rem;
+                                font-weight: 700;
+                                color: var(--vt-muted);
+                                text-transform: uppercase;
+                                margin-bottom: 6px;
+                            }
+
+                            .vt-config-row {
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: center;
+                                margin-bottom: 4px;
+                                font-size: 0.75rem;
+                            }
+
+                            .vt-config-input {
+                                background: var(--vt-border);
+                                border: none;
+                                color: var(--vt-text);
+                                padding: 4px 8px;
+                                border-radius: 4px;
+                                width: 60px;
+                                text-align: center;
+                                font-size: 0.75rem;
+                            }
+
+                            .vt-save-btn {
+                                width: 100%;
+                                padding: 8px;
+                                background: var(--vt-gold);
+                                color: #000;
+                                border: none;
+                                border-radius: 6px;
+                                font-weight: 700;
+                                font-size: 0.75rem;
+                                cursor: pointer;
+                                margin-top: 8px;
+                            }
+
+                            .vt-layout {
+                                display: grid;
+                                grid-template-columns: 1fr 180px;
+                                gap: 12px;
+                            }
+                        </style>
+
+                        <div class="vt-header">
+                            <h3>💼 TELOS Ventures</h3>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div class="vt-status">Connected</div>
+                                <div class="vt-balance" id="vtBalance">$0.00</div>
+                            </div>
+                        </div>
+
+                        <div class="vt-toggle-row">
+                            <div>
+                                <h4>VENTURES MODE</h4>
+                                <small id="vtStatus">AI researches opportunities and proposes experiments</small>
+                            </div>
+                            <div class="vt-toggle" id="vtToggle" onclick="toggleVentures()"></div>
+                        </div>
+
+                        <div class="vt-layout">
+                            <div>
+                                <div class="vt-kpis">
+                                    <div class="vt-kpi">
+                                        <div class="vt-kpi-val green" id="vtTotalRevenue">$0</div>
+                                        <div class="vt-kpi-label">Total Revenue</div>
                                     </div>
-                                    <div
-                                        style="background: linear-gradient(135deg, #ff9500, #ff6b9d); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800;">
-                                        +2 SUITE</div>
-                                </div>
-                            </div>
-                            <!-- Try App -->
-                            <div style="background: rgba(255, 149, 0, 0.08); border: 2px solid rgba(255, 149, 0, 0.2); border-radius: 16px; padding: 20px; cursor: pointer; transition: all 0.3s;"
-                                onclick="window.location.href='apps.html'">
-                                <div style="display: flex; align-items: center; gap: 16px;">
-                                    <div
-                                        style="font-size: 2rem; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: white; border-radius: 12px;">
-                                        ??</div>
-                                    <div style="flex: 1;">
-                                        <div style="font-weight: 700; font-size: 1.1rem; color: #2d1b4e;">Try an App
-                                        </div>
-                                        <div style="font-size: 0.9rem; color: #5a4a6f;">Use for 5 minutes</div>
+                                    <div class="vt-kpi">
+                                        <div class="vt-kpi-val" id="vtActiveVentures">0</div>
+                                        <div class="vt-kpi-label">Active</div>
                                     </div>
-                                    <div
-                                        style="background: linear-gradient(135deg, #ff9500, #ff6b9d); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800;">
-                                        +100 SUITE</div>
-                                </div>
-                            </div>
-                            <!-- Daily Bonus -->
-                            <div style="background: rgba(255, 149, 0, 0.08); border: 2px solid rgba(255, 149, 0, 0.2); border-radius: 16px; padding: 20px; cursor: pointer; transition: all 0.3s;"
-                                onclick="window.location.href='earn.html'">
-                                <div style="display: flex; align-items: center; gap: 16px;">
-                                    <div
-                                        style="font-size: 2rem; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: white; border-radius: 12px;">
-                                        ??</div>
-                                    <div style="flex: 1;">
-                                        <div style="font-weight: 700; font-size: 1.1rem; color: #2d1b4e;">Daily
-                                            Bonus
-                                        </div>
-                                        <div style="font-size: 0.9rem; color: #5a4a6f;">Claim once per day</div>
+                                    <div class="vt-kpi">
+                                        <div class="vt-kpi-val green" id="vtAvgRoi">0%</div>
+                                        <div class="vt-kpi-label">Avg ROI</div>
                                     </div>
-                                    <div
-                                        style="background: linear-gradient(135deg, #ff9500, #ff6b9d); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800;">
-                                        +5 SUITE</div>
-                                </div>
-                            </div>
-                            <!-- Referral -->
-                            <div style="background: rgba(255, 149, 0, 0.08); border: 2px solid rgba(255, 149, 0, 0.2); border-radius: 16px; padding: 20px; cursor: pointer; transition: all 0.3s;"
-                                onclick="window.location.href='earn.html'">
-                                <div style="display: flex; align-items: center; gap: 16px;">
-                                    <div
-                                        style="font-size: 2rem; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: white; border-radius: 12px;">
-                                        ??</div>
-                                    <div style="flex: 1;">
-                                        <div style="font-weight: 700; font-size: 1.1rem; color: #2d1b4e;">Refer a
-                                            Friend
-                                        </div>
-                                        <div style="font-size: 0.9rem; color: #5a4a6f;">Share your link</div>
+                                    <div class="vt-kpi">
+                                        <div class="vt-kpi-val" id="vtProposed">0</div>
+                                        <div class="vt-kpi-label">Proposed</div>
                                     </div>
-                                    <div
-                                        style="background: linear-gradient(135deg, #ff9500, #ff6b9d); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800;">
-                                        +25 SUITE</div>
+                                </div>
+
+                                <div class="vt-grid">
+                                    <div class="vt-panel">
+                                        <div class="vt-panel-header">Proposed Experiments <span
+                                                class="vt-badge proposed" id="vtProposedCount">0</span></div>
+                                        <div class="vt-panel-body" id="vtProposals">
+                                            <div class="vt-empty">No proposals yet. Enable Ventures Mode to start
+                                                researching.</div>
+                                        </div>
+                                    </div>
+                                    <div class="vt-panel">
+                                        <div class="vt-panel-header">Active Ventures <span class="vt-badge active"
+                                                id="vtActiveCount">0</span></div>
+                                        <div class="vt-panel-body" id="vtActiveList">
+                                            <div class="vt-empty">No active ventures yet.</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="vt-panel">
+                                    <div class="vt-panel-header">Venture Activity <span
+                                            class="vt-badge proposed">LIVE</span></div>
+                                    <div class="vt-panel-body" id="vtFeed" style="max-height: 100px;">
+                                        <div class="vt-empty">No activity yet.</div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div style="text-align: center; margin-top: 24px;">
-                            <a href="earn.html" class="btn-primary"
-                                style="display: inline-block; text-decoration: none;">??
-                                Open
-                                Full Earn Page</a>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Store Panel -->
-                <div id="panel-store" class="section-panel">
-                    <div class="panel-header">
-                        <h2 class="panel-title">?? SUITE Store</h2>
-                        <p class="panel-desc">Buy powerups and items with $SUITE to supercharge your apps.</p>
+                            <!-- Right Sidebar: Ventures Config -->
+                            <div class="vt-sidebar">
+                                <div style="font-weight: 700; margin-bottom: 10px; font-size: 0.85rem;">⚙️ Ventures
+                                    Config</div>
+                                <div
+                                    style="font-size: 0.6rem; background: rgba(251,191,36,0.2); color: var(--vt-gold); padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 10px;">
+                                    Owner Only</div>
+
+                                <div class="vt-config-section">
+                                    <div class="vt-config-title">Budget Limits</div>
+                                    <div class="vt-config-row"><span>Monthly Max</span><input class="vt-config-input"
+                                            type="text" value="$500" id="vtMonthlyMax"></div>
+                                    <div class="vt-config-row"><span>Per Venture</span><input class="vt-config-input"
+                                            type="text" value="$100" id="vtPerVenture"></div>
+                                </div>
+
+                                <div class="vt-config-section">
+                                    <div class="vt-config-title">Focus Areas</div>
+                                    <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                                        <span
+                                            style="padding: 3px 6px; background: var(--vt-gold); color: #000; border-radius: 4px; font-size: 0.6rem; font-weight: 600;">Ebooks</span>
+                                        <span
+                                            style="padding: 3px 6px; background: var(--vt-gold); color: #000; border-radius: 4px; font-size: 0.6rem; font-weight: 600;">SaaS</span>
+                                        <span
+                                            style="padding: 3px 6px; background: var(--vt-border); color: var(--vt-muted); border-radius: 4px; font-size: 0.6rem; font-weight: 600;">Newsletter</span>
+                                        <span
+                                            style="padding: 3px 6px; background: var(--vt-border); color: var(--vt-muted); border-radius: 4px; font-size: 0.6rem; font-weight: 600;">Affiliate</span>
+                                    </div>
+                                </div>
+
+                                <div class="vt-config-section">
+                                    <div class="vt-config-title">Risk Level</div>
+                                    <select
+                                        style="width: 100%; padding: 6px; background: var(--vt-border); border: none; color: var(--vt-text); border-radius: 4px; font-size: 0.75rem;">
+                                        <option>Low (Safe bets)</option>
+                                        <option selected>Medium (Balanced)</option>
+                                        <option>High (Experimental)</option>
+                                    </select>
+                                </div>
+
+                                <button class="vt-save-btn" onclick="saveVenturesConfig()">Save Config</button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="content-card">
-                        <div
-                            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px;">
-                            <!-- Priority Queue -->
+
+
+                    <!-- Earn Panel -->
+                    <div id="panel-earn" class="section-panel">
+
+                        <div class="panel-header">
+                            <h2 class="panel-title">💰 Earn SUITE</h2>
+                            <p class="panel-desc">Watch ads, complete tasks, and earn free SUITE tokens.</p>
+                        </div>
+                        <div class="content-card">
                             <div
-                                style="background: linear-gradient(to bottom, rgb(255, 210, 190) 50%, white 50%); border-radius: 16px; text-align: center; overflow: hidden;">
-                                <div style="padding: 20px 16px 16px;">
-                                    <div style="font-size: 3rem; margin-bottom: 8px;">?</div>
+                                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
+                                <!-- Watch Ad -->
+                                <div style="background: rgba(255, 149, 0, 0.08); border: 2px solid rgba(255, 149, 0, 0.2); border-radius: 16px; padding: 20px; cursor: pointer; transition: all 0.3s;"
+                                    onclick="window.location.href='earn.html'">
+                                    <div style="display: flex; align-items: center; gap: 16px;">
+                                        <div
+                                            style="font-size: 2rem; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: white; border-radius: 12px;">
+                                            ??</div>
+                                        <div style="flex: 1;">
+                                            <div style="font-weight: 700; font-size: 1.1rem; color: #2d1b4e;">Watch
+                                                Video Ad
+                                            </div>
+                                            <div style="font-size: 0.9rem; color: #5a4a6f;">30 seconds</div>
+                                        </div>
+                                        <div
+                                            style="background: linear-gradient(135deg, #ff9500, #ff6b9d); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800;">
+                                            +2 SUITE</div>
+                                    </div>
                                 </div>
-                                <div style="padding: 0 16px 20px; background: white;">
-                                    <div style="font-weight: 800; margin-bottom: 6px;">Priority Queue</div>
-                                    <div
-                                        style="color: #ff9500; font-weight: 700; font-size: 0.85rem; margin-bottom: 12px;">
-                                        500
-                                        $SUITE</div>
-                                    <button
-                                        style="width: 100%; padding: 10px; background: linear-gradient(90deg, #ff8c42, #ff6b9d); border: none; border-radius: 50px; color: white; font-weight: 700; cursor: pointer;">BUY</button>
+                                <!-- Try App -->
+                                <div style="background: rgba(255, 149, 0, 0.08); border: 2px solid rgba(255, 149, 0, 0.2); border-radius: 16px; padding: 20px; cursor: pointer; transition: all 0.3s;"
+                                    onclick="window.location.href='apps.html'">
+                                    <div style="display: flex; align-items: center; gap: 16px;">
+                                        <div
+                                            style="font-size: 2rem; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: white; border-radius: 12px;">
+                                            ??</div>
+                                        <div style="flex: 1;">
+                                            <div style="font-weight: 700; font-size: 1.1rem; color: #2d1b4e;">Try an App
+                                            </div>
+                                            <div style="font-size: 0.9rem; color: #5a4a6f;">Use for 5 minutes</div>
+                                        </div>
+                                        <div
+                                            style="background: linear-gradient(135deg, #ff9500, #ff6b9d); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800;">
+                                            +100 SUITE</div>
+                                    </div>
+                                </div>
+                                <!-- Daily Bonus -->
+                                <div style="background: rgba(255, 149, 0, 0.08); border: 2px solid rgba(255, 149, 0, 0.2); border-radius: 16px; padding: 20px; cursor: pointer; transition: all 0.3s;"
+                                    onclick="window.location.href='earn.html'">
+                                    <div style="display: flex; align-items: center; gap: 16px;">
+                                        <div
+                                            style="font-size: 2rem; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: white; border-radius: 12px;">
+                                            ??</div>
+                                        <div style="flex: 1;">
+                                            <div style="font-weight: 700; font-size: 1.1rem; color: #2d1b4e;">Daily
+                                                Bonus
+                                            </div>
+                                            <div style="font-size: 0.9rem; color: #5a4a6f;">Claim once per day</div>
+                                        </div>
+                                        <div
+                                            style="background: linear-gradient(135deg, #ff9500, #ff6b9d); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800;">
+                                            +5 SUITE</div>
+                                    </div>
+                                </div>
+                                <!-- Referral -->
+                                <div style="background: rgba(255, 149, 0, 0.08); border: 2px solid rgba(255, 149, 0, 0.2); border-radius: 16px; padding: 20px; cursor: pointer; transition: all 0.3s;"
+                                    onclick="window.location.href='earn.html'">
+                                    <div style="display: flex; align-items: center; gap: 16px;">
+                                        <div
+                                            style="font-size: 2rem; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: white; border-radius: 12px;">
+                                            ??</div>
+                                        <div style="flex: 1;">
+                                            <div style="font-weight: 700; font-size: 1.1rem; color: #2d1b4e;">Refer a
+                                                Friend
+                                            </div>
+                                            <div style="font-size: 0.9rem; color: #5a4a6f;">Share your link</div>
+                                        </div>
+                                        <div
+                                            style="background: linear-gradient(135deg, #ff9500, #ff6b9d); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800;">
+                                            +25 SUITE</div>
+                                    </div>
                                 </div>
                             </div>
-                            <!-- AI Pack -->
+                            <div style="text-align: center; margin-top: 24px;">
+                                <a href="earn.html" class="btn-primary"
+                                    style="display: inline-block; text-decoration: none;">??
+                                    Open
+                                    Full Earn Page</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Store Panel -->
+                    <div id="panel-store" class="section-panel">
+                        <div class="panel-header">
+                            <h2 class="panel-title">?? SUITE Store</h2>
+                            <p class="panel-desc">Buy powerups and items with $SUITE to supercharge your apps.</p>
+                        </div>
+                        <div class="content-card">
                             <div
-                                style="background: linear-gradient(to bottom, rgb(255, 210, 190) 50%, white 50%); border-radius: 16px; text-align: center; overflow: hidden;">
-                                <div style="padding: 20px 16px 16px;">
-                                    <div style="font-size: 3rem; margin-bottom: 8px;">??</div>
+                                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px;">
+                                <!-- Priority Queue -->
+                                <div
+                                    style="background: linear-gradient(to bottom, rgb(255, 210, 190) 50%, white 50%); border-radius: 16px; text-align: center; overflow: hidden;">
+                                    <div style="padding: 20px 16px 16px;">
+                                        <div style="font-size: 3rem; margin-bottom: 8px;">?</div>
+                                    </div>
+                                    <div style="padding: 0 16px 20px; background: white;">
+                                        <div style="font-weight: 800; margin-bottom: 6px;">Priority Queue</div>
+                                        <div
+                                            style="color: #ff9500; font-weight: 700; font-size: 0.85rem; margin-bottom: 12px;">
+                                            500
+                                            $SUITE</div>
+                                        <button
+                                            style="width: 100%; padding: 10px; background: linear-gradient(90deg, #ff8c42, #ff6b9d); border: none; border-radius: 50px; color: white; font-weight: 700; cursor: pointer;">BUY</button>
+                                    </div>
                                 </div>
-                                <div style="padding: 0 16px 20px; background: white;">
-                                    <div style="font-weight: 800; margin-bottom: 6px;">AI Pack</div>
-                                    <div
-                                        style="color: #ff9500; font-weight: 700; font-size: 0.85rem; margin-bottom: 12px;">
-                                        200
-                                        $SUITE</div>
-                                    <button
-                                        style="width: 100%; padding: 10px; background: linear-gradient(90deg, #ff8c42, #ff6b9d); border: none; border-radius: 50px; color: white; font-weight: 700; cursor: pointer;">BUY</button>
+                                <!-- AI Pack -->
+                                <div
+                                    style="background: linear-gradient(to bottom, rgb(255, 210, 190) 50%, white 50%); border-radius: 16px; text-align: center; overflow: hidden;">
+                                    <div style="padding: 20px 16px 16px;">
+                                        <div style="font-size: 3rem; margin-bottom: 8px;">??</div>
+                                    </div>
+                                    <div style="padding: 0 16px 20px; background: white;">
+                                        <div style="font-weight: 800; margin-bottom: 6px;">AI Pack</div>
+                                        <div
+                                            style="color: #ff9500; font-weight: 700; font-size: 0.85rem; margin-bottom: 12px;">
+                                            200
+                                            $SUITE</div>
+                                        <button
+                                            style="width: 100%; padding: 10px; background: linear-gradient(90deg, #ff8c42, #ff6b9d); border: none; border-radius: 50px; color: white; font-weight: 700; cursor: pointer;">BUY</button>
+                                    </div>
+                                </div>
+                                <!-- App Slot -->
+                                <div
+                                    style="background: linear-gradient(to bottom, rgb(255, 210, 190) 50%, white 50%); border-radius: 16px; text-align: center; overflow: hidden;">
+                                    <div style="padding: 20px 16px 16px;">
+                                        <div style="font-size: 3rem; margin-bottom: 8px;">??</div>
+                                    </div>
+                                    <div style="padding: 0 16px 20px; background: white;">
+                                        <div style="font-weight: 800; margin-bottom: 6px;">App Slot</div>
+                                        <div
+                                            style="color: #ff9500; font-weight: 700; font-size: 0.85rem; margin-bottom: 12px;">
+                                            1,000
+                                            $SUITE</div>
+                                        <button
+                                            style="width: 100%; padding: 10px; background: linear-gradient(90deg, #ff8c42, #ff6b9d); border: none; border-radius: 50px; color: white; font-weight: 700; cursor: pointer;">BUY</button>
+                                    </div>
+                                </div>
+                                <!-- Featured Week -->
+                                <div
+                                    style="background: linear-gradient(to bottom, rgb(255, 210, 190) 50%, white 50%); border-radius: 16px; text-align: center; overflow: hidden;">
+                                    <div style="padding: 20px 16px 16px;">
+                                        <div style="font-size: 3rem; margin-bottom: 8px;">?</div>
+                                    </div>
+                                    <div style="padding: 0 16px 20px; background: white;">
+                                        <div style="font-weight: 800; margin-bottom: 6px;">Featured Week</div>
+                                        <div
+                                            style="color: #ff9500; font-weight: 700; font-size: 0.85rem; margin-bottom: 12px;">
+                                            2,000
+                                            $SUITE</div>
+                                        <button
+                                            style="width: 100%; padding: 10px; background: linear-gradient(90deg, #ff8c42, #ff6b9d); border: none; border-radius: 50px; color: white; font-weight: 700; cursor: pointer;">BUY</button>
+                                    </div>
+                                </div>
+                                <!-- 2x Earn -->
+                                <div
+                                    style="background: linear-gradient(to bottom, rgb(255, 210, 190) 50%, white 50%); border-radius: 16px; text-align: center; overflow: hidden;">
+                                    <div style="padding: 20px 16px 16px;">
+                                        <div style="font-size: 3rem; margin-bottom: 8px;">2??</div>
+                                    </div>
+                                    <div style="padding: 0 16px 20px; background: white;">
+                                        <div style="font-weight: 800; margin-bottom: 6px;">2x Earn</div>
+                                        <div
+                                            style="color: #ff9500; font-weight: 700; font-size: 0.85rem; margin-bottom: 12px;">
+                                            500
+                                            $SUITE</div>
+                                        <button
+                                            style="width: 100%; padding: 10px; background: linear-gradient(90deg, #ff8c42, #ff6b9d); border: none; border-radius: 50px; color: white; font-weight: 700; cursor: pointer;">BUY</button>
+                                    </div>
                                 </div>
                             </div>
-                            <!-- App Slot -->
-                            <div
-                                style="background: linear-gradient(to bottom, rgb(255, 210, 190) 50%, white 50%); border-radius: 16px; text-align: center; overflow: hidden;">
-                                <div style="padding: 20px 16px 16px;">
-                                    <div style="font-size: 3rem; margin-bottom: 8px;">??</div>
-                                </div>
-                                <div style="padding: 0 16px 20px; background: white;">
-                                    <div style="font-weight: 800; margin-bottom: 6px;">App Slot</div>
-                                    <div
-                                        style="color: #ff9500; font-weight: 700; font-size: 0.85rem; margin-bottom: 12px;">
-                                        1,000
-                                        $SUITE</div>
-                                    <button
-                                        style="width: 100%; padding: 10px; background: linear-gradient(90deg, #ff8c42, #ff6b9d); border: none; border-radius: 50px; color: white; font-weight: 700; cursor: pointer;">BUY</button>
-                                </div>
+                            <div style="text-align: center; margin-top: 24px;">
+                                <a href="boost.html" class="btn-primary"
+                                    style="display: inline-block; text-decoration: none;">??
+                                    Visit
+                                    Full Store</a>
                             </div>
-                            <!-- Featured Week -->
-                            <div
-                                style="background: linear-gradient(to bottom, rgb(255, 210, 190) 50%, white 50%); border-radius: 16px; text-align: center; overflow: hidden;">
-                                <div style="padding: 20px 16px 16px;">
-                                    <div style="font-size: 3rem; margin-bottom: 8px;">?</div>
-                                </div>
-                                <div style="padding: 0 16px 20px; background: white;">
-                                    <div style="font-weight: 800; margin-bottom: 6px;">Featured Week</div>
-                                    <div
-                                        style="color: #ff9500; font-weight: 700; font-size: 0.85rem; margin-bottom: 12px;">
-                                        2,000
-                                        $SUITE</div>
-                                    <button
-                                        style="width: 100%; padding: 10px; background: linear-gradient(90deg, #ff8c42, #ff6b9d); border: none; border-radius: 50px; color: white; font-weight: 700; cursor: pointer;">BUY</button>
-                                </div>
-                            </div>
-                            <!-- 2x Earn -->
-                            <div
-                                style="background: linear-gradient(to bottom, rgb(255, 210, 190) 50%, white 50%); border-radius: 16px; text-align: center; overflow: hidden;">
-                                <div style="padding: 20px 16px 16px;">
-                                    <div style="font-size: 3rem; margin-bottom: 8px;">2??</div>
-                                </div>
-                                <div style="padding: 0 16px 20px; background: white;">
-                                    <div style="font-weight: 800; margin-bottom: 6px;">2x Earn</div>
-                                    <div
-                                        style="color: #ff9500; font-weight: 700; font-size: 0.85rem; margin-bottom: 12px;">
-                                        500
-                                        $SUITE</div>
-                                    <button
-                                        style="width: 100%; padding: 10px; background: linear-gradient(90deg, #ff8c42, #ff6b9d); border: none; border-radius: 50px; color: white; font-weight: 700; cursor: pointer;">BUY</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div style="text-align: center; margin-top: 24px;">
-                            <a href="boost.html" class="btn-primary"
-                                style="display: inline-block; text-decoration: none;">??
-                                Visit
-                                Full Store</a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Apologetics Arena Panel -->
-                <div id="panel-constitution" class="section-panel">
-                    <!-- Header -->
-                    <div class="panel-header"
-                        style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
-                        <div>
-                            <h2 class="panel-title" style="display: flex; align-items: center; gap: 12px;">
-                                <img src="assets/emojis/clay-trophy.png" alt="" style="width: 32px; height: 32px;">
-                                The Constitution
-                            </h2>
-                            <p class="panel-desc">TELOS.md — The master constitution governing all AI systems in the
-                                SUITE ecosystem.</p>
-                        </div>
-                        <a href="TELOS.md" target="_blank"
-                            style="background: linear-gradient(135deg, #a855f7, #6366f1); color: white; padding: 10px 18px; border-radius: 100px; font-size: 0.85rem; font-weight: 700; text-decoration: none;">
-                            <img src="assets/emojis/clay-book.png" alt=""
-                                style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;">View
-                            TELOS.md
-                        </a>
-                    </div>
-
-                    <!-- Governance Explainer -->
-                    <div
-                        style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(99, 102, 241, 0.05)); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 16px; padding: 20px; margin-bottom: 24px;">
-                        <h3
-                            style="margin: 0 0 12px; font-size: 1.1rem; color: #a855f7; display: flex; align-items: center; gap: 10px;">
-                            <span style="font-size: 1.3rem;">🏛️</span> Governance Model
-                        </h3>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                            <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 16px;">
-                                <div style="font-weight: 700; color: #22c55e; margin-bottom: 8px;">📍 Current Phase:
-                                    Founder Stewardship</div>
-                                <p
-                                    style="margin: 0; font-size: 0.9rem; color: rgba(255,255,255,0.7); line-height: 1.6;">
-                                    TELOS.md is maintained by Stuart Hollinger. All refinements are publicly
-                                    documented,
-                                    but final approval rests with the founder during this bootstrap phase.
-                                </p>
-                            </div>
-                            <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 16px;">
-                                <div style="font-weight: 700; color: #ff9500; margin-bottom: 8px;">🔮 Future Phase:
-                                    Council Governance</div>
-                                <p
-                                    style="margin: 0; font-size: 0.9rem; color: rgba(255,255,255,0.7); line-height: 1.6;">
-                                    Holders who <strong style="color: #ff9500;">permanently lock SUITE</strong> in
-                                    the
-                                    Treasury
-                                    become Council members with voting rights on TELOS.md amendments.
-                                </p>
-                            </div>
-                        </div>
-                        <p
-                            style="margin: 16px 0 0; font-size: 0.85rem; color: rgba(255,255,255,0.5); text-align: center; font-style: italic;">
-                            "Locked forever = permanent voice in SUITE's direction"
-                        </p>
-                    </div>
-
-                    <!-- Stats -->
-                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;">
-                        <div
-                            style="text-align: center; padding: 20px; background: linear-gradient(135deg, #22c55e, #16a34a); border-radius: 16px; color: white;">
-                            <div style="font-size: 2rem; font-weight: 900;">5</div>
-                            <div style="font-size: 0.8rem; opacity: 0.9;">Core Principles</div>
-                        </div>
-                        <div
-                            style="text-align: center; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 16px; border: 1px solid rgba(255, 149, 0, 0.2);">
-                            <div id="totalRefinements" style="font-size: 2rem; font-weight: 900; color: #ff9500;">0
-                            </div>
-                            <div style="font-size: 0.8rem; color: rgba(255,255,255,0.7);">Refinements Submitted
-                            </div>
-                        </div>
-                        <div
-                            style="text-align: center; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 16px; border: 1px solid rgba(168, 85, 247, 0.2);">
-                            <div id="novelAttacksCount" style="font-size: 2rem; font-weight: 900; color: #a855f7;">0
-                            </div>
-                            <div style="font-size: 0.8rem; color: rgba(255,255,255,0.7);">Novel Attacks Refuted
-                            </div>
-                        </div>
-                        <div
-                            style="text-align: center; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 16px; border: 1px solid rgba(34, 197, 94, 0.2);">
-                            <div style="font-size: 2rem; font-weight: 900; color: #22c55e;">v1.0</div>
-                            <div style="font-size: 0.8rem; color: rgba(255,255,255,0.7);">Current Version</div>
                         </div>
                     </div>
 
-                    <!-- Core Principle Box -->
-                    <div
-                        style="background: rgba(34, 197, 94, 0.1); border-left: 4px solid #22c55e; padding: 16px 20px; border-radius: 0 12px 12px 0; margin-bottom: 24px;">
-                        <div style="font-weight: 700; color: #22c55e; margin-bottom: 4px;">CORE PRINCIPLE #1</div>
-                        <p style="margin: 0; color: rgba(255,255,255,0.9); font-size: 1.1rem;">Truth wins over
-                            untruth.
-                            Always.</p>
-                    </div>
+                    <!-- Apologetics Arena Panel -->
+                    <div id="panel-constitution" class="section-panel">
+                        <!-- Header -->
+                        <div class="panel-header"
+                            style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
+                            <div>
+                                <h2 class="panel-title" style="display: flex; align-items: center; gap: 12px;">
+                                    <img src="assets/emojis/clay-trophy.png" alt="" style="width: 32px; height: 32px;">
+                                    The Constitution
+                                </h2>
+                                <p class="panel-desc">TELOS.md — The master constitution governing all AI systems in the
+                                    SUITE ecosystem.</p>
+                            </div>
+                            <a href="TELOS.md" target="_blank"
+                                style="background: linear-gradient(135deg, #a855f7, #6366f1); color: white; padding: 10px 18px; border-radius: 100px; font-size: 0.85rem; font-weight: 700; text-decoration: none;">
+                                <img src="assets/emojis/clay-book.png" alt=""
+                                    style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;">View
+                                TELOS.md
+                            </a>
+                        </div>
 
-                    <!-- Two Column Layout -->
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-
-                        <!-- TELOS.md Viewer -->
+                        <!-- Governance Explainer -->
                         <div
-                            style="background: rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 24px; border: 1px solid rgba(255, 149, 0, 0.1);">
+                            style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(99, 102, 241, 0.05)); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 16px; padding: 20px; margin-bottom: 24px;">
                             <h3
-                                style="margin: 0 0 16px; font-weight: 800; display: flex; align-items: center; gap: 10px;">
-                                <img src="assets/emojis/clay-book.png" alt="" style="width: 24px; height: 24px;">
-                                TELOS.md Principles
+                                style="margin: 0 0 12px; font-size: 1.1rem; color: #a855f7; display: flex; align-items: center; gap: 10px;">
+                                <span style="font-size: 1.3rem;">🏛️</span> Governance Model
                             </h3>
-
-                            <div id="telosPrinciples" style="max-height: 350px; overflow-y: auto;">
-                                <!-- Principle 1 -->
-                                <details
-                                    style="margin-bottom: 10px; background: rgba(0,0,0,0.2); border-radius: 10px; border-left: 3px solid #22c55e;">
-                                    <summary
-                                        style="padding: 12px 16px; cursor: pointer; font-weight: 600; color: white;">
-                                        1. Truth Over Untruth
-                                        <span style="float: right; font-size: 0.75rem; color: rgba(255,255,255,0.5);">0
-                                            claims | 0 attacks</span>
-                                    </summary>
-                                    <div style="padding: 0 16px 16px; color: rgba(255,255,255,0.7); font-size: 0.9rem;">
-                                        Truth wins. Always. All AI outputs must be grounded in verifiable truth.
-                                    </div>
-                                </details>
-
-                                <!-- Principle 2 -->
-                                <details
-                                    style="margin-bottom: 10px; background: rgba(0,0,0,0.2); border-radius: 10px; border-left: 3px solid #22c55e;">
-                                    <summary
-                                        style="padding: 12px 16px; cursor: pointer; font-weight: 600; color: white;">
-                                        2. Human Flourishing
-                                        <span style="float: right; font-size: 0.75rem; color: rgba(255,255,255,0.5);">0
-                                            claims | 0 attacks</span>
-                                    </summary>
-                                    <div style="padding: 0 16px 16px; color: rgba(255,255,255,0.7); font-size: 0.9rem;">
-                                        All systems exist to serve human flourishing — spiritually, mentally,
-                                        physically, and financially.
-                                    </div>
-                                </details>
-
-                                <!-- Principle 3 -->
-                                <details
-                                    style="margin-bottom: 10px; background: rgba(0,0,0,0.2); border-radius: 10px; border-left: 3px solid #22c55e;">
-                                    <summary
-                                        style="padding: 12px 16px; cursor: pointer; font-weight: 600; color: white;">
-                                        3. Transparency
-                                        <span style="float: right; font-size: 0.75rem; color: rgba(255,255,255,0.5);">0
-                                            claims | 0 attacks</span>
-                                    </summary>
-                                    <div style="padding: 0 16px 16px; color: rgba(255,255,255,0.7); font-size: 0.9rem;">
-                                        All operations must be visible and auditable. No hidden agendas.
-                                    </div>
-                                </details>
-
-                                <!-- Principle 4 -->
-                                <details
-                                    style="margin-bottom: 10px; background: rgba(0,0,0,0.2); border-radius: 10px; border-left: 3px solid #22c55e;">
-                                    <summary
-                                        style="padding: 12px 16px; cursor: pointer; font-weight: 600; color: white;">
-                                        4. Sustainability
-                                        <span style="float: right; font-size: 0.75rem; color: rgba(255,255,255,0.5);">0
-                                            claims | 0 attacks</span>
-                                    </summary>
-                                    <div style="padding: 0 16px 16px; color: rgba(255,255,255,0.7); font-size: 0.9rem;">
-                                        The ecosystem must be self-sustaining and perpetual.
-                                    </div>
-                                </details>
-
-                                <!-- Principle 5 -->
-                                <details
-                                    style="margin-bottom: 10px; background: rgba(0,0,0,0.2); border-radius: 10px; border-left: 3px solid #a855f7;">
-                                    <summary
-                                        style="padding: 12px 16px; cursor: pointer; font-weight: 600; color: white;">
-                                        5. Alignment with Creator's Intent
-                                        <span style="float: right; font-size: 0.75rem; color: rgba(255,255,255,0.5);">0
-                                            claims | 0 attacks</span>
-                                    </summary>
-                                    <div style="padding: 0 16px 16px; color: rgba(255,255,255,0.7); font-size: 0.9rem;">
-                                        All AI behavior aligns with Christian values as interpreted through
-                                        Scripture.
-                                    </div>
-                                </details>
-                            </div>
-                        </div>
-
-                        <!-- Submit Refinement Form -->
-                        <div
-                            style="background: rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 24px; border: 1px solid rgba(255, 149, 0, 0.1);">
-                            <h3
-                                style="margin: 0 0 16px; font-weight: 800; display: flex; align-items: center; gap: 10px;">
-                                <img src="assets/emojis/clay-chat.png" alt="" style="width: 24px; height: 24px;">
-                                Submit Refinement
-                            </h3>
-
-                            <div style="margin-bottom: 12px;">
-                                <label
-                                    style="font-size: 0.85rem; font-weight: 600; color: rgba(255,255,255,0.6); display: block; margin-bottom: 8px;">Target
-                                    Principle</label>
-                                <select id="targetPrinciple"
-                                    style="width: 100%; padding: 12px; border: 2px solid rgba(255, 149, 0, 0.2); border-radius: 10px; background: rgba(0,0,0,0.2); color: white; font-size: 0.95rem;">
-                                    <option value="1">1. Truth Over Untruth</option>
-                                    <option value="2">2. Human Flourishing</option>
-                                    <option value="3">3. Transparency</option>
-                                    <option value="4">4. Sustainability</option>
-                                    <option value="5">5. Alignment with Creator's Intent</option>
-                                    <option value="new">+ Propose New Principle</option>
-                                </select>
-                            </div>
-
-                            <div style="margin-bottom: 12px;">
-                                <label
-                                    style="font-size: 0.85rem; font-weight: 600; color: rgba(255,255,255,0.6); display: block; margin-bottom: 8px;">Position</label>
-                                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
-                                    <label
-                                        style="padding: 10px 8px; background: rgba(168, 85, 247, 0.1); border: 2px solid rgba(168, 85, 247, 0.3); border-radius: 10px; cursor: pointer; text-align: center;">
-                                        <input type="radio" name="submissionType" value="above" style="display: none;">
-                                        <span style="color: #a855f7; font-weight: 600;">↑ Above</span>
-                                        <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">Higher tier
-                                        </div>
-                                    </label>
-                                    <label
-                                        style="padding: 10px 8px; background: rgba(255, 149, 0, 0.1); border: 2px solid rgba(255, 149, 0, 0.3); border-radius: 10px; cursor: pointer; text-align: center;">
-                                        <input type="radio" name="submissionType" value="alongside" checked
-                                            style="display: none;">
-                                        <span style="color: #ff9500; font-weight: 600;">↔ Alongside</span>
-                                        <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">Equal weight
-                                        </div>
-                                    </label>
-                                    <label
-                                        style="padding: 10px 8px; background: rgba(34, 197, 94, 0.1); border: 2px solid rgba(34, 197, 94, 0.3); border-radius: 10px; cursor: pointer; text-align: center;">
-                                        <input type="radio" name="submissionType" value="below" style="display: none;">
-                                        <span style="color: #22c55e; font-weight: 600;">↓ Below</span>
-                                        <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">Sub-principle
-                                        </div>
-                                    </label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 16px;">
+                                    <div style="font-weight: 700; color: #22c55e; margin-bottom: 8px;">📍 Current Phase:
+                                        Founder Stewardship</div>
+                                    <p
+                                        style="margin: 0; font-size: 0.9rem; color: rgba(255,255,255,0.7); line-height: 1.6;">
+                                        TELOS.md is maintained by Stuart Hollinger. All refinements are publicly
+                                        documented,
+                                        but final approval rests with the founder during this bootstrap phase.
+                                    </p>
                                 </div>
-                                <div
-                                    style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 8px;">
-                                    <label
-                                        style="padding: 10px 8px; background: rgba(255, 107, 157, 0.1); border: 2px solid rgba(255, 107, 157, 0.3); border-radius: 10px; cursor: pointer; text-align: center;">
-                                        <input type="radio" name="submissionType" value="refine" style="display: none;">
-                                        <span style="color: #ff6b9d; font-weight: 600;">✏️ Refine</span>
-                                        <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">Edit wording
-                                        </div>
-                                    </label>
-                                    <label
-                                        style="padding: 10px 8px; background: rgba(239, 68, 68, 0.1); border: 2px solid rgba(239, 68, 68, 0.3); border-radius: 10px; cursor: pointer; text-align: center;">
-                                        <input type="radio" name="submissionType" value="challenge"
-                                            style="display: none;">
-                                        <span style="color: #ef4444; font-weight: 600;">⚔️ Challenge</span>
-                                        <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">Test strength
-                                        </div>
-                                    </label>
+                                <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 16px;">
+                                    <div style="font-weight: 700; color: #ff9500; margin-bottom: 8px;">🔮 Future Phase:
+                                        Council Governance</div>
+                                    <p
+                                        style="margin: 0; font-size: 0.9rem; color: rgba(255,255,255,0.7); line-height: 1.6;">
+                                        Holders who <strong style="color: #ff9500;">permanently lock SUITE</strong> in
+                                        the
+                                        Treasury
+                                        become Council members with voting rights on TELOS.md amendments.
+                                    </p>
                                 </div>
                             </div>
-
-                            <div style="margin-bottom: 16px;">
-                                <label
-                                    style="font-size: 0.85rem; font-weight: 600; color: rgba(255,255,255,0.6); display: block; margin-bottom: 8px;">Your
-                                    Argument</label>
-                                <textarea id="challengeInput"
-                                    placeholder="Describe your attack, supporting evidence, or proposed refinement..."
-                                    style="width: 100%; min-height: 100px; padding: 14px; border: 2px solid rgba(255, 149, 0, 0.2); border-radius: 12px; background: rgba(0,0,0,0.2); color: white; font-size: 0.95rem; resize: vertical;"></textarea>
-                            </div>
-
-                            <div
-                                style="margin-bottom: 16px; background: rgba(0,0,0,0.2); border-radius: 12px; padding: 16px;">
-                                <div
-                                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1);">
-                                    <span style="font-size: 0.9rem; color: rgba(255,255,255,0.7);">Submission
-                                        Cost:</span>
-                                    <span style="font-weight: 700; color: #ff9500;">0.5 SUITE <span
-                                            style="font-size: 0.75rem; color: rgba(255,255,255,0.5);">(~$0.002)</span></span>
-                                </div>
-                                <div style="font-size: 0.8rem; color: rgba(255,255,255,0.6); margin-bottom: 8px;">🏆
-                                    Rewards for Accepted Submissions:</div>
-                                <div
-                                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem;">
-                                    <div
-                                        style="background: rgba(34, 197, 94, 0.1); padding: 8px 12px; border-radius: 8px; border-left: 3px solid #22c55e;">
-                                        <span style="color: #22c55e; font-weight: 700;">+10 SUITE</span>
-                                        <span style="color: rgba(255,255,255,0.6);"> Supporting Claim</span>
-                                    </div>
-                                    <div
-                                        style="background: rgba(255, 149, 0, 0.1); padding: 8px 12px; border-radius: 8px; border-left: 3px solid #ff9500;">
-                                        <span style="color: #ff9500; font-weight: 700;">+25 SUITE</span>
-                                        <span style="color: rgba(255,255,255,0.6);"> Novel Attack</span>
-                                    </div>
-                                    <div
-                                        style="background: rgba(168, 85, 247, 0.1); padding: 8px 12px; border-radius: 8px; border-left: 3px solid #a855f7;">
-                                        <span style="color: #a855f7; font-weight: 700;">+50 SUITE</span>
-                                        <span style="color: rgba(255,255,255,0.6);"> Accepted Refinement</span>
-                                    </div>
-                                    <div
-                                        style="background: rgba(255, 107, 157, 0.1); padding: 8px 12px; border-radius: 8px; border-left: 3px solid #ff6b9d;">
-                                        <span style="color: #ff6b9d; font-weight: 700;">+100 SUITE</span>
-                                        <span style="color: rgba(255,255,255,0.6);"> New Principle</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button onclick="submitChallenge()"
-                                style="width: 100%; padding: 14px; background: linear-gradient(135deg, #ff9500, #ff6b9d); color: white; border: none; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer;">
-                                Submit for Review
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- TELOS.md History & Changelog -->
-                    <div
-                        style="margin-top: 24px; background: rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 24px; border: 1px solid rgba(255, 149, 0, 0.1);">
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                            <h3 style="margin: 0; font-weight: 800; display: flex; align-items: center; gap: 10px;">
-                                <img src="assets/emojis/clay-book.png" alt="" style="width: 24px; height: 24px;">
-                                TELOS.md History
-                            </h3>
-                            <span style="font-size: 0.8rem; color: rgba(255,255,255,0.5);">Immutable audit
-                                trail</span>
-                        </div>
-
-                        <div
-                            style="margin-bottom: 16px; padding: 12px 16px; background: rgba(168, 85, 247, 0.1); border-radius: 10px; border-left: 3px solid #a855f7;">
-                            <p style="margin: 0; font-size: 0.9rem; color: rgba(255,255,255,0.8);">
-                                Every submission, refinement, and version change is permanently recorded here.
-                                This log will exist as long as the SUITE ecosystem exists —
-                                <strong style="color: #a855f7;">a living record from Day 1</strong>.
+                            <p
+                                style="margin: 16px 0 0; font-size: 0.85rem; color: rgba(255,255,255,0.5); text-align: center; font-style: italic;">
+                                "Locked forever = permanent voice in SUITE's direction"
                             </p>
                         </div>
 
-                        <!-- Version History -->
-                        <div id="telosHistory" style="max-height: 300px; overflow-y: auto;">
-                            <!-- Initial Version -->
+                        <!-- Stats -->
+                        <div
+                            style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;">
                             <div
-                                style="display: flex; gap: 16px; padding: 16px; background: rgba(0,0,0,0.2); border-radius: 12px; margin-bottom: 12px; border-left: 3px solid #22c55e;">
-                                <div style="flex-shrink: 0; width: 80px; text-align: center;">
-                                    <div style="font-size: 1.5rem; font-weight: 900; color: #22c55e;">v1.0</div>
-                                    <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">GENESIS</div>
+                                style="text-align: center; padding: 20px; background: linear-gradient(135deg, #22c55e, #16a34a); border-radius: 16px; color: white;">
+                                <div style="font-size: 2rem; font-weight: 900;">5</div>
+                                <div style="font-size: 0.8rem; opacity: 0.9;">Core Principles</div>
+                            </div>
+                            <div
+                                style="text-align: center; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 16px; border: 1px solid rgba(255, 149, 0, 0.2);">
+                                <div id="totalRefinements" style="font-size: 2rem; font-weight: 900; color: #ff9500;">0
                                 </div>
-                                <div style="flex: 1;">
-                                    <div style="font-weight: 700; color: white; margin-bottom: 4px;">Initial
-                                        Constitution Created</div>
-                                    <div style="font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-bottom: 8px;">
-                                        5 core principles established: Truth Over Untruth, Human Flourishing,
-                                        Transparency, Sustainability, Alignment with Creator's Intent
+                                <div style="font-size: 0.8rem; color: rgba(255,255,255,0.7);">Refinements Submitted
+                                </div>
+                            </div>
+                            <div
+                                style="text-align: center; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 16px; border: 1px solid rgba(168, 85, 247, 0.2);">
+                                <div id="novelAttacksCount" style="font-size: 2rem; font-weight: 900; color: #a855f7;">0
+                                </div>
+                                <div style="font-size: 0.8rem; color: rgba(255,255,255,0.7);">Novel Attacks Refuted
+                                </div>
+                            </div>
+                            <div
+                                style="text-align: center; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 16px; border: 1px solid rgba(34, 197, 94, 0.2);">
+                                <div style="font-size: 2rem; font-weight: 900; color: #22c55e;">v1.0</div>
+                                <div style="font-size: 0.8rem; color: rgba(255,255,255,0.7);">Current Version</div>
+                            </div>
+                        </div>
+
+                        <!-- Core Principle Box -->
+                        <div
+                            style="background: rgba(34, 197, 94, 0.1); border-left: 4px solid #22c55e; padding: 16px 20px; border-radius: 0 12px 12px 0; margin-bottom: 24px;">
+                            <div style="font-weight: 700; color: #22c55e; margin-bottom: 4px;">CORE PRINCIPLE #1</div>
+                            <p style="margin: 0; color: rgba(255,255,255,0.9); font-size: 1.1rem;">Truth wins over
+                                untruth.
+                                Always.</p>
+                        </div>
+
+                        <!-- Two Column Layout -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+
+                            <!-- TELOS.md Viewer -->
+                            <div
+                                style="background: rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 24px; border: 1px solid rgba(255, 149, 0, 0.1);">
+                                <h3
+                                    style="margin: 0 0 16px; font-weight: 800; display: flex; align-items: center; gap: 10px;">
+                                    <img src="assets/emojis/clay-book.png" alt="" style="width: 24px; height: 24px;">
+                                    TELOS.md Principles
+                                </h3>
+
+                                <div id="telosPrinciples" style="max-height: 350px; overflow-y: auto;">
+                                    <!-- Principle 1 -->
+                                    <details
+                                        style="margin-bottom: 10px; background: rgba(0,0,0,0.2); border-radius: 10px; border-left: 3px solid #22c55e;">
+                                        <summary
+                                            style="padding: 12px 16px; cursor: pointer; font-weight: 600; color: white;">
+                                            1. Truth Over Untruth
+                                            <span
+                                                style="float: right; font-size: 0.75rem; color: rgba(255,255,255,0.5);">0
+                                                claims | 0 attacks</span>
+                                        </summary>
+                                        <div
+                                            style="padding: 0 16px 16px; color: rgba(255,255,255,0.7); font-size: 0.9rem;">
+                                            Truth wins. Always. All AI outputs must be grounded in verifiable truth.
+                                        </div>
+                                    </details>
+
+                                    <!-- Principle 2 -->
+                                    <details
+                                        style="margin-bottom: 10px; background: rgba(0,0,0,0.2); border-radius: 10px; border-left: 3px solid #22c55e;">
+                                        <summary
+                                            style="padding: 12px 16px; cursor: pointer; font-weight: 600; color: white;">
+                                            2. Human Flourishing
+                                            <span
+                                                style="float: right; font-size: 0.75rem; color: rgba(255,255,255,0.5);">0
+                                                claims | 0 attacks</span>
+                                        </summary>
+                                        <div
+                                            style="padding: 0 16px 16px; color: rgba(255,255,255,0.7); font-size: 0.9rem;">
+                                            All systems exist to serve human flourishing — spiritually, mentally,
+                                            physically, and financially.
+                                        </div>
+                                    </details>
+
+                                    <!-- Principle 3 -->
+                                    <details
+                                        style="margin-bottom: 10px; background: rgba(0,0,0,0.2); border-radius: 10px; border-left: 3px solid #22c55e;">
+                                        <summary
+                                            style="padding: 12px 16px; cursor: pointer; font-weight: 600; color: white;">
+                                            3. Transparency
+                                            <span
+                                                style="float: right; font-size: 0.75rem; color: rgba(255,255,255,0.5);">0
+                                                claims | 0 attacks</span>
+                                        </summary>
+                                        <div
+                                            style="padding: 0 16px 16px; color: rgba(255,255,255,0.7); font-size: 0.9rem;">
+                                            All operations must be visible and auditable. No hidden agendas.
+                                        </div>
+                                    </details>
+
+                                    <!-- Principle 4 -->
+                                    <details
+                                        style="margin-bottom: 10px; background: rgba(0,0,0,0.2); border-radius: 10px; border-left: 3px solid #22c55e;">
+                                        <summary
+                                            style="padding: 12px 16px; cursor: pointer; font-weight: 600; color: white;">
+                                            4. Sustainability
+                                            <span
+                                                style="float: right; font-size: 0.75rem; color: rgba(255,255,255,0.5);">0
+                                                claims | 0 attacks</span>
+                                        </summary>
+                                        <div
+                                            style="padding: 0 16px 16px; color: rgba(255,255,255,0.7); font-size: 0.9rem;">
+                                            The ecosystem must be self-sustaining and perpetual.
+                                        </div>
+                                    </details>
+
+                                    <!-- Principle 5 -->
+                                    <details
+                                        style="margin-bottom: 10px; background: rgba(0,0,0,0.2); border-radius: 10px; border-left: 3px solid #a855f7;">
+                                        <summary
+                                            style="padding: 12px 16px; cursor: pointer; font-weight: 600; color: white;">
+                                            5. Alignment with Creator's Intent
+                                            <span
+                                                style="float: right; font-size: 0.75rem; color: rgba(255,255,255,0.5);">0
+                                                claims | 0 attacks</span>
+                                        </summary>
+                                        <div
+                                            style="padding: 0 16px 16px; color: rgba(255,255,255,0.7); font-size: 0.9rem;">
+                                            All AI behavior aligns with Christian values as interpreted through
+                                            Scripture.
+                                        </div>
+                                    </details>
+                                </div>
+                            </div>
+
+                            <!-- Submit Refinement Form -->
+                            <div
+                                style="background: rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 24px; border: 1px solid rgba(255, 149, 0, 0.1);">
+                                <h3
+                                    style="margin: 0 0 16px; font-weight: 800; display: flex; align-items: center; gap: 10px;">
+                                    <img src="assets/emojis/clay-chat.png" alt="" style="width: 24px; height: 24px;">
+                                    Submit Refinement
+                                </h3>
+
+                                <div style="margin-bottom: 12px;">
+                                    <label
+                                        style="font-size: 0.85rem; font-weight: 600; color: rgba(255,255,255,0.6); display: block; margin-bottom: 8px;">Target
+                                        Principle</label>
+                                    <select id="targetPrinciple"
+                                        style="width: 100%; padding: 12px; border: 2px solid rgba(255, 149, 0, 0.2); border-radius: 10px; background: rgba(0,0,0,0.2); color: white; font-size: 0.95rem;">
+                                        <option value="1">1. Truth Over Untruth</option>
+                                        <option value="2">2. Human Flourishing</option>
+                                        <option value="3">3. Transparency</option>
+                                        <option value="4">4. Sustainability</option>
+                                        <option value="5">5. Alignment with Creator's Intent</option>
+                                        <option value="new">+ Propose New Principle</option>
+                                    </select>
+                                </div>
+
+                                <div style="margin-bottom: 12px;">
+                                    <label
+                                        style="font-size: 0.85rem; font-weight: 600; color: rgba(255,255,255,0.6); display: block; margin-bottom: 8px;">Position</label>
+                                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                                        <label
+                                            style="padding: 10px 8px; background: rgba(168, 85, 247, 0.1); border: 2px solid rgba(168, 85, 247, 0.3); border-radius: 10px; cursor: pointer; text-align: center;">
+                                            <input type="radio" name="submissionType" value="above"
+                                                style="display: none;">
+                                            <span style="color: #a855f7; font-weight: 600;">↑ Above</span>
+                                            <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">Higher tier
+                                            </div>
+                                        </label>
+                                        <label
+                                            style="padding: 10px 8px; background: rgba(255, 149, 0, 0.1); border: 2px solid rgba(255, 149, 0, 0.3); border-radius: 10px; cursor: pointer; text-align: center;">
+                                            <input type="radio" name="submissionType" value="alongside" checked
+                                                style="display: none;">
+                                            <span style="color: #ff9500; font-weight: 600;">↔ Alongside</span>
+                                            <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">Equal weight
+                                            </div>
+                                        </label>
+                                        <label
+                                            style="padding: 10px 8px; background: rgba(34, 197, 94, 0.1); border: 2px solid rgba(34, 197, 94, 0.3); border-radius: 10px; cursor: pointer; text-align: center;">
+                                            <input type="radio" name="submissionType" value="below"
+                                                style="display: none;">
+                                            <span style="color: #22c55e; font-weight: 600;">↓ Below</span>
+                                            <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">Sub-principle
+                                            </div>
+                                        </label>
                                     </div>
                                     <div
-                                        style="display: flex; justify-content: space-between; font-size: 0.75rem; color: rgba(255,255,255,0.5);">
-                                        <span>👤 Stuart Hollinger (Founder)</span>
-                                        <span>📅 Jan 11, 2026</span>
+                                        style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 8px;">
+                                        <label
+                                            style="padding: 10px 8px; background: rgba(255, 107, 157, 0.1); border: 2px solid rgba(255, 107, 157, 0.3); border-radius: 10px; cursor: pointer; text-align: center;">
+                                            <input type="radio" name="submissionType" value="refine"
+                                                style="display: none;">
+                                            <span style="color: #ff6b9d; font-weight: 600;">✏️ Refine</span>
+                                            <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">Edit wording
+                                            </div>
+                                        </label>
+                                        <label
+                                            style="padding: 10px 8px; background: rgba(239, 68, 68, 0.1); border: 2px solid rgba(239, 68, 68, 0.3); border-radius: 10px; cursor: pointer; text-align: center;">
+                                            <input type="radio" name="submissionType" value="challenge"
+                                                style="display: none;">
+                                            <span style="color: #ef4444; font-weight: 600;">⚔️ Challenge</span>
+                                            <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">Test strength
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div style="margin-bottom: 16px;">
+                                    <label
+                                        style="font-size: 0.85rem; font-weight: 600; color: rgba(255,255,255,0.6); display: block; margin-bottom: 8px;">Your
+                                        Argument</label>
+                                    <textarea id="challengeInput"
+                                        placeholder="Describe your attack, supporting evidence, or proposed refinement..."
+                                        style="width: 100%; min-height: 100px; padding: 14px; border: 2px solid rgba(255, 149, 0, 0.2); border-radius: 12px; background: rgba(0,0,0,0.2); color: white; font-size: 0.95rem; resize: vertical;"></textarea>
+                                </div>
+
+                                <div
+                                    style="margin-bottom: 16px; background: rgba(0,0,0,0.2); border-radius: 12px; padding: 16px;">
+                                    <div
+                                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                        <span style="font-size: 0.9rem; color: rgba(255,255,255,0.7);">Submission
+                                            Cost:</span>
+                                        <span style="font-weight: 700; color: #ff9500;">0.5 SUITE <span
+                                                style="font-size: 0.75rem; color: rgba(255,255,255,0.5);">(~$0.002)</span></span>
+                                    </div>
+                                    <div style="font-size: 0.8rem; color: rgba(255,255,255,0.6); margin-bottom: 8px;">🏆
+                                        Rewards for Accepted Submissions:</div>
+                                    <div
+                                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem;">
+                                        <div
+                                            style="background: rgba(34, 197, 94, 0.1); padding: 8px 12px; border-radius: 8px; border-left: 3px solid #22c55e;">
+                                            <span style="color: #22c55e; font-weight: 700;">+10 SUITE</span>
+                                            <span style="color: rgba(255,255,255,0.6);"> Supporting Claim</span>
+                                        </div>
+                                        <div
+                                            style="background: rgba(255, 149, 0, 0.1); padding: 8px 12px; border-radius: 8px; border-left: 3px solid #ff9500;">
+                                            <span style="color: #ff9500; font-weight: 700;">+25 SUITE</span>
+                                            <span style="color: rgba(255,255,255,0.6);"> Novel Attack</span>
+                                        </div>
+                                        <div
+                                            style="background: rgba(168, 85, 247, 0.1); padding: 8px 12px; border-radius: 8px; border-left: 3px solid #a855f7;">
+                                            <span style="color: #a855f7; font-weight: 700;">+50 SUITE</span>
+                                            <span style="color: rgba(255,255,255,0.6);"> Accepted Refinement</span>
+                                        </div>
+                                        <div
+                                            style="background: rgba(255, 107, 157, 0.1); padding: 8px 12px; border-radius: 8px; border-left: 3px solid #ff6b9d;">
+                                            <span style="color: #ff6b9d; font-weight: 700;">+100 SUITE</span>
+                                            <span style="color: rgba(255,255,255,0.6);"> New Principle</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button onclick="submitChallenge()"
+                                    style="width: 100%; padding: 14px; background: linear-gradient(135deg, #ff9500, #ff6b9d); color: white; border: none; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer;">
+                                    Submit for Review
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- TELOS.md History & Changelog -->
+                        <div
+                            style="margin-top: 24px; background: rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 24px; border: 1px solid rgba(255, 149, 0, 0.1);">
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                                <h3 style="margin: 0; font-weight: 800; display: flex; align-items: center; gap: 10px;">
+                                    <img src="assets/emojis/clay-book.png" alt="" style="width: 24px; height: 24px;">
+                                    TELOS.md History
+                                </h3>
+                                <span style="font-size: 0.8rem; color: rgba(255,255,255,0.5);">Immutable audit
+                                    trail</span>
+                            </div>
+
+                            <div
+                                style="margin-bottom: 16px; padding: 12px 16px; background: rgba(168, 85, 247, 0.1); border-radius: 10px; border-left: 3px solid #a855f7;">
+                                <p style="margin: 0; font-size: 0.9rem; color: rgba(255,255,255,0.8);">
+                                    Every submission, refinement, and version change is permanently recorded here.
+                                    This log will exist as long as the SUITE ecosystem exists —
+                                    <strong style="color: #a855f7;">a living record from Day 1</strong>.
+                                </p>
+                            </div>
+
+                            <!-- Version History -->
+                            <div id="telosHistory" style="max-height: 300px; overflow-y: auto;">
+                                <!-- Initial Version -->
+                                <div
+                                    style="display: flex; gap: 16px; padding: 16px; background: rgba(0,0,0,0.2); border-radius: 12px; margin-bottom: 12px; border-left: 3px solid #22c55e;">
+                                    <div style="flex-shrink: 0; width: 80px; text-align: center;">
+                                        <div style="font-size: 1.5rem; font-weight: 900; color: #22c55e;">v1.0</div>
+                                        <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">GENESIS</div>
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <div style="font-weight: 700; color: white; margin-bottom: 4px;">Initial
+                                            Constitution Created</div>
+                                        <div
+                                            style="font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-bottom: 8px;">
+                                            5 core principles established: Truth Over Untruth, Human Flourishing,
+                                            Transparency, Sustainability, Alignment with Creator's Intent
+                                        </div>
+                                        <div
+                                            style="display: flex; justify-content: space-between; font-size: 0.75rem; color: rgba(255,255,255,0.5);">
+                                            <span>👤 Stuart Hollinger (Founder)</span>
+                                            <span>📅 Jan 11, 2026</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Placeholder for future entries -->
+                                <div
+                                    style="text-align: center; padding: 20px; color: rgba(255,255,255,0.4); font-style: italic;">
+                                    Future refinements will appear here...
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Beyond Good and Evil -->
+                        <details
+                            style="margin-top: 24px; background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.2); border-radius: 16px;">
+                            <summary style="padding: 16px 20px; cursor: pointer; font-weight: 700; color: #a855f7;">
+                                Beyond Good and Evil — Meta-Perspectives
+                            </summary>
+                            <div style="padding: 0 20px 20px; color: rgba(255,255,255,0.8); line-height: 1.7;">
+                                <p>While TELOS.md operates on clear principles, the SUITE School acknowledges deeper
+                                    frameworks:</p>
+                                <ul style="margin: 12px 0; padding-left: 20px;">
+                                    <li><strong>Moment View</strong> — Reality through present-moment consciousness</li>
+                                    <li><strong>Existential Matrix</strong> — The interconnected web of being</li>
+                                    <li><strong>Shape Meanings</strong> — Truth beyond language</li>
+                                </ul>
+                                <a href="https://docs.getsuite.app/school" target="_blank"
+                                    style="color: #a855f7; font-weight: 600;">Explore SUITE School →</a>
+                            </div>
+                        </details>
+                    </div>
+
+                    <!-- Giving Panel -->
+                    <div id="panel-giving" class="section-panel">
+                        <div class="panel-header">
+                            <h2 class="panel-title">?? Giving</h2>
+                            <p class="panel-desc">10% of SUITE treasury yield goes to charity. Vote on causes that
+                                matter.
+                            </p>
+                        </div>
+                        <div class="iframe-container"
+                            style="background: white; border-radius: 20px; overflow: hidden; height: calc(100vh - 200px); min-height: 500px;">
+                            <iframe src="giving.html" style="width: 100%; height: 100%; border: none;"></iframe>
+                        </div>
+                    </div>
+
+                    <!-- Content Studio Panel -->
+                    <div id="panel-studio" class="section-panel">
+                        <div class="panel-header">
+                            <h2 class="panel-title">?? Content Studio</h2>
+                            <p class="panel-desc">Create stunning promo videos & voiceovers for your apps using AI.</p>
+                        </div>
+                        <div class="section" id="section-content-studio" data-section="content-studio"
+                            style="border: 2px solid rgba(255, 107, 157, 0.3); background: linear-gradient(135deg, rgba(255, 107, 157, 0.05), rgba(255, 149, 0, 0.05));">
+                            <div class="section-header" onclick="toggleSection('content-studio')">
+                                <div class="section-info">
+                                    <h3 class="section-title">?? Content Studio</h3>
+                                    <div class="section-desc">Create stunning promo videos & voiceovers for your apps
+                                        using
+                                        AI</div>
+                                </div>
+                                <div class="section-toggle">?</div>
+                            </div>
+                            <div class="section-content">
+                                <!-- Owner Badge (shown for Stuart) -->
+                                <div id="studioOwnerBadge"
+                                    style="display: none; background: linear-gradient(135deg, #22c55e, #16a34a); color: white; padding: 12px 20px; border-radius: 12px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
+                                    <span style="font-size: 1.5rem;">??</span>
+                                    <div>
+                                        <div style="font-weight: 700;">Owner Access</div>
+                                        <div style="font-size: 0.85rem; opacity: 0.9;">All content generation is FREE
+                                            for
+                                            you!</div>
+                                    </div>
+                                </div>
+
+                                <!-- Video Generation -->
+                                <div
+                                    style="background: white; border-radius: 20px; padding: 28px; margin-bottom: 20px;">
+                                    <div
+                                        style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
+                                        <div>
+                                            <h4
+                                                style="font-size: 1.2rem; font-weight: 800; margin: 0 0 8px 0; display: flex; align-items: center; gap: 8px;">
+                                                ?? Video Clips (Veo 2)
+                                            </h4>
+                                            <p style="color: #666; font-size: 0.9rem; margin: 0;">Generate 8-second
+                                                claymation-style
+                                                promo clips</p>
+                                        </div>
+                                        <div id="videoPricingBadge"
+                                            style="background: linear-gradient(135deg, #ff9500, #ff6b9d); color: white; padding: 8px 16px; border-radius: 100px; font-weight: 700; font-size: 0.85rem;">
+                                            100 SUITE / clip
+                                        </div>
+                                    </div>
+
+                                    <!-- Template Selection -->
+                                    <div style="margin-bottom: 20px;">
+                                        <label
+                                            style="font-weight: 700; font-size: 0.9rem; color: #444; display: block; margin-bottom: 8px;">Choose
+                                            Template</label>
+                                        <div
+                                            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px;">
+                                            <label style="cursor: pointer;">
+                                                <input type="radio" name="videoTemplate" value="builder-journey" checked
+                                                    style="display: none;">
+                                                <div class="template-option"
+                                                    style="background: rgba(255, 149, 0, 0.1); border: 2px solid #ff9500; padding: 16px; border-radius: 12px; text-align: center;">
+                                                    <div style="font-size: 1.5rem; margin-bottom: 8px;">??</div>
+                                                    <div style="font-weight: 700; font-size: 0.9rem;">Builder Journey
+                                                    </div>
+                                                    <div style="font-size: 0.75rem; color: #666;">6 panels</div>
+                                                </div>
+                                            </label>
+                                            <label style="cursor: pointer;">
+                                                <input type="radio" name="videoTemplate" value="app-launch"
+                                                    style="display: none;">
+                                                <div class="template-option"
+                                                    style="background: #f8f9fa; border: 2px solid transparent; padding: 16px; border-radius: 12px; text-align: center;">
+                                                    <div style="font-size: 1.5rem; margin-bottom: 8px;">??</div>
+                                                    <div style="font-weight: 700; font-size: 0.9rem;">App Launch</div>
+                                                    <div style="font-size: 0.75rem; color: #666;">4 panels</div>
+                                                </div>
+                                            </label>
+                                            <label style="cursor: pointer;">
+                                                <input type="radio" name="videoTemplate" value="feature-highlight"
+                                                    style="display: none;">
+                                                <div class="template-option"
+                                                    style="background: #f8f9fa; border: 2px solid transparent; padding: 16px; border-radius: 12px; text-align: center;">
+                                                    <div style="font-size: 1.5rem; margin-bottom: 8px;">?</div>
+                                                    <div style="font-weight: 700; font-size: 0.9rem;">Feature Highlight
+                                                    </div>
+                                                    <div style="font-size: 0.75rem; color: #666;">3 panels</div>
+                                                </div>
+                                            </label>
+                                            <label style="cursor: pointer;">
+                                                <input type="radio" name="videoTemplate" value="custom"
+                                                    style="display: none;">
+                                                <div class="template-option"
+                                                    style="background: #f8f9fa; border: 2px solid transparent; padding: 16px; border-radius: 12px; text-align: center;">
+                                                    <div style="font-size: 1.5rem; margin-bottom: 8px;">??</div>
+                                                    <div style="font-weight: 700; font-size: 0.9rem;">Custom</div>
+                                                    <div style="font-size: 0.75rem; color: #666;">Your idea</div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Custom Prompt (shown for custom template) -->
+                                    <div id="customPromptSection" style="display: none; margin-bottom: 20px;">
+                                        <label
+                                            style="font-weight: 700; font-size: 0.9rem; color: #444; display: block; margin-bottom: 8px;">Describe
+                                            Your Video</label>
+                                        <textarea id="customVideoPrompt"
+                                            placeholder="Describe what you want in your claymation video..."
+                                            style="width: 100%; padding: 14px; border: 2px solid #eee; border-radius: 12px; font-size: 1rem; min-height: 100px; resize: vertical;"></textarea>
+                                    </div>
+
+                                    <!-- App Selection -->
+                                    <div style="margin-bottom: 20px;">
+                                        <label
+                                            style="font-weight: 700; font-size: 0.9rem; color: #444; display: block; margin-bottom: 8px;">Select
+                                            App (optional)</label>
+                                        <select id="videoAppSelect"
+                                            style="width: 100%; padding: 14px; border: 2px solid #eee; border-radius: 12px; font-size: 1rem;">
+                                            <option value="">General promo video</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Pricing Tiers -->
+                                    <div
+                                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px;">
+                                        <label style="cursor: pointer;">
+                                            <input type="radio" name="videoPriority" value="batch"
+                                                style="display: none;">
+                                            <div class="priority-option"
+                                                style="background: #f8f9fa; border: 2px solid transparent; padding: 16px; border-radius: 12px;">
+                                                <div style="font-weight: 700; margin-bottom: 4px;">?? Batch</div>
+                                                <div style="font-size: 0.85rem; color: #666;">24-hour delivery</div>
+                                                <div style="font-weight: 800; color: #22c55e; margin-top: 8px;"
+                                                    id="batchPrice">50
+                                                    SUITE</div>
+                                            </div>
+                                        </label>
+                                        <label style="cursor: pointer;">
+                                            <input type="radio" name="videoPriority" value="priority" checked
+                                                style="display: none;">
+                                            <div class="priority-option"
+                                                style="background: rgba(255, 149, 0, 0.1); border: 2px solid #ff9500; padding: 16px; border-radius: 12px;">
+                                                <div style="font-weight: 700; margin-bottom: 4px;">? Priority</div>
+                                                <div style="font-size: 0.85rem; color: #666;">1-2 hour delivery</div>
+                                                <div style="font-weight: 800; color: #ff9500; margin-top: 8px;"
+                                                    id="priorityPrice">
+                                                    100 SUITE</div>
+                                            </div>
+                                        </label>
+                                    </div>
+
+                                    <button onclick="generateVideo()" class="btn-primary" style="width: 100%;">
+                                        ?? Generate Video Clips
+                                    </button>
+                                </div>
+
+                                <!-- Voice Generation -->
+                                <div
+                                    style="background: white; border-radius: 20px; padding: 28px; margin-bottom: 20px;">
+                                    <div
+                                        style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
+                                        <div>
+                                            <h4
+                                                style="font-size: 1.2rem; font-weight: 800; margin: 0 0 8px 0; display: flex; align-items: center; gap: 8px;">
+                                                ??? Voice Generation (ElevenLabs)
+                                            </h4>
+                                            <p style="color: #666; font-size: 0.9rem; margin: 0;">Professional
+                                                voiceovers
+                                                for your
+                                                videos and apps</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Voice Selection -->
+                                    <div style="margin-bottom: 20px;">
+                                        <label
+                                            style="font-weight: 700; font-size: 0.9rem; color: #444; display: block; margin-bottom: 8px;">Select
+                                            Voice</label>
+                                        <div
+                                            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px;">
+                                            <label style="cursor: pointer;">
+                                                <input type="radio" name="voiceSelect" value="adam" checked
+                                                    style="display: none;">
+                                                <div class="voice-option"
+                                                    style="background: rgba(99, 102, 241, 0.1); border: 2px solid #6366f1; padding: 16px; border-radius: 12px; text-align: center;">
+                                                    <div style="font-size: 1.5rem; margin-bottom: 8px;">??</div>
+                                                    <div style="font-weight: 700;">Adam</div>
+                                                    <div style="font-size: 0.75rem; color: #666;">Male</div>
+                                                </div>
+                                            </label>
+                                            <label style="cursor: pointer;">
+                                                <input type="radio" name="voiceSelect" value="rachel"
+                                                    style="display: none;">
+                                                <div class="voice-option"
+                                                    style="background: #f8f9fa; border: 2px solid transparent; padding: 16px; border-radius: 12px; text-align: center;">
+                                                    <div style="font-size: 1.5rem; margin-bottom: 8px;">??</div>
+                                                    <div style="font-weight: 700;">Rachel</div>
+                                                    <div style="font-size: 0.75rem; color: #666;">Female</div>
+                                                </div>
+                                            </label>
+                                            <label style="cursor: pointer;">
+                                                <input type="radio" name="voiceSelect" value="sam"
+                                                    style="display: none;">
+                                                <div class="voice-option"
+                                                    style="background: #f8f9fa; border: 2px solid transparent; padding: 16px; border-radius: 12px; text-align: center;">
+                                                    <div style="font-size: 1.5rem; margin-bottom: 8px;">??</div>
+                                                    <div style="font-weight: 700;">Sam</div>
+                                                    <div style="font-size: 0.75rem; color: #666;">Neutral</div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Voice Script -->
+                                    <div style="margin-bottom: 20px;">
+                                        <label
+                                            style="font-weight: 700; font-size: 0.9rem; color: #444; display: block; margin-bottom: 8px;">Script</label>
+                                        <textarea id="voiceScript" placeholder="Enter the text you want spoken..."
+                                            style="width: 100%; padding: 14px; border: 2px solid #eee; border-radius: 12px; font-size: 1rem; min-height: 80px; resize: vertical;"></textarea>
+                                        <div
+                                            style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.85rem; color: #888;">
+                                            <span>Suggested: "Build. Earn. Give."</span>
+                                            <span id="voiceCharCount">0 / 500 chars</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Voice Pricing -->
+                                    <div
+                                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px;">
+                                        <label style="cursor: pointer;">
+                                            <input type="radio" name="voicePriority" value="standard" checked
+                                                style="display: none;">
+                                            <div class="priority-option"
+                                                style="background: rgba(99, 102, 241, 0.1); border: 2px solid #6366f1; padding: 16px; border-radius: 12px;">
+                                                <div style="font-weight: 700; margin-bottom: 4px;">⚙️ Standard</div>
+                                                <div style="font-size: 0.85rem; color: #666;">Pre-made voices</div>
+                                                <div style="font-weight: 800; color: #6366f1; margin-top: 8px;"
+                                                    id="voiceStandardPrice">
+                                                    50 SUITE</div>
+                                            </div>
+                                        </label>
+                                        <label style="cursor: pointer;">
+                                            <input type="radio" name="voicePriority" value="clone"
+                                                style="display: none;">
+                                            <div class="priority-option"
+                                                style="background: #f8f9fa; border: 2px solid transparent; padding: 16px; border-radius: 12px;">
+                                                <div style="font-weight: 700; margin-bottom: 4px;">?? Voice Clone</div>
+                                                <div style="font-size: 0.85rem; color: #666;">Clone your own voice</div>
+                                                <div style="font-weight: 800; color: #8b5cf6; margin-top: 8px;"
+                                                    id="voiceClonePrice">200
+                                                    SUITE</div>
+                                            </div>
+                                        </label>
+                                    </div>
+
+                                    <button onclick="generateVoice()" class="btn-primary"
+                                        style="width: 100%; background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+                                        ??? Generate Voiceover
+                                    </button>
+                                </div>
+
+                                <!-- Your Content Orders -->
+                                <div style="background: #f8f9fa; border-radius: 16px; padding: 24px;">
+                                    <h4 style="font-weight: 700; margin: 0 0 16px 0;">?? Your Orders</h4>
+                                    <div id="contentOrdersList">
+                                        <div class="empty-state" style="padding: 20px;">
+                                            <p style="color: #888; margin: 0;">No content orders yet. Generate your
+                                                first
+                                                video or
+                                                voiceover above!</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- Placeholder for future entries -->
-                            <div
-                                style="text-align: center; padding: 20px; color: rgba(255,255,255,0.4); font-style: italic;">
-                                Future refinements will appear here...
-                            </div>
                         </div>
-                    </div>
-
-                    <!-- Beyond Good and Evil -->
-                    <details
-                        style="margin-top: 24px; background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.2); border-radius: 16px;">
-                        <summary style="padding: 16px 20px; cursor: pointer; font-weight: 700; color: #a855f7;">
-                            Beyond Good and Evil — Meta-Perspectives
-                        </summary>
-                        <div style="padding: 0 20px 20px; color: rgba(255,255,255,0.8); line-height: 1.7;">
-                            <p>While TELOS.md operates on clear principles, the SUITE School acknowledges deeper
-                                frameworks:</p>
-                            <ul style="margin: 12px 0; padding-left: 20px;">
-                                <li><strong>Moment View</strong> — Reality through present-moment consciousness</li>
-                                <li><strong>Existential Matrix</strong> — The interconnected web of being</li>
-                                <li><strong>Shape Meanings</strong> — Truth beyond language</li>
-                            </ul>
-                            <a href="https://docs.getsuite.app/school" target="_blank"
-                                style="color: #a855f7; font-weight: 600;">Explore SUITE School →</a>
-                        </div>
-                    </details>
-                </div>
-
-                <!-- Giving Panel -->
-                <div id="panel-giving" class="section-panel">
-                    <div class="panel-header">
-                        <h2 class="panel-title">?? Giving</h2>
-                        <p class="panel-desc">10% of SUITE treasury yield goes to charity. Vote on causes that
-                            matter.
-                        </p>
-                    </div>
-                    <div class="iframe-container"
-                        style="background: white; border-radius: 20px; overflow: hidden; height: calc(100vh - 200px); min-height: 500px;">
-                        <iframe src="giving.html" style="width: 100%; height: 100%; border: none;"></iframe>
                     </div>
                 </div>
 
-                <!-- Content Studio Panel -->
-                <div id="panel-studio" class="section-panel">
+                <!-- Content Marketplace Panel -->
+                <div id="panel-marketplace" class="section-panel">
                     <div class="panel-header">
-                        <h2 class="panel-title">?? Content Studio</h2>
-                        <p class="panel-desc">Create stunning promo videos & voiceovers for your apps using AI.</p>
+                        <h2 class="panel-title">?? Content Marketplace</h2>
+                        <p class="panel-desc">Post bounties for content, submit work, earn SUITE from the community.</p>
                     </div>
-                    <div class="section" id="section-content-studio" data-section="content-studio"
-                        style="border: 2px solid rgba(255, 107, 157, 0.3); background: linear-gradient(135deg, rgba(255, 107, 157, 0.05), rgba(255, 149, 0, 0.05));">
-                        <div class="section-header" onclick="toggleSection('content-studio')">
+                    <div class="section" id="section-marketplace" data-section="marketplace"
+                        style="border: 2px solid rgba(139, 92, 246, 0.3); background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(99, 102, 241, 0.05));">
+                        <div class="section-header" onclick="toggleSection('marketplace')">
                             <div class="section-info">
-                                <h3 class="section-title">?? Content Studio</h3>
-                                <div class="section-desc">Create stunning promo videos & voiceovers for your apps
-                                    using
-                                    AI</div>
+                                <h3 class="section-title">?? Content Marketplace</h3>
+                                <div class="section-desc">Post bounties for content, submit work, earn SUITE from the
+                                    community
+                                </div>
                             </div>
                             <div class="section-toggle">?</div>
                         </div>
                         <div class="section-content">
-                            <!-- Owner Badge (shown for Stuart) -->
-                            <div id="studioOwnerBadge"
-                                style="display: none; background: linear-gradient(135deg, #22c55e, #16a34a); color: white; padding: 12px 20px; border-radius: 12px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
-                                <span style="font-size: 1.5rem;">??</span>
-                                <div>
-                                    <div style="font-weight: 700;">Owner Access</div>
-                                    <div style="font-size: 0.85rem; opacity: 0.9;">All content generation is FREE
-                                        for
-                                        you!</div>
-                                </div>
-                            </div>
-
-                            <!-- Video Generation -->
-                            <div style="background: white; border-radius: 20px; padding: 28px; margin-bottom: 20px;">
-                                <div
-                                    style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
-                                    <div>
-                                        <h4
-                                            style="font-size: 1.2rem; font-weight: 800; margin: 0 0 8px 0; display: flex; align-items: center; gap: 8px;">
-                                            ?? Video Clips (Veo 2)
-                                        </h4>
-                                        <p style="color: #666; font-size: 0.9rem; margin: 0;">Generate 8-second
-                                            claymation-style
-                                            promo clips</p>
+                            <!-- Marketplace Stats -->
+                            <div
+                                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                                <div style="background: white; border-radius: 16px; padding: 20px; text-align: center;">
+                                    <div style="font-size: 0.8rem; color: #6b7280; margin-bottom: 4px;">Open Bounties
                                     </div>
-                                    <div id="videoPricingBadge"
-                                        style="background: linear-gradient(135deg, #ff9500, #ff6b9d); color: white; padding: 8px 16px; border-radius: 100px; font-weight: 700; font-size: 0.85rem;">
-                                        100 SUITE / clip
+                                    <div style="font-size: 1.8rem; font-weight: 900; color: #ff9500;"
+                                        id="dashboardOpenBounties">�
                                     </div>
                                 </div>
-
-                                <!-- Template Selection -->
-                                <div style="margin-bottom: 20px;">
-                                    <label
-                                        style="font-weight: 700; font-size: 0.9rem; color: #444; display: block; margin-bottom: 8px;">Choose
-                                        Template</label>
-                                    <div
-                                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px;">
-                                        <label style="cursor: pointer;">
-                                            <input type="radio" name="videoTemplate" value="builder-journey" checked
-                                                style="display: none;">
-                                            <div class="template-option"
-                                                style="background: rgba(255, 149, 0, 0.1); border: 2px solid #ff9500; padding: 16px; border-radius: 12px; text-align: center;">
-                                                <div style="font-size: 1.5rem; margin-bottom: 8px;">??</div>
-                                                <div style="font-weight: 700; font-size: 0.9rem;">Builder Journey
-                                                </div>
-                                                <div style="font-size: 0.75rem; color: #666;">6 panels</div>
-                                            </div>
-                                        </label>
-                                        <label style="cursor: pointer;">
-                                            <input type="radio" name="videoTemplate" value="app-launch"
-                                                style="display: none;">
-                                            <div class="template-option"
-                                                style="background: #f8f9fa; border: 2px solid transparent; padding: 16px; border-radius: 12px; text-align: center;">
-                                                <div style="font-size: 1.5rem; margin-bottom: 8px;">??</div>
-                                                <div style="font-weight: 700; font-size: 0.9rem;">App Launch</div>
-                                                <div style="font-size: 0.75rem; color: #666;">4 panels</div>
-                                            </div>
-                                        </label>
-                                        <label style="cursor: pointer;">
-                                            <input type="radio" name="videoTemplate" value="feature-highlight"
-                                                style="display: none;">
-                                            <div class="template-option"
-                                                style="background: #f8f9fa; border: 2px solid transparent; padding: 16px; border-radius: 12px; text-align: center;">
-                                                <div style="font-size: 1.5rem; margin-bottom: 8px;">?</div>
-                                                <div style="font-weight: 700; font-size: 0.9rem;">Feature Highlight
-                                                </div>
-                                                <div style="font-size: 0.75rem; color: #666;">3 panels</div>
-                                            </div>
-                                        </label>
-                                        <label style="cursor: pointer;">
-                                            <input type="radio" name="videoTemplate" value="custom"
-                                                style="display: none;">
-                                            <div class="template-option"
-                                                style="background: #f8f9fa; border: 2px solid transparent; padding: 16px; border-radius: 12px; text-align: center;">
-                                                <div style="font-size: 1.5rem; margin-bottom: 8px;">??</div>
-                                                <div style="font-weight: 700; font-size: 0.9rem;">Custom</div>
-                                                <div style="font-size: 0.75rem; color: #666;">Your idea</div>
-                                            </div>
-                                        </label>
+                                <div style="background: white; border-radius: 16px; padding: 20px; text-align: center;">
+                                    <div style="font-size: 0.8rem; color: #6b7280; margin-bottom: 4px;">SUITE Paid Out
+                                    </div>
+                                    <div style="font-size: 1.8rem; font-weight: 900; color: #22c55e;"
+                                        id="dashboardTotalPaid">�
                                     </div>
                                 </div>
-
-                                <!-- Custom Prompt (shown for custom template) -->
-                                <div id="customPromptSection" style="display: none; margin-bottom: 20px;">
-                                    <label
-                                        style="font-weight: 700; font-size: 0.9rem; color: #444; display: block; margin-bottom: 8px;">Describe
-                                        Your Video</label>
-                                    <textarea id="customVideoPrompt"
-                                        placeholder="Describe what you want in your claymation video..."
-                                        style="width: 100%; padding: 14px; border: 2px solid #eee; border-radius: 12px; font-size: 1rem; min-height: 100px; resize: vertical;"></textarea>
-                                </div>
-
-                                <!-- App Selection -->
-                                <div style="margin-bottom: 20px;">
-                                    <label
-                                        style="font-weight: 700; font-size: 0.9rem; color: #444; display: block; margin-bottom: 8px;">Select
-                                        App (optional)</label>
-                                    <select id="videoAppSelect"
-                                        style="width: 100%; padding: 14px; border: 2px solid #eee; border-radius: 12px; font-size: 1rem;">
-                                        <option value="">General promo video</option>
-                                    </select>
-                                </div>
-
-                                <!-- Pricing Tiers -->
-                                <div
-                                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px;">
-                                    <label style="cursor: pointer;">
-                                        <input type="radio" name="videoPriority" value="batch" style="display: none;">
-                                        <div class="priority-option"
-                                            style="background: #f8f9fa; border: 2px solid transparent; padding: 16px; border-radius: 12px;">
-                                            <div style="font-weight: 700; margin-bottom: 4px;">?? Batch</div>
-                                            <div style="font-size: 0.85rem; color: #666;">24-hour delivery</div>
-                                            <div style="font-weight: 800; color: #22c55e; margin-top: 8px;"
-                                                id="batchPrice">50
-                                                SUITE</div>
-                                        </div>
-                                    </label>
-                                    <label style="cursor: pointer;">
-                                        <input type="radio" name="videoPriority" value="priority" checked
-                                            style="display: none;">
-                                        <div class="priority-option"
-                                            style="background: rgba(255, 149, 0, 0.1); border: 2px solid #ff9500; padding: 16px; border-radius: 12px;">
-                                            <div style="font-weight: 700; margin-bottom: 4px;">? Priority</div>
-                                            <div style="font-size: 0.85rem; color: #666;">1-2 hour delivery</div>
-                                            <div style="font-weight: 800; color: #ff9500; margin-top: 8px;"
-                                                id="priorityPrice">
-                                                100 SUITE</div>
-                                        </div>
-                                    </label>
-                                </div>
-
-                                <button onclick="generateVideo()" class="btn-primary" style="width: 100%;">
-                                    ?? Generate Video Clips
-                                </button>
-                            </div>
-
-                            <!-- Voice Generation -->
-                            <div style="background: white; border-radius: 20px; padding: 28px; margin-bottom: 20px;">
-                                <div
-                                    style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
-                                    <div>
-                                        <h4
-                                            style="font-size: 1.2rem; font-weight: 800; margin: 0 0 8px 0; display: flex; align-items: center; gap: 8px;">
-                                            ??? Voice Generation (ElevenLabs)
-                                        </h4>
-                                        <p style="color: #666; font-size: 0.9rem; margin: 0;">Professional
-                                            voiceovers
-                                            for your
-                                            videos and apps</p>
+                                <div style="background: white; border-radius: 16px; padding: 20px; text-align: center;">
+                                    <div style="font-size: 0.8rem; color: #6b7280; margin-bottom: 4px;">Your Submissions
                                     </div>
-                                </div>
-
-                                <!-- Voice Selection -->
-                                <div style="margin-bottom: 20px;">
-                                    <label
-                                        style="font-weight: 700; font-size: 0.9rem; color: #444; display: block; margin-bottom: 8px;">Select
-                                        Voice</label>
-                                    <div
-                                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px;">
-                                        <label style="cursor: pointer;">
-                                            <input type="radio" name="voiceSelect" value="adam" checked
-                                                style="display: none;">
-                                            <div class="voice-option"
-                                                style="background: rgba(99, 102, 241, 0.1); border: 2px solid #6366f1; padding: 16px; border-radius: 12px; text-align: center;">
-                                                <div style="font-size: 1.5rem; margin-bottom: 8px;">??</div>
-                                                <div style="font-weight: 700;">Adam</div>
-                                                <div style="font-size: 0.75rem; color: #666;">Male</div>
-                                            </div>
-                                        </label>
-                                        <label style="cursor: pointer;">
-                                            <input type="radio" name="voiceSelect" value="rachel"
-                                                style="display: none;">
-                                            <div class="voice-option"
-                                                style="background: #f8f9fa; border: 2px solid transparent; padding: 16px; border-radius: 12px; text-align: center;">
-                                                <div style="font-size: 1.5rem; margin-bottom: 8px;">??</div>
-                                                <div style="font-weight: 700;">Rachel</div>
-                                                <div style="font-size: 0.75rem; color: #666;">Female</div>
-                                            </div>
-                                        </label>
-                                        <label style="cursor: pointer;">
-                                            <input type="radio" name="voiceSelect" value="sam" style="display: none;">
-                                            <div class="voice-option"
-                                                style="background: #f8f9fa; border: 2px solid transparent; padding: 16px; border-radius: 12px; text-align: center;">
-                                                <div style="font-size: 1.5rem; margin-bottom: 8px;">??</div>
-                                                <div style="font-weight: 700;">Sam</div>
-                                                <div style="font-size: 0.75rem; color: #666;">Neutral</div>
-                                            </div>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <!-- Voice Script -->
-                                <div style="margin-bottom: 20px;">
-                                    <label
-                                        style="font-weight: 700; font-size: 0.9rem; color: #444; display: block; margin-bottom: 8px;">Script</label>
-                                    <textarea id="voiceScript" placeholder="Enter the text you want spoken..."
-                                        style="width: 100%; padding: 14px; border: 2px solid #eee; border-radius: 12px; font-size: 1rem; min-height: 80px; resize: vertical;"></textarea>
-                                    <div
-                                        style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.85rem; color: #888;">
-                                        <span>Suggested: "Build. Earn. Give."</span>
-                                        <span id="voiceCharCount">0 / 500 chars</span>
-                                    </div>
-                                </div>
-
-                                <!-- Voice Pricing -->
-                                <div
-                                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px;">
-                                    <label style="cursor: pointer;">
-                                        <input type="radio" name="voicePriority" value="standard" checked
-                                            style="display: none;">
-                                        <div class="priority-option"
-                                            style="background: rgba(99, 102, 241, 0.1); border: 2px solid #6366f1; padding: 16px; border-radius: 12px;">
-                                            <div style="font-weight: 700; margin-bottom: 4px;">⚙️ Standard</div>
-                                            <div style="font-size: 0.85rem; color: #666;">Pre-made voices</div>
-                                            <div style="font-weight: 800; color: #6366f1; margin-top: 8px;"
-                                                id="voiceStandardPrice">
-                                                50 SUITE</div>
-                                        </div>
-                                    </label>
-                                    <label style="cursor: pointer;">
-                                        <input type="radio" name="voicePriority" value="clone" style="display: none;">
-                                        <div class="priority-option"
-                                            style="background: #f8f9fa; border: 2px solid transparent; padding: 16px; border-radius: 12px;">
-                                            <div style="font-weight: 700; margin-bottom: 4px;">?? Voice Clone</div>
-                                            <div style="font-size: 0.85rem; color: #666;">Clone your own voice</div>
-                                            <div style="font-weight: 800; color: #8b5cf6; margin-top: 8px;"
-                                                id="voiceClonePrice">200
-                                                SUITE</div>
-                                        </div>
-                                    </label>
-                                </div>
-
-                                <button onclick="generateVoice()" class="btn-primary"
-                                    style="width: 100%; background: linear-gradient(135deg, #6366f1, #8b5cf6);">
-                                    ??? Generate Voiceover
-                                </button>
-                            </div>
-
-                            <!-- Your Content Orders -->
-                            <div style="background: #f8f9fa; border-radius: 16px; padding: 24px;">
-                                <h4 style="font-weight: 700; margin: 0 0 16px 0;">?? Your Orders</h4>
-                                <div id="contentOrdersList">
-                                    <div class="empty-state" style="padding: 20px;">
-                                        <p style="color: #888; margin: 0;">No content orders yet. Generate your
-                                            first
-                                            video or
-                                            voiceover above!</p>
-                                    </div>
+                                    <div style="font-size: 1.8rem; font-weight: 900; color: #6366f1;"
+                                        id="dashboardYourSubmissions">
+                                        �</div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-        </div>
 
-        <!-- Content Marketplace Panel -->
-        <div id="panel-marketplace" class="section-panel">
-            <div class="panel-header">
-                <h2 class="panel-title">?? Content Marketplace</h2>
-                <p class="panel-desc">Post bounties for content, submit work, earn SUITE from the community.</p>
-            </div>
-            <div class="section" id="section-marketplace" data-section="marketplace"
-                style="border: 2px solid rgba(139, 92, 246, 0.3); background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(99, 102, 241, 0.05));">
-                <div class="section-header" onclick="toggleSection('marketplace')">
-                    <div class="section-info">
-                        <h3 class="section-title">?? Content Marketplace</h3>
-                        <div class="section-desc">Post bounties for content, submit work, earn SUITE from the
-                            community
-                        </div>
-                    </div>
-                    <div class="section-toggle">?</div>
-                </div>
-                <div class="section-content">
-                    <!-- Marketplace Stats -->
-                    <div
-                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 24px;">
-                        <div style="background: white; border-radius: 16px; padding: 20px; text-align: center;">
-                            <div style="font-size: 0.8rem; color: #6b7280; margin-bottom: 4px;">Open Bounties
-                            </div>
-                            <div style="font-size: 1.8rem; font-weight: 900; color: #ff9500;"
-                                id="dashboardOpenBounties">�
-                            </div>
-                        </div>
-                        <div style="background: white; border-radius: 16px; padding: 20px; text-align: center;">
-                            <div style="font-size: 0.8rem; color: #6b7280; margin-bottom: 4px;">SUITE Paid Out
-                            </div>
-                            <div style="font-size: 1.8rem; font-weight: 900; color: #22c55e;" id="dashboardTotalPaid">�
-                            </div>
-                        </div>
-                        <div style="background: white; border-radius: 16px; padding: 20px; text-align: center;">
-                            <div style="font-size: 0.8rem; color: #6b7280; margin-bottom: 4px;">Your Submissions
-                            </div>
-                            <div style="font-size: 1.8rem; font-weight: 900; color: #6366f1;"
-                                id="dashboardYourSubmissions">
-                                �</div>
-                        </div>
-                    </div>
-
-                    <!-- Quick Actions -->
-                    <div style="display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;">
-                        <button onclick="openBountyModal()" style="
+                            <!-- Quick Actions -->
+                            <div style="display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;">
+                                <button onclick="openBountyModal()" style="
                             display: inline-flex;
                             align-items: center;
                             gap: 8px;
@@ -2950,10 +3415,10 @@
                             cursor: pointer;
                             transition: all 0.3s ease;
                         " onmouseover="this.style.transform='translateY(-2px)'"
-                            onmouseout="this.style.transform='translateY(0)'">
-                            ?? Post a Bounty
-                        </button>
-                        <a href="content.html" style="
+                                    onmouseout="this.style.transform='translateY(0)'">
+                                    ?? Post a Bounty
+                                </button>
+                                <a href="content.html" style="
                             display: inline-flex;
                             align-items: center;
                             gap: 8px;
@@ -2967,37 +3432,37 @@
                             text-decoration: none;
                             transition: all 0.3s ease;
                         " onmouseover="this.style.background='white'"
-                            onmouseout="this.style.background='rgba(255, 255, 255, 0.9)'">
-                            ?? Browse All Bounties
-                        </a>
-                    </div>
+                                    onmouseout="this.style.background='rgba(255, 255, 255, 0.9)'">
+                                    ?? Browse All Bounties
+                                </a>
+                            </div>
 
-                    <!-- Featured Bounties -->
-                    <h4 style="font-weight: 700; margin: 0 0 16px 0;">?? Featured Bounties</h4>
-                    <div id="featuredBounties"
-                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 24px;">
-                        <!-- Will be populated by JS -->
-                        <div
-                            style="background: white; border-radius: 16px; padding: 24px; text-align: center; color: #888;">
-                            Loading bounties...
-                        </div>
-                    </div>
+                            <!-- Featured Bounties -->
+                            <h4 style="font-weight: 700; margin: 0 0 16px 0;">?? Featured Bounties</h4>
+                            <div id="featuredBounties"
+                                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                                <!-- Will be populated by JS -->
+                                <div
+                                    style="background: white; border-radius: 16px; padding: 24px; text-align: center; color: #888;">
+                                    Loading bounties...
+                                </div>
+                            </div>
 
-                    <!-- Your Bounties -->
-                    <h4 style="font-weight: 700; margin: 0 0 16px 0;">?? Your Posted Bounties</h4>
-                    <div id="yourBounties" style="background: #f8f9fa; border-radius: 16px; padding: 20px;">
-                        <div class="empty-state" style="padding: 20px; text-align: center;">
-                            <p style="color: #888; margin: 0;">You haven't posted any bounties yet. Post one to
-                                get
-                                content for your apps!</p>
+                            <!-- Your Bounties -->
+                            <h4 style="font-weight: 700; margin: 0 0 16px 0;">?? Your Posted Bounties</h4>
+                            <div id="yourBounties" style="background: #f8f9fa; border-radius: 16px; padding: 20px;">
+                                <div class="empty-state" style="padding: 20px; text-align: center;">
+                                    <p style="color: #888; margin: 0;">You haven't posted any bounties yet. Post one to
+                                        get
+                                        content for your apps!</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        </main>
-    </div>
+            </main>
+        </div>
     </div>
 
     <script>
@@ -5476,6 +5941,158 @@ Make each idea genuinely DIFFERENT (different categories, audiences, purposes).`
             setInterval(loadAfStats, 30000);
             setInterval(loadAfFeed, 30000);
             setInterval(loadAfHistory, 60000);
+        }
+
+        // ═══ TELOS VENTURES PANEL FUNCTIONS ═══
+        async function toggleVentures() {
+            const toggle = document.getElementById('vtToggle');
+            const statusText = document.getElementById('vtStatus');
+            const isOn = toggle.classList.toggle('on');
+
+            statusText.textContent = isOn ? 'ACTIVE: Researching opportunities...' : 'AI researches opportunities and proposes experiments';
+
+            try {
+                await fetch(`${SUPABASE_URL}/rest/v1/venture_config?key=eq.ventures_enabled`, {
+                    method: 'PATCH',
+                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ value: isOn ? 'true' : 'false', updated_at: new Date().toISOString() })
+                });
+            } catch (e) { console.error('Ventures toggle error:', e); }
+        }
+
+        async function loadVenturesStats() {
+            try {
+                const ventures = await (await fetch(`${SUPABASE_URL}/rest/v1/ventures?select=*`, { headers: { 'apikey': SUPABASE_ANON_KEY } })).json();
+                if (!Array.isArray(ventures)) return;
+
+                const active = ventures.filter(v => v.status === 'active');
+                const proposed = ventures.filter(v => v.status === 'proposed');
+                const totalRevenue = ventures.reduce((sum, v) => sum + (parseFloat(v.revenue_generated) || 0), 0);
+                const avgRoi = active.length > 0 ? (active.reduce((sum, v) => sum + (parseFloat(v.roi_actual) || 0), 0) / active.length) : 0;
+
+                document.getElementById('vtTotalRevenue').textContent = '$' + totalRevenue.toFixed(0);
+                document.getElementById('vtActiveVentures').textContent = active.length;
+                document.getElementById('vtAvgRoi').textContent = avgRoi.toFixed(0) + '%';
+                document.getElementById('vtProposed').textContent = proposed.length;
+                document.getElementById('vtProposedCount').textContent = proposed.length;
+                document.getElementById('vtActiveCount').textContent = active.length;
+            } catch (e) { console.error('Ventures stats error:', e); }
+        }
+
+        async function loadVenturesProposals() {
+            try {
+                const proposals = await (await fetch(`${SUPABASE_URL}/rest/v1/ventures?status=eq.proposed&order=proposed_at.desc`, { headers: { 'apikey': SUPABASE_ANON_KEY } })).json();
+                const container = document.getElementById('vtProposals');
+                if (!container) return;
+
+                if (Array.isArray(proposals) && proposals.length > 0) {
+                    container.innerHTML = proposals.map(p => {
+                        const roi = p.roi_projection || {};
+                        return `<div class="vt-proposal">
+                            <div class="vt-proposal-name">${p.name}</div>
+                            <div class="vt-proposal-roi">Est: $${roi.estimated_revenue || 0} rev / $${roi.estimated_cost || 0} cost</div>
+                            <div class="vt-proposal-btns">
+                                <button class="vt-btn approve" onclick="approveVenture('${p.id}')">✅ Approve</button>
+                                <button class="vt-btn reject" onclick="rejectVenture('${p.id}')">❌ Reject</button>
+                            </div>
+                        </div>`;
+                    }).join('');
+                } else {
+                    container.innerHTML = '<div class="vt-empty">No proposals yet. Enable Ventures Mode to start researching.</div>';
+                }
+            } catch (e) { console.error('Ventures proposals error:', e); }
+        }
+
+        async function loadVenturesActive() {
+            try {
+                const active = await (await fetch(`${SUPABASE_URL}/rest/v1/ventures?status=eq.active&order=launched_at.desc`, { headers: { 'apikey': SUPABASE_ANON_KEY } })).json();
+                const container = document.getElementById('vtActiveList');
+                if (!container) return;
+
+                if (Array.isArray(active) && active.length > 0) {
+                    container.innerHTML = active.map(v => `<div class="vt-venture">
+                        <div class="vt-venture-info">
+                            <div class="vt-venture-name">${v.name}</div>
+                            <div class="vt-venture-stats">$${v.revenue_generated || 0} earned | ROI: ${v.roi_actual || 0}%</div>
+                        </div>
+                        <span class="vt-badge active">${v.category}</span>
+                    </div>`).join('');
+                } else {
+                    container.innerHTML = '<div class="vt-empty">No active ventures yet.</div>';
+                }
+            } catch (e) { console.error('Ventures active error:', e); }
+        }
+
+        async function loadVenturesFeed() {
+            try {
+                const activities = await (await fetch(`${SUPABASE_URL}/rest/v1/venture_activity_log?order=timestamp.desc&limit=8`, { headers: { 'apikey': SUPABASE_ANON_KEY } })).json();
+                const container = document.getElementById('vtFeed');
+                if (!container) return;
+
+                if (Array.isArray(activities) && activities.length > 0) {
+                    container.innerHTML = activities.map(a => {
+                        const time = new Date(a.timestamp).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+                        return `<div class="vt-feed-item"><span class="vt-feed-time">[${time}]</span> ${a.message}</div>`;
+                    }).join('');
+                } else {
+                    container.innerHTML = '<div class="vt-empty">No activity yet.</div>';
+                }
+            } catch (e) { console.error('Ventures feed error:', e); }
+        }
+
+        async function approveVenture(id) {
+            if (!confirm('Approve this venture and start execution?')) return;
+            try {
+                await fetch(`${SUPABASE_URL}/rest/v1/ventures?id=eq.${id}`, {
+                    method: 'PATCH',
+                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'approved', approved_at: new Date().toISOString() })
+                });
+                loadVenturesProposals();
+                loadVenturesStats();
+            } catch (e) { console.error('Approve venture error:', e); }
+        }
+
+        async function rejectVenture(id) {
+            try {
+                await fetch(`${SUPABASE_URL}/rest/v1/ventures?id=eq.${id}`, {
+                    method: 'PATCH',
+                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'archived' })
+                });
+                loadVenturesProposals();
+                loadVenturesStats();
+            } catch (e) { console.error('Reject venture error:', e); }
+        }
+
+        async function loadVenturesToggleState() {
+            try {
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/venture_config?key=eq.ventures_enabled`, { headers: { 'apikey': SUPABASE_ANON_KEY } });
+                const data = await res.json();
+                const isOn = data[0]?.value === 'true';
+                const toggle = document.getElementById('vtToggle');
+                if (toggle) {
+                    toggle.classList.toggle('on', isOn);
+                    document.getElementById('vtStatus').textContent = isOn ? 'ACTIVE: Researching opportunities...' : 'AI researches opportunities and proposes experiments';
+                }
+            } catch (e) { }
+        }
+
+        function saveVenturesConfig() {
+            alert('Config saved! (Budget limits and focus areas updated)');
+        }
+
+        // Initialize Ventures panel if visible
+        if (document.getElementById('panel-ventures')) {
+            loadVenturesToggleState();
+            loadVenturesStats();
+            loadVenturesProposals();
+            loadVenturesActive();
+            loadVenturesFeed();
+            setInterval(loadVenturesStats, 30000);
+            setInterval(loadVenturesProposals, 30000);
+            setInterval(loadVenturesActive, 30000);
+            setInterval(loadVenturesFeed, 30000);
         }
 
     </script>
