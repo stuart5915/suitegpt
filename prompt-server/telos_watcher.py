@@ -70,6 +70,7 @@ def check_telos_enabled():
             headers={'apikey': SUPABASE_KEY},
             timeout=10
         )
+        print(f'[DEBUG] ai_config response: {response.status_code} - {response.text[:200]}')
         if response.ok:
             data = response.json()
             if data and len(data) > 0:
