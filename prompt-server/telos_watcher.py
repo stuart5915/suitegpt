@@ -30,8 +30,8 @@ except ImportError as e:
     sys.exit(1)
 
 # ═══ CONFIGURATION ═══
-SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://rdsmdywbdiskxknluiym.supabase.co')
-SUPABASE_KEY = os.environ.get('SUPABASE_SERVICE_KEY', '')
+SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co'
+SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM2MzU4MTEsImV4cCI6MjA0OTIxMTgxMX0.G9OJ1lGVn1QPBK4F5kl_K1ILp-eoKCGiAAdZbzQ38c4'
 
 POLL_INTERVAL = 30  # Check every 30 seconds
 IDEA_GENERATION_COOLDOWN = 300  # 5 minutes between idea generations
@@ -135,16 +135,6 @@ def run_idea_generation():
 
 def main():
     global was_enabled, last_generation_time
-    
-    # Validate API key
-    if not SUPABASE_KEY:
-        print('=' * 60)
-        print('ERROR: SUPABASE_SERVICE_KEY not set!')
-        print('=' * 60)
-        print('Set it as an environment variable:')
-        print('  $env:SUPABASE_SERVICE_KEY = "your-key-here"')
-        print('=' * 60)
-        sys.exit(1)
     
     print('=' * 60)
     print('TELOS AUTONOMOUS WATCHER')
