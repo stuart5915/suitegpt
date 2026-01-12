@@ -12,7 +12,7 @@ CORS(app)
 
 # Supabase config - same as watcher
 SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://rdsmdywbdiskxknluiym.supabase.co')
-SUPABASE_KEY = os.environ.get('SUPABASE_SERVICE_KEY', '')
+SUPABASE_KEY = os.environ.get('SUPABASE_SERVICE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2Nzc4OTcxOCwiZXhwIjoyMDgzMzY1NzE4fQ.W8hqJClOZons4Vl9jMdcsApU0116YUZvchUTIfo1bSA')
 
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), 'prompts')
 os.makedirs(PROMPTS_DIR, exist_ok=True)
@@ -354,6 +354,35 @@ def toggle_auto_push():
         'auto_push': auto_push_enabled,
         'message': f'Auto-push is now {status}'
     })
+
+@app.route('/trigger-research', methods=['POST'])
+def trigger_research():
+    """Trigger Perplexity Deep Research on demand"""
+    print('[API] Triggering deep research...')
+    try:
+        import telos_research
+        success = telos_research.run_deep_research()
+        
+        if success:
+            # Count how many ideas were just generated
+            try:
+                res = requests.get(
+                    f'{SUPABASE_URL}/rest/v1/telos_ideas?status=eq.pending&order=created_at.desc&limit=10',
+                    headers={'apikey': SUPABASE_KEY}
+                )
+                ideas = res.json() if res.ok else []
+                return jsonify({
+                    'success': True,
+                    'ideas_generated': len(ideas),
+                    'message': f'Research complete! {len(ideas)} ideas in queue.'
+                })
+            except:
+                return jsonify({'success': True, 'ideas_generated': 0, 'message': 'Research complete!'})
+        else:
+            return jsonify({'success': False, 'error': 'Research returned no ideas'}), 500
+    except Exception as e:
+        print(f'[API] Research failed: {e}')
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
     print('=' * 50)

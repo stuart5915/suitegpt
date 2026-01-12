@@ -16,9 +16,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const isActive = (page) => currentPage === page ? 'active' : '';
 
     sidebar.innerHTML = `
-        <a href="codex.html" class="sidebar-link ${isActive('codex.html')}" style="font-size: 1.1rem; font-weight: 800; padding: 14px 16px; margin-bottom: 8px; background: linear-gradient(135deg, rgba(255, 149, 0, 0.15), rgba(168, 85, 247, 0.1)); border-radius: 12px; display: block;">📖 The SUITE Bible</a>
-        <a href="faith.html" class="sidebar-link ${isActive('faith.html')}" style="font-size: 0.95rem; font-weight: 700; padding: 10px 16px; margin-bottom: 16px; display: block; color: #a855f7;">✝️ Explore Faith</a>
-
         <div class="sidebar-section">
             <div class="sidebar-title">Learn</div>
             <a href="index.html" class="sidebar-link ${isActive('index.html')}">📚 Introduction</a>
@@ -28,15 +25,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <a href="utility.html" class="sidebar-link ${isActive('utility.html')}">⚡ SUITE Utility</a>
             <a href="roadmap.html" class="sidebar-link ${isActive('roadmap.html')}">🗺️ Roadmap</a>
             <a href="systems-view.html" class="sidebar-link ${isActive('systems-view.html')}">🏗️ Systems View</a>
-            <a href="glossary.html" class="sidebar-link ${isActive('glossary.html')}">🗣️ SUITE Lingo</a>
             <a href="safety.html" class="sidebar-link ${isActive('safety.html')}">🛡️ AI Safety</a>
-        </div>
-
-        <div class="sidebar-section">
-            <div class="sidebar-title">School</div>
-            <a href="school.html" class="sidebar-link ${isActive('school.html')}">🎓 SUITE School</a>
-            <a href="apologetics.html" class="sidebar-link ${isActive('apologetics.html')}">🛡️ Apologetics Arena</a>
-            <a href="lab.html" class="sidebar-link ${isActive('lab.html')}">🔬 SUITE Lab</a>
         </div>
 
         <div class="sidebar-section">
@@ -46,7 +35,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <a href="commands.html" class="sidebar-link ${isActive('commands.html')}">⚡ Commands</a>
             <a href="dashboard.html" class="sidebar-link ${isActive('dashboard.html')}">🛠️ Dashboard</a>
             <a href="publish-checklist.html" class="sidebar-link ${isActive('publish-checklist.html')}">📋 Publish Checklist</a>
-            <a href="ai-fleet.html" class="sidebar-link ${isActive('ai-fleet.html')}">🤖 AI Fleet</a>
+            <a href="ai-fleet.html" class="sidebar-link ${isActive('ai-fleet.html')}">🤖 AI Fleet (coming soon)</a>
         </div>
 
         <div class="sidebar-section">

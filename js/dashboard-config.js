@@ -8,63 +8,58 @@
 const DASHBOARD_CONFIG = {
     // Sidebar sections - grouped by category
     sections: [
-        // --- AI Factory (FIRST - Top Priority) ---
+        // --- App Store (MVP - CORE) ---
         {
-            category: 'AI Factory',
+            category: 'App Store',
             items: [
-                { id: 'ai-fleet', label: 'AI Fleet', icon: '🤖', status: 'LIVE' },
-                { id: 'ventures', label: 'Ventures', icon: '💼', status: 'NEW' },
-                { id: 'prompt-server', label: 'Prompt Server', icon: '💻', status: null },
-                { id: 'cadence', label: 'Cadence AI', icon: '🎯', status: null },
+                { id: 'store', label: 'App Store', icon: '🏪', status: 'LIVE' },
             ]
         },
-        // --- Build ---
+        // --- $SUITE Economy (MVP - CORE) ---
         {
-            category: 'Build',
+            category: '$SUITE Economy',
             items: [
-                { id: 'apps', label: 'My Apps', icon: '📱', status: null },
-                { id: 'studio', label: 'Studio', icon: '🎨', status: null },
+                { id: 'treasury', label: 'Treasury', icon: '🏦', status: 'LIVE' },
+                { id: 'earn', label: 'Earn SUITE', icon: '💰', status: 'SOON' },
             ]
         },
-        // --- Manage ---
+        // --- Roadmap (Coming Soon) ---
         {
-            category: 'Manage',
+            category: 'Roadmap',
             items: [
-                { id: 'store', label: 'App Store', icon: '🏪', status: null },
-                { id: 'campaigns', label: 'Campaigns', icon: '📣', status: null },
-                { id: 'reviews', label: 'Reviews', icon: '⭐', status: null },
-                { id: 'powerups', label: 'Powerups', icon: '⚡', status: null },
-                { id: 'marketplace', label: 'Marketplace', icon: '🛒', status: null },
-            ]
-        },
-        // --- Earn & Spend ---
-        {
-            category: 'Earn & Spend',
-            items: [
-                { id: 'earn', label: 'Earnings', icon: '💰', status: null },
-                { id: 'treasury', label: 'Treasury', icon: '🏦', status: null },
-                { id: 'lp-incentives', label: 'LP Incentives', icon: '🌊', status: 'LIVE' },
+                { id: 'incubator', label: 'Incubator', icon: '🚀', status: 'SOON' },
+                { id: 'apps', label: 'My Apps', icon: '📱', status: 'SOON' },
+                { id: 'studio', label: 'Studio', icon: '🎨', status: 'SOON' },
+                { id: 'marketplace', label: 'Marketplace', icon: '🛒', status: 'SOON' },
+                { id: 'ai-fleet', label: 'AI Fleet', icon: '🤖', status: 'SOON' },
             ]
         },
         // --- Community ---
         {
             category: 'Community',
             items: [
-                { id: 'constitution', label: 'The Constitution', icon: '📜', status: 'NEW' },
-                { id: 'suitehub', label: 'SUITE Hub', icon: '💬', status: null },
-                { id: 'giving', label: 'Giving Fund', icon: '❤️', status: null },
+                { id: 'constitution', label: 'Constitution', icon: '📜', status: 'NEW' },
+                { id: 'suitehub', label: 'SUITE Hub', icon: '💬', status: 'SOON' },
+                { id: 'giving', label: 'Giving Fund', icon: '❤️', status: 'SOON' },
             ]
         },
     ],
 
-    // Admin sections (shown only to owner)
+    // Admin sections (shown only to owner) - includes WIP/experimental features
     adminSections: [
         { id: 'admin-treasury', label: 'Treasury Admin', icon: '🔐', status: null },
         { id: 'admin-apps', label: 'App Admin', icon: '⚙️', status: null },
+        { id: 'ventures', label: 'Ventures (WIP)', icon: '💼', status: 'WIP' },
+        { id: 'prompt-server', label: 'Prompt Server', icon: '💻', status: null },
+        { id: 'cadence', label: 'Cadence AI', icon: '🎯', status: null },
+        { id: 'lp-incentives', label: 'LP Incentives', icon: '🌊', status: null },
     ],
 
+    // Panels that should show "Coming Soon" overlay
+    comingSoonPanels: ['earn', 'incubator', 'apps', 'studio', 'marketplace', 'suitehub', 'giving', 'ai-fleet'],
+
     // Default section to show
-    defaultSection: 'ai-fleet',
+    defaultSection: 'store',
 };
 
 /**
@@ -187,4 +182,14 @@ class DashboardNav {
 let dashboardNav;
 document.addEventListener('DOMContentLoaded', () => {
     dashboardNav = new DashboardNav(DASHBOARD_CONFIG);
+
+    // Apply "coming-soon" class to panels that aren't ready yet
+    if (DASHBOARD_CONFIG.comingSoonPanels) {
+        DASHBOARD_CONFIG.comingSoonPanels.forEach(panelId => {
+            const panel = document.getElementById('panel-' + panelId);
+            if (panel) {
+                panel.classList.add('coming-soon');
+            }
+        });
+    }
 });

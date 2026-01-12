@@ -749,15 +749,85 @@
                 </div>
             </section>
 
+            <!-- Symbiotic Flow Logic -->
+            <section
+                style="margin-bottom: 1rem; background: linear-gradient(135deg, rgba(57,255,20,0.1), rgba(0,240,255,0.05)); border: 1px solid rgba(57,255,20,0.3); border-radius: 12px; padding: 16px;">
+                <div style="font-weight: 700; color: var(--accent-green); margin-bottom: 8px; font-size: 0.9rem;">⚡
+                    SYMBIOTIC ENERGY FLOW</div>
+                <div style="color: var(--text-secondary); font-size: 0.8rem; line-height: 1.6;">
+                    <strong>1.</strong> Generate Idea → Copy prompt → Run in Gemini Deep Research<br>
+                    <strong>2.</strong> Approve/Reject with notes (saved for future refinement)<br>
+                    <strong>3.</strong> If approved → AI builds autonomously → Returns with:<br>
+                    &nbsp;&nbsp;&nbsp;• <span style="color: var(--accent-cyan);">"Keep prompting me"</span> — AI needs
+                    more coding direction<br>
+                    &nbsp;&nbsp;&nbsp;• <span style="color: var(--accent-yellow);">"Human task needed"</span> — External
+                    setup/account work for you<br>
+                    <strong>4.</strong> Energy flows back and forth until app ships or archives
+                </div>
+            </section>
+
+            <!-- Current Task Panel - AI→Human Assignment -->
+            <section id="currentTaskPanel" class="panel"
+                style="margin-bottom: 1.5rem; border: 2px solid var(--accent-cyan); background: linear-gradient(135deg, rgba(0,240,255,0.1), var(--bg-panel));">
+                <div class="panel-header" style="border-bottom: none;">
+                    <span>🎯 YOUR CURRENT TASK</span>
+                    <span id="currentTaskType" class="badge"
+                        style="background: var(--accent-cyan); color: #000;">WAITING</span>
+                </div>
+                <div style="padding: 0 1.5rem 1.5rem;">
+                    <div id="currentTaskContent">
+                        <div style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 20px;">
+                            No active app in progress. Approve an idea to start building.
+                        </div>
+                    </div>
+                    <div id="currentTaskForm" style="display: none; margin-top: 12px;">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px;">AI says:</div>
+                        <div id="aiInstructions"
+                            style="font-size: 0.9rem; color: var(--text-primary); background: var(--bg-card); padding: 12px; border-radius: 8px; margin-bottom: 12px; border-left: 3px solid var(--accent-cyan);">
+                        </div>
+                        <textarea id="humanResponse" placeholder="Your response / notes / API key / URL..."
+                            style="width: 100%; min-height: 70px; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-primary); padding: 12px; border-radius: 8px; font-size: 0.9rem; resize: vertical;"></textarea>
+                        <div style="display: flex; gap: 8px; margin-top: 10px;">
+                            <button onclick="completeCurrentTask()"
+                                style="flex: 1; padding: 12px; background: var(--accent-green); color: #000; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">✅
+                                Mark Complete & Continue</button>
+                            <button onclick="skipCurrentTask()"
+                                style="padding: 12px 20px; background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer;">Skip</button>
+                        </div>
+                    </div>
+                    <div id="taskProgress" style="margin-top: 12px; display: none;">
+                        <div
+                            style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">
+                            <span>Build Progress</span>
+                            <span id="taskProgressText">0 / 0 tasks</span>
+                        </div>
+                        <div
+                            style="background: var(--border-color); height: 6px; border-radius: 3px; overflow: hidden;">
+                            <div id="taskProgressBar"
+                                style="background: var(--accent-green); height: 100%; width: 0%; transition: width 0.3s;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <section class="split-view">
                 <div class="flex-col gap-4">
                     <div class="panel" style="flex: 1;">
-                        <div class="panel-header">
+                        <div class="panel-header" style="flex-wrap: wrap; gap: 8px;">
                             <span>Ideas Awaiting Approval</span>
+                            <div style="display: flex; gap: 8px;">
+                                <button onclick="generateIdeas()"
+                                    style="background: var(--accent-green); color: #000; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">🔍
+                                    Generate Ideas</button>
+                                <button onclick="copyResearchPrompt()"
+                                    style="background: var(--bg-hover); color: var(--text-primary); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer;">📋
+                                    Copy Prompt</button>
+                            </div>
                         </div>
                         <div class="panel-body" id="ideasQueueBody">
                             <div class="empty-state">
-                                No pending ideas. Enable TELOS mode to start generating.
+                                No pending ideas. Click "Generate Ideas" to run deep research.
                             </div>
                         </div>
                     </div>
@@ -1116,16 +1186,16 @@
             // Update UI immediately
             updateToggleUI(newState);
 
-            // Save to Supabase
+            // Save to Supabase (UPSERT - creates if not exists)
             try {
-                await fetch(`${SUPABASE_URL}/rest/v1/ai_config?key=eq.telos_enabled`, {
-                    method: 'PATCH',
+                await fetch(`${SUPABASE_URL}/rest/v1/ai_config`, {
+                    method: 'POST',
                     headers: {
                         'apikey': SUPABASE_ANON_KEY,
                         'Content-Type': 'application/json',
-                        'Prefer': 'return=minimal'
+                        'Prefer': 'resolution=merge-duplicates'
                     },
-                    body: JSON.stringify({ value: newState ? 'true' : 'false' })
+                    body: JSON.stringify({ key: 'telos_enabled', value: newState ? 'true' : 'false' })
                 });
                 console.log(`TELOS mode ${newState ? 'ENABLED' : 'DISABLED'}`);
             } catch (err) {
@@ -1133,20 +1203,6 @@
             }
         });
 
-        // ═══ INITIALIZE ═══
-        async function init() {
-            await loadToggleState();
-            await loadStats();
-            await loadActivityFeed();
-            await loadHistory();
-            await loadIdeasQueue();
-
-            // Refresh every 30 seconds
-            setInterval(loadStats, 30000);
-            setInterval(loadActivityFeed, 30000);
-            setInterval(loadHistory, 60000); // History refreshes less often
-            setInterval(loadIdeasQueue, 30000);
-        }
 
         // ═══ LOAD IDEAS HISTORY ═══
         const historyBody = document.getElementById('historyBody');
@@ -1327,21 +1383,51 @@
 
         async function approveIdea(ideaId) {
             try {
+                // Get approval notes if any
+                const approvalNotes = document.getElementById('rejectionFeedback')?.value || '';
+
+                // Update idea status to 'building'
                 const res = await fetch(`${SUPABASE_URL}/rest/v1/telos_ideas?id=eq.${ideaId}`, {
                     method: 'PATCH',
                     headers: {
                         'apikey': SUPABASE_ANON_KEY,
                         'Content-Type': 'application/json',
-                        'Prefer': 'return=minimal'
+                        'Prefer': 'return=representation'
                     },
-                    body: JSON.stringify({ status: 'approved' })
+                    body: JSON.stringify({
+                        status: 'building',
+                        approval_notes: approvalNotes,
+                        approved_at: new Date().toISOString()
+                    })
                 });
 
                 if (res.ok) {
+                    const updatedIdea = await res.json();
+
+                    // Create initial AI task in activity log
+                    await fetch(`${SUPABASE_URL}/rest/v1/ai_activity_log`, {
+                        method: 'POST',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            action_type: 'task_created',
+                            message: `🚀 APPROVED: ${updatedIdea[0]?.name || 'New App'} - Build initiated. AI will generate first tasks.`,
+                            metadata: JSON.stringify({
+                                idea_id: ideaId,
+                                phase: 'scaffolding',
+                                task_type: 'ai', // First task is AI creating the project
+                                instructions: 'Create Expo project scaffold and initial file structure'
+                            })
+                        })
+                    });
+
                     closeIdeaModal();
-                    loadIdeasQueue();
-                    loadHistory();
-                    alert('✓ Idea approved! Build will start on next watcher cycle.');
+                    await loadIdeasQueue();
+                    await loadHistory();
+                    await loadCurrentTask();
+                    alert('✓ Idea approved! Build starting now. Check "Your Current Task" for next steps.');
                 } else {
                     alert('Error approving idea. Please try again.');
                 }
@@ -1417,6 +1503,289 @@
             } catch (err) {
                 console.error('Error loading ideas queue:', err);
             }
+        }
+
+        // ═══ GENERATE IDEAS (Trigger Deep Research) ═══
+        async function generateIdeas() {
+            const btn = event.target;
+            const originalText = btn.innerText;
+            btn.innerText = '⏳ Researching...';
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
+
+            try {
+                // Call the server to trigger research
+                const res = await fetch('http://10.0.0.142:3000/trigger-research', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    alert(`✅ Research complete! ${data.ideas_generated || 0} ideas generated.`);
+                    await loadIdeasQueue();
+                    await loadHistory();
+                } else {
+                    alert('❌ Research failed. Check PC watcher console.');
+                }
+            } catch (err) {
+                console.error('Error triggering research:', err);
+                alert('❌ Could not connect to research server. Make sure server.py is running on PC.');
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+                btn.style.opacity = '1';
+            }
+        }
+
+        // ═══ COPY RESEARCH PROMPT (for manual use in Google Deep Research) ═══
+        async function copyResearchPrompt() {
+            try {
+                // Fetch existing ideas to build context
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/telos_ideas?select=name,tagline,status,rejection_reason&limit=50`, {
+                    headers: { 'apikey': SUPABASE_ANON_KEY }
+                });
+                const ideas = await res.json() || [];
+
+                // Build avoidance list
+                const avoidList = ideas.slice(0, 20).map(i => `- ${i.name}: ${(i.tagline || '').slice(0, 50)}`).join('\n') || '- None yet';
+
+                // Rejection patterns
+                const rejected = ideas.filter(i => i.status === 'rejected' && i.rejection_reason);
+                const rejectionPatterns = rejected.slice(0, 5).map(i => `- ${i.rejection_reason}`).join('\n') || '- No rejections yet';
+
+                const prompt = `Research emerging mobile app opportunities for 2025-2026 that have strong market potential.
+
+CONTEXT - Apps already in my portfolio (DO NOT suggest similar concepts):
+${avoidList}
+
+PATTERNS FROM REJECTED IDEAS (avoid these patterns):
+${rejectionPatterns}
+
+FOCUS AREAS: AI tools, productivity, health, finance
+MONETIZATION PREFERENCE: subscription, in-app purchases, freemium
+
+REQUIREMENTS FOR EACH IDEA:
+1. Must be buildable as a React Native/Expo mobile app
+2. Must have clear monetization path
+3. Must target an underserved niche or emerging trend
+4. Must NOT be a generic utility app (todo, notes, calculator, etc.)
+5. Should have potential for $1000+/month revenue
+
+Please research and identify 3-5 NOVEL app opportunities with:
+- App name and tagline
+- Target audience (specific demographic)
+- Core problem it solves
+- Why NOW is the right time (market timing)
+- Monetization strategy
+- Key differentiator from existing apps
+
+Focus on opportunities backed by real data: Reddit discussions, app store gaps, emerging trends, underserved communities.`;
+
+                await navigator.clipboard.writeText(prompt);
+
+                const btn = event.target;
+                const originalText = btn.innerText;
+                btn.innerText = '✓ Copied!';
+                btn.style.background = 'var(--accent-green)';
+                btn.style.color = '#000';
+
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                    btn.style.background = 'var(--bg-hover)';
+                    btn.style.color = 'var(--text-primary)';
+                }, 2000);
+
+            } catch (err) {
+                console.error('Error building prompt:', err);
+                alert('Error building prompt. Check console.');
+            }
+        }
+
+        // ═══ CURRENT TASK MANAGEMENT (Symbiotic Human-AI Flow) ═══
+        let currentBuildingIdea = null;
+
+        async function loadCurrentTask() {
+            const taskContent = document.getElementById('currentTaskContent');
+            const taskForm = document.getElementById('currentTaskForm');
+            const taskType = document.getElementById('currentTaskType');
+            const taskProgress = document.getElementById('taskProgress');
+            const aiInstructions = document.getElementById('aiInstructions');
+
+            if (!taskContent) return;
+
+            try {
+                // Get the currently building idea
+                const ideaRes = await fetch(`${SUPABASE_URL}/rest/v1/telos_ideas?status=eq.building&order=approved_at.desc&limit=1`, {
+                    headers: { 'apikey': SUPABASE_ANON_KEY }
+                });
+                const ideas = await ideaRes.json();
+
+                if (!Array.isArray(ideas) || ideas.length === 0) {
+                    // No active build
+                    taskContent.innerHTML = '<div style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 20px;">No active app in progress. Approve an idea to start building.</div>';
+                    taskForm.style.display = 'none';
+                    taskProgress.style.display = 'none';
+                    taskType.textContent = 'WAITING';
+                    taskType.style.background = 'var(--text-muted)';
+                    currentBuildingIdea = null;
+                    return;
+                }
+
+                currentBuildingIdea = ideas[0];
+
+                // Get latest task for this idea from activity log
+                const taskRes = await fetch(`${SUPABASE_URL}/rest/v1/ai_activity_log?action_type=eq.task_created&order=timestamp.desc&limit=1`, {
+                    headers: { 'apikey': SUPABASE_ANON_KEY }
+                });
+                const tasks = await taskRes.json();
+
+                // Show current build info
+                taskContent.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                        <div style="background: var(--accent-cyan); color: #000; padding: 8px 16px; border-radius: 8px; font-weight: 700;">
+                            🚀 ${currentBuildingIdea.name}
+                        </div>
+                        <span style="color: var(--text-muted); font-size: 0.8rem;">${currentBuildingIdea.focus_area || 'App'}</span>
+                    </div>
+                `;
+
+                if (tasks && tasks.length > 0) {
+                    const latestTask = tasks[0];
+                    let metadata = {};
+                    try {
+                        metadata = JSON.parse(latestTask.metadata || '{}');
+                    } catch (e) { }
+
+                    const taskTypeValue = metadata.task_type || 'ai';
+                    taskType.textContent = taskTypeValue.toUpperCase();
+                    taskType.style.background = taskTypeValue === 'human' ? 'var(--accent-yellow)' :
+                        taskTypeValue === 'hybrid' ? 'var(--accent-cyan)' :
+                            'var(--accent-green)';
+
+                    if (taskTypeValue === 'human' || taskTypeValue === 'hybrid') {
+                        // Show form for human input
+                        aiInstructions.textContent = metadata.instructions || latestTask.message;
+                        taskForm.style.display = 'block';
+                    } else {
+                        // AI task - just show status
+                        taskForm.style.display = 'none';
+                        taskContent.innerHTML += `
+                            <div style="color: var(--accent-green); font-size: 0.9rem; padding: 12px; background: var(--bg-card); border-radius: 8px;">
+                                ⚡ AI is working: ${metadata.instructions || 'Processing...'}
+                            </div>
+                        `;
+                    }
+                } else {
+                    taskType.textContent = 'AI';
+                    taskType.style.background = 'var(--accent-green)';
+                    taskForm.style.display = 'none';
+                    taskContent.innerHTML += `
+                        <div style="color: var(--accent-green); font-size: 0.9rem; padding: 12px; background: var(--bg-card); border-radius: 8px;">
+                            ⚡ AI is setting up the project scaffold...
+                        </div>
+                    `;
+                }
+
+                // Show progress bar
+                const iterations = currentBuildingIdea.build_iterations || 0;
+                taskProgress.style.display = 'block';
+                document.getElementById('taskProgressText').textContent = `${iterations} iterations`;
+                document.getElementById('taskProgressBar').style.width = `${Math.min(iterations * 10, 100)}%`;
+
+            } catch (err) {
+                console.error('Error loading current task:', err);
+            }
+        }
+
+        async function completeCurrentTask() {
+            const response = document.getElementById('humanResponse')?.value || '';
+
+            if (!currentBuildingIdea) {
+                alert('No active task to complete.');
+                return;
+            }
+
+            try {
+                // Log completion and response
+                await fetch(`${SUPABASE_URL}/rest/v1/ai_activity_log`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action_type: 'human_response',
+                        message: `✅ Human completed task for ${currentBuildingIdea.name}`,
+                        metadata: JSON.stringify({
+                            idea_id: currentBuildingIdea.id,
+                            response: response,
+                            completed_at: new Date().toISOString()
+                        })
+                    })
+                });
+
+                // Increment build iterations
+                await fetch(`${SUPABASE_URL}/rest/v1/telos_ideas?id=eq.${currentBuildingIdea.id}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        build_iterations: (currentBuildingIdea.build_iterations || 0) + 1
+                    })
+                });
+
+                document.getElementById('humanResponse').value = '';
+                await loadCurrentTask();
+                await loadActivityFeed();
+                alert('✓ Task completed! AI will continue work.');
+
+            } catch (err) {
+                console.error('Error completing task:', err);
+                alert('Error completing task. Please try again.');
+            }
+        }
+
+        async function skipCurrentTask() {
+            if (!currentBuildingIdea) return;
+
+            try {
+                await fetch(`${SUPABASE_URL}/rest/v1/ai_activity_log`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action_type: 'task_skipped',
+                        message: `⏭ Task skipped for ${currentBuildingIdea.name}`,
+                        metadata: JSON.stringify({ idea_id: currentBuildingIdea.id })
+                    })
+                });
+
+                await loadCurrentTask();
+            } catch (err) {
+                console.error('Error skipping task:', err);
+            }
+        }
+
+        // ═══ INITIALIZE ═══
+        async function init() {
+            await loadToggleState();
+            await loadStats();
+            await loadActivityFeed();
+            await loadHistory();
+            await loadIdeasQueue();
+            await loadCurrentTask();
+
+            // Refresh intervals
+            setInterval(loadStats, 30000);
+            setInterval(loadActivityFeed, 15000);
+            setInterval(loadHistory, 60000);
+            setInterval(loadIdeasQueue, 30000);
+            setInterval(loadCurrentTask, 15000); // Check task status more frequently
         }
 
         init();

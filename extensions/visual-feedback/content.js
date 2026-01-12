@@ -338,8 +338,15 @@
             // Build prompt
             const fullPrompt = buildPrompt(message, selector, elementInfo, dragBounds);
 
+            // Re-read destination from storage to ensure we have the latest selection
+            const storedConfig = await new Promise(resolve => {
+                chrome.storage.sync.get(['supabaseKey', 'destination'], resolve);
+            });
+            const destination = storedConfig.destination || config.destination;
+            const supabaseKey = storedConfig.supabaseKey || config.supabaseKey;
+
             // Route based on destination
-            switch (config.destination) {
+            switch (destination) {
                 case 'clipboard':
                     await navigator.clipboard.writeText(fullPrompt);
                     showSuccess('Copied to clipboard!');
@@ -354,7 +361,7 @@
                 case 'antigravity':
                 default:
                     // Check for Supabase key
-                    if (!config.supabaseKey) {
+                    if (!supabaseKey) {
                         throw new Error('No Supabase key! Click extension icon → enter key in Settings');
                     }
 
@@ -364,8 +371,8 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'apikey': config.supabaseKey,
-                            'Authorization': `Bearer ${config.supabaseKey}`,
+                            'apikey': supabaseKey,
+                            'Authorization': `Bearer ${supabaseKey}`,
                             'Prefer': 'return=minimal'
                         },
                         body: JSON.stringify({

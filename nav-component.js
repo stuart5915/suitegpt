@@ -13,19 +13,11 @@
         </a>
         <div class="nav-links">
             <a href="${basePath}apps.html">Apps</a>
-            <a href="${basePath}ecosystem.html">Ecosystem</a>
             <a href="${basePath}developer-portal.html">Build</a>
             <a href="${basePath}discuss.html">Discuss</a>
             <a href="${basePath}incubate.html">Incubate</a>
-            <a href="https://docs.getsuite.app">Docs</a>
-            <div class="nav-dropdown">
-                <span class="nav-dropdown-trigger">SUITE</span>
-                <div class="nav-dropdown-menu">
-                    <a href="${basePath}wallet.html">🏦 Vault</a>
-                    <a href="${basePath}dashboard.html">💼 Dashboard</a>
-                    <a href="${basePath}learn.html">📚 Learn</a>
-                </div>
-            </div>
+            <a href="${basePath}docs/">Docs</a>
+            <a href="${basePath}wallet.html">Wallet</a>
             <a href="${basePath}start-building.html" class="nav-cta"><img src="${basePath}assets/emojis/clay-rocket.png" alt="" class="nav-cta-emoji"> Start Building</a>
         </div>
         <button class="mobile-menu-btn" onclick="this.classList.toggle('active'); document.querySelector('.nav-links').classList.toggle('mobile-open');">

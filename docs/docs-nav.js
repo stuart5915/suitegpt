@@ -23,14 +23,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         <a href="../discuss.html">Discuss</a>
                         <a href="../incubate.html">Incubate</a>
                         <a href="index.html" class="active">Docs</a>
-                        <div class="nav-dropdown">
-                            <span class="nav-dropdown-trigger">SUITE ▾</span>
-                            <div class="nav-dropdown-menu">
-                                <a href="../wallet.html">🏦 Vault</a>
-                                <a href="../boost.html">🛒 Store</a>
-                                <a href="../dashboard.html">⚙️ Dashboard</a>
-                            </div>
-                        </div>
+                        <a href="../wallet.html">Vault</a>
                         <a href="../start-building.html" class="nav-cta"><img src="../assets/emojis/clay-rocket.png" alt="" class="nav-cta-emoji"> Start Building</a>
                     </div>
                     <button class="mobile-menu-btn">
