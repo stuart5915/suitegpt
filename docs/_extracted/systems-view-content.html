@@ -1,0 +1,846 @@
+<h1 style="font-size: 2.5rem; margin-bottom: 8px;">🏗️ Systems Architecture</h1>
+                <p style="color: #666; font-size: 1.1rem; margin-bottom: 32px;">
+                    Bird's-eye view of every system in the SUITE ecosystem. Click any step to see the logic behind it.
+                </p>
+
+                <!-- Table of Contents -->
+                <div class="toc">
+                    <h3>📋 Jump to System</h3>
+                    <div class="toc-list">
+                        <a href="#ai-fleet">🤖 AI Fleet</a>
+                        <a href="#watcher-bot">📡 Watcher Bot</a>
+                        <a href="#pc-laptop-sync">🔄 PC-Laptop Sync</a>
+                        <a href="#treasury">💰 Treasury</a>
+                        <a href="#app-store">🏪 App Store</a>
+                        <a href="#content-marketplace">📸 Content Marketplace</a>
+                        <a href="#discord-integration">💬 Discord Integration</a>
+                        <a href="#auth-system">🔐 Authentication</a>
+                    </div>
+                </div>
+
+                <!-- AI FLEET SYSTEM -->
+                <div class="system-card" id="ai-fleet">
+                    <h2 class="system-title">🤖 Autonomous App Creation</h2>
+                    <p class="system-desc">Fully autonomous system that researches, designs, and builds complete apps
+                        24/7 without human intervention. Uses 50-prompt staged builds with automatic testing and bug
+                        loops.</p>
+
+                    <div class="system-layout">
+                        <div class="system-diagram">
+                            <img src="diagrams/ai-fleet.png" alt="AI Fleet System Diagram" class="diagram-img">
+                        </div>
+                        <div class="system-details">
+                            <!-- PHASE 1: IDEA GENERATION -->
+                            <details class="expand-section">
+                                <summary><span class="phase-badge phase-research">PHASE 1</span> Intelligent Batch
+                                    Ideation</summary>
+                                <div class="expand-content">
+                                    <p><strong>Generates 5 diverse app ideas</strong> using:</p>
+                                    <ul>
+                                        <li>📅 <strong>30-day history</strong> — Avoids repeating recent ideas</li>
+                                        <li>❌ <strong>Rejection patterns</strong> — Learns from rejected concepts</li>
+                                        <li>✅ <strong>Success patterns</strong> — Does more of what gets approved</li>
+                                        <li>🌸 <strong>Seasonal context</strong> — January = resolutions, October =
+                                            Halloween, etc.</li>
+                                    </ul>
+                                    <p>You pick ONE idea to build, or enter a "New Direction" to regenerate.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Human requests? → DO THOSE FIRST</summary>
+                                <div class="expand-content">
+                                    <p>When a human submits a bug report or feature request via Discord, drop everything
+                                        and handle it first. Human priority always beats autonomous work.</p>
+                                </div>
+                            </details>
+
+                            <!-- PHASE 2: STAGED BUILD -->
+                            <details class="expand-section">
+                                <summary><span class="phase-badge phase-build">PHASE 2</span> Staged Build (50 Prompts)
+                                </summary>
+                                <div class="expand-content">
+                                    <p><strong>App built across 50 intelligent prompts in stages:</strong></p>
+                                    <pre>
+STAGE 0: Init (Prompts 1-2)
+├── Create Expo app
+└── Set up navigation, theme, base screens
+
+STAGE 1: Core Build (Prompts 3-10)
+├── Build core features from approved idea
+├── Implement main screens
+└── ─── CHECKPOINT: Test, capture bugs ───
+    └── BUG LOOP: Keep prompting until 0 errors
+
+STAGE 2: Reframe + Enhance (Prompts 11-20)
+├── AI re-analyzes what exists
+├── Decides TOP 5 most valuable additions
+├── Builds those features
+└── ─── CHECKPOINT: Test, fix bugs ───
+
+STAGE 3: Polish (Prompts 21-35)
+├── Animations, transitions
+├── Error handling, edge cases
+├── Loading states, empty states
+└── ─── CHECKPOINT: Test, fix bugs ───
+
+STAGE 4: Final Touches (Prompts 36-45)
+├── App icon + splash screen
+├── Performance optimization
+├── Store screenshots
+└── ─── CHECKPOINT: Test, fix bugs ───
+
+STAGE 5: Buffer (Prompts 46-50)
+├── Unexpected issues
+├── Final refinements
+└── Write build_complete.json
+                                    </pre>
+                                </div>
+                            </details>
+
+                            <!-- CHECKPOINTS -->
+                            <details class="expand-section">
+                                <summary>🔍 Checkpoint Testing</summary>
+                                <div class="expand-content">
+                                    <p>After each stage, the system:</p>
+                                    <ol>
+                                        <li>Opens browser / runs <code>npm start</code></li>
+                                        <li>Captures console logs and errors</li>
+                                        <li>Takes screenshots</li>
+                                        <li>AI analyzes: What works? What's broken?</li>
+                                    </ol>
+                                </div>
+                            </details>
+
+                            <!-- BUG LOOP -->
+                            <details class="expand-section">
+                                <summary>🐛 Bug Loop (Until Clean)</summary>
+                                <div class="expand-content">
+                                    <p><strong>Critical:</strong> Don't proceed with broken code!</p>
+                                    <pre>
+while (errors.length > 0) {
+    prompt("Fix these errors: " + errors);
+    test();
+    errors = captureConsoleErrors();
+}
+// Only continue when bugs = 0
+                                    </pre>
+                                    <p>AI keeps fixing until zero console errors detected.</p>
+                                </div>
+                            </details>
+
+                            <!-- REFRAMING -->
+                            <details class="expand-section">
+                                <summary>🔄 Stage Reframing</summary>
+                                <div class="expand-content">
+                                    <p>Every ~10 prompts, AI gets a fresh perspective prompt:</p>
+                                    <blockquote>
+                                        "Look at what currently exists in this app. Based on the current state, what are
+                                        the TOP 5 features that would add the MOST value? Consider user experience gaps,
+                                        missing functionality, polish opportunities."
+                                    </blockquote>
+                                    <p>This prevents tunnel vision and lets AI adapt as the app grows.</p>
+                                </div>
+                            </details>
+
+                            <!-- PROGRESS TRACKING -->
+                            <details class="expand-section">
+                                <summary>📊 Progress Tracking</summary>
+                                <div class="expand-content">
+                                    <p>Throughout the build:</p>
+                                    <ul>
+                                        <li><code>PROGRESS.md</code> — Written after each stage</li>
+                                        <li>Git commits — After each successful stage (rollback points)</li>
+                                        <li>Screenshots — Captured at each checkpoint</li>
+                                        <li>Prompt counter — Tracks 1-50 progress</li>
+                                    </ul>
+                                </div>
+                            </details>
+
+                            <!-- COMPLETION -->
+                            <details class="expand-section">
+                                <summary><span class="phase-badge phase-deploy">PHASE 3</span> Completion → Review Queue
+                                </summary>
+                                <div class="expand-content">
+                                    <p>After prompt 50:</p>
+                                    <ol>
+                                        <li>AI writes <code>build_complete.json</code> with summary</li>
+                                        <li>Status changes to "review"</li>
+                                        <li>App appears in your dashboard "Ready for Review"</li>
+                                        <li>You can: <strong>Deploy</strong> / <strong>Refine</strong> /
+                                            <strong>Scrap</strong>
+                                        </li>
+                                    </ol>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>D) REPEAT → Back to Ideation</summary>
+                                <div class="expand-content">
+                                    <p>After deployment, cycle back to generate the next batch of 5 ideas. The fleet
+                                        never stops!</p>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- WATCHER BOT -->
+                <div class="system-card" id="watcher-bot">
+                    <h2 class="system-title">📡 Watcher Bot</h2>
+                    <p class="system-desc">Processes prompts from Discord/Supabase and injects them into Antigravity IDE
+                        windows.</p>
+
+                    <div class="system-layout">
+                        <div class="system-diagram">
+                            <img src="diagrams/watcher-bot.png" alt="Watcher Bot System Diagram" class="diagram-img">
+                        </div>
+                        <div class="system-details">
+                            <details class="expand-section">
+                                <summary>Poll Supabase for prompts</summary>
+                                <div class="expand-content">
+                                    <p>Every 5 seconds, check for pending prompts in the database.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Slot allocation (round-robin across 3 IDE windows)</summary>
+                                <div class="expand-content">
+                                    <p>Distribute prompts evenly across 3 Antigravity IDE windows to maximize
+                                        throughput.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Click chat input</summary>
+                                <div class="expand-content">
+                                    <p>Focus the chat input field in the target IDE window.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Type prompt (<span class="term-tooltip"
+                                        data-tooltip="Python library for GUI automation - simulates keyboard and mouse">pyautogui</span>)
+                                </summary>
+                                <div class="expand-content">
+                                    <p>Use pyautogui to type the prompt text into the IDE at ~100 chars/second.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Press Enter</summary>
+                                <div class="expand-content">
+                                    <p>Submit the prompt to the AI agent.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Mark slot as busy</summary>
+                                <div class="expand-content">
+                                    <p>Flag the slot so background workers don't interfere while the AI is processing.
+                                    </p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Click Accept buttons on all windows</summary>
+                                <div class="expand-content">
+                                    <p>Background worker clicks Accept buttons to approve AI changes every 60 seconds.
+                                    </p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Git pull + push to sync changes</summary>
+                                <div class="expand-content">
+                                    <p>Automatically sync code changes via Git between PC and laptop.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Update .last_push timestamp</summary>
+                                <div class="expand-content">
+                                    <p>Write timestamp to file so the UI can show when the last push occurred.</p>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PC-LAPTOP SYNC -->
+                <div class="system-card" id="pc-laptop-sync">
+                    <h2 class="system-title">🔄 PC-Laptop Sync</h2>
+                    <p class="system-desc">Bidirectional file sync between your PC and laptop via GitHub.</p>
+
+                    <div class="system-layout">
+                        <div class="system-diagram">
+                            <img src="diagrams/pc-laptop-sync.png" alt="PC-Laptop Sync System Diagram"
+                                class="diagram-img">
+                        </div>
+                        <div class="system-details">
+                            <details class="expand-section">
+                                <summary>Laptop (You code)</summary>
+                                <div class="expand-content">
+                                    <p>Your laptop where you manually code and review changes.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>PC (AI codes)</summary>
+                                <div class="expand-content">
+                                    <p>Your PC running the AI agent that automatically writes code.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>git push (from Laptop)</summary>
+                                <div class="expand-content">
+                                    <p>Push your manual changes from laptop to GitHub.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>git push (from PC)</summary>
+                                <div class="expand-content">
+                                    <p>watcher.py auto-pushes AI changes every 60 seconds.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>GitHub (stuart-hollinger-landing)</summary>
+                                <div class="expand-content">
+                                    <p>Central repository that syncs changes between your machines.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>git pull (to Laptop)</summary>
+                                <div class="expand-content">
+                                    <p>Pull latest AI changes to your laptop via server.py.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>git pull (to PC)</summary>
+                                <div class="expand-content">
+                                    <p>watcher.py auto-pulls your manual changes to the PC.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>server.py - Manual pull / Auto-pull toggle</summary>
+                                <div class="expand-content">
+                                    <p>Control laptop sync via localhost:3000 UI with manual or auto-pull options.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>watcher.py - Auto push/pull every 60s</summary>
+                                <div class="expand-content">
+                                    <p>Background worker on PC that automatically syncs every 60 seconds.</p>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TREASURY & TOKENOMICS -->
+                <div class="system-card" id="treasury">
+                    <h2 class="system-title">💰 Treasury & Tokenomics</h2>
+                    <p class="system-desc">$SUITE token economy: floor price guarantee, yield distribution, and giving.
+                    </p>
+
+                    <div class="system-layout">
+                        <div class="system-diagram">
+                            <img src="diagrams/treasury.png" alt="Treasury System Diagram" class="diagram-img">
+                        </div>
+                        <div class="system-details">
+                            <details class="expand-section">
+                                <summary>SUITE TREASURY</summary>
+                                <div class="expand-content">
+                                    <p>The central smart contract holding all treasury funds backing $SUITE tokens.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>USER DEPOSITS</summary>
+                                <div class="expand-content">
+                                    <p>Users deposit ETH (or any ERC-20 via 0x swap) into the Treasury Contract.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>ETH → Treasury Contract (Any ERC-20 via 0x swap)</summary>
+                                <div class="expand-content">
+                                    <p>Deposits accepted in any token, automatically swapped to ETH via 0x aggregator.
+                                    </p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Mint $SUITE tokens (1:1 backed)</summary>
+                                <div class="expand-content">
+                                    <p>For each deposit, proportional $SUITE tokens are minted to the user, always
+                                        backed by ETH.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>TREASURY ALLOCATION</summary>
+                                <div class="expand-content">
+                                    <p>How the treasury funds are distributed and invested.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Under $100k → 100% reinvest</summary>
+                                <div class="expand-content">
+                                    <p>When treasury is under $100k, all yield is reinvested for growth.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Over $100k → 90% reinvest / 10% giving</summary>
+                                <div class="expand-content">
+                                    <p>When treasury exceeds $100k, 90% reinvested and 10% goes to Giving Fund for
+                                        charity votes.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>USER WITHDRAWALS</summary>
+                                <div class="expand-content">
+                                    <p>Users can withdraw their share at any time by burning $SUITE tokens.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>$SUITE → Burn tokens → Receive ETH</summary>
+                                <div class="expand-content">
+                                    <p>Burn your $SUITE to receive proportional ETH at the floor price guaranteed.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>FLOOR PRICE = Treasury ETH Balance / Total $SUITE Supply</summary>
+                                <div class="expand-content">
+                                    <p>The guaranteed minimum value of each $SUITE token. Users can ALWAYS withdraw at
+                                        floor price.</p>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- APP STORE -->
+                <div class="system-card" id="app-store">
+                    <h2 class="system-title">🏪 App Store</h2>
+                    <p class="system-desc">Discovery, deployment, and distribution of SUITE apps.</p>
+
+                    <div class="system-layout">
+                        <div class="system-diagram">
+                            <img src="diagrams/app-store.png" alt="App Store System Diagram" class="diagram-img">
+                        </div>
+                        <div class="system-details">
+                            <details class="expand-section">
+                                <summary>SUITE APP STORE</summary>
+                                <div class="expand-content">
+                                    <p>The central marketplace for all SUITE ecosystem apps.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Developer (You)</summary>
+                                <div class="expand-content">
+                                    <p>You build apps using Cadence AI or code manually.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Submit App via FORGE</summary>
+                                <div class="expand-content">
+                                    <p>Use /submit-app command in Discord to submit your app for review.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Review & Approval (Quality check)</summary>
+                                <div class="expand-content">
+                                    <p>Community reviewers check app quality, safety, and functionality.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>APP LISTING</summary>
+                                <div class="expand-content">
+                                    <p>Your approved app appears in the store listing.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>App Name / Description / Screenshots</summary>
+                                <div class="expand-content">
+                                    <p>Basic app info displayed on the store page.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Category / Rating / Developer</summary>
+                                <div class="expand-content">
+                                    <p>Discovery metadata to help users find your app.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Price (SUITE) / Downloads / Last Updated</summary>
+                                <div class="expand-content">
+                                    <p>Pricing and stats shown on the app listing.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>USER PURCHASES</summary>
+                                <div class="expand-content">
+                                    <p>Users pay in $SUITE to access premium features.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>User → Pay $SUITE → 70% to Developer</summary>
+                                <div class="expand-content">
+                                    <p>Developer receives 70% of each purchase.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>20% to Treasury</summary>
+                                <div class="expand-content">
+                                    <p>Platform sustainability fee to back the treasury.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>10% to Giving Fund</summary>
+                                <div class="expand-content">
+                                    <p>Charitable contribution to community-voted causes.</p>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONTENT MARKETPLACE -->
+                <div class="system-card" id="content-marketplace">
+                    <h2 class="system-title">📸 Content Marketplace</h2>
+                    <p class="system-desc">Community-driven content creation. Post bounties, submit work, earn SUITE.
+                    </p>
+
+                    <div class="system-layout">
+                        <div class="system-diagram">
+                            <img src="diagrams/content-marketplace.png" alt="Content Marketplace System Diagram"
+                                class="diagram-img">
+                        </div>
+                        <div class="system-details">
+                            <details class="expand-section">
+                                <summary>CONTENT MARKETPLACE</summary>
+                                <div class="expand-content">
+                                    <p>Buy and sell digital content with SUITE tokens.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>CREATORS</summary>
+                                <div class="expand-content">
+                                    <p>Content creators who build and sell digital assets.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Templates / Themes / Datasets</summary>
+                                <div class="expand-content">
+                                    <p>Reusable assets creators can sell: app templates, visual themes, training data.
+                                    </p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Guides / Audio / Graphics / Video / Tools</summary>
+                                <div class="expand-content">
+                                    <p>Educational content, sound packs, design assets, videos, and utilities.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Upload + Set Price</summary>
+                                <div class="expand-content">
+                                    <p>Creators upload their content and set a price in SUITE tokens.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>MARKETPLACE LISTING</summary>
+                                <div class="expand-content">
+                                    <p>Content appears in the marketplace with preview, reviews, and pricing.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Preview / Reviews (4 Stars) / License Terms</summary>
+                                <div class="expand-content">
+                                    <p>Buyers can preview, read reviews, and check licensing before purchase.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Buy Now - 5 SUITE</summary>
+                                <div class="expand-content">
+                                    <p>One-click purchase with SUITE tokens.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Purchase</summary>
+                                <div class="expand-content">
+                                    <p>User completes the transaction and receives the content.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>REVENUE SPLIT</summary>
+                                <div class="expand-content">
+                                    <p>Revenue automatically distributed after each sale.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Creator: 80%</summary>
+                                <div class="expand-content">
+                                    <p>Majority of the sale goes directly to the content creator.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Treasury: 15%</summary>
+                                <div class="expand-content">
+                                    <p>Platform fee to sustain the ecosystem.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Giving: 5%</summary>
+                                <div class="expand-content">
+                                    <p>Charitable contribution to community-voted causes.</p>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DISCORD INTEGRATION -->
+                <div class="system-card" id="discord-integration">
+                    <h2 class="system-title">💬 FORGE Discord Bot</h2>
+                    <p class="system-desc">Queue prompts, manage apps, and get notifications - all from Discord.</p>
+
+                    <div class="system-layout">
+                        <div class="system-diagram">
+                            <img src="diagrams/forge-discord-bot.png" alt="FORGE Discord Bot System Diagram"
+                                class="diagram-img">
+                        </div>
+                        <div class="system-details">
+                            <details class="expand-section">
+                                <summary>FORGE BOT (Discord)</summary>
+                                <div class="expand-content">
+                                    <p>The central Discord bot that bridges community commands to the SUITE AI pipeline.
+                                        Runs 24/7 listening for slash commands.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Discord Server (SUITE Community)</summary>
+                                <div class="expand-content">
+                                    <p>The main hub where users interact with FORGE. Includes channels for #prompts,
+                                        #new-apps, #support, and #announcements.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>/addition {prompt} → Queue for AI</summary>
+                                <div class="expand-content">
+                                    <p>Main command to submit work. User types their request and FORGE inserts it into
+                                        the Supabase prompts table with status='pending'.</p>
+                                    <pre>/addition Fix the login button on FoodVitals</pre>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>/create-app {name} → Start new project</summary>
+                                <div class="expand-content">
+                                    <p>Creates a new app scaffold in the ecosystem. Initializes repo, adds to suite_apps
+                                        table, and sets up basic structure.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>/status → Check watcher/server status</summary>
+                                <div class="expand-content">
+                                    <p>Returns live status of the PC watcher, available IDE slots, and pending prompt
+                                        count. Shows last sync time.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>/balance → Check SUITE balance</summary>
+                                <div class="expand-content">
+                                    <p>Queries the user's wallet balance and governance points directly from Discord.
+                                    </p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>prompts table (Supabase)</summary>
+                                <div class="expand-content">
+                                    <p>Central queue where all prompts are stored. Fields include: prompt, status,
+                                        discord_user_id, discord_channel_id, target (app slug), created_at.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>watcher.py polls for pending prompts</summary>
+                                <div class="expand-content">
+                                    <p>PC Watcher queries Supabase every 5 seconds for prompts with status='pending'.
+                                        Human requests (bugs, features) get priority over TELOS tasks.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Inject into Antigravity IDE</summary>
+                                <div class="expand-content">
+                                    <p>Watcher uses pyautogui to type the prompt into the chat input of an available IDE
+                                        window, then presses Enter to submit.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>Git push → Notify user via DM</summary>
+                                <div class="expand-content">
+                                    <p>After AI completes the task, changes are pushed to GitHub. FORGE sends a DM to
+                                        the original requester with commit link and summary.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>🔔 DM Notifications</summary>
+                                <div class="expand-content">
+                                    <p>FORGE sends DMs for:</p>
+                                    <ul>
+                                        <li>✅ Prompt completed (with git commit link)</li>
+                                        <li>❓ AI asked a question (with screenshot)</li>
+                                        <li>❌ Error occurred (with details)</li>
+                                        <li>📊 Daily summary stats</li>
+                                    </ul>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AUTHENTICATION -->
+                <div class="system-card" id="auth-system">
+                    <h2 class="system-title">🔐 SUITE Authentication</h2>
+                    <p class="system-desc">Multi-method login with unified user profiles and encrypted data.</p>
+
+                    <div class="system-layout">
+                        <div class="system-diagram">
+                            <img src="diagrams/suite-authentication.png" alt="SUITE Authentication System Diagram"
+                                class="diagram-img">
+                        </div>
+                        <div class="system-details">
+                            <details class="expand-section">
+                                <summary>SUITE AUTHENTICATION</summary>
+                                <div class="expand-content">
+                                    <p>Unified auth system that connects Discord, wallet, and email identities into a
+                                        single user profile.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>🎮 Discord OAuth</summary>
+                                <div class="expand-content">
+                                    <p>Primary login method for FORGE users. Uses Discord OAuth2 to authenticate,
+                                        fetching user ID, username, and avatar.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>💳 Wallet Connect</summary>
+                                <div class="expand-content">
+                                    <p>Connect MetaMask or WalletConnect for token holders. Links wallet address to
+                                        profile for on-chain SUITE balance tracking.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>📧 Email (Magic Link)</summary>
+                                <div class="expand-content">
+                                    <p>Supabase magic link for general users without Discord or crypto wallet. Sends
+                                        one-time login link to email.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>→ Unified User Profile (suite_users)</summary>
+                                <div class="expand-content">
+                                    <p>All auth methods merge into one profile. Links discord_id, wallet_address, and
+                                        email to a single user record.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>👤 User Profile Data</summary>
+                                <div class="expand-content">
+                                    <pre>{
+  "discord_id": "123456789",
+  "wallet_address": "0x...",
+  "email": "user@example.com",
+  "suite_balance": 1500,
+  "gov_points": 25,
+  "owned_apps": ["FoodVitals", "LifeHub"],
+  "role": "contributor"
+}</pre>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>💰 SUITE Balance</summary>
+                                <div class="expand-content">
+                                    <p>User's current $SUITE token balance. Synced from on-chain wallet or earned
+                                        through platform activities (watching ads, referrals).</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>🗳️ Governance Points</summary>
+                                <div class="expand-content">
+                                    <p>Non-transferable points earned by contributing to the ecosystem. Used for voting
+                                        on Giving Fund allocations and platform decisions.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>🔒 Session Management</summary>
+                                <div class="expand-content">
+                                    <p>JWT tokens stored in localStorage. Sessions auto-refresh and persist across page
+                                        loads. Logout clears all stored credentials.</p>
+                                </div>
+                            </details>
+
+                            <details class="expand-section">
+                                <summary>👑 Role-Based Access</summary>
+                                <div class="expand-content">
+                                    <p>Roles: user, contributor, developer, admin, owner. Higher roles unlock features
+                                        like Treasury dashboard and AI Fleet config.</p>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+                </div>

@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ecosystem Overview | SUITE Docs</title>
+    <meta name="description" content="Visual overview of the SUITE ecosystem - entities, flows, and user journeys.">
+    <link rel="icon" type="image/png" href="../assets/suite-token.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../suite-styles.css">
+    <link rel="stylesheet" href="../nav.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        html {
+            overflow-y: scroll;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fff5eb 0%, #ffe4d4 20%, #ffd4e3 50%, #e8d5f9 80%, #d4e5ff 100%);
+            min-height: 100vh;
+            color: #2d1b4e;
+        }
+
+        .nav-links a:hover {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            color: white !important;
+        }
+
+        .nav-links a.active {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            color: white !important;
+        }
+
+        .canvas-container {
+            width: 100%;
+            min-height: 100vh;
+            padding: 90px 24px 40px 24px;
+            padding-right: calc(24px + (100vw - 100%));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .docs-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 32px;
+            box-shadow: 0 16px 80px rgba(0, 0, 0, 0.08);
+            padding: 30px;
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            gap: 30px;
+        }
+
+        .docs-sidebar {
+            width: 220px;
+            flex-shrink: 0;
+            border-right: 1px solid rgba(0, 0, 0, 0.06);
+            padding-right: 24px;
+        }
+
+        .docs-content {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .docs-content h1 {
+            font-size: 2rem;
+            font-weight: 900;
+            display: inline-block;
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .docs-content h2 {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin: 24px 0 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid rgba(255, 149, 0, 0.2);
+        }
+
+        .docs-content p {
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: #5a4a6f;
+            margin-bottom: 12px;
+        }
+
+        /* Interactive banner */
+        .interactive-banner {
+            background: linear-gradient(135deg, rgba(255, 149, 0, 0.1), rgba(168, 85, 247, 0.1));
+            border: 2px solid rgba(255, 149, 0, 0.2);
+            border-radius: 16px;
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .interactive-banner-text {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .interactive-banner-title {
+            font-weight: 800;
+            font-size: 1.1rem;
+            color: #2d1b4e;
+        }
+
+        .interactive-banner-desc {
+            font-size: 0.9rem;
+            color: #5a4a6f;
+        }
+
+        .interactive-banner-btn {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-decoration: none;
+            white-space: nowrap;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 16px rgba(255, 149, 0, 0.3);
+        }
+
+        .interactive-banner-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 149, 0, 0.4);
+        }
+
+        /* Main content area with journey sidebar */
+        .ecosystem-layout {
+            display: flex;
+            gap: 24px;
+        }
+
+        .ecosystem-main {
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* Entity Grid */
+        .entity-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .entity-card {
+            padding: 20px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            cursor: default;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 2px solid transparent;
+        }
+
+        .entity-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .entity-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .entity-title {
+            font-weight: 800;
+            font-size: 1rem;
+            margin-bottom: 4px;
+        }
+
+        .entity-subtitle {
+            font-size: 0.75rem;
+            opacity: 0.85;
+        }
+
+        .entity-desc {
+            font-size: 0.8rem;
+            margin-top: 10px;
+            opacity: 0.9;
+            line-height: 1.4;
+        }
+
+        /* Entity Colors */
+        .entity-card.user {
+            background: linear-gradient(135deg, #a855f7, #8b5cf6);
+            color: white;
+        }
+
+        .entity-card.treasury {
+            background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+            color: white;
+        }
+
+        .entity-card.token {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+        }
+
+        .entity-card.appstore {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            color: white;
+        }
+
+        .entity-card.discord {
+            background: linear-gradient(135deg, #5865F2, #7289DA);
+            color: white;
+        }
+
+        .entity-card.charity {
+            background: linear-gradient(135deg, #ec4899, #f472b6);
+            color: white;
+        }
+
+        .entity-card.wallet {
+            background: linear-gradient(135deg, #43e97b, #38f9d7);
+            color: white;
+        }
+
+        .entity-card.developer {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+        }
+
+        .entity-card.governance {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: white;
+        }
+
+        /* Journey Sidebar */
+        .journey-sidebar {
+            width: 180px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-left: 24px;
+            border-left: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .journey-sidebar-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #9ca3af;
+            margin-bottom: 8px;
+        }
+
+        .journey-tab {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 14px;
+            border: 2px solid transparent;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #5a4a6f;
+            text-decoration: none;
+        }
+
+        .journey-tab:hover {
+            transform: translateX(-4px);
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
+            border-color: rgba(255, 149, 0, 0.3);
+            color: #ff9500;
+        }
+
+        .journey-tab.active,
+        .journey-tab:focus {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+            border-color: transparent;
+        }
+
+        .tab-icon {
+            font-size: 1.2rem;
+        }
+
+        /* Journey Flow */
+        .journey-flow {
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 16px;
+            display: none;
+        }
+
+        .journey-flow.active {
+            display: block;
+        }
+
+        .journey-flow-title {
+            font-weight: 800;
+            font-size: 1rem;
+            color: #2d1b4e;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .journey-steps {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .journey-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            min-width: 80px;
+        }
+
+        .step-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-bottom: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .step-icon.user {
+            background: linear-gradient(135deg, #a855f7, #8b5cf6);
+        }
+
+        .step-icon.treasury {
+            background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+        }
+
+        .step-icon.token {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+        }
+
+        .step-icon.appstore {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+        }
+
+        .step-icon.discord {
+            background: linear-gradient(135deg, #5865F2, #7289DA);
+        }
+
+        .step-icon.charity {
+            background: linear-gradient(135deg, #ec4899, #f472b6);
+        }
+
+        .step-icon.developer {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+        }
+
+        .step-icon.deposit {
+            background: linear-gradient(135deg, #10b981, #34d399);
+        }
+
+        .step-title {
+            font-weight: 700;
+            font-size: 0.75rem;
+            color: #2d1b4e;
+        }
+
+        .journey-arrow {
+            color: #ff9500;
+            font-size: 1.2rem;
+        }
+
+        /* Connections info */
+        .connections-section {
+            margin-top: 24px;
+        }
+
+        .connection-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .connection-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            color: #5a4a6f;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .connection-arrow {
+            color: #ff9500;
+            font-weight: 800;
+        }
+
+        @media (max-width: 900px) {
+            .ecosystem-layout {
+                flex-direction: column;
+            }
+
+            .journey-sidebar {
+                width: 100%;
+                flex-direction: row;
+                flex-wrap: wrap;
+                padding-left: 0;
+                border-left: none;
+                border-top: 1px solid rgba(0, 0, 0, 0.06);
+                padding-top: 16px;
+            }
+
+            .entity-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .docs-container {
+                flex-direction: column;
+            }
+
+            .docs-sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+                padding-right: 0;
+                padding-bottom: 20px;
+            }
+
+            .interactive-banner {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="../index.html" class="nav-logo">
+                <img src="../assets/suite-token.png" alt="SUITE" class="nav-logo-img">
+                SUITE
+            </a>
+            <div class="nav-links">
+                <a href="../apps.html">Apps</a>
+                <a href="../developer-portal.html">Build</a>
+                <a href="../discuss.html">Discuss</a>
+                <a href="../incubate.html">Incubate</a>
+                <a href="index.html">Docs</a>
+                <div class="nav-dropdown">
+                    <span class="nav-dropdown-trigger">SUITE</span>
+                    <div class="nav-dropdown-menu">
+                        <a href="../wallet.html">🏦 Vault</a>
+                        <a href="../boost.html">🛒 Store</a>
+                        <a href="../dashboard.html">⚙️ Dashboard</a>
+                    </div>
+                </div>
+                <a href="../start-building.html" class="nav-cta">🚀 Start Building</a>
+            </div>
+            <button class="mobile-menu-btn">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="canvas-container">
+        <div class="docs-container">
+            <!-- Sidebar -->
+            <aside class="docs-sidebar"></aside>
+
+            <!-- Main Content -->
+            <main class="docs-content">
+                <h1>🌐 Ecosystem Overview</h1>
+                <p style="color: #6b7280; margin-bottom: 16px;">Visual map of the SUITE ecosystem - all the entities and
+                    how they connect.</p>
+
+                <!-- Interactive Banner -->
+                <div class="interactive-banner">
+                    <div class="interactive-banner-text">
+                        <div class="interactive-banner-title">🎮 Try the Interactive Version</div>
+                        <div class="interactive-banner-desc">Click entities to expand, watch flows animate, and explore
+                            connections!</div>
+                    </div>
+                    <a href="../ecosystem.html" class="interactive-banner-btn">Open Interactive Map →</a>
+                </div>
+
+                <div class="ecosystem-layout">
+                    <div class="ecosystem-main">
+                        <h2>🏛️ Core Entities</h2>
+                        <p>These are the building blocks of the SUITE ecosystem. Each plays a vital role in the value
+                            flow.</p>
+
+                        <!-- Entity Grid -->
+                        <div class="entity-grid">
+                            <div class="entity-card user">
+                                <div class="entity-icon">👤</div>
+                                <div class="entity-title">You</div>
+                                <div class="entity-subtitle">Build • Use • Earn</div>
+                                <div class="entity-desc">You're at the center. Buy tokens, use apps, or build your own!
+                                </div>
+                            </div>
+                            <div class="entity-card treasury">
+                                <div class="entity-icon">🏦</div>
+                                <div class="entity-title">Vault</div>
+                                <div class="entity-subtitle">Treasury</div>
+                                <div class="entity-desc">Holds ETH backing all SUITE tokens. Your value is protected.
+                                </div>
+                            </div>
+                            <div class="entity-card token">
+                                <div class="entity-icon">🪙</div>
+                                <div class="entity-title">$SUITE</div>
+                                <div class="entity-subtitle">Token</div>
+                                <div class="entity-desc">Your currency for the ecosystem. Always backed by ETH.</div>
+                            </div>
+                            <div class="entity-card appstore">
+                                <div class="entity-icon">📱</div>
+                                <div class="entity-title">Apps</div>
+                                <div class="entity-subtitle">Marketplace</div>
+                                <div class="entity-desc">50+ AI-powered apps built by the community.</div>
+                            </div>
+                            <div class="entity-card discord">
+                                <div class="entity-icon">🔨</div>
+                                <div class="entity-title">Forge</div>
+                                <div class="entity-subtitle">Build Hub</div>
+                                <div class="entity-desc">Describe your app, AI builds it. No coding required!</div>
+                            </div>
+                            <div class="entity-card charity">
+                                <div class="entity-icon">💝</div>
+                                <div class="entity-title">Charity</div>
+                                <div class="entity-subtitle">10% Giving</div>
+                                <div class="entity-desc">10% of yield goes to charity. Community votes on recipients.
+                                </div>
+                            </div>
+                            <div class="entity-card wallet">
+                                <div class="entity-icon">📺</div>
+                                <div class="entity-title">Earn</div>
+                                <div class="entity-subtitle">Watch Ads</div>
+                                <div class="entity-desc">Watch 30-sec ads to earn FREE $SUITE tokens.</div>
+                            </div>
+                            <div class="entity-card developer">
+                                <div class="entity-icon">🚀</div>
+                                <div class="entity-title">Incubate</div>
+                                <div class="entity-subtitle">Launch Pad</div>
+                                <div class="entity-desc">Apply for funding and mentorship for bigger projects.</div>
+                            </div>
+                            <div class="entity-card governance">
+                                <div class="entity-icon">🗳️</div>
+                                <div class="entity-title">Governance</div>
+                                <div class="entity-subtitle">Vote & Decide</div>
+                                <div class="entity-desc">Shape SUITE's future. Vote on proposals, join the Council.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Journey Flows -->
+                        <div class="journey-flow active" id="journey-build">
+                            <div class="journey-flow-title">🔨 Build an App Journey</div>
+                            <div class="journey-steps">
+                                <div class="journey-step">
+                                    <div class="step-icon user">👤</div>
+                                    <div class="step-title">You</div>
+                                </div>
+                                <div class="journey-arrow">→</div>
+                                <div class="journey-step">
+                                    <div class="step-icon discord">💬</div>
+                                    <div class="step-title">Describe</div>
+                                </div>
+                                <div class="journey-arrow">→</div>
+                                <div class="journey-step">
+                                    <div class="step-icon discord">🤖</div>
+                                    <div class="step-title">AI Builds</div>
+                                </div>
+                                <div class="journey-arrow">→</div>
+                                <div class="journey-step">
+                                    <div class="step-icon appstore">📱</div>
+                                    <div class="step-title">Publish</div>
+                                </div>
+                                <div class="journey-arrow">→</div>
+                                <div class="journey-step">
+                                    <div class="step-icon token">💰</div>
+                                    <div class="step-title">Earn</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="journey-flow" id="journey-use">
+                            <div class="journey-flow-title">📱 Use an App Journey</div>
+                            <div class="journey-steps">
+                                <div class="journey-step">
+                                    <div class="step-icon token">🪙</div>
+                                    <div class="step-title">SUITE</div>
+                                </div>
+                                <div class="journey-arrow">→</div>
+                                <div class="journey-step">
+                                    <div class="step-icon appstore">📱</div>
+                                    <div class="step-title">Browse</div>
+                                </div>
+                                <div class="journey-arrow">→</div>
+                                <div class="journey-step">
+                                    <div class="step-icon appstore">⚡</div>
+                                    <div class="step-title">Use App</div>
+                                </div>
+                                <div class="journey-arrow">→</div>
+                                <div class="journey-step">
+                                    <div class="step-icon developer">👨‍💻</div>
+                                    <div class="step-title">Dev Earns</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="journey-flow" id="journey-buy">
+                            <div class="journey-flow-title">💎 Buy SUITE Journey</div>
+                            <div class="journey-steps">
+                                <div class="journey-step">
+                                    <div class="step-icon user">👤</div>
+                                    <div class="step-title">You</div>
+                                </div>
+                                <div class="journey-arrow">→</div>
+                                <div class="journey-step">
+                                    <div class="step-icon deposit">💵</div>
+                                    <div class="step-title">Deposit ETH</div>
+                                </div>
+                                <div class="journey-arrow">→</div>
+                                <div class="journey-step">
+                                    <div class="step-icon treasury">🏦</div>
+                                    <div class="step-title">Vault Holds</div>
+                                </div>
+                                <div class="journey-arrow">→</div>
+                                <div class="journey-step">
+                                    <div class="step-icon token">🪙</div>
+                                    <div class="step-title">Get SUITE</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="journey-flow" id="journey-giving">
+                            <div class="journey-flow-title">💝 Give Back Journey</div>
+                            <div class="journey-steps">
+                                <div class="journey-step">
+                                    <div class="step-icon treasury">🏦</div>
+                                    <div class="step-title">Vault</div>
+                                </div>
+                                <div class="journey-arrow">→</div>
+                                <div class="journey-step">
+                                    <div class="step-icon deposit">📈</div>
+                                    <div class="step-title">Yield</div>
+                                </div>
+                                <div class="journey-arrow">→</div>
+                                <div class="journey-step">
+                                    <div class="step-icon charity">💝</div>
+                                    <div class="step-title">10% Split</div>
+                                </div>
+                                <div class="journey-arrow">→</div>
+                                <div class="journey-step">
+                                    <div class="step-icon user">🗳️</div>
+                                    <div class="step-title">Vote</div>
+                                </div>
+                                <div class="journey-arrow">→</div>
+                                <div class="journey-step">
+                                    <div class="step-icon charity">🌍</div>
+                                    <div class="step-title">Impact</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="journey-flow" id="journey-ads">
+                            <div class="journey-flow-title">📺 Watch Ads Journey</div>
+                            <div class="journey-steps">
+                                <div class="journey-step">
+                                    <div class="step-icon user">👤</div>
+                                    <div class="step-title">Free Tier</div>
+                                </div>
+                                <div class="journey-arrow">→</div>
+                                <div class="journey-step">
+                                    <div class="step-icon appstore">⚡</div>
+                                    <div class="step-title">Use Actions</div>
+                                </div>
+                                <div class="journey-arrow">→</div>
+                                <div class="journey-step">
+                                    <div class="step-icon discord">📺</div>
+                                    <div class="step-title">Watch Ad</div>
+                                </div>
+                                <div class="journey-arrow">→</div>
+                                <div class="journey-step">
+                                    <div class="step-icon token">🪙</div>
+                                    <div class="step-title">Get SUITE</div>
+                                </div>
+                                <div class="journey-arrow">→</div>
+                                <div class="journey-step">
+                                    <div class="step-icon user">🔄</div>
+                                    <div class="step-title">Repeat!</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Connections -->
+                        <h2>🔗 Key Connections</h2>
+                        <div class="connection-list">
+                            <div class="connection-item">
+                                <span>👤 You</span>
+                                <span class="connection-arrow">→</span>
+                                <span>🏦 Vault</span>
+                                <span style="color: #9ca3af; margin-left: auto;">deposits</span>
+                            </div>
+                            <div class="connection-item">
+                                <span>🏦 Vault</span>
+                                <span class="connection-arrow">→</span>
+                                <span>🪙 SUITE</span>
+                                <span style="color: #9ca3af; margin-left: auto;">mints</span>
+                            </div>
+                            <div class="connection-item">
+                                <span>🪙 SUITE</span>
+                                <span class="connection-arrow">→</span>
+                                <span>📱 Apps</span>
+                                <span style="color: #9ca3af; margin-left: auto;">payments</span>
+                            </div>
+                            <div class="connection-item">
+                                <span>🔨 Forge</span>
+                                <span class="connection-arrow">→</span>
+                                <span>📱 Apps</span>
+                                <span style="color: #9ca3af; margin-left: auto;">publishes</span>
+                            </div>
+                            <div class="connection-item">
+                                <span>📱 Apps</span>
+                                <span class="connection-arrow">→</span>
+                                <span>👨‍💻 Devs</span>
+                                <span style="color: #9ca3af; margin-left: auto;">revenue</span>
+                            </div>
+                            <div class="connection-item">
+                                <span>🏦 Vault</span>
+                                <span class="connection-arrow">→</span>
+                                <span>💝 Charity</span>
+                                <span style="color: #9ca3af; margin-left: auto;">10% yield</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Journey Sidebar -->
+                    <div class="journey-sidebar">
+                        <div class="journey-sidebar-title">User Journeys</div>
+                        <div class="journey-tab active" onclick="showJourney('build')">
+                            <span class="tab-icon">🔨</span>
+                            <span>Build</span>
+                        </div>
+                        <div class="journey-tab" onclick="showJourney('use')">
+                            <span class="tab-icon">📱</span>
+                            <span>Use App</span>
+                        </div>
+                        <div class="journey-tab" onclick="showJourney('buy')">
+                            <span class="tab-icon">💎</span>
+                            <span>Buy SUITE</span>
+                        </div>
+                        <div class="journey-tab" onclick="showJourney('giving')">
+                            <span class="tab-icon">💝</span>
+                            <span>Give Back</span>
+                        </div>
+                        <div class="journey-tab" onclick="showJourney('ads')">
+                            <span class="tab-icon">📺</span>
+                            <span>Watch Ads</span>
+                        </div>
+                        <a href="user-flows.html" class="journey-tab" style="margin-top: auto;">
+                            <span class="tab-icon">📖</span>
+                            <span>All Flows →</span>
+                        </a>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="sidebar.js"></script>
+    <script>
+        function showJourney(key) {
+            // Update active tab
+            document.querySelectorAll('.journey-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+
+            // Show corresponding flow
+            document.querySelectorAll('.journey-flow').forEach(flow => {
+                flow.classList.remove('active');
+            });
+            document.getElementById('journey-' + key).classList.add('active');
+        }
+    </script>
+</body>
+
+</html>

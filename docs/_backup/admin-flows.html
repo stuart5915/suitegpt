@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Admin Flows | SUITE Docs</title>
+    <link rel="icon" type="image/png" href="../assets/suite-token.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../suite-styles.css">
+    <link rel="stylesheet" href="../nav.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        html {
+            overflow-y: scroll;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fff5eb 0%, #ffe4d4 20%, #ffd4e3 50%, #e8d5f9 80%, #d4e5ff 100%);
+            min-height: 100vh;
+            color: #2d1b4e;
+            overflow-x: hidden;
+        }
+
+        /* Inverse nav hover - orange bg, white text */
+        .nav-links a:hover {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            color: white !important;
+        }
+
+        .nav-links a.active {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(255, 149, 0, 0.3);
+        }
+
+        .canvas-container {
+            width: 100%;
+            min-height: 100vh;
+            padding: 90px 24px 40px 24px;
+            padding-right: calc(24px + (100vw - 100%));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+            box-sizing: border-box;
+        }
+
+        .docs-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 32px;
+            box-shadow: 0 16px 80px rgba(0, 0, 0, 0.08);
+            padding: 30px;
+            width: 100%;
+            max-width: 1200px;
+            min-height: 500px;
+            margin: 0 auto;
+            display: flex;
+            gap: 30px;
+        }
+
+        .docs-sidebar {
+            width: 220px;
+            flex-shrink: 0;
+            border-right: 1px solid rgba(0, 0, 0, 0.06);
+            padding-right: 24px;
+        }
+
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+
+        .sidebar-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #9ca3af;
+            margin-bottom: 12px;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            color: #2d1b4e;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            margin-bottom: 4px;
+        }
+
+        .sidebar-link:hover {
+            background: rgba(255, 149, 0, 0.1);
+            color: #ff9500;
+        }
+
+        .sidebar-link.active {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+        }
+
+        .docs-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .docs-content h1 {
+            font-size: 2.2rem;
+            font-weight: 900;
+            display: inline-block;
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 12px;
+        }
+
+        .docs-content .subtitle {
+            font-size: 1rem;
+            color: #6b7280;
+            margin-bottom: 24px;
+        }
+
+        .docs-content h2 {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin: 28px 0 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid rgba(255, 149, 0, 0.2);
+        }
+
+        .docs-content h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #5a4a6f;
+            margin: 20px 0 10px;
+        }
+
+        .docs-content p {
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: #5a4a6f;
+            margin-bottom: 12px;
+        }
+
+        .docs-content ul,
+        .docs-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+        }
+
+        .docs-content li {
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: #5a4a6f;
+            margin-bottom: 8px;
+        }
+
+        /* Accordion/Toggle Styles */
+        .command-toggle {
+            margin: 8px 0;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            border-radius: 12px;
+            overflow: hidden;
+            background: white;
+        }
+
+        .command-toggle summary {
+            padding: 14px 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            color: #2d1b4e;
+            list-style: none;
+            transition: all 0.2s;
+        }
+
+        .command-toggle summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .command-toggle summary::after {
+            content: '+';
+            margin-left: auto;
+            font-size: 1.2rem;
+            color: #9ca3af;
+            transition: transform 0.2s;
+        }
+
+        .command-toggle[open] summary::after {
+            content: '−';
+            color: #ff9500;
+        }
+
+        .command-toggle summary:hover {
+            background: rgba(255, 149, 0, 0.05);
+        }
+
+        .command-toggle[open] summary {
+            background: rgba(255, 149, 0, 0.1);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .toggle-content {
+            padding: 16px 18px;
+            font-size: 0.9rem;
+            color: #5a4a6f;
+        }
+
+        .toggle-content .code-block {
+            margin: 10px 0;
+        }
+
+        .section-group {
+            margin: 24px 0;
+        }
+
+        .section-group-title {
+            font-size: 1rem;
+            font-weight: 800;
+            color: #ff9500;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Flow Diagram */
+        .flow-diagram {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border-radius: 16px;
+            padding: 24px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            color: #e0e0e0;
+            overflow-x: auto;
+        }
+
+        .flow-diagram pre {
+            margin: 0;
+            white-space: pre;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        .flow-step {
+            background: rgba(255, 149, 0, 0.1);
+            border-left: 3px solid #ff9500;
+            padding: 16px;
+            margin: 12px 0;
+            border-radius: 0 12px 12px 0;
+        }
+
+        .flow-step strong {
+            color: #ff9500;
+        }
+
+        /* Code blocks */
+        code {
+            background: rgba(255, 149, 0, 0.1);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            color: #7c3aed;
+        }
+
+        .code-block {
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 16px;
+            margin: 12px 0;
+            overflow-x: auto;
+        }
+
+        .code-block code {
+            background: none;
+            color: #4ade80;
+            display: block;
+            white-space: pre;
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .badge-automated {
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            color: white;
+        }
+
+        .badge-manual {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .docs-container {
+                flex-direction: column;
+                padding: 20px;
+            }
+
+            .docs-sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+                padding-right: 0;
+                padding-bottom: 20px;
+                margin-bottom: 20px;
+            }
+
+            .flow-diagram {
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Standard Navigation -->
+    <!-- Navigation -->
+<nav class="nav">
+    <div class="nav-inner">
+        <a href="../index.html" class="nav-logo">
+            <img src="assets/suite-token.png" alt="SUITE" class="nav-logo-img">
+            SUITE
+        </a>
+        <div class="nav-links">
+            <a href="../apps.html">Apps</a>
+            <a href="../developer-portal.html">Build</a>
+            <a href="../discuss.html">Discuss</a>
+            <a href="../incubate.html">Incubate</a>
+            <a href="index.html">Docs</a>
+            <a href="../wallet.html">Vault</a><a href="../dashboard.html">Dashboard</a>
+            <a href="../start-building.html" class="nav-cta">🚀 Start Building</a>
+        </div>
+        <button class="mobile-menu-btn">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </div>
+</nav>
+
+    <div class="canvas-container">
+        <div class="docs-container">
+            <!-- Sidebar -->
+            <aside class="docs-sidebar"></aside>
+
+            <!-- Main Content -->
+            <main class="docs-content">
+                <h1>⚙️ Admin Commands</h1>
+                <p class="subtitle">All admin workflows and AI prompts. Click to expand.</p>
+
+                <!-- APP MANAGEMENT -->
+                <div class="section-group">
+                    <div class="section-group-title">📱 App Management</div>
+
+                    <details class="command-toggle">
+                        <summary>Publish App</summary>
+                        <div class="toggle-content">
+                            <code>/publish-app [app-name]</code>
+                            <p>Builds PWA, deploys to Vercel, sends approval request.</p>
+                        </div>
+                    </details>
+
+                    <details class="command-toggle">
+                        <summary>Preflight Check</summary>
+                        <div class="toggle-content">
+                            <code>/preflight-check [app-name]</code>
+                            <p>Verify app is ready for publishing.</p>
+                        </div>
+                    </details>
+
+                    <details class="command-toggle">
+                        <summary>Create New App</summary>
+                        <div class="toggle-content">
+                            <code>/create-app [name] [description]</code>
+                            <p>Creates prompt → AI generates code → Appears in #pending.</p>
+                        </div>
+                    </details>
+
+                    <details class="command-toggle">
+                        <summary>Archive App</summary>
+                        <div class="toggle-content">
+                            <code>/archive-app [name] [reason]</code>
+                            <p>Removes from active apps but keeps data.</p>
+                        </div>
+                    </details>
+                </div>
+
+                <!-- DATABASE COMMANDS -->
+                <div class="section-group">
+                    <div class="section-group-title">🗄️ Database Commands</div>
+
+                    <details class="command-toggle">
+                        <summary>Publish Manually (SQL)</summary>
+                        <div class="toggle-content">
+                            <div class="code-block">
+                                <code>UPDATE suite_apps SET status = 'published', published_at = NOW() WHERE slug = '[app-slug]';</code>
+                            </div>
+                        </div>
+                    </details>
+
+                    <details class="command-toggle">
+                        <summary>Unpublish App (SQL)</summary>
+                        <div class="toggle-content">
+                            <div class="code-block">
+                                <code>UPDATE suite_apps SET status = 'development', published_at = NULL WHERE slug = '[app-slug]';</code>
+                            </div>
+                        </div>
+                    </details>
+
+                    <details class="command-toggle">
+                        <summary>Feature in Hero Banner (SQL)</summary>
+                        <div class="toggle-content">
+                            <div class="code-block">
+                                <code>UPDATE suite_apps SET is_featured = true, featured_order = 1 WHERE slug = '[app-slug]';</code>
+                            </div>
+                        </div>
+                    </details>
+
+                    <details class="command-toggle">
+                        <summary>Register Earn Flow App (SQL)</summary>
+                        <div class="toggle-content">
+                            <div class="code-block">
+                                <code>INSERT INTO earn_apps (app_id, action_name, reward_amount, is_active) VALUES ('[app]', '[action]', [amount], true);</code>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+
+                <!-- AI PROMPTS -->
+                <div class="section-group">
+                    <div class="section-group-title">🤖 AI Prompts (Copy-Paste)</div>
+
+                    <details class="command-toggle">
+                        <summary>Enable Earn Flow</summary>
+                        <div class="toggle-content">
+                            <div class="code-block"><code>Enable earn flow for [APP_NAME]:
+- Action trigger: "[ACTION]"
+- $SUITE reward: [AMOUNT]
+- App location: [PATH]
+
+Add SUITE earn SDK: track action, call SuiteEarn.reward(), show success toast.</code></div>
+                        </div>
+                    </details>
+
+                    <details class="command-toggle">
+                        <summary>Fix Bug</summary>
+                        <div class="toggle-content">
+                            <div class="code-block"><code>Fix [ISSUE] in [APP_NAME]. The bug is: [DESCRIPTION]</code>
+                            </div>
+                        </div>
+                    </details>
+
+                    <details class="command-toggle">
+                        <summary>Add Feature</summary>
+                        <div class="toggle-content">
+                            <div class="code-block"><code>Add [FEATURE] to [APP_NAME]. It should: [REQUIREMENTS]</code>
+                            </div>
+                        </div>
+                    </details>
+
+                    <details class="command-toggle">
+                        <summary>Update UI</summary>
+                        <div class="toggle-content">
+                            <div class="code-block">
+                                <code>Update the [SCREEN/COMPONENT] in [APP_NAME] to: [CHANGES]</code>
+                            </div>
+                        </div>
+                    </details>
+
+                    <details class="command-toggle">
+                        <summary>Twitter Spotlight</summary>
+                        <div class="toggle-content">
+                            <div class="code-block"><code>Write Twitter spotlight for [APP_NAME]:
+- Features: [LIST]
+- Creator: @[USERNAME]
+Write 3 tweets: hook, features, CTA.</code></div>
+                        </div>
+                    </details>
+
+                    <details class="command-toggle">
+                        <summary>Generate Promo Image</summary>
+                        <div class="toggle-content">
+                            <div class="code-block">
+                                <code>Create promotional image for [APP_NAME] showing: [DESCRIPTION]</code>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+
+                <!-- PROMOTION FORUM -->
+                <div class="section-group">
+                    <div class="section-group-title">🌟 Promotion Forum (Discord)</div>
+
+                    <details class="command-toggle">
+                        <summary>Forum Tags</summary>
+                        <div class="toggle-content">
+                            <p>🟡 <strong>Pending</strong> • 🟢 <strong>Approved</strong> • 🔵 <strong>Featured</strong>
+                                • 🔴 <strong>Declined</strong></p>
+                        </div>
+                    </details>
+
+                    <details class="command-toggle">
+                        <summary>Earn Flow Application Process</summary>
+                        <div class="toggle-content">
+                            <p><strong>1.</strong> Dev applies in #promotions: app name, reward action, $SUITE amount
+                            </p>
+                            <p><strong>2.</strong> Add "Approved" tag → <strong>3.</strong> Use AI prompt to integrate
+                                SDK</p>
+                        </div>
+                    </details>
+                </div>
+
+                <!-- APPROVAL CHECKLISTS -->
+                <div class="section-group">
+                    <div class="section-group-title">✅ Approval Checklists</div>
+
+                    <details class="command-toggle">
+                        <summary>App Approval</summary>
+                        <div class="toggle-content">
+                            <p>✓ Works without crashes? ✓ UI usable? ✓ Provides value? ✓ No inappropriate content?</p>
+                        </div>
+                    </details>
+
+                    <details class="command-toggle">
+                        <summary>Earn Flow Approval</summary>
+                        <div class="toggle-content">
+                            <p>✓ Action meaningful? ✓ $SUITE reasonable (1-10)? ✓ Verifiable programmatically?</p>
+                        </div>
+                    </details>
+
+                    <details class="command-toggle">
+                        <summary>Featured App Approval</summary>
+                        <div class="toggle-content">
+                            <p>✓ High quality? ✓ Good brand fit? ✓ Variety in features? ✓ Active creator?</p>
+                        </div>
+                    </details>
+                </div>
+
+                <!-- ENV -->
+                <div class="section-group">
+                    <div class="section-group-title">🔑 Environment Variables</div>
+
+                    <details class="command-toggle">
+                        <summary>Discord Bot .env</summary>
+                        <div class="toggle-content">
+                            <div class="code-block"><code>SUPABASE_URL=https://rdsmdywbdiskxknluiym.supabase.co
+SUPABASE_SERVICE_KEY=your_key
+CADENCE_SUPABASE_URL=https://tbfpopablanksrzyxaxj.supabase.co</code></div>
+                        </div>
+                    </details>
+
+                    <details class="command-toggle">
+                        <summary>Cadence .env.local</summary>
+                        <div class="toggle-content">
+                            <div class="code-block"><code>NEXT_PUBLIC_SUPABASE_URL=https://tbfpopablanksrzyxaxj.supabase.co
+GEMINI_API_KEY=your_key</code></div>
+                        </div>
+                    </details>
+                </div>
+
+            </main>
+        </div>
+    </div>
+    <script src="sidebar.js"></script>
+</body>
+
+</html>

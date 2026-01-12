@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The SUITE Bible | Philosophy & First Principles</title>
+    <link rel="icon" type="image/png" href="../assets/suite-token.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../suite-styles.css">
+    <link rel="stylesheet" href="../nav.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        html {
+            overflow-y: scroll;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fff5eb 0%, #ffe4d4 20%, #ffd4e3 50%, #e8d5f9 80%, #d4e5ff 100%);
+            min-height: 100vh;
+            color: #2d1b4e;
+        }
+
+        .canvas-container {
+            width: 100%;
+            min-height: 100vh;
+            padding: 90px 24px 40px 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Telos Banner */
+        .telos-banner {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            margin-bottom: 32px;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .telos-banner img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .telos-banner-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(to bottom, rgba(26, 10, 46, 0.3), rgba(26, 10, 46, 0.6));
+            text-align: center;
+            padding: 24px;
+        }
+
+        .telos-banner-overlay h2 {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: white;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            margin-bottom: 8px;
+        }
+
+        .telos-banner-overlay p {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.5;
+        }
+
+        /* Philosophy Sections */
+        .philosophy-section {
+            margin-bottom: 40px;
+        }
+
+        .philosophy-section h2 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid rgba(255, 149, 0, 0.2);
+        }
+
+        .philosophy-content {
+            background: white;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            border-radius: 16px;
+            padding: 24px;
+            line-height: 1.8;
+            font-size: 0.95rem;
+            color: #5a4a6f;
+        }
+
+        .philosophy-content p {
+            margin-bottom: 16px;
+        }
+
+        .philosophy-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .highlight {
+            color: #ff9500;
+            font-weight: 700;
+        }
+
+        .quote-block {
+            background: linear-gradient(135deg, rgba(255, 149, 0, 0.1), rgba(168, 85, 247, 0.1));
+            border-left: 4px solid #ff9500;
+            padding: 20px 24px;
+            border-radius: 0 12px 12px 0;
+            margin: 20px 0;
+            font-style: italic;
+            font-size: 1rem;
+        }
+
+        /* Principles Grid */
+        .principles-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .principle-card {
+            background: white;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .principle-card h3 {
+            font-size: 1rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            color: #2d1b4e;
+        }
+
+        .principle-card p {
+            font-size: 0.9rem;
+            color: #5a4a6f;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        /* Method Steps */
+        .method-steps {
+            counter-reset: step;
+            margin-top: 20px;
+        }
+
+        .method-step {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+            align-items: flex-start;
+        }
+
+        .method-step::before {
+            counter-increment: step;
+            content: counter(step);
+            min-width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 1rem;
+            color: white;
+        }
+
+        .method-step-content h4 {
+            font-size: 1rem;
+            font-weight: 800;
+            margin-bottom: 4px;
+            color: #2d1b4e;
+        }
+
+        .method-step-content p {
+            color: #5a4a6f;
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        /* Ontology Tree */
+        .ontology-tree {
+            background: #1e1e2e;
+            border-radius: 12px;
+            padding: 24px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            line-height: 1.7;
+            overflow-x: auto;
+            color: white;
+        }
+
+        .ontology-tree .root {
+            color: #ff9500;
+            font-weight: 700;
+        }
+
+        .ontology-tree .branch {
+            color: #a855f7;
+        }
+
+        .ontology-tree .leaf {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        @media (max-width: 768px) {
+            .principles-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .telos-banner {
+                height: 200px;
+            }
+
+            .telos-banner-overlay h2 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="../index.html" class="nav-logo">
+                <img src="../assets/suite-token.png" alt="SUITE" class="nav-logo-img">
+                SUITE
+            </a>
+            <div class="nav-links">
+                <a href="../apps.html">Apps</a>
+                <a href="../developer-portal.html">Build</a>
+                <a href="../discuss.html">Discuss</a>
+                <a href="../incubate.html">Incubate</a>
+                <a href="index.html">Docs</a>
+                <a href="../wallet.html">Vault</a><a href="../dashboard.html">Dashboard</a>
+                <a href="../start-building.html" class="nav-cta">🚀 Start Building</a>
+            </div>
+            <button class="mobile-menu-btn">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="canvas-container">
+        <div class="docs-container">
+            <!-- Sidebar -->
+            <aside class="docs-sidebar"></aside>
+
+            <!-- Main Content -->
+            <main class="docs-content">
+                <!-- Telos Banner -->
+                <div class="telos-banner">
+                    <img src="../assets/telos-hero.jpg" alt="Telos - Loving God, Loving Others">
+                    <div class="telos-banner-overlay">
+                        <h2>TELOS</h2>
+                        <p>Loving God<br>Loving Others</p>
+                    </div>
+                </div>
+
+                <h1>📖 The SUITE Bible</h1>
+                <p class="subtitle">The definitive guide to meaning, philosophy, and the ultimate purpose of the SUITE
+                    ecosystem</p>
+
+                <!-- Outside-In Perspective -->
+                <section class="philosophy-section">
+                    <h2>What You're Looking At</h2>
+                    <div class="philosophy-content">
+                        <p><strong>From the outside:</strong> What you're seeing is a form of <span
+                                class="highlight">ontological design</span> — the deliberate practice of designing the
+                            categories of being themselves. It's also called <span class="highlight">meaning
+                                cartography</span> (mapping landscapes of significance), <span
+                                class="highlight">semantic architecture</span> (building structures from words), or
+                            simply <span class="highlight">worldbuilding</span>.</p>
+
+                        <p>This isn't just documentation. It's the externalization of an internal vision — taking what
+                            exists only in the founder's mind and making it visible, navigable, and buildable by
+                            others. Every named entity (TELOS, FORGE, Cadence, Treasury) is an intentional creation,
+                            chosen to carry weight and evoke meaning.</p>
+
+                        <p>You're looking at a living map of a world that's being built. The map itself is generative —
+                            the act of naming creates space for more naming, more connections, more possibility.</p>
+                    </div>
+                </section>
+
+                <!-- What Is SUITE -->
+                <section class="philosophy-section">
+                    <h2>What Is SUITE?</h2>
+                    <div class="philosophy-content">
+                        <p>SUITE is not just an app store or a token. It's a <span class="highlight">meaning
+                                system</span> — a collection of named entities that, together, form a coherent world.
+                            This page documents the philosophy behind how that world was built.</p>
+
+                        <p>Before code was written, before designs were made, there was <span
+                                class="highlight">naming</span>. Each word in the SUITE ecosystem carries intentional
+                            weight. TELOS isn't just a feature toggle — it's a concept. FORGE isn't just a Discord bot
+                            — it's an archetype. Treasury isn't just a smart contract — it's a promise.</p>
+
+                        <div class="quote-block">
+                            "To name a thing is to give it existence. To name it well is to give it meaning. To name it
+                            intentionally is to give it power."
+                        </div>
+                    </div>
+                </section>
+
+                <!-- The Method -->
+                <section class="philosophy-section">
+                    <h2>The Method: Ontological Design</h2>
+                    <div class="philosophy-content">
+                        <p>How does one generate new incentive systems, new connections, new worlds — all founded in
+                            coherent meaning? Here is the process:</p>
+
+                        <div class="method-steps">
+                            <div class="method-step">
+                                <div class="method-step-content">
+                                    <h4>Externalize the Implicit</h4>
+                                    <p>Take what exists only in your mind and make it visible. Write down every entity,
+                                        every concept, every named thing.</p>
+                                </div>
+                            </div>
+
+                            <div class="method-step">
+                                <div class="method-step-content">
+                                    <h4>Contemplate with Stillness</h4>
+                                    <p>Sit with your externalized map. Don't force connections. Let patterns emerge in
+                                        an atmosphere of intense potential.</p>
+                                </div>
+                            </div>
+
+                            <div class="method-step">
+                                <div class="method-step-content">
+                                    <h4>Draw New Connections</h4>
+                                    <p>As you see the whole, new relationships reveal themselves. These intuitions are
+                                        the generative engine of the system.</p>
+                                </div>
+                            </div>
+
+                            <div class="method-step">
+                                <div class="method-step-content">
+                                    <h4>Name the New Things</h4>
+                                    <p>When you see a pattern that needs a name, name it. TELOS. FORGE. Cadence. These
+                                        aren't just labels — they're invocations.</p>
+                                </div>
+                            </div>
+
+                            <div class="method-step">
+                                <div class="method-step-content">
+                                    <h4>Recurse</h4>
+                                    <p>The new names create new space for more naming. Return to step one with your
+                                        expanded ontology. Each cycle adds coherence.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- First Principles -->
+                <section class="philosophy-section">
+                    <h2>First Principles</h2>
+                    <div class="philosophy-content">
+                        <p>Every decision in SUITE flows from these foundational beliefs:</p>
+
+                        <div class="principles-grid">
+                            <div class="principle-card">
+                                <h3>🏗️ Anyone Can Build</h3>
+                                <p>The barrier to creation should be zero. If you can speak, you can build.</p>
+                            </div>
+
+                            <div class="principle-card">
+                                <h3>💰 Everyone Gets Paid</h3>
+                                <p>Value created should return to value creators. No exploitation, no extraction.</p>
+                            </div>
+
+                            <div class="principle-card">
+                                <h3>🔄 Perpetual Motion</h3>
+                                <p>Build systems that run themselves. AI creates apps. Apps generate revenue. Close the
+                                    loop.</p>
+                            </div>
+
+                            <div class="principle-card">
+                                <h3>❤️ Give First</h3>
+                                <p>Before taking, give. Giving is not charity — it's investment in the whole.</p>
+                            </div>
+
+                            <div class="principle-card">
+                                <h3>🎯 Intentional Naming</h3>
+                                <p>Words create worlds. Choose names that carry meaning and inspire.</p>
+                            </div>
+
+                            <div class="principle-card">
+                                <h3>🌐 Open Externalization</h3>
+                                <p>Document everything. Make the implicit explicit. Share the map.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- The Ontology -->
+                <section class="philosophy-section">
+                    <h2>The Ontology: Map of Meaning</h2>
+                    <div class="philosophy-content">
+                        <p>Here is the current structure of named things in SUITE:</p>
+
+                        <div class="ontology-tree">
+                            <span class="root">SUITE</span><br>
+                            ├── <span class="branch">PLACES</span> (where things happen)<br>
+                            │ ├── <span class="leaf">Homepage — the welcome</span><br>
+                            │ ├── <span class="leaf">App Store — the marketplace</span><br>
+                            │ ├── <span class="leaf">Dashboard — the control room</span><br>
+                            │ └── <span class="leaf">Treasury — the foundation</span><br>
+                            │<br>
+                            ├── <span class="branch">AGENTS</span> (things that act)<br>
+                            │ ├── <span class="leaf">FORGE — the Discord bot</span><br>
+                            │ ├── <span class="leaf">Cadence — the AI builder</span><br>
+                            │ ├── <span class="leaf">Watcher — the sentinel</span><br>
+                            │ └── <span class="leaf">AI Fleet — the collective</span><br>
+                            │<br>
+                            ├── <span class="branch">MODES</span> (states of being)<br>
+                            │ ├── <span class="leaf">TELOS — autonomous goal-seeking</span><br>
+                            │ └── <span class="leaf">Human Priority — responsive</span><br>
+                            │<br>
+                            └── <span class="branch">CONCEPTS</span> (abstract foundations)<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;├── <span class="leaf">Anyone Can Build</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;├── <span class="leaf">Everyone Gets Paid</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="leaf">Floor Price Guarantee</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- What This Is Called -->
+                <section class="philosophy-section">
+                    <h2>What Is This Practice Called?</h2>
+                    <div class="philosophy-content">
+                        <p><strong>Ontological Design</strong> — designing the categories of being<br>
+                            <strong>Meaning Cartography</strong> — mapping the landscape of significance<br>
+                            <strong>Semantic Architecture</strong> — building structures of meaning<br>
+                            <strong>Worldbuilding</strong> — creating coherent universes
+                        </p>
+
+                        <p>But perhaps the simplest description is: <span class="highlight">naming things into
+                                existence</span>. You see a gap, you give it a name, and suddenly it's real.</p>
+
+                        <div class="quote-block">
+                            "In the beginning was the Word." — Not just theology, but methodology.
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Note from Stu -->
+                <div
+                    style="background: linear-gradient(135deg, rgba(255, 149, 0, 0.08), rgba(168, 85, 247, 0.05)); border-radius: 20px; padding: 32px; margin-top: 48px; text-align: center;">
+                    <p
+                        style="font-size: 0.8rem; font-weight: 700; color: #ff9500; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px;">
+                        #InitialSystemLayer</p>
+                    <h3 style="font-size: 1.2rem; font-weight: 800; color: #2d1b4e; margin-bottom: 16px;">A Note from
+                        Stu</h3>
+                    <p
+                        style="font-size: 0.95rem; color: #5a4a6f; line-height: 1.8; max-width: 600px; margin: 0 auto 16px auto; font-style: italic;">
+                        I hope these systems harness the energy within them ultimately for the goodness of God's Will.
+                        As SUITE grows and evolves, may the systems we create cater to the goodness of God and the
+                        desire to worship Him and only Him.
+                    </p>
+                    <p style="font-size: 0.95rem; color: #5a4a6f; line-height: 1.8; max-width: 600px; margin: 0 auto;">
+                        This is the foundation. Everything built on top of it should point upward.
+                    </p>
+
+                    <!-- Faith Foundation -->
+                    <div
+                        style="margin-top: 24px; padding: 20px; background: rgba(168, 85, 247, 0.08); border-radius: 12px; max-width: 600px; margin-left: auto; margin-right: auto;">
+                        <p style="font-size: 0.9rem; color: #5a4a6f; line-height: 1.7; margin-bottom: 12px;">
+                            <strong style="color: #a855f7;">The Ultimate Meaning:</strong> Jesus is God. This Christian
+                            foundation is the bedrock of SUITE.
+                            The ecosystem exists to serve, to give, and to point toward Truth.
+                        </p>
+                        <p style="font-size: 0.9rem; color: #5a4a6f; line-height: 1.7; margin: 0;">
+                            Want to explore God yourself? <strong>CheshBon</strong> offers AI-powered spiritual insights
+                            to help you navigate
+                            the forces of Good and Evil, engage with Scripture, and grow in community.
+                        </p>
+                    </div>
+
+                    <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(0,0,0,0.06);">
+                        <p style="font-size: 1rem; font-weight: 800; color: #2d1b4e; margin: 0;">Stuart Hollinger</p>
+                        <p style="font-size: 0.85rem; color: #9ca3af; margin-top: 4px;">Founder, SUITE</p>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
+                        <a href="faith.html"
+                            style="display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #a855f7, #7c3aed); color: white; text-decoration: none; border-radius: 100px; font-weight: 700; font-size: 0.9rem;">✝️
+                            Explore Faith →</a>
+                        <a href="safety.html"
+                            style="display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #ff9500, #ff6b9d); color: white; text-decoration: none; border-radius: 100px; font-weight: 700; font-size: 0.9rem;">🛡️
+                            AI Safety →</a>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script src="sidebar.js"></script>
+</body>
+
+</html>

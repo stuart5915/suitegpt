@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Revenue & Fees | SUITE Docs</title>
+    <link rel="icon" type="image/png" href="../assets/suite-token.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../suite-styles.css">
+    <link rel="stylesheet" href="../nav.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        html {
+            overflow-y: scroll;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fff5eb 0%, #ffe4d4 20%, #ffd4e3 50%, #e8d5f9 80%, #d4e5ff 100%);
+            min-height: 100vh;
+            color: #2d1b4e;
+            overflow-x: hidden;
+        }
+
+        .nav-links a:hover {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            color: white !important;
+        }
+
+        .nav-links a.active {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(255, 149, 0, 0.3);
+        }
+
+        .canvas-container {
+            width: 100%;
+            min-height: 100vh;
+            padding: 90px 24px 40px 24px;
+            padding-right: calc(24px + (100vw - 100%));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        .docs-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 32px;
+            box-shadow: 0 16px 80px rgba(0, 0, 0, 0.08);
+            padding: 30px;
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            gap: 30px;
+        }
+
+        .docs-sidebar {
+            width: 220px;
+            flex-shrink: 0;
+            border-right: 1px solid rgba(0, 0, 0, 0.06);
+            padding-right: 24px;
+        }
+
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+
+        .sidebar-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #9ca3af;
+            margin-bottom: 12px;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            color: #2d1b4e;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            margin-bottom: 4px;
+        }
+
+        .sidebar-link:hover {
+            background: rgba(255, 149, 0, 0.1);
+            color: #ff9500;
+        }
+
+        .sidebar-link.active {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+        }
+
+        .docs-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .docs-content h1 {
+            font-size: 2rem;
+            font-weight: 900;
+            display: inline-block;
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .docs-content h2 {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin: 32px 0 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid rgba(255, 149, 0, 0.2);
+        }
+
+        .docs-content h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #5a4a6f;
+            margin: 20px 0 12px;
+        }
+
+        .docs-content p,
+        .docs-content li {
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: #5a4a6f;
+            margin-bottom: 12px;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(59, 130, 246, 0.1));
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .highlight-box h4 {
+            margin: 0 0 12px 0;
+            color: #22c55e;
+            font-size: 1rem;
+        }
+
+        .fee-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .fee-table th,
+        .fee-table td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .fee-table th {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+
+        .fee-table tr:nth-child(even) {
+            background: rgba(255, 149, 0, 0.05);
+        }
+
+        .fee-table tr:hover {
+            background: rgba(255, 149, 0, 0.1);
+        }
+
+        .fee-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .fee-green {
+            background: rgba(34, 197, 94, 0.15);
+            color: #22c55e;
+        }
+
+        .fee-orange {
+            background: rgba(255, 149, 0, 0.15);
+            color: #ff9500;
+        }
+
+        .fee-purple {
+            background: rgba(168, 85, 247, 0.15);
+            color: #a855f7;
+        }
+
+        .fee-blue {
+            background: rgba(59, 130, 246, 0.15);
+            color: #3b82f6;
+        }
+
+        .flow-diagram {
+            background: #1e1e2e;
+            border-radius: 12px;
+            padding: 20px;
+            color: #a6e3a1;
+            font-family: monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            overflow-x: auto;
+            margin: 16px 0;
+        }
+
+        .revenue-card {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 12px 0;
+        }
+
+        .revenue-card h4 {
+            margin: 0 0 12px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .revenue-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin: 16px 0;
+        }
+
+        @media (max-width: 768px) {
+            .docs-container {
+                flex-direction: column;
+            }
+
+            .docs-sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+                padding-right: 0;
+                padding-bottom: 20px;
+            }
+
+            .revenue-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+<nav class="nav">
+    <div class="nav-inner">
+        <a href="../index.html" class="nav-logo">
+            <img src="assets/suite-token.png" alt="SUITE" class="nav-logo-img">
+            SUITE
+        </a>
+        <div class="nav-links">
+            <a href="../apps.html">Apps</a>
+            <a href="../developer-portal.html">Build</a>
+            <a href="../discuss.html">Discuss</a>
+            <a href="../incubate.html">Incubate</a>
+            <a href="index.html">Docs</a>
+            <a href="../wallet.html">Vault</a><a href="../dashboard.html">Dashboard</a>
+            <a href="../start-building.html" class="nav-cta">🚀 Start Building</a>
+        </div>
+        <button class="mobile-menu-btn">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </div>
+</nav>
+
+    <div class="canvas-container">
+        <div class="docs-container">
+            <aside class="docs-sidebar"></aside>
+
+            <main class="docs-content">
+                <h1>💰 Revenue & Fees</h1>
+                <p style="color: #6b7280; margin-bottom: 24px;">Complete breakdown of how SUITE generates revenue and
+                    where fees are collected throughout the ecosystem.</p>
+
+                <div class="highlight-box">
+                    <h4>🎯 Core Principle: Transparent & Sustainable</h4>
+                    <p style="margin-bottom: 0;">All fees go toward sustaining the ecosystem, rewarding creators, and
+                        charitable giving. <strong>10% of all treasury yield goes to community-voted charities.</strong>
+                    </p>
+                </div>
+
+                <h2>📋 Fee Structure Overview</h2>
+                <table class="fee-table">
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>Fee</th>
+                            <th>Where It Goes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Deposit ETH → Mint SUITE</strong></td>
+                            <td><span class="fee-badge fee-green">0.5%</span></td>
+                            <td>Treasury (backs all SUITE)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Redeem SUITE → ETH</strong></td>
+                            <td><span class="fee-badge fee-green">0.5%</span></td>
+                            <td>Treasury</td>
+                        </tr>
+                        <tr>
+                            <td><strong>AI Action (per use)</strong></td>
+                            <td><span class="fee-badge fee-orange">1 SUITE</span></td>
+                            <td>70% Creator, 30% Treasury</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Store Purchase</strong></td>
+                            <td><span class="fee-badge fee-purple">0%</span></td>
+                            <td>100% to product pool</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Ad Watch Reward</strong></td>
+                            <td><span class="fee-badge fee-blue">+2 SUITE</span></td>
+                            <td>User earns from ad revenue</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h2>🔄 Revenue Streams</h2>
+                <p>SUITE generates revenue from multiple sources that flow into the treasury:</p>
+
+                <div class="revenue-grid">
+                    <div class="revenue-card">
+                        <h4>📺 Ad Revenue</h4>
+                        <p>When users watch ads in SUITE apps, advertisers pay us. This revenue is deposited into the
+                            treasury and users receive SUITE credits.</p>
+                        <p><strong>Rate:</strong> ~$0.002 per ad view → 2 SUITE to user</p>
+                    </div>
+                    <div class="revenue-card">
+                        <h4>💳 Store Purchases</h4>
+                        <p>Users buy boosts, priority queue slots, and premium features using SUITE. This SUITE gets
+                            burned or recycled.</p>
+                        <p><strong>Rate:</strong> Products priced in SUITE, recycled to ecosystem</p>
+                    </div>
+                    <div class="revenue-card">
+                        <h4>🎮 In-App Usage</h4>
+                        <p>Every AI action (meal scan, workout generation, etc.) costs 1 SUITE. Creators earn 70%,
+                            treasury gets 30%.</p>
+                        <p><strong>Rate:</strong> 1 SUITE per AI action</p>
+                    </div>
+                    <div class="revenue-card">
+                        <h4>📈 Treasury Yield</h4>
+                        <p>Treasury ETH is deployed to DeFi strategies (staking, lending) generating passive yield that
+                            increases the floor price.</p>
+                        <p><strong>Rate:</strong> Variable (3-8% APY typical)</p>
+                    </div>
+                </div>
+
+                <h2>💸 Where Money Flows</h2>
+                <div class="flow-diagram">
+                    USER ACTION → Fee → Destination
+                    ─────────────────────────────────────────────────────────
+                    Deposit 1 ETH to Treasury → 0.5% → Treasury (0.995 ETH)
+                    → → User gets SUITE at floor price
+
+                    Use AI Feature (1 SUITE) → 100% → 70% App Creator
+                    → → 30% Treasury
+
+                    Watch Ad → $0 → User earns 2 SUITE
+                    → Ad $ → Treasury (backs new SUITE)
+
+                    Cash Out SUITE → ETH → 0.5% → Treasury (kept as fee)
+                    → → User gets proportional ETH
+
+                    Treasury Yield (Monthly) → 90% → Stays in treasury (floor↑)
+                    → 10% → Charity giving pool
+                </div>
+
+                <h2>👨‍💻 Creator Revenue Split</h2>
+                <p>When users pay SUITE to use your app's AI features:</p>
+                <table class="fee-table">
+                    <thead>
+                        <tr>
+                            <th>Recipient</th>
+                            <th>Share</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>App Creator</strong></td>
+                            <td><span class="fee-badge fee-green">70%</span></td>
+                            <td>Paid directly to your Discord/wallet</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Platform (Treasury)</strong></td>
+                            <td><span class="fee-badge fee-orange">30%</span></td>
+                            <td>Funds infrastructure, AI costs, development</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Example: Your App Gets 1,000 Uses</h3>
+                <div class="revenue-card">
+                    <p><strong>1,000 uses × 1 SUITE = 1,000 SUITE spent</strong></p>
+                    <ul style="margin-left: 20px;">
+                        <li>You earn: <strong>700 SUITE</strong> (70%)</li>
+                        <li>Platform keeps: <strong>300 SUITE</strong> (30%)</li>
+                    </ul>
+                    <p style="margin-top: 12px;">At floor price of $0.001/SUITE = <strong>$0.70 to you</strong></p>
+                    <p>At premium DEX price of $0.01/SUITE = <strong>$7.00 to you</strong></p>
+                </div>
+
+                <h2>🎁 Charity Giving (10%)</h2>
+                <p>10% of all treasury yield is allocated to the <strong>Giving Pool</strong>. SUITE holders vote
+                    monthly on which charities receive funds.</p>
+                <ul style="margin-left: 20px;">
+                    <li><strong>Voting Power:</strong> Based on SUITE held/staked</li>
+                    <li><strong>Distribution:</strong> Monthly, on-chain</li>
+                    <li><strong>Transparency:</strong> All donations publicly verifiable</li>
+                </ul>
+
+                <h2>🔥 Fee-Free Actions</h2>
+                <p>Not everything costs money! These actions are <strong>completely free</strong>:</p>
+                <ul style="margin-left: 20px;">
+                    <li>✅ Creating an account</li>
+                    <li>✅ First 20 AI actions (free tier)</li>
+                    <li>✅ Watching ads to earn SUITE</li>
+                    <li>✅ Voting on charities</li>
+                    <li>✅ Transferring credits between Discord accounts</li>
+                    <li>✅ Browsing and downloading SUITE apps</li>
+                    <li>✅ Submitting app ideas</li>
+                </ul>
+
+                <h2>⛽ Gas Costs (Blockchain)</h2>
+                <p>For on-chain actions on Base network:</p>
+                <table class="fee-table">
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>Typical Gas Cost</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Deposit ETH to Treasury</td>
+                            <td>~$0.01 - $0.05</td>
+                        </tr>
+                        <tr>
+                            <td>Withdraw from Treasury</td>
+                            <td>~$0.01 - $0.05</td>
+                        </tr>
+                        <tr>
+                            <td>Transfer SUITE (ERC-20)</td>
+                            <td>~$0.005 - $0.02</td>
+                        </tr>
+                        <tr>
+                            <td>Claim NFT Boost</td>
+                            <td>~$0.02 - $0.10</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p><em>Gas costs vary with network congestion. Base is typically very cheap!</em></p>
+
+                <div class="highlight-box"
+                    style="background: linear-gradient(135deg, rgba(255, 149, 0, 0.1), rgba(255, 107, 157, 0.1)); border-color: rgba(255, 149, 0, 0.2);">
+                    <h4 style="color: #ff9500;">💡 Summary</h4>
+                    <p style="margin: 0;">
+                        <strong>For Users:</strong> Watch ads = free SUITE. Small fees only when converting to/from
+                        ETH.<br>
+                        <strong>For Creators:</strong> Keep 70% of all SUITE spent in your apps.<br>
+                        <strong>For Holders:</strong> Treasury grows = floor price rises. 10% supports charities.
+                    </p>
+                </div>
+            </main>
+        </div>
+    </div>
+    <script src="sidebar.js"></script>
+</body>
+
+</html>

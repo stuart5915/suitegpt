@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Flows | SUITE Docs</title>
+    <link rel="icon" type="image/png" href="../assets/suite-token.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../suite-styles.css">
+    <link rel="stylesheet" href="../nav.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        html {
+            overflow-y: scroll;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fff5eb 0%, #ffe4d4 20%, #ffd4e3 50%, #e8d5f9 80%, #d4e5ff 100%);
+            min-height: 100vh;
+            color: #2d1b4e;
+        }
+
+        .nav-links a:hover {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            color: white !important;
+        }
+
+        .nav-links a.active {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            color: white !important;
+        }
+
+        .canvas-container {
+            width: 100%;
+            min-height: 100vh;
+            padding: 90px 24px 40px 24px;
+            padding-right: calc(24px + (100vw - 100%));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .docs-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 32px;
+            box-shadow: 0 16px 80px rgba(0, 0, 0, 0.08);
+            padding: 30px;
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            gap: 30px;
+        }
+
+        .docs-sidebar {
+            width: 220px;
+            flex-shrink: 0;
+            border-right: 1px solid rgba(0, 0, 0, 0.06);
+            padding-right: 24px;
+        }
+
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+
+        .sidebar-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #9ca3af;
+            margin-bottom: 12px;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            color: #2d1b4e;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            margin-bottom: 4px;
+        }
+
+        .sidebar-link:hover {
+            background: rgba(255, 149, 0, 0.1);
+            color: #ff9500;
+        }
+
+        .sidebar-link.active {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+        }
+
+        .docs-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .docs-content h1 {
+            font-size: 2rem;
+            font-weight: 900;
+            display: inline-block;
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .docs-content h2 {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin: 32px 0 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid rgba(255, 149, 0, 0.2);
+        }
+
+        .docs-content h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #5a4a6f;
+            margin: 20px 0 12px;
+        }
+
+        .docs-content p,
+        .docs-content li {
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: #5a4a6f;
+            margin-bottom: 12px;
+        }
+
+        .docs-content ul {
+            padding-left: 20px;
+        }
+
+        .flow-card {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            margin: 16px 0;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+            border-left: 4px solid #ff9500;
+        }
+
+        .flow-card h3 {
+            margin-top: 0;
+            color: #ff9500;
+        }
+
+        .flow-steps {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .flow-step {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+
+        .flow-arrow {
+            color: #ff9500;
+            font-size: 1.2rem;
+        }
+
+        .info-box {
+            background: rgba(255, 149, 0, 0.1);
+            border: 1px solid rgba(255, 149, 0, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+
+        .info-box.green {
+            background: rgba(34, 197, 94, 0.1);
+            border-color: rgba(34, 197, 94, 0.3);
+        }
+
+        .info-box.purple {
+            background: rgba(139, 92, 246, 0.1);
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .docs-container {
+                flex-direction: column;
+            }
+
+            .docs-sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+                padding-right: 0;
+                padding-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+<nav class="nav">
+    <div class="nav-inner">
+        <a href="../index.html" class="nav-logo">
+            <img src="assets/suite-token.png" alt="SUITE" class="nav-logo-img">
+            SUITE
+        </a>
+        <div class="nav-links">
+            <a href="../apps.html">Apps</a>
+            <a href="../developer-portal.html">Build</a>
+            <a href="../discuss.html">Discuss</a>
+            <a href="../incubate.html">Incubate</a>
+            <a href="index.html">Docs</a>
+            <a href="../wallet.html">Vault</a><a href="../dashboard.html">Dashboard</a>
+            <a href="../start-building.html" class="nav-cta">🚀 Start Building</a>
+        </div>
+        <button class="mobile-menu-btn">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </div>
+</nav>
+
+    <div class="canvas-container">
+        <div class="docs-container">
+            <aside class="docs-sidebar"></aside>
+
+            <main class="docs-content">
+                <h1>🚶 User Flows</h1>
+                <!-- MVP Status Overview -->
+                <div style="background: linear-gradient(135deg, rgba(57, 255, 20, 0.1), rgba(0, 240, 255, 0.05)); border: 1px solid rgba(57, 255, 20, 0.3); border-radius: 16px; padding: 24px; margin: 24px 0;">
+                    <h2 style="margin-bottom: 16px; color: #39ff14;"> MVP Flows</h2>
+                    <div style="display: grid; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 12px;"><span style="font-size: 1.2rem;"></span><span>Browse and Download Apps</span></div>
+                        <div style="display: flex; align-items: center; gap: 12px;"><span style="font-size: 1.2rem;"></span><span>Connect Wallet</span></div>
+                        <div style="display: flex; align-items: center; gap: 12px;"><span style="font-size: 1.2rem;"></span><span>Request App via Discord (20 free actions)</span></div>
+                        <div style="display: flex; align-items: center; gap: 12px;"><span style="font-size: 1.2rem;"></span><span>Deposit ETH to get SUITE <span style="color: #888; font-size: 0.85rem;">(contract ready)</span></span></div>
+                        <div style="display: flex; align-items: center; gap: 12px;"><span style="font-size: 1.2rem;"></span><span>Withdraw SUITE to get ETH <span style="color: #888; font-size: 0.85rem;">(contract ready)</span></span></div>
+                    </div>
+                    <h3 style="margin: 24px 0 12px; color: #a855f7;">Planned Flows</h3>
+                    <div style="display: grid; gap: 6px; opacity: 0.7;">
+                        <div>- In-App SUITE Payments</div>
+                        <div>- Staking for Rewards</div>
+                        <div>- Governance Voting</div>
+                        <div>- AI Fleet Auto-Build</div>
+                        <div>- Revenue Sharing</div>
+                    </div>
+                    <p style="margin-top: 16px; font-size: 0.85rem; color: #888;">Legend: Green check = Live, Yellow = Built (needs integration), Dash = Planned</p>
+                </div>
+                <p style="color: #6b7280; margin-bottom: 24px;">Step-by-step journeys through the SUITE ecosystem.</p>
+
+                <div class="info-box">
+                    <strong>💡 TL;DR:</strong> SUITE has multiple entry points. Whether you want to use apps, build
+                    apps, earn tokens, or participate in governance - there's a path for you.
+                </div>
+
+                <h2>🆓 Free User Flow (Earn)</h2>
+                <div class="flow-card">
+                    <h3>Watch Ads → Get SUITE → Use Apps</h3>
+                    <p>No payment required. Earn tokens by watching short video ads.</p>
+                    <div class="flow-steps">
+                        <span class="flow-step">📺 Watch Ad</span>
+                        <span class="flow-arrow">→</span>
+                        <span class="flow-step">🪙 Get 2 SUITE</span>
+                        <span class="flow-arrow">→</span>
+                        <span class="flow-step">📱 Use Apps</span>
+                    </div>
+                    <ul>
+                        <li>Go to <a href="../earn.html" style="color: #ff9500;">Earn page</a></li>
+                        <li>Click "Watch Ad" to view a 30-second video</li>
+                        <li>Receive 2 SUITE directly to your wallet</li>
+                        <li>Repeat - no daily limit!</li>
+                    </ul>
+                </div>
+
+                <h2>💰 Buyer Flow (Deposit)</h2>
+                <div class="flow-card">
+                    <h3>Deposit ETH → Get SUITE → Use Anywhere</h3>
+                    <p>Convert ETH to SUITE tokens. 1:1 backing, always redeemable.</p>
+                    <div class="flow-steps">
+                        <span class="flow-step">💎 Deposit ETH</span>
+                        <span class="flow-arrow">→</span>
+                        <span class="flow-step">🏦 Vault Holds</span>
+                        <span class="flow-arrow">→</span>
+                        <span class="flow-step">🪙 Receive SUITE</span>
+                    </div>
+                    <ul>
+                        <li>Connect wallet on <a href="../wallet.html" style="color: #ff9500;">Wallet page</a></li>
+                        <li>Enter ETH amount and click Deposit</li>
+                        <li>ETH goes to Treasury Vault, you get SUITE minted</li>
+                        <li>Withdraw anytime - SUITE burns, ETH returns</li>
+                    </ul>
+                </div>
+
+                <h2>🌉 Bridge Flow (Wallet → Discord)</h2>
+                <div class="flow-card">
+                    <h3>Deposit SUITE → Credit Discord → Build Apps</h3>
+                    <p>Transfer SUITE from your wallet to Discord to use for building apps.</p>
+                    <div class="flow-steps">
+                        <span class="flow-step">🦊 Connect Wallet</span>
+                        <span class="flow-arrow">→</span>
+                        <span class="flow-step">💬 Connect Discord</span>
+                        <span class="flow-arrow">→</span>
+                        <span class="flow-step">🌉 Deposit SUITE</span>
+                        <span class="flow-arrow">→</span>
+                        <span class="flow-step">📱 Build Apps</span>
+                    </div>
+                    <ul>
+                        <li>Go to <a href="../wallet.html" style="color: #ff9500;">Wallet page</a></li>
+                        <li>Connect your MetaMask wallet</li>
+                        <li>Scroll to "Wallet ↔ Discord Bridge" section</li>
+                        <li>Connect your Discord account</li>
+                        <li>Enter SUITE amount and click "→ Discord"</li>
+                        <li>Confirm transaction in MetaMask</li>
+                        <li>SUITE appears in your Discord balance within seconds!</li>
+                    </ul>
+                    <div class="info-box" style="margin-top: 16px;">
+                        <strong>💡 Why Bridge?</strong>
+                        <p style="margin: 8px 0 0 0;">Your wallet holds on-chain SUITE for trading/staking. Your Discord
+                            balance is used for building apps. The bridge lets you transfer between them!</p>
+                    </div>
+                </div>
+
+                <h2>🛠️ Builder Flow (Create Apps)</h2>
+                <div class="flow-card">
+                    <h3>Describe App → AI Builds → Publish → Earn</h3>
+                    <p>Build apps without coding. Just describe what you want!</p>
+                    <div class="flow-steps">
+                        <span class="flow-step">💬 Describe Idea</span>
+                        <span class="flow-arrow">→</span>
+                        <span class="flow-step">🤖 AI Builds</span>
+                        <span class="flow-arrow">→</span>
+                        <span class="flow-step">🚀 Publish</span>
+                        <span class="flow-arrow">→</span>
+                        <span class="flow-step">💸 Earn SUITE</span>
+                    </div>
+                    <ul>
+                        <li>Go to <a href="../developer-portal.html" style="color: #ff9500;">Build page</a></li>
+                        <li>Join Discord and describe your app in #app-ideas</li>
+                        <li>AI generates your app - iterate until perfect</li>
+                        <li>Request publish - team reviews and approves</li>
+                        <li>Earn SUITE when users interact with your app!</li>
+                    </ul>
+                </div>
+
+                <h2>🗳️ Governance Flow (Vote on Proposals)</h2>
+                <div class="flow-card">
+                    <h3>Connect Wallet → Vote → Shape SUITE</h3>
+                    <p>Your SUITE tokens = voting power. Help decide SUITE's future.</p>
+                    <div class="flow-steps">
+                        <span class="flow-step">🦊 Connect Wallet</span>
+                        <span class="flow-arrow">→</span>
+                        <span class="flow-step">✍️ Sign Vote</span>
+                        <span class="flow-arrow">→</span>
+                        <span class="flow-step">🏆 Earn Points</span>
+                    </div>
+                    <ul>
+                        <li>Go to <a href="../discuss.html" style="color: #ff9500;">Discuss page</a></li>
+                        <li>Connect your wallet (voting power = your SUITE balance)</li>
+                        <li>Vote on proposals in the Voting column</li>
+                        <li>Earn governance points, build your rank</li>
+                        <li>Create proposals for 10 SUITE (Council members: free)</li>
+                    </ul>
+                </div>
+
+                <h2>🚀 Incubator Flow (Launch a Project)</h2>
+                <div class="flow-card">
+                    <h3>Apply → Get Support → Launch</h3>
+                    <p>Build a bigger project with SUITE backing and community support.</p>
+                    <div class="flow-steps">
+                        <span class="flow-step">📝 Apply</span>
+                        <span class="flow-arrow">→</span>
+                        <span class="flow-step">👥 Interview</span>
+                        <span class="flow-arrow">→</span>
+                        <span class="flow-step">🛠️ Build</span>
+                        <span class="flow-arrow">→</span>
+                        <span class="flow-step">🚀 Launch</span>
+                    </div>
+                    <ul>
+                        <li>Go to <a href="../incubate.html" style="color: #ff9500;">Incubate page</a></li>
+                        <li>Submit your project idea</li>
+                        <li>If accepted: get mentorship, funding, and community support</li>
+                        <li>Build and launch with the SUITE ecosystem behind you</li>
+                    </ul>
+                </div>
+
+                <h2>🛒 Store Flow (Buy Boosts)</h2>
+                <div class="flow-card">
+                    <h3>Browse → Buy → Power Up</h3>
+                    <p>Purchase powerups and items to supercharge your apps.</p>
+                    <div class="flow-steps">
+                        <span class="flow-step">🛒 Browse Store</span>
+                        <span class="flow-arrow">→</span>
+                        <span class="flow-step">💳 Pay SUITE</span>
+                        <span class="flow-arrow">→</span>
+                        <span class="flow-step">⚡ Get Boosted</span>
+                    </div>
+                    <ul>
+                        <li>Go to <a href="../boost.html" style="color: #ff9500;">Boost page</a></li>
+                        <li>Connect your wallet</li>
+                        <li>Browse available powerups</li>
+                        <li>Purchase with SUITE tokens</li>
+                    </ul>
+                </div>
+
+                <h2>🔄 The Complete Cycle</h2>
+                <div class="info-box green">
+                    <p style="margin: 0;"><strong>The SUITE flywheel:</strong></p>
+                    <p style="margin: 8px 0 0;">Users → Apps → Builders earn → More apps → More users → Treasury grows →
+                        Charity impact 💝</p>
+                </div>
+
+            </main>
+        </div>
+    </div>
+    <script src="sidebar.js"></script>
+</body>
+
+</html>

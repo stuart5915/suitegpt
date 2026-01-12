@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Governance | SUITE Docs</title>
+    <link rel="icon" type="image/png" href="../assets/suite-token.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../suite-styles.css">
+    <link rel="stylesheet" href="../nav.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        html {
+            overflow-y: scroll;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fff5eb 0%, #ffe4d4 20%, #ffd4e3 50%, #e8d5f9 80%, #d4e5ff 100%);
+            min-height: 100vh;
+            color: #2d1b4e;
+        }
+
+        .nav-links a:hover {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            color: white !important;
+        }
+
+        .nav-links a.active {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            color: white !important;
+        }
+
+        .canvas-container {
+            width: 100%;
+            min-height: 100vh;
+            padding: 90px 24px 40px 24px;
+            padding-right: calc(24px + (100vw - 100%));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .docs-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 32px;
+            box-shadow: 0 16px 80px rgba(0, 0, 0, 0.08);
+            padding: 30px;
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            gap: 30px;
+        }
+
+        .docs-sidebar {
+            width: 220px;
+            flex-shrink: 0;
+            border-right: 1px solid rgba(0, 0, 0, 0.06);
+            padding-right: 24px;
+        }
+
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+
+        .sidebar-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #9ca3af;
+            margin-bottom: 12px;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            color: #2d1b4e;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            margin-bottom: 4px;
+        }
+
+        .sidebar-link:hover {
+            background: rgba(255, 149, 0, 0.1);
+            color: #ff9500;
+        }
+
+        .sidebar-link.active {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+        }
+
+        .docs-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .docs-content h1 {
+            font-size: 2rem;
+            font-weight: 900;
+            display: inline-block;
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .docs-content h2 {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin: 32px 0 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid rgba(255, 149, 0, 0.2);
+        }
+
+        .docs-content h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #5a4a6f;
+            margin: 20px 0 12px;
+        }
+
+        .docs-content p,
+        .docs-content li {
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: #5a4a6f;
+            margin-bottom: 12px;
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, rgba(255, 149, 0, 0.1), rgba(255, 107, 157, 0.1));
+            border: 1px solid rgba(255, 149, 0, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .info-box h4 {
+            margin: 0 0 12px 0;
+            color: #ff9500;
+            font-size: 1rem;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th,
+        td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        th {
+            background: rgba(0, 0, 0, 0.02);
+            font-weight: 700;
+            color: #2d1b4e;
+        }
+
+        td {
+            color: #5a4a6f;
+        }
+
+        .rank-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .rank-newcomer {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .rank-contributor {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        .rank-active {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .rank-power {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .rank-legend {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .docs-container {
+                flex-direction: column;
+            }
+
+            .docs-sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+                padding-right: 0;
+                padding-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+<nav class="nav">
+    <div class="nav-inner">
+        <a href="../index.html" class="nav-logo">
+            <img src="assets/suite-token.png" alt="SUITE" class="nav-logo-img">
+            SUITE
+        </a>
+        <div class="nav-links">
+            <a href="../apps.html">Apps</a>
+            <a href="../developer-portal.html">Build</a>
+            <a href="../discuss.html">Discuss</a>
+            <a href="../incubate.html">Incubate</a>
+            <a href="index.html">Docs</a>
+            <a href="../wallet.html">Vault</a><a href="../dashboard.html">Dashboard</a>
+            <a href="../start-building.html" class="nav-cta">🚀 Start Building</a>
+        </div>
+        <button class="mobile-menu-btn">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </div>
+</nav>
+
+    <div class="canvas-container">
+        <div class="docs-container">
+            <aside class="docs-sidebar"></aside>
+
+            <main class="docs-content">
+                <h1>🗳️ SUITE Governance</h1>
+                <p style="color: #6b7280; margin-bottom: 24px;">How proposals work, voting, and the Council system.</p>
+
+                <div class="info-box">
+                    <h4>🎯 TL;DR</h4>
+                    <p style="margin-bottom: 0;">Anyone holding SUITE can vote on proposals. Create proposals for 10
+                        SUITE (Council members are free). Earn governance points for participating!</p>
+                </div>
+                <div class="info-box"
+                    style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(16, 185, 129, 0.1)); border-color: rgba(34, 197, 94, 0.3);">
+                    <h4 style="color: #16a34a;">💎 $SUITE vs Credits</h4>
+                    <p><strong>Governance requires real on-chain $SUITE tokens</strong> — not Credits.</p>
+                    <p>Credits are for earning rewards (reviews, ads, etc.) and can be claimed as real SUITE later. But
+                        to vote or create proposals, you need actual SUITE in your wallet. This ensures:</p>
+                    <ul style="margin-bottom: 0;">
+                        <li>✅ Sybil resistance (can't fake balances)</li>
+                        <li>✅ Real skin in the game</li>
+                        <li>✅ Verifiable on-chain ownership</li>
+                    </ul>
+                </div>
+
+                <h2>📍 How Proposals Work</h2>
+
+                <h3>1. Submit an Idea (💡 Ideas)</h3>
+                <p>Connect your wallet and create a proposal. It costs <strong>10 SUITE</strong> to prevent spam.
+                    Council members can submit for free.</p>
+                <ul>
+                    <li>Choose a category: Treasury, Feature, Charity, or Other</li>
+                    <li>Write a clear title and description</li>
+                    <li>Your proposal starts in the "Ideas" column</li>
+                    <li>You earn <strong>+50 governance points</strong></li>
+                </ul>
+
+                <h3>2. Community Votes (🗳️ Voting)</h3>
+                <p>Once the Council moves a proposal to voting, the community can vote:</p>
+                <ul>
+                    <li>Connect wallet and sign a message (no gas fees)</li>
+                    <li>Your vote weight = your SUITE balance</li>
+                    <li>Vote YES 👍 or NO 👎</li>
+                    <li>You earn <strong>+10 governance points</strong> per vote</li>
+                </ul>
+
+                <h3>3. Council Review (✅ Approved)</h3>
+                <p>The Council reviews voting results and moves approved proposals forward.</p>
+                <ul>
+                    <li>Council members are multi-sig holders of the Treasury</li>
+                    <li>They ensure proposals are implementable</li>
+                    <li>Approved proposals move to implementation</li>
+                </ul>
+
+                <h3>4. Implementation (🚀 Shipped)</h3>
+                <p>Once implemented, proposals are marked as Shipped.</p>
+                <ul>
+                    <li>The original author earns <strong>+200 governance points</strong></li>
+                    <li>Shipped proposals are celebrated in Discord</li>
+                </ul>
+
+                <h2>🛡️ The Council</h2>
+                <p>The Council is a group of trusted community members who hold keys to the Treasury multi-sig. They
+                    have special powers:</p>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Ability</th>
+                                <th>Regular User</th>
+                                <th>Council Member</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Create Proposal</td>
+                                <td>10 SUITE</td>
+                                <td>✅ Free</td>
+                            </tr>
+                            <tr>
+                                <td>Vote on Proposals</td>
+                                <td>✅ Yes</td>
+                                <td>✅ Yes</td>
+                            </tr>
+                            <tr>
+                                <td>Move to Voting</td>
+                                <td>❌ No</td>
+                                <td>✅ Yes</td>
+                            </tr>
+                            <tr>
+                                <td>Approve/Ship Proposals</td>
+                                <td>❌ No</td>
+                                <td>✅ Yes</td>
+                            </tr>
+                            <tr>
+                                <td>Treasury Access</td>
+                                <td>❌ No</td>
+                                <td>✅ Multi-sig</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h2>🏆 Governance Points & Ranks</h2>
+                <p>Earn points by participating in governance. Your rank is displayed in your wallet and on proposals.
+                </p>
+
+                <h3>How to Earn Points</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Action</th>
+                                <th>Points</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Create a proposal</td>
+                                <td><strong>+50</strong></td>
+                            </tr>
+                            <tr>
+                                <td>Vote on a proposal</td>
+                                <td><strong>+10</strong></td>
+                            </tr>
+                            <tr>
+                                <td>Your proposal gets approved</td>
+                                <td><strong>+100</strong></td>
+                            </tr>
+                            <tr>
+                                <td>Your proposal gets shipped</td>
+                                <td><strong>+200</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Governance Ranks</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Points Required</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="rank-badge rank-newcomer">👋 Newcomer</span></td>
+                                <td>0 - 99</td>
+                            </tr>
+                            <tr>
+                                <td><span class="rank-badge rank-contributor">✨ Contributor</span></td>
+                                <td>100 - 499</td>
+                            </tr>
+                            <tr>
+                                <td><span class="rank-badge rank-active">🌟 Active Member</span></td>
+                                <td>500 - 1,999</td>
+                            </tr>
+                            <tr>
+                                <td><span class="rank-badge rank-power">⚡ Power Voter</span></td>
+                                <td>2,000 - 4,999</td>
+                            </tr>
+                            <tr>
+                                <td><span class="rank-badge rank-legend">🏆 Legend</span></td>
+                                <td>5,000+</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h2>🔒 Security</h2>
+                <ul>
+                    <li><strong>Signature Verification:</strong> All votes require a wallet signature (no gas, just
+                        proof of ownership)</li>
+                    <li><strong>Vote Weight:</strong> Your vote power = your SUITE balance at time of voting</li>
+                    <li><strong>Council Control:</strong> Final approval requires Council multi-sig holders</li>
+                    <li><strong>Spam Prevention:</strong> 10 SUITE cost to create proposals</li>
+                </ul>
+
+                <h2>🚀 Get Started</h2>
+                <p>Ready to participate in governance?</p>
+                <ul>
+                    <li><a href="../discuss.html" style="color: #ff9500;">Go to Governance Board →</a></li>
+                    <li><a href="../wallet.html" style="color: #ff9500;">Get SUITE tokens →</a></li>
+                    <li><a href="https://discord.gg/B2Kz5Rqf3u" style="color: #5865F2;">Join Discord for casual
+                            discussion →</a></li>
+                </ul>
+            </main>
+        </div>
+    </div>
+
+    <script src="../nav.js"></script>
+    <script src="sidebar.js"></script>
+</body>
+
+</html>

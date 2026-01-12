@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Roadmap | SUITE Docs</title>
+    <link rel="icon" type="image/png" href="../assets/suite-token.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../suite-styles.css">
+    <link rel="stylesheet" href="../nav.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        html {
+            overflow-y: scroll;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fff5eb 0%, #ffe4d4 20%, #ffd4e3 50%, #e8d5f9 80%, #d4e5ff 100%);
+            min-height: 100vh;
+            color: #2d1b4e;
+            overflow-x: hidden;
+        }
+
+        /* Inverse nav hover - orange bg, white text */
+        .nav-links a:hover {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            color: white !important;
+        }
+
+        .nav-links a.active {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(255, 149, 0, 0.3);
+        }
+
+        .canvas-container {
+            width: 100%;
+            min-height: 100vh;
+            padding: 90px 24px 40px 24px;
+            padding-right: calc(24px + (100vw - 100%));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        .docs-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 32px;
+            box-shadow: 0 16px 80px rgba(0, 0, 0, 0.08);
+            padding: 30px;
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            gap: 30px;
+        }
+
+        .docs-sidebar {
+            width: 220px;
+            flex-shrink: 0;
+            border-right: 1px solid rgba(0, 0, 0, 0.06);
+            padding-right: 24px;
+        }
+
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+
+        .sidebar-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #9ca3af;
+            margin-bottom: 12px;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            color: #2d1b4e;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            margin-bottom: 4px;
+        }
+
+        .sidebar-link:hover {
+            background: rgba(255, 149, 0, 0.1);
+            color: #ff9500;
+        }
+
+        .sidebar-link.active {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+        }
+
+        .docs-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .docs-content h1 {
+            font-size: 2rem;
+            font-weight: 900;
+            display: inline-block;
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .docs-content h2 {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin: 32px 0 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid rgba(255, 149, 0, 0.2);
+        }
+
+        .docs-content h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #5a4a6f;
+            margin: 20px 0 12px;
+        }
+
+        .docs-content p,
+        .docs-content li {
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: #5a4a6f;
+            margin-bottom: 12px;
+        }
+
+        /* Phase timeline */
+        .phase-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7));
+            border: 2px solid rgba(255, 149, 0, 0.2);
+            border-radius: 20px;
+            padding: 24px;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .phase-card.active {
+            border-color: #ff9500;
+            box-shadow: 0 8px 32px rgba(255, 149, 0, 0.15);
+        }
+
+        .phase-badge {
+            position: absolute;
+            top: -12px;
+            left: 24px;
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .phase-badge.current {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+        }
+
+        .phase-badge.future {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        }
+
+        .phase-title {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin: 8px 0 12px;
+        }
+
+        .phase-items {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .phase-items li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .phase-items li:last-child {
+            border-bottom: none;
+        }
+
+        .phase-items .icon {
+            font-size: 1.1rem;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(59, 130, 246, 0.1));
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .highlight-box h4 {
+            margin: 0 0 12px 0;
+            color: #22c55e;
+            font-size: 1rem;
+        }
+
+        .vision-box {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1));
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .vision-box h4 {
+            margin: 0 0 12px 0;
+            color: #6366f1;
+            font-size: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .docs-container {
+                flex-direction: column;
+            }
+
+            .docs-sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+                padding-right: 0;
+                padding-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="../index.html" class="nav-logo">
+                <img src="assets/suite-token.png" alt="SUITE" class="nav-logo-img">
+                SUITE
+            </a>
+            <div class="nav-links">
+                <a href="../apps.html">Apps</a>
+                <a href="../developer-portal.html">Build</a>
+                <a href="../discuss.html">Discuss</a>
+                <a href="../incubate.html">Incubate</a>
+                <a href="index.html">Docs</a>
+                <a href="../wallet.html">Vault</a><a href="../dashboard.html">Dashboard</a>
+                <a href="../start-building.html" class="nav-cta">🚀 Start Building</a>
+            </div>
+            <button class="mobile-menu-btn">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="canvas-container">
+        <div class="docs-container">
+            <aside class="docs-sidebar"></aside>
+
+            <main class="docs-content">
+                <h1>🗺️ SUITE Roadmap</h1>
+                <p style="color: #6b7280; margin-bottom: 24px;">Where we're headed. Built in public, evolved by the
+                    community.</p>
+
+                <div class="highlight-box">
+                    <h4>🌟 The Vision</h4>
+                    <p style="margin-bottom: 0;">SUITE is building a perpetual, community-owned ecosystem where apps
+                        generate value, treasury grows through yield, and governance evolves from solo founder to full
+                        DAO.</p>
+                </div>
+
+                <h2>📍 Phase 1: Foundation (Now)</h2>
+                <div class="phase-card active">
+                    <span class="phase-badge current">Current</span>
+                    <div class="phase-title">Launch & Liquidity</div>
+                    <ul class="phase-items">
+                        <li><span class="icon">✅</span> Treasury deployed on Base mainnet (TreasuryV4)</li>
+                        <li><span class="icon">✅</span> SUITE token with proportional backing</li>
+                        <li><span class="icon">✅</span> Wallet page with ETH/USDC deposits</li>
+                        <li><span class="icon">🔄</span> LP pool on Aerodrome (ETH/SUITE)</li>
+                        <li><span class="icon">🔄</span> 8 apps finalized to production</li>
+                        <li><span class="icon">🔄</span> Discord commands enabled</li>
+                    </ul>
+                </div>
+
+                <h2>🏦 Phase 2: Treasury Evolution</h2>
+                <div class="phase-card">
+                    <span class="phase-badge">Q1 2026</span>
+                    <div class="phase-title">Yield & Transparency</div>
+                    <ul class="phase-items">
+                        <li><span class="icon">🔐</span> Gnosis Safe multi-sig (solo admin → trusted signers)</li>
+                        <li><span class="icon">📊</span> Treasury dashboard with live allocations</li>
+                        <li><span class="icon">💰</span> Yield strategies (Aave, Lido, lending pools)</li>
+                        <li><span class="icon">🎯</span> <strong>Signer skin-in-game:</strong> Multi-sig signers must
+                            lock SUITE/ETH</li>
+                        <li><span class="icon">📢</span> Weekly treasury updates in Discord</li>
+                        <li><span class="icon">💱</span> <strong>Dynamic pricing:</strong> USD-denominated fees paid in
+                            SUITE (oracle-based)</li>
+                    </ul>
+                </div>
+
+                <h2>🗳️ Phase 3: Community Governance</h2>
+                <div class="phase-card">
+                    <span class="phase-badge future">Q2 2026</span>
+                    <div class="phase-title">DAO & Voting</div>
+                    <ul class="phase-items">
+                        <li><span class="icon">🗳️</span> Snapshot voting for treasury decisions</li>
+                        <li><span class="icon">💡</span> Community proposals for yield allocation</li>
+                        <li><span class="icon">🤝</span> Multi-sig expansion (3-of-5, 5-of-7)</li>
+                        <li><span class="icon">❤️</span> Charity/giving allocation votes</li>
+                        <li><span class="icon">🏛️</span> Finance section in Discord for treasury enthusiasts</li>
+                    </ul>
+                </div>
+
+                <h2>🚀 Phase 4: Expansion</h2>
+                <div class="phase-card">
+                    <span class="phase-badge future">2026+</span>
+                    <div class="phase-title">Scale & Reach</div>
+                    <ul class="phase-items">
+                        <li><span class="icon">📱</span> Native mobile apps (TestFlight, Play Store)</li>
+                        <li><span class="icon">🤖</span> Agentic AI app development</li>
+                        <li><span class="icon">🪙</span> Token listings (CEX/DEX expansion)</li>
+                        <li><span class="icon">⛓️</span> Multi-chain deployment (Ethereum, Arbitrum, Optimism)</li>
+                        <li><span class="icon">🌍</span> Global community & localization</li>
+                    </ul>
+                </div>
+
+                <h2>🤖 Phase 5: AI Robotics Ventures</h2>
+                <div class="phase-card">
+                    <span class="phase-badge future">2026-2027</span>
+                    <div class="phase-title">Physical AI & Autonomous Entrepreneurship</div>
+                    <div
+                        style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(16, 185, 129, 0.1)); border-radius: 12px; padding: 14px; margin-bottom: 16px; border-left: 4px solid #22c55e;">
+                        <strong style="color: #22c55e;">💰 $500,000 USD Funding Secured</strong>
+                        <p style="margin: 8px 0 0; font-size: 0.9rem;">Personal investment committed to bringing AI
+                            robotics into the SUITE ecosystem.</p>
+                    </div>
+                    <ul class="phase-items">
+                        <li><span class="icon">🦾</span> Physical AI robots integrated with SUITE governance</li>
+                        <li><span class="icon">🏪</span> DAO-funded autonomous business ventures (retail, services,
+                            logistics)</li>
+                        <li><span class="icon">📡</span> Real-time robot activity streams to community</li>
+                        <li><span class="icon">🗳️</span> Community voting on robot business decisions</li>
+                        <li><span class="icon">💵</span> Robot-generated revenue flows to SUITE treasury</li>
+                        <li><span class="icon">🔄</span> Autonomous app factory: AI researches gaps → builds → refines →
+                            deploys</li>
+                        <li><span class="icon">🧠</span> AI agents with "telos" (mission) that pause for human input,
+                            then resume</li>
+                    </ul>
+                </div>
+
+                <div class="vision-box">
+                    <h4>🔮 Long-term Vision</h4>
+                    <p>SUITE becomes a perpetual, self-sustaining ecosystem:</p>
+                    <ul style="margin-bottom: 0;">
+                        <li>Treasury generates yield that raises the floor forever</li>
+                        <li>Apps generate revenue that flows to treasury</li>
+                        <li>Community governs allocation of yield to building, giving, growing</li>
+                        <li>A vibe coding team ready to build whatever comes next</li>
+                        <li><strong>AI robots run real-world businesses governed by token holders</strong></li>
+                    </ul>
+                </div>
+
+                <h2>🎯 Stay Updated</h2>
+                <p>Join the community to follow progress and participate in governance:</p>
+                <ul>
+                    <li><strong>Discord:</strong> Real-time updates and proposals</li>
+                    <li><strong>X/Twitter:</strong> @suiteappstore for announcements</li>
+                    <li><strong>Wallet:</strong> Check treasury stats at getsuite.app/wallet</li>
+                </ul>
+            </main>
+        </div>
+    </div>
+
+    <script src="../nav.js"></script>
+    <script src="sidebar.js"></script>
+</body>
+
+</html>

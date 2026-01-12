@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Guide | SUITE Docs</title>
+    <link rel="icon" type="image/png" href="../assets/suite-token.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../suite-styles.css">
+    <link rel="stylesheet" href="../nav.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        html {
+            overflow-y: scroll;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fff5eb 0%, #ffe4d4 20%, #ffd4e3 50%, #e8d5f9 80%, #d4e5ff 100%);
+            min-height: 100vh;
+            color: #2d1b4e;
+        }
+
+        /* Inverse nav hover - orange bg, white text */
+        .nav-links a:hover {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            color: white !important;
+        }
+
+        .nav-links a.active {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(255, 149, 0, 0.3);
+        }
+
+        .canvas-container {
+            width: 100%;
+            min-height: 100vh;
+            padding: 90px 24px 40px;
+            padding-right: calc(24px + (100vw - 100%));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .docs-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 32px;
+            box-shadow: 0 16px 80px rgba(0, 0, 0, 0.08);
+            padding: 30px;
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            gap: 30px;
+        }
+
+        .docs-sidebar {
+            width: 220px;
+            flex-shrink: 0;
+            border-right: 1px solid rgba(0, 0, 0, 0.06);
+            padding-right: 24px;
+        }
+
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+
+        .sidebar-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #9ca3af;
+            margin-bottom: 12px;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            color: #2d1b4e;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            margin-bottom: 4px;
+        }
+
+        .sidebar-link:hover {
+            background: rgba(255, 149, 0, 0.1);
+            color: #ff9500;
+        }
+
+        .sidebar-link.active {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+        }
+
+        .docs-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .docs-content h1 {
+            font-size: 2rem;
+            font-weight: 900;
+            display: inline-block;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .docs-content .subtitle {
+            font-size: 1.1rem;
+            color: #5a4a6f;
+            margin-bottom: 32px;
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin: 32px 0 16px;
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, rgba(255, 149, 0, 0.1), rgba(255, 107, 157, 0.1));
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .info-box h4 {
+            font-weight: 700;
+            color: #ff9500;
+            margin-bottom: 8px;
+        }
+
+        .info-box p {
+            color: #5a4a6f;
+            font-size: 0.95rem;
+            margin: 0;
+        }
+
+        .feature-card {
+            background: white;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+
+        .feature-card h3 {
+            font-size: 1.1rem;
+            font-weight: 800;
+            margin-bottom: 12px;
+            color: #2d1b4e;
+        }
+
+        .feature-card p {
+            color: #5a4a6f;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .steps-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .steps-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+        }
+
+        .step-num {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+
+        .code-block {
+            background: #1e1e2e;
+            color: #f8f8f2;
+            padding: 16px;
+            border-radius: 12px;
+            font-family: 'SF Mono', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            margin: 16px 0;
+        }
+
+        .cta-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+            padding: 14px 28px;
+            border-radius: 100px;
+            font-weight: 700;
+            text-decoration: none;
+            margin-top: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .docs-container {
+                flex-direction: column;
+                padding: 20px;
+            }
+
+            .docs-sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+                padding-right: 0;
+                padding-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="../index.html" class="nav-logo">
+                <img src="../assets/suite-token.png" alt="SUITE" class="nav-logo-img">
+                SUITE
+            </a>
+            <div class="nav-links">
+                <a href="../apps.html">Apps</a>
+                <a href="../developer-portal.html">Build</a>
+                <a href="../discuss.html">Discuss</a>
+                <a href="../incubate.html">Incubate</a>
+                <a href="index.html">Docs</a>
+                <a href="../wallet.html">Vault</a><a href="../dashboard.html">Dashboard</a>
+                <a href="../start-building.html" class="nav-cta">🚀 Start Building</a>
+            </div>
+            <button class="mobile-menu-btn">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="canvas-container">
+        <div class="docs-container">
+            <aside class="docs-sidebar"></aside>
+
+            <main class="docs-content">
+                <h1>🛠️ Developer Dashboard</h1>
+                <p class="subtitle">Manage your apps and campaigns from the web - no Discord required.</p>
+
+                <div class="info-box">
+                    <h4>📍 Access the Dashboard</h4>
+                    <p>Go to <a href="../dashboard.html"
+                            style="color: #ff9500; font-weight: 700;">getsuite.app/dashboard</a> and login with Discord.
+                    </p>
+                </div>
+
+                <h2 class="section-title">Dashboard Features</h2>
+
+                <div class="feature-card">
+                    <h3>📊 Your Apps</h3>
+                    <p>View all apps you've created, their status, and usage statistics. See which apps are performing
+                        best.</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>🎯 Campaign Management</h3>
+                    <p>Create user acquisition campaigns. Pay SUITE to bring users to your app. Set requirements like
+                        minimum time or actions.</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>💰 Balance &amp; Earnings</h3>
+                    <p>Track your SUITE balance, revenue from apps, and campaign spending all in one place.</p>
+                </div>
+
+                <h2 class="section-title">Creating a Campaign</h2>
+
+                <ol class="steps-list">
+                    <li>
+                        <span class="step-num">1</span>
+                        <div>
+                            <strong>Select Your App</strong><br>
+                            <span style="color: #5a4a6f;">Choose which app you want to promote</span>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="step-num">2</span>
+                        <div>
+                            <strong>Set Reward Amount</strong><br>
+                            <span style="color: #5a4a6f;">How much SUITE will each user earn (e.g., 100 SUITE)</span>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="step-num">3</span>
+                        <div>
+                            <strong>Set Total Budget</strong><br>
+                            <span style="color: #5a4a6f;">Maximum SUITE to spend on this campaign</span>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="step-num">4</span>
+                        <div>
+                            <strong>Add Requirements (Optional)</strong><br>
+                            <span style="color: #5a4a6f;">Minimum time in app, minimum unique actions</span>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="step-num">5</span>
+                        <div>
+                            <strong>Launch Campaign</strong><br>
+                            <span style="color: #5a4a6f;">Your app appears on the Earn page immediately!</span>
+                        </div>
+                    </li>
+                </ol>
+
+                <h2 class="section-title">Campaign Requirements</h2>
+
+                <div class="info-box">
+                    <h4>⏱️ Minimum Time</h4>
+                    <p>Require users to spend X minutes in your app before they can claim the reward.</p>
+                </div>
+
+                <div class="info-box">
+                    <h4>🎯 Minimum Actions</h4>
+                    <p>Require users to perform X unique interactions (screen views, button clicks, etc.) in your app.
+                    </p>
+                </div>
+
+                <h2 class="section-title">📝 Request Reviews</h2>
+                <p style="color: #5a4a6f; margin-bottom: 20px;">Pay users to provide honest feedback on your app.</p>
+
+                <div class="feature-card">
+                    <h3>How Review Campaigns Work</h3>
+                    <p>Set a SUITE reward per review (10-500 SUITE). Users must use your app for the minimum time you
+                        set before they can submit a review. Reviews appear on your app's page.</p>
+                </div>
+
+                <ol class="steps-list">
+                    <li>
+                        <span class="step-num">1</span>
+                        <div>
+                            <strong>Select App &amp; Set Reward</strong><br>
+                            <span style="color: #5a4a6f;">Choose 10-500 SUITE per honest review</span>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="step-num">2</span>
+                        <div>
+                            <strong>Set Minimum Usage Time</strong><br>
+                            <span style="color: #5a4a6f;">1 min to 30 minutes - ensures quality feedback</span>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="step-num">3</span>
+                        <div>
+                            <strong>Set Total Budget</strong><br>
+                            <span style="color: #5a4a6f;">Campaign ends when budget is spent</span>
+                        </div>
+                    </li>
+                </ol>
+
+                <h2 class="section-title">⚡ Create Power-Ups</h2>
+                <p style="color: #5a4a6f; margin-bottom: 20px;">Sell in-app upgrades and earn 70% of each sale.</p>
+
+                <div class="feature-card">
+                    <h3>What Are Power-Ups?</h3>
+                    <p>Power-Ups are purchasable upgrades for your app - premium features, extra content, time-limited
+                        boosts, or permanent unlocks. You set the name, description, icon, price, and duration.</p>
+                </div>
+
+                <div class="info-box">
+                    <h4>💰 Revenue Split</h4>
+                    <p>You keep <strong style="color: #22c55e;">70%</strong> of every Power-Up sale. The remaining 30%
+                        goes to the SUITE Treasury.</p>
+                </div>
+
+                <h2 class="section-title">🏷️ App Earning Badges</h2>
+                <p style="color: #5a4a6f; margin-bottom: 20px;">Visual indicators help users discover earning
+                    opportunities.</p>
+
+                <div class="feature-card">
+                    <h3>Badge Types</h3>
+                    <p>
+                        <span
+                            style="background: linear-gradient(135deg, #22c55e, #10b981); color: white; padding: 4px 12px; border-radius: 100px; font-size: 0.85rem; font-weight: 600;">💰
+                            Earn SUITE</span>
+                        App has an active campaign - users can try it to earn<br><br>
+                        <span
+                            style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 4px 12px; border-radius: 100px; font-size: 0.85rem; font-weight: 600;">⭐
+                            Review</span>
+                        App pays for honest reviews<br><br>
+                        <span
+                            style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; padding: 4px 12px; border-radius: 100px; font-size: 0.85rem; font-weight: 600;">⚡
+                            Power-Ups</span>
+                        App has purchasable upgrades available
+                    </p>
+                </div>
+
+                <a href="../dashboard.html" class="cta-btn">
+                    Open Dashboard →
+                </a>
+            </main>
+        </div>
+    </div>
+    <script src="sidebar.js"></script>
+</body>
+
+</html>

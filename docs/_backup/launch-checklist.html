@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Launch Checklist | SUITE Docs</title>
+    <link rel="icon" type="image/png" href="../assets/suite-token.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../suite-styles.css">
+    <link rel="stylesheet" href="../nav.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        html {
+            overflow-y: scroll;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fff5eb 0%, #ffe4d4 20%, #ffd4e3 50%, #e8d5f9 80%, #d4e5ff 100%);
+            min-height: 100vh;
+            color: #2d1b4e;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            color: white !important;
+        }
+
+        .canvas-container {
+            width: 100%;
+            min-height: 100vh;
+            padding: 90px 24px 40px 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .docs-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 32px;
+            box-shadow: 0 16px 80px rgba(0, 0, 0, 0.08);
+            padding: 30px;
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .docs-content h1 {
+            font-size: 2.2rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            margin-bottom: 24px;
+        }
+
+        /* Checklist Styles */
+        .checklist-section {
+            margin: 24px 0;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(255, 149, 0, 0.05), rgba(255, 107, 157, 0.03));
+            border-radius: 16px;
+            border: 1px solid rgba(255, 149, 0, 0.1);
+        }
+
+        .checklist-title {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .checklist-item:last-child {
+            border-bottom: none;
+        }
+
+        .check-box {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #d1d5db;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .check-box.checked {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            border-color: #22c55e;
+            color: white;
+        }
+
+        .check-content {
+            flex: 1;
+        }
+
+        .check-label {
+            font-weight: 700;
+            color: #2d1b4e;
+            margin-bottom: 4px;
+        }
+
+        .check-desc {
+            font-size: 0.9rem;
+            color: #6b7280;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .badge-done {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .badge-pending {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .badge-blocked {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin: 20px 0;
+            background: #e5e7eb;
+            border-radius: 100px;
+            height: 12px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #22c55e, #16a34a);
+            border-radius: 100px;
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            text-align: center;
+            font-weight: 700;
+            color: #22c55e;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="../index.html" class="nav-logo">
+                <img src="assets/suite-token.png" alt="SUITE" class="nav-logo-img">
+                SUITE
+            </a>
+            <div class="nav-links">
+                <a href="../apps.html">Apps</a>
+                <a href="../developer-portal.html">Build</a>
+                <a href="index.html">Docs</a>
+                <a href="../start-building.html" class="nav-cta">🚀 Start Building</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="canvas-container">
+        <div class="docs-container">
+            <main class="docs-content">
+                <h1>🚀 Ready to Launch Checklist</h1>
+                <p class="subtitle">Everything needed to launch the automated developer experience. Check items as
+                    completed.</p>
+
+                <!-- Progress -->
+                <div class="progress-container">
+                    <div class="progress-bar" id="progressBar" style="width: 60%"></div>
+                </div>
+                <div class="progress-text" id="progressText">60% Complete</div>
+
+                <!-- Discord Bot -->
+                <div class="checklist-section">
+                    <div class="checklist-title">🤖 Discord Bot</div>
+
+                    <div class="checklist-item">
+                        <div class="check-box checked">✓</div>
+                        <div class="check-content">
+                            <div class="check-label">/dev-create-app command</div>
+                            <div class="check-desc">Developers can submit app ideas with AI generation</div>
+                        </div>
+                        <span class="status-badge badge-done">Done</span>
+                    </div>
+
+                    <div class="checklist-item">
+                        <div class="check-box checked">✓</div>
+                        <div class="check-content">
+                            <div class="check-label">/feature-fast command</div>
+                            <div class="check-desc">Instant AI-powered feature implementation</div>
+                        </div>
+                        <span class="status-badge badge-done">Done</span>
+                    </div>
+
+                    <div class="checklist-item">
+                        <div class="check-box checked">✓</div>
+                        <div class="check-content">
+                            <div class="check-label">/bug-fast command</div>
+                            <div class="check-desc">Instant AI-powered bug fixing</div>
+                        </div>
+                        <span class="status-badge badge-done">Done</span>
+                    </div>
+
+                    <div class="checklist-item">
+                        <div class="check-box checked">✓</div>
+                        <div class="check-content">
+                            <div class="check-label">Completion watcher</div>
+                            <div class="check-desc">Watches for completion files and notifies developers</div>
+                        </div>
+                        <span class="status-badge badge-done">Done</span>
+                    </div>
+
+                    <div class="checklist-item">
+                        <div class="check-box"></div>
+                        <div class="check-content">
+                            <div class="check-label">/revert command</div>
+                            <div class="check-desc">Roll back last AI change if it broke something</div>
+                        </div>
+                        <span class="status-badge badge-pending">Pending</span>
+                    </div>
+                </div>
+
+                <!-- GitHub Integration -->
+                <div class="checklist-section">
+                    <div class="checklist-title">🐙 GitHub Integration</div>
+
+                    <div class="checklist-item">
+                        <div class="check-box checked">✓</div>
+                        <div class="check-content">
+                            <div class="check-label">github.js handler module</div>
+                            <div class="check-desc">Functions for fetching/committing files, reverting, writing
+                                completions</div>
+                        </div>
+                        <span class="status-badge badge-done">Done</span>
+                    </div>
+
+                    <div class="checklist-item">
+                        <div class="check-box checked">✓</div>
+                        <div class="check-content">
+                            <div class="check-label">App repo mapping in config</div>
+                            <div class="check-desc">Map app slugs to GitHub repository names</div>
+                        </div>
+                        <span class="status-badge badge-done">Done</span>
+                    </div>
+
+                    <div class="checklist-item">
+                        <div class="check-box"></div>
+                        <div class="check-content">
+                            <div class="check-label">GITHUB_TOKEN configured</div>
+                            <div class="check-desc">Personal Access Token added to Railway env vars</div>
+                        </div>
+                        <span class="status-badge badge-blocked">Needs Token</span>
+                    </div>
+                </div>
+
+                <!-- Deployment -->
+                <div class="checklist-section">
+                    <div class="checklist-title">🚢 Auto-Deployment</div>
+
+                    <div class="checklist-item">
+                        <div class="check-box checked">✓</div>
+                        <div class="check-content">
+                            <div class="check-label">GitHub Actions for EAS updates</div>
+                            <div class="check-desc">Push to main triggers Expo OTA update</div>
+                        </div>
+                        <span class="status-badge badge-done">Done</span>
+                    </div>
+
+                    <div class="checklist-item">
+                        <div class="check-box"></div>
+                        <div class="check-content">
+                            <div class="check-label">Webhook for deploy notifications</div>
+                            <div class="check-desc">Bot gets notified when deploy completes</div>
+                        </div>
+                        <span class="status-badge badge-pending">Optional</span>
+                    </div>
+                </div>
+
+                <!-- Documentation -->
+                <div class="checklist-section">
+                    <div class="checklist-title">📚 Documentation</div>
+
+                    <div class="checklist-item">
+                        <div class="check-box checked">✓</div>
+                        <div class="check-content">
+                            <div class="check-label">Commands reference updated</div>
+                            <div class="check-desc">Fast vs Regular guide, new commands documented</div>
+                        </div>
+                        <span class="status-badge badge-done">Done</span>
+                    </div>
+
+                    <div class="checklist-item">
+                        <div class="check-box checked">✓</div>
+                        <div class="check-content">
+                            <div class="check-label">Launch checklist page</div>
+                            <div class="check-desc">This page - tracking all requirements</div>
+                        </div>
+                        <span class="status-badge badge-done">Done</span>
+                    </div>
+
+                    <div class="checklist-item">
+                        <div class="check-box checked">✓</div>
+                        <div class="check-content">
+                            <div class="check-label">Developer quickstart guide</div>
+                            <div class="check-desc">Step-by-step for new developers</div>
+                        </div>
+                        <span class="status-badge badge-done">Done</span>
+                    </div>
+                </div>
+
+                <!-- Action Items -->
+                <div
+                    style="background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 16px; padding: 20px; margin: 24px 0; border-left: 4px solid #f59e0b;">
+                    <h3 style="margin: 0 0 12px; color: #92400e;">⚠️ Action Required</h3>
+                    <p style="margin: 0 0 8px; color: #92400e;"><strong>To enable the full automated flow:</strong></p>
+                    <ol style="margin: 0 0 0 20px; color: #92400e;">
+                        <li>Create a GitHub Personal Access Token at <a href="https://github.com/settings/tokens/new"
+                                target="_blank" style="color: #b45309;">github.com/settings/tokens</a></li>
+                        <li>Scope: <code>repo</code> (full control)</li>
+                        <li>Add to Railway as <code>GITHUB_TOKEN</code></li>
+                        <li>Redeploy the bot</li>
+                    </ol>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Interactive checkboxes (local storage persistence)
+        document.querySelectorAll('.check-box:not(.checked)').forEach(box => {
+            box.addEventListener('click', () => {
+                box.classList.toggle('checked');
+                box.innerHTML = box.classList.contains('checked') ? '✓' : '';
+                updateProgress();
+            });
+        });
+
+        function updateProgress() {
+            const total = document.querySelectorAll('.check-box').length;
+            const checked = document.querySelectorAll('.check-box.checked').length;
+            const percent = Math.round((checked / total) * 100);
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('progressText').innerText = percent + '% Complete';
+        }
+    </script>
+    <script src="sidebar.js"></script>
+    <script src="docs-nav.js"></script></body>
+
+</html>

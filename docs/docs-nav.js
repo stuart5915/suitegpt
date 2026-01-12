@@ -5,8 +5,8 @@
  */
 
 document.addEventListener('DOMContentLoaded', function () {
-    // Find or create nav element
-    let nav = document.querySelector('nav.nav');
+    // Find nav element by ID or class
+    let nav = document.querySelector('#main-nav') || document.querySelector('nav.nav');
 
     if (nav) {
         // Replace existing nav with standardized version

@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUITE Utility | SUITE Docs</title>
+    <link rel="icon" type="image/png" href="../assets/suite-token.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../suite-styles.css">
+    <link rel="stylesheet" href="../nav.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        html {
+            overflow-y: scroll;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fff5eb 0%, #ffe4d4 20%, #ffd4e3 50%, #e8d5f9 80%, #d4e5ff 100%);
+            min-height: 100vh;
+            color: #2d1b4e;
+            overflow-x: hidden;
+        }
+
+        .nav-links a:hover {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            color: white !important;
+        }
+
+        .nav-links a.active {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(255, 149, 0, 0.3);
+        }
+
+        .canvas-container {
+            width: 100%;
+            min-height: 100vh;
+            padding: 90px 24px 40px 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        .docs-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 32px;
+            box-shadow: 0 16px 80px rgba(0, 0, 0, 0.08);
+            padding: 30px;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            gap: 30px;
+        }
+
+        .docs-sidebar {
+            width: 220px;
+            flex-shrink: 0;
+            border-right: 1px solid rgba(0, 0, 0, 0.06);
+            padding-right: 24px;
+        }
+
+        .docs-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .docs-content h1 {
+            font-size: 2rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .docs-content h2 {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin: 32px 0 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid rgba(255, 149, 0, 0.2);
+        }
+
+        .docs-content h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #5a4a6f;
+            margin: 20px 0 12px;
+        }
+
+        .docs-content p,
+        .docs-content li {
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: #5a4a6f;
+            margin-bottom: 12px;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(59, 130, 246, 0.1));
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .highlight-box h4 {
+            margin: 0 0 12px 0;
+            color: #22c55e;
+            font-size: 1rem;
+        }
+
+        .flow-diagram {
+            background: #1e1e2e;
+            border-radius: 12px;
+            padding: 20px;
+            color: #a6e3a1;
+            font-family: monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            overflow-x: auto;
+            margin: 16px 0;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .stat-box {
+            background: rgba(255, 149, 0, 0.1);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .stat-box .label {
+            font-size: 0.75rem;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-box .value {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #ff9500;
+        }
+
+        .option-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .option-card {
+            background: rgba(255, 255, 255, 0.7);
+            padding: 16px;
+            border-radius: 12px;
+            border: 2px solid transparent;
+        }
+
+        .option-card.earning {
+            border-color: rgba(34, 197, 94, 0.3);
+        }
+
+        .option-card.no-earn {
+            border-color: rgba(156, 163, 175, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .docs-container {
+                flex-direction: column;
+            }
+
+            .docs-sidebar {
+                width: 100%;
+                border-right: none;
+                padding-bottom: 20px;
+            }
+
+            .stats-row,
+            .option-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="../index.html" class="nav-logo">
+                <img src="../assets/suite-token.png" alt="SUITE" class="nav-logo-img">
+                SUITE
+            </a>
+            <div class="nav-links">
+                <a href="../apps.html">Apps</a>
+                <a href="../developer-portal.html">Build</a>
+                <a href="../discuss.html">Discuss</a>
+                <a href="../incubate.html">Incubate</a>
+                <a href="index.html">Docs</a>
+                <a href="../wallet.html">Vault</a><a href="../dashboard.html">Dashboard</a>
+                <a href="../start-building.html" class="nav-cta">🚀 Start Building</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="canvas-container">
+        <div class="docs-container">
+            <aside class="docs-sidebar"></aside>
+
+            <main class="docs-content">
+                <h1>⚡ SUITE Utility</h1>
+                <p style="color: #6b7280; margin-bottom: 24px;">Everything you can do with your SUITE tokens beyond just
+                    holding.</p>
+
+                <h2>🎯 Current SUITE Utility</h2>
+                <div class="stats-row">
+                    <div class="stat-box">
+                        <div class="label">📱 Apps</div>
+                        <div class="value">Pay for AI</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="label">🗳️ Discuss</div>
+                        <div class="value">Vote</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="label">⚡ Arb</div>
+                        <div class="value">Earn</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="label">🏦 Vault</div>
+                        <div class="value">Redeem</div>
+                    </div>
+                </div>
+
+                <h2>💰 Yield Direction</h2>
+                <p>When you hold SUITE, your proportional share of <strong>treasury yield</strong> can be directed to
+                    different places. You choose where YOUR yield goes:</p>
+
+                <div class="option-grid">
+                    <div class="option-card earning">
+                        <strong style="color: #22c55e;">🔄 Reinvest to Treasury</strong>
+                        <p style="margin: 8px 0 0 0; font-size: 0.85rem;">Compounds your value. Earns REP.</p>
+                    </div>
+                    <div class="option-card no-earn">
+                        <strong style="color: #6b7280;">💰 Claim to Myself</strong>
+                        <p style="margin: 8px 0 0 0; font-size: 0.85rem;">Withdraw as ETH/USDC. No REP.</p>
+                    </div>
+                    <div class="option-card earning">
+                        <strong style="color: #22c55e;">💝 Donate to Charity</strong>
+                        <p style="margin: 8px 0 0 0; font-size: 0.85rem;">Water.org, One Tree Planted, etc. Earns REP.
+                        </p>
+                    </div>
+                    <div class="option-card earning">
+                        <strong style="color: #22c55e;">🎮 Support Ecosystem</strong>
+                        <p style="margin: 8px 0 0 0; font-size: 0.85rem;">Creator grants, LP incentives. Earns REP.</p>
+                    </div>
+                </div>
+
+                <div class="highlight-box">
+                    <h4>🔄 Flexibility</h4>
+                    <p style="margin: 0;">You can change your yield destination <strong>anytime</strong>. Changes take
+                        effect at the next weekly distribution (every Sunday).</p>
+                </div>
+
+                <h2>🔒 Locking for REP</h2>
+                <p>Want more influence and future rewards? <strong>Lock your SUITE</strong> for a period of time:</p>
+
+                <div class="stats-row">
+                    <div class="stat-box">
+                        <div class="label">3 Months</div>
+                        <div class="value">1x REP</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="label">1 Year</div>
+                        <div class="value">2x REP</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="label">2 Years</div>
+                        <div class="value">3x REP</div>
+                    </div>
+                    <div class="stat-box" style="background: rgba(34, 197, 94, 0.15);">
+                        <div class="label">4 Years (Max)</div>
+                        <div class="value" style="color: #22c55e;">4x REP</div>
+                    </div>
+                </div>
+
+                <h3>While Locked:</h3>
+                <ul style="margin-left: 20px;">
+                    <li>❌ Can't spend in apps</li>
+                    <li>❌ Can't withdraw</li>
+                    <li>✅ Still earn from ecosystem</li>
+                    <li>✅ Still direct yield</li>
+                    <li>✅ Earn more REP</li>
+                </ul>
+
+                <h2>⭐ REP (Reputation Points)</h2>
+                <p>REP is earned by <strong>giving back to the ecosystem</strong>. It determines your share of future
+                    protocol revenue.</p>
+
+                <div class="flow-diagram">
+                    REP Formula:
+                    REP = (SUITE Amount) × (Lock Multiplier) × (Yield Action)
+
+                    Yield Actions:
+                    - Claim to self: 0x (no REP)
+                    - Reinvest/Donate: 1x (full REP)
+
+                    Example:
+                    Lock 1,000 SUITE for 4 years (4x multiplier)
+                    Direct yield to charity (1x action)
+                    Weekly REP earned: 1,000 × 4 × 1 = 4,000 REP
+                </div>
+
+                <h3>REP Benefits:</h3>
+                <ul style="margin-left: 20px;">
+                    <li>🏆 <strong>Protocol Revenue Share:</strong> REP holders split a portion of all ecosystem revenue
+                    </li>
+                    <li>📊 <strong>Leaderboard Status:</strong> Public recognition of contribution</li>
+                    <li>🎯 <strong>Future Airdrops:</strong> Priority access to new features</li>
+                </ul>
+
+                <h2>🏦 Treasury Liquidity</h2>
+                <p>All protocol revenue and yield stays <strong>productive</strong> in DeFi strategies, with a liquid
+                    buffer for operations:</p>
+
+                <div class="flow-diagram">
+                    Treasury Allocation:
+                    ├── 🔒 DeFi Strategies (90%): ETH staking, USDC lending, LP positions
+                    └── 💧 Liquid Buffer (10%): Weekly distributions, redemptions, REP claims
+
+                    Auto-Rebalancing:
+                    - If buffer < 5% → Withdraw from DeFi - If buffer> 15% → Deploy excess to DeFi
+                        - Target: ~10% liquid at all times
+                </div>
+
+                <div class="highlight-box"
+                    style="background: linear-gradient(135deg, rgba(255, 149, 0, 0.1), rgba(255, 107, 157, 0.1)); border-color: rgba(255, 149, 0, 0.2);">
+                    <h4 style="color: #ff9500;">💡 Key Insight</h4>
+                    <p style="margin: 0;">Your capital never sits idle. The treasury actively earns yield, which
+                        increases the floor price for all SUITE holders—whether you lock or not!</p>
+                </div>
+
+                <h2>📅 Weekly Cycle</h2>
+                <div class="flow-diagram">
+                    Every Sunday:
+                    1. Calculate total treasury yield for the week
+                    2. For each SUITE holder:
+                    - Determine their share (SUITE balance / total supply)
+                    - Check their yield_destination setting
+                    - Distribute yield to chosen destination
+                    - Award REP based on destination + lock multiplier
+                    3. Update REP leaderboard
+                    4. Rebalance treasury buffer if needed
+                </div>
+
+            </main>
+        </div>
+    </div>
+    <script src="sidebar.js"></script>
+</body>
+
+</html>

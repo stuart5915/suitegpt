@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Tokenomics | SUITE Docs</title>
+    <link rel="icon" type="image/png" href="../assets/suite-token.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../suite-styles.css">
+    <link rel="stylesheet" href="../nav.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        html {
+            overflow-y: scroll;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fff5eb 0%, #ffe4d4 20%, #ffd4e3 50%, #e8d5f9 80%, #d4e5ff 100%);
+            min-height: 100vh;
+            color: #2d1b4e;
+            overflow-x: hidden;
+        }
+
+        /* Inverse nav hover - orange bg, white text */
+        .nav-links a:hover {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            color: white !important;
+        }
+
+        .nav-links a.active {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(255, 149, 0, 0.3);
+        }
+
+        .canvas-container {
+            width: 100%;
+            min-height: 100vh;
+            padding: 90px 24px 40px 24px;
+            padding-right: calc(24px + (100vw - 100%));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        .docs-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 32px;
+            box-shadow: 0 16px 80px rgba(0, 0, 0, 0.08);
+            padding: 30px;
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            gap: 30px;
+        }
+
+        .docs-sidebar {
+            width: 220px;
+            flex-shrink: 0;
+            border-right: 1px solid rgba(0, 0, 0, 0.06);
+            padding-right: 24px;
+        }
+
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+
+        .sidebar-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #9ca3af;
+            margin-bottom: 12px;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            color: #2d1b4e;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            margin-bottom: 4px;
+        }
+
+        .sidebar-link:hover {
+            background: rgba(255, 149, 0, 0.1);
+            color: #ff9500;
+        }
+
+        .sidebar-link.active {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+        }
+
+        .docs-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .docs-content h1 {
+            font-size: 2rem;
+            font-weight: 900;
+            display: inline-block;
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .docs-content h2 {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin: 32px 0 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid rgba(255, 149, 0, 0.2);
+        }
+
+        .docs-content h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #5a4a6f;
+            margin: 20px 0 12px;
+        }
+
+        .docs-content p,
+        .docs-content li {
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: #5a4a6f;
+            margin-bottom: 12px;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(59, 130, 246, 0.1));
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .highlight-box h4 {
+            margin: 0 0 12px 0;
+            color: #22c55e;
+            font-size: 1rem;
+        }
+
+        .scenario-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .scenario-card {
+            background: rgba(255, 255, 255, 0.7);
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .scenario-card .price {
+            font-size: 1.1rem;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .scenario-card .action {
+            font-size: 0.85rem;
+            color: #5a4a6f;
+        }
+
+        .green {
+            color: #22c55e;
+        }
+
+        .blue {
+            color: #3b82f6;
+        }
+
+        .red {
+            color: #ef4444;
+        }
+
+        .flow-diagram {
+            background: #1e1e2e;
+            border-radius: 12px;
+            padding: 20px;
+            color: #a6e3a1;
+            font-family: monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            overflow-x: auto;
+            margin: 16px 0;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .stat-box {
+            background: rgba(255, 149, 0, 0.1);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .stat-box .label {
+            font-size: 0.75rem;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-box .value {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #ff9500;
+        }
+
+        @media (max-width: 768px) {
+            .docs-container {
+                flex-direction: column;
+            }
+
+            .docs-sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+                padding-right: 0;
+                padding-bottom: 20px;
+            }
+
+            .scenario-grid,
+            .stats-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="../index.html" class="nav-logo">
+                <img src="../assets/suite-token.png" alt="SUITE" class="nav-logo-img">
+                SUITE
+            </a>
+            <div class="nav-links">
+                <a href="../apps.html">Apps</a>
+                <a href="../developer-portal.html">Build</a>
+                <a href="../discuss.html">Discuss</a>
+                <a href="../incubate.html">Incubate</a>
+                <a href="index.html">Docs</a>
+                <a href="../wallet.html">Vault</a><a href="../dashboard.html">Dashboard</a>
+                <a href="../start-building.html" class="nav-cta">🚀 Start Building</a>
+            </div>
+            <button class="mobile-menu-btn">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="canvas-container">
+        <div class="docs-container">
+            <aside class="docs-sidebar"></aside>
+
+            <main class="docs-content">
+                <h1>📊 SUITE Tokenomics</h1>
+                <p style="color: #6b7280; margin-bottom: 24px;">How SUITE maintains its value and why the price can
+                    never fall below the floor.</p>
+
+                <h2>🛡️ The Floor Price Guarantee</h2>
+                <p>Every SUITE token is backed by real ETH in the treasury. This creates a <strong>hard price
+                        floor</strong> that makes it structurally impossible for SUITE to trade below its backing value.
+                </p>
+
+                <div class="highlight-box">
+                    <h4>🔑 Key Insight: It's Structurally Impossible</h4>
+                    <p style="margin-bottom: 16px;">Every SUITE token in existence was either:</p>
+                    <ul style="margin-left: 20px;">
+                        <li>Minted by depositing ETH to the treasury (at floor price)</li>
+                        <li>Bought from DEX at market price (at or above floor)</li>
+                    </ul>
+                    <p style="margin-top: 12px; margin-bottom: 0;"><strong>No one would ever sell below floor because
+                            they can always redeem at the treasury for floor price!</strong></p>
+                </div>
+
+                <h3>Price Scenarios</h3>
+                <div class="scenario-grid">
+                    <div class="scenario-card">
+                        <div class="price green">DEX @ $1.20</div>
+                        <div class="action">Sell on DEX for profit ✓</div>
+                    </div>
+                    <div class="scenario-card">
+                        <div class="price blue">DEX @ $1.00</div>
+                        <div class="action">Sell DEX or redeem treasury ✓</div>
+                    </div>
+                    <div class="scenario-card">
+                        <div class="price red">DEX @ $0.80</div>
+                        <div class="action">Can't happen - redeem at $1 ✗</div>
+                    </div>
+                </div>
+
+                <h2>💰 How Treasury Backing Works</h2>
+                <div class="flow-diagram">
+                    User deposits 1 ETH to Treasury
+                    ↓
+                    Treasury mints SUITE at floor price
+                    ↓
+                    User receives SUITE tokens
+                    ↓
+                    Floor Price = Treasury ETH / Total SUITE Supply
+                    ↓
+                    User can ALWAYS redeem SUITE for proportional ETH
+                </div>
+
+                <h3>The Math</h3>
+                <p>If the treasury holds <strong>10 ETH</strong> and there are <strong>100,000 SUITE</strong> tokens:
+                </p>
+                <div class="stats-row">
+                    <div class="stat-box">
+                        <div class="label">Floor Price</div>
+                        <div class="value">$0.0001/SUITE</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="label">Your 10,000 SUITE</div>
+                        <div class="value">= 1 ETH</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="label">Backing Rate</div>
+                        <div class="value">100%</div>
+                    </div>
+                </div>
+
+                <h2>📈 Why Price Can Go UP</h2>
+                <p>While the floor provides downside protection, SUITE can trade <strong>above</strong> the floor on DEX
+                    markets due to:</p>
+                <ul style="margin-left: 20px;">
+                    <li><strong>Demand:</strong> More people wanting to use SUITE apps</li>
+                    <li><strong>Scarcity:</strong> Limited supply on DEX</li>
+                    <li><strong>Speculation:</strong> Traders expecting future growth</li>
+                    <li><strong>Buybacks:</strong> Treasury using yield to buy SUITE</li>
+                </ul>
+
+                <h2>🏦 Treasury Growth</h2>
+                <p>The treasury grows through:</p>
+                <ul style="margin-left: 20px;">
+                    <li><strong>Deposits:</strong> Users depositing ETH to mint SUITE</li>
+                    <li><strong>Fees:</strong> Small fees on deposits/withdrawals</li>
+                    <li><strong>Yield:</strong> Treasury ETH earning staking rewards</li>
+                </ul>
+                <p>As treasury grows faster than supply (thanks to fees), the <strong>floor price increases over
+                        time</strong>!</p>
+
+                <h2>🎯 $SUITE Perspectives</h2>
+                <p>Different people interact with $SUITE for different reasons. Here's how the token serves various use
+                    cases:</p>
+
+                <div class="scenario-grid">
+                    <div class="scenario-card">
+                        <div class="price" style="color: #8b5cf6;">📱 App User</div>
+                        <div class="action">Use SUITE to unlock AI features in apps (meal analysis, workout tracking,
+                            etc.)</div>
+                    </div>
+                    <div class="scenario-card">
+                        <div class="price" style="color: #f59e0b;">🔨 Builder</div>
+                        <div class="action">Earn SUITE for building apps, reporting bugs, creating content</div>
+                    </div>
+                    <div class="scenario-card">
+                        <div class="price" style="color: #10b981;">💎 Investor</div>
+                        <div class="action">Hold SUITE with guaranteed floor price + upside potential</div>
+                    </div>
+                </div>
+
+                <h3>Why You'd Want $SUITE</h3>
+                <ul style="margin-left: 20px;">
+                    <li><strong>Power AI Features:</strong> AI meal analysis, workout generation, dream interpretation -
+                        all powered by SUITE</li>
+                    <li><strong>App Development:</strong> Build your own app ideas without coding using SUITE credits
+                    </li>
+                    <li><strong>Safe Store of Value:</strong> Treasury-backed floor price means your SUITE can never go
+                        below backing value</li>
+                    <li><strong>Earn by Contributing:</strong> Get rewarded for helping improve the ecosystem</li>
+                    <li><strong>Vote on Giving:</strong> Help decide which charities receive from the 10% giving pool
+                    </li>
+                    <li><strong>Access Premium Features:</strong> Unlock advanced AI capabilities across all SUITE apps
+                    </li>
+                </ul>
+
+                <h3>How to Get SUITE</h3>
+                <div class="scenario-grid">
+                    <div class="scenario-card">
+                        <div class="price" style="color: #3b82f6;">💳 Buy</div>
+                        <div class="action">Deposit ETH/USDC to treasury or buy on DEX</div>
+                    </div>
+                    <div class="scenario-card">
+                        <div class="price" style="color: #ec4899;">📺 Watch Ads</div>
+                        <div class="action">Earn free SUITE by watching short video ads</div>
+                    </div>
+                    <div class="scenario-card">
+                        <div class="price" style="color: #22c55e;">🎁 Free Tier</div>
+                        <div class="action">Everyone gets 20 free actions to start</div>
+                    </div>
+                </div>
+
+                <h2>📺 Ad Credits System</h2>
+                <p>Don't want to spend money? <strong>Watch ads to earn SUITE!</strong> This lets anyone use SUITE apps
+                    for free.</p>
+
+                <h3>How It Works</h3>
+                <div class="flow-diagram">
+                    1. You use your 20 FREE actions
+                    ↓
+                    2. Need more? Click "Watch Ad for SUITE"
+                    ↓
+                    3. Watch a 15-30 second video ad
+                    ↓
+                    4. Receive SUITE credits instantly
+                    ↓
+                    5. Continue using AI features!
+                </div>
+
+                <h3>Credits vs On-Chain SUITE</h3>
+                <div class="scenario-grid">
+                    <div class="scenario-card">
+                        <div class="price" style="color: #8b5cf6;">💨 Credits (Off-Chain)</div>
+                        <div class="action">Instant, no gas fees, earned from ads, used in apps</div>
+                    </div>
+                    <div class="scenario-card">
+                        <div class="price" style="color: #f59e0b;">🔗 SUITE Token (On-Chain)</div>
+                        <div class="action">Treasury-backed, redeemable, tradeable on DEX</div>
+                    </div>
+                </div>
+                <p style="margin-top: 16px;">Credits are <strong>IOUs</strong> that work instantly. When you deposit
+                    real money, you get
+                    <strong>on-chain SUITE</strong> that's fully backed and redeemable. Both work identically in apps!
+                </p>
+
+                <div class="highlight-box">
+                    <h4>🎮 The Free-to-Play Model</h4>
+                    <p style="margin-bottom: 0;">Just like mobile games, you can play for free by watching ads, or pay
+                        to skip ads
+                        and get more features. SUITE apps work the same way - accessible to everyone!</p>
+                </div>
+
+                <h3>🗺️ Roadmap: On-Chain Settlement</h3>
+                <p>Currently credits are off-chain for speed. <strong>Future plans:</strong></p>
+                <ul style="margin-left: 20px;">
+                    <li><strong>Batch Settlements:</strong> Aggregate credits and settle to Base chain periodically</li>
+                    <li><strong>Signature-Based:</strong> Users sign messages (EIP-712), we submit - <em>gasless for
+                            users!</em></li>
+                    <li><strong>Full On-Chain:</strong> Every action recorded on Base (optional for transparency)</li>
+                </ul>
+
+                <h3>🚀 Roadmap: Crypto Onboarding for Beginners</h3>
+                <p>Never used crypto? We'll guide you through it! <strong>Type /onchain in Discord:</strong></p>
+                <div class="flow-diagram">
+                    1. Type /onchain in Discord
+                    ↓
+                    2. Click "Create Wallet" (never had one)
+                    ↓
+                    3. Create wallet with email/Google (no seed phrase!)
+                    ↓
+                    4. Sign message to link Discord → Wallet
+                    ↓
+                    5. Your credits are now claimable as real tokens!
+                </div>
+                <p style="margin-top: 16px;">This makes SUITE a <strong>crypto on-ramp</strong> - your first experience
+                    with blockchain, made easy through familiar apps!</p>
+
+                <h3>❓ Frequently Asked Questions</h3>
+
+                <div class="faq-item" style="margin-bottom: 24px;">
+                    <h4 style="color: #ff9500; margin-bottom: 8px;">Can I use SUITE as a hedge against ETH price drops?
+                    </h4>
+                    <p>Not exactly. SUITE is <strong>backed by ETH in the treasury</strong>, so if ETH drops 50%,
+                        your SUITE redemption value drops proportionally. However, SUITE <em>can</em> trade above the
+                        treasury floor on external DEXs if there's demand for the utility. The treasury creates a
+                        <strong>guaranteed floor price</strong> - SUITE can never go to zero because there's always
+                        backing.
+                    </p>
+                </div>
+
+                <div class="faq-item" style="margin-bottom: 24px;">
+                    <h4 style="color: #ff9500; margin-bottom: 8px;">How does the treasury floor price work?</h4>
+                    <p><strong>Floor Price = Treasury Value ÷ Total SUITE Supply</strong><br>
+                        If the treasury has $100k and 100M SUITE exists, floor = $0.001 per SUITE. When you redeem,
+                        you always get your proportional share of the treasury. On DEXs, the price can be higher
+                        (demand for utility) but not lower (arbitrage would correct it).</p>
+                </div>
+
+                <div class="faq-item" style="margin-bottom: 24px;">
+                    <h4 style="color: #ff9500; margin-bottom: 8px;">How much SUITE do I earn from watching ads?</h4>
+                    <p>You earn <strong>2 SUITE per ad view</strong>. This is calculated to match the ~$0.002
+                        ad revenue deposited into the treasury, ensuring the system stays solvent. Watch more ads
+                        = earn more SUITE = more AI actions in apps!</p>
+                </div>
+
+                <div class="faq-item" style="margin-bottom: 24px;">
+                    <h4 style="color: #ff9500; margin-bottom: 8px;">What's the difference between credits and on-chain
+                        SUITE?</h4>
+                    <p><strong>Credits</strong> = Off-chain, instant, stored in our database. Great for quick
+                        actions.<br>
+                        <strong>On-chain SUITE</strong> = Real ERC-20 tokens on Base. Tradeable, verifiable, truly
+                        yours.<br>
+                        You can convert credits to on-chain SUITE anytime using the /onchain command in Discord.
+                    </p>
+                </div>
+
+                <div class="faq-item" style="margin-bottom: 24px;">
+                    <h4 style="color: #ff9500; margin-bottom: 8px;">What happens if everyone redeems at once?</h4>
+                    <p>The treasury is designed for <strong>proportional redemption</strong>. If 10% of SUITE
+                        holders redeem, they get 10% of the treasury. The remaining holders still have 100% of
+                        their proportional share. The system stays solvent because you can only withdraw what
+                        you're entitled to - never more.</p>
+                </div>
+
+                <div class="faq-item" style="margin-bottom: 24px;">
+                    <h4 style="color: #ff9500; margin-bottom: 8px;">How does SUITE generate yield?</h4>
+                    <p>The treasury ETH is deployed to <strong>DeFi yield strategies</strong> (staking, lending,
+                        LP positions). Yield earned increases the total treasury value, which increases the floor
+                        price of all SUITE tokens. You benefit just by holding!</p>
+                </div>
+
+                <div class="faq-item" style="margin-bottom: 24px;">
+                    <h4 style="color: #ff9500; margin-bottom: 8px;">Is there a fee for minting or redeeming?</h4>
+                    <p><strong>Minting:</strong> 0.5% fee goes to community treasury for development.<br>
+                        <strong>Redeeming:</strong> 0.5% fee + gas costs on Base (~$0.01).<br>
+                        These small fees help sustain the ecosystem while keeping transactions affordable.
+                    </p>
+                </div>
+
+                <div class="highlight-box"
+                    style="background: linear-gradient(135deg, rgba(255, 149, 0, 0.1), rgba(255, 107, 157, 0.1)); border-color: rgba(255, 149, 0, 0.2);">
+                    <h4 style="color: #ff9500;">💡 Summary</h4>
+                    <p style="margin: 0;"><strong>SUITE = Utility + Safety + Growth + Impact</strong><br>Use it in apps,
+                        backed by real value, grows over time, gives back to community.</p>
+                </div>
+            </main>
+        </div>
+    </div>
+    <script src="sidebar.js"></script>
+</body>
+
+</html>
