@@ -4734,17 +4734,18 @@
             // Update UI
             updateTelosUI(isEnabled);
 
-            // Save to Supabase
+            // Save to Supabase (UPSERT - creates if not exists)
             try {
-                await fetch(`${SUPABASE_URL}/rest/v1/ai_config?key=eq.telos_enabled`, {
-                    method: 'PATCH',
+                await fetch(`${SUPABASE_URL}/rest/v1/ai_config`, {
+                    method: 'POST',
                     headers: {
                         'apikey': SUPABASE_ANON_KEY,
                         'Content-Type': 'application/json',
-                        'Prefer': 'return=minimal'
+                        'Prefer': 'resolution=merge-duplicates'
                     },
-                    body: JSON.stringify({ value: isEnabled ? 'true' : 'false', updated_at: new Date().toISOString() })
+                    body: JSON.stringify({ key: 'telos_enabled', value: isEnabled ? 'true' : 'false', updated_at: new Date().toISOString() })
                 });
+                console.log('TELOS toggle saved:', isEnabled);
             } catch (error) {
                 console.error('Error saving TELOS state:', error);
             }
