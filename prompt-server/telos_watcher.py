@@ -1,6 +1,6 @@
 # TELOS Watcher - Autonomous App Generation
 # 
-# This is a simplified watcher that ONLY handles TELOS autonomous mode.
+# This watcher handles TELOS autonomous mode with Perplexity Deep Research.
 # No prompts table, no pyautogui, no window management.
 #
 # USAGE:
@@ -8,9 +8,10 @@
 #
 # FLOW:
 #   1. Check if TELOS mode is enabled in ai_config table
-#   2. When enabled, generate ideas via telos_generator
-#   3. Check for approved ideas and log activity
-#   4. Sleep and repeat
+#   2. When enabled, run Perplexity Deep Research for market insights
+#   3. Generate context-aware app ideas
+#   4. Insert to telos_ideas for approval
+#   5. Sleep and repeat
 
 import os
 import sys
@@ -19,15 +20,8 @@ import json
 import requests
 from datetime import datetime
 
-# Import TELOS modules
-try:
-    import telos_generator as telos
-    TELOS_AVAILABLE = True
-    print('[INIT] ✅ TELOS generator loaded')
-except ImportError as e:
-    TELOS_AVAILABLE = False
-    print(f'[INIT] ❌ TELOS generator not available: {e}')
-    sys.exit(1)
+print('[INIT] ✅ TELOS watcher with Perplexity Deep Research')
+
 
 # ═══ CONFIGURATION ═══
 SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co'
@@ -103,33 +97,28 @@ def get_stats():
 
 
 def run_idea_generation():
-    """Generate new app ideas using TELOS."""
+    """Generate new app ideas using Perplexity Deep Research."""
     global last_generation_time
     
-    print('[TELOS] 🤖 Starting idea generation...')
-    log_activity('telos_research', 'Starting market research and idea generation...')
+    print('[TELOS] 🔍 Starting Perplexity Deep Research...')
+    log_activity('telos_research', 'Starting deep market research with Perplexity AI...')
     
     try:
-        # Check if we can generate (respects daily limits)
-        can_generate, reason = telos.check_limits()
-        if not can_generate:
-            print(f'[TELOS] ⏳ Cannot generate: {reason}')
-            return False
-        
-        # Run the TELOS cycle
-        success = telos.run_telos_cycle()
+        # Import and run the deep research module
+        import telos_research
+        success = telos_research.run_deep_research()
         
         if success:
             last_generation_time = time.time()
-            print('[TELOS] ✅ Ideas generated successfully!')
+            print('[TELOS] ✅ Deep research complete! New ideas generated.')
             return True
         else:
-            print('[TELOS] ⚠️ Generation returned false')
+            print('[TELOS] ⚠️ Deep research returned no ideas')
             return False
             
     except Exception as e:
-        print(f'[TELOS] ❌ Generation failed: {e}')
-        log_activity('telos_error', f'Idea generation failed: {str(e)[:100]}')
+        print(f'[TELOS] ❌ Research failed: {e}')
+        log_activity('telos_error', f'Deep research failed: {str(e)[:100]}')
         return False
 
 
