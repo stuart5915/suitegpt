@@ -266,20 +266,17 @@ def insert_ideas_to_supabase(ideas, research_citations=None):
     
     for idea in ideas:
         try:
+            # Map to actual telos_ideas schema
             idea_record = {
                 'name': idea.get('name', 'Unnamed App'),
                 'tagline': idea.get('tagline', ''),
-                'description': idea.get('description', ''),
-                'category': idea.get('category', 'Other'),
+                'description': idea.get('description', '') + '\n\nWhy Now: ' + idea.get('why_now', '') + '\n\nDifferentiator: ' + idea.get('differentiator', ''),
+                'focus_area': idea.get('category', 'Other'),
                 'target_audience': idea.get('target_audience', ''),
-                'problem_solved': idea.get('problem_solved', ''),
-                'why_now': idea.get('why_now', ''),
                 'monetization': idea.get('monetization', ''),
-                'key_features': idea.get('key_features', []),
-                'differentiator': idea.get('differentiator', ''),
+                'features': idea.get('key_features', []),
                 'status': 'pending',
-                'source': 'perplexity_deep_research',
-                'research_citations': research_citations[:5] if research_citations else [],
+                'generated_prompt': f"Source: Perplexity Deep Research\nProblem: {idea.get('problem_solved', '')}\nCitations: {research_citations[:3] if research_citations else []}",
                 'created_at': datetime.now().isoformat()
             }
             
