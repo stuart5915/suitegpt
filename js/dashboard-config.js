@@ -17,13 +17,6 @@ const DASHBOARD_CONFIG = {
                 { id: 'cadence', label: 'Cadence AI', icon: '🎯', status: null },
             ]
         },
-        // --- Overview ---
-        {
-            category: 'Overview',
-            items: [
-                { id: 'overview', label: 'Dashboard', icon: '🏠', status: null },
-            ]
-        },
         // --- Build ---
         {
             category: 'Build',
@@ -56,6 +49,7 @@ const DASHBOARD_CONFIG = {
         {
             category: 'Community',
             items: [
+                { id: 'constitution', label: 'The Constitution', icon: '📜', status: 'NEW' },
                 { id: 'suitehub', label: 'SUITE Hub', icon: '💬', status: null },
                 { id: 'giving', label: 'Giving Fund', icon: '❤️', status: null },
             ]

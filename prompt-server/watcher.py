@@ -12,9 +12,19 @@
 import os
 import sys
 import time
+import json
 import threading
 import subprocess
 import requests
+
+# TELOS Mode - Autonomous app generation
+try:
+    import telos_generator as telos
+    import telos_builder as builder
+    TELOS_AVAILABLE = True
+except ImportError as e:
+    TELOS_AVAILABLE = False
+    print(f"[WARN] TELOS modules not available: {e}")
 
 try:
     import pyautogui
@@ -479,6 +489,181 @@ def send_response(response_data):
         supabase.update_status(prompt_id, 'needs-review', f'Response failed: {e}')
 
 
+# ═══ TELOS IDEA FILE WATCHER ═══
+# Watches for telos_ideas_batch.json (array of 5 ideas) and auto-inserts into telos_ideas table
+
+TELOS_BATCH_FILE = os.path.join(REPO_DIR, 'stuart-hollinger-landing', 'prompt-server', 'telos_ideas_batch.json')
+TELOS_SINGLE_FILE = os.path.join(REPO_DIR, 'stuart-hollinger-landing', 'prompt-server', 'telos_idea_output.json')
+
+def check_telos_idea_files():
+    """Check if Antigravity wrote idea JSON files, parse and insert into telos_ideas."""
+    import json as json_module
+    
+    # Check for batch file first (5 ideas)
+    if os.path.exists(TELOS_BATCH_FILE):
+        try:
+            with open(TELOS_BATCH_FILE, 'r', encoding='utf-8') as f:
+                ideas = json_module.load(f)
+            
+            if isinstance(ideas, list) and len(ideas) > 0:
+                print(f'[TELOS] 📥 Found batch file with {len(ideas)} ideas!')
+                
+                # Get batch_id from first idea or generate one
+                batch_id = ideas[0].get('batch_id', str(int(time.time())))
+                
+                if TELOS_AVAILABLE:
+                    inserted = telos.insert_batch_ideas(ideas, batch_id)
+                    print(f'[TELOS] ✅ Queued {inserted}/{len(ideas)} ideas for approval')
+                
+                # Delete the file after processing
+                os.remove(TELOS_BATCH_FILE)
+                return True
+            else:
+                print('[TELOS] ⚠️ Batch file empty or invalid')
+                os.remove(TELOS_BATCH_FILE)
+                
+        except json_module.JSONDecodeError as e:
+            print(f'[TELOS] ⚠️ Invalid JSON in batch file: {e}')
+            if os.path.exists(TELOS_BATCH_FILE):
+                backup = TELOS_BATCH_FILE + '.bad.' + str(int(time.time()))
+                os.rename(TELOS_BATCH_FILE, backup)
+        except Exception as e:
+            print(f'[TELOS] ⚠️ Error processing batch file: {e}')
+            if os.path.exists(TELOS_BATCH_FILE):
+                os.remove(TELOS_BATCH_FILE)
+    
+    # Also check for single idea file (backwards compatibility)
+    if os.path.exists(TELOS_SINGLE_FILE):
+        try:
+            with open(TELOS_SINGLE_FILE, 'r', encoding='utf-8') as f:
+                idea_data = json_module.load(f)
+            
+            print(f'[TELOS] 📥 Found single idea file: {idea_data.get("name", "Unknown")}')
+            
+            if not idea_data.get('name'):
+                print('[TELOS] ⚠️ Invalid idea - no name')
+                os.remove(TELOS_SINGLE_FILE)
+                return False
+            
+            if TELOS_AVAILABLE:
+                success = telos.insert_pending_idea(idea_data)
+                if success:
+                    print(f'[TELOS] ✅ Idea queued for approval: {idea_data.get("name")}')
+                    os.remove(TELOS_SINGLE_FILE)
+                    return True
+            
+            os.remove(TELOS_SINGLE_FILE)
+            
+        except json_module.JSONDecodeError as e:
+            print(f'[TELOS] ⚠️ Invalid JSON in single file: {e}')
+            if os.path.exists(TELOS_SINGLE_FILE):
+                backup = TELOS_SINGLE_FILE + '.bad.' + str(int(time.time()))
+                os.rename(TELOS_SINGLE_FILE, backup)
+        except Exception as e:
+            print(f'[TELOS] ⚠️ Error processing single file: {e}')
+            if os.path.exists(TELOS_SINGLE_FILE):
+                os.remove(TELOS_SINGLE_FILE)
+    
+    return False
+
+
+# ═══ STAGED BUILD WORKER ═══
+# Manages 50-prompt staged builds with bug loops
+
+def check_staged_builds():
+    """
+    Check for approved ideas that need building.
+    Generates next prompt in the staged build sequence.
+    Returns a prompt if one is ready, None otherwise.
+    """
+    if not TELOS_AVAILABLE:
+        return None
+    
+    try:
+        # Find ideas with status='approved' OR 'building' (resume in-progress builds)
+        response = requests.get(
+            f'{SUPABASE_URL}/rest/v1/telos_ideas?status=in.(approved,building)&order=approved_at.asc&limit=1',
+            headers={'apikey': SUPABASE_KEY},
+            timeout=10
+        )
+        
+        if response.status_code != 200:
+            return None
+        
+        ideas = response.json()
+        if not ideas:
+            return None
+        
+        idea = ideas[0]
+        idea_id = idea['id']
+        app_name = idea.get('name', 'UnnamedApp')
+        stored_iterations = idea.get('build_iterations', 0) or 0  # Resume from stored progress
+        
+        # Get or create builder (with resume support)
+        app_slug = app_name.lower().replace(' ', '-').replace("'", "")
+        app_path = os.path.join(REPO_DIR, 'apps', app_slug)
+        
+        build_instance = builder.get_or_create_builder(idea_id, app_name, app_path, stored_iterations)
+        
+        # Get next prompt
+        prompt_text, prompt_type = build_instance.get_next_prompt(idea)
+        
+        if prompt_type == 'complete':
+            # Build is done!
+            builder.mark_build_complete(idea_id)
+            builder.remove_builder(idea_id)
+            print(f'[STAGED] 🎉 Build complete: {app_name}')
+            return None
+        
+        if prompt_text:
+            # Update progress in DB
+            progress = build_instance.get_progress()
+            builder.update_build_progress(idea_id, progress['prompt_count'], progress['stage'], 'building')
+            
+            # Write progress file
+            build_instance.write_progress_file()
+            
+            print(f'[STAGED] 📝 Prompt {progress["prompt_count"]}/50 for {app_name} ({prompt_type})')
+            
+            return {
+                'prompt': prompt_text,
+                'idea_id': idea_id,
+                'app_name': app_name,
+                'prompt_type': prompt_type,
+                'prompt_count': progress['prompt_count']
+            }
+        
+        return None
+        
+    except Exception as e:
+        print(f'[STAGED] Error: {e}')
+        return None
+
+
+def check_build_complete_file():
+    """Check if Antigravity wrote a build_complete.json file for any active build."""
+    if not TELOS_AVAILABLE:
+        return
+    
+    for idea_id, build_instance in list(builder.active_builds.items()):
+        complete_file = os.path.join(build_instance.app_path, 'build_complete.json')
+        
+        if os.path.exists(complete_file):
+            try:
+                with open(complete_file, 'r') as f:
+                    data = json.load(f)
+                
+                print(f'[STAGED] 🎉 Build complete detected: {build_instance.app_name}')
+                builder.mark_build_complete(idea_id)
+                builder.remove_builder(idea_id)
+                
+                # Archive the file
+                os.rename(complete_file, complete_file + '.archived')
+                
+            except Exception as e:
+                print(f'[STAGED] Error reading complete file: {e}')
+
+
 # ═══ BACKGROUND PUSH THREAD ═══
 # Runs continuously - handles accept sweeps and git push every 60s when idle
 
@@ -543,6 +728,113 @@ def background_push_worker():
                     last_push_time = current_time
                     print('[BACKGROUND] ✅ Sync complete')
             
+            # ═══ TELOS IDEA CHECK ═══
+            # Check if Antigravity wrote idea JSON files (batch or single)
+            if TELOS_AVAILABLE:
+                check_telos_idea_files()
+                check_build_complete_file()
+            
+            # ═══ STAGED BUILD CHECK (every 30 seconds) ═══
+            # Check if there are approved ideas that need staged build prompts
+            if TELOS_AVAILABLE and not paused and current_time % 30 < 1:
+                staged_prompt = check_staged_builds()
+                if staged_prompt:
+                    # Insert the staged prompt into the queue
+                    try:
+                        requests.post(
+                            f'{SUPABASE_URL}/rest/v1/prompts',
+                            headers={
+                                'apikey': SUPABASE_KEY,
+                                'Authorization': f'Bearer {SUPABASE_KEY}',
+                                'Content-Type': 'application/json'
+                            },
+                            json={
+                                'prompt': staged_prompt['prompt'],
+                                'status': 'pending',
+                                'prompt_type': 'telos_build',
+                                'source': f"TELOS Staged Build [{staged_prompt['prompt_count']}/50]",
+                                'metadata': json.dumps({
+                                    'idea_id': staged_prompt['idea_id'],
+                                    'app_name': staged_prompt['app_name'],
+                                    'stage_type': staged_prompt['prompt_type'],
+                                    'prompt_count': staged_prompt['prompt_count']
+                                })
+                            },
+                            timeout=10
+                        )
+                        print(f'[STAGED] ✅ Queued prompt {staged_prompt["prompt_count"]}/50')
+                    except Exception as e:
+                        print(f'[STAGED] Failed to queue prompt: {e}')
+            
+            # ═══ AUTONOMOUS APP CREATION ═══
+            # When toggled ON: immediately starts, then runs every 5 mins while enabled
+            # When toggled OFF: stops generating new ideas (but finishes current builds)
+            if TELOS_AVAILABLE and not paused:
+                # Check if autonomous mode is enabled (every 10 seconds to not spam DB)
+                if int(current_time) % 10 < 1:
+                    is_enabled_now = telos.is_enabled()
+                    
+                    # Track state change in a module-level variable
+                    if not hasattr(check_staged_builds, 'was_enabled'):
+                        check_staged_builds.was_enabled = False
+                        check_staged_builds.last_generation = 0
+                    
+                    was_enabled = check_staged_builds.was_enabled
+                    
+                    # Detect toggle ON → immediately start
+                    if is_enabled_now and not was_enabled:
+                        print('[AUTONOMOUS] 🟢 Mode ENABLED - starting app creation...')
+                        check_staged_builds.was_enabled = True
+                        
+                        # Log to activity feed
+                        telos.log_activity('telos_on', 'Autonomous mode ENABLED - starting app creation')
+                        
+                        # Immediately trigger idea generation
+                        try:
+                            can_generate, reason = telos.check_limits()
+                            if can_generate:
+                                print('[AUTONOMOUS] 🤖 Generating 5 app ideas...')
+                                telos.run_telos_cycle()
+                                check_staged_builds.last_generation = current_time
+                            else:
+                                print(f'[AUTONOMOUS] ⏳ Waiting: {reason}')
+                        except Exception as e:
+                            print(f'[AUTONOMOUS] Error: {e}')
+                    
+                    # Detect toggle OFF → stop
+                    elif not is_enabled_now and was_enabled:
+                        print('[AUTONOMOUS] 🔴 Mode DISABLED - stopping new ideas')
+                        check_staged_builds.was_enabled = False
+                        
+                        # Log to activity feed
+                        telos.log_activity('telos_off', 'Autonomous mode DISABLED - stopping new ideas')
+                    
+                    # While enabled: generate every 5 minutes if idle
+                    elif is_enabled_now:
+                        time_since_last = current_time - check_staged_builds.last_generation
+                        if time_since_last > 300:  # 5 minutes
+                            try:
+                                # Check if idle (no pending, no building)
+                                pending_resp = requests.get(
+                                    f'{SUPABASE_URL}/rest/v1/telos_ideas?status=eq.pending&select=id&limit=1',
+                                    headers={'apikey': SUPABASE_KEY}, timeout=5
+                                )
+                                building_resp = requests.get(
+                                    f'{SUPABASE_URL}/rest/v1/telos_ideas?status=eq.building&select=id&limit=1',
+                                    headers={'apikey': SUPABASE_KEY}, timeout=5
+                                )
+                                has_pending = pending_resp.ok and len(pending_resp.json()) > 0
+                                has_building = building_resp.ok and len(building_resp.json()) > 0
+                                
+                                if not has_pending and not has_building:
+                                    can_generate, reason = telos.check_limits()
+                                    if can_generate:
+                                        print('[AUTONOMOUS] 🤖 System idle - generating 5 new ideas...')
+                                        telos.run_telos_cycle()
+                                        check_staged_builds.last_generation = current_time
+                            except Exception:
+                                pass
+            
             time.sleep(1)  # Check every second
             
         except Exception as e:
@@ -566,6 +858,47 @@ def main():
         sys.exit(1)
     
     supabase = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
+    
+    # ═══ RECOVERY: Reset orphaned prompts from previous run ═══
+    # If bot was stopped mid-way, reset 'processing' and 'sent' back to 'pending'
+    print('[RECOVERY] Checking for orphaned prompts...')
+    try:
+        # Reset processing prompts
+        response = requests.patch(
+            f'{SUPABASE_URL}/rest/v1/prompts?status=in.(processing,sent)',
+            headers={
+                'apikey': SUPABASE_KEY,
+                'Authorization': f'Bearer {SUPABASE_KEY}',
+                'Content-Type': 'application/json'
+            },
+            json={'status': 'pending'}
+        )
+        if response.ok:
+            # Check how many were reset
+            check = requests.get(
+                f'{SUPABASE_URL}/rest/v1/prompts?status=eq.pending&select=id',
+                headers={'apikey': SUPABASE_KEY}
+            )
+            pending_count = len(check.json()) if check.ok else 0
+            if pending_count > 0:
+                print(f'[RECOVERY] ✓ Reset orphaned prompts. {pending_count} pending.')
+            else:
+                print('[RECOVERY] ✓ No orphaned prompts found.')
+        
+        # telos_ideas in 'building' status will now RESUME automatically
+        # (check_staged_builds looks for both 'approved' AND 'building')
+        # Check how many are in progress
+        response2 = requests.get(
+            f'{SUPABASE_URL}/rest/v1/telos_ideas?status=eq.building&select=id,name,build_iterations',
+            headers={'apikey': SUPABASE_KEY}
+        )
+        if response2.ok:
+            building = response2.json()
+            if building:
+                for b in building:
+                    print(f'[RECOVERY] ♻️ Will resume: {b.get("name")} at prompt {b.get("build_iterations", 0)}/50')
+    except Exception as e:
+        print(f'[RECOVERY] Warning: Could not check orphans: {e}')
     
     # Initial window detection
     count = window_manager.refresh_windows()
@@ -613,8 +946,21 @@ def main():
                     time.sleep(0.5)
             
             if not prompts and not responses:
-                status = window_manager.status()
-                print(f'\r[POLL] No pending prompts | {status}', end='', flush=True)
+                # TELOS MODE: Generate autonomous app when queue is empty
+                if TELOS_AVAILABLE and telos.is_enabled():
+                    can_run, reason = telos.check_limits()
+                    if can_run:
+                        print(f'\n[TELOS] Queue empty - generating autonomous app...')
+                        if telos.run_telos_cycle():
+                            print(f'[TELOS] ✅ App prompt inserted - will process on next poll')
+                        else:
+                            print(f'[TELOS] ⚠️ Generation failed, will retry later')
+                    else:
+                        status = window_manager.status()
+                        print(f'\r[POLL] No prompts | TELOS: {reason} | {status}', end='', flush=True)
+                else:
+                    status = window_manager.status()
+                    print(f'\r[POLL] No pending prompts | {status}', end='', flush=True)
             
             time.sleep(POLL_INTERVAL)
             

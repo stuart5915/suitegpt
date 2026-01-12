@@ -1,0 +1,1437 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Fleet Command Center</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-app: #0a0a0c;
+            --bg-panel: #141418;
+            --bg-card: #1c1c21;
+            --bg-hover: #2a2a30;
+            --text-primary: #ffffff;
+            --text-secondary: #9ba1a6;
+            --text-muted: #5c6066;
+            --accent-green: #39ff14;
+            --accent-green-dim: rgba(57, 255, 20, 0.2);
+            --accent-cyan: #00f0ff;
+            --accent-yellow: #ffd700;
+            --accent-red: #ff4757;
+            --border-color: #2c2c35;
+            --sidebar-width: 240px;
+            --config-width: 300px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Hide ALL scrollbars everywhere */
+        *::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+        }
+
+        *,
+        *::before,
+        *::after {
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+        }
+
+        html,
+        body,
+        div,
+        section,
+        aside,
+        main,
+        nav {
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-app);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+        }
+
+        /* Typography & Utilities */
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .text-secondary {
+            color: var(--text-secondary);
+        }
+
+        .text-muted {
+            color: var(--text-muted);
+        }
+
+        .text-green {
+            color: var(--accent-green);
+        }
+
+        .flex {
+            display: flex;
+        }
+
+        .flex-col {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .items-center {
+            align-items: center;
+        }
+
+        .justify-between {
+            justify-content: space-between;
+        }
+
+        .gap-2 {
+            gap: 0.5rem;
+        }
+
+        .gap-4 {
+            gap: 1rem;
+        }
+
+        .mb-4 {
+            margin-bottom: 1rem;
+        }
+
+        .mb-2 {
+            margin-bottom: 0.5rem;
+        }
+
+        .mt-4 {
+            margin-top: 1rem;
+        }
+
+        .p-4 {
+            padding: 1rem;
+        }
+
+        .p-6 {
+            padding: 1.5rem;
+        }
+
+        /* Badges */
+        .badge {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .badge.live {
+            background: var(--accent-green-dim);
+            color: var(--accent-green);
+            box-shadow: 0 0 5px var(--accent-green-dim);
+        }
+
+        .badge.soon {
+            background: rgba(255, 215, 0, 0.15);
+            color: var(--accent-yellow);
+        }
+
+        .badge.streaming {
+            background: rgba(0, 240, 255, 0.15);
+            color: var(--accent-cyan);
+            animation: pulse 2s infinite;
+        }
+
+        .badge.offline {
+            background: rgba(255, 71, 87, 0.15);
+            color: var(--accent-red);
+            cursor: help;
+            position: relative;
+        }
+
+        .badge.offline:hover::after {
+            content: 'Start the watcher on your PC to enable streaming. Run: python watcher.py';
+            position: absolute;
+            bottom: calc(100% + 8px);
+            right: 0;
+            width: 250px;
+            padding: 10px 12px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            white-space: normal;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            outline: none;
+        }
+
+        .btn-primary {
+            background: var(--accent-cyan);
+            color: var(--bg-app);
+        }
+
+        .btn-primary:hover {
+            background: #4dffff;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .link-btn {
+            color: var(--accent-cyan);
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        /* --- Layout Structure --- */
+
+        /* 1. Sidebar Navigation */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border-color);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand h1 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .brand p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+            line-height: 1.4;
+        }
+
+        .nav-menu {
+            margin-top: 2rem;
+            flex-grow: 1;
+        }
+
+        .nav-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            margin-bottom: 4px;
+            border-radius: 6px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .nav-item:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: var(--bg-hover);
+            color: var(--accent-green);
+        }
+
+        /* 2. Main Content Area */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--bg-app);
+        }
+
+        /* Top Status Bar */
+        .top-bar {
+            height: 60px;
+            padding: 0 1.5rem;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-panel);
+        }
+
+        .system-status {
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--accent-green);
+        }
+
+        /* Scrollable Dashboard Content */
+        .dashboard-scroll {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        /* TELOS Hero Section */
+        .telos-hero {
+            background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-panel) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Subtle glow effect for active state */
+        .telos-hero.active-mode::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at top right, var(--accent-green-dim), transparent 70%);
+            pointer-events: none;
+        }
+
+        .telos-info h2 {
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .telos-info p {
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        .telos-status-text {
+            color: var(--accent-green);
+            font-weight: 600;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Toggle Switch */
+        .switch-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .switch-label {
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        .switch-label.active {
+            color: var(--accent-green);
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 64px;
+            height: 32px;
+            background: var(--bg-hover);
+            border-radius: 16px;
+            padding: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.on {
+            background: var(--accent-green);
+        }
+
+        .toggle-knob {
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .toggle-switch.on .toggle-knob {
+            transform: translateX(32px);
+        }
+
+        /* KPI Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .kpi-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 0.75rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .kpi-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono';
+            margin: 0.25rem 0;
+        }
+
+        .kpi-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        /* Workflow & Feed Split */
+        .split-view {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 1rem;
+            max-height: 220px;
+        }
+
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+        }
+
+        .panel-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .workflow-section {
+            margin-bottom: 2rem;
+        }
+
+        .workflow-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .workflow-header h4 {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .empty-state {
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* Feed Styling */
+        .feed-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .feed-item {
+            padding: 0.8rem 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.9rem;
+            font-family: 'JetBrains Mono';
+        }
+
+        .feed-time {
+            color: var(--text-muted);
+            margin-right: 0.5rem;
+            font-size: 0.8rem;
+        }
+
+
+        /* 3. Configuration Panel (Right Sidebar) */
+        .config-panel {
+            width: var(--config-width);
+            background: var(--bg-panel);
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .config-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .owner-badge {
+            display: inline-block;
+            background: #ff475733;
+            color: var(--accent-red);
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-top: 0.5rem;
+        }
+
+        .config-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .config-group {
+            margin-bottom: 2rem;
+        }
+
+        .config-group h4 {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        /* Checkboxes & Inputs */
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.8rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            accent-color: var(--accent-cyan);
+            margin-right: 0.8rem;
+            transform: scale(1.2);
+        }
+
+        .input-group {
+            margin-bottom: 1rem;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .input-field {
+            width: 100%;
+            background: var(--bg-app);
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono';
+        }
+
+        .config-footer {
+            padding: 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .btn-save {
+            width: 100%;
+            background: var(--accent-green);
+            color: black;
+        }
+
+        .btn-save:hover {
+            background: #2ecc71;
+        }
+
+        /* Helper for the demo toggle interaction */
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+
+    <aside class="sidebar">
+        <div class="brand">
+            <h1>AI Fleet Command Center</h1>
+            <p>Autonomous systems building, deploying, and managing across multiple domains.</p>
+            <a href="#" class="link-btn" style="margin-top: 1rem; display: inline-block;">Learn More -></a>
+        </div>
+
+        <nav class="nav-menu">
+            <a href="#" class="nav-item active">
+                <span>Apps</span>
+                <span class="badge live">LIVE</span>
+            </a>
+            <a href="#" class="nav-item">
+                <span>Robots</span>
+                <span class="badge soon">SOON</span>
+            </a>
+            <a href="#" class="nav-item">
+                <span>Drones</span>
+                <span class="badge soon">SOON</span>
+            </a>
+            <a href="#" class="nav-item">
+                <span>Microfarms</span>
+                <span class="badge soon">SOON</span>
+            </a>
+            <a href="#" class="nav-item">
+                <span>Web Ventures</span>
+                <span class="badge soon">SOON</span>
+            </a>
+            <a href="#" class="nav-item">
+                <span>External AI</span>
+                <span class="badge soon">SOON</span>
+            </a>
+            <div style="border-top: 1px solid var(--border-color); margin: 12px 0;"></div>
+            <a href="#" class="nav-item"
+                style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(16, 185, 129, 0.1)); border: 1px solid rgba(34, 197, 94, 0.3);">
+                <span>💰 TELOS Ventures</span>
+                <span class="badge" style="background: var(--accent-green); color: #000;">NEW</span>
+            </a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="top-bar">
+            <div class="system-status">
+                <div class="flex items-center gap-2">
+                    <div class="status-dot"></div>
+                    <span style="font-weight: 600;">Forge (PC) Connected</span>
+                </div>
+                <span class="text-muted">|</span>
+                <span class="text-secondary mono" style="font-size: 0.85rem;">Last sync: Just now</span>
+            </div>
+        </header>
+
+        <div class="dashboard-scroll">
+
+            <section class="telos-hero active-mode" id="telosHero">
+                <div class="telos-info">
+                    <h2>TELOS MODE? <span class="text-muted" style="font-size: 1rem;">ℹ️</span></h2>
+                    <p>AI creates apps autonomously 24/7</p>
+                    <div class="telos-status-text" id="telosActiveText">
+                        <span class="badge live" style="font-size: 0.6rem;">●</span> ACTIVE: AI is researching markets,
+                        building apps, and deploying automatically.
+                    </div>
+                    <div class="telos-status-text text-muted hidden" id="telosInactiveText">
+                        INACTIVE: Autonomous systems paused.
+                    </div>
+                </div>
+                <div class="switch-container">
+                    <span class="switch-label" id="labelOff">OFF</span>
+                    <div class="toggle-switch on" id="telosToggle">
+                        <div class="toggle-knob"></div>
+                    </div>
+                    <span class="switch-label active" id="labelOn">ON</span>
+                </div>
+            </section>
+
+            <section class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-value text-green">0</div>
+                    <div class="kpi-label">Total AI Apps</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-value">0</div>
+                    <div class="kpi-label">Created Today</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-value">0</div>
+                    <div class="kpi-label">In Progress</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-value">0</div>
+                    <div class="kpi-label">Total Iterations</div>
+                </div>
+            </section>
+
+            <!-- Current AI State -->
+            <section class="panel"
+                style="margin-bottom: 1.5rem; background: linear-gradient(135deg, var(--bg-card), var(--bg-panel));">
+                <div class="panel-header" style="border-bottom: none; padding-bottom: 0;">
+                    <span>🎯 Current State</span>
+                    <span id="currentStateTime" class="text-muted" style="font-size: 0.8rem;">Last updated: --</span>
+                </div>
+                <div style="padding: 0 1.5rem 1.5rem;">
+                    <div id="currentStateText"
+                        style="font-size: 1.1rem; font-weight: 600; color: var(--text-secondary);">
+                        Waiting for activity...
+                    </div>
+                    <div id="currentStateDetails"
+                        style="font-size: 0.85rem; color: var(--text-muted); margin-top: 6px;">
+                        No recent activity. Toggle TELOS mode to start autonomous operation.
+                    </div>
+                </div>
+            </section>
+
+            <section class="split-view">
+                <div class="flex-col gap-4">
+                    <div class="panel" style="flex: 1;">
+                        <div class="panel-header">
+                            <span>Ideas Awaiting Approval</span>
+                        </div>
+                        <div class="panel-body" id="ideasQueueBody">
+                            <div class="empty-state">
+                                No pending ideas. Enable TELOS mode to start generating.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel" style="flex: 1;">
+                        <div class="panel-header">
+                            <span>Ready for Review</span>
+                            <span class="badge" style="background: var(--bg-hover);">0</span>
+                        </div>
+                        <div class="panel-body">
+                            <div class="empty-state" style="border-style: solid; background: var(--bg-app);">
+                                No apps ready for review yet
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <span>Live Activity Feed</span>
+                        <span id="feedStatusBadge" class="badge offline">OFFLINE</span>
+                    </div>
+                    <div class="panel-body mono" id="feedBody">
+                        <div class="feed-item"><span class="feed-time">[10:24:01]</span> TELOS engine initialized.
+                            Scanning market gaps.</div>
+                        <div class="feed-item"><span class="feed-time">[10:24:15]</span> <span
+                                style="color: var(--accent-cyan)">Research</span> identified niche: "Local artisan
+                            supply chain logistics".</div>
+                        <div class="feed-item"><span class="feed-time">[10:24:42]</span> Generating 3 app concepts based
+                            on research parameters.</div>
+                        <div class="feed-item"><span class="feed-time">[10:25:05]</span> Concept "CraftLink" selected
+                            for iteration cycle 1.</div>
+                        <div class="feed-item"><span class="feed-time">[10:25:10]</span> Initiating codebase scaffolding
+                            (React/Node.js template).</div>
+                        <div class="feed-item" style="color: var(--text-muted);"><span class="feed-time">...</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Ideas History Section -->
+            <section class="panel" style="margin-top: 1.5rem;">
+                <div class="panel-header">
+                    <span>Ideas History</span>
+                    <div class="flex items-center gap-2">
+                        <span id="historyApproved" class="badge"
+                            style="background: var(--accent-green-dim); color: var(--accent-green);">0 approved</span>
+                        <span id="historyRejected" class="badge"
+                            style="background: rgba(255, 71, 87, 0.15); color: var(--accent-red);">0 rejected</span>
+                        <span id="historyTotal" class="badge" style="background: var(--bg-hover);">0 total</span>
+                    </div>
+                </div>
+                <div class="panel-body" id="historyBody" style="max-height: 300px; overflow-y: auto;">
+                    <div class="feed-placeholder">Loading history...</div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <aside class="config-panel">
+        <div class="config-header">
+            <h3>TELOS Configuration</h3>
+            <span class="owner-badge">Owner Only</span>
+        </div>
+        <div class="config-body">
+
+            <div class="config-group">
+                <h4>Autonomous Behavior</h4>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" checked> Research Focus</label>
+                    <div style="margin-left: 1.8rem; display: flex; flex-wrap: wrap; gap: 8px;">
+                        <span class="badge"
+                            style="background: var(--bg-hover); color: var(--text-primary);">Productivity</span>
+                        <span class="badge"
+                            style="background: var(--bg-hover); color: var(--text-secondary);">Health</span>
+                        <span class="badge"
+                            style="background: var(--bg-hover); color: var(--text-secondary);">Finance</span>
+                        <span class="badge"
+                            style="background: var(--bg-hover); color: var(--text-secondary);">Social</span>
+                        <span class="badge"
+                            style="background: var(--bg-hover); color: var(--text-secondary);">Education</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="config-group">
+                <h4>Scheduling limits</h4>
+                <div class="input-group flex justify-between items-center">
+                    <label class="mb-0">Max Apps/Day</label>
+                    <input type="number" class="input-field mono" value="5" style="width: 60px;">
+                </div>
+                <div class="input-group flex justify-between items-center">
+                    <label class="mb-0">Iterations per App</label>
+                    <input type="number" class="input-field mono" value="20" style="width: 60px;">
+                </div>
+            </div>
+
+            <div class="config-group">
+                <h4>Workflow</h4>
+                <div class="checkbox-group">
+                    <label><input type="checkbox"> Auto-Deploy to Production</label>
+                    <label><input type="checkbox" checked> GitHub Auto-Create Repo</label>
+                </div>
+            </div>
+
+            <!-- System Mechanics Section -->
+            <div class="config-group">
+                <h4 style="display: flex; align-items: center; gap: 8px;">
+                    <span style="color: var(--accent-cyan);">⚙️</span> System Mechanics
+                </h4>
+                <div style="font-size: 0.75rem; color: var(--text-secondary); line-height: 1.6;">
+
+                    <details style="margin-bottom: 8px;">
+                        <summary
+                            style="cursor: pointer; color: var(--accent-yellow); font-weight: 600; padding: 6px 0;">
+                            💡 Idea Generation Loop
+                        </summary>
+                        <div style="padding: 8px 0 8px 12px; border-left: 2px solid var(--border-color);">
+                            Every 5 min when TELOS is ON:<br>
+                            1. Scan market trends & gaps<br>
+                            2. Analyze rejection patterns<br>
+                            3. Generate 3-5 diverse concepts<br>
+                            4. Queue for owner approval
+                        </div>
+                    </details>
+
+                    <details style="margin-bottom: 8px;">
+                        <summary style="cursor: pointer; color: var(--accent-green); font-weight: 600; padding: 6px 0;">
+                            🔨 Staged Build Process
+                        </summary>
+                        <div style="padding: 8px 0 8px 12px; border-left: 2px solid var(--border-color);">
+                            50-prompt build cycle:<br>
+                            • Prompts 1-10: Core scaffold<br>
+                            • Prompts 11-30: Features & UI<br>
+                            • Prompts 31-40: Polish & UX<br>
+                            • Prompts 41-50: Testing & fixes<br>
+                            <em style="color: var(--accent-cyan);">Progress persists across restarts</em>
+                        </div>
+                    </details>
+
+                    <details style="margin-bottom: 8px;">
+                        <summary style="cursor: pointer; color: var(--accent-red); font-weight: 600; padding: 6px 0;">
+                            🐛 Bug Sovereignty
+                        </summary>
+                        <div style="padding: 8px 0 8px 12px; border-left: 2px solid var(--border-color);">
+                            Self-healing error loop:<br>
+                            1. Build triggers Expo bundler<br>
+                            2. Detect Metro errors in logs<br>
+                            3. Auto-generate fix prompts<br>
+                            4. Re-test until clean build
+                        </div>
+                    </details>
+
+                    <details style="margin-bottom: 8px;">
+                        <summary style="cursor: pointer; color: var(--text-primary); font-weight: 600; padding: 6px 0;">
+                            🚀 Deployment Pipeline
+                        </summary>
+                        <div style="padding: 8px 0 8px 12px; border-left: 2px solid var(--border-color);">
+                            On build complete:<br>
+                            1. Push to GitHub repo<br>
+                            2. EAS Update → Expo Go<br>
+                            3. Post QR to Discord<br>
+                            4. Mark ready for review
+                        </div>
+                    </details>
+
+                </div>
+            </div>
+
+        </div>
+        <div class="config-footer">
+            <button class="btn btn-save">Save Configuration</button>
+        </div>
+    </aside>
+
+    <script>
+        // ═══ SUPABASE CONFIGURATION ═══
+        const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM2MzU4MTEsImV4cCI6MjA0OTIxMTgxMX0.G9OJ1lGVn1QPBK4F5kl_K1ILp-eoKCGiAAdZbzQ38c4';
+
+        // DOM Elements
+        const toggle = document.getElementById('telosToggle');
+        const hero = document.getElementById('telosHero');
+        const labelOn = document.getElementById('labelOn');
+        const labelOff = document.getElementById('labelOff');
+        const activeText = document.getElementById('telosActiveText');
+        const inactiveText = document.getElementById('telosInactiveText');
+        const feedBody = document.getElementById('feedBody');
+
+        // KPI Elements
+        const kpiTotalApps = document.querySelector('.kpi-grid .kpi-card:nth-child(1) .kpi-value');
+        const kpiCreatedToday = document.querySelector('.kpi-grid .kpi-card:nth-child(2) .kpi-value');
+        const kpiInProgress = document.querySelector('.kpi-grid .kpi-card:nth-child(3) .kpi-value');
+        const kpiIterations = document.querySelector('.kpi-grid .kpi-card:nth-child(4) .kpi-value');
+
+        // ═══ LOAD STATS FROM SUPABASE ═══
+        async function loadStats() {
+            try {
+                // Total AI Apps (review or deployed)
+                const totalRes = await fetch(`${SUPABASE_URL}/rest/v1/telos_ideas?status=in.(review,deployed)&select=id`, {
+                    headers: { 'apikey': SUPABASE_ANON_KEY }
+                });
+                const totalApps = await totalRes.json();
+                kpiTotalApps.textContent = Array.isArray(totalApps) ? totalApps.length : 0;
+
+                // Created Today
+                const today = new Date().toISOString().split('T')[0];
+                const todayRes = await fetch(`${SUPABASE_URL}/rest/v1/telos_ideas?created_at=gte.${today}T00:00:00&select=id`, {
+                    headers: { 'apikey': SUPABASE_ANON_KEY }
+                });
+                const todayApps = await todayRes.json();
+                kpiCreatedToday.textContent = Array.isArray(todayApps) ? todayApps.length : 0;
+
+                // In Progress (building)
+                const progressRes = await fetch(`${SUPABASE_URL}/rest/v1/telos_ideas?status=eq.building&select=id`, {
+                    headers: { 'apikey': SUPABASE_ANON_KEY }
+                });
+                const inProgress = await progressRes.json();
+                kpiInProgress.textContent = Array.isArray(inProgress) ? inProgress.length : 0;
+
+                // Total Iterations
+                const iterRes = await fetch(`${SUPABASE_URL}/rest/v1/telos_ideas?select=build_iterations`, {
+                    headers: { 'apikey': SUPABASE_ANON_KEY }
+                });
+                const allIdeas = await iterRes.json();
+                let totalIter = 0;
+                if (Array.isArray(allIdeas)) {
+                    totalIter = allIdeas.reduce((sum, i) => sum + (i.build_iterations || 0), 0);
+                }
+                kpiIterations.textContent = totalIter;
+
+            } catch (err) {
+                console.error('Error loading stats:', err);
+            }
+        }
+
+        // ═══ LOAD ACTIVITY FEED ═══
+        const feedStatusBadge = document.getElementById('feedStatusBadge');
+        const currentStateText = document.getElementById('currentStateText');
+        const currentStateDetails = document.getElementById('currentStateDetails');
+        const currentStateTime = document.getElementById('currentStateTime');
+
+        async function loadActivityFeed() {
+            try {
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/ai_activity_log?order=timestamp.desc&limit=20`, {
+                    headers: { 'apikey': SUPABASE_ANON_KEY }
+                });
+                const activities = await res.json();
+
+                if (Array.isArray(activities) && activities.length > 0) {
+                    // Check if most recent activity is within last 60 seconds
+                    const latestTime = new Date(activities[0].timestamp);
+                    const now = new Date();
+                    const secondsAgo = (now - latestTime) / 1000;
+                    const isLive = secondsAgo < 60;
+
+                    // Update status badge
+                    if (isLive) {
+                        feedStatusBadge.textContent = 'STREAMING';
+                        feedStatusBadge.className = 'badge streaming';
+                    } else {
+                        const minsAgo = Math.floor(secondsAgo / 60);
+                        feedStatusBadge.textContent = minsAgo < 60 ? `${minsAgo}m ago` : 'OFFLINE';
+                        feedStatusBadge.className = 'badge offline';
+                    }
+
+                    // Update Current State panel
+                    const latest = activities[0];
+                    const stateColor = latest.action_type === 'error' ? 'var(--accent-red)' :
+                        isLive ? 'var(--accent-cyan)' : 'var(--text-secondary)';
+                    currentStateText.innerHTML = `<span style="color: ${stateColor}">${latest.message}</span>`;
+
+                    // Show context from previous actions
+                    if (activities.length > 1) {
+                        const prevActions = activities.slice(1, 4).map(a => a.message).join(' → ');
+                        currentStateDetails.textContent = `Previous: ${prevActions}`;
+                    } else {
+                        currentStateDetails.textContent = 'First activity recorded.';
+                    }
+
+                    // Update timestamp
+                    const timeAgo = isLive ? 'Just now' :
+                        secondsAgo < 3600 ? `${Math.floor(secondsAgo / 60)}m ago` :
+                            secondsAgo < 86400 ? `${Math.floor(secondsAgo / 3600)}h ago` :
+                                latestTime.toLocaleDateString();
+                    currentStateTime.textContent = `Last updated: ${timeAgo}`;
+
+                    feedBody.innerHTML = activities.map(a => {
+                        const time = new Date(a.timestamp).toLocaleTimeString('en-US', { hour12: false });
+                        const color = a.action_type === 'research' ? 'var(--accent-cyan)' :
+                            a.action_type === 'error' ? 'var(--accent-red)' : '';
+                        return `<div class="feed-item"><span class="feed-time">[${time}]</span> <span style="color: ${color}">${a.message}</span></div>`;
+                    }).join('');
+                } else {
+                    // No activities at all
+                    feedStatusBadge.textContent = 'OFFLINE';
+                    feedStatusBadge.className = 'badge offline';
+                    feedBody.innerHTML = '<div class="feed-placeholder">No activity yet. Start the watcher to begin.</div>';
+                    currentStateText.textContent = 'Waiting for activity...';
+                    currentStateDetails.textContent = 'No recent activity. Toggle TELOS mode to start autonomous operation.';
+                    currentStateTime.textContent = 'Last updated: --';
+                }
+            } catch (err) {
+                console.error('Error loading feed:', err);
+                feedStatusBadge.textContent = 'ERROR';
+                feedStatusBadge.className = 'badge offline';
+            }
+        }
+
+        // ═══ LOAD TOGGLE STATE ═══
+        async function loadToggleState() {
+            try {
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/ai_config?key=eq.telos_enabled&select=value`, {
+                    headers: { 'apikey': SUPABASE_ANON_KEY }
+                });
+                const configs = await res.json();
+
+                if (Array.isArray(configs) && configs.length > 0) {
+                    const isEnabled = configs[0].value === 'true';
+                    updateToggleUI(isEnabled);
+                } else {
+                    updateToggleUI(false);
+                }
+            } catch (err) {
+                console.error('Error loading toggle state:', err);
+                updateToggleUI(false);
+            }
+        }
+
+        // ═══ UPDATE TOGGLE UI ═══
+        function updateToggleUI(isEnabled) {
+            if (isEnabled) {
+                toggle.classList.add('on');
+                hero.classList.add('active-mode');
+                labelOn.classList.add('active');
+                labelOff.classList.remove('active');
+                activeText.classList.remove('hidden');
+                inactiveText.classList.add('hidden');
+                kpiTotalApps.style.color = 'var(--accent-green)';
+            } else {
+                toggle.classList.remove('on');
+                hero.classList.remove('active-mode');
+                labelOn.classList.remove('active');
+                labelOff.classList.add('active');
+                activeText.classList.add('hidden');
+                inactiveText.classList.remove('hidden');
+                kpiTotalApps.style.color = 'var(--text-muted)';
+            }
+        }
+
+        // ═══ TOGGLE CLICK HANDLER ═══
+        toggle.addEventListener('click', async () => {
+            const isCurrentlyOn = toggle.classList.contains('on');
+            const newState = !isCurrentlyOn;
+
+            // Update UI immediately
+            updateToggleUI(newState);
+
+            // Save to Supabase
+            try {
+                await fetch(`${SUPABASE_URL}/rest/v1/ai_config?key=eq.telos_enabled`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({ value: newState ? 'true' : 'false' })
+                });
+                console.log(`TELOS mode ${newState ? 'ENABLED' : 'DISABLED'}`);
+            } catch (err) {
+                console.error('Error saving toggle state:', err);
+            }
+        });
+
+        // ═══ INITIALIZE ═══
+        async function init() {
+            await loadToggleState();
+            await loadStats();
+            await loadActivityFeed();
+            await loadHistory();
+            await loadIdeasQueue();
+
+            // Refresh every 30 seconds
+            setInterval(loadStats, 30000);
+            setInterval(loadActivityFeed, 30000);
+            setInterval(loadHistory, 60000); // History refreshes less often
+            setInterval(loadIdeasQueue, 30000);
+        }
+
+        // ═══ LOAD IDEAS HISTORY ═══
+        const historyBody = document.getElementById('historyBody');
+        const historyApproved = document.getElementById('historyApproved');
+        const historyRejected = document.getElementById('historyRejected');
+        const historyTotal = document.getElementById('historyTotal');
+
+        async function loadHistory() {
+            try {
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/telos_ideas?select=id,name,tagline,status,created_at,focus_area,build_iterations&order=created_at.desc&limit=100`, {
+                    headers: { 'apikey': SUPABASE_ANON_KEY }
+                });
+                const ideas = await res.json();
+
+                if (Array.isArray(ideas) && ideas.length > 0) {
+                    // Count by status
+                    const approved = ideas.filter(i => ['approved', 'building', 'review', 'deployed'].includes(i.status)).length;
+                    const rejected = ideas.filter(i => i.status === 'rejected').length;
+
+                    historyApproved.textContent = `${approved} approved`;
+                    historyRejected.textContent = `${rejected} rejected`;
+                    historyTotal.textContent = `${ideas.length} total`;
+
+                    // Render history items
+                    historyBody.innerHTML = ideas.map(idea => {
+                        const date = new Date(idea.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        const statusColor = getStatusColor(idea.status);
+                        const statusLabel = getStatusLabel(idea.status);
+
+                        return `
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; font-size: 0.9rem;">${idea.name}</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-muted);">${idea.tagline || idea.focus_area || 'No description'}</div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    ${idea.build_iterations ? `<span style="font-size: 0.75rem; color: var(--text-muted);">${idea.build_iterations} iters</span>` : ''}
+                                    <span class="badge" style="background: ${statusColor}15; color: ${statusColor};">${statusLabel}</span>
+                                    <span style="font-size: 0.75rem; color: var(--text-muted);">${date}</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    historyBody.innerHTML = '<div class="feed-placeholder">No ideas generated yet.</div>';
+                    historyApproved.textContent = '0 approved';
+                    historyRejected.textContent = '0 rejected';
+                    historyTotal.textContent = '0 total';
+                }
+            } catch (err) {
+                console.error('Error loading history:', err);
+                historyBody.innerHTML = '<div class="feed-placeholder" style="color: var(--accent-red);">Error loading history</div>';
+            }
+        }
+
+        function getStatusColor(status) {
+            switch (status) {
+                case 'pending': return '#ffd700';
+                case 'approved': return '#00f0ff';
+                case 'building': return '#00f0ff';
+                case 'review': return '#a855f7';
+                case 'deployed': return '#39ff14';
+                case 'rejected': return '#ff4757';
+                default: return '#5c6066';
+            }
+        }
+
+        function getStatusLabel(status) {
+            switch (status) {
+                case 'pending': return '⏳ Pending';
+                case 'approved': return '✓ Approved';
+                case 'building': return '🔨 Building';
+                case 'review': return '👁 Review';
+                case 'deployed': return '🚀 Live';
+                case 'rejected': return '✗ Rejected';
+                default: return status;
+            }
+        }
+
+        // ═══ IDEA DETAIL MODAL ═══
+        let currentIdeaId = null;
+
+        async function viewIdea(ideaId) {
+            currentIdeaId = ideaId;
+            const modal = document.getElementById('ideaModal');
+            const modalContent = document.getElementById('ideaModalContent');
+
+            // Show loading state
+            modal.style.display = 'flex';
+            modalContent.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">Loading idea details...</div>';
+
+            try {
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/telos_ideas?id=eq.${ideaId}&select=*`, {
+                    headers: { 'apikey': SUPABASE_ANON_KEY }
+                });
+                const ideas = await res.json();
+
+                if (ideas && ideas.length > 0) {
+                    const idea = ideas[0];
+                    const features = idea.features ? (typeof idea.features === 'string' ? JSON.parse(idea.features) : idea.features) : [];
+                    const statusColor = getStatusColor(idea.status);
+                    const statusLabel = getStatusLabel(idea.status);
+
+                    modalContent.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
+                            <div>
+                                <h2 style="margin: 0 0 8px; font-size: 1.5rem;">${idea.name}</h2>
+                                <p style="margin: 0; color: var(--text-secondary);">${idea.tagline || 'No tagline'}</p>
+                            </div>
+                            <span style="background: ${statusColor}; color: #000; padding: 4px 12px; border-radius: 100px; font-size: 0.8rem; font-weight: 700;">${statusLabel}</span>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                            <div style="background: var(--bg-card); border-radius: 12px; padding: 16px;">
+                                <h4 style="margin: 0 0 8px; color: var(--accent-cyan); font-size: 0.9rem;">📊 Description</h4>
+                                <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6;">${idea.description || 'No description provided'}</p>
+                            </div>
+                            <div style="background: var(--bg-card); border-radius: 12px; padding: 16px;">
+                                <h4 style="margin: 0 0 8px; color: var(--accent-green); font-size: 0.9rem;">🎯 Target Audience</h4>
+                                <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">${idea.target_audience || 'Not specified'}</p>
+                                <h4 style="margin: 16px 0 8px; color: var(--accent-yellow); font-size: 0.9rem;">💰 Monetization</h4>
+                                <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">${idea.monetization || 'Not specified'}</p>
+                            </div>
+                        </div>
+                        
+                        ${features.length > 0 ? `
+                        <div style="background: var(--bg-card); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                            <h4 style="margin: 0 0 12px; color: var(--accent-cyan); font-size: 0.9rem;">✨ Features</h4>
+                            <ul style="margin: 0; padding-left: 20px; color: var(--text-secondary); font-size: 0.9rem; line-height: 1.8;">
+                                ${features.map(f => `<li>${f}</li>`).join('')}
+                            </ul>
+                        </div>
+                        ` : ''}
+                        
+                        <div style="background: linear-gradient(135deg, var(--bg-card), var(--bg-panel)); border: 1px solid var(--accent-cyan); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                            <h4 style="margin: 0 0 12px; color: var(--accent-cyan); font-size: 0.9rem; display: flex; align-items: center; gap: 8px;">
+                                🔬 Research Report — Why This Idea?
+                            </h4>
+                            <p style="margin: 0; color: var(--text-primary); font-size: 0.95rem; line-height: 1.7;">${idea.why_now || 'No research reasoning recorded for this idea.'}</p>
+                            <div style="margin-top: 12px; display: flex; gap: 12px; font-size: 0.8rem; color: var(--text-muted);">
+                                <span>📁 Focus: ${idea.focus_area || 'General'}</span>
+                                <span>📅 Created: ${new Date(idea.created_at).toLocaleDateString()}</span>
+                                ${idea.build_iterations ? `<span>🔄 Iterations: ${idea.build_iterations}</span>` : ''}
+                            </div>
+                        </div>
+                        
+                        ${idea.status === 'pending' ? `
+                        <div style="border-top: 1px solid var(--border-color); padding-top: 20px;">
+                            <h4 style="margin: 0 0 12px; font-size: 0.9rem;">📝 Rejection Feedback (optional)</h4>
+                            <textarea id="rejectionFeedback" placeholder="Why are you rejecting this idea? This helps the AI learn..." 
+                                style="width: 100%; min-height: 80px; padding: 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 0.9rem; resize: vertical;"></textarea>
+                            
+                            <div style="display: flex; gap: 12px; margin-top: 16px;">
+                                <button onclick="approveIdea(${idea.id})" 
+                                    style="flex: 1; padding: 14px; background: var(--accent-green); color: #000; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 1rem;">
+                                    ✓ Approve & Start Building
+                                </button>
+                                <button onclick="rejectIdea(${idea.id})" 
+                                    style="flex: 1; padding: 14px; background: var(--accent-red); color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 1rem;">
+                                    ✗ Reject Idea
+                                </button>
+                            </div>
+                        </div>
+                        ` : `
+                        <div style="text-align: center; padding: 16px; background: var(--bg-card); border-radius: 12px;">
+                            <span style="color: var(--text-secondary);">This idea has already been ${idea.status}</span>
+                        </div>
+                        `}
+                    `;
+                } else {
+                    modalContent.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--accent-red);">Idea not found</div>';
+                }
+            } catch (err) {
+                console.error('Error loading idea:', err);
+                modalContent.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--accent-red);">Error loading idea details</div>';
+            }
+        }
+
+        async function approveIdea(ideaId) {
+            try {
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/telos_ideas?id=eq.${ideaId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({ status: 'approved' })
+                });
+
+                if (res.ok) {
+                    closeIdeaModal();
+                    loadIdeasQueue();
+                    loadHistory();
+                    alert('✓ Idea approved! Build will start on next watcher cycle.');
+                } else {
+                    alert('Error approving idea. Please try again.');
+                }
+            } catch (err) {
+                console.error('Error approving idea:', err);
+                alert('Error approving idea. Please try again.');
+            }
+        }
+
+        async function rejectIdea(ideaId) {
+            const feedback = document.getElementById('rejectionFeedback')?.value || '';
+
+            try {
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/telos_ideas?id=eq.${ideaId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({
+                        status: 'rejected',
+                        rejection_reason: feedback
+                    })
+                });
+
+                if (res.ok) {
+                    closeIdeaModal();
+                    loadIdeasQueue();
+                    loadHistory();
+                    alert('✗ Idea rejected. Feedback recorded for AI learning.');
+                } else {
+                    alert('Error rejecting idea. Please try again.');
+                }
+            } catch (err) {
+                console.error('Error rejecting idea:', err);
+                alert('Error rejecting idea. Please try again.');
+            }
+        }
+
+        function closeIdeaModal() {
+            document.getElementById('ideaModal').style.display = 'none';
+            currentIdeaId = null;
+        }
+
+        // ═══ LOAD IDEAS QUEUE ═══
+        async function loadIdeasQueue() {
+            const queueBody = document.getElementById('ideasQueueBody');
+            if (!queueBody) return;
+
+            try {
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/telos_ideas?status=eq.pending&order=created_at.desc&limit=10`, {
+                    headers: { 'apikey': SUPABASE_ANON_KEY }
+                });
+                const ideas = await res.json();
+
+                if (Array.isArray(ideas) && ideas.length > 0) {
+                    queueBody.innerHTML = ideas.map(idea => `
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--bg-card); border-radius: 8px; margin-bottom: 8px;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: var(--text-primary);">${idea.name}</div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">${idea.tagline || 'No tagline'}</div>
+                            </div>
+                            <button onclick="viewIdea(${idea.id})" 
+                                style="padding: 6px 12px; background: var(--accent-cyan); color: #000; border: none; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">
+                                View
+                            </button>
+                        </div>
+                    `).join('');
+                } else {
+                    queueBody.innerHTML = '<div class="empty-state">No pending ideas. Enable TELOS mode to start generating.</div>';
+                }
+            } catch (err) {
+                console.error('Error loading ideas queue:', err);
+            }
+        }
+
+        init();
+    </script>
+
+    <!-- Idea Detail Modal -->
+    <div id="ideaModal" onclick="if(event.target === this) closeIdeaModal()"
+        style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+        <div id="ideaModalContent"
+            style="background: var(--bg-panel); border-radius: 16px; padding: 24px; max-width: 700px; width: 100%; max-height: 90vh; overflow-y: auto; position: relative; border: 1px solid var(--border-color);">
+            <!-- Content populated by JS -->
+        </div>
+        <button onclick="closeIdeaModal()"
+            style="position: absolute; top: 20px; right: 20px; background: var(--bg-card); border: none; color: var(--text-primary); width: 40px; height: 40px; border-radius: 50%; font-size: 1.5rem; cursor: pointer;">×</button>
+    </div>
+</body>
+
+</html>
