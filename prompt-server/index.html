@@ -606,6 +606,36 @@ Example: Update the footer on all pages"></textarea>
                 </div>
             </div>
 
+            <!-- Target Slot Selector -->
+            <div
+                style="margin: 16px 0; padding: 16px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 12px;">
+                <div style="font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-bottom: 10px;">
+                    🎯 <strong>Target Box:</strong> Send to a specific Antigravity window for project context
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button onclick="selectSlot(null)" id="slotAuto" class="slot-btn slot-active"
+                        style="padding: 10px 16px; background: linear-gradient(135deg, #22c55e, #16a34a); border-radius: 8px; font-size: 0.9rem; width: auto;">
+                        🔄 Auto (Cycle)
+                    </button>
+                    <button onclick="selectSlot(1)" id="slot1" class="slot-btn"
+                        style="padding: 10px 16px; background: rgba(255,255,255,0.1); border-radius: 8px; font-size: 0.9rem; width: auto;">
+                        1️⃣ Box 1
+                    </button>
+                    <button onclick="selectSlot(2)" id="slot2" class="slot-btn"
+                        style="padding: 10px 16px; background: rgba(255,255,255,0.1); border-radius: 8px; font-size: 0.9rem; width: auto;">
+                        2️⃣ Box 2
+                    </button>
+                    <button onclick="selectSlot(3)" id="slot3" class="slot-btn"
+                        style="padding: 10px 16px; background: rgba(255,255,255,0.1); border-radius: 8px; font-size: 0.9rem; width: auto;">
+                        3️⃣ Box 3
+                    </button>
+                    <button onclick="selectSlot(4)" id="slot4" class="slot-btn"
+                        style="padding: 10px 16px; background: rgba(255,255,255,0.1); border-radius: 8px; font-size: 0.9rem; width: auto;">
+                        4️⃣ Box 4
+                    </button>
+                </div>
+            </div>
+
             <button onclick="sendPrompt()" id="sendBtn">🚀 Send to PC (Ctrl+Enter)</button>
             <div id="response"></div>
 
@@ -1125,6 +1155,33 @@ Example: Update the footer on all pages"></textarea>
             document.getElementById('descriptionInput').value = '';
         }
 
+        // ═══ TARGET SLOT SELECTION ═══
+        let selectedSlot = null;  // null = auto cycle, 1-4 = specific box
+
+        function selectSlot(slot) {
+            selectedSlot = slot;
+            // Update button styles
+            document.querySelectorAll('.slot-btn').forEach(btn => {
+                btn.classList.remove('slot-active');
+                btn.style.background = 'rgba(255,255,255,0.1)';
+            });
+            const activeId = slot === null ? 'slotAuto' : `slot${slot}`;
+            const activeBtn = document.getElementById(activeId);
+            if (activeBtn) {
+                activeBtn.classList.add('slot-active');
+                activeBtn.style.background = slot === null
+                    ? 'linear-gradient(135deg, #22c55e, #16a34a)'
+                    : 'linear-gradient(135deg, #3b82f6, #2563eb)';
+            }
+            // Update send button text
+            const sendBtn = document.getElementById('sendBtn');
+            if (slot === null) {
+                sendBtn.textContent = '🚀 Send to PC (Ctrl+Enter)';
+            } else {
+                sendBtn.textContent = `🚀 Send to Box ${slot} (Ctrl+Enter)`;
+            }
+        }
+
         async function sendPrompt() {
             const prompt = document.getElementById('prompt').value.trim();
             const btn = document.getElementById('sendBtn');
@@ -1146,7 +1203,7 @@ Example: Update the footer on all pages"></textarea>
                 const res = await fetch('/send', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt })
+                    body: JSON.stringify({ prompt, target_slot: selectedSlot })
                 });
                 const data = await res.json();
 

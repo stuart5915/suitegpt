@@ -116,6 +116,7 @@ def upload_image():
 def send_prompt():
     data = request.json
     prompt = data.get('prompt', '').strip()
+    target_slot = data.get('target_slot')  # null = auto cycle, 1-4 = specific box
     
     if not prompt:
         return jsonify({'error': 'No prompt provided'}), 400
@@ -130,6 +131,15 @@ def send_prompt():
     # INSERT into Supabase (main path - watcher polls this)
     if SUPABASE_KEY:
         try:
+            prompt_data = {
+                'prompt': prompt,
+                'target': 'stuart-hollinger-landing',
+                'status': 'pending'
+            }
+            # Add target_slot if specified (1-4)
+            if target_slot is not None:
+                prompt_data['target_slot'] = target_slot
+            
             response = requests.post(
                 f'{SUPABASE_URL}/rest/v1/prompts',
                 headers={
@@ -138,11 +148,7 @@ def send_prompt():
                     'Content-Type': 'application/json',
                     'Prefer': 'return=representation'
                 },
-                json={
-                    'prompt': prompt,
-                    'target': 'stuart-hollinger-landing',
-                    'status': 'pending'
-                }
+                json=prompt_data
             )
             if response.ok:
                 print(f'[NEW PROMPT] {filename}: {prompt[:50]}... -> Supabase ✓')

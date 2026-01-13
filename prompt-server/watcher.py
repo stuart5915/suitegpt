@@ -310,18 +310,25 @@ def process_prompt(prompt_data):
     prompt_id = prompt_data['id']
     prompt_text = prompt_data['prompt']
     target = prompt_data.get('target', 'stuart-hollinger-landing')
+    target_slot = prompt_data.get('target_slot')  # 1-4 for specific box, None for auto-cycle
     
     # SIGNAL BACKGROUND THREAD TO STOP - prevents sweep from clicking while we prepare
     global prompt_incoming
     prompt_incoming = True
     time.sleep(0.3)  # Give background thread time to finish current action
     
-    # Get next slot round-robin (Antigravity queues messages, so we keep going)
-    slot_index = get_next_slot()
-    slot = WINDOW_SLOTS[slot_index]
+    # Get slot - either targeted (0-indexed) or round-robin
+    if target_slot is not None and 1 <= target_slot <= len(WINDOW_SLOTS):
+        slot_index = target_slot - 1  # Convert to 0-indexed
+        slot_busy[slot_index] = True  # Mark as busy
+        print(f'\n{"="*60}')
+        print(f'[NEW PROMPT] {prompt_id[:8]}... → Window {slot_index} (TARGETED Box {target_slot})')
+    else:
+        slot_index = get_next_slot()
+        print(f'\n{"="*60}')
+        print(f'[NEW PROMPT] {prompt_id[:8]}... → Window {slot_index} (auto-cycle)')
     
-    print(f'\n{"="*60}')
-    print(f'[NEW PROMPT] {prompt_id[:8]}... → Window {slot_index}')
+    slot = WINDOW_SLOTS[slot_index]
     print(f'[TARGET] {target}')
     print(f'[STATUS] {get_slot_status()}')
     print(f'{"="*60}')
