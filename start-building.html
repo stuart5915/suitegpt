@@ -563,6 +563,72 @@
             position: absolute;
             font-size: 2rem;
         }
+
+        /* Custom Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            padding: 16px 24px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: toastSlide 0.3s ease;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            max-width: 350px;
+        }
+
+        .toast.success {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .toast.error {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .toast.info {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+        }
+
+        .toast-icon {
+            font-size: 1.3rem;
+        }
+
+        .toast-close {
+            margin-left: auto;
+            background: none;
+            border: none;
+            color: white;
+            opacity: 0.7;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        .toast-close:hover {
+            opacity: 1;
+        }
+
+        @keyframes toastSlide {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 
@@ -570,6 +636,9 @@
     <!-- Navigation -->
     <nav id="main-nav"></nav>
     <script src="nav-component.js"></script>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
 
     <div class="builder-container">
         <div class="builder-header">
@@ -750,10 +819,28 @@
                             <input type="file" id="ss3FileInput" accept="image/*" style="display:none"
                                 onchange="handleFileSelect(event, 'editScreenshot3', 'ss3Preview', 'ss3Placeholder')">
                         </div>
+                        <div class="upload-zone small" id="ss4Zone" ondrop="handleDrop(event, 'editScreenshot4')"
+                            ondragover="handleDragOver(event)"
+                            onclick="document.getElementById('ss4FileInput').click()">
+                            <img class="upload-preview" id="ss4Preview" style="display: none;">
+                            <div class="upload-placeholder" id="ss4Placeholder"><span>📷 4</span></div>
+                            <input type="file" id="ss4FileInput" accept="image/*" style="display:none"
+                                onchange="handleFileSelect(event, 'editScreenshot4', 'ss4Preview', 'ss4Placeholder')">
+                        </div>
+                        <div class="upload-zone small" id="ss5Zone" ondrop="handleDrop(event, 'editScreenshot5')"
+                            ondragover="handleDragOver(event)"
+                            onclick="document.getElementById('ss5FileInput').click()">
+                            <img class="upload-preview" id="ss5Preview" style="display: none;">
+                            <div class="upload-placeholder" id="ss5Placeholder"><span>📷 5</span></div>
+                            <input type="file" id="ss5FileInput" accept="image/*" style="display:none"
+                                onchange="handleFileSelect(event, 'editScreenshot5', 'ss5Preview', 'ss5Placeholder')">
+                        </div>
                     </div>
                     <input type="hidden" id="editScreenshot1">
                     <input type="hidden" id="editScreenshot2">
                     <input type="hidden" id="editScreenshot3">
+                    <input type="hidden" id="editScreenshot4">
+                    <input type="hidden" id="editScreenshot5">
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
@@ -774,6 +861,21 @@
         const ADMIN_API = 'http://10.0.0.142:3000/api/admin/update-app';
         const ADMIN_UPLOAD_API = 'http://10.0.0.142:3000/api/admin/upload-image';
         const ADMIN_DISCORD_ID = '1135315153824993402';
+
+        // Toast notification function
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : '💡';
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <span class="toast-icon">${icon}</span>
+                <span>${message}</span>
+                <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
 
         // Upload handlers
         function handleDragOver(e) {
@@ -834,7 +936,7 @@
                 }
             } catch (err) {
                 console.error('Upload failed:', err);
-                alert('Upload failed: ' + err.message);
+                showToast('Upload failed: ' + err.message, 'error');
                 // Reset preview
                 preview.style.display = 'none';
                 placeholder.style.display = 'flex';
@@ -934,7 +1036,7 @@
                 renderYourApps();
             } catch (err) {
                 console.error('Update failed:', err);
-                alert('Error: ' + err.message);
+                showToast('Error: ' + err.message, 'error');
             }
         }
 
@@ -957,9 +1059,13 @@
             document.getElementById('editScreenshot1').value = app.screenshot_1 || '';
             document.getElementById('editScreenshot2').value = app.screenshot_2 || '';
             document.getElementById('editScreenshot3').value = app.screenshot_3 || '';
+            document.getElementById('editScreenshot4').value = app.screenshot_4 || '';
+            document.getElementById('editScreenshot5').value = app.screenshot_5 || '';
             setPreview('ss1Preview', 'ss1Placeholder', app.screenshot_1);
             setPreview('ss2Preview', 'ss2Placeholder', app.screenshot_2);
             setPreview('ss3Preview', 'ss3Placeholder', app.screenshot_3);
+            setPreview('ss4Preview', 'ss4Placeholder', app.screenshot_4);
+            setPreview('ss5Preview', 'ss5Placeholder', app.screenshot_5);
 
             document.getElementById('editModalOverlay').classList.add('active');
         }
@@ -994,7 +1100,9 @@
                 app_url: document.getElementById('editAppUrl').value || null,
                 screenshot_1: document.getElementById('editScreenshot1').value || null,
                 screenshot_2: document.getElementById('editScreenshot2').value || null,
-                screenshot_3: document.getElementById('editScreenshot3').value || null
+                screenshot_3: document.getElementById('editScreenshot3').value || null,
+                screenshot_4: document.getElementById('editScreenshot4').value || null,
+                screenshot_5: document.getElementById('editScreenshot5').value || null
             };
             try {
                 const response = await fetch(ADMIN_API, {
@@ -1008,11 +1116,11 @@
                 });
                 const result = await response.json();
                 if (!result.success) throw new Error(result.error);
-                alert('✅ App updated!');
+                showToast('App updated!', 'success');
                 closeEditModal();
                 loadYourApps();
             } catch (err) {
-                alert('❌ Error: ' + err.message);
+                showToast('Error: ' + err.message, 'error');
             }
         });
 
