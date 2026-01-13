@@ -674,6 +674,52 @@ def check_build_complete_file():
                     data = json.load(f)
                 
                 print(f'[STAGED] 🎉 Build complete detected: {build_instance.app_name}')
+                
+                # ═══ VERCEL DEPLOYMENT ═══
+                # Deploy the app to Vercel and get production URL
+                try:
+                    import vercel_deployer
+                    print(f'[VERCEL] Deploying {build_instance.app_name} to Vercel...')
+                    
+                    deploy_result = vercel_deployer.deploy_app(
+                        build_instance.app_path,
+                        build_instance.app_name
+                    )
+                    
+                    if deploy_result.get('success'):
+                        prod_url = deploy_result['url']
+                        print(f'[VERCEL] ✅ Deployed: {prod_url}')
+                        
+                        # Update Supabase with production URL
+                        try:
+                            response = requests.patch(
+                                f'{SUPABASE_URL}/rest/v1/suite_apps?id=eq.{idea_id}',
+                                headers={
+                                    'apikey': SUPABASE_KEY,
+                                    'Authorization': f'Bearer {SUPABASE_KEY}',
+                                    'Content-Type': 'application/json'
+                                },
+                                json={
+                                    'download_url': prod_url,
+                                    'app_url': prod_url,
+                                    'status': 'published'
+                                }
+                            )
+                            if response.ok:
+                                print(f'[SUPABASE] ✅ Updated app URL: {prod_url}')
+                            else:
+                                print(f'[SUPABASE] ⚠️ Failed to update URL: {response.text}')
+                        except Exception as e:
+                            print(f'[SUPABASE] ⚠️ Error updating URL: {e}')
+                    else:
+                        error_msg = deploy_result.get('error', 'Unknown error')
+                        print(f'[VERCEL] ❌ Deployment failed: {error_msg}')
+                        
+                except ImportError:
+                    print('[VERCEL] ⚠️ vercel_deployer module not found - skipping deployment')
+                except Exception as e:
+                    print(f'[VERCEL] ❌ Deployment error: {e}')
+                
                 builder.mark_build_complete(idea_id)
                 builder.remove_builder(idea_id)
                 
