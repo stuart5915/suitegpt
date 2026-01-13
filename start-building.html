@@ -685,9 +685,10 @@
 
         async function loadYourApps() {
             try {
-                const { data, error } = await db.from('apps').select('*').order('name');
-                if (error) throw error;
-                yourApps = data || [];
+                const response = await fetch(`http://10.0.0.142:3000/api/admin/get-apps?discord_id=${ADMIN_DISCORD_ID}`);
+                const result = await response.json();
+                if (!result.success) throw new Error(result.error);
+                yourApps = result.apps || [];
                 renderYourApps();
             } catch (err) {
                 console.error('Error loading apps:', err);
@@ -714,10 +715,10 @@
 
             grid.innerHTML = yourApps.map(app => {
                 const isLive = app.status === 'approved' || app.status === 'featured';
-                const statusClass = isLive ? 'live' : app.status === 'development' ? 'development' : 'paused';
+                const statusClass = isLive ? 'live' : app.status === 'pending' ? 'development' : 'paused';
                 const statusLabel = app.status === 'approved' ? '🟢 Live' :
                     app.status === 'featured' ? '⭐ Featured' :
-                        app.status === 'development' ? '🟡 Dev' : '⏸️ Paused';
+                        app.status === 'pending' ? '🟡 Pending' : '⏸️ Offline';
 
                 const iconHtml = app.icon_url
                     ? `<img src="${app.icon_url}" alt="${app.name}" onerror="this.parentElement.innerHTML='📱'">`
@@ -750,7 +751,7 @@
         }
 
         async function toggleLive(slug, currentlyLive) {
-            const newStatus = currentlyLive ? 'development' : 'approved';
+            const newStatus = currentlyLive ? 'pending' : 'approved';
             try {
                 console.log(`Updating ${slug} to status: ${newStatus}`);
                 const response = await fetch(ADMIN_API, {

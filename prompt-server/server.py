@@ -437,6 +437,32 @@ def admin_update_app():
         print(f'[ADMIN] Error: {e}')
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/api/admin/get-apps', methods=['GET'])
+def admin_get_apps():
+    """Get ALL apps for admin view (including offline) - uses service key"""
+    if not SUPABASE_KEY:
+        return jsonify({'success': False, 'error': 'No Supabase key'}), 500
+    
+    discord_id = request.args.get('discord_id')
+    if discord_id != ADMIN_DISCORD_ID:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+    
+    try:
+        response = requests.get(
+            f'{SUPABASE_URL}/rest/v1/apps?order=name.asc',
+            headers={
+                'apikey': SUPABASE_KEY,
+                'Authorization': f'Bearer {SUPABASE_KEY}'
+            }
+        )
+        
+        if response.ok:
+            return jsonify({'success': True, 'apps': response.json()})
+        else:
+            return jsonify({'success': False, 'error': response.text}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 if __name__ == '__main__':
     print('=' * 50)
     print('PROMPT SERVER RUNNING')
