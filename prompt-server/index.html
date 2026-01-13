@@ -458,6 +458,39 @@
         .generate-btn:hover {
             box-shadow: 0 6px 20px rgba(34, 197, 94, 0.3);
         }
+
+        .generate-btn:hover {
+            box-shadow: 0 6px 20px rgba(34, 197, 94, 0.3);
+        }
+
+        /* Smart Badge Styles */
+        .analysis-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-left: 12px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .analysis-badge.visible {
+            opacity: 1;
+        }
+
+        .analysis-opus {
+            background: linear-gradient(135deg, #a855f7, #6366f1);
+            color: white;
+            box-shadow: 0 2px 10px rgba(168, 85, 247, 0.3);
+        }
+
+        .analysis-sonnet {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            box-shadow: 0 2px 10px rgba(34, 197, 94, 0.3);
+        }
     </style>
 </head>
 
@@ -582,6 +615,13 @@
                     <button class="generate-btn" onclick="generatePrompt()">⚡ Fill Prompt</button>
                 </div>
             </details>
+
+            </details>
+
+            <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                <label for="prompt" style="font-weight: 700; color: #ff9500;">Your Prompt</label>
+                <div id="smartBadge" class="analysis-badge"></div>
+            </div>
 
             <textarea id="prompt" style="height: 200px;" placeholder="Type your coding prompt or use the builder above...
 
@@ -1050,6 +1090,31 @@ Example: Update the footer on all pages"></textarea>
             event.target.classList.add('active');
         }
 
+        // ═══ SMART PROMPT LOGIC ═══
+        const promptInput = document.getElementById('prompt');
+        const badge = document.getElementById('smartBadge');
+
+        promptInput.addEventListener('input', () => {
+            const text = promptInput.value.trim();
+            if (text.length === 0) {
+                badge.classList.remove('visible');
+                return;
+            }
+
+            // Heuristics
+            const isComplex = text.length > 50 ||
+                /refactor|rewrite|architecture|database|security|api|complex|optimize|class|structure/i.test(text);
+
+            badge.className = isComplex ? 'analysis-badge analysis-opus visible' : 'analysis-badge analysis-sonnet visible';
+            badge.innerHTML = isComplex
+                ? '<span>🧠 High Complexity: Opus 3.5 Recommended</span>'
+                : '<span>🚀 Standard: Sonnet 3.5 Recommended</span>';
+
+            // Store for submission
+            promptInput.dataset.complexity = isComplex ? 'high' : 'low';
+            promptInput.dataset.model = isComplex ? 'opus' : 'sonnet';
+        });
+
         // ═══ SMART PROMPT BUILDER ═══
         const projectNames = {
             website: 'SUITE Website',
@@ -1200,10 +1265,21 @@ Example: Update the footer on all pages"></textarea>
             btn.textContent = 'Sending...';
 
             try {
+                const complexity = document.getElementById('prompt').dataset.complexity || 'low';
+                const model = document.getElementById('prompt').dataset.model || 'sonnet';
+
                 const res = await fetch('/send', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt, target_slot: selectedSlot })
+                    body: JSON.stringify({
+                        prompt,
+                        target_slot: selectedSlot,
+                        metadata: {
+                            complexity: complexity,
+                            recommended_model: model,
+                            source: 'web_smart_prompt'
+                        }
+                    })
                 });
                 const data = await res.json();
 

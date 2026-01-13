@@ -328,8 +328,21 @@ def process_prompt(prompt_data):
         print(f'\n{"="*60}')
         print(f'[NEW PROMPT] {prompt_id[:8]}... → Window {slot_index} (auto-cycle)')
     
+    # Check for Smart Prompt metadata
+    metadata = prompt_data.get('metadata', {})
+    if isinstance(metadata, str):
+        try:
+            import json
+            metadata = json.loads(metadata)
+        except:
+            metadata = {}
+    
+    recommended_model = metadata.get('recommended_model', 'sonnet')
+    complexity = metadata.get('complexity', 'low')
+    
     slot = WINDOW_SLOTS[slot_index]
     print(f'[TARGET] {target}')
+    print(f'[MODEL] {recommended_model.upper()} ({complexity} complexity)')
     print(f'[STATUS] {get_slot_status()}')
     print(f'{"="*60}')
     print(f'{prompt_text[:200]}...' if len(prompt_text) > 200 else prompt_text)

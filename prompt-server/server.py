@@ -139,6 +139,11 @@ def send_prompt():
             # Add target_slot if specified (1-4)
             if target_slot is not None:
                 prompt_data['target_slot'] = target_slot
+                
+            # Add metadata if present (complexity, recommended_model)
+            if 'metadata' in data:
+                prompt_data['metadata'] = data['metadata']
+
             
             response = requests.post(
                 f'{SUPABASE_URL}/rest/v1/prompts',

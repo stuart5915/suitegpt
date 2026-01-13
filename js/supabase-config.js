@@ -14,25 +14,26 @@ function initSupabase() {
     return supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 
-// Fetch ALL apps from suite_apps table
+// Fetch ALL apps from apps table (the main source of truth)
 async function fetchAllSuiteApps() {
     const client = initSupabase();
     if (!client) return [];
 
     try {
         const { data, error } = await client
-            .from('suite_apps')
+            .from('apps')
             .select('*')
-            .order('published_at', { ascending: false, nullsFirst: false });
+            .in('status', ['approved', 'featured', 'pending'])
+            .order('created_at', { ascending: false });
 
         if (error) {
-            console.error('Error fetching suite apps:', error);
+            console.error('Error fetching apps:', error);
             return [];
         }
 
         return data || [];
     } catch (err) {
-        console.error('Failed to fetch suite apps:', err);
+        console.error('Failed to fetch apps:', err);
         return [];
     }
 }
@@ -103,28 +104,10 @@ async function fetchApprovedApps() {
     }
 }
 
-// Fetch a single app by slug from suite_apps
+// Fetch a single app by slug from apps table (alias for consistency)
 async function fetchSuiteAppBySlug(slug) {
-    const client = initSupabase();
-    if (!client) return null;
-
-    try {
-        const { data, error } = await client
-            .from('suite_apps')
-            .select('*')
-            .eq('slug', slug)
-            .single();
-
-        if (error) {
-            console.error('Error fetching app:', error);
-            return null;
-        }
-
-        return data;
-    } catch (err) {
-        console.error('Failed to fetch app:', err);
-        return null;
-    }
+    // Just use fetchAppBySlug - all apps are in the apps table now
+    return await fetchAppBySlug(slug);
 }
 
 // Fetch a single app by slug (old table, fallback)
