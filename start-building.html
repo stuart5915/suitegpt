@@ -499,6 +499,70 @@
         .refresh-btn svg {
             transition: transform 0.3s ease;
         }
+
+        /* Upload zone styles */
+        .upload-zone {
+            border: 2px dashed #d1d5db;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #fafafa;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.drag-over {
+            border-color: #ff9500;
+            background: #fff8f0;
+        }
+
+        .upload-zone.small {
+            min-height: 80px;
+            padding: 10px;
+        }
+
+        .upload-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+
+        .upload-placeholder span:first-child {
+            font-size: 1.5rem;
+        }
+
+        .upload-preview {
+            max-width: 100%;
+            max-height: 100px;
+            border-radius: 8px;
+            object-fit: contain;
+        }
+
+        .screenshots-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .upload-zone.uploading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .upload-zone.uploading::after {
+            content: '⏳';
+            position: absolute;
+            font-size: 2rem;
+        }
     </style>
 </head>
 
@@ -642,24 +706,54 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="editIconUrl">Icon URL</label>
-                    <input type="url" id="editIconUrl" placeholder="https://...">
+                    <label>App Icon</label>
+                    <div class="upload-zone" id="iconUploadZone" ondrop="handleDrop(event, 'editIconUrl')"
+                        ondragover="handleDragOver(event)" onclick="document.getElementById('iconFileInput').click()">
+                        <img class="upload-preview" id="iconPreview" style="display: none;">
+                        <div class="upload-placeholder" id="iconPlaceholder">
+                            <span>📷</span>
+                            <span>Drop image or click to upload</span>
+                        </div>
+                        <input type="file" id="iconFileInput" accept="image/*" style="display:none"
+                            onchange="handleFileSelect(event, 'editIconUrl', 'iconPreview', 'iconPlaceholder')">
+                    </div>
+                    <input type="hidden" id="editIconUrl">
                 </div>
                 <div class="form-group">
                     <label for="editAppUrl">App URL (PWA Link)</label>
                     <input type="url" id="editAppUrl" placeholder="https://yourapp.vercel.app">
                 </div>
                 <div class="form-group">
-                    <label for="editScreenshot1">Screenshot 1 URL</label>
-                    <input type="url" id="editScreenshot1" placeholder="https://...">
-                </div>
-                <div class="form-group">
-                    <label for="editScreenshot2">Screenshot 2 URL</label>
-                    <input type="url" id="editScreenshot2" placeholder="https://...">
-                </div>
-                <div class="form-group">
-                    <label for="editScreenshot3">Screenshot 3 URL</label>
-                    <input type="url" id="editScreenshot3" placeholder="https://...">
+                    <label>Screenshots</label>
+                    <div class="screenshots-grid">
+                        <div class="upload-zone small" id="ss1Zone" ondrop="handleDrop(event, 'editScreenshot1')"
+                            ondragover="handleDragOver(event)"
+                            onclick="document.getElementById('ss1FileInput').click()">
+                            <img class="upload-preview" id="ss1Preview" style="display: none;">
+                            <div class="upload-placeholder" id="ss1Placeholder"><span>📷 1</span></div>
+                            <input type="file" id="ss1FileInput" accept="image/*" style="display:none"
+                                onchange="handleFileSelect(event, 'editScreenshot1', 'ss1Preview', 'ss1Placeholder')">
+                        </div>
+                        <div class="upload-zone small" id="ss2Zone" ondrop="handleDrop(event, 'editScreenshot2')"
+                            ondragover="handleDragOver(event)"
+                            onclick="document.getElementById('ss2FileInput').click()">
+                            <img class="upload-preview" id="ss2Preview" style="display: none;">
+                            <div class="upload-placeholder" id="ss2Placeholder"><span>📷 2</span></div>
+                            <input type="file" id="ss2FileInput" accept="image/*" style="display:none"
+                                onchange="handleFileSelect(event, 'editScreenshot2', 'ss2Preview', 'ss2Placeholder')">
+                        </div>
+                        <div class="upload-zone small" id="ss3Zone" ondrop="handleDrop(event, 'editScreenshot3')"
+                            ondragover="handleDragOver(event)"
+                            onclick="document.getElementById('ss3FileInput').click()">
+                            <img class="upload-preview" id="ss3Preview" style="display: none;">
+                            <div class="upload-placeholder" id="ss3Placeholder"><span>📷 3</span></div>
+                            <input type="file" id="ss3FileInput" accept="image/*" style="display:none"
+                                onchange="handleFileSelect(event, 'editScreenshot3', 'ss3Preview', 'ss3Placeholder')">
+                        </div>
+                    </div>
+                    <input type="hidden" id="editScreenshot1">
+                    <input type="hidden" id="editScreenshot2">
+                    <input type="hidden" id="editScreenshot3">
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
@@ -678,7 +772,76 @@
 
         // Admin API (calls prompt-server which has service key)
         const ADMIN_API = 'http://10.0.0.142:3000/api/admin/update-app';
+        const ADMIN_UPLOAD_API = 'http://10.0.0.142:3000/api/admin/upload-image';
         const ADMIN_DISCORD_ID = '1135315153824993402';
+
+        // Upload handlers
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.target.closest('.upload-zone').classList.add('drag-over');
+        }
+
+        function handleDrop(e, inputId) {
+            e.preventDefault();
+            e.target.closest('.upload-zone').classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const zone = e.target.closest('.upload-zone');
+                const preview = zone.querySelector('.upload-preview');
+                const placeholder = zone.querySelector('.upload-placeholder');
+                uploadFile(file, inputId, preview, placeholder, zone);
+            }
+        }
+
+        function handleFileSelect(e, inputId, previewId, placeholderId) {
+            const file = e.target.files[0];
+            if (file) {
+                const zone = e.target.closest('.upload-zone');
+                const preview = document.getElementById(previewId);
+                const placeholder = document.getElementById(placeholderId);
+                uploadFile(file, inputId, preview, placeholder, zone);
+            }
+        }
+
+        async function uploadFile(file, inputId, preview, placeholder, zone) {
+            zone.classList.add('uploading');
+
+            // Show preview immediately
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+                placeholder.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+
+            // Upload to server
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('discord_id', ADMIN_DISCORD_ID);
+
+            try {
+                const response = await fetch(ADMIN_UPLOAD_API, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                if (result.success) {
+                    document.getElementById(inputId).value = result.url;
+                    console.log('Uploaded:', result.url);
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (err) {
+                console.error('Upload failed:', err);
+                alert('Upload failed: ' + err.message);
+                // Reset preview
+                preview.style.display = 'none';
+                placeholder.style.display = 'flex';
+            } finally {
+                zone.classList.remove('uploading');
+            }
+        }
 
         let isAdmin = true;
         let yourApps = [];
@@ -783,13 +946,35 @@
             document.getElementById('editTagline').value = app.tagline || '';
             document.getElementById('editDescription').value = app.description || '';
             document.getElementById('editCategory').value = app.category || 'productivity';
-            document.getElementById('editStatus').value = app.status || 'development';
-            document.getElementById('editIconUrl').value = app.icon_url || '';
+            document.getElementById('editStatus').value = app.status || 'pending';
             document.getElementById('editAppUrl').value = app.app_url || '';
+
+            // Set icon preview
+            document.getElementById('editIconUrl').value = app.icon_url || '';
+            setPreview('iconPreview', 'iconPlaceholder', app.icon_url);
+
+            // Set screenshot previews
             document.getElementById('editScreenshot1').value = app.screenshot_1 || '';
             document.getElementById('editScreenshot2').value = app.screenshot_2 || '';
             document.getElementById('editScreenshot3').value = app.screenshot_3 || '';
+            setPreview('ss1Preview', 'ss1Placeholder', app.screenshot_1);
+            setPreview('ss2Preview', 'ss2Placeholder', app.screenshot_2);
+            setPreview('ss3Preview', 'ss3Placeholder', app.screenshot_3);
+
             document.getElementById('editModalOverlay').classList.add('active');
+        }
+
+        function setPreview(previewId, placeholderId, url) {
+            const preview = document.getElementById(previewId);
+            const placeholder = document.getElementById(placeholderId);
+            if (url) {
+                preview.src = url;
+                preview.style.display = 'block';
+                placeholder.style.display = 'none';
+            } else {
+                preview.style.display = 'none';
+                placeholder.style.display = 'flex';
+            }
         }
 
         function closeEditModal() {

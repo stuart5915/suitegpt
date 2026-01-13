@@ -463,6 +463,54 @@ def admin_get_apps():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/api/admin/upload-image', methods=['POST'])
+def admin_upload_image():
+    """Upload an image to Supabase Storage and return public URL"""
+    if not SUPABASE_KEY:
+        return jsonify({'success': False, 'error': 'No Supabase key'}), 500
+    
+    discord_id = request.form.get('discord_id')
+    if discord_id != ADMIN_DISCORD_ID:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+    
+    if 'file' not in request.files:
+        return jsonify({'success': False, 'error': 'No file provided'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'success': False, 'error': 'No file selected'}), 400
+    
+    try:
+        # Generate unique filename
+        import uuid
+        ext = os.path.splitext(file.filename)[1] or '.png'
+        filename = f"{uuid.uuid4().hex}{ext}"
+        file_content = file.read()
+        
+        # Upload to Supabase Storage
+        storage_url = f'{SUPABASE_URL}/storage/v1/object/app-assets/{filename}'
+        response = requests.post(
+            storage_url,
+            headers={
+                'apikey': SUPABASE_KEY,
+                'Authorization': f'Bearer {SUPABASE_KEY}',
+                'Content-Type': file.content_type or 'image/png'
+            },
+            data=file_content
+        )
+        
+        if response.ok:
+            # Return public URL
+            public_url = f'{SUPABASE_URL}/storage/v1/object/public/app-assets/{filename}'
+            print(f'[UPLOAD] Uploaded {filename} -> {public_url}')
+            return jsonify({'success': True, 'url': public_url, 'filename': filename})
+        else:
+            print(f'[UPLOAD] Failed: {response.text}')
+            return jsonify({'success': False, 'error': response.text}), 400
+    except Exception as e:
+        print(f'[UPLOAD] Error: {e}')
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 if __name__ == '__main__':
     print('=' * 50)
     print('PROMPT SERVER RUNNING')
