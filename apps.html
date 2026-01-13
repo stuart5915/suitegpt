@@ -673,19 +673,6 @@
             background: linear-gradient(135deg, #fff 0%, #fef7ed 100%);
         }
 
-        .app-card.featured::before {
-            content: '? Featured';
-            position: absolute;
-            top: -10px;
-            left: 16px;
-            background: var(--gradient-button);
-            color: white;
-            padding: 4px 12px;
-            border-radius: 100px;
-            font-size: 0.7rem;
-            font-weight: 600;
-        }
-
         .app-row {
             display: flex;
             gap: 16px;
@@ -1130,60 +1117,14 @@
         <div class="canvas-container">
             <!-- Frosted Glass Container -->
             <div class="apps-main-container">
-                <!-- Featured Hero Section -->
-                <div class="featured-hero">
-                    <!-- Large Featured Card -->
-                    <a href="app.html?slug=cheshbon-reflections" class="featured-large"
-                        style="background: linear-gradient(135deg, #ff9500 0%, #ff6b9d 100%); text-decoration: none;"
-                        id="featuredLarge">
-                        <span class="featured-badge">⭐ Featured App</span>
-                        <div class="featured-content">
-                            <div class="featured-icon"><img src="assets/cheshbon-icon.png" alt="Cheshbon"
-                                    style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;"></div>
-                            <div class="featured-title">Cheshbon Reflections</div>
-                            <div class="featured-desc">Journal through insights at your own pace with AI-powered
-                                guidance</div>
-                            <span class="featured-btn">
-                                Try Now
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
-                                    <path d="M5 12h14M12 5l7 7-7 7" />
-                                </svg>
-                            </span>
-                        </div>
-                    </a>
-
-                    <!-- Stacked Small Cards -->
-                    <div class="featured-stack" id="featuredSmallCards">
-                        <!-- Populated dynamically from Supabase -->
-                        <div class="featured-small" style="opacity: 0.5;">
-                            <div class="small-icon" style="background: #f3f4f6;">⏳</div>
-                            <div class="small-content">
-                                <div class="small-title">Loading...</div>
-                                <div class="small-meta">Fetching apps</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Carousel Dots -->
-                <div class="carousel-dots">
-                    <span class="carousel-dot active"></span>
-                    <span class="carousel-dot"></span>
-                    <span class="carousel-dot"></span>
-                </div>
 
                 <!-- Filter Pills -->
                 <div style="margin: 32px 0 24px;">
                     <div class="category-tabs" id="categoryTabs">
-                        <!-- Tabs rendered by JS, with fallback -->
-                        <button class="category-tab active"> All Apps <span class="count">3</span></button>
-                        <button class="category-tab"> Trending</button>
-                        <button class="category-tab">✨ New</button>
-                        <button class="category-tab"> AI Tools</button>
-                        <button class="category-tab"> Health</button>
-                        <button class="category-tab">📊 Productivity</button>
-                        <button class="category-tab" data-category="extensions">🧩 Extensions</button>
+                        <!-- Fallback tabs - JS will replace these -->
+                        <button class="category-tab active"> All Apps <span class="count">5</span></button>
+                        <button class="category-tab" data-category="extensions">🧩 Extensions <span
+                                class="count">4</span></button>
                     </div>
                 </div>
 
@@ -1446,13 +1387,9 @@
     </footer>
 
     <script>
-        // Status-based categories (not content categories)
+        // Simplified categories - just All Apps and Extensions
         const statusCategories = [
             { id: 'all', name: 'All Apps', emoji: '' },
-            { id: 'pays-review', name: 'Pays to Review', emoji: '' },
-            { id: 'published', name: 'Live', emoji: '' },
-            { id: 'development', name: 'In Development', emoji: '' },
-            { id: 'beta', name: 'Beta', emoji: '' },
             { id: 'extensions', name: 'Extensions', emoji: '🧩' }
         ];
 
@@ -1496,7 +1433,6 @@
 
             renderTabs();
             renderApps();
-            renderTopCharts();
         }
 
         // Load active review campaigns from Supabase
@@ -1610,18 +1546,15 @@
                     // Toggle sections based on whether Extensions is selected
                     const appsMainContainer = document.getElementById('appsMainContainer');
                     const extensionsContainer = document.getElementById('extensionsContainer');
-                    const topCharts = document.querySelector('.top-charts');
                     const searchBarParent = document.querySelector('.search-bar')?.parentElement;
 
                     if (currentStatus === 'extensions') {
                         if (appsMainContainer) appsMainContainer.style.display = 'none';
                         if (extensionsContainer) extensionsContainer.style.display = 'block';
-                        if (topCharts) topCharts.style.display = 'none';
                         if (searchBarParent) searchBarParent.style.display = 'none';
                     } else {
                         if (appsMainContainer) appsMainContainer.style.display = 'block';
                         if (extensionsContainer) extensionsContainer.style.display = 'none';
-                        if (topCharts) topCharts.style.display = 'block';
                         if (searchBarParent) searchBarParent.style.display = 'block';
                     }
 
@@ -1692,7 +1625,7 @@
                     <div class="app-row" onclick="window.location.href='app.html?slug=${app.slug}'">
                         <div class="app-icon">${getAppIcon(app)}</div>
                         <div class="app-content">
-                            <div class="app-name">${app.name}</div>
+                            <div class="app-name">${stripEmojis(app.name)}</div>
                             <div class="app-meta">
                                 ${app.published_at ? `<span>Published ${formatDate(app.published_at)}</span>` : ''}
                             </div>
@@ -1703,11 +1636,11 @@
                     <div class="app-footer" style="flex-wrap: wrap; gap: 8px;">
                         <span class="app-status ${isLive ? 'live' : 'coming'}">${getStatusLabel(app.status)}</span>
                         <div class="app-actions" style="display: flex; gap: 6px; margin-left: auto;">
-                            <button onclick="event.stopPropagation(); requestFeature('${app.slug}', '${app.name}')" class="action-btn feature-btn" title="Request a Feature">
-                                ? Request
+                            <button onclick="event.stopPropagation(); requestFeature('${app.slug}', '${stripEmojis(app.name)}')" class="action-btn feature-btn" title="Request a Feature">
+                                + Request
                             </button>
-                            <button onclick="event.stopPropagation(); reportBug('${app.slug}', '${app.name}')" class="action-btn bug-btn" title="Report a Bug">
-                                ?? Bug
+                            <button onclick="event.stopPropagation(); reportBug('${app.slug}', '${stripEmojis(app.name)}')" class="action-btn bug-btn" title="Report a Bug">
+                                Report Bug
                             </button>
                         </div>
                     </div>
@@ -1751,6 +1684,16 @@
             if (!dateStr) return '';
             const date = new Date(dateStr);
             return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        // Strip emojis and special characters from text (for clean app names)
+        function stripEmojis(text) {
+            if (!text) return '';
+            // Remove all non-ASCII characters and trim, then remove any leading non-letter chars
+            return text
+                .replace(/[^\x00-\x7F]/g, '')  // Remove all non-ASCII (includes emojis)
+                .replace(/^[^a-zA-Z]+/, '')    // Remove leading non-letters
+                .trim();
         }
 
         // Get earning badges for an app
@@ -1970,7 +1913,7 @@
                     <div class="app-row" onclick="window.location.href='app.html?slug=${app.slug}'">
                         <div class="app-icon">${getAppIcon(app)}</div>
                         <div class="app-content">
-                            <div class="app-name">${originBadge} ${app.name}</div>
+                            <div class="app-name">${stripEmojis(app.name)}</div>
                             <div class="app-meta">
                                 ${app.published_at ? `<span>Published ${formatDate(app.published_at)}</span>` : ''}
                             </div>
@@ -1981,11 +1924,11 @@
                     <div class="app-footer" style="flex-wrap: wrap; gap: 8px;">
                         <span class="app-status ${isLive ? 'live' : 'coming'}">${getStatusLabel(app.status)}</span>
                         <div class="app-actions" style="display: flex; gap: 6px; margin-left: auto;">
-                            <button onclick="event.stopPropagation(); requestFeature('${app.slug}', '${app.name}')" class="action-btn feature-btn" title="Request a Feature">
-                                ? Request
+                            <button onclick="event.stopPropagation(); requestFeature('${app.slug}', '${stripEmojis(app.name)}')" class="action-btn feature-btn" title="Request a Feature">
+                                + Request
                             </button>
-                            <button onclick="event.stopPropagation(); reportBug('${app.slug}', '${app.name}')" class="action-btn bug-btn" title="Report a Bug">
-                                ?? Bug
+                            <button onclick="event.stopPropagation(); reportBug('${app.slug}', '${stripEmojis(app.name)}')" class="action-btn bug-btn" title="Report a Bug">
+                                Report Bug
                             </button>
                         </div>
                     </div>

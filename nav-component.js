@@ -2,8 +2,8 @@
 // Include this script and add <nav id="main-nav"></nav> to any page
 
 (function () {
-    const isDocsPage = window.location.pathname.includes('/docs/');
-    const basePath = isDocsPage ? '../' : '';
+    const isSubfolder = window.location.pathname.includes('/docs/') || window.location.pathname.includes('/learn/');
+    const basePath = isSubfolder ? '../' : '';
 
     const navHTML = `
     <div class="nav-inner">
@@ -17,6 +17,7 @@
 
 
             <a href="${basePath}docs/">Docs</a>
+            <a href="${basePath}learn.html">Learn</a>
             <a href="${basePath}wallet.html">Wallet</a>
             <a href="${basePath}start-building.html" class="nav-cta"><img src="${basePath}assets/emojis/clay-rocket.png" alt="" class="nav-cta-emoji"> Start Building</a>
         </div>
