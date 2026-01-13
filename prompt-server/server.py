@@ -390,6 +390,53 @@ def trigger_research():
         print(f'[API] Research failed: {e}')
         return jsonify({'success': False, 'error': str(e)}), 500
 
+# Admin Discord ID - only this user can update apps
+ADMIN_DISCORD_ID = '1135315153824993402'
+
+@app.route('/api/admin/update-app', methods=['POST'])
+def admin_update_app():
+    """Update an app in the database - requires admin Discord ID"""
+    if not SUPABASE_KEY:
+        return jsonify({'success': False, 'error': 'No Supabase key'}), 500
+    
+    data = request.json
+    discord_id = data.get('discord_id')
+    slug = data.get('slug')
+    updates = data.get('updates', {})
+    
+    # Validate admin
+    if discord_id != ADMIN_DISCORD_ID:
+        print(f'[ADMIN] Unauthorized attempt: {discord_id}')
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+    
+    if not slug:
+        return jsonify({'success': False, 'error': 'No app slug provided'}), 400
+    
+    if not updates:
+        return jsonify({'success': False, 'error': 'No updates provided'}), 400
+    
+    try:
+        response = requests.patch(
+            f'{SUPABASE_URL}/rest/v1/apps?slug=eq.{slug}',
+            headers={
+                'apikey': SUPABASE_KEY,
+                'Authorization': f'Bearer {SUPABASE_KEY}',
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+            },
+            json=updates
+        )
+        
+        if response.ok:
+            print(f'[ADMIN] Updated app {slug}: {list(updates.keys())}')
+            return jsonify({'success': True, 'app': response.json()})
+        else:
+            print(f'[ADMIN] Update failed: {response.text}')
+            return jsonify({'success': False, 'error': response.text}), 400
+    except Exception as e:
+        print(f'[ADMIN] Error: {e}')
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 if __name__ == '__main__':
     print('=' * 50)
     print('PROMPT SERVER RUNNING')
