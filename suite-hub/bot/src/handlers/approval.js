@@ -73,7 +73,7 @@ export async function handleReactionAdd(reaction, user) {
         } else if (isNeedsInfo) {
             await handleNeedsInfo(message, spec, user.username);
         } else if (isReject) {
-            await handleRejection(message, spec, user.username);
+            await startRejectionFlow(message, spec, user);
         } else if (isAIRefine) {
             // Import AI refinement handler
             const { handleAIRefinement } = await import('./ai-refinement.js');
@@ -172,20 +172,96 @@ async function handleApproval(message, spec, approvedBy, model = 'sonnet') {
 }
 
 /**
- * Handle rejection of a submission
+ * Handle rejection of a submission - stores pending rejection for modal
  */
-async function handleRejection(message, spec, rejectedBy) {
+async function handleRejection(message, spec, rejectedBy, reason = null) {
     const channel = message.channel;
+    const guild = message.guild;
+
+    // Build the rejection message
+    let rejectionContent = `❌ <@${spec.authorId}> Your ${spec.type} "${spec.title}" was not approved by **${rejectedBy}**.`;
+
+    if (reason) {
+        rejectionContent += `\n\n**Reason:** ${reason}`;
+    } else {
+        rejectionContent += `\n\nFeel free to improve and resubmit!`;
+    }
 
     // Notify in channel by mentioning the user
-    await channel.send({
-        content: `❌ <@${spec.authorId}> Your ${spec.type} "${spec.title}" was not approved by **${rejectedBy}**.\n\nFeel free to improve and resubmit!`
-    });
+    await channel.send({ content: rejectionContent });
+
+    // Also DM the user with the rejection reason
+    try {
+        const submitter = await guild.members.fetch(spec.authorId);
+        await submitter.send({
+            content: `❌ **Submission Rejected**\n\n**${spec.type}:** ${spec.title}\n**Rejected by:** ${rejectedBy}${reason ? `\n**Reason:** ${reason}` : ''}\n\nFeel free to revise and resubmit!`
+        });
+    } catch {
+        // User may have DMs disabled
+    }
 
     // Delete the pending message
     await message.delete().catch(() => { });
 
-    console.log(`Rejected: ${spec.title} by ${rejectedBy}`);
+    console.log(`Rejected: ${spec.title} by ${rejectedBy}${reason ? ` - Reason: ${reason}` : ''}`);
+}
+
+// Store pending rejections for modal response
+export const pendingRejections = new Map();
+
+/**
+ * Start rejection flow - store info and send prompt for reason
+ */
+export async function startRejectionFlow(message, spec, rejectedBy) {
+    const channel = message.channel;
+
+    // Store the pending rejection
+    pendingRejections.set(message.id, {
+        message,
+        spec,
+        rejectedBy,
+        timestamp: Date.now()
+    });
+
+    // Ask for rejection reason in channel
+    const reasonPrompt = await channel.send({
+        content: `❌ **Rejecting:** "${spec.title}"\n\n<@${rejectedBy.id}> Please reply with the rejection reason, or react ⏭️ to skip:`
+    });
+
+    await reasonPrompt.react('⏭️');
+
+    // Store prompt message for cleanup
+    pendingRejections.get(message.id).promptMessageId = reasonPrompt.id;
+    pendingRejections.get(message.id).rejectorId = rejectedBy.id;
+
+    console.log(`Rejection flow started: ${spec.title} by ${rejectedBy.username}`);
+}
+
+/**
+ * Complete rejection with reason
+ */
+export async function completeRejection(messageId, reason = null) {
+    const rejection = pendingRejections.get(messageId);
+    if (!rejection) return false;
+
+    await handleRejection(
+        rejection.message,
+        rejection.spec,
+        rejection.rejectedBy.username || rejection.rejectedBy,
+        reason
+    );
+
+    // Clean up prompt message
+    if (rejection.promptMessageId) {
+        try {
+            const channel = rejection.message.channel;
+            const promptMsg = await channel.messages.fetch(rejection.promptMessageId);
+            await promptMsg.delete();
+        } catch { }
+    }
+
+    pendingRejections.delete(messageId);
+    return true;
 }
 
 /**

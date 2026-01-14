@@ -1764,6 +1764,46 @@ See you in the server! 🎉`;
     }
 });
 
+// Handle rejection reason replies
+import { pendingRejections, completeRejection } from './handlers/approval.js';
+
+client.on('messageCreate', async (message) => {
+    // Ignore bots
+    if (message.author.bot) return;
+
+    // Check if in pending channel
+    if (message.channel.id !== config.channels.pending) return;
+
+    // Check if this user has a pending rejection
+    for (const [messageId, rejection] of pendingRejections.entries()) {
+        if (rejection.rejectorId === message.author.id) {
+            // This is the rejection reason
+            const reason = message.content;
+            await completeRejection(messageId, reason);
+
+            // Delete the reason message
+            await message.delete().catch(() => { });
+
+            return;
+        }
+    }
+});
+
+// Handle skip reaction on rejection prompts
+client.on('messageReactionAdd', async (reaction, user) => {
+    if (user.bot) return;
+    if (reaction.emoji.name !== '⏭️') return;
+
+    // Check if this is a skip reaction on a rejection prompt
+    for (const [messageId, rejection] of pendingRejections.entries()) {
+        if (rejection.promptMessageId === reaction.message.id && rejection.rejectorId === user.id) {
+            // Skip = complete rejection without reason
+            await completeRejection(messageId, null);
+            return;
+        }
+    }
+});
+
 // Error handling
 client.on('error', (error) => {
     console.error('Discord client error:', error);
