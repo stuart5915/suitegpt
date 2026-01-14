@@ -924,6 +924,46 @@
                     <input type="hidden" id="editScreenshot4">
                     <input type="hidden" id="editScreenshot5">
                 </div>
+
+                <!-- Free vs Pro Features Section -->
+                <div style="border-top: 2px dashed #e5e7eb; margin: 20px 0; padding-top: 20px;">
+                    <label
+                        style="font-weight: 800; font-size: 1.1rem; color: #1f2937; display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+                        🔓 Feature Tiers
+                        <span style="font-size: 0.75rem; font-weight: 500; color: #6b7280;">(Shown on app store
+                            page)</span>
+                    </label>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editFreeFeatures" style="color: #16a34a;">
+                                🆓 Free Features <span style="font-weight: 400; color: #6b7280;">(one per line)</span>
+                            </label>
+                            <textarea id="editFreeFeatures" placeholder="Basic AI analysis
+Barcode scanning
+Food logging
+Weekly summary" style="min-height: 120px;"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="editProFeatures" style="color: #f59e0b;">
+                                ⚡ Pro Features <span style="font-weight: 400; color: #6b7280;">(one per line)</span>
+                            </label>
+                            <textarea id="editProFeatures" placeholder="Advanced AI Pro model
+Photo recognition
+Micronutrient tracking
+Personalized insights" style="min-height: 120px;"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editProPrice">Pro Feature Price</label>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <input type="number" id="editProPrice" placeholder="10" value="10" style="width: 80px;">
+                            <span style="color: #6b7280;">credits per use</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
                     <button type="submit" class="btn-save">💾 Save Changes</button>
@@ -1152,6 +1192,13 @@
             setPreview('ss4Preview', 'ss4Placeholder', app.screenshot_4);
             setPreview('ss5Preview', 'ss5Placeholder', app.screenshot_5);
 
+            // Load free/pro feature tiers
+            const freeFeatures = app.free_features || [];
+            const proFeatures = app.pro_features || [];
+            document.getElementById('editFreeFeatures').value = Array.isArray(freeFeatures) ? freeFeatures.join('\n') : freeFeatures;
+            document.getElementById('editProFeatures').value = Array.isArray(proFeatures) ? proFeatures.join('\n') : proFeatures;
+            document.getElementById('editProPrice').value = app.pro_price || 10;
+
             document.getElementById('editModalOverlay').classList.add('active');
         }
 
@@ -1187,7 +1234,11 @@
                 screenshot_2: document.getElementById('editScreenshot2').value || null,
                 screenshot_3: document.getElementById('editScreenshot3').value || null,
                 screenshot_4: document.getElementById('editScreenshot4').value || null,
-                screenshot_5: document.getElementById('editScreenshot5').value || null
+                screenshot_5: document.getElementById('editScreenshot5').value || null,
+                // Feature tiers
+                free_features: document.getElementById('editFreeFeatures').value.split('\n').filter(f => f.trim()),
+                pro_features: document.getElementById('editProFeatures').value.split('\n').filter(f => f.trim()),
+                pro_price: parseInt(document.getElementById('editProPrice').value) || 10
             };
             try {
                 const response = await fetch(ADMIN_API, {

@@ -2014,6 +2014,95 @@
                 openBtn.disabled = true;
                 openBtn.style.opacity = '0.6';
             }
+
+            // Pricing Tiers (Free vs Pro)
+            renderPricingTiers(app, appUrl);
+        }
+
+        function renderPricingTiers(app, appUrl) {
+            const section = document.getElementById('pricingSection');
+            const container = document.getElementById('pricingTiersContainer');
+
+            // Parse features from database
+            let freeFeatures = app.free_features || [];
+            let proFeatures = app.pro_features || [];
+            const proPrice = app.pro_price || 10;
+
+            // Parse if stored as string
+            if (typeof freeFeatures === 'string') {
+                try { freeFeatures = JSON.parse(freeFeatures); } catch (e) { freeFeatures = freeFeatures.split('\n').filter(f => f.trim()); }
+            }
+            if (typeof proFeatures === 'string') {
+                try { proFeatures = JSON.parse(proFeatures); } catch (e) { proFeatures = proFeatures.split('\n').filter(f => f.trim()); }
+            }
+
+            // Only show section if there are features defined
+            if (freeFeatures.length === 0 && proFeatures.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+
+            // Generate feature HTML
+            const freeHTML = freeFeatures.map(f => `
+                <div class="tier-feature included">
+                    <span class="feature-check">✓</span>
+                    <span class="feature-text">${f}</span>
+                </div>
+            `).join('');
+
+            const proExcludedHTML = proFeatures.map(f => `
+                <div class="tier-feature excluded">
+                    <span class="feature-check">✗</span>
+                    <span class="feature-text">${f}</span>
+                </div>
+            `).join('');
+
+            const proIncludedHTML = proFeatures.map(f => `
+                <div class="tier-feature included">
+                    <span class="feature-check">✓</span>
+                    <span class="feature-text">${f}</span>
+                </div>
+            `).join('');
+
+            container.innerHTML = `
+                <!-- Free Tier -->
+                <div class="tier-card free">
+                    <div class="tier-header">
+                        <div class="tier-icon">🆓</div>
+                        <div class="tier-name">Free</div>
+                        <div class="tier-price">$0 <span>forever</span></div>
+                    </div>
+                    <div class="tier-features">
+                        ${freeHTML}
+                        ${proExcludedHTML}
+                    </div>
+                    <div class="tier-cta">
+                        <button class="btn-free" onclick="window.open('${appUrl}', '_blank')">Start Free</button>
+                    </div>
+                </div>
+
+                <!-- Pro Tier -->
+                <div class="tier-card pro">
+                    <div class="tier-header">
+                        <div class="tier-icon">⚡</div>
+                        <div class="tier-name">Pro</div>
+                        <div class="tier-price pro-price">${proPrice} <span>credits/use</span></div>
+                    </div>
+                    <div class="tier-features">
+                        <div class="tier-feature included">
+                            <span class="feature-check">✓</span>
+                            <span class="feature-text">Everything in Free</span>
+                        </div>
+                        ${proIncludedHTML}
+                    </div>
+                    <div class="tier-cta">
+                        <button class="btn-pro" onclick="window.open('${appUrl}', '_blank')">Get Pro Access</button>
+                        <p class="tier-note">Pay per use · Watch ads for free credits</p>
+                    </div>
+                </div>
+            `;
         }
 
         function showError() {
