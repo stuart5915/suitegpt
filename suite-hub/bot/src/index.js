@@ -57,9 +57,6 @@ const client = new Client({
 // Slash commands
 const commands = [
     new SlashCommandBuilder()
-        .setName('leaderboard')
-        .setDescription('Show this week\'s SUITE leaderboard'),
-    new SlashCommandBuilder()
         .setName('mystats')
         .setDescription('Show your SUITE earnings'),
     new SlashCommandBuilder()
@@ -919,17 +916,6 @@ client.on('interactionCreate', async (interaction) => {
 
     try {
         switch (commandName) {
-            case 'leaderboard': {
-                const leaders = getLeaderboard();
-                const embed = createLeaderboardEmbed(leaders);
-                const reply = await interaction.reply({ embeds: [embed], fetchReply: true });
-                // Auto-delete after 5 minutes in commands channel
-                if (interaction.channel.id === config.channels.commands) {
-                    autoDelete(reply, 300);
-                }
-                break;
-            }
-
             case 'mystats': {
                 const stats = getContributorStats(interaction.user.id);
                 if (!stats) {
