@@ -936,30 +936,44 @@ client.on('interactionCreate', async (interaction) => {
 
             case 'help': {
                 await interaction.reply({
-                    content: `**👋 Welcome to SUITE!**
+                    content: `# 👋 Welcome to SUITE Hub!
 
-This is the SUITE community - where anyone can build apps without coding.
+> **Build apps without coding. Earn tokens. Ship products.**
 
-**🤖 Talk to SUITE Bot**
-• @mention the bot to ask a question
-• Ask anything: "@SUITE what is SUITE?" or "@SUITE help me"
+## 🤖 Chat with Stu
+Just @mention me anywhere! I can answer questions, analyze ideas, and help you navigate.
 
-**📱 Commands:**
-• \`/apps\` - Browse all SUITE apps
-• \`/suite\` - How to get SUITE tokens
-• \`/idea\` - Get AI analysis of your idea
-• \`/study\` - Research a topic with AI
-• \`/content\` - Get content ideas for an app
-• \`/suggest\` - AI suggests features for an app
-• \`/bug\` - Report a bug
-• \`/feature\` - Request a feature
-• \`/mystats\` - See your contributions
-• \`/leaderboard\` - Weekly rankings
+## 📱 Explore & Earn
+\`/apps\` — Browse the App Store
+\`/suite\` — How to earn & spend SUITE tokens
+\`/earn\` — Watch ads to earn free SUITE
+\`/balance\` — Check your SUITE balance
+\`/mystats\` — Your contribution stats
+\`/leaderboard\` — Weekly top contributors
 
-**🔗 Links:**
-• Website: getsuite.app
-• Forge (build apps): getsuite.app (Start Building)
-• Docs: getsuite.app/docs`,
+## 🛠️ Build Apps
+\`/dev-create-app\` — Submit your app idea (AI builds it!)
+\`/my-apps\` — View your submitted apps
+\`/preflight-check\` — Verify app is ready to publish
+\`/security-check\` — Scan for exposed API keys
+\`/publish-app\` — Deploy to the SUITE App Store
+
+## 🧠 AI Tools
+\`/idea\` — Get AI analysis of your idea
+\`/study\` — Deep research on any topic
+\`/suggest\` — AI suggests features for an app
+\`/content\` — Generate marketing content ideas
+
+## 🐛 Feedback & Contributions
+\`/bug\` — Report a bug (earn 500 SUITE)
+\`/feature\` — Request a feature (earn 1,000 SUITE)
+
+## 🔗 Quick Links
+• **App Store** → <https://getsuite.app/apps>
+• **Start Building** → <https://getsuite.app/start-building>
+• **Documentation** → <https://getsuite.app/docs>
+• **Tokenomics** → <https://getsuite.app/docs/tokenomics>
+• **Wallet** → <https://getsuite.app/wallet>`,
                     ephemeral: true
                 });
                 break;
@@ -967,34 +981,33 @@ This is the SUITE community - where anyone can build apps without coding.
 
             case 'suite': {
                 await interaction.reply({
-                    content: `**💰 How to Get SUITE**
+                    content: `# 💰 SUITE Token
 
-**💳 Buy (Card/Crypto)**
-• Deposit with credit/debit card
-• Or deposit ETH, USDC, other tokens
-• Swapped to SUITE automatically
+> **1 SUITE ≈ $0.001** — Treasury-backed floor price
 
-**🔄 Trade on DEX**
-• Coming soon: Trade SUITE on decentralized exchanges
+## 💵 How to Get SUITE
 
-**📺 Watch Ads**
-• Earn real SUITE by watching ads
-• Use \`/earn\` to get started!
+**🎁 Free Methods**
+• \`/earn\` — Watch ads to earn SUITE
+• \`/bug\` — Report bugs (500 SUITE)
+• \`/feature\` — Request features (1,000 SUITE)
 
-**🏆 Earn Rewards**
-• Report bugs: 500 SUITE
-• Request features: 1,000 SUITE
-• Ship fixes: 750 SUITE bonus
+**💳 Buy SUITE**
+• Deposit with card or crypto at <https://getsuite.app/wallet>
+• ETH, USDC, and other tokens auto-swap to SUITE
 
-**🎁 Free Tier vs 💰 SUITE**
-• 🎁 Free tier = 20 trial credits (can't cash out)
-• 💰 SUITE = Real tokens you earn/buy (can cash out!)
+## 💎 What Can You Do With SUITE?
 
-**What is SUITE?**
-1 SUITE = ~$0.001 (treasury-backed floor price)
-Redeem anytime for ETH at getsuite.app/wallet
+• **Use AI Features** — Power-ups in apps cost SUITE
+• **Tip Creators** — Support app developers
+• **Cash Out** — Redeem for ETH anytime
 
-**More info:** getsuite.app/docs/tokenomics.html`,
+## 🎁 Free Tier vs Real SUITE
+• 🎁 Free tier = 20 trial credits (not cashable)
+• 💰 Real SUITE = Earned/bought (cashable!)
+
+**Learn more:** <https://getsuite.app/docs/tokenomics>
+**Wallet:** <https://getsuite.app/wallet>`,
                     ephemeral: true
                 });
                 break;
