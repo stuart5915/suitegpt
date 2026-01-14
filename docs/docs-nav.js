@@ -22,10 +22,15 @@ document.addEventListener('DOMContentLoaded', function () {
                         <a href="../developer-portal.html">Build</a>
                         <a href="index.html" class="active">Docs</a>
                         <a href="../learn.html">Learn</a>
-                        <a href="../wallet.html">Wallet</a>
+                        <a href="../wallet.html">Vault</a>
                         <a href="../start-building.html" class="nav-cta"><img src="../assets/emojis/clay-rocket.png" alt="" class="nav-cta-emoji"> Start Building</a>
                     </div>
-                    <button class="mobile-menu-btn">
+                    <div class="nav-actions">
+                        <button class="nav-btn nav-wallet" onclick="connectWallet()">
+                            🔗 Connect Wallet
+                        </button>
+                    </div>
+                    <button class="mobile-menu-btn" onclick="this.classList.toggle('active'); document.querySelector('.nav-links').classList.toggle('mobile-open'); document.querySelector('.nav-actions').classList.toggle('mobile-open');">
                         <span></span>
                         <span></span>
                         <span></span>
