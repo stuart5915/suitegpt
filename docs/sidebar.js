@@ -43,6 +43,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         <div class="sidebar-section">
             <div class="sidebar-title">Admin</div>
+            <a href="systems.html" class="sidebar-link ${isActive('systems.html')}">🔧 Systems View</a>
             <a href="governance.html" class="sidebar-link ${isActive('governance.html')}">🗳️ Governance</a>
             <a href="content-policy.html" class="sidebar-link ${isActive('content-policy.html')}">📜 Content Policy</a>
         </div>
