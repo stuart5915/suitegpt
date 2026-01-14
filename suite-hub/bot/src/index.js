@@ -184,13 +184,12 @@ const commands = [
                 .setDescription('Select app to check status')
                 .setRequired(true)
                 .addChoices(
-                    { name: '📖 Cheshbon', value: 'cheshbon-reflections' },
+                    { name: '📖 Cheshbon Reflections', value: 'cheshbon-reflections' },
                     { name: '🥗 FoodVitals', value: 'foodvitals' },
                     { name: '💪 OpticRep', value: 'opticrep' },
-                    { name: '🧠 Life Hub', value: 'life-hub' },
-                    { name: '💭 REMcast', value: 'remcast' },
-                    { name: '💎 DeFi Knowledge', value: 'defi-knowledge' },
-                    { name: '🏃 TrueForm', value: 'trueform-ai' }
+                    { name: '💭 REMCast', value: 'remcast' },
+                    { name: '🧠 SUITEhub', value: 'suitehub' },
+                    { name: '🏃 TrueForm AI', value: 'trueform-ai' }
                 )),
     new SlashCommandBuilder()
         .setName('apps')
