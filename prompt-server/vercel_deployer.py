@@ -88,11 +88,18 @@ class VercelDeployer:
                     'error': 'Deployment timed out or failed'
                 }
             
+            # Step 4: Add custom getsuite.app domain
+            custom_domain = f"{project_name}.getsuite.app"
+            domain_added = self._add_custom_domain(project_name, custom_domain)
+            
             print(f'[VERCEL] ✅ Deployment successful: {prod_url}')
+            if domain_added:
+                print(f'[VERCEL] ✅ Custom domain added: https://{custom_domain}')
            
             return {
                 'success': True,
                 'url': prod_url,
+                'custom_url': f'https://{custom_domain}' if domain_added else None,
                 'project_name': project_name,
                 'deployment_id': deployment_id
             }
@@ -111,6 +118,31 @@ class VercelDeployer:
         text = re.sub(r'[^\w\s-]', '', text.lower())
         text = re.sub(r'[\s_]+', '-', text)
         return text.strip('-')
+    
+    def _add_custom_domain(self, project_name: str, domain: str) -> bool:
+        """Add a custom domain to the Vercel project"""
+        print(f'[VERCEL] Adding custom domain: {domain}...')
+        
+        url = f'{self.api_base}/v10/projects/{project_name}/domains'
+        if self.team_id:
+            url += f'?teamId={self.team_id}'
+        
+        payload = {
+            'name': domain
+        }
+        
+        response = requests.post(url, headers=self.headers, json=payload)
+        
+        if response.status_code in [200, 201]:
+            print(f'[VERCEL] ✅ Custom domain added: {domain}')
+            return True
+        elif response.status_code == 409:
+            # Domain already exists on this project
+            print(f'[VERCEL] ℹ️ Domain already configured: {domain}')
+            return True
+        else:
+            print(f'[VERCEL] ⚠️ Could not add domain: {response.text}')
+            return False
     
     def _ensure_project(self, project_name: str, display_name: str) -> dict:
         """Create Vercel project if it doesn't exist, or return existing"""
@@ -267,21 +299,65 @@ class VercelDeployer:
         return None
 
 
+# Supabase config for updating app URLs
+SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://rdsmdywbdiskxknluiym.supabase.co')
+SUPABASE_KEY = os.environ.get('SUPABASE_SERVICE_KEY', '')
+
+def update_app_url_in_supabase(app_slug: str, custom_url: str) -> bool:
+    """Update the app_url field in the apps table after deployment"""
+    if not SUPABASE_KEY:
+        print('[SUPABASE] Warning: No SUPABASE_SERVICE_KEY set, skipping DB update')
+        return False
+    
+    try:
+        headers = {
+            'apikey': SUPABASE_KEY,
+            'Authorization': f'Bearer {SUPABASE_KEY}',
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+        }
+        
+        # Update by slug
+        response = requests.patch(
+            f'{SUPABASE_URL}/rest/v1/apps?slug=eq.{app_slug}',
+            headers=headers,
+            json={'app_url': custom_url, 'status': 'published'}
+        )
+        
+        if response.status_code in [200, 204]:
+            print(f'[SUPABASE] ✅ Updated app_url for {app_slug} to {custom_url}')
+            return True
+        else:
+            print(f'[SUPABASE] ⚠️ Failed to update app_url: {response.text}')
+            return False
+    except Exception as e:
+        print(f'[SUPABASE] ❌ Error updating app_url: {e}')
+        return False
+
+
 # Helper function for easy use
-def deploy_app(app_path: str, app_name: str) -> dict:
-    """Deploy an app to Vercel - simple wrapper"""
+def deploy_app(app_path: str, app_name: str, app_slug: str = None) -> dict:
+    """Deploy an app to Vercel and update Supabase with the new URL"""
     deployer = VercelDeployer()
-    return deployer.deploy(app_path, app_name)
+    result = deployer.deploy(app_path, app_name)
+    
+    # If deployment successful and we have a slug, update Supabase
+    if result.get('success') and result.get('custom_url') and app_slug:
+        update_app_url_in_supabase(app_slug, result['custom_url'])
+    
+    return result
 
 
 if __name__ == '__main__':
     # Test deployment
     if len(sys.argv) < 3:
-        print('Usage: python vercel_deployer.py <app_path> <app_name>')
+        print('Usage: python vercel_deployer.py <app_path> <app_name> [app_slug]')
         sys.exit(1)
     
     app_path = sys.argv[1]
     app_name = sys.argv[2]
+    app_slug = sys.argv[3] if len(sys.argv) > 3 else None
     
-    result = deploy_app(app_path, app_name)
+    result = deploy_app(app_path, app_name, app_slug)
     print(json.dumps(result, indent=2))
+
