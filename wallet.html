@@ -1132,8 +1132,8 @@
         }
 
         .dashboard-bottom {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+            display: flex;
+            flex-direction: column;
             gap: 20px;
         }
 
@@ -1153,7 +1153,7 @@
             }
 
             .dashboard-bottom {
-                grid-template-columns: 1fr;
+                gap: 16px;
             }
         }
 
@@ -1298,8 +1298,22 @@
     <main class="wallet-page">
         <div class="wallet-container">
             <!-- Clay Treasure Chest - Fixed to right side of page (behind everything) -->
+            <!-- Popout Blurb Card - Left side -->
+            <div
+                style="position: absolute; top: 180px; left: 60px; background: white; border-radius: 16px; padding: 20px 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); max-width: 200px; z-index: 5;">
+                <div style="font-size: 0.9rem; font-weight: 700; color: #2d1b4e; margin-bottom: 8px;">💡 How it works
+                </div>
+                <div style="font-size: 0.85rem; color: #6b7280; line-height: 1.5;">Deposit <span
+                        style="font-weight: 700; color: #627EEA;">ETH</span> or <span
+                        style="font-weight: 700; color: #2775CA;">USDC</span>, and get <span
+                        style="font-weight: 700; color: #ff9500;">SUITE</span> tokens!</div>
+                <div
+                    style="width: 12px; height: 12px; background: white; position: absolute; right: -6px; top: 30px; transform: rotate(45deg); box-shadow: 4px -4px 8px rgba(0,0,0,0.05);">
+                </div>
+            </div>
+
             <img src="assets/clay/treasure-chest.png" alt=""
-                style="position: absolute; top: 700px; right: 100px; width: 630px; height: auto; opacity: 1; pointer-events: none; z-index: 0;" />
+                style="position: absolute; top: 700px; right: 50px; width: 630px; height: auto; opacity: 1; pointer-events: none; z-index: 0; transform: scaleX(-1);" />
 
             <!-- Wallet Dashboard (always visible) -->
             <section class="wallet-dashboard connected" id="walletDashboard">
@@ -1316,126 +1330,170 @@
 
                     <!-- Top Row: UX Notice removed for compactness -->
 
-                    <!-- NEW: Dashboard Grid -->
-                    <!-- NEW: Horizontal Vault Card -->
-                    <div class="glass-card vault-card">
-                        <div class="vault-content-left">
-                            <div
-                                style="font-size: 0.9rem; font-weight: 700; color: #8b5cf6; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.8;">
-                                Total Balance
+                    <!-- ═══════════════════════════════════════════════ -->
+                    <!-- TREASURY VAULT CARD (NEW - Above Wallet) -->
+                    <!-- ═══════════════════════════════════════════════ -->
+                    <div class="glass-card"
+                        style="margin-bottom: 16px; background: linear-gradient(135deg, rgba(45, 27, 78, 0.95), rgba(88, 28, 135, 0.9)); border: 1px solid rgba(255,255,255,0.1); position: relative; overflow: hidden;">
+                        <!-- Decorative glow -->
+                        <div
+                            style="position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(255,149,0,0.3) 0%, transparent 70%); pointer-events: none;">
+                        </div>
+
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; position: relative; z-index: 1;">
+                            <!-- Left: Vault Info -->
+                            <div>
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                                    <!-- ETH + USDC Stacked Icons -->
+                                    <div style="position: relative; width: 52px; height: 48px;">
+                                        <img src="https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/svg/color/eth.svg"
+                                            alt="ETH"
+                                            style="width: 36px; height: 36px; position: absolute; top: 0; left: 0; border-radius: 50%; background: white; padding: 2px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                                        <img src="https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/svg/color/usdc.svg"
+                                            alt="USDC"
+                                            style="width: 32px; height: 32px; position: absolute; bottom: 0; right: 0; border-radius: 50%; background: white; padding: 2px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 1.3rem; font-weight: 800; color: white;">SUITE Treasury
+                                            Vault</div>
+                                        <div style="font-size: 0.85rem; color: rgba(255,255,255,0.7);">Deposit ETH or
+                                            USDC • Receive SUITE</div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="vault-balance-large" id="vaultBalanceHero" style="font-size: 3rem; margin: 0;">
-                                $0.00</div>
-                            <div style="color: #6b7280; font-weight: 600; font-size: 1rem;">SUITE Token Balance</div>
+
+                            <!-- Right: Stats + Auth Buttons -->
+                            <div style="display: flex; gap: 24px; align-items: center;">
+                                <div style="text-align: center;">
+                                    <div
+                                        style="font-size: 0.75rem; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 1px;">
+                                        Est. APY</div>
+                                    <div style="font-size: 1.5rem; font-weight: 800; color: #22c55e;">12.4%</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div
+                                        style="font-size: 0.75rem; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 1px;">
+                                        Your Deposit</div>
+                                    <div style="font-size: 1.5rem; font-weight: 800; color: white;" id="vaultDeposit">
+                                        $0.00</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div
+                                        style="font-size: 0.75rem; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 1px;">
+                                        TVL</div>
+                                    <div style="font-size: 1.5rem; font-weight: 800; color: white;">$50.2K</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Vault Actions -->
+                        <div
+                            style="display: flex; gap: 12px; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+                            <button onclick="document.getElementById('depositModal').classList.add('active')"
+                                style="flex: 1; padding: 14px 24px; background: linear-gradient(135deg, #22c55e, #10b981); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s;">
+                                Deposit to Vault
+                            </button>
+                            <button onclick="document.getElementById('withdrawModal').classList.add('active')"
+                                style="flex: 1; padding: 14px 24px; background: rgba(255,255,255,0.1); color: white; border: 2px solid rgba(255,255,255,0.3); border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s;">
+                                Withdraw from Vault
+                            </button>
+                        </div>
+
+                        <p
+                            style="margin: 16px 0 0; font-size: 0.8rem; color: rgba(255,255,255,0.5); text-align: center;">
+                            💡 When you deposit, SUITE tokens appear in your wallet below. Withdraw anytime - your SUITE
+                            is always backed by the vault.
+                        </p>
+                    </div>
+
+                    <!-- ═══════════════════════════════════════════════ -->
+                    <!-- WALLET BALANCE CARD (Existing - Shows SUITE) -->
+                    <!-- ═══════════════════════════════════════════════ -->
+                    <div class="glass-card vault-card" style="position: relative;">
+                        <div class="vault-content-left">
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 4px;">
+                                <img src="assets/suite-token.png" alt="SUITE"
+                                    style="width: 80px; height: 80px; border-radius: 50%;"
+                                    onerror="this.src='assets/suite-logo.png'">
+                                <div
+                                    style="font-size: 0.85rem; font-weight: 700; color: #8b5cf6; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.9;">
+                                    Your SUITE Wallet
+                                </div>
+                            </div>
+                            <div class="vault-balance-large" id="vaultBalanceHero"
+                                style="font-size: 2.5rem; margin: 0; margin-left: 52px;">
+                                0 SUITE</div>
+                            <div style="color: #6b7280; font-weight: 600; font-size: 0.9rem; margin-left: 52px;">≈ $0.00
+                                USD</div>
                         </div>
 
                         <div class="vault-content-right">
-                            <!-- Mini Stats -->
-                            <div
-                                style="display: flex; gap: 24px; text-align: center; border-right: 1px solid rgba(0,0,0,0.1); padding-right: 32px;">
-                                <div>
-                                    <div style="font-size: 0.8rem; color: #9ca3af;">Available</div>
-                                    <div id="availableBalance"
-                                        style="font-size: 1.1rem; font-weight: 700; color: #2d1b4e;">0</div>
-                                </div>
-                                <div>
-                                    <div style="font-size: 0.8rem; color: #9ca3af;">Staked</div>
-                                    <div id="stakedBalance"
-                                        style="font-size: 1.1rem; font-weight: 700; color: #8b5cf6;">0</div>
-                                </div>
-                                <div>
-                                    <div style="font-size: 0.8rem; color: #9ca3af;">Value (USD)</div>
-                                    <div id="totalValue" style="font-size: 1.1rem; font-weight: 700; color: #22c55e;">
-                                        $0.00</div>
-                                </div>
-                            </div>
 
-                            <!-- Actions -->
-                            <div style="display: flex; gap: 12px;">
-                                <button class="btn-deposit-hero"
-                                    onclick="document.getElementById('depositModal').classList.add('active')"
-                                    style="padding: 12px 24px; font-size: 1rem;">
-                                    <span>?</span> Deposit
+                            <!-- Auth Buttons -->
+                            <div style="display: flex; gap: 8px;">
+                                <button id="discordLoginBtn2" onclick="loginWithDiscord()"
+                                    style="display: flex; align-items: center; gap: 6px; padding: 10px 16px; background: #5865F2; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;">
+                                    <svg width="14" height="14" viewBox="0 0 71 55" fill="white">
+                                        <path
+                                            d="M60.1 4.6A58.4 58.4 0 0045.6.2a.2.2 0 00-.2.1 44.5 44.5 0 00-1.9 3.8 54.1 54.1 0 00-16.3 0 42 42 0 00-2-3.8.2.2 0 00-.2-.1 58.3 58.3 0 00-14.4 4.4.2.2 0 00-.1.1A60.2 60.2 0 00.3 45.2c0 .1 0 .1.1.2a58.6 58.6 0 0017.7 9 .2.2 0 00.3-.1 42 42 0 003.6-5.9.2.2 0 00-.1-.3 38.6 38.6 0 01-5.5-2.6.2.2 0 01 0-.4l1.1-.9a.2.2 0 01.2 0 42 42 0 0035.8 0 .2.2 0 01.2 0l1.1.9a.2.2 0 010 .4 36.3 36.3 0 01-5.6 2.6.2.2 0 00-.1.3 47.2 47.2 0 003.6 5.9.2.2 0 00.3.1 58.4 58.4 0 0017.7-9 .2.2 0 00.1-.2c1.4-14.5-2.4-27.2-10-38.4a.2.2 0 00-.1-.1zM23.8 37.1c-3.3 0-6-3-6-6.7s2.6-6.7 6-6.7c3.4 0 6.1 3 6 6.7 0 3.7-2.7 6.7-6 6.7zm22.2 0c-3.3 0-6-3-6-6.7s2.6-6.7 6-6.7 6 3 6 6.7c0 3.7-2.6 6.7-6 6.7z" />
+                                    </svg>
+                                    Connect Discord
                                 </button>
-                                <button class="btn-withdraw-hero"
-                                    onclick="document.getElementById('withdrawModal').classList.add('active')"
-                                    style="padding: 12px 24px; font-size: 1rem;">
-                                    <span>?</span> Withdraw
+                                <button id="connectWalletBtn2" onclick="connectWallet()"
+                                    style="display: flex; align-items: center; gap: 6px; padding: 10px 16px; background: linear-gradient(135deg, #ff9500, #ff6b9d); color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;">
+                                    🔗 Connect Wallet
                                 </button>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Dashboard Bottom Grid -->
-                    <div class="dashboard-bottom">
+                <!-- Dashboard Bottom Grid -->
+                <div class="dashboard-bottom" style="width: 100%;">
 
-                        <!-- 1. Yield & Reputation Group -->
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                            <!-- Yield Status -->
-                            <div class="glass-card"
-                                style="display: flex; flex-direction: column; gap: 10px; padding: 16px;">
-                                <div class="stat-card-row">
-                                    <div style="font-weight: 700; color: #2d1b4e; font-size: 0.85rem;">Yield Status
-                                    </div>
-                                    <span class="info-pill" style="font-size: 0.65rem; padding: 2px 6px;">Active</span>
+                    <!-- 1. Yield & Arbitrage Grid -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%;">
+                        <!-- Yield Status -->
+                        <div class="glass-card"
+                            style="display: flex; flex-direction: column; gap: 10px; padding: 16px;">
+                            <div class="stat-card-row">
+                                <div style="font-weight: 700; color: #2d1b4e; font-size: 0.85rem;">Yield Status
                                 </div>
-                                <div>
-                                    <select id="yieldDestination"
-                                        style="width: 100%; border: none; background: rgba(0,0,0,0.05); border-radius: 6px; font-size: 0.75rem; padding: 4px; font-weight: 600; color: #8b5cf6; cursor: pointer;"
-                                        onchange="updateYieldDestination(this.value)">
-                                        <option value="reinvest">?? Reinvest</option>
-                                        <option value="self">?? Claim</option>
-                                        <option value="water_org">?? Donate</option>
-                                    </select>
-                                    <div
-                                        style="width: 100%; height: 4px; background: rgba(0,0,0,0.05); border-radius: 100px; overflow: hidden; margin-top: 6px;">
-                                        <div style="width: 75%; height: 100%; background: #22c55e;"></div>
-                                    </div>
-                                </div>
-                                <div style="display: flex; justify-content: space-between; font-size: 0.75rem;">
-                                    <span style="color: #9ca3af;">Next:</span>
-                                    <span style="font-weight: 700; color: #2d1b4e;">14h 32m</span>
+                                <span class="info-pill" style="font-size: 0.65rem; padding: 2px 6px;">Active</span>
+                            </div>
+                            <div>
+                                <select id="yieldDestination"
+                                    style="width: 100%; border: none; background: rgba(0,0,0,0.05); border-radius: 6px; font-size: 0.75rem; padding: 4px; font-weight: 600; color: #8b5cf6; cursor: pointer;"
+                                    onchange="updateYieldDestination(this.value)">
+                                    <option value="reinvest">🔄 Reinvest</option>
+                                    <option value="self">💰 Claim</option>
+                                    <option value="water_org">💧 Donate</option>
+                                </select>
+                                <div
+                                    style="width: 100%; height: 4px; background: rgba(0,0,0,0.05); border-radius: 100px; overflow: hidden; margin-top: 6px;">
+                                    <div style="width: 75%; height: 100%; background: #22c55e;"></div>
                                 </div>
                             </div>
-
-                            <!-- Reputation -->
-                            <div class="glass-card"
-                                style="display: flex; flex-direction: column; gap: 10px; padding: 16px;">
-                                <div class="stat-card-row">
-                                    <div style="font-weight: 700; color: #2d1b4e; font-size: 0.85rem;">Reputation</div>
-                                    <span class="info-pill" style="font-size: 0.65rem; padding: 2px 6px;">Rank
-                                        #--</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between; text-align: center;">
-                                    <div>
-                                        <div style="font-size: 0.65rem; color: #9ca3af;">Score</div>
-                                        <div id="userRep" style="font-weight: 800; font-size: 0.9rem; color: #8b5cf6;">0
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div style="font-size: 0.65rem; color: #9ca3af;">Status</div>
-                                        <div id="lockStatus"
-                                            style="font-weight: 700; font-size: 0.8rem; color: #6b7280;">Open</div>
-                                    </div>
-                                </div>
-                                <button onclick="openLockModal()"
-                                    style="width: 100%; padding: 4px; background: white; border: 1px solid #e5e7eb; border-radius: 6px; font-weight: 600; color: #6b7280; font-size: 0.75rem; cursor: pointer;">
-                                    Lock SUITE ?
-                                </button>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem;">
+                                <span style="color: #9ca3af;">Next:</span>
+                                <span style="font-weight: 700; color: #2d1b4e;">14h 32m</span>
                             </div>
                         </div>
 
-                        <!-- 2. Arbitrage Banner -->
+                        <!-- 2. Community Arbitrage -->
                         <div id="arbSection" class="glass-card"
                             style="border: 2px solid rgba(34, 197, 94, 0.2); background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(240, 253, 244, 0.95)); padding: 16px; display: flex; flex-direction: column; justify-content: center;">
                             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                                 <div
                                     style="width: 40px; height: 40px; background: rgba(34, 197, 94, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
-                                    ?</div>
+                                    💹</div>
                                 <div>
-                                    <h3 style="margin: 0; font-size: 1rem; font-weight: 800; color: #2d1b4e;">Community
+                                    <h3 style="margin: 0; font-size: 1rem; font-weight: 800; color: #2d1b4e;">
+                                        Community
                                         Arbitrage</h3>
-                                    <div style="font-size: 0.8rem; color: #22c55e; font-weight: 600;">+24% Spread Live
+                                    <div style="font-size: 0.8rem; color: #22c55e; font-weight: 600;">+24% Spread
+                                        Live
                                     </div>
                                 </div>
                             </div>
@@ -1462,101 +1520,170 @@
                                 Execute Trade
                             </button>
                         </div>
-
-                        <!-- 3. Tabs Section (Full Width) -->
-                        <div style="grid-column: 1 / -1;">
-                            <div class="wallet-tabs" style="margin-bottom: 16px;">
-                                <div class="wallet-tab active" onclick="switchTab('activity')">Recent Activity</div>
-                                <div class="wallet-tab" onclick="switchTab('boosts')">Active Boosts</div>
-                                <div class="wallet-tab" onclick="switchTab('governance')">Governance</div>
-                            </div>
-
-                            <!-- Tab Content: Activity -->
-                            <div id="tab-activity" class="tab-content active">
-                                <div class="glass-card"
-                                    style="min-height: 150px; display: flex; align-items: center; justify-content: center; color: #9ca3af; flex-direction: column; gap: 8px;">
-                                    <div style="font-size: 1.5rem;">??</div>
-                                    <div style="font-size: 0.9rem;">No recent activity.</div>
-                                </div>
-                            </div>
-
-                            <!-- Tab Content: Boosts -->
-                            <div id="tab-boosts" class="tab-content" style="display: none;">
-                                <div class="glass-card">
-                                    <h4 style="margin: 0 0 12px 0; color: #2d1b4e; font-size: 1rem;">Your Active Boosts
-                                    </h4>
-                                    <!-- Boosts Lists -->
-                                    <div id="databaseBoostsList" style="margin-bottom: 16px;">
-                                        <div
-                                            style="font-size: 0.8rem; font-weight: 700; color: var(--text-medium); margin-bottom: 8px;">
-                                            ?? Account Boosts</div>
-                                        <div id="databaseBoostsContent"
-                                            style="display: flex; flex-wrap: wrap; gap: 8px;"><span
-                                                style="color: var(--text-tertiary); font-size: 0.8rem;">Connect
-                                                Discord</span></div>
-                                    </div>
-                                    <div id="nftBoostsList">
-                                        <div
-                                            style="font-size: 0.8rem; font-weight: 700; color: var(--text-medium); margin-bottom: 8px;">
-                                            ?? NFT Boosts</div>
-                                        <div id="nftBoostsContent" style="display: flex; flex-wrap: wrap; gap: 8px;">
-                                            <span style="color: var(--text-tertiary); font-size: 0.8rem;">Connect
-                                                wallet</span></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Tab Content: Governance -->
-                            <div id="tab-governance" class="tab-content" style="display: none;">
-                                <div class="glass-card" style="text-align: center; padding: 24px;">
-                                    <h3 style="font-size: 1.1rem; margin-bottom: 8px;">Governance Portal</h3>
-                                    <p style="color: #6b7280; margin-bottom: 16px; font-size: 0.9rem;">Vote on treasury
-                                        proposals.</p>
-                                    <button
-                                        style="padding: 8px 16px; background: rgba(0,0,0,0.05); border-radius: 100px; border: none; font-weight: 600; color: #6b7280; cursor: not-allowed; font-size: 0.8rem;">Coming
-                                        Soon</button>
-                                </div>
-                            </div>
-                        </div>
-
                     </div>
 
+                    <!-- 3. Tabs Section (Full Width) -->
+                    <div id="earn" style="grid-column: 1 / -1;">
+                        <div class="wallet-tabs" style="margin-bottom: 16px;">
+                            <div class="wallet-tab active" onclick="switchTab('earn')">Earn</div>
+                            <div class="wallet-tab" onclick="switchTab('activity')">Recent Activity</div>
+                            <div class="wallet-tab" onclick="switchTab('boosts')">Active Boosts</div>
+                            <div class="wallet-tab" onclick="switchTab('governance')">Governance</div>
+                        </div>
 
-                    <!-- Admin Panel (Only visible to contract owner) -->
-                    <div class="wallet-section admin-panel" id="adminPanel" style="display: none;">
-                        <h3>?? Treasury Admin</h3>
-                        <p class="admin-notice">You are the Treasury contract owner.</p>
-
-                        <div class="admin-stats">
-                            <div class="admin-stat">
-                                <span class="admin-label">Accumulated Fees</span>
-                                <span class="admin-value" id="accumulatedFees">$0.00</span>
-                            </div>
-                            <div class="admin-stat">
-                                <span class="admin-label">Total Treasury ETH</span>
-                                <span class="admin-value" id="adminTreasuryEth">0 ETH</span>
+                        <!-- Tab Content: Activity -->
+                        <div id="tab-activity" class="tab-content" style="display: none;">
+                            <div class="glass-card"
+                                style="min-height: 150px; display: flex; align-items: center; justify-content: center; color: #9ca3af; flex-direction: column; gap: 8px;">
+                                <div style="font-size: 1.5rem;">📭</div>
+                                <div style="font-size: 0.9rem;">No recent activity.</div>
                             </div>
                         </div>
 
-                        <div class="admin-actions">
-                            <button class="admin-btn" id="withdrawFeesBtn" onclick="withdrawFees()" disabled>
-                                ?? Withdraw Fees
-                            </button>
-                            <p class="admin-helper" id="withdrawFeesHelper"
-                                style="font-size: 12px; color: #888; margin-top: 4px;">
-                                Minimum 0.001 ETH in fees required to withdraw
-                            </p>
+                        <!-- Tab Content: Earn -->
+                        <div id="tab-earn" class="tab-content active">
+                            <div class="glass-card" style="padding: 20px;">
+                                <h4 style="margin: 0 0 16px 0; color: #2d1b4e; font-size: 1.1rem; font-weight: 800;">
+                                    💰 Ways to Earn SUITE</h4>
+                                <div style="display: flex; flex-direction: column; gap: 12px;">
+                                    <div style="display: flex; align-items: center; gap: 16px; padding: 14px 16px; background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(16, 185, 129, 0.05)); border-radius: 14px; cursor: pointer; transition: all 0.3s ease;"
+                                        onmouseover="this.style.transform='translateX(4px)'"
+                                        onmouseout="this.style.transform='translateX(0)'">
+                                        <div
+                                            style="width: 44px; height: 44px; background: linear-gradient(135deg, #22c55e, #10b981); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">
+                                            👥</div>
+                                        <div style="flex: 1;">
+                                            <div style="font-weight: 700; color: #2d1b4e; font-size: 0.95rem;">
+                                                Refer
+                                                Friends</div>
+                                            <div style="font-size: 0.8rem; color: #6b7280;">Invite others to
+                                                join
+                                                SUITE</div>
+                                        </div>
+                                        <div
+                                            style="background: linear-gradient(135deg, #22c55e, #10b981); color: white; padding: 6px 12px; border-radius: 100px; font-weight: 700; font-size: 0.8rem;">
+                                            +25 SUITE</div>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 16px; padding: 14px 16px; background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(37, 99, 235, 0.05)); border-radius: 14px; cursor: pointer; transition: all 0.3s ease;"
+                                        onmouseover="this.style.transform='translateX(4px)'"
+                                        onmouseout="this.style.transform='translateX(0)'">
+                                        <div
+                                            style="width: 44px; height: 44px; background: linear-gradient(135deg, #3b82f6, #2563eb); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">
+                                            📺</div>
+                                        <div style="flex: 1;">
+                                            <div style="font-weight: 700; color: #2d1b4e; font-size: 0.95rem;">
+                                                Watch
+                                                Ads</div>
+                                            <div style="font-size: 0.8rem; color: #6b7280;">View sponsored
+                                                content
+                                                for rewards</div>
+                                        </div>
+                                        <div
+                                            style="background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; padding: 6px 12px; border-radius: 100px; font-weight: 700; font-size: 0.8rem;">
+                                            +2 SUITE</div>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 16px; padding: 14px 16px; background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(217, 119, 6, 0.05)); border-radius: 14px; cursor: pointer; transition: all 0.3s ease;"
+                                        onmouseover="this.style.transform='translateX(4px)'"
+                                        onmouseout="this.style.transform='translateX(0)'">
+                                        <div
+                                            style="width: 44px; height: 44px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">
+                                            🏆</div>
+                                        <div style="flex: 1;">
+                                            <div style="font-weight: 700; color: #2d1b4e; font-size: 0.95rem;">
+                                                Hold
+                                                SUITE</div>
+                                            <div style="font-size: 0.8rem; color: #6b7280;">Stake and earn
+                                                passive
+                                                yield (~18% APY)</div>
+                                        </div>
+                                        <div
+                                            style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 6px 12px; border-radius: 100px; font-weight: 700; font-size: 0.8rem;">
+                                            📈 Yield</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="admin-ownership">
-                            <h4>Transfer Ownership</h4>
-                            <input type="text" id="newOwnerAddress" placeholder="0x... new owner address"
-                                class="admin-input">
-                            <button class="admin-btn secondary" onclick="transferOwnership()">
-                                Transfer Ownership
-                            </button>
+                        <!-- Tab Content: Boosts -->
+                        <div id="tab-boosts" class="tab-content" style="display: none;">
+                            <div class="glass-card">
+                                <h4 style="margin: 0 0 12px 0; color: #2d1b4e; font-size: 1rem;">Your Active
+                                    Boosts
+                                </h4>
+                                <!-- Boosts Lists -->
+                                <div id="databaseBoostsList" style="margin-bottom: 16px;">
+                                    <div
+                                        style="font-size: 0.8rem; font-weight: 700; color: var(--text-medium); margin-bottom: 8px;">
+                                        ?? Account Boosts</div>
+                                    <div id="databaseBoostsContent" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                        <span style="color: var(--text-tertiary); font-size: 0.8rem;">Connect
+                                            Discord</span>
+                                    </div>
+                                </div>
+                                <div id="nftBoostsList">
+                                    <div
+                                        style="font-size: 0.8rem; font-weight: 700; color: var(--text-medium); margin-bottom: 8px;">
+                                        ?? NFT Boosts</div>
+                                    <div id="nftBoostsContent" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                        <span style="color: var(--text-tertiary); font-size: 0.8rem;">Connect
+                                            wallet</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab Content: Governance -->
+                        <div id="tab-governance" class="tab-content" style="display: none;">
+                            <div class="glass-card" style="text-align: center; padding: 24px;">
+                                <h3 style="font-size: 1.1rem; margin-bottom: 8px;">Governance Portal</h3>
+                                <p style="color: #6b7280; margin-bottom: 16px; font-size: 0.9rem;">Vote on
+                                    treasury
+                                    proposals.</p>
+                                <button
+                                    style="padding: 8px 16px; background: rgba(0,0,0,0.05); border-radius: 100px; border: none; font-weight: 600; color: #6b7280; cursor: not-allowed; font-size: 0.8rem;">Coming
+                                    Soon</button>
+                            </div>
                         </div>
                     </div>
+
+                </div>
+
+
+                <!-- Admin Panel (Only visible to contract owner) -->
+                <div class="wallet-section admin-panel" id="adminPanel" style="display: none;">
+                    <h3>?? Treasury Admin</h3>
+                    <p class="admin-notice">You are the Treasury contract owner.</p>
+
+                    <div class="admin-stats">
+                        <div class="admin-stat">
+                            <span class="admin-label">Accumulated Fees</span>
+                            <span class="admin-value" id="accumulatedFees">$0.00</span>
+                        </div>
+                        <div class="admin-stat">
+                            <span class="admin-label">Total Treasury ETH</span>
+                            <span class="admin-value" id="adminTreasuryEth">0 ETH</span>
+                        </div>
+                    </div>
+
+                    <div class="admin-actions">
+                        <button class="admin-btn" id="withdrawFeesBtn" onclick="withdrawFees()" disabled>
+                            ?? Withdraw Fees
+                        </button>
+                        <p class="admin-helper" id="withdrawFeesHelper"
+                            style="font-size: 12px; color: #888; margin-top: 4px;">
+                            Minimum 0.001 ETH in fees required to withdraw
+                        </p>
+                    </div>
+
+                    <div class="admin-ownership">
+                        <h4>Transfer Ownership</h4>
+                        <input type="text" id="newOwnerAddress" placeholder="0x... new owner address"
+                            class="admin-input">
+                        <button class="admin-btn secondary" onclick="transferOwnership()">
+                            Transfer Ownership
+                        </button>
+                    </div>
+                </div>
 
             </section>
         </div>
@@ -2114,6 +2241,30 @@
 
 
     <script>
+        // Tab switching function
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.style.display = 'none';
+                tab.classList.remove('active');
+            });
+
+            // Remove active class from all tabs
+            document.querySelectorAll('.wallet-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show the selected tab content
+            const selectedTab = document.getElementById('tab-' + tabName);
+            if (selectedTab) {
+                selectedTab.style.display = 'block';
+                selectedTab.classList.add('active');
+            }
+
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+
         // Wallet Connection Logic
         const walletDashboard = document.getElementById('walletDashboard');
         const connectBtn = document.getElementById('connectWalletBtn');
@@ -3685,6 +3836,107 @@
 
         document.addEventListener('DOMContentLoaded', loadUserCredits);
         window.loadUserCredits = loadUserCredits;
+
+        // ========== DISCORD LOGIN ==========
+        function loginWithDiscord() {
+            // Discord OAuth2 URL - using the same flow as developer portal
+            const DISCORD_CLIENT_ID = '1311757088540311633'; // Your Discord App Client ID
+            const REDIRECT_URI = encodeURIComponent(window.location.origin + '/oauth-callback.html');
+            const SCOPE = encodeURIComponent('identify email');
+
+            const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=${SCOPE}`;
+
+            // Open Discord auth in a popup
+            const popup = window.open(authUrl, 'Discord Login', 'width=500,height=700');
+
+            // Listen for the callback
+            window.addEventListener('message', function handleAuthMessage(event) {
+                if (event.origin !== window.location.origin) return;
+                if (event.data && event.data.type === 'discord-auth-success') {
+                    const user = event.data.user;
+                    localStorage.setItem('suiteDev', JSON.stringify(user));
+                    updateAuthUI(user);
+                    popup.close();
+                    window.removeEventListener('message', handleAuthMessage);
+                }
+            });
+        }
+
+        function updateAuthUI(user) {
+            const discordBtn = document.getElementById('discordLoginBtn');
+            if (discordBtn && user) {
+                discordBtn.innerHTML = `<img src="${user.avatar ? 'https://cdn.discordapp.com/avatars/' + user.id + '/' + user.avatar + '.png' : 'https://cdn.discordapp.com/embed/avatars/0.png'}" style="width: 24px; height: 24px; border-radius: 50%;"> ${user.username}`;
+                discordBtn.onclick = () => {
+                    if (confirm('Log out of Discord?')) {
+                        localStorage.removeItem('suiteDev');
+                        location.reload();
+                    }
+                };
+            }
+        }
+
+        // Check if already logged in on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            const currentUser = JSON.parse(localStorage.getItem('suiteDev') || 'null');
+            if (currentUser) {
+                updateAuthUI(currentUser);
+            }
+        });
+
+        // ========== WALLET CONNECTION ==========
+        async function connectWallet() {
+            if (typeof window.ethereum === 'undefined') {
+                alert('Please install MetaMask or another Web3 wallet to connect.');
+                window.open('https://metamask.io/download/', '_blank');
+                return;
+            }
+
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                const address = accounts[0];
+
+                // Store connected wallet
+                localStorage.setItem('suiteWallet', address);
+
+                // Update UI
+                const walletBtn = document.getElementById('connectWalletBtn');
+                if (walletBtn) {
+                    walletBtn.innerHTML = `✅ ${address.slice(0, 6)}...${address.slice(-4)}`;
+                    walletBtn.onclick = disconnectWallet;
+                }
+
+                // Update global wallet address if it exists
+                if (typeof userAddress !== 'undefined') {
+                    window.userAddress = address;
+                }
+
+                console.log('Connected wallet:', address);
+            } catch (error) {
+                console.error('Wallet connection failed:', error);
+                alert('Failed to connect wallet. Please try again.');
+            }
+        }
+
+        function disconnectWallet() {
+            localStorage.removeItem('suiteWallet');
+            const walletBtn = document.getElementById('connectWalletBtn');
+            if (walletBtn) {
+                walletBtn.innerHTML = '🔗 Connect Wallet';
+                walletBtn.onclick = connectWallet;
+            }
+        }
+
+        // Restore wallet connection on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            const savedWallet = localStorage.getItem('suiteWallet');
+            if (savedWallet) {
+                const walletBtn = document.getElementById('connectWalletBtn');
+                if (walletBtn) {
+                    walletBtn.innerHTML = `✅ ${savedWallet.slice(0, 6)}...${savedWallet.slice(-4)}`;
+                    walletBtn.onclick = disconnectWallet;
+                }
+            }
+        });
     </script>
 </body>
 

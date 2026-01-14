@@ -108,6 +108,7 @@ Keep responses short, friendly, and helpful. Use emojis sparingly. If you don't 
         widget.innerHTML = `
             <!-- Speech Bubble - appears on page load -->
             <div class="stu-bubble" id="stuBubble">
+                <span class="stu-bubble-close" id="stuBubbleClose">×</span>
                 👋 Need help? Ask me anything!
             </div>
             <div class="stu-panel">
@@ -124,12 +125,20 @@ Keep responses short, friendly, and helpful. Use emojis sparingly. If you don't 
                     </div>
                 </div>
                 <div class="stu-quick">
-                    <div class="stu-quick-label">Quick Questions</div>
-                    <div class="stu-pills">
-                        <button class="stu-pill" data-q="What is SUITE?">What is SUITE?</button>
-                        <button class="stu-pill" data-q="How do I earn?">How do I earn?</button>
-                        <button class="stu-pill" data-q="What are campaigns?">Campaigns?</button>
-                        <button class="stu-pill" data-q="How do I build an app?">Build an app</button>
+                    <div class="stu-quick-header">
+                        <div class="stu-quick-label">Quick Questions</div>
+                        <div class="stu-quick-nav">
+                            <button class="stu-quick-arrow" id="stuPrevPill" disabled>◀</button>
+                            <button class="stu-quick-arrow" id="stuNextPill">▶</button>
+                        </div>
+                    </div>
+                    <div class="stu-pills-container">
+                        <div class="stu-pills" id="stuPills">
+                            <button class="stu-pill" data-q="What is SUITE?">What is SUITE?</button>
+                            <button class="stu-pill" data-q="How do I earn?">How do I earn?</button>
+                            <button class="stu-pill" data-q="What are campaigns?">Campaigns?</button>
+                            <button class="stu-pill" data-q="How do I build an app?">Build an app</button>
+                        </div>
                     </div>
                 </div>
                 <div class="stu-input-area">
@@ -264,6 +273,15 @@ Keep responses short, friendly, and helpful. Use emojis sparingly. If you don't 
             setTimeout(() => {
                 bubble.classList.add('hidden');
             }, 8000);
+
+            // Close button click handler
+            const closeBtn = document.getElementById('stuBubbleClose');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    bubble.classList.add('hidden');
+                });
+            }
         }
 
         // Jiggle animation: trigger every 8 seconds (when widget is closed)
@@ -279,6 +297,36 @@ Keep responses short, friendly, and helpful. Use emojis sparingly. If you don't 
         // Quick question pills
         pills.forEach(pill => {
             pill.addEventListener('click', () => handleQuestion(pill.dataset.q));
+        });
+
+        // Arrow navigation for pills
+        const pillsContainer = document.getElementById('stuPills');
+        const prevBtn = document.getElementById('stuPrevPill');
+        const nextBtn = document.getElementById('stuNextPill');
+        let pillOffset = 0;
+        const pillsPerView = 2;
+        const totalPills = pills.length;
+        const maxOffset = Math.max(0, totalPills - pillsPerView);
+
+        function updatePillsView() {
+            const pillWidth = pills[0].offsetWidth + 6; // width + gap
+            pillsContainer.style.transform = `translateX(-${pillOffset * pillWidth}px)`;
+            prevBtn.disabled = pillOffset === 0;
+            nextBtn.disabled = pillOffset >= maxOffset;
+        }
+
+        prevBtn.addEventListener('click', () => {
+            if (pillOffset > 0) {
+                pillOffset--;
+                updatePillsView();
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            if (pillOffset < maxOffset) {
+                pillOffset++;
+                updatePillsView();
+            }
         });
 
         // Text input

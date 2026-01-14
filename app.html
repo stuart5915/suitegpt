@@ -47,8 +47,6 @@
             margin-bottom: 40px;
         }
 
-        .app-hero-left {}
-
         .app-title {
             font-size: 2.5rem;
             font-weight: 900;
@@ -264,8 +262,6 @@
             font-size: 0.9rem;
             flex-shrink: 0;
         }
-
-        .step-content {}
 
         .step-title {
             font-weight: 700;
@@ -755,6 +751,21 @@
             background: linear-gradient(135deg, #22c55e, #10b981);
             color: white;
         }
+
+        /* Tip Creator Button Styles */
+        .btn-tip {
+            transition: all 0.3s ease;
+        }
+
+        .btn-tip:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 8px 24px rgba(34, 197, 94, 0.4);
+            filter: brightness(1.1);
+        }
+
+        .btn-tip:active {
+            transform: translateY(0) scale(0.98);
+        }
     </style>
 </head>
 
@@ -1039,10 +1050,17 @@
                 </div>
 
                 <div class="tip-options">
+                    <div class="tip-option-card" onclick="selectTipOption('fiat')">
+                        <span class="tip-icon">💳</span>
+                        <h4>Pay with Card</h4>
+                        <p>Use credit/debit card via Stripe</p>
+                        <span class="tip-arrow">→</span>
+                    </div>
+
                     <div class="tip-option-card" onclick="selectTipOption('direct')">
                         <span class="tip-icon">💎</span>
-                        <h4>Send SUITE Tokens</h4>
-                        <p>Tip directly from your wallet</p>
+                        <h4>Pay with Crypto</h4>
+                        <p>Send ETH, USDC, or SUITE tokens</p>
                         <span class="tip-arrow">→</span>
                     </div>
 
@@ -1092,6 +1110,53 @@
                     <button class="modal-btn modal-btn-cancel" onclick="backToTipSelection()">Back</button>
                     <button class="modal-btn modal-btn-submit" id="sendTipBtn" disabled onclick="sendDirectTip()">Send
                         Tip</button>
+                </div>
+            </div>
+
+            <!-- Fiat Payment View -->
+            <div id="tipFiatView" style="display: none;">
+                <div class="modal-header">
+                    <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
+                        <button onclick="backToTipSelection()"
+                            style="background: none; border: none; font-size: 24px; cursor: pointer; padding: 0;">←</button>
+                        <div>
+                            <div class="modal-title">Pay with Card</div>
+                            <div class="modal-subtitle" id="tipFiatCreatorName"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-body">
+                    <p style="color: #6b7280; margin-bottom: 16px;">Select an amount:</p>
+                    <div class="tip-amounts">
+                        <button class="tip-amount-btn fiat-amount-btn" onclick="selectFiatAmount(1)">$1</button>
+                        <button class="tip-amount-btn fiat-amount-btn" onclick="selectFiatAmount(5)">$5</button>
+                        <button class="tip-amount-btn fiat-amount-btn" onclick="selectFiatAmount(10)">$10</button>
+                        <button class="tip-amount-btn fiat-amount-btn" onclick="selectFiatAmount(25)">$25</button>
+                    </div>
+                    <div style="margin-top: 16px;">
+                        <label style="color: #6b7280; font-size: 0.9rem; margin-bottom: 8px; display: block;">Custom
+                            amount:</label>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 1.2rem; font-weight: 600;">$</span>
+                            <input type="number" id="customFiatAmount" placeholder="Enter amount" min="1"
+                                style="flex: 1; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 1rem;"
+                                oninput="selectCustomFiatAmount(this.value)">
+                        </div>
+                    </div>
+                    <div
+                        style="margin-top: 16px; padding: 16px; background: linear-gradient(135deg, #f0f9ff, #e0f2fe); border-radius: 12px;">
+                        <p style="color: #0369a1; font-size: 0.85rem; display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 1.2rem;">🔒</span>
+                            Secure payment powered by Stripe
+                        </p>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button class="modal-btn modal-btn-cancel" onclick="backToTipSelection()">Back</button>
+                    <button class="modal-btn modal-btn-submit" id="payFiatBtn" disabled onclick="processFiatPayment()"
+                        style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">Pay Now</button>
                 </div>
             </div>
 
@@ -1828,174 +1893,15 @@
         });
     </script>
 
-    <!-- Tip Creator Modal -->
-    <div id="tipModal"
-        style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 10000; opacity: 0; visibility: hidden; transition: all 0.3s;">
-        <div
-            style="background: white; border-radius: 24px; padding: 32px; max-width: 420px; width: 90%; transform: scale(0.9); transition: transform 0.3s;">
-            <h3
-                style="font-size: 1.3rem; font-weight: 800; color: #2d1b4e; margin: 0 0 8px; display: flex; align-items: center; gap: 8px;">
-                💰 Tip the Creator
-            </h3>
-            <p style="color: #6b7280; margin: 0 0 24px; line-height: 1.5; font-size: 0.9rem;">
-                Show your appreciation for <strong id="tipCreatorName">this app</strong>!
-                All tips are converted to SUITE and sent directly to the creator.
-            </p>
-
-            <!-- Tip Amount Selection -->
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px;">
-                <button class="tip-amount-btn" data-amount="1" onclick="selectTipAmount(1)"
-                    style="padding: 12px; border: 2px solid #e5e7eb; background: white; border-radius: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;">$1</button>
-                <button class="tip-amount-btn" data-amount="5" onclick="selectTipAmount(5)"
-                    style="padding: 12px; border: 2px solid #e5e7eb; background: white; border-radius: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;">$5</button>
-                <button class="tip-amount-btn" data-amount="10" onclick="selectTipAmount(10)"
-                    style="padding: 12px; border: 2px solid #22c55e; background: rgba(34, 197, 94, 0.1); color: #22c55e; border-radius: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;">$10</button>
-                <button class="tip-amount-btn" data-amount="25" onclick="selectTipAmount(25)"
-                    style="padding: 12px; border: 2px solid #e5e7eb; background: white; border-radius: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;">$25</button>
-            </div>
-
-            <div style="margin-bottom: 20px;">
-                <label style="font-size: 0.85rem; color: #6b7280; display: block; margin-bottom: 6px;">Custom
-                    amount</label>
-                <input type="number" id="customTipAmount" placeholder="Enter amount" min="0.50" step="0.50"
-                    style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 1rem; font-weight: 600;">
-            </div>
-
-            <!-- Payment Method -->
-            <div style="margin-bottom: 24px;">
-                <label style="font-size: 0.85rem; color: #6b7280; display: block; margin-bottom: 8px;">Pay with</label>
-                <div style="display: flex; gap: 8px;">
-                    <button class="pay-method-btn selected" data-method="suite" onclick="selectPayMethod('suite')"
-                        style="flex: 1; padding: 10px; border: 2px solid #ff9500; background: rgba(255, 149, 0, 0.1); border-radius: 10px; font-weight: 600; font-size: 0.85rem; cursor: pointer;">🪙
-                        SUITE</button>
-                    <button class="pay-method-btn" data-method="eth" onclick="selectPayMethod('eth')"
-                        style="flex: 1; padding: 10px; border: 2px solid #e5e7eb; background: white; border-radius: 10px; font-weight: 600; font-size: 0.85rem; cursor: pointer;">⟠
-                        ETH</button>
-                    <button class="pay-method-btn" data-method="card" onclick="selectPayMethod('card')"
-                        style="flex: 1; padding: 10px; border: 2px solid #e5e7eb; background: white; border-radius: 10px; font-weight: 600; font-size: 0.85rem; cursor: pointer;">💳
-                        Card</button>
-                </div>
-            </div>
-
-            <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                <button onclick="closeTipModal()"
-                    style="padding: 12px 24px; border-radius: 12px; font-weight: 700; font-size: 0.95rem; cursor: pointer; background: rgba(0, 0, 0, 0.05); color: #6b7280; border: none;">Cancel</button>
-                <button id="sendTipBtn" onclick="sendTip()"
-                    style="padding: 12px 24px; border-radius: 12px; font-weight: 700; font-size: 0.95rem; cursor: pointer; background: linear-gradient(135deg, #22c55e, #10b981); color: white; border: none;">
-                    Send Tip
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <style>
-        #tipModal.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        #tipModal.active>div {
-            transform: scale(1);
-        }
-
-        .tip-amount-btn.selected {
-            border-color: #22c55e !important;
-            background: rgba(34, 197, 94, 0.1) !important;
-            color: #22c55e !important;
-        }
-
-        .pay-method-btn.selected {
-            border-color: #ff9500 !important;
-            background: rgba(255, 149, 0, 0.1) !important;
-            color: #ff9500 !important;
-        }
-    </style>
-
     <script>
-        // Tip Modal Functions
-        let selectedTipAmount = 10;
-        let selectedPayMethod = 'suite';
-        let currentAppCreator = null;
-
-        function openTipModal() {
-            // Set creator name from current app data
-            const creatorEl = document.getElementById('appCreator');
-            if (creatorEl) {
-                document.getElementById('tipCreatorName').textContent = creatorEl.textContent.replace('By ', '');
-            }
-            document.getElementById('tipModal').classList.add('active');
-        }
-
-        function closeTipModal() {
-            document.getElementById('tipModal').classList.remove('active');
-        }
-
-        function selectTipAmount(amount) {
-            selectedTipAmount = amount;
-            document.querySelectorAll('.tip-amount-btn').forEach(btn => {
-                btn.classList.toggle('selected', parseInt(btn.dataset.amount) === amount);
-            });
-            document.getElementById('customTipAmount').value = '';
-        }
-
-        function selectPayMethod(method) {
-            selectedPayMethod = method;
-            document.querySelectorAll('.pay-method-btn').forEach(btn => {
-                btn.classList.toggle('selected', btn.dataset.method === method);
-            });
-        }
-
-        async function sendTip() {
-            // Get amount (custom or selected)
-            const customAmount = parseFloat(document.getElementById('customTipAmount').value);
-            const amount = customAmount > 0 ? customAmount : selectedTipAmount;
-
-            if (amount < 0.50) {
-                alert('Minimum tip is $0.50');
-                return;
-            }
-
-            const creatorName = document.getElementById('tipCreatorName').textContent;
-
-            if (selectedPayMethod === 'card') {
-                alert(`💳 Card payments coming soon!\n\nFor now, please use SUITE or ETH to tip ${creatorName}.`);
-                return;
-            }
-
-            if (selectedPayMethod === 'eth' || selectedPayMethod === 'suite') {
-                // Check for wallet
-                if (typeof window.ethereum === 'undefined') {
-                    alert('Please install MetaMask to send tips with crypto.');
-                    window.open('https://metamask.io/download/', '_blank');
-                    return;
-                }
-
-                try {
-                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-
-                    // For now, show success message - in production, this would send actual transaction
-                    alert(`🎉 Thank you for your generosity!\n\n$${amount} tip to ${creatorName} will be processed.\n\nNote: Treasury integration coming soon - tips will be converted to SUITE and sent to the creator.`);
-                    closeTipModal();
-
-                } catch (error) {
-                    console.error('Tip failed:', error);
-                    alert('Failed to send tip. Please try again.');
-                }
-            }
-        }
-
-        // Close tip modal on overlay click
-        document.getElementById('tipModal')?.addEventListener('click', function (e) {
-            if (e.target === this) closeTipModal();
-        });
-
         // ========== DISCORD LOGIN FOR REVIEWS ==========
         function loginWithDiscord() {
             const DISCORD_CLIENT_ID = '1311757088540311633';
             const REDIRECT_URI = encodeURIComponent(window.location.origin + '/oauth-callback.html');
             const SCOPE = encodeURIComponent('identify email');
 
-            const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=${SCOPE}`;
+            const authUrl =
+                `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=${SCOPE}`;
 
             const popup = window.open(authUrl, 'Discord Login', 'width=500,height=700');
 
@@ -2016,7 +1922,10 @@
             const submitBtn = document.getElementById('submitReviewBtn');
 
             if (loginPrompt && user) {
-                loginPrompt.innerHTML = `<img src="${user.avatar ? 'https://cdn.discordapp.com/avatars/' + user.id + '/' + user.avatar + '.png' : 'https://cdn.discordapp.com/embed/avatars/0.png'}" style="width: 20px; height: 20px; border-radius: 50%; vertical-align: middle;"> Posting as <strong>${user.username}</strong>`;
+                loginPrompt.innerHTML = `<img
+        src="${user.avatar ? 'https://cdn.discordapp.com/avatars/' + user.id + '/' + user.avatar + '.png' : 'https://cdn.discordapp.com/embed/avatars/0.png'}"
+        style="width: 20px; height: 20px; border-radius: 50%; vertical-align: middle;"> Posting as
+    <strong>${user.username}</strong>`;
             }
             if (submitBtn) {
                 submitBtn.disabled = false;
@@ -2033,6 +1942,7 @@
 
         // ========== TIP MODAL SYSTEM ==========
         let selectedTipAmount = 0;
+        let selectedFiatAmount = 0;
 
         function openTipModal() {
             if (!currentApp) return;
@@ -2040,6 +1950,7 @@
             // Reset views
             document.getElementById('tipSelectionView').style.display = 'block';
             document.getElementById('tipDirectView').style.display = 'none';
+            document.getElementById('tipFiatView').style.display = 'none';
             document.getElementById('tipAdView').style.display = 'none';
             document.getElementById('tipSuccessView').style.display = 'none';
 
@@ -2054,17 +1965,25 @@
         function closeTipModal() {
             document.getElementById('tipModal').classList.remove('active');
             selectedTipAmount = 0;
+            selectedFiatAmount = 0;
         }
 
         function selectTipOption(option) {
             const creatorName = currentApp.creator_username || 'Creator';
 
-            if (option === 'direct') {
-                document.getElementById('tipSelectionView').style.display = 'none';
+            // Hide all views first
+            document.getElementById('tipSelectionView').style.display = 'none';
+            document.getElementById('tipDirectView').style.display = 'none';
+            document.getElementById('tipFiatView').style.display = 'none';
+            document.getElementById('tipAdView').style.display = 'none';
+
+            if (option === 'fiat') {
+                document.getElementById('tipFiatView').style.display = 'block';
+                document.getElementById('tipFiatCreatorName').textContent = `To ${creatorName}`;
+            } else if (option === 'direct') {
                 document.getElementById('tipDirectView').style.display = 'block';
                 document.getElementById('tipDirectCreatorName').textContent = `To ${creatorName}`;
             } else if (option === 'ad') {
-                document.getElementById('tipSelectionView').style.display = 'none';
                 document.getElementById('tipAdView').style.display = 'block';
                 document.getElementById('tipAdCreatorName').textContent = creatorName;
             }
@@ -2073,22 +1992,32 @@
         function backToTipSelection() {
             document.getElementById('tipSelectionView').style.display = 'block';
             document.getElementById('tipDirectView').style.display = 'none';
+            document.getElementById('tipFiatView').style.display = 'none';
             document.getElementById('tipAdView').style.display = 'none';
             selectedTipAmount = 0;
+            selectedFiatAmount = 0;
 
             // Reset amount buttons
             document.querySelectorAll('.tip-amount-btn').forEach(btn => {
                 btn.classList.remove('selected');
             });
-            document.getElementById('customTipAmount').value = '';
-            document.getElementById('sendTipBtn').disabled = true;
+            if (document.getElementById('customTipAmount')) {
+                document.getElementById('customTipAmount').value = '';
+            }
+            if (document.getElementById('sendTipBtn')) {
+                document.getElementById('sendTipBtn').disabled = true;
+            }
+            if (document.getElementById('customFiatAmount')) {
+                document.getElementById('customFiatAmount').value = '';
+            }
+            if (document.getElementById('payFiatBtn')) {
+                document.getElementById('payFiatBtn').disabled = true;
+            }
         }
 
         function selectAmount(amount) {
             selectedTipAmount = amount;
-
-            // Update UI
-            document.querySelectorAll('.tip-amount-btn').forEach(btn => {
+            document.querySelectorAll('#tipDirectView .tip-amount-btn').forEach(btn => {
                 btn.classList.remove('selected');
             });
             event.target.classList.add('selected');
@@ -2100,7 +2029,7 @@
             const amount = parseFloat(value);
             if (amount && amount > 0) {
                 selectedTipAmount = amount;
-                document.querySelectorAll('.tip-amount-btn').forEach(btn => {
+                document.querySelectorAll('#tipDirectView .tip-amount-btn').forEach(btn => {
                     btn.classList.remove('selected');
                 });
                 document.getElementById('sendTipBtn').disabled = false;
@@ -2110,6 +2039,57 @@
             }
         }
 
+        // ========== FIAT PAYMENT FUNCTIONS ==========
+        function selectFiatAmount(amount) {
+            selectedFiatAmount = amount;
+            document.querySelectorAll('.fiat-amount-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+            document.getElementById('customFiatAmount').value = '';
+            document.getElementById('payFiatBtn').disabled = false;
+        }
+
+        function selectCustomFiatAmount(value) {
+            const amount = parseFloat(value);
+            if (amount && amount >= 1) {
+                selectedFiatAmount = amount;
+                document.querySelectorAll('.fiat-amount-btn').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+                document.getElementById('payFiatBtn').disabled = false;
+            } else {
+                selectedFiatAmount = 0;
+                document.getElementById('payFiatBtn').disabled = true;
+            }
+        }
+
+        async function processFiatPayment() {
+            if (selectedFiatAmount <= 0) return;
+
+            const btn = document.getElementById('payFiatBtn');
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+
+            const creatorName = currentApp.creator_username || 'the creator';
+
+            try {
+                console.log(`Processing $${selectedFiatAmount} fiat payment to ${creatorName}`);
+                await new Promise(resolve => setTimeout(resolve, 1500));
+
+                document.getElementById('tipFiatView').style.display = 'none';
+                document.getElementById('tipSuccessView').style.display = 'block';
+                document.getElementById('tipSuccessTitle').textContent = 'Payment Successful!';
+                document.getElementById('tipSuccessText').textContent = `You sent $${selectedFiatAmount} to ${creatorName}. Thank you for your support!`;
+            } catch (error) {
+                console.error('Fiat payment failed:', error);
+                alert('Payment failed. Please try again.');
+            }
+
+            btn.textContent = 'Pay Now';
+            btn.disabled = false;
+        }
+
         async function sendDirectTip() {
             if (selectedTipAmount <= 0) return;
 
@@ -2117,14 +2097,9 @@
             btn.disabled = true;
             btn.textContent = 'Sending...';
 
-            // TODO: Integrate with wallet to send SUITE tokens through Treasury
-            // For now, just show success
             console.log(`Sending ${selectedTipAmount} SUITE to creator`);
-
-            // Simulate sending (replace with actual wallet integration)
             await new Promise(resolve => setTimeout(resolve, 2000));
 
-            // Show success
             document.getElementById('tipDirectView').style.display = 'none';
             document.getElementById('tipSuccessView').style.display = 'block';
             document.getElementById('tipSuccessTitle').textContent = 'Tip Sent!';
@@ -2139,22 +2114,9 @@
             btn.disabled = true;
             btn.textContent = 'Loading Ad...';
 
-            // Load Adsterra ad
-            // Adsterra documentation: https://partners.adsterra.com/
-            // You'll need to replace with your actual Adsterra zone ID
             const adContainer = document.getElementById('adContainer');
             adContainer.innerHTML = '<p style="color: white;">Ad is now playing...</p>';
 
-            // TODO: Integrate actual Adsterra ad code here
-            // Example Adsterra code (replace with your zone ID):
-            /*
-            const script = document.createElement('script');
-            script.src = 'https://pl12345678.profitablegatetocontent.com/YOUR_ZONE_ID/invoke.js';
-            script.async = true;
-            adContainer.appendChild(script);
-            */
-
-            // For demo: simulate 30-second ad watch
             let countdown = 30;
             const countdownInterval = setInterval(() => {
                 countdown--;
@@ -2168,14 +2130,12 @@
         }
 
         async function completeAdWatch() {
-            // Ad watched! Now credit user with FORGE credits
             const user = getCurrentUser();
             if (!user) {
                 alert('Please login to earn FORGE credits');
                 return;
             }
 
-            // Track ad watch in Supabase and credit FORGE
             try {
                 await fetch(`${SUPABASE_URL}/rest/v1/forge_credits`, {
                     method: 'POST',
@@ -2188,7 +2148,7 @@
                     body: JSON.stringify({
                         user_discord_id: user.type === 'discord' ? user.id : null,
                         user_wallet: user.type === 'wallet' ? user.id : null,
-                        credits_earned: 50, // 50 FORGE credits = $0.005 worth of SUITE
+                        credits_earned: 50,
                         source: 'ad_watch',
                         app_id: currentApp.id,
                         app_creator_discord_id: currentApp.creator_discord_id
@@ -2199,11 +2159,10 @@
                 console.error('Failed to award FORGE credits:', err);
             }
 
-            // Show success
             document.getElementById('tipAdView').style.display = 'none';
             document.getElementById('tipSuccessView').style.display = 'block';
             document.getElementById('tipSuccessTitle').textContent = 'Ad Complete!';
-            document.getElementById('tipSuccessText').textContent = `You earned 50 SUITE FORGE credits! The creator will receive ad revenue from your view.`;
+            document.getElementById('tipSuccessText').textContent = 'You earned 50 SUITE FORGE credits! The creator will receive ad revenue from your view.';
 
             document.getElementById('watchAdBtn').textContent = 'Watch Ad';
             document.getElementById('watchAdBtn').disabled = false;

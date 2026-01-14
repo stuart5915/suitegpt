@@ -18,13 +18,9 @@ document.addEventListener('DOMContentLoaded', function () {
     sidebar.innerHTML = `
         <div class="sidebar-section">
             <div class="sidebar-title">Learn</div>
-            <a href="index.html" class="sidebar-link ${isActive('index.html')}">📚 Introduction</a>
-            <a href="how-it-works.html" class="sidebar-link ${isActive('how-it-works.html')}">⚙️ How It Works</a>
-            <a href="ecosystem-overview.html" class="sidebar-link ${isActive('ecosystem-overview.html')}">🌐 Ecosystem Overview</a>
+            <a href="index.html" class="sidebar-link ${isActive('index.html')}">📚 Getting Started</a>
+            <a href="ecosystem-overview.html" class="sidebar-link ${isActive('ecosystem-overview.html')}">🌐 Ecosystem</a>
             <a href="tokenomics.html" class="sidebar-link ${isActive('tokenomics.html')}">📊 Tokenomics</a>
-            <a href="utility.html" class="sidebar-link ${isActive('utility.html')}">⚡ SUITE Utility</a>
-            <a href="roadmap.html" class="sidebar-link ${isActive('roadmap.html')}">🗺️ Roadmap</a>
-            <a href="systems-view.html" class="sidebar-link ${isActive('systems-view.html')}">🏗️ Systems View</a>
             <a href="safety.html" class="sidebar-link ${isActive('safety.html')}">🛡️ AI Safety</a>
         </div>
 
@@ -32,8 +28,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="sidebar-title">Build</div>
             <a href="quickstart.html" class="sidebar-link ${isActive('quickstart.html')}">🚀 Quick Start</a>
             <a href="developer.html" class="sidebar-link ${isActive('developer.html')}">👨‍💻 Developer Guide</a>
-            <a href="commands.html" class="sidebar-link ${isActive('commands.html')}">⚡ Commands</a>
-            <a href="features.html" class="sidebar-link ${isActive('features.html')}">✨ Features</a>
+            <a href="commands.html" class="sidebar-link ${isActive('commands.html')}">⚡ Commands & Features</a>
             <a href="publish-checklist.html" class="sidebar-link ${isActive('publish-checklist.html')}">📋 Publish Checklist</a>
             <a href="incubate.html" class="sidebar-link ${isActive('incubate.html')}">🌱 Incubate (coming soon)</a>
             <a href="ai-fleet.html" class="sidebar-link ${isActive('ai-fleet.html')}">🤖 AI Fleet (coming soon)</a>
@@ -49,7 +44,6 @@ document.addEventListener('DOMContentLoaded', function () {
         <div class="sidebar-section">
             <div class="sidebar-title">Admin</div>
             <a href="governance.html" class="sidebar-link ${isActive('governance.html')}">🗳️ Governance</a>
-            <a href="admin-flows.html" class="sidebar-link ${isActive('admin-flows.html')}">⚙️ Admin Flows</a>
             <a href="content-policy.html" class="sidebar-link ${isActive('content-policy.html')}">📜 Content Policy</a>
         </div>
     `;

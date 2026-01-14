@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logging in... | SUITE</title>
+    <link rel="icon" type="image/png" href="assets/suite-icon.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #fff5f0 0%, #ffeef5 50%, #f0e6ff 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 48px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid #e5e7eb;
+            border-top-color: #5865F2;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 24px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin-bottom: 8px;
+        }
+
+        p {
+            color: #6b7280;
+            font-size: 0.95rem;
+        }
+
+        .error {
+            color: #ef4444;
+            display: none;
+            margin-top: 16px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="spinner"></div>
+        <h1>Logging you in...</h1>
+        <p>Connecting with Discord</p>
+        <p class="error" id="errorMsg"></p>
+    </div>
+
+    <script>
+        // Discord OAuth Callback Handler
+        const DISCORD_CLIENT_ID = '1311757088540311633';
+        const DISCORD_CLIENT_SECRET = 'YOUR_CLIENT_SECRET'; // Replace with actual secret (or use server-side)
+
+        async function handleCallback() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const error = urlParams.get('error');
+
+            if (error) {
+                showError('Login cancelled or failed. Please try again.');
+                return;
+            }
+
+            if (!code) {
+                showError('No authorization code received.');
+                return;
+            }
+
+            try {
+                // For now, we'll use a simpler approach - exchange code for user info client-side
+                // In production, this should go through your backend
+
+                // Get user info directly using the code (simplified flow)
+                // Note: For production, use a proper backend exchange
+
+                // Simulated user for demo - in production, exchange code with Discord API
+                const mockUser = {
+                    id: 'demo_' + Date.now(),
+                    username: 'DiscordUser',
+                    avatar: null,
+                    email: 'user@example.com'
+                };
+
+                // Send message to parent window
+                if (window.opener) {
+                    window.opener.postMessage({
+                        type: 'discord-auth-success',
+                        user: mockUser
+                    }, window.location.origin);
+
+                    // Close this popup after a short delay
+                    setTimeout(() => window.close(), 500);
+                } else {
+                    // If opened directly (not as popup), redirect to main page
+                    localStorage.setItem('suiteDev', JSON.stringify(mockUser));
+                    window.location.href = '/';
+                }
+
+            } catch (err) {
+                console.error('OAuth error:', err);
+                showError('Failed to complete login. Please try again.');
+            }
+        }
+
+        function showError(msg) {
+            document.getElementById('errorMsg').textContent = msg;
+            document.getElementById('errorMsg').style.display = 'block';
+            document.querySelector('.spinner').style.display = 'none';
+        }
+
+        // Run on page load
+        handleCallback();
+    </script>
+</body>
+
+</html>
