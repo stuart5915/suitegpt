@@ -894,6 +894,13 @@ client.on('interactionCreate', async (interaction) => {
             return;
         }
 
+        // Handle bug/feature submission confirmation buttons
+        if (customId.startsWith('confirm_submit_') || customId.startsWith('cancel_submit_') || customId.startsWith('pro_mode_')) {
+            const { handleSubmissionConfirmation } = await import('./handlers/bugFeature.js');
+            await handleSubmissionConfirmation(interaction);
+            return;
+        }
+
         return;
     }
 
