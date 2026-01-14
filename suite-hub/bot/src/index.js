@@ -178,7 +178,20 @@ const commands = [
                 )),
     new SlashCommandBuilder()
         .setName('status')
-        .setDescription('Get current project status and priorities'),
+        .setDescription('Get detailed status of an app')
+        .addStringOption(option =>
+            option.setName('app')
+                .setDescription('Select app to check status')
+                .setRequired(true)
+                .addChoices(
+                    { name: '📖 Cheshbon', value: 'cheshbon-reflections' },
+                    { name: '🥗 FoodVitals', value: 'foodvitals' },
+                    { name: '💪 OpticRep', value: 'opticrep' },
+                    { name: '🧠 Life Hub', value: 'life-hub' },
+                    { name: '💭 REMcast', value: 'remcast' },
+                    { name: '💎 DeFi Knowledge', value: 'defi-knowledge' },
+                    { name: '🏃 TrueForm', value: 'trueform-ai' }
+                )),
     new SlashCommandBuilder()
         .setName('apps')
         .setDescription('View all SUITE apps and their status'),
@@ -1294,7 +1307,76 @@ IMPORTANT: Verify app name is correct before archiving!
             }
 
             case 'status': {
-                await handleDailyBriefCommand(interaction);
+                const appSlug = interaction.options.getString('app');
+
+                await interaction.deferReply();
+
+                const SUPABASE_URL = process.env.SUPABASE_URL || 'https://rdsmdywbdiskxknluiym.supabase.co';
+                const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+
+                if (!SUPABASE_SERVICE_KEY) {
+                    await interaction.editReply({ content: '❌ SUPABASE_SERVICE_KEY not configured.' });
+                    return;
+                }
+
+                try {
+                    // Search by slug (partial match)
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/apps?slug=ilike.*${appSlug}*&limit=1`, {
+                        headers: {
+                            'apikey': SUPABASE_SERVICE_KEY,
+                            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+                        }
+                    });
+
+                    const apps = await response.json();
+
+                    if (!apps || apps.length === 0) {
+                        await interaction.editReply({ content: `❌ No app found matching "${appSlug}"` });
+                        return;
+                    }
+
+                    const app = apps[0];
+                    const { EmbedBuilder } = await import('discord.js');
+
+                    const statusEmoji = {
+                        'approved': '🟢 Live',
+                        'featured': '⭐ Featured',
+                        'pending': '🔨 Pending',
+                        'rejected': '❌ Rejected',
+                        'removed': '🗑️ Removed'
+                    };
+
+                    const embed = new EmbedBuilder()
+                        .setTitle(`📱 ${app.name}`)
+                        .setDescription(app.description || 'No description')
+                        .setColor(app.status === 'approved' ? 0x22c55e : app.status === 'pending' ? 0xf59e0b : 0x6366f1)
+                        .addFields(
+                            { name: 'Status', value: statusEmoji[app.status] || app.status, inline: true },
+                            { name: 'Category', value: app.category || 'Uncategorized', inline: true },
+                            { name: 'Slug', value: `\`${app.slug}\``, inline: true }
+                        )
+                        .setTimestamp();
+
+                    if (app.app_url) {
+                        embed.addFields({ name: '🔗 App URL', value: app.app_url, inline: false });
+                    }
+
+                    if (app.icon_url) {
+                        embed.setThumbnail(app.icon_url);
+                    }
+
+                    if (app.creator_username) {
+                        embed.addFields({ name: '👤 Creator', value: app.creator_username, inline: true });
+                    }
+
+                    embed.setFooter({ text: `ID: ${app.id}` });
+
+                    await interaction.editReply({ embeds: [embed] });
+
+                } catch (error) {
+                    console.error('Status command error:', error);
+                    await interaction.editReply({ content: `❌ Error: ${error.message}` });
+                }
                 break;
             }
 
