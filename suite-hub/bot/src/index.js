@@ -13,6 +13,7 @@ import { handleBugCommand, handleFeatureCommand, getAppChoices } from './handler
 import { handleMyAppsCommand, handleMyAppStatusCommand, handleDeleteMyAppCommand, getUserAppChoices, addUserApp } from './handlers/userApps.js';
 import { handlePublishApp, handlePublishButton } from './handlers/publishApp.js';
 import { handlePreflightCheck } from './handlers/preflightCheck.js';
+import { handleSecurityCheck } from './handlers/securityCheck.js';
 import { handleFeatureFast, handleBugFast } from './handlers/featureFast.js';
 import { handleFeaturePro, handleBugPro } from './handlers/featurePro.js';
 import { generateBotResponse } from './ai/suiteBot.js';
@@ -475,6 +476,23 @@ const commands = [
                     { name: 'LifeHub', value: 'life-hub-app' },
                     { name: 'OpticRep', value: 'opticrep-ai-workout-trainer' },
                     { name: 'REMcast', value: 'remcast' }
+                )),
+    // 🔒 Security check before publishing
+    new SlashCommandBuilder()
+        .setName('security-check')
+        .setDescription('🔒 Scan app for exposed API keys and secrets before publishing')
+        .addStringOption(option =>
+            option.setName('app')
+                .setDescription('Select app to scan')
+                .setRequired(true)
+                .addChoices(
+                    { name: '📖 Cheshbon Reflections', value: 'cheshbon-reflections' },
+                    { name: '🥗 FoodVitals', value: 'food-vitals-expo' },
+                    { name: '💪 OpticRep', value: 'opticrep-ai-workout-trainer' },
+                    { name: '🧠 Life Hub AI', value: 'life-hub-app' },
+                    { name: '💭 REMcast', value: 'remcast' },
+                    { name: '💎 DeFi Knowledge', value: 'defi-knowledge' },
+                    { name: '🏃 TrueForm', value: 'trueform-ai-physiotherapist' }
                 )),
 ];
 
@@ -1598,6 +1616,11 @@ Your PC watcher will pick this up and Antigravity will implement it. Check back 
                         content: `❌ Failed to save prompt: ${error.message}`
                     });
                 }
+                break;
+            }
+
+            case 'security-check': {
+                await handleSecurityCheck(interaction);
                 break;
             }
         }
