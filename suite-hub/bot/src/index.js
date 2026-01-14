@@ -1058,54 +1058,23 @@ Just @mention me anywhere! I can answer questions, analyze ideas, and help you n
 
             case 'earn': {
                 await interaction.reply({
-                    content: `**📺 Earn Free SUITE **
+                    content: `# 💰 Earn SUITE
 
-                    Watch short video ads to earn SUITE tokens - no purchase required!
+> Multiple ways to grow your balance!
 
-                        **🔗 Click here to start earning:**
-                            https://getsuite.app/earn
+## 🎁 Free Methods
+• **Report bugs** — Earn 500 SUITE per bug
+• **Request features** — Earn 1,000 SUITE per feature
+• **Build apps** — Get rewarded when users tip you
 
-** How it works:**
-                    1. Click the link above
-                2. Login with Discord
-3. Watch a 30 - second ad
-                4. Get + 10 SUITE instantly!
+## 💳 Deposit Funds
+Buy SUITE with card or crypto:
+<https://getsuite.app/wallet>
 
-You can watch unlimited ads to earn as much SUITE as you want! 🚀`,
+## 📊 Check Your Balance
+Use \`/mysuite\` to see your current balance and earnings.`,
                     ephemeral: true
                 });
-                break;
-            }
-
-            case 'balance': {
-                const stats = await getUserStats(interaction.user.id);
-
-                if (!stats) {
-                    await interaction.reply({
-                        content: `**💰 Your SUITE Balance **
-
-                    You haven't used any actions yet!
-
-                        ** Free Tier:** 20 actions remaining
-                            ** SUITE Balance:** 0 SUITE
-
-Start chatting with me or use \`/earn\` to get more SUITE!`,
-                        ephemeral: true
-                    });
-                } else {
-                    await interaction.reply({
-                        content: `**💰 Your SUITE Balance**
-
-**Free Tier:** ${stats.freeActionsRemaining} actions remaining
-**SUITE Balance:** ${stats.suiteBalance.toFixed(0)} SUITE
-**Total Available:** ${Math.floor(stats.totalActionsAvailable)} actions
-
-**Ads Watched:** ${stats.totalAdsWatched}
-
-Need more? Use \`/earn\` to watch ads for free SUITE!`,
-                        ephemeral: true
-                    });
-                }
                 break;
             }
 
