@@ -57,8 +57,8 @@ const client = new Client({
 // Slash commands
 const commands = [
     new SlashCommandBuilder()
-        .setName('mystats')
-        .setDescription('Show your SUITE earnings'),
+        .setName('mysuite')
+        .setDescription('View your SUITE account - balance, credits, and earnings'),
     new SlashCommandBuilder()
         .setName('help')
         .setDescription('Learn about this server and available commands'),
@@ -916,18 +916,65 @@ client.on('interactionCreate', async (interaction) => {
 
     try {
         switch (commandName) {
-            case 'mystats': {
-                const stats = getContributorStats(interaction.user.id);
-                if (!stats) {
-                    await interaction.reply({
-                        content: 'You haven\'t earned any SUITE yet! Submit bugs, features, or content to get started.',
-                        ephemeral: true
+            case 'mysuite': {
+                await interaction.deferReply({ ephemeral: true });
+
+                const SUPABASE_URL = process.env.SUPABASE_URL || 'https://rdsmdywbdiskxknluiym.supabase.co';
+                const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+
+                try {
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/forge_credits?discord_id=eq.${interaction.user.id}`, {
+                        headers: {
+                            'apikey': SUPABASE_SERVICE_KEY,
+                            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+                        }
                     });
-                } else {
-                    await interaction.reply({
-                        content: `📊 **Your Stats**\n💰 Total SUITE: **${stats.totalSuite}**\n📝 Contributions: **${stats.contributions.length}**`,
-                        ephemeral: true
+
+                    const users = await response.json();
+                    const user = users?.[0];
+
+                    if (!user) {
+                        await interaction.editReply({
+                            content: `# 💰 Your SUITE Account
+
+> You don't have an account yet!
+
+**Get started:**
+• \`/earn\` — Watch ads for free SUITE
+• \`/bug\` — Report bugs (500 SUITE)
+• \`/feature\` — Request features (1,000 SUITE)
+
+**Deposit:** <https://getsuite.app/wallet>`
+                        });
+                        return;
+                    }
+
+                    const freeCredits = user.free_actions_remaining || 0;
+                    const suiteBalance = Math.floor(user.suite_balance || 0);
+                    const totalEarned = Math.floor(user.total_earned || 0);
+                    const dollarValue = (suiteBalance * 0.001).toFixed(2);
+
+                    await interaction.editReply({
+                        content: `# 💰 Your SUITE Account
+
+## 💳 Balance
+• **${suiteBalance.toLocaleString()} SUITE** (~$${dollarValue})
+• 🎁 ${freeCredits} free credits remaining
+
+## 📊 Lifetime Stats
+• Total earned: **${totalEarned.toLocaleString()} SUITE**
+
+## 💡 Earn More
+• \`/earn\` — Watch ads
+• \`/bug\` — Report bugs (500 SUITE)
+• \`/feature\` — Request features (1,000 SUITE)
+
+**Wallet:** <https://getsuite.app/wallet>`
                     });
+
+                } catch (error) {
+                    console.error('mysuite error:', error);
+                    await interaction.editReply({ content: `❌ Error: ${error.message}` });
                 }
                 break;
             }
@@ -945,9 +992,7 @@ Just @mention me anywhere! I can answer questions, analyze ideas, and help you n
 \`/apps\` — Browse the App Store
 \`/suite\` — How to earn & spend SUITE tokens
 \`/earn\` — Watch ads to earn free SUITE
-\`/balance\` — Check your SUITE balance
-\`/mystats\` — Your contribution stats
-\`/leaderboard\` — Weekly top contributors
+\`/mysuite\` — Your balance, credits & earnings
 
 ## 🛠️ Build Apps
 \`/dev-create-app\` — Submit your app idea (AI builds it!)
