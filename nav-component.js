@@ -14,14 +14,17 @@
         <div class="nav-links">
             <a href="${basePath}apps.html">Apps</a>
             <a href="${basePath}developer-portal.html">Build</a>
-
-
             <a href="${basePath}docs/">Docs</a>
             <a href="${basePath}learn.html">Learn</a>
-            <a href="${basePath}wallet.html">Wallet</a>
+            <a href="${basePath}wallet.html">Vault</a>
             <a href="${basePath}start-building.html" class="nav-cta"><img src="${basePath}assets/emojis/clay-rocket.png" alt="" class="nav-cta-emoji"> Start Building</a>
         </div>
-        <button class="mobile-menu-btn" onclick="this.classList.toggle('active'); document.querySelector('.nav-links').classList.toggle('mobile-open');">
+        <div class="nav-actions">
+            <button class="nav-btn nav-wallet" onclick="connectWallet()">
+                🔗 Connect Wallet
+            </button>
+        </div>
+        <button class="mobile-menu-btn" onclick="this.classList.toggle('active'); document.querySelector('.nav-links').classList.toggle('mobile-open'); document.querySelector('.nav-actions').classList.toggle('mobile-open');">
             <span></span>
             <span></span>
             <span></span>
@@ -38,10 +41,78 @@
         }
     }
 
+    // Restore wallet state after nav is injected
+    function restoreWalletState() {
+        const savedAddress = localStorage.getItem('suiteWalletAddress');
+        if (savedAddress && window.ethereum) {
+            const walletBtn = document.querySelector('.nav-wallet');
+            if (walletBtn) {
+                const shortAddress = `${savedAddress.slice(0, 6)}...${savedAddress.slice(-4)}`;
+                walletBtn.classList.add('connected');
+                walletBtn.innerHTML = `✅ ${shortAddress}`;
+            }
+        }
+    }
+
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', injectNav);
+        document.addEventListener('DOMContentLoaded', () => {
+            injectNav();
+            restoreWalletState();
+        });
     } else {
         injectNav();
+        restoreWalletState();
     }
 })();
 
+// Global wallet connection function
+async function connectWallet() {
+    const walletBtn = document.querySelector('.nav-wallet');
+
+    // Check if already connected
+    if (walletBtn && walletBtn.classList.contains('connected')) {
+        // Disconnect - clear state
+        walletBtn.classList.remove('connected');
+        walletBtn.innerHTML = '🔗 Connect Wallet';
+        localStorage.removeItem('suiteWalletAddress');
+        return;
+    }
+
+    // Check for MetaMask/Ethereum provider
+    if (typeof window.ethereum === 'undefined') {
+        alert('Please install MetaMask or another Web3 wallet to connect!');
+        window.open('https://metamask.io/download/', '_blank');
+        return;
+    }
+
+    try {
+        // Request account access
+        const accounts = await window.ethereum.request({
+            method: 'eth_requestAccounts'
+        });
+
+        if (accounts.length > 0) {
+            const address = accounts[0];
+            const shortAddress = `${address.slice(0, 6)}...${address.slice(-4)}`;
+
+            // Update button state
+            if (walletBtn) {
+                walletBtn.classList.add('connected');
+                walletBtn.innerHTML = `✅ ${shortAddress}`;
+            }
+
+            // Store in localStorage for persistence
+            localStorage.setItem('suiteWalletAddress', address);
+
+            console.log('Wallet connected:', address);
+        }
+    } catch (error) {
+        console.error('Wallet connection failed:', error);
+        if (error.code === 4001) {
+            // User rejected the request
+            alert('Connection cancelled. Click Connect Wallet to try again.');
+        } else {
+            alert('Failed to connect wallet. Please try again.');
+        }
+    }
+}

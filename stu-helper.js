@@ -5,7 +5,8 @@
 
 (function () {
     // Configuration - Gemini API
-    const GEMINI_API_KEY = 'AIzaSyAVMyNlk_X6WbZ1iWLDhdBpwHYOtO42zh0'; // Your Gemini key
+    // SECURITY: This key is exposed client-side. Restrict by HTTP referrer in Google Cloud Console!
+    const GEMINI_API_KEY = 'AIzaSyDwVL1g96Zyx1pq1r8J2ehrDbXuxiR0LTA';
     const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
     // FAQ Knowledge Base - Used first before AI
