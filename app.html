@@ -672,6 +672,89 @@
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(88, 101, 242, 0.3);
         }
+
+        /* Tip Modal Styles */
+        .tip-modal-content {
+            max-width: 500px;
+        }
+
+        .tip-options {
+            display: grid;
+            gap: 16px;
+            margin: 24px 0;
+        }
+
+        .tip-option-card {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 24px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .tip-option-card:hover {
+            border-color: #22c55e;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(34, 197, 94, 0.2);
+        }
+
+        .tip-icon {
+            font-size: 36px;
+            display: block;
+            margin-bottom: 12px;
+        }
+
+        .tip-option-card h4 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: #1f2937;
+        }
+
+        .tip-option-card p {
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        .tip-arrow {
+            position: absolute;
+            right: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 24px;
+            color: #22c55e;
+        }
+
+        .tip-amounts {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .tip-amount-btn {
+            padding: 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            background: white;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tip-amount-btn:hover {
+            border-color: #22c55e;
+            background: #f0fdf4;
+        }
+
+        .tip-amount-btn.selected {
+            border-color: #22c55e;
+            background: linear-gradient(135deg, #22c55e, #10b981);
+            color: white;
+        }
     </style>
 </head>
 
@@ -937,6 +1020,128 @@
                 </div>
                 <div class="modal-actions" style="justify-content: center; margin-top: 20px;">
                     <button class="modal-btn modal-btn-cancel" onclick="closeModal()">Got it</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tip Creator Modal -->
+    <div class="modal-overlay" id="tipModal">
+        <div class="modal-content tip-modal-content">
+            <!-- Initial Selection View -->
+            <div id="tipSelectionView">
+                <div class="modal-header">
+                    <div class="modal-icon" style="background: linear-gradient(135deg, #22c55e, #10b981);">💰</div>
+                    <div>
+                        <div class="modal-title">Support the Creator</div>
+                        <div class="modal-subtitle" id="tipCreatorName">Choose how you'd like to tip</div>
+                    </div>
+                </div>
+
+                <div class="tip-options">
+                    <div class="tip-option-card" onclick="selectTipOption('direct')">
+                        <span class="tip-icon">💎</span>
+                        <h4>Send SUITE Tokens</h4>
+                        <p>Tip directly from your wallet</p>
+                        <span class="tip-arrow">→</span>
+                    </div>
+
+                    <div class="tip-option-card" onclick="selectTipOption('ad')">
+                        <span class="tip-icon">📺</span>
+                        <h4>Watch an Ad</h4>
+                        <p>Free! Creator earns from the view</p>
+                        <span class="tip-arrow">→</span>
+                    </div>
+                </div>
+
+                <button class="modal-btn modal-btn-cancel" onclick="closeTipModal()"
+                    style="width: 100%; margin-top: 16px;">Cancel</button>
+            </div>
+
+            <!-- Direct Tip View -->
+            <div id="tipDirectView" style="display: none;">
+                <div class="modal-header">
+                    <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
+                        <button onclick="backToTipSelection()"
+                            style="background: none; border: none; font-size: 24px; cursor: pointer; padding: 0;">←</button>
+                        <div>
+                            <div class="modal-title">Send SUITE Tokens</div>
+                            <div class="modal-subtitle" id="tipDirectCreatorName"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-body">
+                    <p style="color: #6b7280; margin-bottom: 16px;">Select an amount to tip:</p>
+                    <div class="tip-amounts">
+                        <button class="tip-amount-btn" onclick="selectAmount(10)">10 SUITE</button>
+                        <button class="tip-amount-btn" onclick="selectAmount(25)">25 SUITE</button>
+                        <button class="tip-amount-btn" onclick="selectAmount(50)">50 SUITE</button>
+                        <button class="tip-amount-btn" onclick="selectAmount(100)">100 SUITE</button>
+                    </div>
+                    <div style="margin-top: 16px;">
+                        <label style="color: #6b7280; font-size: 0.9rem; margin-bottom: 8px; display: block;">Custom
+                            amount:</label>
+                        <input type="number" id="customTipAmount" placeholder="Enter SUITE amount"
+                            style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 1rem;"
+                            oninput="selectCustomAmount(this.value)">
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button class="modal-btn modal-btn-cancel" onclick="backToTipSelection()">Back</button>
+                    <button class="modal-btn modal-btn-submit" id="sendTipBtn" disabled onclick="sendDirectTip()">Send
+                        Tip</button>
+                </div>
+            </div>
+
+            <!-- Watch Ad View -->
+            <div id="tipAdView" style="display: none;">
+                <div class="modal-header">
+                    <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
+                        <button onclick="backToTipSelection()"
+                            style="background: none; border: none; font-size: 24px; cursor: pointer; padding: 0;">←</button>
+                        <div>
+                            <div class="modal-title">Watch an Ad</div>
+                            <div class="modal-subtitle">Support <span id="tipAdCreatorName"></span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-body">
+                    <div
+                        style="background: linear-gradient(135deg, #f0fdf4, #dcfce7); padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 20px;">
+                        <div style="font-size: 48px; margin-bottom: 12px;">📺</div>
+                        <p style="font-size: 1.1rem; font-weight: 600; color: #166534; margin-bottom: 8px;">Watch a
+                            30-second ad</p>
+                        <p style="color: #65a30d; font-size: 0.9rem;">Creator receives ~$0.01 in ad revenue</p>
+                        <p style="color: #65a30d; font-size: 0.9rem;">You earn 50 SUITE FORGE credits!</p>
+                    </div>
+
+                    <!-- Ad Container -->
+                    <div id="adContainer"
+                        style="min-height: 250px; background: #1f2937; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white;">
+                        <p>Ad will load here...</p>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button class="modal-btn modal-btn-cancel" onclick="backToTipSelection()">Back</button>
+                    <button class="modal-btn modal-btn-submit" id="watchAdBtn" onclick="watchAd()">Watch Ad</button>
+                </div>
+            </div>
+
+            <!-- Success View -->
+            <div id="tipSuccessView" style="display: none;">
+                <div class="modal-success">
+                    <div class="modal-success-icon">✓</div>
+                    <div class="modal-success-title" id="tipSuccessTitle">Tip Sent!</div>
+                    <p class="modal-success-text" id="tipSuccessText">
+                        Thank you for supporting the creator!
+                    </p>
+                </div>
+                <div class="modal-actions" style="justify-content: center; margin-top: 20px;">
+                    <button class="modal-btn modal-btn-cancel" onclick="closeTipModal()">Close</button>
                 </div>
             </div>
         </div>
@@ -1824,6 +2029,189 @@
             if (currentUser) {
                 updateReviewAuthUI(currentUser);
             }
+        });
+
+        // ========== TIP MODAL SYSTEM ==========
+        let selectedTipAmount = 0;
+
+        function openTipModal() {
+            if (!currentApp) return;
+
+            // Reset views
+            document.getElementById('tipSelectionView').style.display = 'block';
+            document.getElementById('tipDirectView').style.display = 'none';
+            document.getElementById('tipAdView').style.display = 'none';
+            document.getElementById('tipSuccessView').style.display = 'none';
+
+            // Set creator name
+            const creatorName = currentApp.creator_username || 'the creator';
+            document.getElementById('tipCreatorName').textContent = `Choose how you'd like to tip ${creatorName}`;
+
+            // Show modal
+            document.getElementById('tipModal').classList.add('active');
+        }
+
+        function closeTipModal() {
+            document.getElementById('tipModal').classList.remove('active');
+            selectedTipAmount = 0;
+        }
+
+        function selectTipOption(option) {
+            const creatorName = currentApp.creator_username || 'Creator';
+
+            if (option === 'direct') {
+                document.getElementById('tipSelectionView').style.display = 'none';
+                document.getElementById('tipDirectView').style.display = 'block';
+                document.getElementById('tipDirectCreatorName').textContent = `To ${creatorName}`;
+            } else if (option === 'ad') {
+                document.getElementById('tipSelectionView').style.display = 'none';
+                document.getElementById('tipAdView').style.display = 'block';
+                document.getElementById('tipAdCreatorName').textContent = creatorName;
+            }
+        }
+
+        function backToTipSelection() {
+            document.getElementById('tipSelectionView').style.display = 'block';
+            document.getElementById('tipDirectView').style.display = 'none';
+            document.getElementById('tipAdView').style.display = 'none';
+            selectedTipAmount = 0;
+
+            // Reset amount buttons
+            document.querySelectorAll('.tip-amount-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            document.getElementById('customTipAmount').value = '';
+            document.getElementById('sendTipBtn').disabled = true;
+        }
+
+        function selectAmount(amount) {
+            selectedTipAmount = amount;
+
+            // Update UI
+            document.querySelectorAll('.tip-amount-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+            document.getElementById('customTipAmount').value = '';
+            document.getElementById('sendTipBtn').disabled = false;
+        }
+
+        function selectCustomAmount(value) {
+            const amount = parseFloat(value);
+            if (amount && amount > 0) {
+                selectedTipAmount = amount;
+                document.querySelectorAll('.tip-amount-btn').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+                document.getElementById('sendTipBtn').disabled = false;
+            } else {
+                selectedTipAmount = 0;
+                document.getElementById('sendTipBtn').disabled = true;
+            }
+        }
+
+        async function sendDirectTip() {
+            if (selectedTipAmount <= 0) return;
+
+            const btn = document.getElementById('sendTipBtn');
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+
+            // TODO: Integrate with wallet to send SUITE tokens through Treasury
+            // For now, just show success
+            console.log(`Sending ${selectedTipAmount} SUITE to creator`);
+
+            // Simulate sending (replace with actual wallet integration)
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Show success
+            document.getElementById('tipDirectView').style.display = 'none';
+            document.getElementById('tipSuccessView').style.display = 'block';
+            document.getElementById('tipSuccessTitle').textContent = 'Tip Sent!';
+            document.getElementById('tipSuccessText').textContent = `You sent ${selectedTipAmount} SUITE to ${currentApp.creator_username || 'the creator'}. Thank you for your support!`;
+
+            btn.textContent = 'Send Tip';
+            btn.disabled = false;
+        }
+
+        async function watchAd() {
+            const btn = document.getElementById('watchAdBtn');
+            btn.disabled = true;
+            btn.textContent = 'Loading Ad...';
+
+            // Load Adsterra ad
+            // Adsterra documentation: https://partners.adsterra.com/
+            // You'll need to replace with your actual Adsterra zone ID
+            const adContainer = document.getElementById('adContainer');
+            adContainer.innerHTML = '<p style="color: white;">Ad is now playing...</p>';
+
+            // TODO: Integrate actual Adsterra ad code here
+            // Example Adsterra code (replace with your zone ID):
+            /*
+            const script = document.createElement('script');
+            script.src = 'https://pl12345678.profitablegatetocontent.com/YOUR_ZONE_ID/invoke.js';
+            script.async = true;
+            adContainer.appendChild(script);
+            */
+
+            // For demo: simulate 30-second ad watch
+            let countdown = 30;
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                adContainer.innerHTML = `<p style="color: white;">Ad playing... ${countdown}s remaining</p>`;
+
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                    completeAdWatch();
+                }
+            }, 1000);
+        }
+
+        async function completeAdWatch() {
+            // Ad watched! Now credit user with FORGE credits
+            const user = getCurrentUser();
+            if (!user) {
+                alert('Please login to earn FORGE credits');
+                return;
+            }
+
+            // Track ad watch in Supabase and credit FORGE
+            try {
+                await fetch(`${SUPABASE_URL}/rest/v1/forge_credits`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({
+                        user_discord_id: user.type === 'discord' ? user.id : null,
+                        user_wallet: user.type === 'wallet' ? user.id : null,
+                        credits_earned: 50, // 50 FORGE credits = $0.005 worth of SUITE
+                        source: 'ad_watch',
+                        app_id: currentApp.id,
+                        app_creator_discord_id: currentApp.creator_discord_id
+                    })
+                });
+                console.log('FORGE credits awarded');
+            } catch (err) {
+                console.error('Failed to award FORGE credits:', err);
+            }
+
+            // Show success
+            document.getElementById('tipAdView').style.display = 'none';
+            document.getElementById('tipSuccessView').style.display = 'block';
+            document.getElementById('tipSuccessTitle').textContent = 'Ad Complete!';
+            document.getElementById('tipSuccessText').textContent = `You earned 50 SUITE FORGE credits! The creator will receive ad revenue from your view.`;
+
+            document.getElementById('watchAdBtn').textContent = 'Watch Ad';
+            document.getElementById('watchAdBtn').disabled = false;
+        }
+
+        // Close modal on overlay click
+        document.getElementById('tipModal')?.addEventListener('click', function (e) {
+            if (e.target === this) closeTipModal();
         });
     </script>
 
