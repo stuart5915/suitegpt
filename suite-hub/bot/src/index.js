@@ -1063,9 +1063,8 @@ Just @mention me anywhere! I can answer questions, analyze ideas, and help you n
 > Multiple ways to grow your balance!
 
 ## 🎁 Free Methods
-• **Report bugs** — Earn 500 SUITE per bug
-• **Request features** — Earn 1,000 SUITE per feature
-• **Build apps** — Get rewarded when users tip you
+• 👥 **Refer Friends** — Invite others to join SUITE (+25 SUITE)
+• 📺 **Watch Ads** — View sponsored content for rewards (+2 SUITE)
 
 ## 💳 Deposit Funds
 Buy SUITE with card or crypto:
