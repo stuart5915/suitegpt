@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="WorkConductor - Your Personal AI Work Session Manager. Get strategic guidance powered by Gemini AI.">
+    <title>WorkConductor | AI Work Session Manager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Setup View (First Time Only) -->
+        <section id="setup-view" class="view">
+            <div class="setup-container">
+                <div class="setup-header">
+                    <h1>🎯 WorkConductor</h1>
+                    <p>Your AI-powered work session manager. Let's get you set up.</p>
+                </div>
+
+                <form id="setup-form" class="setup-form">
+                    <div class="form-group">
+                        <label for="api-key">Gemini API Key</label>
+                        <input type="password" id="api-key" placeholder="Enter your Gemini API key" required>
+                        <p class="form-hint">Get your key from <a href="https://aistudio.google.com/app/apikey"
+                                target="_blank">Google AI Studio</a></p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="telos-input">Your Goals (Initial Setup)</label>
+                        <textarea id="telos-input" rows="10"
+                            placeholder="Paste your goals here. After setup, you can update them by just chatting!&#10;&#10;Example:&#10;# My Project Goals&#10;## Immediate&#10;- Finish feature X&#10;- Fix bug Y&#10;## This Week&#10;- Launch product Z"
+                            required></textarea>
+                        <p class="form-hint">This is just the starting point - you can update goals through chat anytime
+                        </p>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-large">
+                        <span>Start Working</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Main App View (Sidebar + Chat) -->
+        <section id="main-view" class="view hidden">
+            <div class="main-layout">
+                <!-- Sidebar: Hierarchical Goals -->
+                <aside class="sidebar" id="sidebar">
+                    <div class="sidebar-header">
+                        <div class="logo">
+                            <span class="logo-icon">🎯</span>
+                            <span class="logo-text">WorkConductor</span>
+                        </div>
+                        <button id="toggle-sidebar" class="icon-btn" title="Toggle Sidebar">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M3 12h18M3 6h18M3 18h18" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Rate Limits -->
+                    <div class="rate-limits">
+                        <div class="rate-item">
+                            <span class="rate-label">Pro</span>
+                            <span id="pro-count" class="rate-value">0/100</span>
+                        </div>
+                        <div class="rate-item">
+                            <span class="rate-label">Flash</span>
+                            <span id="flash-count" class="rate-value">0/100</span>
+                        </div>
+                    </div>
+
+                    <!-- Goals Tree -->
+                    <div class="goals-container">
+                        <div class="goals-header">
+                            <h3>Goals</h3>
+                        </div>
+
+                        <!-- Quick Add Input -->
+                        <div class="quick-add-container">
+                            <div class="quick-add-wrapper">
+                                <input type="text" id="quick-add-input" placeholder="+ Quick add idea..." />
+                                <button id="quick-add-btn" class="quick-add-btn" title="Add">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path d="M12 5v14M5 12h14" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div id="quick-add-status" class="quick-add-status hidden"></div>
+                        </div>
+
+                        <div id="goals-tree" class="goals-tree">
+                            <!-- Dynamically populated -->
+                            <div class="goals-empty">
+                                <p>Your goals will appear here as a hierarchical tree.</p>
+                                <p class="hint">Chat with the AI to add, complete, or modify goals!</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Settings Button -->
+                    <div class="sidebar-footer">
+                        <button id="settings-btn" class="btn btn-ghost btn-full">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path
+                                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                                </path>
+                            </svg>
+                            <span>Settings</span>
+                        </button>
+                    </div>
+                </aside>
+
+                <!-- Main Chat Area -->
+                <main class="chat-area">
+                    <!-- Chat Messages -->
+                    <div id="chat-messages" class="chat-messages">
+                        <!-- AI will provide dynamic welcome with analysis -->
+                    </div>
+
+                    <!-- Typing Indicator -->
+                    <div id="typing-indicator" class="typing-indicator hidden">
+                        <div class="message-avatar">🎯</div>
+                        <div class="typing-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+
+                    <!-- Chat Input -->
+                    <div class="chat-input-container">
+                        <div class="chat-input-wrapper">
+                            <textarea id="chat-input"
+                                placeholder="Tell me what you're working on, what you finished, or ask what's next..."
+                                rows="1"></textarea>
+                            <button id="send-btn" class="send-btn" title="Send">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="chat-hints">
+                            <span class="hint-item">Press Enter to send</span>
+                            <span class="hint-item">Shift+Enter for new line</span>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </section>
+
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal hidden">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Settings</h3>
+                    <button id="close-settings" class="btn btn-ghost btn-small">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="settings-api-key">Gemini API Key</label>
+                        <input type="password" id="settings-api-key" placeholder="Enter your Gemini API key">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Rate Limits (Today)</label>
+                        <div class="rate-info">
+                            <div class="rate-info-row">
+                                <span>Gemini 2.5 Pro:</span>
+                                <span><span id="settings-pro-count">0</span> / 100</span>
+                            </div>
+                            <div class="rate-info-row">
+                                <span>Gemini 3 Flash:</span>
+                                <span><span id="settings-flash-count">0</span> / 100</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Export Goals</label>
+                        <button id="export-goals" class="btn btn-ghost btn-full">Download as Markdown</button>
+                    </div>
+
+                    <div class="form-group danger-zone">
+                        <label>Danger Zone</label>
+                        <button id="clear-data" class="btn btn-danger">Clear All Data & Reset</button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="save-settings" class="btn btn-primary">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="gemini-client.js"></script>
+    <script src="supabase-client.js"></script>
+    <script src="goals-manager.js"></script>
+    <script src="chat-ui.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>

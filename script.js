@@ -1124,7 +1124,7 @@ function initSuiteSimulator() {
                 stakedAmount.textContent = `${state.stakedBalance.toFixed(2)} SUITE`;
             } else {
                 stakeBtn.classList.remove('staked');
-                stakeBtnText.textContent = 'Stake SUITE';
+                stakeBtnText.textContent = 'Stake LP';
                 stakeBtn.disabled = state.suiteBalance <= 0;
                 stakedDisplay.style.display = 'none';
             }

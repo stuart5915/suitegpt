@@ -43,13 +43,17 @@
 
     // Restore wallet state after nav is injected
     function restoreWalletState() {
-        const savedAddress = localStorage.getItem('suiteWalletAddress');
-        if (savedAddress && window.ethereum) {
+        // Check both possible localStorage keys
+        const savedAddress = localStorage.getItem('suiteWalletAddress') || localStorage.getItem('suiteWallet');
+        if (savedAddress) {
             const walletBtn = document.querySelector('.nav-wallet');
             if (walletBtn) {
                 const shortAddress = `${savedAddress.slice(0, 6)}...${savedAddress.slice(-4)}`;
                 walletBtn.classList.add('connected');
                 walletBtn.innerHTML = `✅ ${shortAddress}`;
+                // Sync both keys
+                localStorage.setItem('suiteWalletAddress', savedAddress);
+                localStorage.setItem('suiteWallet', savedAddress);
             }
         }
     }
@@ -75,6 +79,8 @@ async function connectWallet() {
         walletBtn.classList.remove('connected');
         walletBtn.innerHTML = '🔗 Connect Wallet';
         localStorage.removeItem('suiteWalletAddress');
+        localStorage.removeItem('suiteWallet'); // Also clear wallet.html key
+        window.walletAddress = null;
         return;
     }
 

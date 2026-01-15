@@ -39,4 +39,76 @@ document.addEventListener('DOMContentLoaded', function () {
             </nav>
         `;
     }
+
+    // Restore wallet state
+    restoreDocsWalletState();
 });
+
+// Restore wallet state for docs pages
+function restoreDocsWalletState() {
+    const savedAddress = localStorage.getItem('suiteWalletAddress') || localStorage.getItem('suiteWallet');
+    if (savedAddress) {
+        const walletBtn = document.querySelector('.nav-wallet');
+        if (walletBtn) {
+            const shortAddress = `${savedAddress.slice(0, 6)}...${savedAddress.slice(-4)}`;
+            walletBtn.classList.add('connected');
+            walletBtn.innerHTML = `✅ ${shortAddress}`;
+            // Sync both keys
+            localStorage.setItem('suiteWalletAddress', savedAddress);
+            localStorage.setItem('suiteWallet', savedAddress);
+        }
+    }
+}
+
+// Global wallet connection function for docs pages
+async function connectWallet() {
+    const walletBtn = document.querySelector('.nav-wallet');
+
+    // Check if already connected - disconnect
+    if (walletBtn && walletBtn.classList.contains('connected')) {
+        walletBtn.classList.remove('connected');
+        walletBtn.innerHTML = '🔗 Connect Wallet';
+        localStorage.removeItem('suiteWalletAddress');
+        localStorage.removeItem('suiteWallet');
+        window.walletAddress = null;
+        return;
+    }
+
+    // Check for MetaMask/Ethereum provider
+    if (typeof window.ethereum === 'undefined') {
+        alert('Please install MetaMask or another Web3 wallet to connect!');
+        window.open('https://metamask.io/download/', '_blank');
+        return;
+    }
+
+    try {
+        // Request account access
+        const accounts = await window.ethereum.request({
+            method: 'eth_requestAccounts'
+        });
+
+        if (accounts.length > 0) {
+            const address = accounts[0];
+            const shortAddress = `${address.slice(0, 6)}...${address.slice(-4)}`;
+
+            // Update button state
+            if (walletBtn) {
+                walletBtn.classList.add('connected');
+                walletBtn.innerHTML = `✅ ${shortAddress}`;
+            }
+
+            // Store in localStorage for persistence (both keys)
+            localStorage.setItem('suiteWalletAddress', address);
+            localStorage.setItem('suiteWallet', address);
+
+            console.log('Wallet connected:', address);
+        }
+    } catch (error) {
+        console.error('Wallet connection failed:', error);
+        if (error.code === 4001) {
+            alert('Connection cancelled. Click Connect Wallet to try again.');
+        } else {
+            alert('Failed to connect wallet. Please try again.');
+        }
+    }
+}
