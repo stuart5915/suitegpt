@@ -1354,6 +1354,10 @@
 
                     <div class="app-actions">
                         <button class="btn-primary" id="openAppBtn">Open App</button>
+                        <button class="btn-secondary" id="addToHomeBtn" onclick="addToHomeScreen()"
+                            style="display: flex; align-items: center; gap: 6px;">
+                            📲 Add to Home Screen
+                        </button>
                         <button class="btn-tip" id="tipCreatorBtn" onclick="openTipModal()"
                             style="background: linear-gradient(135deg, #22c55e, #10b981); color: white; border: none; padding: 12px 24px; border-radius: 100px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
                             💰 Tip Creator
@@ -3280,6 +3284,62 @@
                 if (currentApp) loadReviews();
             }, 1000);
         });
+
+        // PWA Install Prompt
+        let deferredPrompt = null;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            console.log('Install prompt ready');
+        });
+
+        function addToHomeScreen() {
+            if (!currentApp || !currentApp.app_url) {
+                alert('Please open the app first, then use your browser\'s "Add to Home Screen" option.');
+                return;
+            }
+
+            // If we have a deferred prompt (Chrome/Android), use it
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted install prompt');
+                    }
+                    deferredPrompt = null;
+                });
+                return;
+            }
+
+            // Detect OS for instructions
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            const isAndroid = /Android/.test(navigator.userAgent);
+
+            let instructions = '';
+            if (isIOS) {
+                instructions = `To add "${currentApp.name}" to your home screen:\n\n` +
+                    `1. Tap the Share button (📤) at the bottom of Safari\n` +
+                    `2. Scroll down and tap "Add to Home Screen"\n` +
+                    `3. Tap "Add" in the top right\n\n` +
+                    `Opening the app now so you can add it...`;
+            } else if (isAndroid) {
+                instructions = `To add "${currentApp.name}" to your home screen:\n\n` +
+                    `1. Tap the menu (⋮) in Chrome\n` +
+                    `2. Tap "Add to Home screen" or "Install app"\n\n` +
+                    `Opening the app now so you can add it...`;
+            } else {
+                instructions = `To add "${currentApp.name}" to your home screen:\n\n` +
+                    `• On mobile: Use your browser's "Add to Home Screen" option\n` +
+                    `• On desktop: Click the install icon in the address bar\n\n` +
+                    `Opening the app now...`;
+            }
+
+            alert(instructions);
+
+            // Open the app URL so they can add it
+            window.open(currentApp.app_url, '_blank');
+        }
     </script>
 
     <!-- Stu Helper Widget -->

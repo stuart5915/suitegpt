@@ -13,11 +13,9 @@
         </a>
         <div class="nav-links">
             <a href="${basePath}apps.html">Apps</a>
-            <a href="${basePath}developer-portal.html">Build</a>
             <a href="${basePath}docs/">Docs</a>
             <a href="${basePath}learn.html">Learn</a>
             <a href="${basePath}wallet.html">Vault</a>
-            <a href="${basePath}start-building.html" class="nav-cta"><img src="${basePath}assets/emojis/clay-rocket.png" alt="" class="nav-cta-emoji"> Start Building</a>
         </div>
         <div class="nav-actions">
             <button class="nav-btn nav-wallet" onclick="connectWallet()">
