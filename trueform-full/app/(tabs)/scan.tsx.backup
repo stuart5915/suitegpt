@@ -1,0 +1,1757 @@
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, Dimensions, TextInput, ScrollView, Modal, Image } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import { router } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
+import { Movement, getMovementsForPain } from '../../constants/movements';
+
+type ScanPhase = 'idle' | 'questionnaire' | 'intensity' | 'movements' | 'scanning' | 'complete';
+
+// Questionnaire data
+interface QuestionnaireData {
+    painLocation: string;
+    painDuration: string;
+    painTrigger: string;
+    painType: string;
+    priorInjuries: string;
+}
+
+// Recorded frame - just image URI and timestamp
+interface RecordedFrame {
+    uri: string;
+    timestamp: number;
+}
+
+export default function ScanScreen() {
+    const [scanPhase, setScanPhase] = useState<ScanPhase>('idle');
+    const [questionStep, setQuestionStep] = useState(0);
+    const [questionnaire, setQuestionnaire] = useState<QuestionnaireData>({
+        painLocation: '',
+        painDuration: '',
+        painTrigger: '',
+        painType: '',
+        priorInjuries: '',
+    });
+    const [isRecording, setIsRecording] = useState(false);
+    const [countdown, setCountdown] = useState<number | null>(null);
+    const [countdownMessage, setCountdownMessage] = useState<string>('');
+    const [recordingTime, setRecordingTime] = useState(0);
+
+    // Camera permissions
+    const [permission, requestPermission] = useCameraPermissions();
+
+    // Movement protocol state
+    const [movementProtocol, setMovementProtocol] = useState<Movement[]>([]);
+    const [currentMovementIndex, setCurrentMovementIndex] = useState(0);
+    const [sessionRecordings, setSessionRecordings] = useState<RecordedFrame[][]>([]);
+
+    // Multi-scan diagnostic state
+    const [scanIntensity, setScanIntensity] = useState(3); // 1-5 scans
+    const [currentScanNumber, setCurrentScanNumber] = useState(1);
+    const [allSessionRecordings, setAllSessionRecordings] = useState<{
+        movement: Movement;
+        frames: RecordedFrame[];
+        duration: number;
+        reviewed: boolean;
+        painPoints: { bodyPart: string; intensity: number; timestamp: number }[];
+        notes: string;
+        visualFrames: string[];
+    }[]>([]);
+    const [selectedMovementInfo, setSelectedMovementInfo] = useState<Movement | null>(null);
+    const [reviewingIndex, setReviewingIndex] = useState<number | null>(null); // Which recording is being reviewed
+
+    const { width, height } = Dimensions.get('window');
+
+    // Recording state
+    const recordedFrames = useRef<RecordedFrame[]>([]);
+    const recordedVisualFrames = useRef<string[]>([]);
+    const recordingStartTime = useRef<number>(0);
+    const lastFrameTime = useRef<number>(0);
+    const timerInterval = useRef<NodeJS.Timeout | null>(null);
+    const captureInterval = useRef<NodeJS.Timeout | null>(null);
+    const isRecordingRef = useRef(false); // Use ref to avoid stale closure
+    const recordingTimeRef = useRef(0); // Track recording time in ref for stopRecording
+    const viewShotRef = useRef(null); // View ref for capturing
+    const [captureMode, setCaptureMode] = useState(false); // Hide skeleton during capture
+
+
+    // Max recording time in seconds (auto-stop for quick movements)
+    const MAX_RECORDING_TIME = 15; // 15 seconds - movements shouldn't take longer
+
+    // Handle landmarks from MediaPipe
+    const handleLandmarks = useCallback((data: any) => {
+        // Extract landmarks array from data object
+        const landmarksArray = data?.landmarks;
+
+        if (landmarksArray && Array.isArray(landmarksArray)) {
+            const converted: Landmark[] = landmarksArray.map((lm: any) => ({
+                x: lm.x || 0,
+                y: lm.y || 0,
+                visibility: lm.visibility || 1,
+            }));
+            setLandmarks(converted);
+
+            // Record frame if recording (at 5fps = every 200ms)
+            if (isRecordingRef.current) {
+                const now = Date.now();
+                if (now - lastFrameTime.current >= 200) {
+                    lastFrameTime.current = now;
+                    recordedFrames.current.push({
+                        timestamp: (now - recordingStartTime.current) / 1000,
+                        landmarks: converted,
+                    });
+                    // Debug: Log every 5th frame
+                    if (recordedFrames.current.length % 5 === 0) {
+                        console.log('📹 Recording frames:', recordedFrames.current.length);
+                    }
+                }
+            }
+        }
+    }, []);
+
+    // Start countdown then recording
+    const startCountdown = () => {
+        // Get the camera position hint for the static message
+        const currentMovement = movementProtocol[currentMovementIndex];
+        const cameraAngle = currentMovement?.cameraAngle || 'front';
+        const cameraText = cameraAngle === 'front' ? 'Face the camera'
+            : cameraAngle === 'side' ? 'Turn sideways' : 'Face away';
+
+        setCountdown(5);
+        setCountdownMessage(`Step back so the camera can see your full body\n${cameraText} and get ready to perform the movement`);
+
+        // Countdown from 5
+        let count = 5;
+        const countdownInterval = setInterval(() => {
+            count -= 1;
+            if (count > 0) {
+                setCountdown(count);
+                // Keep the same message throughout
+            } else {
+                clearInterval(countdownInterval);
+                setCountdown(null);
+                setCountdownMessage('');
+                startRecording();
+            }
+        }, 1000);
+    };
+
+    // Start recording
+    const startRecording = () => {
+        console.log('🔴 Starting recording... isRecordingRef was:', isRecordingRef.current);
+        recordedFrames.current = [];
+        recordedVisualFrames.current = [];
+        recordingStartTime.current = Date.now();
+        lastFrameTime.current = Date.now();
+        isRecordingRef.current = true; // Set ref immediately
+        setIsRecording(true);
+        setRecordingTime(0);
+        recordingTimeRef.current = 0;
+        console.log('🔴 Recording started! isRecordingRef is now:', isRecordingRef.current);
+
+        // Timer for display - just increment time, don't check for stop here
+        timerInterval.current = setInterval(() => {
+            recordingTimeRef.current += 1;
+            setRecordingTime((prev) => prev + 1);
+        }, 1000) as unknown as NodeJS.Timeout;
+
+
+
+        // Strategic Keyframe Capture with skeleton hiding
+        let captureCount = 0;
+        const targetCaptures = 8;
+        const captureIntervalMs = 1200; // 1.2s to allow skeleton hide/show
+
+        captureInterval.current = setInterval(async () => {
+            if (viewShotRef.current && captureCount < targetCaptures) {
+                try {
+                    // Hide skeleton
+                    setCaptureMode(true);
+                    // Wait 100ms for UI to update
+                    await new Promise(resolve => setTimeout(resolve, 100));
+
+                    const uri = await captureRef(viewShotRef, {
+                        format: 'jpg',
+                        quality: 0.8,
+                        result: 'tmpfile',
+                    });
+
+                    console.log('📸 Captured keyframe:', uri);
+                    recordedVisualFrames.current.push(uri);
+                    captureCount++;
+
+                    // Show skeleton again
+                    setCaptureMode(false);
+                } catch (error) {
+                    console.error('📸 Snapshot failed:', error);
+                    setCaptureMode(false); // Ensure skeleton shows again
+                }
+            }
+        }, captureIntervalMs) as unknown as NodeJS.Timeout;
+    };
+
+    // Stop recording and go to review
+    const stopRecording = useCallback(() => {
+        if (!isRecordingRef.current && !isRecording) return; // Already stopped
+
+        console.log('Stopping recording... Frames:', recordedFrames.current.length);
+        isRecordingRef.current = false; // Set ref immediately
+        setIsRecording(false);
+        if (timerInterval.current) {
+            clearInterval(timerInterval.current);
+            timerInterval.current = null;
+        }
+        if (captureInterval.current) {
+            clearInterval(captureInterval.current);
+            captureInterval.current = null;
+        }
+
+        // Save recording to session and continue to next movement
+        console.log('Recorded frames count:', recordedFrames.current.length);
+        if (recordedFrames.current.length > 0 && movementProtocol.length > 0) {
+            // Save this recording to the session
+            const currentMovement = movementProtocol[currentMovementIndex];
+            const framesToSave = [...recordedFrames.current];
+            console.log('💾 Saving recording with', framesToSave.length, 'frames');
+            setAllSessionRecordings(prev => {
+                const newRecording = {
+                    movement: currentMovement,
+                    frames: framesToSave,
+                    duration: recordingTimeRef.current,
+                    reviewed: false,
+                    painPoints: [],
+                    notes: '',
+                    visualFrames: [...recordedVisualFrames.current],
+                };
+                console.log('💾 New recording object has', newRecording.frames.length, 'frames and', newRecording.visualFrames.length, 'photos');
+                return [...prev, newRecording];
+            });
+
+            // Check if there are more movements
+            if (currentMovementIndex < movementProtocol.length - 1) {
+                // Move to next movement
+                setCurrentMovementIndex(prev => prev + 1);
+                setCurrentScanNumber(prev => prev + 1);
+                setScanPhase('movements'); // Go back to movement instruction screen
+                recordedFrames.current = [];
+                setRecordingTime(0);
+            } else {
+                // All movements complete - go to session complete screen
+                setScanPhase('complete');
+                recordedFrames.current = [];
+            }
+        } else {
+            console.log('No frames recorded, not advancing');
+            // Just go back to movements if no frames
+            setScanPhase('movements');
+        }
+    }, [isRecording, recordingTime, movementProtocol, currentMovementIndex]);
+
+    // Auto-stop when recording time reaches max (outside of render cycle)
+    useEffect(() => {
+        if (isRecording && recordingTime >= MAX_RECORDING_TIME) {
+            stopRecording();
+        }
+    }, [recordingTime, isRecording, stopRecording]);
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (timerInterval.current) {
+                clearInterval(timerInterval.current);
+            }
+            if (captureInterval.current) {
+                clearInterval(captureInterval.current);
+            }
+        };
+    }, []);
+
+    // Handle returning from review screen with pain points data
+    useFocusEffect(
+        useCallback(() => {
+            // Check recordedSession which is updated by ReviewScreen
+            const updatedSession = (global as any).recordedSession;
+            const reviewIndex = (global as any).reviewingMultiScanIndex;
+
+            if (updatedSession && updatedSession.reviewed && reviewIndex !== undefined && reviewIndex !== null) {
+                console.log('📥 Received review data for index', reviewIndex, ':', updatedSession.painPoints?.length, 'pain points');
+
+                // Update the recording with review data
+                setAllSessionRecordings(prev => prev.map((r, i) => {
+                    if (i === reviewIndex) {
+                        return {
+                            ...r,
+                            painPoints: updatedSession.painPoints || [],
+                            reviewed: true,
+                        };
+                    }
+                    return r;
+                }));
+
+                // Clear reviewing index
+                (global as any).reviewingMultiScanIndex = null;
+            }
+        }, [])
+    );
+
+    // Start the questionnaire flow
+    const startQuestionnaire = () => {
+        setScanPhase('questionnaire');
+        setQuestionStep(0);
+    };
+
+    // Toggle option selection (multi-select)
+    const toggleOption = (field: keyof QuestionnaireData, value: string) => {
+        const current = questionnaire[field];
+        const values = current ? current.split(', ').filter(v => v) : [];
+
+        if (values.includes(value)) {
+            // Remove if already selected
+            const newValues = values.filter(v => v !== value);
+            setQuestionnaire({ ...questionnaire, [field]: newValues.join(', ') });
+        } else {
+            // Add to selection
+            setQuestionnaire({ ...questionnaire, [field]: [...values, value].join(', ') });
+        }
+    };
+
+    // Check if option is selected
+    const isSelected = (field: keyof QuestionnaireData, value: string) => {
+        const current = questionnaire[field];
+        return current ? current.split(', ').includes(value) : false;
+    };
+
+    // Go to next question
+    const goNext = () => {
+        if (questionStep < 4) {
+            setQuestionStep(questionStep + 1);
+        } else {
+            // Go to intensity selection instead of directly to movements
+            setScanPhase('intensity');
+        }
+    };
+
+    // Confirm intensity and start assessment
+    const confirmIntensity = () => {
+        // Generate movement protocol based on pain location AND intensity
+        const movements = getMovementsForPain(questionnaire.painLocation, scanIntensity);
+        setMovementProtocol(movements);
+        setCurrentMovementIndex(0);
+        setCurrentScanNumber(1);
+        setSessionRecordings([]);
+        setAllSessionRecordings([]);
+        setScanPhase('movements');
+    };
+
+    // Go back to previous question
+    const goBack = () => {
+        if (questionStep > 0) {
+            setQuestionStep(questionStep - 1);
+        }
+    };
+
+    // Reset/end scan session
+    const handleEndSession = () => {
+        if (isRecording) {
+            stopRecording();
+        } else {
+            setScanPhase('idle');
+            setQuestionStep(0);
+            setQuestionnaire({
+                painLocation: '',
+                painDuration: '',
+                painTrigger: '',
+                painType: '',
+                priorInjuries: '',
+            });
+            setLandmarks([]);
+            recordedFrames.current = [];
+        }
+    };
+
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    return (
+        <View style={styles.container}>
+            {/* MediaPipe Camera with overlay */}
+            <View ref={viewShotRef} collapsable={false} style={{ width, height }}>
+                <RNMediapipe
+                    style={styles.camera}
+                    width={width}
+                    height={height}
+                    onLandmark={handleLandmarks}
+                    face={false}
+                    leftArm={true}
+                    rightArm={true}
+                    leftWrist={true}
+                    rightWrist={true}
+                    torso={true}
+                    leftLeg={true}
+                    rightLeg={true}
+                />
+
+                {/* Skeleton Overlay - hidden during capture */}
+                {scanPhase === 'scanning' && landmarks.length > 0 && !captureMode && (
+                    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                        {POSE_CONNECTIONS.map(([start, end], index) => {
+                            const s = landmarks[start];
+                            const e = landmarks[end];
+                            if (!s || !e || (s.visibility || 0) < 0.5 || (e.visibility || 0) < 0.5) return null;
+                            return (
+                                <SkeletonLine
+                                    key={`line-${index}`}
+                                    x1={s.x * width} y1={s.y * height}
+                                    x2={e.x * width} y2={e.y * height}
+                                    color={isRecording ? '#FF5722' : '#00BCD4'}
+                                />
+                            );
+                        })}
+                        {landmarks.map((lm, index) => {
+                            if ((lm.visibility || 0) < 0.5 || index < 11) return null;
+                            return (
+                                <SkeletonPoint
+                                    key={`point-${index}`}
+                                    x={lm.x * width}
+                                    y={lm.y * height}
+                                    color={isRecording ? '#FF5722' : '#00BCD4'}
+                                />
+                            );
+                        })}
+                    </View>
+                )}
+            </View>
+
+            {/* Recording Indicator - removed duplicate, now only using top status badge */}
+
+            {/* Status Badge */}
+            <SafeAreaView style={styles.topBar}>
+                <View style={styles.statusBadge}>
+                    <View style={[styles.statusDot, { backgroundColor: isRecording ? '#FF5722' : scanPhase === 'scanning' ? '#4CAF50' : '#FF9800' }]} />
+                    <Text style={styles.statusText}>
+                        {isRecording ? 'Recording' : scanPhase === 'scanning' ? 'AI Scan' : 'Ready'}
+                    </Text>
+                </View>
+                {scanPhase !== 'idle' && !isRecording && (
+                    <TouchableOpacity style={styles.endButton} onPress={handleEndSession}>
+                        <Text style={styles.endButtonText}>End</Text>
+                    </TouchableOpacity>
+                )}
+            </SafeAreaView>
+
+            {/* AI Analysis Button - Idle State */}
+            {scanPhase === 'idle' && (
+                <LinearGradient colors={['transparent', 'rgba(0,0,0,0.9)']} style={styles.modeOverlay}>
+                    <Text style={styles.modeTitle}>AI Movement Analysis</Text>
+                    <Text style={styles.modeSubtitle}>Get personalized guidance based on your movements</Text>
+
+                    <TouchableOpacity style={styles.aiAnalysisButton} onPress={startQuestionnaire}>
+                        <Text style={styles.aiAnalysisIcon}>🧠</Text>
+                        <Text style={styles.aiAnalysisText}>Start AI Analysis</Text>
+                    </TouchableOpacity>
+                </LinearGradient>
+            )}
+
+            {/* Questionnaire Flow */}
+            {scanPhase === 'questionnaire' && (
+                <View style={styles.questionnaireOverlay}>
+                    <SafeAreaView style={styles.questionnaireContainer}>
+                        <Text style={styles.questionProgress}>Question {questionStep + 1} of 5</Text>
+
+                        {questionStep === 0 && (
+                            <View style={styles.questionSection}>
+                                <Text style={styles.questionText}>Where is your pain located?</Text>
+                                <Text style={styles.questionHint}>Select all that apply</Text>
+                                <View style={styles.optionsGrid}>
+                                    {['Neck', 'Shoulder', 'Upper Back', 'Lower Back', 'Hip', 'Knee', 'Other'].map(opt => (
+                                        <TouchableOpacity key={opt} style={[styles.optionChip, isSelected('painLocation', opt) && styles.optionChipSelected]} onPress={() => toggleOption('painLocation', opt)}>
+                                            <Text style={[styles.optionText, isSelected('painLocation', opt) && styles.optionTextSelected]}>{opt}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </View>
+                        )}
+
+                        {questionStep === 1 && (
+                            <View style={styles.questionSection}>
+                                <Text style={styles.questionText}>When did the pain start?</Text>
+                                <View style={styles.optionsGrid}>
+                                    {['Today', 'This Week', 'This Month', 'Months Ago', 'Years Ago'].map(opt => (
+                                        <TouchableOpacity key={opt} style={[styles.optionChip, isSelected('painDuration', opt) && styles.optionChipSelected]} onPress={() => toggleOption('painDuration', opt)}>
+                                            <Text style={[styles.optionText, isSelected('painDuration', opt) && styles.optionTextSelected]}>{opt}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </View>
+                        )}
+
+                        {questionStep === 2 && (
+                            <View style={styles.questionSection}>
+                                <Text style={styles.questionText}>What triggers your pain?</Text>
+                                <View style={styles.optionsGrid}>
+                                    {['Movement', 'Rest/Sitting', 'Morning Stiffness', 'Exercise', 'Work Activities', 'Unknown'].map(opt => (
+                                        <TouchableOpacity key={opt} style={[styles.optionChip, isSelected('painTrigger', opt) && styles.optionChipSelected]} onPress={() => toggleOption('painTrigger', opt)}>
+                                            <Text style={[styles.optionText, isSelected('painTrigger', opt) && styles.optionTextSelected]}>{opt}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </View>
+                        )}
+
+                        {questionStep === 3 && (
+                            <View style={styles.questionSection}>
+                                <Text style={styles.questionText}>What type of pain do you feel?</Text>
+                                <View style={styles.optionsGrid}>
+                                    {['Sharp', 'Dull/Aching', 'Burning', 'Stiffness', 'Tingling', 'Throbbing'].map(opt => (
+                                        <TouchableOpacity key={opt} style={[styles.optionChip, isSelected('painType', opt) && styles.optionChipSelected]} onPress={() => toggleOption('painType', opt)}>
+                                            <Text style={[styles.optionText, isSelected('painType', opt) && styles.optionTextSelected]}>{opt}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </View>
+                        )}
+
+                        {questionStep === 4 && (
+                            <View style={styles.questionSection}>
+                                <Text style={styles.questionText}>Any prior injuries?</Text>
+                                <TextInput
+                                    style={styles.textInput}
+                                    placeholder="e.g., Surgery, sports injury, arthritis..."
+                                    placeholderTextColor="rgba(255,255,255,0.4)"
+                                    multiline
+                                    value={questionnaire.priorInjuries}
+                                    onChangeText={(text) => setQuestionnaire({ ...questionnaire, priorInjuries: text })}
+                                />
+                            </View>
+                        )}
+
+                        {/* Navigation Buttons */}
+                        <View style={styles.questionNavRow}>
+                            {questionStep > 0 ? (
+                                <TouchableOpacity style={styles.backBtn} onPress={goBack}>
+                                    <Text style={styles.backBtnText}>← Back</Text>
+                                </TouchableOpacity>
+                            ) : (
+                                <TouchableOpacity style={styles.backBtn} onPress={handleEndSession}>
+                                    <Text style={styles.backBtnText}>Cancel</Text>
+                                </TouchableOpacity>
+                            )}
+                            <TouchableOpacity style={styles.nextBtn} onPress={goNext}>
+                                <Text style={styles.nextBtnText}>{questionStep === 4 ? 'Start Scan →' : 'Next →'}</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </SafeAreaView>
+                </View>
+            )}
+
+            {/* Intensity Selection Screen */}
+            {scanPhase === 'intensity' && (
+                <View style={styles.intensityOverlay}>
+                    <SafeAreaView style={styles.intensityContainer}>
+                        <Text style={styles.intensityTitle}>📊 Scan Depth</Text>
+                        <Text style={styles.intensitySubtitle}>How thorough should the analysis be?</Text>
+
+                        {/* Intensity Toggle */}
+                        <View style={styles.intensityToggleRow}>
+                            {[1, 2, 3, 4, 5].map(level => (
+                                <TouchableOpacity
+                                    key={level}
+                                    style={[
+                                        styles.intensityBtn,
+                                        scanIntensity === level && styles.intensityBtnSelected
+                                    ]}
+                                    onPress={() => setScanIntensity(level)}
+                                >
+                                    <Text style={[
+                                        styles.intensityBtnText,
+                                        scanIntensity === level && styles.intensityBtnTextSelected
+                                    ]}>{level}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                        <View style={styles.intensityLabels}>
+                            <Text style={styles.intensityLabel}>Quick</Text>
+                            <Text style={styles.intensityLabel}>Thorough</Text>
+                        </View>
+
+                        {/* Movement Preview */}
+                        <View style={styles.movementPreview}>
+                            <Text style={styles.movementPreviewTitle}>
+                                {scanIntensity} movement{scanIntensity > 1 ? 's' : ''} selected:
+                            </Text>
+                            <ScrollView style={styles.movementPreviewList}>
+                                {getMovementsForPain(questionnaire.painLocation, scanIntensity).map((movement, idx) => (
+                                    <View key={movement.id} style={styles.movementPreviewItem}>
+                                        <Text style={styles.movementPreviewEmoji}>{movement.emoji}</Text>
+                                        <View style={styles.movementPreviewInfo}>
+                                            <Text style={styles.movementPreviewName}>{movement.name}</Text>
+                                            <Text style={styles.movementPreviewAngle}>
+                                                📷 {movement.cameraAngle === 'front' ? 'Front view' : movement.cameraAngle === 'side' ? 'Side view' : 'Back view'}
+                                            </Text>
+                                        </View>
+                                        <TouchableOpacity
+                                            style={styles.movementInfoBtn}
+                                            onPress={() => setSelectedMovementInfo(movement)}
+                                        >
+                                            <Text style={styles.movementInfoIcon}>ℹ️</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                ))}
+                            </ScrollView>
+                        </View>
+
+                        {/* Begin Button */}
+                        <TouchableOpacity style={styles.beginAssessmentBtn} onPress={confirmIntensity}>
+                            <Text style={styles.beginAssessmentText}>Begin Assessment</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.intensityCancelBtn}
+                            onPress={() => setScanPhase('questionnaire')}
+                        >
+                            <Text style={styles.intensityCancelText}>← Back to Questions</Text>
+                        </TouchableOpacity>
+                    </SafeAreaView>
+                </View>
+            )}
+
+            {/* Movement Info Popup */}
+            {selectedMovementInfo && (
+                <View style={styles.infoModalOverlay}>
+                    <View style={styles.infoModal}>
+                        <Text style={styles.infoModalEmoji}>{selectedMovementInfo.emoji}</Text>
+                        <Text style={styles.infoModalTitle}>{selectedMovementInfo.name}</Text>
+
+                        <View style={styles.infoModalSection}>
+                            <Text style={styles.infoModalLabel}>How to perform:</Text>
+                            <Text style={styles.infoModalText}>{selectedMovementInfo.instruction}</Text>
+                        </View>
+
+                        <View style={styles.infoModalRow}>
+                            <View style={styles.infoModalDetail}>
+                                <Text style={styles.infoModalDetailLabel}>📷 Camera</Text>
+                                <Text style={styles.infoModalDetailValue}>
+                                    {selectedMovementInfo.cameraAngle === 'front' ? 'Face camera'
+                                        : selectedMovementInfo.cameraAngle === 'side' ? 'Turn sideways'
+                                            : 'Face away'}
+                                </Text>
+                            </View>
+                            <View style={styles.infoModalDetail}>
+                                <Text style={styles.infoModalDetailLabel}>⏱️ Duration</Text>
+                                <Text style={styles.infoModalDetailValue}>~{selectedMovementInfo.duration}s</Text>
+                            </View>
+                        </View>
+
+                        <TouchableOpacity
+                            style={styles.infoModalCloseBtn}
+                            onPress={() => setSelectedMovementInfo(null)}
+                        >
+                            <Text style={styles.infoModalCloseText}>Got it</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            )}
+
+            {/* Movement Protocol Cards */}
+            {scanPhase === 'movements' && movementProtocol.length > 0 && (
+                <View style={styles.movementOverlay}>
+                    <SafeAreaView style={styles.movementContainer}>
+                        <Text style={styles.movementProgress}>
+                            Scan {currentScanNumber} of {movementProtocol.length}
+                        </Text>
+
+                        <View style={styles.movementCard}>
+                            <Text style={styles.movementEmoji}>{movementProtocol[currentMovementIndex].emoji}</Text>
+                            <Text style={styles.movementName}>{movementProtocol[currentMovementIndex].name}</Text>
+                            <Text style={styles.movementInstruction}>
+                                {movementProtocol[currentMovementIndex].instruction}
+                            </Text>
+
+                            <View style={styles.cameraGuide}>
+                                <Text style={styles.cameraIcon}>📷</Text>
+                                <Text style={styles.cameraText}>
+                                    {movementProtocol[currentMovementIndex].cameraAngle === 'front'
+                                        ? 'Face the camera directly'
+                                        : movementProtocol[currentMovementIndex].cameraAngle === 'side'
+                                            ? 'Turn sideways to camera'
+                                            : 'Back facing camera'}
+                                </Text>
+                            </View>
+
+                            <Text style={styles.movementDuration}>
+                                ~{movementProtocol[currentMovementIndex].duration} seconds
+                            </Text>
+                        </View>
+
+                        <TouchableOpacity
+                            style={styles.startMovementBtn}
+                            onPress={() => {
+                                setScanPhase('scanning');
+                                startCountdown(); // Immediately start countdown
+                            }}
+                        >
+                            <Text style={styles.startMovementText}>Start Recording</Text>
+                        </TouchableOpacity>
+                        <Text style={styles.startHint}>Tap to begin • Recording starts in 5 seconds</Text>
+
+                        <TouchableOpacity style={styles.skipMovementBtn} onPress={handleEndSession}>
+                            <Text style={styles.skipMovementText}>Cancel</Text>
+                        </TouchableOpacity>
+                    </SafeAreaView>
+                </View>
+            )}
+
+
+            {scanPhase === 'scanning' && !isRecording && countdown === null && (
+                <LinearGradient colors={['transparent', 'rgba(0,0,0,0.8)']} style={styles.sessionUI}>
+                    <View style={styles.aiPrompt}>
+                        <Text style={styles.aiIcon}>🤖</Text>
+                        <Text style={styles.aiText}>
+                            {questionnaire.painLocation
+                                ? `Focus on your ${questionnaire.painLocation}. Move slowly and pause when you feel pain.`
+                                : "Position yourself in frame. Tap Record when ready."}
+                        </Text>
+                    </View>
+
+                    <TouchableOpacity style={styles.recordButton} onPress={startCountdown}>
+                        <View style={styles.recordButtonInner} />
+                        <Text style={styles.recordButtonText}>Record</Text>
+                    </TouchableOpacity>
+                </LinearGradient>
+            )}
+
+            {/* Countdown Overlay */}
+            {countdown !== null && (
+                <View style={styles.countdownOverlay}>
+                    <Text style={styles.countdownText}>{countdown}</Text>
+                    <Text style={styles.countdownLabel}>{countdownMessage}</Text>
+                </View>
+            )}
+
+            {/* Recording UI */}
+            {isRecording && (
+                <LinearGradient colors={['transparent', 'rgba(0,0,0,0.85)']} style={styles.recordingUI}>
+                    {/* Movement prompt card */}
+                    <View style={styles.performPrompt}>
+                        <Text style={styles.performTitle}>Perform the movement now</Text>
+                        <Text style={styles.performMovement}>
+                            {movementProtocol[currentMovementIndex]?.name || 'Movement'}
+                        </Text>
+                    </View>
+
+                    {/* Large Stop Button */}
+                    <TouchableOpacity style={styles.stopButton} onPress={stopRecording} activeOpacity={0.8}>
+                        <View style={styles.stopButtonInner}>
+                            <View style={styles.stopIcon} />
+                        </View>
+                        <Text style={styles.stopButtonLabel}>Tap to Stop</Text>
+                    </TouchableOpacity>
+
+                    {/* Compact timer info */}
+                    <Text style={styles.timerInfo}>
+                        {formatTime(recordingTime)} · Auto-stops in {MAX_RECORDING_TIME - recordingTime}s
+                    </Text>
+                </LinearGradient>
+            )}
+
+            {/* Session Complete Screen */}
+            {scanPhase === 'complete' && (
+                <View style={styles.completeOverlay}>
+                    <SafeAreaView style={styles.completeContainer}>
+                        <Text style={styles.completeEmoji}>✅</Text>
+                        <Text style={styles.completeTitle}>Assessment Complete!</Text>
+                        <Text style={styles.completeSubtitle}>
+                            Tap each recording to add pain points & notes
+                        </Text>
+                        <Text style={styles.reviewProgress}>
+                            {allSessionRecordings.filter(r => r.reviewed).length} / {allSessionRecordings.length} reviewed
+                        </Text>
+
+                        {/* Recorded movements list - tappable */}
+                        <ScrollView style={styles.completedList}>
+                            {allSessionRecordings.map((recording, idx) => (
+                                <TouchableOpacity
+                                    key={idx}
+                                    style={[
+                                        styles.completedItem,
+                                        recording.reviewed && styles.completedItemReviewed
+                                    ]}
+                                    onPress={() => {
+                                        // Set global session data for review screen
+                                        (global as any).recordedSession = {
+                                            frames: recording.frames,
+                                            duration: recording.duration,
+                                            mode: 'diagnostic',
+                                            targetArea: recording.movement.name,
+                                        };
+                                        // Store index for when we return
+                                        (global as any).reviewingMultiScanIndex = idx;
+                                        // Navigate to full review screen
+                                        router.push('/review');
+                                    }}
+                                >
+                                    <Text style={styles.completedEmoji}>{recording.movement.emoji}</Text>
+                                    <View style={styles.completedInfo}>
+                                        <Text style={styles.completedName}>{recording.movement.name}</Text>
+                                        <Text style={styles.completedDuration}>
+                                            {recording.reviewed
+                                                ? `${recording.painPoints.length} pain point${recording.painPoints.length !== 1 ? 's' : ''} marked`
+                                                : 'Tap to review'}
+                                        </Text>
+                                    </View>
+                                    <Text style={[
+                                        styles.completedCheck,
+                                        !recording.reviewed && styles.completedPending
+                                    ]}>
+                                        {recording.reviewed ? '✓' : '○'}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+
+                        {/* Action Buttons */}
+                        <TouchableOpacity
+                            style={[
+                                styles.generateReportBtn,
+                                !allSessionRecordings.every(r => r.reviewed) && styles.generateReportBtnDisabled
+                            ]}
+                            disabled={!allSessionRecordings.every(r => r.reviewed)}
+                            onPress={() => {
+                                console.log('Generate AI Report with', allSessionRecordings.length, 'recordings');
+                                // Pass session data to report screen
+                                (global as any).reportSessionData = allSessionRecordings;
+                                router.push('/report');
+                            }}
+                        >
+                            <Text style={[
+                                styles.generateReportText,
+                                !allSessionRecordings.every(r => r.reviewed) && styles.generateReportTextDisabled
+                            ]}>
+                                🤖 Generate AI Report
+                            </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.saveSessionBtn}
+                            onPress={() => {
+                                handleEndSession();
+                            }}
+                        >
+                            <Text style={styles.saveSessionText}>Cancel Session</Text>
+                        </TouchableOpacity>
+                    </SafeAreaView>
+                </View>
+            )}
+
+            {/* Review Modal - Full Screen for reviewing recordings */}
+            <Modal
+                visible={reviewingIndex !== null}
+                animationType="slide"
+                presentationStyle="fullScreen"
+                onRequestClose={() => setReviewingIndex(null)}
+            >
+                {reviewingIndex !== null && allSessionRecordings[reviewingIndex] ? (
+                    <View style={styles.reviewModalOverlay}>
+                        <SafeAreaView style={styles.reviewModalContainer}>
+                            {/* Header */}
+                            <View style={styles.reviewModalHeader}>
+                                <TouchableOpacity onPress={() => setReviewingIndex(null)}>
+                                    <Text style={styles.reviewModalCancel}>← Back</Text>
+                                </TouchableOpacity>
+                                <Text style={styles.reviewModalTitle}>
+                                    {allSessionRecordings[reviewingIndex].movement.name}
+                                </Text>
+                                <TouchableOpacity onPress={() => {
+                                    // Mark as reviewed and close
+                                    setAllSessionRecordings(prev => prev.map((r, i) =>
+                                        i === reviewingIndex ? { ...r, reviewed: true } : r
+                                    ));
+                                    setReviewingIndex(null);
+                                }}>
+                                    <Text style={styles.reviewModalSave}>Done</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            {/* Skeleton Preview */}
+                            <View style={styles.skeletonPreview}>
+                                {allSessionRecordings[reviewingIndex].frames.length > 0 ? (
+                                    <View style={styles.skeletonContainer}>
+                                        {/* Show first frame as static preview */}
+                                        {(() => {
+                                            const frame = allSessionRecordings[reviewingIndex].frames[0];
+                                            const previewWidth = width - 64;
+                                            const previewHeight = 200;
+                                            const scale = Math.min(previewWidth / width, previewHeight / height);
+                                            return (
+                                                <>
+                                                    {POSE_CONNECTIONS.map(([start, end], index) => {
+                                                        const s = frame.landmarks[start];
+                                                        const e = frame.landmarks[end];
+                                                        if (!s || !e || (s.visibility || 0) < 0.5 || (e.visibility || 0) < 0.5) return null;
+                                                        return (
+                                                            <SkeletonLine
+                                                                key={`line-${index}`}
+                                                                x1={s.x * previewWidth}
+                                                                y1={s.y * previewHeight}
+                                                                x2={e.x * previewWidth}
+                                                                y2={e.y * previewHeight}
+                                                                color="#00BCD4"
+                                                            />
+                                                        );
+                                                    })}
+                                                    {frame.landmarks.map((lm, index) => {
+                                                        if ((lm.visibility || 0) < 0.5 || index < 11) return null;
+                                                        return (
+                                                            <SkeletonPoint
+                                                                key={`point-${index}`}
+                                                                x={lm.x * previewWidth}
+                                                                y={lm.y * previewHeight}
+                                                                color="#00BCD4"
+                                                            />
+                                                        );
+                                                    })}
+                                                </>
+                                            );
+                                        })()}
+                                    </View>
+                                ) : (
+                                    <View style={styles.noFramesPlaceholder}>
+                                        <Text style={styles.noFramesEmoji}>📹</Text>
+                                        <Text style={styles.noFramesText}>No pose data captured</Text>
+                                        <Text style={styles.noFramesHint}>Skeleton tracking wasn't available during recording</Text>
+                                    </View>
+                                )}
+                            </View>
+
+                            <ScrollView style={styles.reviewModalContent}>
+                                {/* Movement Info */}
+                                <View style={styles.reviewMovementInfo}>
+                                    <Text style={styles.reviewMovementEmoji}>
+                                        {allSessionRecordings[reviewingIndex].movement.emoji}
+                                    </Text>
+                                    <Text style={styles.reviewMovementDuration}>
+                                        {allSessionRecordings[reviewingIndex].duration}s · {allSessionRecordings[reviewingIndex].frames.length} frames
+                                    </Text>
+                                </View>
+
+                                {/* Pain Points Section */}
+                                <View style={styles.reviewSection}>
+                                    <Text style={styles.reviewSectionTitle}>Pain Points</Text>
+                                    <Text style={styles.reviewSectionHint}>
+                                        Mark where you felt pain during this movement
+                                    </Text>
+
+                                    {/* Quick add buttons for common body parts */}
+                                    <View style={styles.painPointGrid}>
+                                        {['Neck', 'Shoulder', 'Upper Back', 'Lower Back', 'Hip', 'Knee'].map(bodyPart => {
+                                            const hasPoint = allSessionRecordings[reviewingIndex].painPoints.some(p => p.bodyPart === bodyPart);
+                                            return (
+                                                <TouchableOpacity
+                                                    key={bodyPart}
+                                                    style={[styles.painPointBtn, hasPoint && styles.painPointBtnActive]}
+                                                    onPress={() => {
+                                                        setAllSessionRecordings(prev => prev.map((r, i) => {
+                                                            if (i !== reviewingIndex) return r;
+                                                            const existing = r.painPoints.find(p => p.bodyPart === bodyPart);
+                                                            if (existing) {
+                                                                // Remove it
+                                                                return { ...r, painPoints: r.painPoints.filter(p => p.bodyPart !== bodyPart) };
+                                                            } else {
+                                                                // Add it
+                                                                return { ...r, painPoints: [...r.painPoints, { bodyPart, intensity: 5, timestamp: 0 }] };
+                                                            }
+                                                        }));
+                                                    }}
+                                                >
+                                                    <Text style={[styles.painPointBtnText, hasPoint && styles.painPointBtnTextActive]}>
+                                                        {bodyPart}
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            );
+                                        })}
+                                    </View>
+
+                                    {allSessionRecordings[reviewingIndex].painPoints.length > 0 && (
+                                        <Text style={styles.painPointCount}>
+                                            {allSessionRecordings[reviewingIndex].painPoints.length} area{allSessionRecordings[reviewingIndex].painPoints.length !== 1 ? 's' : ''} marked
+                                        </Text>
+                                    )}
+                                </View>
+
+                                {/* Notes Section */}
+                                <View style={styles.reviewSection}>
+                                    <Text style={styles.reviewSectionTitle}>Notes</Text>
+                                    <TextInput
+                                        style={styles.reviewNotesInput}
+                                        placeholder="Add notes about this movement..."
+                                        placeholderTextColor="rgba(255,255,255,0.4)"
+                                        multiline
+                                        value={allSessionRecordings[reviewingIndex].notes}
+                                        onChangeText={(text) => {
+                                            setAllSessionRecordings(prev => prev.map((r, i) =>
+                                                i === reviewingIndex ? { ...r, notes: text } : r
+                                            ));
+                                        }}
+                                    />
+                                </View>
+                            </ScrollView>
+
+                            {/* Save Button */}
+                            <TouchableOpacity
+                                style={styles.reviewSaveBtn}
+                                onPress={() => {
+                                    setAllSessionRecordings(prev => prev.map((r, i) =>
+                                        i === reviewingIndex ? { ...r, reviewed: true } : r
+                                    ));
+                                    setReviewingIndex(null);
+                                }}
+                            >
+                                <Text style={styles.reviewSaveBtnText}>✓ Mark as Reviewed</Text>
+                            </TouchableOpacity>
+                        </SafeAreaView>
+                    </View>
+                ) : (
+                    <View style={styles.reviewModalOverlay}>
+                        <Text style={{ color: '#fff', fontSize: 18 }}>Loading...</Text>
+                    </View>
+                )}
+            </Modal>
+        </View>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: '#1A1A2E' },
+    camera: { flex: 1, width: '100%' },
+    topBar: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 8 },
+    statusBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
+    statusDot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
+    statusText: { color: '#fff', fontSize: 12 },
+    endButton: { backgroundColor: 'rgba(244,67,54,0.8)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
+    endButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+    // Recording UI styles
+    recordingUI: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        paddingHorizontal: 24,
+        paddingBottom: 120,
+        paddingTop: 60,
+        alignItems: 'center',
+    },
+    modeOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingBottom: 120, paddingTop: 60 },
+    modeTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff', textAlign: 'center', marginBottom: 24 },
+    modeCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 16, padding: 16, marginBottom: 12 },
+    modeIcon: { width: 50, height: 50, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginRight: 16 },
+    modeEmoji: { fontSize: 24 },
+    modeText: { flex: 1 },
+    modeCardTitle: { fontSize: 18, fontWeight: '600', color: '#fff' },
+    modeCardSubtitle: { fontSize: 14, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
+    arrow: { fontSize: 24, color: 'rgba(255,255,255,0.4)' },
+    sessionUI: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingBottom: 120, paddingTop: 40 },
+    aiPrompt: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 16, padding: 16, marginBottom: 16 },
+    aiIcon: { fontSize: 24, marginRight: 12 },
+    aiText: { flex: 1, color: '#fff', fontSize: 15 },
+    recordButton: {
+        alignItems: 'center', justifyContent: 'center',
+        backgroundColor: 'rgba(244,67,54,0.2)', borderRadius: 40, padding: 8,
+        borderWidth: 3, borderColor: '#F44336', alignSelf: 'center',
+    },
+    recordButtonInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#F44336' },
+    recordButtonText: { color: '#fff', fontSize: 12, marginTop: 8 },
+    timerInfo: {
+        color: 'rgba(255,255,255,0.6)',
+        fontSize: 14,
+        marginTop: 16,
+        textAlign: 'center',
+    },
+    countdownOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 32,
+    },
+    countdownText: {
+        fontSize: 120,
+        fontWeight: 'bold',
+        color: '#00BCD4',
+        textShadowColor: 'rgba(0,188,212,0.5)',
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 30,
+    },
+    countdownLabel: {
+        fontSize: 18,
+        color: '#fff',
+        marginTop: 32,
+        textAlign: 'center',
+        lineHeight: 28,
+        opacity: 0.9,
+    },
+    // AI Analysis & Questionnaire styles
+    modeSubtitle: { fontSize: 16, color: 'rgba(255,255,255,0.7)', textAlign: 'center', marginBottom: 32 },
+    aiAnalysisButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#00BCD4',
+        borderRadius: 16,
+        padding: 20,
+        gap: 12,
+    },
+    aiAnalysisIcon: { fontSize: 32 },
+    aiAnalysisText: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
+    questionnaireOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(26,26,46,0.95)',
+    },
+    questionnaireContainer: {
+        flex: 1,
+        paddingHorizontal: 24,
+        paddingTop: 60,
+    },
+    questionProgress: {
+        color: '#00BCD4',
+        fontSize: 14,
+        fontWeight: '600',
+        textAlign: 'center',
+        marginBottom: 32,
+    },
+    questionSection: { marginTop: 32 },
+    questionText: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#fff',
+        textAlign: 'center',
+        marginBottom: 24,
+    },
+    optionsScroll: { marginBottom: 20 },
+    optionsGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        alignItems: 'flex-start',
+    },
+    optionChip: {
+        backgroundColor: 'rgba(0,188,212,0.2)',
+        borderRadius: 25,
+        paddingHorizontal: 20,
+        paddingVertical: 14,
+        marginRight: 8,
+        marginBottom: 8,
+        borderWidth: 1,
+        borderColor: '#00BCD4',
+    },
+    optionText: { color: '#fff', fontSize: 16, fontWeight: '500' },
+    textInput: {
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: 12,
+        padding: 16,
+        color: '#fff',
+        fontSize: 16,
+        minHeight: 100,
+        textAlignVertical: 'top',
+        marginBottom: 16,
+    },
+    skipButton: {
+        alignSelf: 'center',
+        backgroundColor: '#4CAF50',
+        borderRadius: 25,
+        paddingHorizontal: 32,
+        paddingVertical: 14,
+    },
+    skipButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+    cancelQuestionBtn: {
+        position: 'absolute',
+        bottom: 50,
+        alignSelf: 'center',
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+    },
+    cancelQuestionText: { color: 'rgba(255,255,255,0.6)', fontSize: 16 },
+    questionHint: { color: 'rgba(255,255,255,0.5)', fontSize: 14, textAlign: 'center', marginBottom: 16 },
+    optionChipSelected: { backgroundColor: '#00BCD4', borderColor: '#fff' },
+    optionTextSelected: { color: '#fff', fontWeight: 'bold' },
+    questionNavRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        position: 'absolute',
+        bottom: 40,
+        left: 0,
+        right: 0,
+    },
+    backBtn: {
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+    },
+    backBtnText: { color: 'rgba(255,255,255,0.7)', fontSize: 16 },
+    nextBtn: {
+        backgroundColor: '#00BCD4',
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        borderRadius: 25,
+    },
+    nextBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+    // Movement Protocol styles
+    movementOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(26,26,46,0.95)',
+    },
+    movementContainer: {
+        flex: 1,
+        paddingHorizontal: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    movementProgress: {
+        color: '#00BCD4',
+        fontSize: 14,
+        fontWeight: '600',
+        marginBottom: 24,
+    },
+    movementCard: {
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: 20,
+        padding: 32,
+        alignItems: 'center',
+        width: '100%',
+        marginBottom: 24,
+    },
+    movementEmoji: { fontSize: 48, marginBottom: 16 },
+    movementName: { color: '#fff', fontSize: 24, fontWeight: 'bold', marginBottom: 12, textAlign: 'center' },
+    movementInstruction: { color: 'rgba(255,255,255,0.8)', fontSize: 16, textAlign: 'center', marginBottom: 20, lineHeight: 24 },
+    cameraGuide: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,188,212,0.2)',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 12,
+        marginBottom: 16,
+    },
+    cameraIcon: { fontSize: 20, marginRight: 8 },
+    cameraText: { color: '#00BCD4', fontSize: 14, fontWeight: '500' },
+    movementDuration: { color: 'rgba(255,255,255,0.5)', fontSize: 12 },
+    startMovementBtn: {
+        backgroundColor: '#4CAF50',
+        paddingHorizontal: 48,
+        paddingVertical: 16,
+        borderRadius: 30,
+        marginBottom: 8,
+    },
+    startMovementText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+    startHint: { color: 'rgba(255,255,255,0.5)', fontSize: 12, textAlign: 'center', marginBottom: 16 },
+    // Recording UI styles
+    performPrompt: {
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: 16,
+        paddingVertical: 16,
+        paddingHorizontal: 32,
+        marginBottom: 24,
+        width: '100%',
+    },
+    performTitle: { color: '#fff', fontSize: 18, fontWeight: '600', marginBottom: 4 },
+    performMovement: { color: '#00BCD4', fontSize: 16, fontWeight: '500' },
+    stopButton: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    stopButtonInner: {
+        width: 88,
+        height: 88,
+        borderRadius: 44,
+        backgroundColor: 'rgba(244,67,54,0.15)',
+        borderWidth: 4,
+        borderColor: '#F44336',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    stopIcon: {
+        width: 32,
+        height: 32,
+        borderRadius: 6,
+        backgroundColor: '#F44336',
+    },
+    stopButtonLabel: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+        marginTop: 12,
+    },
+    skipMovementBtn: { paddingVertical: 12 },
+    skipMovementText: { color: 'rgba(255,255,255,0.5)', fontSize: 14 },
+
+    // Intensity Selection Styles
+    intensityOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.95)',
+        justifyContent: 'center',
+    },
+    intensityContainer: {
+        flex: 1,
+        padding: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    intensityTitle: {
+        fontSize: 32,
+        fontWeight: 'bold',
+        color: '#fff',
+        marginBottom: 8,
+    },
+    intensitySubtitle: {
+        fontSize: 16,
+        color: 'rgba(255,255,255,0.6)',
+        marginBottom: 32,
+    },
+    intensityToggleRow: {
+        flexDirection: 'row',
+        gap: 12,
+        marginBottom: 8,
+    },
+    intensityBtn: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: 'transparent',
+    },
+    intensityBtnSelected: {
+        backgroundColor: '#00BCD4',
+        borderColor: '#fff',
+    },
+    intensityBtnText: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: 'rgba(255,255,255,0.5)',
+    },
+    intensityBtnTextSelected: {
+        color: '#fff',
+    },
+    intensityLabels: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: 280,
+        marginBottom: 32,
+    },
+    intensityLabel: {
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.4)',
+    },
+    movementPreview: {
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderRadius: 16,
+        padding: 16,
+        width: '100%',
+        maxHeight: 200,
+        marginBottom: 24,
+    },
+    movementPreviewTitle: {
+        fontSize: 14,
+        color: 'rgba(255,255,255,0.6)',
+        marginBottom: 12,
+    },
+    movementPreviewList: {
+        maxHeight: 140,
+    },
+    movementPreviewItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.1)',
+    },
+    movementPreviewEmoji: {
+        fontSize: 24,
+        marginRight: 12,
+    },
+    movementPreviewInfo: {
+        flex: 1,
+    },
+    movementPreviewName: {
+        fontSize: 16,
+        color: '#fff',
+        fontWeight: '500',
+    },
+    movementPreviewAngle: {
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.5)',
+        marginTop: 2,
+    },
+    beginAssessmentBtn: {
+        backgroundColor: '#4CAF50',
+        borderRadius: 16,
+        paddingVertical: 18,
+        paddingHorizontal: 48,
+        marginBottom: 16,
+    },
+    beginAssessmentText: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#fff',
+    },
+    intensityCancelBtn: {
+        paddingVertical: 12,
+    },
+    intensityCancelText: {
+        fontSize: 14,
+        color: 'rgba(255,255,255,0.5)',
+    },
+
+    // Session Complete Styles
+    completeOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.95)',
+        justifyContent: 'center',
+    },
+    completeContainer: {
+        flex: 1,
+        padding: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    completeEmoji: {
+        fontSize: 64,
+        marginBottom: 16,
+    },
+    completeTitle: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: '#fff',
+        marginBottom: 8,
+    },
+    completeSubtitle: {
+        fontSize: 16,
+        color: 'rgba(255,255,255,0.6)',
+        marginBottom: 24,
+    },
+    completedList: {
+        width: '100%',
+        maxHeight: 220,
+        marginBottom: 24,
+    },
+    completedItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 8,
+    },
+    completedEmoji: {
+        fontSize: 24,
+        marginRight: 12,
+    },
+    completedInfo: {
+        flex: 1,
+    },
+    completedName: {
+        fontSize: 16,
+        color: '#fff',
+        fontWeight: '500',
+    },
+    completedDuration: {
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.5)',
+        marginTop: 2,
+    },
+    completedCheck: {
+        fontSize: 20,
+        color: '#4CAF50',
+        fontWeight: 'bold',
+    },
+    completedPending: {
+        color: 'rgba(255,255,255,0.3)',
+    },
+    completedItemReviewed: {
+        backgroundColor: 'rgba(76,175,80,0.15)',
+        borderColor: '#4CAF50',
+        borderWidth: 1,
+    },
+    reviewProgress: {
+        fontSize: 14,
+        color: '#00BCD4',
+        fontWeight: '600',
+        marginBottom: 20,
+    },
+    generateReportBtn: {
+        backgroundColor: '#00BCD4',
+        borderRadius: 16,
+        paddingVertical: 18,
+        paddingHorizontal: 32,
+        marginBottom: 12,
+        width: '100%',
+        alignItems: 'center',
+    },
+    generateReportBtnDisabled: {
+        backgroundColor: 'rgba(255,255,255,0.1)',
+    },
+    generateReportText: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#fff',
+    },
+    generateReportTextDisabled: {
+        color: 'rgba(255,255,255,0.4)',
+    },
+    saveSessionBtn: {
+        paddingVertical: 16,
+    },
+    saveSessionText: {
+        fontSize: 14,
+        color: 'rgba(255,255,255,0.5)',
+    },
+
+    // Movement Info Button & Modal Styles
+    movementInfoBtn: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    movementInfoIcon: {
+        fontSize: 16,
+    },
+    infoModalOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.85)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 24,
+        zIndex: 100,
+    },
+    infoModal: {
+        backgroundColor: '#2A2A3E',
+        borderRadius: 20,
+        padding: 24,
+        width: '100%',
+        maxWidth: 340,
+        alignItems: 'center',
+    },
+    infoModalEmoji: {
+        fontSize: 48,
+        marginBottom: 12,
+    },
+    infoModalTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: '#fff',
+        marginBottom: 20,
+        textAlign: 'center',
+    },
+    infoModalSection: {
+        width: '100%',
+        marginBottom: 20,
+    },
+    infoModalLabel: {
+        fontSize: 12,
+        color: '#00BCD4',
+        fontWeight: '600',
+        marginBottom: 6,
+        textTransform: 'uppercase',
+    },
+    infoModalText: {
+        fontSize: 16,
+        color: '#fff',
+        lineHeight: 24,
+    },
+    infoModalRow: {
+        flexDirection: 'row',
+        width: '100%',
+        justifyContent: 'space-around',
+        marginBottom: 24,
+    },
+    infoModalDetail: {
+        alignItems: 'center',
+    },
+    infoModalDetailLabel: {
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.5)',
+        marginBottom: 4,
+    },
+    infoModalDetailValue: {
+        fontSize: 16,
+        color: '#fff',
+        fontWeight: '600',
+    },
+    infoModalCloseBtn: {
+        backgroundColor: '#00BCD4',
+        borderRadius: 12,
+        paddingVertical: 14,
+        paddingHorizontal: 48,
+    },
+    infoModalCloseText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#fff',
+    },
+
+    // Review Modal Styles
+    reviewModalOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: '#1A1A2E',
+        zIndex: 200,
+    },
+    reviewModalContainer: {
+        flex: 1,
+        backgroundColor: '#1A1A2E',
+    },
+    reviewModalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingTop: 60,
+        paddingBottom: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.1)',
+    },
+    reviewModalCancel: {
+        fontSize: 16,
+        color: 'rgba(255,255,255,0.6)',
+    },
+    reviewModalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#fff',
+        flex: 1,
+        textAlign: 'center',
+    },
+    reviewModalSave: {
+        fontSize: 16,
+        color: '#00BCD4',
+        fontWeight: '600',
+    },
+    reviewModalContent: {
+        flex: 1,
+        padding: 16,
+    },
+    reviewMovementInfo: {
+        alignItems: 'center',
+        marginBottom: 24,
+        paddingVertical: 20,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderRadius: 16,
+    },
+    reviewMovementEmoji: {
+        fontSize: 48,
+        marginBottom: 8,
+    },
+    reviewMovementDuration: {
+        fontSize: 14,
+        color: 'rgba(255,255,255,0.5)',
+    },
+    reviewSection: {
+        marginBottom: 24,
+    },
+    reviewSectionTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#fff',
+        marginBottom: 8,
+    },
+    reviewSectionHint: {
+        fontSize: 14,
+        color: 'rgba(255,255,255,0.5)',
+        marginBottom: 16,
+    },
+    painPointGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
+    },
+    painPointBtn: {
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'transparent',
+    },
+    painPointBtnActive: {
+        backgroundColor: 'rgba(244,67,54,0.2)',
+        borderColor: '#F44336',
+    },
+    painPointBtnText: {
+        fontSize: 14,
+        color: 'rgba(255,255,255,0.6)',
+    },
+    painPointBtnTextActive: {
+        color: '#F44336',
+        fontWeight: '600',
+    },
+    painPointCount: {
+        fontSize: 14,
+        color: '#F44336',
+        marginTop: 12,
+    },
+    reviewNotesInput: {
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: 12,
+        padding: 16,
+        color: '#fff',
+        fontSize: 16,
+        minHeight: 100,
+        textAlignVertical: 'top',
+    },
+    reviewSaveBtn: {
+        backgroundColor: '#4CAF50',
+        margin: 16,
+        borderRadius: 16,
+        paddingVertical: 18,
+        alignItems: 'center',
+    },
+    reviewSaveBtnText: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#fff',
+    },
+
+    // Skeleton Preview Styles
+    skeletonPreview: {
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        marginHorizontal: 16,
+        borderRadius: 16,
+        height: 220,
+        overflow: 'hidden',
+    },
+    skeletonContainer: {
+        flex: 1,
+        padding: 10,
+        position: 'relative',
+    },
+    noFramesPlaceholder: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    noFramesEmoji: {
+        fontSize: 48,
+        marginBottom: 12,
+    },
+    noFramesText: {
+        fontSize: 16,
+        color: 'rgba(255,255,255,0.7)',
+        fontWeight: '600',
+        marginBottom: 4,
+    },
+    noFramesHint: {
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.4)',
+        textAlign: 'center',
+    },
+});

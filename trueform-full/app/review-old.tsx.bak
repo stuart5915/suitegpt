@@ -1,0 +1,1133 @@
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import {
+    StyleSheet,
+    View,
+    Text,
+    TouchableOpacity,
+    Dimensions,
+    ScrollView,
+    TextInput,
+    Alert,
+    PanResponder,
+    GestureResponderEvent,
+    KeyboardAvoidingView,
+    Platform,
+    Keyboard,
+    TouchableWithoutFeedback,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
+import { useAuth } from '../contexts/AuthContext';
+import { saveScan, savePainPoint } from '../services/supabase';
+
+const { width, height } = Dimensions.get('window');
+
+// Pose landmark connections
+const POSE_CONNECTIONS: [number, number][] = [
+    [11, 12], [11, 23], [12, 24], [23, 24],
+    [11, 13], [13, 15], [12, 14], [14, 16],
+    [23, 25], [25, 27], [24, 26], [26, 28],
+];
+
+interface Landmark {
+    x: number;
+    y: number;
+    visibility?: number;
+}
+
+interface RecordedFrame {
+    timestamp: number;
+    landmarks: Landmark[];
+}
+
+interface PainPoint {
+    timestamp: number;
+    pose: Landmark[];
+    intensity: number;
+    bodyPart: string;
+    note: string;
+}
+
+const BODY_PARTS = [
+    'neck', 'upper_back', 'lower_back', 'left_shoulder', 'right_shoulder',
+    'left_hip', 'right_hip', 'left_knee', 'right_knee', 'other'
+];
+
+// Map landmark indices to body parts (MediaPipe pose landmarks)
+const LANDMARK_TO_BODY_PART: { [key: number]: string } = {
+    11: 'left_shoulder',
+    12: 'right_shoulder',
+    13: 'left_shoulder', // left elbow -> grouped with shoulder
+    14: 'right_shoulder', // right elbow
+    15: 'left_shoulder', // left wrist
+    16: 'right_shoulder', // right wrist
+    23: 'left_hip',
+    24: 'right_hip',
+    25: 'left_knee',
+    26: 'right_knee',
+    27: 'left_knee', // left ankle -> grouped with knee
+    28: 'right_knee', // right ankle
+};
+
+// Calculate angle between three points in degrees
+const calculateAngle = (a: Landmark, b: Landmark, c: Landmark): number => {
+    const radians = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
+    let angle = Math.abs(radians * 180 / Math.PI);
+    if (angle > 180) angle = 360 - angle;
+    return Math.round(angle);
+};
+
+// Get relevant angles for a body part from pose landmarks
+const getAnglesForBodyPart = (bodyPart: string, landmarks: Landmark[]): string => {
+    if (landmarks.length < 29) return '';
+
+    try {
+        switch (bodyPart) {
+            case 'left_shoulder':
+                // Shoulder angle: hip-shoulder-elbow
+                return `Shoulder: ${calculateAngle(landmarks[23], landmarks[11], landmarks[13])}° | Elbow: ${calculateAngle(landmarks[11], landmarks[13], landmarks[15])}°`;
+            case 'right_shoulder':
+                return `Shoulder: ${calculateAngle(landmarks[24], landmarks[12], landmarks[14])}° | Elbow: ${calculateAngle(landmarks[12], landmarks[14], landmarks[16])}°`;
+            case 'left_hip':
+                // Hip angle: shoulder-hip-knee
+                return `Hip: ${calculateAngle(landmarks[11], landmarks[23], landmarks[25])}°`;
+            case 'right_hip':
+                return `Hip: ${calculateAngle(landmarks[12], landmarks[24], landmarks[26])}°`;
+            case 'left_knee':
+                // Knee angle: hip-knee-ankle
+                return `Knee: ${calculateAngle(landmarks[23], landmarks[25], landmarks[27])}°`;
+            case 'right_knee':
+                return `Knee: ${calculateAngle(landmarks[24], landmarks[26], landmarks[28])}°`;
+            default:
+                return '';
+        }
+    } catch {
+        return '';
+    }
+};
+
+// Skeleton drawing components
+const SkeletonLine = ({ x1, y1, x2, y2, color }: { x1: number; y1: number; x2: number; y2: number; color: string }) => {
+    const length = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+    const angle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
+    return (
+        <View
+            style={{
+                position: 'absolute', left: x1, top: y1, width: length, height: 3,
+                backgroundColor: color, transform: [{ rotate: `${angle}deg` }],
+                transformOrigin: 'left center', borderRadius: 2, opacity: 0.9,
+            }}
+        />
+    );
+};
+
+const SkeletonPoint = ({ x, y, color }: { x: number; y: number; color: string }) => (
+    <View
+        style={{
+            position: 'absolute', left: x - 6, top: y - 6, width: 12, height: 12,
+            borderRadius: 6, backgroundColor: color, borderWidth: 2, borderColor: '#fff',
+        }}
+    />
+);
+
+export default function ReviewScreen() {
+    const { user } = useAuth();
+    const [currentTime, setCurrentTime] = useState(0);
+    const [painPoints, setPainPoints] = useState<PainPoint[]>([]);
+    const [showPainModal, setShowPainModal] = useState(false);
+    const [painIntensity, setPainIntensity] = useState(5);
+    const [painBodyPart, setPainBodyPart] = useState('');
+    const [painNote, setPainNote] = useState('');
+    const [notes, setNotes] = useState('');
+    const [saving, setSaving] = useState(false);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [isSelectingBodyPart, setIsSelectingBodyPart] = useState(false);
+    const [touchPosition, setTouchPosition] = useState<{ x: number; y: number } | null>(null);
+    const [showNotesModal, setShowNotesModal] = useState(false);
+
+    const timelineWidth = width - 80;
+    const timelineRef = useRef<View>(null);
+    const scrollViewRef = useRef<ScrollView>(null);
+    const currentTimeRef = useRef(0); // For throttled updates
+    const painPointsRef = useRef<PainPoint[]>([]); // For dismiss handler
+    const notesRef = useRef(''); // For dismiss handler
+
+    // Get recorded session from global state
+    const session = (global as any).recordedSession as {
+        frames: RecordedFrame[];
+        duration: number;
+        mode: string;
+        targetArea: string | null;
+    } | undefined;
+
+    // Playback
+    useEffect(() => {
+        if (!isPlaying || !session) return;
+
+        const interval = setInterval(() => {
+            setCurrentTime((prev) => {
+                if (prev >= session.duration) {
+                    setIsPlaying(false);
+                    return 0; // Loop back to start
+                }
+                return prev + 0.2;
+            });
+        }, 200);
+
+        return () => clearInterval(interval);
+    }, [isPlaying, session]);
+
+    // Keep refs in sync with state for dismiss handler
+    useEffect(() => {
+        painPointsRef.current = painPoints;
+    }, [painPoints]);
+
+    useEffect(() => {
+        notesRef.current = notes;
+    }, [notes]);
+
+    // Get current frame based on time
+    const currentFrame = useMemo(() => {
+        if (!session?.frames.length) return null;
+
+        // Find the frame closest to current time
+        let closest = session.frames[0];
+        for (const frame of session.frames) {
+            if (Math.abs(frame.timestamp - currentTime) < Math.abs(closest.timestamp - currentTime)) {
+                closest = frame;
+            }
+        }
+        return closest;
+    }, [session, currentTime]);
+
+    // Handle timeline touch/drag - use refs for all values to avoid gesture interruption
+    const sessionRef = useRef(session);
+    sessionRef.current = session;
+    const timelineWidthRef = useRef(timelineWidth);
+    timelineWidthRef.current = timelineWidth;
+    const setCurrentTimeRef = useRef(setCurrentTime);
+    setCurrentTimeRef.current = setCurrentTime;
+    const setIsPlayingRef = useRef(setIsPlaying);
+    setIsPlayingRef.current = setIsPlaying;
+
+    // Track the time at drag start for delta-based calculations
+    const dragStartTime = useRef(0);
+    const currentTimeAtDragStart = useRef(0);
+
+    // Pan responder for smooth dragging - use time-delta approach for reliability
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: () => true,
+            onPanResponderTerminationRequest: () => false, // Don't let parent steal touch
+            onShouldBlockNativeResponder: () => true, // Block native gestures
+            onPanResponderGrant: (event) => {
+                const currentSession = sessionRef.current;
+                if (!currentSession) return;
+                setIsPlayingRef.current(false);
+
+                // Calculate time from touch position and jump there immediately
+                const touchX = event.nativeEvent.locationX;
+                const touchTime = (touchX / timelineWidthRef.current) * currentSession.duration;
+                const clampedTime = Math.max(0, Math.min(touchTime, currentSession.duration));
+
+                // Store this as our starting point for the drag
+                currentTimeAtDragStart.current = clampedTime;
+                setCurrentTimeRef.current(clampedTime);
+            },
+            onPanResponderMove: (_, gestureState) => {
+                const currentSession = sessionRef.current;
+                if (!currentSession) return;
+
+                // Calculate time delta based on how far finger has moved
+                const timeDelta = (gestureState.dx / timelineWidthRef.current) * currentSession.duration;
+                const newTime = currentTimeAtDragStart.current + timeDelta;
+                setCurrentTimeRef.current(Math.max(0, Math.min(newTime, currentSession.duration)));
+            },
+        })
+    ).current;
+
+    // Pan responder for drag handle - swipe down to dismiss
+    const dismissPanResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: (_, gestureState) => {
+                // Only claim if moving downward
+                return gestureState.dy > 10;
+            },
+            onPanResponderRelease: (_, gestureState) => {
+                // Dismiss if swiped down more than 100px
+                if (gestureState.dy > 100) {
+                    // Save review data to global for multi-scan flow
+                    (global as any).reviewResult = {
+                        painPoints: painPointsRef.current,
+                        notes: notesRef.current,
+                    };
+                    router.back();
+                }
+            },
+        })
+    ).current;
+
+    if (!session || !session.frames.length) {
+        return (
+            <View style={styles.container}>
+                <SafeAreaView style={styles.errorContainer}>
+                    <Text style={styles.errorText}>No recording found</Text>
+                    <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                        <Text style={styles.backButtonText}>Go Back</Text>
+                    </TouchableOpacity>
+                </SafeAreaView>
+            </View>
+        );
+    }
+
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    const previewHeight = height * 0.4;
+
+    // Enter body part selection mode
+    const handleMarkPain = () => {
+        setIsPlaying(false); // Pause playback
+        setIsSelectingBodyPart(true);
+    };
+
+    // Handle touch on preview to place pain marker
+    const handlePreviewTouch = (event: GestureResponderEvent) => {
+        if (!currentFrame) return;
+
+        // If not already selecting, start selection mode immediately
+        if (!isSelectingBodyPart) {
+            handleMarkPain();
+        }
+
+        const touchX = event.nativeEvent.locationX;
+        const touchY = event.nativeEvent.locationY;
+
+        // Place the marker at touch position
+        setTouchPosition({ x: touchX, y: touchY });
+
+        // Find closest landmark/body part
+        let closestIndex = -1;
+        let closestDistance = Infinity;
+
+        currentFrame.landmarks.forEach((lm, index) => {
+            if (index < 11) return;
+            if (!LANDMARK_TO_BODY_PART[index]) return;
+
+            const lmX = lm.x * width;
+            const lmY = lm.y * previewHeight;
+            const distance = Math.sqrt((touchX - lmX) ** 2 + (touchY - lmY) ** 2);
+
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestIndex = index;
+            }
+        });
+
+        if (closestIndex >= 0) {
+            setPainBodyPart(LANDMARK_TO_BODY_PART[closestIndex] || 'other');
+        }
+        // Marker stays visible - user can tap again to reposition
+    };
+
+    // Select intensity (toggle, don't submit yet)
+    const selectIntensity = (intensity: number) => {
+        setPainIntensity(intensity);
+    };
+
+    // Confirm the pain point (called when user clicks Add button)
+    const confirmPainPoint = () => {
+        if (!touchPosition || !painBodyPart) return;
+
+        const newPainPoint: PainPoint = {
+            timestamp: currentTime,
+            pose: currentFrame?.landmarks || [],
+            intensity: painIntensity,
+            bodyPart: painBodyPart,
+            note: painNote,
+        };
+
+        setPainPoints([...painPoints, newPainPoint]);
+        setTouchPosition(null);
+        setIsSelectingBodyPart(false);
+        setPainBodyPart('');
+        setPainIntensity(5); // Reset for next time
+        setPainNote(''); // Reset note
+    };
+
+    // Cancel selection mode
+    const cancelSelection = () => {
+        setIsSelectingBodyPart(false);
+        setTouchPosition(null);
+        setPainBodyPart('');
+        setPainNote(''); // Reset note
+    };
+
+    const addPainPoint = () => {
+        if (!painBodyPart) {
+            Alert.alert('Select Body Part', 'Please select which body part hurts');
+            return;
+        }
+
+        const newPainPoint: PainPoint = {
+            timestamp: currentTime,
+            pose: currentFrame?.landmarks || [],
+            intensity: painIntensity,
+            bodyPart: painBodyPart,
+            note: painNote,
+        };
+
+        setPainPoints([...painPoints, newPainPoint]);
+        setShowPainModal(false);
+        setPainIntensity(5);
+        setPainBodyPart('');
+        setPainNote('');
+    };
+
+    const removePainPoint = (index: number) => {
+        setPainPoints(painPoints.filter((_, i) => i !== index));
+    };
+
+    const jumpToPainPoint = (timestamp: number) => {
+        setCurrentTime(timestamp);
+        setIsPlaying(false);
+    };
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            // Update global session with review data for handoff back to Scan screen
+            // Database persistence will be implemented in Phase 6
+            const updatedSession = {
+                ...session,
+                painPoints: painPoints,
+                reviewed: true,
+            };
+
+            (global as any).recordedSession = updatedSession;
+
+            // Short delay to show feedback
+            setTimeout(() => {
+                setSaving(false);
+                router.back();
+            }, 500);
+
+        } catch (error) {
+            console.error('Error saving:', error);
+            setSaving(false);
+            router.back(); // Fallback navigate
+        }
+    };
+
+    const progressPercent = (currentTime / session.duration) * 100;
+
+    return (
+        <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+
+        >
+            <LinearGradient colors={['#1A1A2E', '#16213E']} style={styles.container}>
+                <SafeAreaView style={styles.safeArea}>
+                    <ScrollView ref={scrollViewRef} contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps='handled'>
+                        {/* Header */}
+                        <View style={styles.header}>
+                            <TouchableOpacity onPress={() => router.back()}>
+                                <Text style={styles.cancelText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <Text style={styles.headerTitle}>Review Recording</Text>
+                            <TouchableOpacity onPress={handleSave} disabled={saving}>
+                                <Text style={[styles.saveText, saving && styles.saveTextDisabled]}>
+                                    {saving ? 'Saving...' : 'Save'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Pose Preview */}
+                        <TouchableOpacity
+                            activeOpacity={0.9}
+                            style={[styles.previewContainer, { height: previewHeight }]}
+                            onPress={handlePreviewTouch}
+
+                        >
+                            {currentFrame && (
+                                <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                                    {POSE_CONNECTIONS.map(([start, end], index) => {
+                                        const s = currentFrame.landmarks[start];
+                                        const e = currentFrame.landmarks[end];
+                                        if (!s || !e) return null;
+                                        return (
+                                            <SkeletonLine
+                                                key={`line-${index}`}
+                                                x1={s.x * width} y1={s.y * previewHeight}
+                                                x2={e.x * width} y2={e.y * previewHeight}
+                                                color={isSelectingBodyPart ? '#FF9800' : '#00BCD4'}
+                                            />
+                                        );
+                                    })}
+                                    {currentFrame.landmarks.map((lm, index) => {
+                                        if (index < 11) return null;
+                                        const isSelectable = LANDMARK_TO_BODY_PART[index] !== undefined;
+
+                                        return (
+                                            <View
+                                                key={`point-${index}`}
+                                                style={{
+                                                    position: 'absolute',
+                                                    left: lm.x * width - (isSelectingBodyPart && isSelectable ? 12 : 6),
+                                                    top: lm.y * previewHeight - (isSelectingBodyPart && isSelectable ? 12 : 6),
+                                                    width: isSelectingBodyPart && isSelectable ? 24 : 12,
+                                                    height: isSelectingBodyPart && isSelectable ? 24 : 12,
+                                                    borderRadius: isSelectingBodyPart && isSelectable ? 12 : 6,
+                                                    backgroundColor: isSelectingBodyPart && isSelectable ? '#FF5722' : '#00BCD4',
+                                                    borderWidth: 2,
+                                                    borderColor: '#fff',
+                                                }}
+                                            />
+                                        );
+                                    })}
+                                </View>
+                            )}
+
+                            {/* Touch circle feedback - pointerEvents none so it doesn't intercept touches */}
+                            {touchPosition && (
+                                <View
+                                    pointerEvents="none"
+                                    style={{
+                                        position: 'absolute',
+                                        left: touchPosition.x - 30,
+                                        top: touchPosition.y - 30,
+                                        width: 60,
+                                        height: 60,
+                                        borderRadius: 30,
+                                        backgroundColor: 'rgba(255, 87, 34, 0.5)',
+                                        borderWidth: 3,
+                                        borderColor: '#FF5722',
+                                    }}
+                                />
+                            )}
+
+                            {/* Current time overlay */}
+                            <View style={styles.timeOverlay}>
+                                <Text style={styles.timeOverlayText}>{formatTime(currentTime)}</Text>
+                            </View>
+                        </TouchableOpacity>
+
+                        {/* Selection Panel - Indent from skeleton, below it */}
+                        {isSelectingBodyPart && (
+                            <View style={styles.selectionPanel}>
+                                {!touchPosition ? (
+                                    <View style={styles.selectionHeaderRow}>
+                                        <Text style={styles.selectionHeaderText}>☝️ Tap on the skeleton above where it hurts</Text>
+                                        <TouchableOpacity style={styles.cancelSelectionBtnSmall} onPress={cancelSelection}>
+                                            <Text style={styles.cancelSelectionTextSmall}>✕</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                ) : (
+                                    <View style={styles.selectionConfirmRow}>
+                                        <Text style={styles.selectedBodyPart}>
+                                            {painBodyPart.replace('_', ' ').toUpperCase()}
+                                        </Text>
+                                        <View style={styles.inlineIntensityRow}>
+                                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => (
+                                                <TouchableOpacity
+                                                    key={i}
+                                                    style={[
+                                                        styles.inlineIntensityBtn,
+                                                        painIntensity === i && styles.inlineIntensityBtnSelected
+                                                    ]}
+                                                    onPress={() => selectIntensity(i)}
+                                                >
+                                                    <Text style={[
+                                                        styles.inlineIntensityText,
+                                                        painIntensity === i && styles.inlineIntensityTextSelected
+                                                    ]}>{i}</Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </View>
+
+                                        {/* Notes Input */}
+                                        <TextInput
+                                            style={styles.painNoteInput}
+                                            placeholder="Add a note (optional)..."
+                                            placeholderTextColor="rgba(255,255,255,0.4)"
+                                            value={painNote}
+                                            onChangeText={setPainNote}
+                                            multiline
+                                            numberOfLines={2}
+                                            onFocus={() => {
+                                                // Scroll to bottom after keyboard opens to keep input visible
+                                                setTimeout(() => {
+                                                    scrollViewRef.current?.scrollToEnd({ animated: true });
+                                                }, 250);
+                                            }}
+                                        />
+
+                                        <View style={styles.intensityActions}>
+                                            <TouchableOpacity style={styles.cancelSelectionBtn} onPress={cancelSelection}>
+                                                <Text style={styles.cancelSelectionText}>Cancel</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity style={styles.addPainBtn} onPress={confirmPainPoint}>
+                                                <Text style={styles.addPainBtnText}>Add Pain Point</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                )}
+                            </View>
+                        )}
+
+                        {/* Custom Timeline Scrubber - Hidden during selection */}
+                        {!isSelectingBodyPart && (
+                            <>
+                                <View style={styles.timelineSection}>
+                                    <Text style={styles.timeLabel}>{formatTime(currentTime)}</Text>
+
+                                    <View
+                                        ref={timelineRef}
+                                        style={[styles.timeline, { width: timelineWidth }]}
+                                    >
+                                        {/* Timeline track */}
+                                        <View style={styles.timelineTrack}>
+                                            {/* Progress fill */}
+                                            <View style={[styles.timelineProgress, { width: `${progressPercent}%` }]} />
+                                        </View>
+
+                                        {/* Pain point markers on timeline */}
+                                        {painPoints.map((pp, index) => (
+                                            <View
+                                                key={index}
+                                                style={[
+                                                    styles.timelineMarker,
+                                                    { left: `${(pp.timestamp / session.duration) * 100}%` }
+                                                ]}
+                                            />
+                                        ))}
+
+                                        {/* Thumb/handle */}
+                                        <View style={[styles.timelineThumb, { left: `${progressPercent}%` }]}>
+                                            <View style={styles.thumbInner} />
+                                        </View>
+
+                                        {/* Transparent touch overlay for reliable scrubbing */}
+                                        <View
+                                            style={StyleSheet.absoluteFill}
+                                            {...panResponder.panHandlers}
+                                        />
+                                    </View>
+
+                                    <Text style={styles.timeLabel}>{formatTime(session.duration)}</Text>
+                                </View>
+
+                                {/* Playback Controls */}
+                                <View style={styles.playbackControls}>
+                                    <TouchableOpacity
+                                        style={styles.controlButton}
+                                        onPress={() => setCurrentTime(0)}
+                                    >
+                                        <Text style={styles.controlButtonText}>⏮</Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        style={styles.playButton}
+                                        onPress={() => {
+                                            if (currentTime >= session.duration) {
+                                                setCurrentTime(0);
+                                            }
+                                            setIsPlaying(!isPlaying);
+                                        }}
+                                    >
+                                        <Text style={styles.playButtonText}>{isPlaying ? '⏸' : '▶️'}</Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity style={styles.markPainButton} onPress={handleMarkPain}>
+                                        <Text style={styles.markPainText}>🎯 Mark Pain</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </>
+                        )}
+
+                        {/* Pain Points List - hide during selection to create space for keyboard */}
+                        {!isSelectingBodyPart && (
+                            <View style={[styles.painPointsList, { flex: 0 }]}>
+                                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                                    <View>
+                                        <Text style={styles.sectionTitle}>
+                                            Pain Points ({painPoints.length})
+                                        </Text>
+
+                                        {painPoints.length === 0 ? (
+                                            <Text style={styles.emptyText}>
+                                                Drag the timeline to find a moment, then tap "Mark Pain"
+                                            </Text>
+                                        ) : (
+                                            painPoints.map((pp, index) => (
+                                                <TouchableOpacity
+                                                    key={index}
+                                                    style={styles.painPointCard}
+                                                    onPress={() => jumpToPainPoint(pp.timestamp)}
+                                                >
+                                                    <View style={styles.painPointInfo}>
+                                                        <Text style={styles.painPointTime}>{formatTime(pp.timestamp)}</Text>
+                                                        <Text style={styles.painPointBody}>{pp.bodyPart.replace('_', ' ')}</Text>
+                                                        <Text style={styles.painPointIntensity}>Intensity: {pp.intensity}/10</Text>
+                                                        {pp.note ? (
+                                                            <Text style={styles.painPointNote}>📝 {pp.note}</Text>
+                                                        ) : null}
+                                                        {pp.pose.length > 0 && (
+                                                            <Text style={styles.painPointAngles}>
+                                                                📐 {getAnglesForBodyPart(pp.bodyPart, pp.pose)}
+                                                            </Text>
+                                                        )}
+                                                    </View>
+                                                    <TouchableOpacity
+                                                        style={styles.removeButton}
+                                                        onPress={() => removePainPoint(index)}
+                                                    >
+                                                        <Text style={styles.removeButtonText}>✕</Text>
+                                                    </TouchableOpacity>
+                                                </TouchableOpacity>
+                                            ))
+                                        )}
+                                        <View style={{ height: 20 }} />
+                                    </View>
+                                </TouchableWithoutFeedback>
+                            </View>
+                        )}
+
+                        {/* Pain Modal */}
+                        {showPainModal && (
+                            <View style={styles.modalOverlay}>
+                                <View style={styles.modal}>
+                                    <Text style={styles.modalTitle}>Mark Pain Point</Text>
+                                    <Text style={styles.modalTime}>At {formatTime(currentTime)}</Text>
+
+                                    <Text style={styles.modalLabel}>Which body part hurts?</Text>
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.bodyPartScroll}>
+                                        {BODY_PARTS.map((part) => (
+                                            <TouchableOpacity
+                                                key={part}
+                                                style={[
+                                                    styles.bodyPartChip,
+                                                    painBodyPart === part && styles.bodyPartChipSelected,
+                                                ]}
+                                                onPress={() => setPainBodyPart(part)}
+                                            >
+                                                <Text style={[
+                                                    styles.bodyPartChipText,
+                                                    painBodyPart === part && styles.bodyPartChipTextSelected,
+                                                ]}>
+                                                    {part.replace('_', ' ')}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </ScrollView>
+
+                                    <Text style={styles.modalLabel}>Pain intensity: {painIntensity}/10</Text>
+                                    {/* Simple intensity buttons instead of slider */}
+                                    <View style={styles.intensityRow}>
+                                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                                            <TouchableOpacity
+                                                key={num}
+                                                style={[
+                                                    styles.intensityButton,
+                                                    painIntensity === num && styles.intensityButtonSelected,
+                                                ]}
+                                                onPress={() => setPainIntensity(num)}
+                                            >
+                                                <Text style={[
+                                                    styles.intensityButtonText,
+                                                    painIntensity === num && styles.intensityButtonTextSelected,
+                                                ]}>
+                                                    {num}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+
+                                    <View style={styles.modalButtons}>
+                                        <TouchableOpacity
+                                            style={styles.modalCancelButton}
+                                            onPress={() => setShowPainModal(false)}
+                                        >
+                                            <Text style={styles.modalCancelText}>Cancel</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={styles.modalAddButton}
+                                            onPress={addPainPoint}
+                                        >
+                                            <Text style={styles.modalAddText}>Add Pain Point</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            </View>
+                        )}
+
+                        {/* Notes Modal */}
+                        {showNotesModal && (
+                            <View style={styles.notesModalOverlay}>
+                                <KeyboardAvoidingView
+                                    style={styles.notesModalContainer}
+                                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                                >
+                                    <View style={styles.notesModalHeader}>
+                                        <TouchableOpacity onPress={() => setShowNotesModal(false)}>
+                                            <Text style={styles.notesModalCancel}>Cancel</Text>
+                                        </TouchableOpacity>
+                                        <Text style={styles.notesModalTitle}>Session Notes</Text>
+                                        <TouchableOpacity onPress={() => setShowNotesModal(false)}>
+                                            <Text style={styles.notesModalSave}>Done</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                    <TextInput
+                                        style={styles.notesModalInput}
+                                        placeholder="Add any notes about this session..."
+                                        placeholderTextColor="rgba(255,255,255,0.4)"
+                                        value={notes}
+                                        onChangeText={setNotes}
+                                        multiline
+                                        autoFocus
+                                        textAlignVertical="top"
+                                    />
+                                </KeyboardAvoidingView>
+                            </View>
+                        )}
+                    </ScrollView>
+                </SafeAreaView>
+            </LinearGradient >
+        </KeyboardAvoidingView>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: { flex: 1 },
+    safeArea: { flex: 1 },
+    errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    errorText: { color: '#fff', fontSize: 18, marginBottom: 20 },
+    backButton: { backgroundColor: '#00BCD4', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 },
+    backButtonText: { color: '#fff', fontWeight: '600' },
+    dragHandleContainer: {
+        alignItems: 'center',
+        paddingTop: 50, // Safe area for iOS notch
+        paddingBottom: 4,
+    },
+    dragHandle: {
+        width: 40,
+        height: 5,
+        backgroundColor: 'rgba(255,255,255,0.4)',
+        borderRadius: 3,
+    },
+    header: {
+        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+        paddingHorizontal: 16, paddingVertical: 12, paddingTop: 16,
+    },
+    cancelText: { color: '#FF5722', fontSize: 16 },
+    headerTitle: { color: '#fff', fontSize: 18, fontWeight: '600' },
+    saveText: { color: '#00BCD4', fontSize: 16, fontWeight: '600' },
+    saveTextDisabled: { opacity: 0.5 },
+    previewContainer: {
+        backgroundColor: '#0D1B2A', borderRadius: 12, marginHorizontal: 16, overflow: 'hidden',
+    },
+    timeOverlay: {
+        position: 'absolute', bottom: 8, right: 8,
+        backgroundColor: 'rgba(0,0,0,0.7)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4,
+    },
+    timeOverlayText: { color: '#fff', fontSize: 14, fontWeight: 'bold' },
+    timelineSection: {
+        flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginTop: 16,
+    },
+    timeLabel: { color: 'rgba(255,255,255,0.6)', fontSize: 12, width: 32, textAlign: 'center' },
+    timeline: {
+        height: 60, // Taller for easier touch
+        justifyContent: 'center',
+        marginHorizontal: 8,
+    },
+    timelineTrack: {
+        height: 6,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        borderRadius: 3,
+        overflow: 'hidden',
+    },
+    timelineProgress: {
+        height: '100%',
+        backgroundColor: '#00BCD4',
+        borderRadius: 3,
+    },
+    timelineMarker: {
+        position: 'absolute',
+        width: 4,
+        height: 20,
+        backgroundColor: '#FF5722',
+        borderRadius: 2,
+        top: 10,
+        marginLeft: -2,
+    },
+    timelineThumb: {
+        position: 'absolute',
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#00BCD4',
+        top: 8,
+        marginLeft: -12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 4,
+    },
+    thumbInner: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: '#fff',
+    },
+    playbackControls: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+        paddingHorizontal: 16, marginTop: 12, gap: 12,
+    },
+    controlButton: {
+        width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.1)',
+        justifyContent: 'center', alignItems: 'center',
+    },
+    controlButtonText: { fontSize: 18 },
+    playButton: {
+        width: 54, height: 54, borderRadius: 27, backgroundColor: 'rgba(255,255,255,0.15)',
+        justifyContent: 'center', alignItems: 'center',
+    },
+    playButtonText: { fontSize: 26 },
+    markPainButton: {
+        flex: 1, backgroundColor: '#FF5722', borderRadius: 12, padding: 14, alignItems: 'center',
+    },
+    markPainText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+    painPointsList: { flex: 1, paddingHorizontal: 16, marginTop: 16 },
+    sectionTitle: { color: '#fff', fontSize: 16, fontWeight: '600', marginBottom: 12 },
+    emptyText: { color: 'rgba(255,255,255,0.5)', fontSize: 14, fontStyle: 'italic' },
+    painPointCard: {
+        flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: 12, padding: 12, marginBottom: 8,
+    },
+    painPointInfo: { flex: 1 },
+    painPointTime: { color: '#00BCD4', fontSize: 14, fontWeight: '600' },
+    painPointBody: { color: '#fff', fontSize: 16, textTransform: 'capitalize', marginTop: 2 },
+    painPointIntensity: { color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 2 },
+    painPointNote: { color: '#00BCD4', fontSize: 12, marginTop: 4, fontStyle: 'italic' },
+    painPointAngles: { color: '#FF9800', fontSize: 11, marginTop: 4, fontStyle: 'italic' },
+    removeButton: {
+        width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(244,67,54,0.3)',
+        justifyContent: 'center', alignItems: 'center',
+    },
+    removeButtonText: { color: '#F44336', fontSize: 16 },
+    notesInput: {
+        backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 12, padding: 12,
+        color: '#fff', fontSize: 14, minHeight: 80, textAlignVertical: 'top',
+    },
+    modalOverlay: {
+        ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.8)',
+        justifyContent: 'center', alignItems: 'center', padding: 20,
+    },
+    modal: {
+        backgroundColor: '#1A1A2E', borderRadius: 16, padding: 20, width: '100%',
+    },
+    modalTitle: { color: '#fff', fontSize: 20, fontWeight: 'bold', textAlign: 'center' },
+    modalTime: { color: '#00BCD4', fontSize: 14, textAlign: 'center', marginTop: 4, marginBottom: 20 },
+    modalLabel: { color: 'rgba(255,255,255,0.7)', fontSize: 14, marginBottom: 8 },
+    bodyPartScroll: { marginBottom: 16 },
+    bodyPartChip: {
+        paddingHorizontal: 16, paddingVertical: 8, backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: 20, marginRight: 8,
+    },
+    bodyPartChipSelected: { backgroundColor: '#00BCD4' },
+    bodyPartChipText: { color: 'rgba(255,255,255,0.7)', textTransform: 'capitalize' },
+    bodyPartChipTextSelected: { color: '#fff', fontWeight: '600' },
+    intensityRow: {
+        flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20,
+    },
+    intensityButton: {
+        width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.1)',
+        justifyContent: 'center', alignItems: 'center',
+    },
+    intensityButtonSelected: { backgroundColor: '#FF5722' },
+    intensityButtonText: { color: 'rgba(255,255,255,0.6)', fontSize: 12 },
+    intensityButtonTextSelected: { color: '#fff', fontWeight: 'bold' },
+    modalButtons: { flexDirection: 'row', gap: 12 },
+    modalCancelButton: {
+        flex: 1, padding: 14, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center',
+    },
+    modalCancelText: { color: '#fff' },
+    modalAddButton: {
+        flex: 1, padding: 14, borderRadius: 12, backgroundColor: '#FF5722', alignItems: 'center',
+    },
+    modalAddText: { color: '#fff', fontWeight: '600' },
+    selectionPanel: {
+        backgroundColor: 'rgba(255,255,255,0.08)',
+        padding: 12,
+        marginBottom: 10,
+        borderRadius: 12,
+        marginHorizontal: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+    },
+    selectionHeaderRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    selectionHeaderText: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: '600',
+        flex: 1,
+    },
+    cancelSelectionBtnSmall: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    cancelSelectionTextSmall: {
+        color: '#fff',
+        fontSize: 14,
+    },
+    selectionConfirmRow: {
+        width: '100%',
+    },
+    selectedBodyPart: {
+        color: '#FF5722',
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    cancelSelectionBtn: {
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        borderRadius: 8,
+    },
+    cancelSelectionText: {
+        color: '#fff',
+        fontSize: 14,
+    },
+    inlineIntensityRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+        paddingHorizontal: 4,
+    },
+    inlineIntensityBtn: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        backgroundColor: '#FF5722',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    inlineIntensityText: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: 'bold',
+    },
+    inlineIntensityBtnSelected: {
+        backgroundColor: '#4CAF50',
+        transform: [{ scale: 1.2 }],
+    },
+    inlineIntensityTextSelected: {
+        color: '#fff',
+    },
+    intensityActions: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 12,
+        gap: 12,
+    },
+    addPainBtn: {
+        flex: 1,
+        backgroundColor: '#4CAF50',
+        paddingVertical: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    addPainBtnText: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: 'bold',
+    },
+    painNoteInput: {
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: 8,
+        padding: 10,
+        color: '#fff',
+        fontSize: 14,
+        minHeight: 50,
+        textAlignVertical: 'top',
+        marginTop: 10,
+    },
+    // Notes button styles
+    notesButton: {
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: 12,
+        padding: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    notesButtonText: {
+        color: 'rgba(255,255,255,0.6)',
+        fontSize: 14,
+        flex: 1,
+    },
+    notesButtonIcon: {
+        fontSize: 16,
+        marginLeft: 8,
+    },
+    // Notes modal styles
+    notesModalOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.95)',
+        justifyContent: 'flex-start',
+    },
+    notesModalContainer: {
+        flex: 1,
+        paddingTop: 20,
+    },
+    notesModalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.1)',
+    },
+    notesModalCancel: {
+        color: '#FF5722',
+        fontSize: 16,
+    },
+    notesModalTitle: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: '600',
+    },
+    notesModalSave: {
+        color: '#00BCD4',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    notesModalInput: {
+        flex: 1,
+        color: '#fff',
+        fontSize: 16,
+        padding: 16,
+        textAlignVertical: 'top',
+    },
+});

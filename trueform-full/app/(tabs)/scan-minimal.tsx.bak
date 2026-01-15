@@ -1,0 +1,323 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, Dimensions, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import { router } from 'expo-router';
+import { Movement, getMovementsForPain } from '../../constants/movements';
+
+type ScanPhase = 'idle' | 'questionnaire' | 'intensity' | 'movements' | 'recording' | 'complete';
+
+interface QuestionnaireData {
+    painLocation: string[];
+    painDuration: string;
+    painTrigger: string[];
+    painType: string[];
+    priorInjuries: string;
+}
+
+interface RecordedFrame {
+    uri: string;
+    timestamp: number;
+}
+
+export default function ScanScreen() {
+    const [scanPhase, setScanPhase] = useState<ScanPhase>('idle');
+    const [questionStep, setQuestionStep] = useState(0);
+    const [permission, requestPermission] = useCameraPermissions();
+    const cameraRef = useRef<any>(null);
+
+    // Full questionnaire state
+    const [questionnaire, setQuestionnaire] = useState<QuestionnaireData>({
+        painLocation: [],
+        painDuration: '',
+        painTrigger: [],
+        painType: [],
+        priorInjuries: '',
+    });
+
+    // Intensity & movements
+    const [scanIntensity, setScanIntensity] = useState(1);
+    const [movementProtocol, setMovementProtocol] = useState<Movement[]>([]);
+    const [currentMovementIndex, setCurrentMovementIndex] = useState(0);
+
+    // Recording state
+    const [isRecording, setIsRecording] = useState(false);
+    const [recordedFrames, setRecordedFrames] = useState<RecordedFrame[]>([]);
+    const [recordingTime, setRecordingTime] = useState(0);
+    const [allSessionRecordings, setAllSessionRecordings] = useState<any[]>([]);
+
+    const captureIntervalRef = useRef<any>(null);
+    const timerIntervalRef = useRef<any>(null);
+
+    const { width, height } = Dimensions.get('window');
+
+    // Request camera permissions
+    useEffect(() => {
+        if (permission && !permission.granted) {
+            requestPermission();
+        }
+    }, [permission]);
+
+
+    return (
+        <View style={styles.container}>
+            {/* Camera - Always visible as background */}
+            {permission?.granted && (
+                <CameraView
+                    ref={cameraRef}
+                    style={StyleSheet.absoluteFill}
+                    facing="front"
+                    mode="picture"
+                />
+            )}
+
+            {/* Idle Screen - Show "Start" button */}
+            {scanPhase === 'idle' && (
+                <SafeAreaView style={styles.fullOverlay}>
+                    <View style={styles.centered}>
+                        <Text style={styles.title}>AI Movement Analysis</Text>
+                        <Text style={styles.subtitle}>Get personalized guidance</Text>
+                        <TouchableOpacity
+                            style={styles.primaryButton}
+                            onPress={() => setScanPhase('questionnaire')}
+                        >
+                            <Text style={styles.buttonText}>Start AI Analysis</Text>
+                        </TouchableOpacity>
+                    </View>
+                </SafeAreaView>
+            )}
+
+            {/* Questionnaire - Full screen overlay */}
+            {scanPhase === 'questionnaire' && (
+                <View style={styles.questionnaireOverlay}>
+                    <SafeAreaView style={styles.questionnaireContainer}>
+                        <Text style={styles.questionProgress}>
+                            Question {questionStep + 1} of 2
+                        </Text>
+
+                        <View style={styles.questionContent}>
+                            {questionStep === 0 && (
+                                <>
+                                    <Text style={styles.questionText}>
+                                        Where is your pain located?
+                                    </Text>
+                                    {['Lower Back', 'Shoulder', 'Neck'].map((option) => (
+                                        <TouchableOpacity
+                                            key={option}
+                                            style={[
+                                                styles.optionButton,
+                                                painLocation === option && styles.optionButtonSelected
+                                            ]}
+                                            onPress={() => setPainLocation(option)}
+                                        >
+                                            <Text style={[
+                                                styles.optionText,
+                                                painLocation === option && styles.optionTextSelected
+                                            ]}>
+                                                {option}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </>
+                            )}
+
+                            {questionStep === 1 && (
+                                <>
+                                    <Text style={styles.questionText}>
+                                        When did the pain start?
+                                    </Text>
+                                    {['Today', 'This Week', 'Months Ago'].map((option) => (
+                                        <TouchableOpacity
+                                            key={option}
+                                            style={[
+                                                styles.optionButton,
+                                                painDuration === option && styles.optionButtonSelected
+                                            ]}
+                                            onPress={() => setPainDuration(option)}
+                                        >
+                                            <Text style={[
+                                                styles.optionText,
+                                                painDuration === option && styles.optionTextSelected
+                                            ]}>
+                                                {option}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </>
+                            )}
+                        </View>
+
+                        <View style={styles.navButtons}>
+                            <TouchableOpacity
+                                style={styles.secondaryButton}
+                                onPress={() => {
+                                    if (questionStep > 0) {
+                                        setQuestionStep(questionStep - 1);
+                                    } else {
+                                        setScanPhase('idle');
+                                    }
+                                }}
+                            >
+                                <Text style={styles.secondaryButtonText}>
+                                    {questionStep > 0 ? '← Back' : 'Cancel'}
+                                </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.primaryButton}
+                                onPress={() => {
+                                    if (questionStep < 1) {
+                                        setQuestionStep(questionStep + 1);
+                                    } else {
+                                        setScanPhase('recording');
+                                    }
+                                }}
+                            >
+                                <Text style={styles.buttonText}>
+                                    {questionStep < 1 ? 'Next →' : 'Start Recording'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </SafeAreaView>
+                </View>
+            )}
+
+            {/* Recording State - Simple for now */}
+            {scanPhase === 'recording' && (
+                <SafeAreaView style={styles.recordingOverlay}>
+                    <Text style={styles.recordingText}>📹 Recording...</Text>
+                    <TouchableOpacity
+                        style={styles.stopButton}
+                        onPress={() => setScanPhase('idle')}
+                    >
+                        <Text style={styles.buttonText}>Stop</Text>
+                    </TouchableOpacity>
+                </SafeAreaView>
+            )}
+        </View>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#000',
+    },
+    fullOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.7)',
+    },
+    centered: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    title: {
+        fontSize: 32,
+        fontWeight: 'bold',
+        color: '#fff',
+        marginBottom: 10,
+        textAlign: 'center',
+    },
+    subtitle: {
+        fontSize: 16,
+        color: 'rgba(255,255,255,0.7)',
+        marginBottom: 40,
+        textAlign: 'center',
+    },
+    primaryButton: {
+        backgroundColor: '#FF5722',
+        paddingVertical: 16,
+        paddingHorizontal: 40,
+        borderRadius: 30,
+    },
+    buttonText: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    questionnaireOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(26,26,46,0.98)',
+        zIndex: 999,
+    },
+    questionnaireContainer: {
+        flex: 1,
+        padding: 24,
+        justifyContent: 'space-between',
+    },
+    questionProgress: {
+        color: '#00BCD4',
+        fontSize: 16,
+        fontWeight: '600',
+        textAlign: 'center',
+        marginTop: 40,
+    },
+    questionContent: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    questionText: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: '#fff',
+        textAlign: 'center',
+        marginBottom: 40,
+    },
+    optionButton: {
+        backgroundColor: 'rgba(0,188,212,0.2)',
+        borderWidth: 2,
+        borderColor: '#00BCD4',
+        borderRadius: 25,
+        paddingVertical: 16,
+        paddingHorizontal: 40,
+        marginBottom: 16,
+        minWidth: 250,
+    },
+    optionButtonSelected: {
+        backgroundColor: '#00BCD4',
+        borderColor: '#fff',
+    },
+    optionText: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: '600',
+        textAlign: 'center',
+    },
+    optionTextSelected: {
+        color: '#fff',
+        fontWeight: 'bold',
+    },
+    navButtons: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 20,
+    },
+    secondaryButton: {
+        paddingVertical: 16,
+        paddingHorizontal: 24,
+    },
+    secondaryButtonText: {
+        color: 'rgba(255,255,255,0.7)',
+        fontSize: 16,
+    },
+    recordingOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    recordingText: {
+        fontSize: 32,
+        color: '#FF5722',
+        marginBottom: 40,
+    },
+    stopButton: {
+        backgroundColor: '#FF5722',
+        paddingVertical: 20,
+        paddingHorizontal: 50,
+        borderRadius: 40,
+    },
+});
