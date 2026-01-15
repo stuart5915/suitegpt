@@ -30,11 +30,25 @@ export default function AIFleetPage() {
     const [screenshots, setScreenshots] = useState<string[]>([])
     const [customText, setCustomText] = useState('')
     const [generatedPost, setGeneratedPost] = useState('')
+    const [replyText, setReplyText] = useState('')
     const [generating, setGenerating] = useState(false)
     const [imageUrl, setImageUrl] = useState('')
-    const [copied, setCopied] = useState(false)
+    const [copiedMain, setCopiedMain] = useState(false)
+    const [copiedReply, setCopiedReply] = useState(false)
     const [addingToQueue, setAddingToQueue] = useState(false)
     const [queueSuccess, setQueueSuccess] = useState(false)
+    const [buildNumber, setBuildNumber] = useState('')
+    const [lastBuildNumber, setLastBuildNumber] = useState<number>(0)
+
+    // Load last build number from localStorage
+    useEffect(() => {
+        const saved = localStorage.getItem('aiFleetLastBuild')
+        if (saved) {
+            const num = parseInt(saved, 10)
+            setLastBuildNumber(num)
+            setBuildNumber(String(num + 1))
+        }
+    }, [])
 
     // Fetch apps from Supabase
     useEffect(() => {
@@ -86,24 +100,35 @@ export default function AIFleetPage() {
             const response = await fetch('/api/generate-fleet-image', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ appName, tagline, iconUrl, screenshots })
+                body: JSON.stringify({ appName, tagline, iconUrl, screenshots, buildNumber })
             })
 
-            const { imageUrl: generatedImageUrl } = await response.json()
+            const { imageUrl: generatedImageUrl, buildNumber: usedBuildNum } = await response.json()
             setImageUrl(generatedImageUrl)
 
-            // Generate post text
-            const postText = customText || `🚀 Just launched: ${appName}!
+            // Save build number to localStorage for next time
+            if (usedBuildNum) {
+                const num = parseInt(usedBuildNum, 10)
+                localStorage.setItem('aiFleetLastBuild', String(num))
+                setLastBuildNumber(num)
+            }
+
+            // Generate main post text (no links for better reach)
+            const mainPost = customText || `🚀 Just launched: ${appName}!
 
 ${tagline}
 
-Try it free → ${appUrl}
+#buildinpublic #ai #apps`
 
-💎 Stake ETH/USDC to fund development → getsuite.app/wallet
+            // Generate reply text (with all the links)
+            const reply = `Try it free → ${appUrl}
 
-#buildinpublic #ai #defi #apps`
+🤖 What is the AI Fleet? → https://www.getsuite.app/learn/ai-fleet
 
-            setGeneratedPost(postText)
+💎 Stake ETH/USDC to fund development → https://www.getsuite.app/wallet`
+
+            setGeneratedPost(mainPost)
+            setReplyText(reply)
         } catch (error) {
             console.error('Error generating post:', error)
         } finally {
@@ -111,10 +136,16 @@ Try it free → ${appUrl}
         }
     }
 
-    const copyPost = () => {
+    const copyMainPost = () => {
         navigator.clipboard.writeText(generatedPost)
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
+        setCopiedMain(true)
+        setTimeout(() => setCopiedMain(false), 2000)
+    }
+
+    const copyReply = () => {
+        navigator.clipboard.writeText(replyText)
+        setCopiedReply(true)
+        setTimeout(() => setCopiedReply(false), 2000)
     }
 
     const addToQueue = async () => {
@@ -128,6 +159,8 @@ Try it free → ${appUrl}
                     content_type: 'ai_fleet',
                     app_id: selectedAppId || null,
                     post_text: generatedPost,
+                    reply_text: replyText,
+                    is_thread: true,
                     images: [imageUrl, ...screenshots].filter(Boolean)
                 })
             })
@@ -237,6 +270,29 @@ Try it free → ${appUrl}
 
                     <div>
                         <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
+                            Build Number
+                        </label>
+                        <div className="flex gap-2 items-center">
+                            <input
+                                type="number"
+                                value={buildNumber}
+                                onChange={(e) => setBuildNumber(e.target.value)}
+                                placeholder="e.g. 42"
+                                className="w-32 px-4 py-2 bg-[var(--background)] border border-[var(--surface-border)] rounded-lg text-[var(--foreground)]"
+                            />
+                            {lastBuildNumber > 0 && (
+                                <span className="text-sm text-[var(--foreground-muted)]">
+                                    Last: #{lastBuildNumber} → Next should be <strong className="text-[var(--primary)]">#{lastBuildNumber + 1}</strong>
+                                </span>
+                            )}
+                        </div>
+                        <p className="text-xs text-[var(--foreground-muted)] mt-1">
+                            Track your AI Fleet build sequence
+                        </p>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
                             Tagline
                         </label>
                         <input
@@ -334,44 +390,63 @@ Try it free → ${appUrl}
                         </div>
                     ) : (
                         <>
-                            {/* Image Preview */}
-                            {imageUrl && (
-                                <div className="rounded-lg overflow-hidden border border-[var(--surface-border)]">
-                                    <img src={imageUrl} alt="Generated post card" className="w-full" />
-                                </div>
-                            )}
-
-                            {/* Text Preview - Editable */}
+                            {/* Post 1: Main Post */}
                             <div className="bg-[var(--surface)] p-4 rounded-lg border border-[var(--surface-border)]">
-                                <label className="block text-xs font-medium text-[var(--foreground-muted)] mb-2">
-                                    Edit post text before copying:
-                                </label>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="text-xs font-medium text-[var(--primary)]">
+                                        Post 1: Main Post (with image, no links)
+                                    </label>
+                                    <button
+                                        onClick={copyMainPost}
+                                        className="text-xs flex items-center gap-1 text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
+                                    >
+                                        {copiedMain ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                        {copiedMain ? 'Copied!' : 'Copy'}
+                                    </button>
+                                </div>
+                                {/* Image Preview */}
+                                {imageUrl && (
+                                    <div className="rounded-lg overflow-hidden border border-[var(--surface-border)] mb-3">
+                                        <img src={imageUrl} alt="Generated post card" className="w-full" />
+                                    </div>
+                                )}
                                 <textarea
                                     value={generatedPost}
                                     onChange={(e) => setGeneratedPost(e.target.value)}
-                                    rows={8}
+                                    rows={4}
                                     className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--surface-border)] rounded-lg text-sm text-[var(--foreground)] font-sans resize-y"
                                 />
                             </div>
 
+                            {/* Post 2: Reply with Links */}
+                            <div className="bg-[var(--surface)] p-4 rounded-lg border border-[var(--surface-border)]">
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="text-xs font-medium text-[var(--foreground-muted)]">
+                                        Post 2: Reply (with links)
+                                    </label>
+                                    <button
+                                        onClick={copyReply}
+                                        className="text-xs flex items-center gap-1 text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
+                                    >
+                                        {copiedReply ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                        {copiedReply ? 'Copied!' : 'Copy'}
+                                    </button>
+                                </div>
+                                <textarea
+                                    value={replyText}
+                                    onChange={(e) => setReplyText(e.target.value)}
+                                    rows={5}
+                                    className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--surface-border)] rounded-lg text-sm text-[var(--foreground)] font-sans resize-y"
+                                />
+                            </div>
+
+                            {/* Thread indicator */}
+                            <div className="text-center text-xs text-[var(--foreground-muted)] py-2">
+                                These will be posted as a thread on X
+                            </div>
+
                             {/* Actions */}
                             <div className="flex gap-2">
-                                <button
-                                    onClick={copyPost}
-                                    className="btn btn-secondary flex-1"
-                                >
-                                    {copied ? (
-                                        <>
-                                            <Check className="w-4 h-4" />
-                                            Copied!
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Copy className="w-4 h-4" />
-                                            Copy Text
-                                        </>
-                                    )}
-                                </button>
                                 <button
                                     onClick={addToQueue}
                                     disabled={addingToQueue}
@@ -390,7 +465,7 @@ Try it free → ${appUrl}
                                     ) : (
                                         <>
                                             <Calendar className="w-4 h-4" />
-                                            Add to Queue
+                                            Add Thread to Queue
                                         </>
                                     )}
                                 </button>

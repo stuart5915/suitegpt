@@ -11,6 +11,8 @@ export async function POST(req: NextRequest) {
             content_type,
             app_id,
             post_text,
+            reply_text,
+            is_thread = false,
             images = [],
             scheduled_for
         } = body
@@ -29,6 +31,8 @@ export async function POST(req: NextRequest) {
                 content_type,
                 app_id: app_id || null,
                 post_text,
+                reply_text: reply_text || null,
+                is_thread,
                 images,
                 scheduled_for: scheduled_for || null,
                 status: scheduled_for ? 'queued' : 'draft'
