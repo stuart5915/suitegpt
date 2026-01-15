@@ -48,4 +48,16 @@ body {
   body {
     background-color: #0A0A1A;
   }
+}
+
+/* iOS PWA Safe Area Handling */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  #root {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Ensure tab bar respects safe area */
+  [role="tablist"] {
+    padding-bottom: env(safe-area-inset-bottom) !important;
+  }
 }`;
