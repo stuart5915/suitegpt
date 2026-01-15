@@ -1,2316 +1,124 @@
-<!-- Test from web UI 😊 -->
-<!-- Test from web UI -->
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>SUITE | Apps that build themselves. Funded by you.</title>
-    <meta name="description"
-        content="Stake ETH or USDC to fund AI-powered apps. Request features. Earn from their success.">
+    <meta name="description" content="Stake ETH or USDC to fund AI-powered apps. Request features. Earn from their success.">
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="assets/suite-token.png">
-    <link rel="stylesheet" href="suite-styles.css">
     <link rel="stylesheet" href="nav.css">
+    <link rel="stylesheet" href="homepage.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-config.js"></script>
-
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            /* Darker warm gradient for white text readability */
-            --gradient-warm: linear-gradient(180deg, #ffb347 0%, #ff9a8b 25%, #ffa07a 50%, #d4a5c9 75%, #c9a0dc 100%);
-            --accent-orange: #ff9500;
-            --accent-pink: #ff6b9d;
-            --accent-purple: #a855f7;
-            --accent-blue: #3b82f6;
-            --text-dark: #2d1b4e;
-            --text-medium: #5a4a6f;
-            --card-bg: rgba(255, 255, 255, 0.25);
-            --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.1);
-            --shadow-hover: 0 16px 48px rgba(0, 0, 0, 0.15);
-            --radius-xl: 28px;
-            --radius-lg: 20px;
-            --radius-md: 14px;
-            --radius-full: 100px;
-        }
-
-        body {
-            font-family: 'Nunito', sans-serif;
-            background: var(--gradient-warm);
-            min-height: 100vh;
-            color: var(--text-dark);
-            overflow-x: hidden;
-        }
-
-        /* Homepage nav - match value-container style */
-        .nav-inner {
-            background: rgba(255, 255, 255, 0.15) !important;
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-        }
-
-        /* Animated background blobs */
-        .bg-blob {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(80px);
-            opacity: 0.4;
-            z-index: -1;
-            animation: float 20s ease-in-out infinite;
-        }
-
-        .blob-1 {
-            width: 500px;
-            height: 500px;
-            background: #ffb3d9;
-            top: -100px;
-            left: -100px;
-        }
-
-        .blob-2 {
-            width: 400px;
-            height: 400px;
-            background: #b3d4ff;
-            top: 50%;
-            right: -100px;
-            animation-delay: -5s;
-        }
-
-        .blob-3 {
-            width: 350px;
-            height: 350px;
-            background: #ffe0b3;
-            bottom: -50px;
-            left: 30%;
-            animation-delay: -10s;
-        }
-
-        @keyframes float {
-
-            0%,
-            100% {
-                transform: translate(0, 0) scale(1);
-            }
-
-            33% {
-                transform: translate(30px, -30px) scale(1.05);
-            }
-
-            66% {
-                transform: translate(-20px, 20px) scale(0.95);
-            }
-        }
-
-        /* Animated pulsating grid background */
-        .grid-background {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            pointer-events: none;
-            overflow: hidden;
-        }
-
-        .grid-background::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image:
-                linear-gradient(rgba(255, 255, 255, 0.25) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.25) 1px, transparent 1px);
-            background-size: 60px 60px;
-        }
-
-        .grid-pulse {
-            position: absolute;
-            width: 60px;
-            height: 60px;
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.5) 0%, transparent 70%);
-            border-radius: 4px;
-            animation: pulse-grid 4s ease-in-out infinite;
-            opacity: 0;
-        }
-
-        .grid-pulse:nth-child(1) {
-            top: 10%;
-            left: 15%;
-            animation-delay: 0s;
-        }
-
-        .grid-pulse:nth-child(2) {
-            top: 25%;
-            left: 75%;
-            animation-delay: 0.5s;
-        }
-
-        .grid-pulse:nth-child(3) {
-            top: 45%;
-            left: 30%;
-            animation-delay: 1s;
-        }
-
-        .grid-pulse:nth-child(4) {
-            top: 60%;
-            left: 85%;
-            animation-delay: 1.5s;
-        }
-
-        .grid-pulse:nth-child(5) {
-            top: 15%;
-            left: 55%;
-            animation-delay: 2s;
-        }
-
-        .grid-pulse:nth-child(6) {
-            top: 70%;
-            left: 20%;
-            animation-delay: 2.5s;
-        }
-
-        .grid-pulse:nth-child(7) {
-            top: 35%;
-            left: 90%;
-            animation-delay: 3s;
-        }
-
-        .grid-pulse:nth-child(8) {
-            top: 80%;
-            left: 45%;
-            animation-delay: 3.5s;
-        }
-
-        @keyframes pulse-grid {
-
-            0%,
-            100% {
-                opacity: 0;
-                transform: scale(0.8);
-            }
-
-            50% {
-                opacity: 1;
-                transform: scale(1.2);
-            }
-        }
-
-        /* Navigation uses external nav.css */
-
-        /* Live Activity Ticker */
-        .activity-ticker {
-            width: 100%;
-            overflow: hidden;
-            padding: 50px 0 8px 0;
-            margin-top: 80px;
-            position: relative;
-            z-index: 5;
-        }
-
-        .activity-ticker::before,
-        .activity-ticker::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            width: 100px;
-            height: 100%;
-            z-index: 2;
-            pointer-events: none;
-        }
-
-        .activity-ticker::before {
-            left: 0;
-            background: linear-gradient(90deg, #ffb347 0%, transparent 100%);
-        }
-
-        .activity-ticker::after {
-            right: 0;
-            background: linear-gradient(90deg, transparent 0%, #ff9a8b 100%);
-        }
-
-        .ticker-track {
-            display: flex;
-            gap: 40px;
-            animation: scroll-ticker 30s linear infinite;
-            width: max-content;
-        }
-
-        .ticker-track:hover {
-            animation-play-state: paused;
-        }
-
-        .ticker-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            padding: 10px 18px;
-            border-radius: 100px;
-            white-space: nowrap;
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #2d1b4e;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            position: relative;
-            z-index: 20;
-            transition: all 0.3s ease;
-            text-decoration: none;
-        }
-
-        .ticker-item .emoji {
-            font-size: 1.1rem;
-        }
-
-        .ticker-emoji {
-            width: 24px;
-            height: 24px;
-            vertical-align: middle;
-            margin-right: 4px;
-            object-fit: contain;
-            position: relative;
-            z-index: 2;
-            background: url('assets/emojis/clay-badge-bg.png') center/contain no-repeat;
-            padding: 4px;
-            box-sizing: content-box;
-        }
-
-        /* Footer link emojis with token badge background */
-        .footer-emoji {
-            width: 18px;
-            height: 18px;
-            vertical-align: middle;
-            margin-right: 6px;
-            object-fit: contain;
-            background: url('assets/emojis/clay-badge-bg.png') center/contain no-repeat;
-            padding: 3px;
-            box-sizing: content-box;
-        }
-
-        .ticker-item .user {
-            color: #ff6b9d;
-            font-weight: 700;
-        }
-
-        .ticker-item:hover {
-            background: rgba(255, 255, 255, 0.4);
-            transform: scale(1.05);
-            box-shadow: 0 4px 20px rgba(255, 149, 0, 0.3);
-            cursor: pointer;
-        }
-
-        .ticker-item:hover::after {
-            content: ' ?';
-            opacity: 0.7;
-        }
-
-        /* Tooltip for ticker items */
-        .ticker-item::before {
-            content: attr(data-tooltip);
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%) translateY(-8px);
-            background: linear-gradient(135deg, #2d1b4e, #5a4a6f);
-            color: white;
-            padding: 8px 14px;
-            border-radius: 8px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            white-space: nowrap;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.2s ease;
-            pointer-events: none;
-            z-index: 100;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-        }
-
-        .ticker-item:hover::before {
-            opacity: 1;
-            visibility: visible;
-            transform: translateX(-50%) translateY(-4px);
-        }
-
-        @keyframes scroll-ticker {
-            0% {
-                transform: translateX(0);
-            }
-
-            100% {
-                transform: translateX(-50%);
-            }
-        }
-
-        /* ═══════════════════════════════════════════════════════════════
-           HERO SECTION - Modern Flexbox Responsive Design
-           ═══════════════════════════════════════════════════════════════ */
-        .hero {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 0 24px;
-            margin-top: -180px;
-            position: relative;
-            background: transparent !important;
-            min-height: auto;
-        }
-
-        .hero-character-arc {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            max-width: 1200px;
-            width: 100%;
-            margin: 0 auto;
-            gap: 0;
-        }
-
-        /* Desktop: Image on right, content on left */
-        @media (min-width: 769px) {
-            .hero-character-arc {
-                flex-direction: row-reverse;
-                justify-content: space-between;
-            }
-
-            .hero-character-arc img {
-                width: 55%;
-                max-width: 600px;
-                flex-shrink: 0;
-            }
-
-            .hero-content {
-                text-align: left;
-                align-items: flex-start;
-                flex: 1;
-                padding-left: 40px;
-            }
-        }
-
-        .hero-character-arc img {
-            width: 90%;
-            max-width: 500px;
-            height: auto;
-            margin: 110px auto 0;
-        }
-
-        .hero-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            gap: 20px;
-            padding: 20px 0;
-        }
-
-        .hero-content .hero-title {
-            font-size: clamp(2rem, 6vw, 3.5rem);
-            line-height: 1.15;
-            margin: 0;
-            color: white;
-            font-weight: 900;
-            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
-        }
-
-        .hero-subtitle {
-            font-size: 1rem;
-            max-width: 500px;
-            margin: 0;
-        }
-
-        .hero-subtitle-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 14px 28px;
-            background: linear-gradient(135deg, #ff9500, #ff6b9d);
-            border-radius: 100px;
-            font-size: clamp(0.9rem, 2.5vw, 1.1rem);
-            color: #2d1b4e;
-            text-decoration: none;
-            font-weight: 700;
-            box-shadow: 0 4px 16px rgba(255, 149, 0, 0.3);
-            transition: all 0.3s ease;
-            position: relative;
-            z-index: 20;
-        }
-
-        .hero-subtitle-pill:hover {
-            transform: translateY(-4px) scale(1.05);
-            box-shadow: 0 8px 24px rgba(255, 149, 0, 0.5);
-        }
-
-        .hero-cta {
-            margin-bottom: 24px;
-        }
-
-        .hero-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: var(--card-bg);
-            backdrop-filter: blur(20px);
-            padding: 10px 20px;
-            border-radius: var(--radius-full);
-            font-weight: 700;
-            font-size: 0.9rem;
-            color: var(--text-medium);
-            box-shadow: var(--shadow-soft);
-            margin-bottom: 28px;
-            animation: bounce-in 0.6s ease;
-        }
-
-        .hero-badge .dot {
-            width: 10px;
-            height: 10px;
-            background: #22c55e;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-
-            0%,
-            100% {
-                transform: scale(1);
-                opacity: 1;
-            }
-
-            50% {
-                transform: scale(0.85);
-                opacity: 0.7;
-            }
-        }
-
-        @keyframes bounce-in {
-            0% {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-
-            100% {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Hero title gradient - disable for character arc version */
-        .hero-title {
-            font-weight: 900;
-        }
-
-        .hero-content .hero-title {
-            background: none !important;
-            -webkit-background-clip: unset !important;
-            -webkit-text-fill-color: white !important;
-            background-clip: unset !important;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 16px 32px;
-            font-size: 1.1rem;
-            font-weight: 700;
-            border-radius: var(--radius-full);
-            text-decoration: none;
-            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            cursor: pointer;
-            border: none;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #ff9500, #ff6b9d);
-            color: white;
-            box-shadow: 0 8px 24px rgba(255, 149, 0, 0.3);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-4px) scale(1.02);
-            box-shadow: 0 16px 40px rgba(255, 149, 0, 0.4);
-        }
-
-        .btn-secondary {
-            background: var(--card-bg);
-            color: var(--text-dark);
-            box-shadow: var(--shadow-soft);
-        }
-
-        .btn-secondary:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-hover);
-        }
-
-        /* Stats */
-        .hero-stats {
-            display: flex;
-            gap: 24px;
-            justify-content: center;
-            flex-wrap: wrap;
-            animation: bounce-in 0.6s ease 0.4s backwards;
-        }
-
-        .stat {
-            background: var(--card-bg);
-            backdrop-filter: blur(20px);
-            padding: 20px 36px;
-            border-radius: var(--radius-xl);
-            box-shadow: var(--shadow-soft);
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-
-        .stat:hover {
-            transform: translateY(-6px);
-            box-shadow: var(--shadow-hover);
-        }
-
-        .stat-value {
-            font-size: 2.2rem;
-            font-weight: 900;
-            background: linear-gradient(135deg, #ff9500, #ff6b9d);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .stat-label {
-            font-size: 0.9rem;
-            color: var(--text-medium);
-            font-weight: 600;
-        }
-
-        /* Section Styles */
-        .section {
-            padding: 80px 24px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .section-header {
-            text-align: center;
-            margin-bottom: 38px;
-        }
-
-        .section-tag {
-            display: inline-block;
-            background: linear-gradient(135deg, #ff9500, #ff6b9d);
-            color: #2d1b4e;
-            padding: 10px 24px;
-            border-radius: var(--radius-full);
-            font-size: 0.85rem;
-            font-weight: 800;
-            margin-bottom: 16px;
-            letter-spacing: 0.5px;
-        }
-
-        .section-title {
-            font-size: 2.8rem;
-            font-weight: 900;
-            color: var(--text-dark);
-        }
-
-        /* Value Cards - BUILD, DISCOVER, EARN - Unified Card */
-        .value-section {
-            padding: 30px 24px 40px;
-            width: 100%;
-            max-width: 900px;
-            margin: -220px auto 0;
-            position: relative;
-            z-index: 5;
-        }
-
-        .value-section .section-header {
-            text-align: left;
-            margin-bottom: 20px;
-            margin-left: 0;
-            z-index: 20;
-        }
-
-        .value-container {
-            background: rgba(255, 255, 255, 0.15) !important;
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: var(--radius-xl);
-            padding: 0;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            position: relative;
-        }
-
-        .value-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 0;
-        }
-
-        @media (max-width: 900px) {
-            .value-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .hero-title {
-                font-size: 2.8rem;
-            }
-        }
-
-        .value-card {
-            padding: 32px 24px;
-            text-align: center;
-            border-right: 1px solid rgba(255, 255, 255, 0.2);
-            overflow: visible;
-        }
-
-        .value-card:last-child {
-            border-right: none;
-        }
-
-        @media (max-width: 900px) {
-            .value-card {
-                border-right: none;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            }
-
-            .value-card:last-child {
-                border-bottom: none;
-            }
-        }
-
-        .value-card h3 {
-            font-size: 1rem;
-            font-weight: 800;
-            margin-bottom: 20px;
-            color: white;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-        }
-
-        /* BUILD card - Token badge - Inspiration style */
-        .value-card.build .token-badge {
-            display: inline-flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: transparent;
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            margin: 0;
-            color: white;
-            font-weight: 800;
-            box-shadow: none;
-            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            cursor: pointer;
-        }
-
-        .value-card.build .token-badge:hover {
-            transform: scale(1.15) rotate(5deg);
-            animation: coinBounce 0.5s ease;
-        }
-
-        @keyframes coinBounce {
-
-            0%,
-            100% {
-                transform: scale(1.15) rotate(5deg);
-            }
-
-            25% {
-                transform: scale(1.2) rotate(-3deg);
-            }
-
-            50% {
-                transform: scale(1.1) rotate(8deg);
-            }
-
-            75% {
-                transform: scale(1.18) rotate(-2deg);
-            }
-        }
-
-        .value-card.build .token-badge .dollar {
-            font-size: 1.1rem;
-            display: flex;
-            align-items: center;
-            gap: 2px;
-        }
-
-        .value-card.build .token-badge .dollar::before {
-            content: '$';
-            font-size: 0.9rem;
-        }
-
-        .value-card.build .token-badge .token-text {
-            font-size: 0.85rem;
-            opacity: 0.9;
-        }
-
-        /* Old styles removed - see bubbly text effect below */
-
-        .value-card.build .token-wrapper {
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 16px;
-        }
-
-        /* Bubbly text effect - $SUITE with black stroke and gradient */
-        .suite-token-text {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0;
-            margin-left: -40px;
-            margin-top: 8px;
-        }
-
-        .token-wrapper .token-badge {
-            margin-left: -40px;
-        }
-
-        .token-wrapper {
-            filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 30px rgba(255, 255, 255, 0.6));
-        }
-
-        .suite-token-text .suite-name {
-            font-size: 2.8rem;
-            font-weight: 900;
-            background: linear-gradient(135deg, #ff9500 0%, #ff6b9d 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            -webkit-text-stroke: 1px #000;
-            paint-order: stroke fill;
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            line-height: 1;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-
-        .suite-token-text .suite-name:hover {
-            transform: scale(1.1);
-            animation: textWobble 0.5s ease;
-        }
-
-        @keyframes textWobble {
-
-            0%,
-            100% {
-                transform: scale(1.1) rotate(0deg);
-            }
-
-            25% {
-                transform: scale(1.12) rotate(-2deg);
-            }
-
-            75% {
-                transform: scale(1.08) rotate(2deg);
-            }
-        }
-
-        .suite-token-text .suite-label {
-            font-size: 2.5rem;
-            font-weight: 900;
-            background: none;
-            -webkit-background-clip: unset;
-            -webkit-text-fill-color: white;
-            background-clip: unset;
-            -webkit-text-stroke: 3px #000;
-            paint-order: stroke fill;
-            margin-top: -10px;
-            margin-left: 4px;
-            cursor: pointer;
-            transition: transform 0.3s ease;
-            line-height: 1;
-            letter-spacing: 0.15em;
-        }
-
-
-
-        /* Falling coins container */
-        .falling-coins {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            pointer-events: none;
-            overflow: hidden;
-            z-index: 9999;
-        }
-
-        .falling-coin {
-            position: absolute;
-            font-size: 2rem;
-            pointer-events: none;
-            user-select: none;
-            will-change: transform, left, top;
-        }
-
-        .falling-coin.physics-coin:hover {
-            filter: brightness(1.2);
-        }
-
-
-        .value-card.build {
-            padding-bottom: 0;
-        }
-
-        .value-card.build .tools-row {
-            display: flex;
-            justify-content: center;
-            align-items: flex-end;
-            gap: 0;
-            margin-top: 40px;
-            margin-bottom: -32px;
-            perspective: 600px;
-            position: relative;
-        }
-
-        .value-card.build .tool-card {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 14px 16px 40px;
-            border-radius: 18px 18px 0 0;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
-            transition: transform 0.3s ease;
-        }
-
-        /* Side cards - smaller and rotated back */
-        .value-card.build .tool-card:first-child,
-        .value-card.build .tool-card:last-child {
-            transform: scale(0.85);
-            opacity: 0.9;
-        }
-
-        .value-card.build .tool-card:first-child {
-            transform: scale(0.85) translateX(15px) rotateY(15deg);
-            z-index: 1;
-        }
-
-        .value-card.build .tool-card:last-child {
-            transform: scale(0.85) translateX(-15px) rotateY(-15deg);
-            z-index: 1;
-        }
-
-        /* Center card - larger and in front */
-        .value-card.build .tool-card:nth-child(2) {
-            transform: scale(1.15) translateY(-5px);
-            z-index: 3;
-        }
-
-        .value-card.build .tool-icon-img {
-            width: 50px;
-            height: 50px;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-        }
-
-        /* Center card icon is bigger */
-        .value-card.build .tool-card:nth-child(2) .tool-icon-img {
-            width: 58px;
-            height: 58px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-        }
-
-        .value-card.build .tool-label {
-            font-size: 0.65rem;
-            font-weight: 600;
-            color: var(--text-medium);
-            text-align: center;
-            line-height: 1.2;
-        }
-
-        /* DISCOVER card - Mini app list */
-        .value-card.discover {
-            position: relative;
-            z-index: 10;
-        }
-
-        .value-card.discover .mini-apps {
-            display: flex;
-            flex-direction: column;
-            gap: 0;
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-            overflow: hidden;
-        }
-
-        .mini-app {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: transparent;
-            padding: 10px 14px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-            transition: all 0.3s ease;
-        }
-
-        .mini-app:last-child {
-            border-bottom: none;
-        }
-
-        .mini-app:hover {
-            background: rgba(255, 149, 0, 0.05);
-        }
-
-        .mini-app .app-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.6rem;
-            /* Apple-style 3D bubble effect */
-            box-shadow:
-                0 4px 8px rgba(0, 0, 0, 0.15),
-                0 1px 3px rgba(0, 0, 0, 0.1),
-                inset 0 2px 4px rgba(255, 255, 255, 0.4),
-                inset 0 -2px 4px rgba(0, 0, 0, 0.1);
-            transform: perspective(200px) rotateX(-2deg);
-            transition: all 0.3s ease;
-        }
-
-        .mini-app:hover .app-icon {
-            transform: perspective(200px) rotateX(-2deg) scale(1.08);
-            box-shadow:
-                0 6px 12px rgba(0, 0, 0, 0.2),
-                0 2px 4px rgba(0, 0, 0, 0.12),
-                inset 0 2px 4px rgba(255, 255, 255, 0.5),
-                inset 0 -2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .mini-app .app-icon img {
-            border-radius: 14px;
-        }
-
-        .mini-app .app-info {
-            flex: 1;
-            text-align: left;
-        }
-
-        .mini-app .app-name {
-            font-weight: 700;
-            font-size: 0.9rem;
-            color: var(--text-dark);
-        }
-
-        .mini-app .app-creator {
-            font-size: 0.75rem;
-            color: var(--text-medium);
-        }
-
-        .mini-app .creator-avatar {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #fbbf24, #f59e0b);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7rem;
-        }
-
-        /* EARN card - Chart illustration */
-        .value-card.earn .chart-illustration {
-            height: 120px;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            gap: 8px;
-            margin-bottom: 16px;
-            position: relative;
-        }
-
-        .chart-bar {
-            width: 28px;
-            border-radius: 6px 6px 0 0;
-            animation: grow-up 1s ease forwards;
-        }
-
-        .chart-bar:nth-child(1) {
-            background: linear-gradient(to top, #e9d5ff, #c084fc);
-            height: 40px;
-            animation-delay: 0.1s;
-        }
-
-        .chart-bar:nth-child(2) {
-            background: linear-gradient(to top, #dbeafe, #60a5fa);
-            height: 55px;
-            animation-delay: 0.2s;
-        }
-
-        .chart-bar:nth-child(3) {
-            background: linear-gradient(to top, #fef3c7, #fbbf24);
-            height: 75px;
-            animation-delay: 0.3s;
-        }
-
-        .chart-bar:nth-child(4) {
-            background: linear-gradient(to top, #dcfce7, #22c55e);
-            height: 100px;
-            animation-delay: 0.4s;
-        }
-
-        .chart-bar:nth-child(5) {
-            background: linear-gradient(to top, #ffe4e6, #f43f5e);
-            height: 80px;
-            animation-delay: 0.5s;
-        }
-
-        .chart-arrow {
-            position: absolute;
-            top: 10px;
-            right: 20px;
-            font-size: 2rem;
-            animation: bounce-arrow 1s ease infinite;
-        }
-
-        @keyframes grow-up {
-            from {
-                transform: scaleY(0);
-            }
-
-            to {
-                transform: scaleY(1);
-            }
-        }
-
-        @keyframes bounce-arrow {
-
-            0%,
-            100% {
-                transform: translateY(0) rotate(-45deg);
-            }
-
-            50% {
-                transform: translateY(-8px) rotate(-45deg);
-            }
-        }
-
-        .value-card .cta-btn {
-            display: inline-block;
-            padding: 12px 24px;
-            background: white;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 0.9rem;
-            color: var(--text-dark);
-            text-decoration: none;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-            margin-top: 8px;
-        }
-
-        .value-card .cta-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-        }
-
-        /* Yield Curve Animation - EARN section */
-        .yield-curve-container {
-            position: relative;
-            height: 140px;
-            margin-bottom: 16px;
-        }
-
-        .yield-curve {
-            width: 100%;
-            height: 100px;
-        }
-
-        .yield-line {
-            stroke-dasharray: 300;
-            stroke-dashoffset: 300;
-            animation: drawLine 2s ease forwards;
-        }
-
-        @keyframes drawLine {
-            to {
-                stroke-dashoffset: 0;
-            }
-        }
-
-        .yield-dot {
-            filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.6));
-        }
-
-        .yield-labels {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--text-medium);
-            margin-top: -8px;
-        }
-
-        .yield-end {
-            color: #22c55e;
-            font-size: 1rem;
-        }
-
-        .compound-badge {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            background: rgba(34, 197, 94, 0.1);
-            color: #22c55e;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 700;
-            margin: 0 auto;
-        }
-
-        .compound-icon {
-            animation: spin 3s linear infinite;
-        }
-
-        @keyframes spin {
-            from {
-                transform: rotate(0deg);
-            }
-
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* Community Love Section */
-        .community-love-tag {
-            color: #000 !important;
-        }
-
-        .quote-avatar {
-            width: 44px;
-            height: 44px;
-            background: linear-gradient(135deg, rgba(255, 149, 0, 0.2), rgba(255, 107, 157, 0.2));
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.3rem;
-            margin: 0 auto 12px;
-        }
-
-        /* Featured Apps */
-        .apps-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 24px;
-        }
-
-        .app-card {
-            background: var(--card-bg);
-            backdrop-filter: blur(20px);
-            border-radius: var(--radius-xl);
-            padding: 28px;
-            box-shadow: var(--shadow-soft);
-            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-            cursor: pointer;
-        }
-
-        .app-card:hover {
-            transform: translateY(-8px) scale(1.02);
-            box-shadow: var(--shadow-hover);
-        }
-
-        .app-card .app-icon {
-            width: 64px;
-            height: 64px;
-            border-radius: 18px;
-            background: linear-gradient(135deg, #fff5eb, #ffe4d4);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            margin-bottom: 16px;
-        }
-
-        .app-card h3 {
-            font-size: 1.3rem;
-            font-weight: 800;
-            margin-bottom: 8px;
-        }
-
-        .app-card p {
-            color: var(--text-medium);
-            font-size: 0.95rem;
-            line-height: 1.6;
-            margin-bottom: 16px;
-        }
-
-        .app-card .meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.85rem;
-        }
-
-        .app-card .rating {
-            color: #92400e;
-            font-weight: 600;
-        }
-
-        .app-card .status {
-            color: #22c55e;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .app-card .status::before {
-            content: '';
-            width: 8px;
-            height: 8px;
-            background: #22c55e;
-            border-radius: 50%;
-        }
-
-        /* Community Love Section */
-        /* Earn Ways */
-        .earn-ways {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-
-        .earn-way {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 12px;
-            background: rgba(34, 197, 94, 0.08);
-            border-radius: 12px;
-            transition: all 0.2s;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        .earn-way:hover {
-            background: rgba(34, 197, 94, 0.15);
-            transform: translateX(4px);
-        }
-
-        .earn-icon {
-            font-size: 1.1rem;
-        }
-
-        .earn-label {
-            flex: 1;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--text-dark);
-        }
-
-        .earn-amount {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: #1a1a2e;
-            background: rgba(255, 255, 255, 0.85);
-            padding: 4px 8px;
-            border-radius: 6px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        /* LP Pager Widget */
-        .lp-pager {
-            position: fixed;
-            bottom: 180px;
-            right: 24px;
-            background: linear-gradient(135deg, #0f172a, #1e293b);
-            border: 2px solid #22c55e;
-            border-radius: 12px;
-            padding: 12px 16px;
-            text-decoration: none;
-            box-shadow: 0 4px 20px rgba(34, 197, 94, 0.3), 0 0 40px rgba(34, 197, 94, 0.1);
-            transition: box-shadow 0.3s ease;
-            z-index: 100;
-            animation: float-subtle 3s ease-in-out infinite;
-            cursor: grab;
-            user-select: none;
-        }
-
-        .lp-pager:hover {
-            transform: translateY(-4px) scale(1.05);
-            box-shadow: 0 8px 30px rgba(34, 197, 94, 0.4), 0 0 60px rgba(34, 197, 94, 0.2);
-        }
-
-        @keyframes float-subtle {
-
-            0%,
-            100% {
-                transform: translateY(0);
-            }
-
-            50% {
-                transform: translateY(-5px);
-            }
-        }
-
-        .lp-pager-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 6px;
-        }
-
-        .lp-pager-dot {
-            width: 8px;
-            height: 8px;
-            background: #22c55e;
-            border-radius: 50%;
-            animation: pulse-dot 1.5s ease-in-out infinite;
-        }
-
-        @keyframes pulse-dot {
-
-            0%,
-            100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.4;
-            }
-        }
-
-        .lp-pager-title {
-            font-family: 'SF Mono', monospace;
-            font-size: 0.7rem;
-            font-weight: 700;
-            color: #22c55e;
-            letter-spacing: 1px;
-        }
-
-        .lp-pager-content {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .lp-pager-dex {
-            font-size: 0.75rem;
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .lp-pager-action {
-            font-size: 0.7rem;
-            font-weight: 600;
-            color: #60a5fa;
-        }
-
-        /* Community Love */
-        .community-love {
-            padding: 60px 24px;
-            max-width: 1000px;
-            margin: 0 auto;
-            text-align: center;
-            position: relative;
-            z-index: 1;
-        }
-
-        .community-love-tag {
-            display: inline-block;
-            background: linear-gradient(135deg, #ff9500, #ff6b9d);
-            color: white;
-            padding: 10px 24px;
-            border-radius: var(--radius-full);
-            font-size: 0.85rem;
-            font-weight: 800;
-            margin-bottom: 32px;
-            letter-spacing: 0.5px;
-        }
-
-        .community-quotes {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-        }
-
-        @media (max-width: 768px) {
-            .community-quotes {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .community-quote {
-            background: var(--card-bg);
-            backdrop-filter: blur(20px);
-            padding: 24px;
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-soft);
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-
-        .community-quote:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-hover);
-        }
-
-        .community-quote .quote-mark {
-            font-size: 2rem;
-            color: var(--accent-pink);
-            margin-bottom: 8px;
-        }
-
-        .community-quote .quote-text {
-            font-size: 1rem;
-            color: var(--text-dark);
-            margin-bottom: 12px;
-            font-weight: 600;
-        }
-
-        .community-quote .quote-author {
-            font-size: 0.85rem;
-            color: var(--text-medium);
-            font-weight: 700;
-        }
-
-        /* Stats Section - By The Numbers */
-        .stats-section {
-            padding: 60px 40px;
-            margin: 40px 24px;
-            max-width: 1200px;
-            margin-left: auto;
-            margin-right: auto;
-            background: linear-gradient(135deg, #2d1b4e 0%, #4a2c6a 100%);
-            border-radius: var(--radius-xl);
-        }
-
-        .stats-section .section-title {
-            color: white;
-        }
-
-        .stats-section .section-tag {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 24px;
-        }
-
-        @media (max-width: 900px) {
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media (max-width: 500px) {
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .stat-card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border-radius: var(--radius-lg);
-            padding: 28px;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-6px);
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        .stat-number {
-            font-size: 2.8rem;
-            font-weight: 900;
-            background: linear-gradient(135deg, #ff9500, #ff6b9d);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 8px;
-        }
-
-        .stat-card .stat-label {
-            font-size: 1rem;
-            font-weight: 700;
-            color: white;
-            margin-bottom: 4px;
-        }
-
-        .stat-sublabel {
-            font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        /* Footer */
-        .footer {
-            padding: 60px 24px 30px;
-            max-width: 1200px;
-            margin: 0 auto;
-            background: linear-gradient(180deg, rgba(255, 179, 71, 0.15) 0%, rgba(255, 154, 139, 0.2) 100%);
-            backdrop-filter: blur(10px);
-            border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-            margin-top: 60px;
-        }
-
-        .footer-content {
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr 1fr;
-            gap: 40px;
-            margin-bottom: 40px;
-        }
-
-        @media (max-width: 768px) {
-            .footer-content {
-                grid-template-columns: 1fr;
-                gap: 30px;
-            }
-        }
-
-        .footer-brand .logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 800;
-            font-size: 1.4rem;
-            margin-bottom: 12px;
-        }
-
-        .footer-brand .logo .icon {
-            width: 36px;
-            height: 36px;
-            background: linear-gradient(135deg, #ff9500, #ff6b9d);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-        }
-
-        .footer-brand p {
-            color: var(--text-medium);
-        }
-
-        .footer-column h5 {
-            font-weight: 800;
-            margin-bottom: 16px;
-            color: var(--text-dark);
-        }
-
-        .footer-column a {
-            display: inline-block;
-            color: var(--text-medium);
-            text-decoration: none;
-            padding: 8px 14px;
-            margin: 2px 0;
-            border-radius: 20px;
-            transition: all 0.2s ease;
-        }
-
-        .footer-column a:hover {
-            background: rgba(255, 255, 255, 0.6);
-            color: #ff6b00;
-        }
-
-        .footer-bottom {
-            text-align: center;
-            padding-top: 30px;
-            border-top: 1px solid rgba(0, 0, 0, 0.1);
-            color: var(--text-medium);
-            font-size: 0.9rem;
-        }
-
-        /* Mobile Menu Button */
-        .mobile-menu-btn {
-            display: none;
-            flex-direction: column;
-            gap: 4px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 8px;
-        }
-
-        .mobile-menu-btn span {
-            width: 24px;
-            height: 3px;
-            background: var(--text-dark);
-            border-radius: 2px;
-            transition: all 0.3s ease;
-        }
-
-        @media (max-width: 768px) {
-            .mobile-menu-btn {
-                display: flex;
-            }
-
-            .nav-links {
-                display: none;
-                position: absolute;
-                top: 100%;
-                left: 0;
-                right: 0;
-                background: var(--card-bg);
-                backdrop-filter: blur(20px);
-                flex-direction: column;
-                padding: 16px;
-                border-radius: 0 0 var(--radius-xl) var(--radius-xl);
-                box-shadow: var(--shadow-soft);
-            }
-
-            .nav-links.active {
-                display: flex;
-            }
-        }
-
-        /* ═══════════════════════════════════════════════════════════════
-           COMPREHENSIVE MOBILE RESPONSIVE STYLES
-           ═══════════════════════════════════════════════════════════════ */
-
-        /* Tablet Breakpoint - 900px */
-        @media (max-width: 900px) {
-            .hero {
-                margin-top: 0;
-            }
-
-            .hero-character-arc {
-                flex-direction: column;
-            }
-
-            .hero-character-arc img {
-                width: 70%;
-                max-width: 400px;
-            }
-
-            .hero-content {
-                padding: 10px 20px;
-            }
-
-            .value-section {
-                margin-top: 20px;
-                padding: 20px 16px 30px;
-            }
-
-            .flywheel-section {
-                margin: 20px auto 0;
-            }
-
-            .section {
-                padding: 60px 20px;
-            }
-
-            .section-title {
-                font-size: 2.2rem;
-            }
-        }
-
-        /* Mobile Breakpoint - 768px */
-        @media (max-width: 768px) {
-            .activity-ticker {
-                margin-top: 60px;
-                padding: 30px 0 8px 0;
-            }
-
-            .ticker-item {
-                padding: 8px 14px;
-                font-size: 0.8rem;
-            }
-
-            .hero {
-                margin-top: 10px;
-                padding: 0 16px;
-            }
-
-            .hero-character-arc img {
-                width: 65%;
-                max-width: 320px;
-            }
-
-            .value-section {
-                margin-top: 20px;
-                max-width: 100%;
-                padding: 15px 12px 25px;
-            }
-
-            .value-card {
-                padding: 24px 16px;
-            }
-
-            .value-card h3 {
-                font-size: 0.9rem;
-            }
-
-            /* LP Pager - smaller on mobile */
-            .lp-pager {
-                bottom: 100px;
-                right: 12px;
-                padding: 8px 12px;
-                font-size: 0.75rem;
-            }
-
-            .lp-pager-title {
-                font-size: 0.6rem;
-            }
-
-            .lp-pager-dex,
-            .lp-pager-action {
-                font-size: 0.65rem;
-            }
-
-            /* Flywheel section - fix positioning on mobile */
-            .flywheel-section {
-                margin: 20px auto 0;
-                padding: 40px 16px;
-            }
-
-            /* Stats section */
-            .stats-section {
-                padding: 40px 20px;
-                margin: 30px 16px;
-            }
-
-            .stats-section .section-title {
-                font-size: 1.8rem;
-            }
-
-            /* Community quotes */
-            .community-love {
-                padding: 40px 16px;
-            }
-
-            /* Footer */
-            .footer {
-                padding: 40px 16px;
-            }
-
-            /* Blobs - reduce on mobile */
-            .bg-blob {
-                opacity: 0.25;
-            }
-
-            .blob-1 {
-                width: 300px;
-                height: 300px;
-            }
-
-            .blob-2 {
-                width: 250px;
-                height: 250px;
-            }
-
-            .blob-3 {
-                width: 200px;
-                height: 200px;
-            }
-        }
-
-        /* Small Phone Breakpoint - 480px */
-        @media (max-width: 480px) {
-            .activity-ticker {
-                margin-top: 70px;
-                padding: 20px 0 8px 0;
-            }
-
-            .ticker-item {
-                padding: 6px 10px;
-                font-size: 0.7rem;
-                gap: 6px;
-            }
-
-            .ticker-emoji {
-                width: 18px;
-                height: 18px;
-            }
-
-            .hero {
-                margin-top: 20px;
-                padding: 20px 16px;
-            }
-
-            .hero-character-arc {
-                flex-direction: column;
-                align-items: center;
-                gap: 20px;
-            }
-
-            .hero-character-arc img {
-                width: 80%;
-                max-width: 280px;
-            }
-
-            .hero-content {
-                text-align: center;
-                padding: 0 10px;
-            }
-
-            .hero-content .hero-title {
-                font-size: 1.6rem;
-                line-height: 1.3;
-                margin-bottom: 16px;
-            }
-
-            .hero-subtitle-pill {
-                font-size: 0.9rem;
-                padding: 12px 20px;
-            }
-
-            .value-section {
-                margin-top: 20px;
-                padding: 10px 8px 20px;
-                display: none !important;
-            }
-
-            /* Flywheel / How It Works section mobile */
-            .flywheel-section {
-                padding: 40px 16px;
-                margin-top: 20px;
-            }
-
-            .flywheel-title {
-                font-size: 1.5rem;
-                margin-bottom: 20px;
-            }
-
-            .flywheel-visual {
-                flex-wrap: wrap;
-                justify-content: center;
-                gap: 8px;
-            }
-
-            .flywheel-arrow {
-                display: none;
-            }
-
-            .flywheel-step {
-                flex: 0 0 calc(33% - 8px);
-                min-width: 80px;
-            }
-
-            .flywheel-description {
-                font-size: 0.9rem;
-                padding: 0 10px;
-            }
-
-            /* Reorder sections on mobile */
-            body {
-                display: flex;
-                flex-direction: column;
-            }
-
-            .activity-ticker {
-                order: 1;
-            }
-
-            .hero {
-                order: 2;
-            }
-
-            .flywheel-section {
-                order: 3;
-            }
-
-            .value-section {
-                order: 4;
-            }
-
-            .community-love {
-                order: 6;
-            }
-
-            .apps-carousel-section {
-                order: 5;
-            }
-
-            .stats-section {
-                order: 7;
-            }
-
-            .roadmap-section {
-                order: 7;
-            }
-
-            #shared-footer {
-                order: 8;
-            }
-
-            .value-card {
-                padding: 20px 12px;
-            }
-
-            .value-card h3 {
-                font-size: 0.8rem;
-                margin-bottom: 12px;
-            }
-
-            /* Token wrapper in BUILD card */
-            .token-wrapper {
-                flex-direction: column;
-                gap: 8px;
-            }
-
-            .suite-token-text {
-                margin-left: 0;
-                align-items: center;
-            }
-
-            .suite-token-text .suite-name {
-                font-size: 2rem;
-            }
-
-            .suite-token-text .suite-label {
-                font-size: 1.8rem;
-            }
-
-            /* Tools row in BUILD card */
-            .value-card.build .tools-row {
-                margin-top: 20px;
-                gap: 0;
-                perspective: none;
-            }
-
-            .value-card.build .tool-card {
-                padding: 10px 10px 30px;
-            }
-
-            /* Simplify 3D transforms on mobile */
-            .value-card.build .tool-card:first-child {
-                transform: scale(0.85) translateX(10px);
-            }
-
-            .value-card.build .tool-card:last-child {
-                transform: scale(0.85) translateX(-10px);
-            }
-
-            .value-card.build .tool-card:nth-child(2) {
-                transform: scale(1.05) translateY(-2px);
-            }
-
-            .value-card.build .tool-icon-img {
-                width: 36px;
-                height: 36px;
-            }
-
-            .value-card.build .tool-card:nth-child(2) .tool-icon-img {
-                width: 42px;
-                height: 42px;
-            }
-
-            .value-card.build .tool-label {
-                font-size: 0.55rem;
-            }
-
-            /* Hide falling coins on mobile for performance */
-            .falling-coin {
-                display: none !important;
-            }
-
-            /* Token badge smaller on mobile */
-            .value-card.build .token-badge {
-                width: 80px;
-                height: 80px;
-            }
-
-            .token-wrapper .token-badge {
-                margin-left: 0;
-            }
-
-            /* Hide SUITE token text on mobile */
-            .suite-token-text {
-                display: none !important;
-            }
-
-            /* Mini apps in DISCOVER card */
-            .mini-app {
-                padding: 8px 10px;
-                gap: 10px;
-            }
-
-            .mini-app .app-icon {
-                width: 40px;
-                height: 40px;
-                font-size: 1.3rem;
-            }
-
-            .mini-app .app-name {
-                font-size: 0.8rem;
-            }
-
-            .mini-app .app-creator {
-                font-size: 0.65rem;
-            }
-
-            /* Earn ways in EARN card */
-            .earn-way {
-                padding: 8px 10px;
-                gap: 8px;
-            }
-
-            .earn-label {
-                font-size: 0.75rem;
-            }
-
-            .earn-amount {
-                font-size: 0.65rem;
-                padding: 3px 6px;
-            }
-
-            /* Section styling */
-            .section {
-                padding: 40px 16px;
-            }
-
-            .section-title {
-                font-size: 1.6rem;
-            }
-
-            .section-tag {
-                padding: 8px 16px;
-                font-size: 0.75rem;
-            }
-
-            /* App cards */
-            .apps-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .app-card {
-                padding: 20px;
-            }
-
-            .app-card .app-icon {
-                width: 48px;
-                height: 48px;
-                font-size: 1.5rem;
-            }
-
-            .app-card h3 {
-                font-size: 1.1rem;
-            }
-
-            /* Stats */
-            .stat {
-                padding: 16px 24px;
-            }
-
-            .stat-value {
-                font-size: 1.8rem;
-            }
-
-            .stat-label {
-                font-size: 0.8rem;
-            }
-
-            /* LP Pager - hide on very small screens */
-            .lp-pager {
-                display: none;
-            }
-
-            /* Community quotes */
-            .community-quote {
-                padding: 18px;
-            }
-
-            .community-quote .quote-text {
-                font-size: 0.9rem;
-            }
-
-            /* Footer */
-            .footer-brand .logo {
-                font-size: 1.2rem;
-            }
-
-            .footer-column h5 {
-                font-size: 0.9rem;
-            }
-
-            .footer-column a {
-                padding: 6px 10px;
-                font-size: 0.85rem;
-            }
-
-            /* Buttons */
-            .btn {
-                padding: 12px 24px;
-                font-size: 0.95rem;
-            }
-
-            /* Hide grid background on mobile for performance */
-            .grid-background {
-                display: none;
-            }
-
-            /* Apps carousel mobile */
-            .apps-carousel-section {
-                overflow: hidden;
-                max-width: 100vw;
-            }
-
-            .apps-carousel-wrapper {
-                max-width: 100vw;
-            }
-
-            .carousel-card {
-                width: 240px;
-            }
-
-            /* Prevent any horizontal scroll */
-            html,
-            body {
-                max-width: 100vw;
-                overflow-x: hidden;
-            }
-        }
-
-        /* Extra small phones - 360px */
-        @media (max-width: 360px) {
-            .hero-content .hero-title {
-                font-size: 1.4rem;
-            }
-
-            .hero-character-arc img {
-                width: 240px;
-            }
-
-            .value-card {
-                padding: 16px 10px;
-            }
-
-            .suite-token-text .suite-name {
-                font-size: 1.6rem;
-            }
-
-            .suite-token-text .suite-label {
-                font-size: 1.4rem;
-            }
-        }
-    </style>
 </head>
 
 <body>
-    <nav id="main-nav"></nav>
-    <script src="nav-component.js"></script>
-    <!-- Background Blobs -->
+    <!-- Animated Background Blobs -->
     <div class="bg-blob blob-1"></div>
     <div class="bg-blob blob-2"></div>
     <div class="bg-blob blob-3"></div>
 
-    <!-- Animated Grid Background -->
-    <div class="grid-background">
-        <div class="grid-pulse"></div>
-        <div class="grid-pulse"></div>
-        <div class="grid-pulse"></div>
-        <div class="grid-pulse"></div>
-        <div class="grid-pulse"></div>
-        <div class="grid-pulse"></div>
-        <div class="grid-pulse"></div>
-        <div class="grid-pulse"></div>
-    </div>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-logo">
+                <img src="assets/suite-token.png" alt="SUITE" class="nav-logo-img">
+                SUITE
+            </a>
+            <div class="nav-links">
+                <a href="apps.html">Apps</a>
+                <a href="docs/index.html">Docs</a>
+                <a href="learn.html">Learn</a>
+                <a href="wallet.html">Vault</a>
+            </div>
+            <div class="nav-actions">
+                <button class="nav-btn nav-wallet" onclick="connectWallet()">
+                    Connect Wallet
+                </button>
+            </div>
+            <button class="mobile-menu-btn" onclick="this.classList.toggle('active'); document.querySelector('.nav-links').classList.toggle('active');">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
 
-    <!-- Navigation (injected by nav-component.js) -->
-    <nav id="main-nav"></nav>
-    <script src="nav-component.js"></script>
-
-    <!-- Top Emojis -->
-
-
-    <!-- Live Activity Ticker -->
+    <!-- Activity Ticker -->
     <div class="activity-ticker">
         <div class="ticker-track">
-            <!-- First set of items -->
-            <a href="apps.html" class="ticker-item" data-tooltip="📋 View app details"><img
-                    src="assets/emojis/clay-sparkles.png" alt="" class="ticker-emoji"><span
-                    class="user">FoodVitals</span>
-                reached Tier 2!</a>
-            <a href="apps.html" class="ticker-item" data-tooltip="🚀 Just published"><img
-                    src="assets/emojis/clay-rocket.png" alt="" class="ticker-emoji"><span class="user">OpticRep</span>
-                published to App Store</a>
-            <a href="apps.html" class="ticker-item" data-tooltip="✅ Feature approved"><img
-                    src="assets/emojis/clay-trophy.png" alt="" class="ticker-emoji">"Dark mode" approved for <span
-                    class="user">REMCast</span></a>
-            <a href="wallet.html" class="ticker-item" data-tooltip="💎 Stake to request features"><img
-                    src="assets/emojis/clay-coins.png" alt="" class="ticker-emoji"><span class="user">TrueForm</span>
-                reached $5k - voting unlocked!</a>
-            <a href="apps.html" class="ticker-item" data-tooltip="📋 Feature requested"><img
-                    src="assets/emojis/clay-wrench.png" alt="" class="ticker-emoji">"Export CSV" requested for <span
-                    class="user">FoodVitals</span></a>
-            <a href="apps.html" class="ticker-item" data-tooltip="🗳️ Community voting"><img
-                    src="assets/emojis/clay-gear.png" alt="" class="ticker-emoji">12 votes on "Calendar sync" for <span
-                    class="user">Cheshbon</span></a>
-            <a href="apps.html" class="ticker-item" data-tooltip="🚀 New AI Fleet app"><img
-                    src="assets/emojis/clay-rocket.png" alt="" class="ticker-emoji">AI Fleet launched <span
-                    class="user">MindMap</span> today</a>
-            <a href="apps.html" class="ticker-item" data-tooltip="✅ Feature shipped"><img
-                    src="assets/emojis/clay-sparkles.png" alt="" class="ticker-emoji">"Push notifications" shipped to
-                <span class="user">REMCast</span></a>
+            <a href="apps.html" class="ticker-item">
+                <img src="assets/emojis/clay-sparkles.png" alt="" class="ticker-emoji">
+                <span class="user">FoodVitals</span> reached Tier 2!
+            </a>
+            <a href="apps.html" class="ticker-item">
+                <img src="assets/emojis/clay-rocket.png" alt="" class="ticker-emoji">
+                <span class="user">OpticRep</span> published to App Store
+            </a>
+            <a href="apps.html" class="ticker-item">
+                <img src="assets/emojis/clay-trophy.png" alt="" class="ticker-emoji">
+                "Dark mode" approved for <span class="user">REMCast</span>
+            </a>
+            <a href="wallet.html" class="ticker-item">
+                <img src="assets/emojis/clay-coins.png" alt="" class="ticker-emoji">
+                <span class="user">TrueForm</span> reached $5k - voting unlocked!
+            </a>
+            <a href="apps.html" class="ticker-item">
+                <img src="assets/emojis/clay-wrench.png" alt="" class="ticker-emoji">
+                "Export CSV" requested for <span class="user">FoodVitals</span>
+            </a>
+            <a href="apps.html" class="ticker-item">
+                <img src="assets/emojis/clay-gear.png" alt="" class="ticker-emoji">
+                12 votes on "Calendar sync" for <span class="user">Cheshbon</span>
+            </a>
+            <a href="apps.html" class="ticker-item">
+                <img src="assets/emojis/clay-rocket.png" alt="" class="ticker-emoji">
+                AI Fleet launched <span class="user">MindMap</span> today
+            </a>
+            <a href="apps.html" class="ticker-item">
+                <img src="assets/emojis/clay-sparkles.png" alt="" class="ticker-emoji">
+                "Push notifications" shipped to <span class="user">REMCast</span>
+            </a>
             <!-- Duplicate for seamless loop -->
-            <a href="apps.html" class="ticker-item" data-tooltip="📋 View app details"><img
-                    src="assets/emojis/clay-sparkles.png" alt="" class="ticker-emoji"><span
-                    class="user">FoodVitals</span>
-                reached Tier 2!</a>
-            <a href="apps.html" class="ticker-item" data-tooltip="🚀 Just published"><img
-                    src="assets/emojis/clay-rocket.png" alt="" class="ticker-emoji"><span class="user">OpticRep</span>
-                published to App Store</a>
-            <a href="apps.html" class="ticker-item" data-tooltip="✅ Feature approved"><img
-                    src="assets/emojis/clay-trophy.png" alt="" class="ticker-emoji">"Dark mode" approved for <span
-                    class="user">REMCast</span></a>
-            <a href="wallet.html" class="ticker-item" data-tooltip="💎 Stake to request features"><img
-                    src="assets/emojis/clay-coins.png" alt="" class="ticker-emoji"><span class="user">TrueForm</span>
-                reached $5k - voting unlocked!</a>
-            <a href="apps.html" class="ticker-item" data-tooltip="📋 Feature requested"><img
-                    src="assets/emojis/clay-wrench.png" alt="" class="ticker-emoji">"Export CSV" requested for <span
-                    class="user">FoodVitals</span></a>
-            <a href="apps.html" class="ticker-item" data-tooltip="🗳️ Community voting"><img
-                    src="assets/emojis/clay-gear.png" alt="" class="ticker-emoji">12 votes on "Calendar sync" for <span
-                    class="user">Cheshbon</span></a>
-            <a href="apps.html" class="ticker-item" data-tooltip="🚀 New AI Fleet app"><img
-                    src="assets/emojis/clay-rocket.png" alt="" class="ticker-emoji">AI Fleet launched <span
-                    class="user">MindMap</span> today</a>
-            <a href="apps.html" class="ticker-item" data-tooltip="✅ Feature shipped"><img
-                    src="assets/emojis/clay-sparkles.png" alt="" class="ticker-emoji">"Push notifications" shipped to
-                <span class="user">REMCast</span></a>
+            <a href="apps.html" class="ticker-item">
+                <img src="assets/emojis/clay-sparkles.png" alt="" class="ticker-emoji">
+                <span class="user">FoodVitals</span> reached Tier 2!
+            </a>
+            <a href="apps.html" class="ticker-item">
+                <img src="assets/emojis/clay-rocket.png" alt="" class="ticker-emoji">
+                <span class="user">OpticRep</span> published to App Store
+            </a>
+            <a href="apps.html" class="ticker-item">
+                <img src="assets/emojis/clay-trophy.png" alt="" class="ticker-emoji">
+                "Dark mode" approved for <span class="user">REMCast</span>
+            </a>
+            <a href="wallet.html" class="ticker-item">
+                <img src="assets/emojis/clay-coins.png" alt="" class="ticker-emoji">
+                <span class="user">TrueForm</span> reached $5k - voting unlocked!
+            </a>
+            <a href="apps.html" class="ticker-item">
+                <img src="assets/emojis/clay-wrench.png" alt="" class="ticker-emoji">
+                "Export CSV" requested for <span class="user">FoodVitals</span>
+            </a>
+            <a href="apps.html" class="ticker-item">
+                <img src="assets/emojis/clay-gear.png" alt="" class="ticker-emoji">
+                12 votes on "Calendar sync" for <span class="user">Cheshbon</span>
+            </a>
+            <a href="apps.html" class="ticker-item">
+                <img src="assets/emojis/clay-rocket.png" alt="" class="ticker-emoji">
+                AI Fleet launched <span class="user">MindMap</span> today
+            </a>
+            <a href="apps.html" class="ticker-item">
+                <img src="assets/emojis/clay-sparkles.png" alt="" class="ticker-emoji">
+                "Push notifications" shipped to <span class="user">REMCast</span>
+            </a>
         </div>
     </div>
 
-    <!-- Hero Section with Character Arc -->
+    <!-- Hero Section -->
     <section class="hero">
-        <!-- Character Arc with Title Inside -->
         <div class="hero-character-arc">
             <img src="assets/hero-characters.png" alt="Community of creators">
             <div class="hero-content">
@@ -2319,9 +127,10 @@
                     Your stake funds apps. <span style="color: black; font-weight: 800;">Explore them →</span>
                 </a>
             </div>
+        </div>
     </section>
 
-    <!-- Flywheel Section -->
+    <!-- Flywheel / How It Works -->
     <section class="flywheel-section">
         <div class="flywheel-container">
             <h2 class="flywheel-title">How It Works</h2>
@@ -2357,8 +166,7 @@
                 </div>
             </div>
             <p class="flywheel-description">
-                Your deposit generates yield. Yield builds apps. Apps generate revenue. Revenue grows the vault. Your
-                share is worth more.
+                Your deposit generates yield. Yield builds apps. Apps generate revenue. Revenue grows the vault. Your share is worth more.
             </p>
             <a href="learn/ai-fleet.html" class="flywheel-link">Read the full story →</a>
         </div>
@@ -2372,7 +180,7 @@
         </div>
         <div class="fleet-cards">
             <!-- Last Build Card -->
-            <div class="fleet-card" id="lastBuildCard">
+            <div class="fleet-card">
                 <span class="card-label">LAST BUILD</span>
                 <div class="fleet-app-icon" id="fleetAppIcon">📱</div>
                 <h3 id="fleetAppName">Loading...</h3>
@@ -2402,11 +210,9 @@
             <div class="fleet-card vote-card">
                 <span class="card-label">VOTE ON NEXT APP</span>
                 <p class="vote-question">Which app should we build tomorrow?</p>
-                <div class="vote-embed">
-                    <a href="https://twitter.com/getSUITE" target="_blank" class="vote-twitter-link">
-                        <span>🗳️</span> Vote in today's poll on X
-                    </a>
-                </div>
+                <a href="https://twitter.com/getSUITE" target="_blank" class="vote-twitter-link">
+                    🗳️ Vote in today's poll on X
+                </a>
                 <a href="https://twitter.com/getSUITE" target="_blank" class="btn-fleet">Vote on X →</a>
             </div>
         </div>
@@ -2455,424 +261,6 @@
         </div>
     </section>
 
-    <style>
-        /* Flywheel Section */
-        .flywheel-section {
-            padding: 40px 24px;
-            max-width: 900px;
-            margin: -200px auto 0;
-            position: relative;
-            z-index: 5;
-        }
-
-        .flywheel-container {
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(20px);
-            border-radius: 24px;
-            padding: 40px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            text-align: center;
-        }
-
-        .flywheel-title {
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: var(--text-dark);
-            margin-bottom: 24px;
-        }
-
-        .flywheel-visual {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 24px;
-        }
-
-        .flywheel-step {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            padding: 12px 16px;
-            background: rgba(255, 255, 255, 0.5);
-            border-radius: 16px;
-            min-width: 70px;
-        }
-
-        .flywheel-step.highlight {
-            background: linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(16, 185, 129, 0.3));
-            border: 2px solid #22c55e;
-        }
-
-        .step-icon {
-            font-size: 1.5rem;
-        }
-
-        .step-label {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--text-dark);
-        }
-
-        .flywheel-arrow {
-            color: var(--text-medium);
-            font-weight: 700;
-        }
-
-        .flywheel-description {
-            color: var(--text-medium);
-            font-size: 0.95rem;
-            max-width: 600px;
-            margin: 0 auto 16px;
-        }
-
-        .flywheel-link {
-            color: var(--accent-purple);
-            font-weight: 700;
-            text-decoration: none;
-        }
-
-        .flywheel-link:hover {
-            text-decoration: underline;
-        }
-
-        /* AI Fleet Section */
-        .ai-fleet-section {
-            padding: 60px 24px;
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-
-        .ai-fleet-header {
-            text-align: center;
-            margin-bottom: 32px;
-        }
-
-        .ai-fleet-header h2 {
-            font-size: 2rem;
-            font-weight: 900;
-            color: var(--text-dark);
-            margin-bottom: 8px;
-        }
-
-        .ai-fleet-header p {
-            color: var(--text-medium);
-        }
-
-        .fleet-cards {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-        }
-
-        @media (max-width: 768px) {
-            .fleet-cards {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .fleet-card {
-            background: rgba(255, 255, 255, 0.25);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            padding: 24px;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .card-label {
-            display: inline-block;
-            background: linear-gradient(135deg, #a855f7, #ec4899);
-            color: white;
-            padding: 4px 12px;
-            border-radius: 100px;
-            font-size: 0.7rem;
-            font-weight: 800;
-            letter-spacing: 0.5px;
-            margin-bottom: 16px;
-        }
-
-        .fleet-app-icon {
-            font-size: 3rem;
-            margin-bottom: 12px;
-        }
-
-        .fleet-card h3 {
-            font-size: 1.2rem;
-            font-weight: 800;
-            color: var(--text-dark);
-            margin-bottom: 4px;
-        }
-
-        .fleet-card p {
-            color: var(--text-medium);
-            font-size: 0.9rem;
-            margin-bottom: 16px;
-        }
-
-        .fleet-stats {
-            display: flex;
-            justify-content: center;
-            gap: 16px;
-            margin-bottom: 16px;
-            font-size: 0.85rem;
-            color: var(--text-dark);
-            font-weight: 600;
-        }
-
-        .fleet-actions {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-        }
-
-        .btn-fleet {
-            padding: 10px 20px;
-            border-radius: 100px;
-            font-size: 0.85rem;
-            font-weight: 700;
-            text-decoration: none;
-            background: rgba(255, 255, 255, 0.5);
-            color: var(--text-dark);
-            transition: all 0.3s ease;
-        }
-
-        .btn-fleet:hover {
-            background: rgba(255, 255, 255, 0.8);
-        }
-
-        .btn-fleet.primary {
-            background: linear-gradient(135deg, #ff9500, #ff6b9d);
-            color: white;
-        }
-
-        .btn-fleet.primary:hover {
-            transform: translateY(-2px);
-        }
-
-        /* Countdown */
-        .countdown-card {
-            background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(236, 72, 153, 0.1));
-            border: 2px solid rgba(168, 85, 247, 0.3);
-        }
-
-        .countdown-timer {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            margin: 20px 0;
-        }
-
-        .time-unit {
-            font-size: 2.5rem;
-            font-weight: 900;
-            color: var(--text-dark);
-        }
-
-        .time-unit span {
-            background: linear-gradient(135deg, #a855f7, #ec4899);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .countdown-note {
-            font-size: 0.8rem !important;
-            color: var(--text-medium) !important;
-        }
-
-        /* Vote Card */
-        .vote-card {
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.1));
-            border: 2px solid rgba(59, 130, 246, 0.3);
-        }
-
-        .vote-question {
-            font-weight: 700 !important;
-            color: var(--text-dark) !important;
-        }
-
-        .vote-embed {
-            margin: 16px 0;
-        }
-
-        .vote-twitter-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 20px;
-            background: #1da1f2;
-            color: white;
-            border-radius: 12px;
-            text-decoration: none;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .vote-twitter-link:hover {
-            background: #0d8bd9;
-        }
-
-        /* Feature Requests Section */
-        .feature-requests-section {
-            padding: 60px 24px;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .feature-requests-header {
-            text-align: center;
-            margin-bottom: 32px;
-        }
-
-        .feature-requests-header h2 {
-            font-size: 2rem;
-            font-weight: 900;
-            color: var(--text-dark);
-            margin-bottom: 8px;
-        }
-
-        .feature-requests-header p {
-            color: var(--text-medium);
-        }
-
-        .governance-callout {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 16px;
-            margin-bottom: 32px;
-            flex-wrap: wrap;
-        }
-
-        .gov-phase {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 16px 24px;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 16px;
-        }
-
-        .gov-phase.highlight {
-            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.2));
-            border: 2px solid #22c55e;
-        }
-
-        .gov-threshold {
-            font-size: 1rem;
-            font-weight: 800;
-            color: var(--text-dark);
-        }
-
-        .gov-label {
-            font-size: 0.85rem;
-            color: var(--text-medium);
-        }
-
-        .gov-arrow {
-            font-size: 1.5rem;
-            color: var(--text-medium);
-        }
-
-        .recent-requests {
-            background: rgba(255, 255, 255, 0.25);
-            backdrop-filter: blur(20px);
-            border-radius: 16px;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .request-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 16px 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .request-item:last-child {
-            border-bottom: none;
-        }
-
-        .request-status {
-            font-size: 1.2rem;
-        }
-
-        .request-text {
-            flex: 1;
-            font-weight: 700;
-            color: var(--text-dark);
-        }
-
-        .request-app {
-            color: var(--accent-purple);
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-
-        .request-votes {
-            background: rgba(168, 85, 247, 0.2);
-            color: var(--accent-purple);
-            padding: 4px 10px;
-            border-radius: 100px;
-            font-size: 0.75rem;
-            font-weight: 700;
-        }
-
-        @media (max-width: 600px) {
-            .flywheel-visual {
-                gap: 4px;
-            }
-
-            .flywheel-step {
-                padding: 8px 10px;
-                min-width: 50px;
-            }
-
-            .step-icon {
-                font-size: 1.2rem;
-            }
-
-            .step-label {
-                font-size: 0.65rem;
-            }
-
-            .flywheel-arrow {
-                font-size: 0.8rem;
-            }
-        }
-    </style>
-
-    <!-- Countdown Timer Script -->
-    <script>
-        function updateCountdown() {
-            const now = new Date();
-            const tomorrow = new Date(now);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            tomorrow.setHours(10, 0, 0, 0); // 10 AM EST
-
-            // If it's past 10 AM today, countdown to tomorrow
-            const today10am = new Date(now);
-            today10am.setHours(10, 0, 0, 0);
-            const target = now > today10am ? tomorrow : today10am;
-
-            const diff = target - now;
-            const hours = Math.floor(diff / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-            document.getElementById('countdown-hours').textContent = String(hours).padStart(2, '0');
-            document.getElementById('countdown-minutes').textContent = String(minutes).padStart(2, '0');
-            document.getElementById('countdown-seconds').textContent = String(seconds).padStart(2, '0');
-        }
-
-        setInterval(updateCountdown, 1000);
-        updateCountdown();
-    </script>
-
     <!-- Community Love -->
     <section class="community-love">
         <span class="community-love-tag">COMMUNITY LOVE</span>
@@ -2895,19 +283,16 @@
         </div>
     </section>
 
-    <!-- Featured Apps - Infinite Scroll Carousel from Supabase -->
+    <!-- Popular Apps Carousel -->
     <section class="section apps-carousel-section">
         <div class="section-header">
-            <h2 class="section-title">Popular Apps </h2>
+            <h2 class="section-title">Popular Apps</h2>
             <p style="color: var(--text-medium); margin-top: 8px;">Built by creators, powered by AI</p>
         </div>
-
-        <!-- Infinite Scroll Container -->
         <div class="apps-carousel-wrapper">
             <div class="apps-carousel" id="appsCarousel">
-                <!-- Loading state -->
                 <div class="carousel-card loading">
-                    <div class="card-icon">?</div>
+                    <div class="card-icon">📱</div>
                     <div class="card-info">
                         <h3>Loading apps...</h3>
                         <p>Fetching from the store</p>
@@ -2915,547 +300,15 @@
                 </div>
             </div>
         </div>
-
-        <!-- Expanded App Modal -->
-        <div class="app-expand-modal" id="appExpandModal">
-            <div class="app-expand-content" id="appExpandContent">
-                <!-- Filled dynamically -->
-            </div>
+        <div id="appExpandModal" class="app-expand-modal">
+            <div class="app-expand-content" id="appExpandContent"></div>
         </div>
-
         <div style="text-align: center; margin-top: 40px;">
             <a href="apps.html" class="btn btn-secondary">View All Apps →</a>
         </div>
     </section>
 
-    <style>
-        /* Infinite Scroll Carousel Styles */
-        .apps-carousel-section {
-            overflow: hidden;
-        }
-
-        .apps-carousel-wrapper {
-            width: 100%;
-            overflow: hidden;
-            mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
-            -webkit-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
-        }
-
-        .apps-carousel {
-            display: flex;
-            gap: 20px;
-            padding: 20px 0;
-            animation: carousel-scroll 30s linear infinite;
-            width: max-content;
-        }
-
-        .apps-carousel:hover {
-            animation-play-state: paused;
-            cursor: grab;
-        }
-
-        .apps-carousel:active {
-            cursor: grabbing;
-        }
-
-        .apps-carousel.dragging {
-            animation: none !important;
-        }
-
-        @keyframes carousel-scroll {
-            0% {
-                transform: translateX(0);
-            }
-
-            100% {
-                transform: translateX(-50%);
-            }
-        }
-
-        .carousel-card {
-            flex-shrink: 0;
-            width: 280px;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 20px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .carousel-card:hover {
-            transform: translateY(-8px) scale(1.02);
-            box-shadow: 0 12px 40px rgba(255, 149, 0, 0.2);
-        }
-
-        .carousel-card .card-header {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
-
-        .carousel-card .card-icon {
-            width: 56px;
-            height: 56px;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.8rem;
-            background: linear-gradient(135deg, #ff9500, #ff6b9d);
-            flex-shrink: 0;
-        }
-
-        .carousel-card .card-icon img {
-            width: 100%;
-            height: 100%;
-            border-radius: 14px;
-            object-fit: cover;
-        }
-
-        .carousel-card .card-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .carousel-card .card-info h3 {
-            font-size: 1rem;
-            font-weight: 800;
-            color: #2d1b4e;
-            margin: 0 0 4px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .carousel-card .card-info p {
-            font-size: 0.8rem;
-            color: #888;
-            margin: 0;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .carousel-card .card-meta {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-top: auto;
-        }
-
-        .carousel-card .card-rating {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 0.85rem;
-            font-weight: 700;
-            color: #ff9500;
-        }
-
-        .carousel-card .card-status {
-            background: #dcfce7;
-            color: #16a34a;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 700;
-        }
-
-        .carousel-card .card-expand {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #ff9500, #ff6b9d);
-            color: white;
-            border: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        .carousel-card .card-expand:hover {
-            transform: scale(1.15);
-        }
-
-        /* Expand Modal */
-        .app-expand-modal {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(8px);
-            z-index: 10000;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-        }
-
-        .app-expand-modal.open {
-            display: flex;
-        }
-
-        .app-expand-content {
-            background: white;
-            border-radius: 24px;
-            max-width: 500px;
-            width: 100%;
-            padding: 32px;
-            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.3);
-            animation: modal-pop 0.3s ease;
-        }
-
-        @keyframes modal-pop {
-            from {
-                transform: scale(0.9);
-                opacity: 0;
-            }
-
-            to {
-                transform: scale(1);
-                opacity: 1;
-            }
-        }
-
-        .app-expand-content .expand-header {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 20px;
-        }
-
-        .app-expand-content .expand-icon {
-            width: 72px;
-            height: 72px;
-            border-radius: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.2rem;
-            background: linear-gradient(135deg, #ff9500, #ff6b9d);
-        }
-
-        .app-expand-content .expand-icon img {
-            width: 100%;
-            height: 100%;
-            border-radius: 18px;
-            object-fit: cover;
-        }
-
-        .app-expand-content .expand-title h2 {
-            font-size: 1.4rem;
-            font-weight: 800;
-            color: #2d1b4e;
-            margin: 0 0 4px;
-        }
-
-        .app-expand-content .expand-title p {
-            font-size: 0.9rem;
-            color: #888;
-            margin: 0;
-        }
-
-        .app-expand-content .expand-close {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: #f3f4f6;
-            border: none;
-            font-size: 1.2rem;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .app-expand-content .expand-close:hover {
-            background: #ff6b9d;
-            color: white;
-        }
-
-        .app-expand-content .expand-description {
-            font-size: 0.95rem;
-            color: #555;
-            line-height: 1.6;
-            margin-bottom: 24px;
-        }
-
-        .app-expand-content .expand-actions {
-            display: flex;
-            gap: 12px;
-        }
-
-        .app-expand-content .expand-btn {
-            flex: 1;
-            padding: 14px 20px;
-            border-radius: 30px;
-            font-weight: 700;
-            font-size: 0.95rem;
-            text-decoration: none;
-            text-align: center;
-            transition: all 0.2s;
-        }
-
-        .app-expand-content .expand-btn.primary {
-            background: linear-gradient(135deg, #ff9500, #ff6b9d);
-            color: white;
-            border: none;
-        }
-
-        .app-expand-content .expand-btn.primary:hover {
-            transform: scale(1.03);
-            box-shadow: 0 8px 24px rgba(255, 149, 0, 0.3);
-        }
-
-        .app-expand-content .expand-btn.secondary {
-            background: transparent;
-            color: #ff9500;
-            border: 2px solid #ff9500;
-        }
-
-        .app-expand-content .expand-btn.secondary:hover {
-            background: #ff9500;
-            color: white;
-        }
-    </style>
-
-    <script>
-        // Store apps data for modal
-        let carouselAppsData = [];
-
-        // Dynamic Apps Carousel Loading with TRUE infinite loop
-        (async function loadAppsCarousel() {
-            const container = document.getElementById('appsCarousel');
-            const modal = document.getElementById('appExpandModal');
-            const modalContent = document.getElementById('appExpandContent');
-            if (!container || !window.SuiteAppStore) return;
-
-            try {
-                const apps = await window.SuiteAppStore.fetchAllSuiteApps();
-
-                // Show ALL apps in carousel (no status filter - dynamically loads whatever exists)
-                const liveApps = apps.length > 0 ? apps : [];
-
-                carouselAppsData = liveApps;
-
-                if (liveApps.length === 0) {
-                    container.innerHTML = `
-                        <div class="carousel-card">
-                            <div class="card-icon"></div>
-                            <div class="card-info">
-                                <h3>No Apps Yet</h3>
-                                <p>Be the first to publish!</p>
-                            </div>
-                        </div>
-                    `;
-                    return;
-                }
-
-                // Duplicate apps exactly 2x for seamless infinite loop (translateX -50%)
-                // Duplicate apps 4x to ensure seamless infinite loop regardless of app count
-                const duplicatedApps = [...liveApps, ...liveApps, ...liveApps, ...liveApps];
-                container.innerHTML = duplicatedApps.map((app, index) => renderCarouselCard(app, index % liveApps.length)).join('');
-
-                // Calculate dynamic animation duration based on app count (5s per app, minimum 20s)
-                const animationDuration = Math.max(liveApps.length * 8, 30); // Slower for better readability
-                container.style.animationDuration = animationDuration + 's';
-
-                // Add click handlers for expand
-                container.querySelectorAll('.carousel-card').forEach((card, i) => {
-                    card.addEventListener('click', () => {
-                        const appIndex = i % liveApps.length;
-                        openAppModal(carouselAppsData[appIndex]);
-                    });
-                });
-
-            } catch (err) {
-                console.error('Failed to load apps carousel:', err);
-                container.innerHTML = `
-                    <div class="carousel-card">
-                        <div class="card-icon"></div>
-                        <div class="card-info">
-                            <h3>Offline</h3>
-                            <p>Check your connection</p>
-                        </div>
-                    </div>
-                `;
-            }
-
-            // Setup drag-to-scroll with momentum
-            setupCarouselDrag(container);
-        })();
-
-        // Drag-to-scroll carousel with momentum/inertia
-        function setupCarouselDrag(carousel) {
-            let isDown = false;
-            let startX;
-            let scrollLeft;
-            let velocity = 0;
-            let momentumId = null;
-
-            const wrapper = carousel.parentElement;
-
-            carousel.addEventListener('mousedown', (e) => {
-                isDown = true;
-                carousel.classList.add('dragging');
-                startX = e.pageX;
-                scrollLeft = wrapper.scrollLeft;
-                cancelMomentum();
-                e.preventDefault();
-            });
-
-            carousel.addEventListener('mouseleave', () => {
-                if (isDown) {
-                    isDown = false;
-                    carousel.classList.remove('dragging');
-                    applyMomentum();
-                }
-            });
-
-            carousel.addEventListener('mouseup', () => {
-                isDown = false;
-                carousel.classList.remove('dragging');
-                applyMomentum();
-            });
-
-            carousel.addEventListener('mousemove', (e) => {
-                if (!isDown) return;
-                e.preventDefault();
-                const x = e.pageX;
-                const walk = (x - startX) * 2;
-                velocity = x - startX;
-                startX = x;
-                wrapper.scrollLeft = wrapper.scrollLeft - walk;
-            });
-
-            // Touch support
-            carousel.addEventListener('touchstart', (e) => {
-                isDown = true;
-                carousel.classList.add('dragging');
-                startX = e.touches[0].pageX;
-                scrollLeft = wrapper.scrollLeft;
-                cancelMomentum();
-            }, { passive: true });
-
-            carousel.addEventListener('touchend', () => {
-                isDown = false;
-                carousel.classList.remove('dragging');
-                applyMomentum();
-            });
-
-            carousel.addEventListener('touchmove', (e) => {
-                if (!isDown) return;
-                const x = e.touches[0].pageX;
-                const walk = (x - startX) * 2;
-                velocity = x - startX;
-                startX = x;
-                wrapper.scrollLeft = wrapper.scrollLeft - walk;
-            }, { passive: true });
-
-            function applyMomentum() {
-                if (Math.abs(velocity) > 1) {
-                    momentumId = requestAnimationFrame(function momentum() {
-                        velocity *= 0.95;
-                        wrapper.scrollLeft -= velocity;
-                        if (Math.abs(velocity) > 0.5) {
-                            momentumId = requestAnimationFrame(momentum);
-                        }
-                    });
-                }
-            }
-
-            function cancelMomentum() {
-                if (momentumId) {
-                    cancelAnimationFrame(momentumId);
-                    momentumId = null;
-                }
-            }
-        }
-
-        function renderCarouselCard(app, index) {
-            const iconUrl = app.icon_url && !app.icon_url.includes('example.com') ? app.icon_url : null;
-            const iconEmoji = app.icon_emoji || app.icon || '📱';
-            const rating = app.rating ? app.rating.toFixed(1) : '4.9';
-
-            const iconHtml = iconUrl
-                ? `<img src="${iconUrl}" alt="${app.name}">`
-                : iconEmoji;
-
-            return `
-                <div class="carousel-card" data-app-index="${index}">
-                    <div class="card-header">
-                        <div class="card-icon">${iconHtml}</div>
-                        <div class="card-info">
-                            <h3>${app.name}</h3>
-                            <p>${app.tagline || app.category || 'productivity'}</p>
-                        </div>
-                    </div>
-                    <div class="card-meta">
-                        <span class="card-rating">⭐ ${rating}</span>
-                        <span class="card-status">🟢 Live</span>
-                        <button class="card-expand">↗</button>
-                    </div>
-                </div>
-            `;
-        }
-
-        function openAppModal(app) {
-            const modal = document.getElementById('appExpandModal');
-            const content = document.getElementById('appExpandContent');
-            const iconUrl = app.icon_url && !app.icon_url.includes('example.com') ? app.icon_url : null;
-            const iconEmoji = app.icon_emoji || app.icon || '📱';
-            const appUrl = app.expo_link || app.pwa_url || `app.html?slug=${app.slug}`;
-            const description = app.description || app.tagline || 'An amazing app built with SUITE.';
-
-            const iconHtml = iconUrl
-                ? `<img src="${iconUrl}" alt="${app.name}">`
-                : iconEmoji;
-
-            content.innerHTML = `
-                <button class="expand-close" onclick="closeAppModal()">✕</button>
-                <div class="expand-header">
-                    <div class="expand-icon">${iconHtml}</div>
-                    <div class="expand-title">
-                        <h2>${app.name}</h2>
-                        <p>${app.tagline || app.category || 'productivity'}</p>
-                    </div>
-                </div>
-                <p class="expand-description">${description}</p>
-                <div class="expand-actions">
-                    <a href="${appUrl}" class="expand-btn primary">Try Now</a>
-                    <a href="app.html?slug=${app.slug}" class="expand-btn secondary">Learn More</a>
-                </div>
-            `;
-
-            modal.classList.add('open');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeAppModal() {
-            const modal = document.getElementById('appExpandModal');
-            modal.classList.remove('open');
-            document.body.style.overflow = '';
-        }
-
-        // Close modal on background click
-        document.getElementById('appExpandModal')?.addEventListener('click', function (e) {
-            if (e.target === this) closeAppModal();
-        });
-
-        // Close modal on escape key
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') closeAppModal();
-        });
-    </script>
-
-    <!-- By The Numbers -->
+    <!-- Stats Section -->
     <section class="stats-section">
         <div class="section-header">
             <span class="section-tag">BY THE NUMBERS</span>
@@ -3485,722 +338,273 @@
         </div>
     </section>
 
-    <script>
-        // Dynamic Stats Loading for "Growing Every Day" section
-        (async function loadGrowthStats() {
-            const appsEl = document.getElementById('statAppsPublished');
-            if (!appsEl) return;
-
-            try {
-                if (window.SuiteAppStore) {
-                    const apps = await window.SuiteAppStore.fetchAllSuiteApps();
-                    const liveApps = apps.filter(app =>
-                        app.status === 'live' || app.status === 'published' || app.status === 'approved'
-                    );
-                    appsEl.textContent = liveApps.length + '+';
-                } else {
-                    appsEl.textContent = '5+';
-                }
-            } catch (err) {
-                console.error('Failed to load growth stats:', err);
-                appsEl.textContent = '5+';
-            }
-        })();
-    </script>
-
     <!-- Roadmap Section -->
-    <section class="roadmap-section" style="padding: 60px 24px; max-width: 1200px; margin: 0 auto;">
-        <div class="section-header" style="text-align: center; margin-bottom: 40px;">
-            <span class="section-tag"
-                style="background: linear-gradient(135deg, #ff9500, #ff6b9d); color: white; padding: 6px 16px; border-radius: 100px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">THE
-                JOURNEY</span>
+    <section class="roadmap-section">
+        <div class="section-header">
+            <span class="section-tag">THE JOURNEY</span>
             <h2 class="section-title">Roadmap</h2>
-            <p style="color: #6b7280; max-width: 600px; margin: 0 auto;">Where we've been and where we're going</p>
+            <p style="color: var(--text-medium); max-width: 600px; margin: 8px auto 0;">Where we've been and where we're going</p>
         </div>
-
-        <div class="roadmap-timeline" style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
+        <div class="roadmap-timeline">
             <!-- Phase 1 - Complete -->
-            <div class="roadmap-card"
-                style="flex: 1; min-width: 280px; max-width: 350px; background: rgba(255,255,255,0.95); border-radius: 20px; padding: 24px; border: 2px solid #22c55e; position: relative;">
-                <div
-                    style="position: absolute; top: -12px; left: 20px; background: #22c55e; color: white; padding: 4px 12px; border-radius: 100px; font-size: 0.7rem; font-weight: 700;">
-                    ✓ COMPLETE</div>
-                <h3 style="font-size: 1.1rem; font-weight: 800; color: #2d1b4e; margin: 12px 0 16px;">🚀 Phase 1:
-                    Foundation</h3>
-                <ul style="list-style: none; padding: 0; margin: 0; color: #5a4a6f; font-size: 0.9rem;">
-                    <li style="margin-bottom: 8px;">✅ AI-powered app builder (Forge)</li>
-                    <li style="margin-bottom: 8px;">✅ 50+ apps in ecosystem</li>
-                    <li style="margin-bottom: 8px;">✅ Discord command system</li>
-                    <li style="margin-bottom: 8px;">✅ Auto-deploy infrastructure</li>
+            <div class="roadmap-card complete">
+                <div class="roadmap-badge">✓ COMPLETE</div>
+                <h3>🚀 Phase 1: Foundation</h3>
+                <ul>
+                    <li>✅ AI-powered app builder (Forge)</li>
+                    <li>✅ 50+ apps in ecosystem</li>
+                    <li>✅ Discord command system</li>
+                    <li>✅ Auto-deploy infrastructure</li>
                 </ul>
             </div>
 
             <!-- Phase 2 - In Progress -->
-            <div class="roadmap-card"
-                style="flex: 1; min-width: 280px; max-width: 350px; background: rgba(255,255,255,0.95); border-radius: 20px; padding: 24px; border: 2px solid #ff9500; position: relative;">
-                <div
-                    style="position: absolute; top: -12px; left: 20px; background: linear-gradient(135deg, #ff9500, #ff6b9d); color: white; padding: 4px 12px; border-radius: 100px; font-size: 0.7rem; font-weight: 700;">
-                    🔥 IN PROGRESS</div>
-                <h3 style="font-size: 1.1rem; font-weight: 800; color: #2d1b4e; margin: 12px 0 16px;">🏦 Phase 2:
-                    Treasury</h3>
-                <ul style="list-style: none; padding: 0; margin: 0; color: #5a4a6f; font-size: 0.9rem;">
-                    <li style="margin-bottom: 8px;">♻️ $SUITE token launch on Base</li>
-                    <li style="margin-bottom: 8px;">♻️ Treasury smart contracts</li>
-                    <li style="margin-bottom: 8px;">⬜ Floor price guarantee</li>
-                    <li style="margin-bottom: 8px;">⬜ Wallet integration</li>
+            <div class="roadmap-card in-progress">
+                <div class="roadmap-badge">🔥 IN PROGRESS</div>
+                <h3>🏦 Phase 2: Treasury</h3>
+                <ul>
+                    <li>♻️ $SUITE token launch on Base</li>
+                    <li>♻️ Treasury smart contracts</li>
+                    <li>⬜ Floor price guarantee</li>
+                    <li>⬜ Wallet integration</li>
                 </ul>
             </div>
 
             <!-- Phase 3 - Upcoming -->
-            <div class="roadmap-card"
-                style="flex: 1; min-width: 280px; max-width: 350px; background: rgba(255,255,255,0.95); border-radius: 20px; padding: 24px; border: 2px solid #e5e7eb; position: relative;">
-                <div
-                    style="position: absolute; top: -12px; left: 20px; background: #e5e7eb; color: #6b7280; padding: 4px 12px; border-radius: 100px; font-size: 0.7rem; font-weight: 700;">
-                    UPCOMING</div>
-                <h3 style="font-size: 1.1rem; font-weight: 800; color: #2d1b4e; margin: 12px 0 16px;">💝 Phase 3:
-                    Community</h3>
-                <ul style="list-style: none; padding: 0; margin: 0; color: #5a4a6f; font-size: 0.9rem;">
-                    <li style="margin-bottom: 8px;">⬜ Governance voting</li>
-                    <li style="margin-bottom: 8px;">⬜ Autonomous AI Fleet app development</li>
+            <div class="roadmap-card upcoming">
+                <div class="roadmap-badge">UPCOMING</div>
+                <h3>🌐 Phase 3: Scale</h3>
+                <ul>
+                    <li>⬜ Mobile app (iOS/Android)</li>
+                    <li>⬜ Developer API</li>
+                    <li>⬜ Enterprise features</li>
+                    <li>⬜ Global expansion</li>
                 </ul>
             </div>
         </div>
     </section>
 
-    <!-- Shared Footer (loaded dynamically) -->
-    <div id="shared-footer"></div>
-    <script>
-        fetch('footer-template.html')
-            .then(response => response.text())
-            .then(html => document.getElementById('shared-footer').innerHTML = html)
-            .catch(err => console.error('Failed to load footer:', err));
-    </script>
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <div class="logo">
+                    <div class="icon">
+                        <img src="assets/suite-token.png" alt="SUITE" style="width: 100%; height: 100%; border-radius: 8px;">
+                    </div>
+                    SUITE
+                </div>
+                <p>Apps that build themselves. Funded by you.</p>
+            </div>
+            <div class="footer-column">
+                <h5>Product</h5>
+                <a href="apps.html">Apps</a>
+                <a href="wallet.html">Vault</a>
+                <a href="docs/index.html">Docs</a>
+            </div>
+            <div class="footer-column">
+                <h5>Community</h5>
+                <a href="https://twitter.com/getSUITE" target="_blank">Twitter</a>
+                <a href="https://discord.gg/suite" target="_blank">Discord</a>
+                <a href="learn.html">Learn</a>
+            </div>
+            <div class="footer-column">
+                <h5>Legal</h5>
+                <a href="privacy.html">Privacy</a>
+                <a href="terms.html">Terms</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2024 SUITE. All rights reserved.</p>
+        </div>
+    </footer>
 
-    <script>
-        // Mobile menu toggle
-        const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
-        const navLinks = document.querySelector('.nav-links');
-
-        if (mobileMenuBtn) {
-            mobileMenuBtn.addEventListener('click', () => {
-                navLinks.classList.toggle('active');
-            });
-        }
-
-        // Add scroll animations
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: '0px 0px -50px 0px'
-        };
-
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.style.opacity = '1';
-                    entry.target.style.transform = 'translateY(0)';
-                }
-            });
-        }, observerOptions);
-
-        // Observe cards for scroll animation
-        document.querySelectorAll('.value-card, .app-card, .testimonial-card').forEach(card => {
-            card.style.opacity = '0';
-            card.style.transform = 'translateY(30px)';
-            card.style.transition = 'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
-            observer.observe(card);
-        });
-
-        // 🪙 EASTER EGG: Coin Physics System!
-        const coinPhysics = {
-            coins: [],
-            mouseX: 0,
-            mouseY: 0,
-            lastMouseX: 0,
-            lastMouseY: 0,
-            mouseVelX: 0,
-            mouseVelY: 0,
-            gravity: 0.3,
-            friction: 0.98,
-            mouseRadius: 80,
-            running: false,
-
-            init() {
-                document.addEventListener('mousemove', (e) => {
-                    this.mouseVelX = e.clientX - this.mouseX;
-                    this.mouseVelY = e.clientY - this.mouseY;
-                    this.mouseX = e.clientX;
-                    this.mouseY = e.clientY;
-                });
-
-                if (!this.running) {
-                    this.running = true;
-                    this.animate();
-                }
-            },
-
-            spawnCoin(x, y, emoji) {
-                const coin = document.createElement('div');
-                coin.className = 'falling-coin physics-coin';
-                coin.textContent = emoji;
-                coin.style.fontSize = (1.5 + Math.random() * 1) + 'rem';
-                coin.style.left = x + 'px';
-                coin.style.top = y + 'px';
-
-                let container = document.querySelector('.falling-coins');
-                if (!container) {
-                    container = document.createElement('div');
-                    container.className = 'falling-coins';
-                    document.body.appendChild(container);
-                }
-                container.appendChild(coin);
-
-                const coinData = {
-                    el: coin,
-                    x: x,
-                    y: y,
-                    vx: (Math.random() - 0.5) * 15,
-                    vy: (Math.random() - 0.5) * 10 - 5,
-                    rotation: 0,
-                    rotationSpeed: (Math.random() - 0.5) * 20
-                };
-                this.coins.push(coinData);
-
-                // Auto-delete coin after 6.5 seconds
-                setTimeout(() => {
-                    const idx = this.coins.indexOf(coinData);
-                    if (idx > -1) {
-                        this.coins.splice(idx, 1);
-                        coin.remove();
-                    }
-                }, 6500);
-
-                // Limit coins for performance (auto-delete oldest when over 400)
-                if (this.coins.length > 400) {
-                    const removed = this.coins.shift();
-                    removed.el.remove();
-                }
-            },
-
-            animate() {
-                const screenHeight = window.innerHeight;
-                const screenWidth = window.innerWidth;
-
-                for (let i = this.coins.length - 1; i >= 0; i--) {
-                    const coin = this.coins[i];
-
-                    // Apply gravity
-                    coin.vy += this.gravity;
-
-                    // Mouse interaction - push coins away
-                    const dx = coin.x - this.mouseX;
-                    const dy = coin.y - this.mouseY;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-
-                    if (dist < this.mouseRadius && dist > 0) {
-                        const force = (this.mouseRadius - dist) / this.mouseRadius;
-                        const pushX = (dx / dist) * force * 8 + this.mouseVelX * 0.3;
-                        const pushY = (dy / dist) * force * 8 + this.mouseVelY * 0.3;
-                        coin.vx += pushX;
-                        coin.vy += pushY;
-                    }
-
-                    // Apply velocity
-                    coin.x += coin.vx;
-                    coin.y += coin.vy;
-
-                    // Apply friction
-                    coin.vx *= this.friction;
-                    coin.vy *= this.friction;
-
-                    // Rotation
-                    coin.rotation += coin.rotationSpeed;
-                    coin.rotationSpeed *= 0.98;
-
-                    // Bounce off edges
-                    if (coin.x < 20) { coin.x = 20; coin.vx *= -0.6; }
-                    if (coin.x > screenWidth - 20) { coin.x = screenWidth - 20; coin.vx *= -0.6; }
-                    if (coin.y > screenHeight - 30) {
-                        coin.y = screenHeight - 30;
-                        coin.vy *= -0.5;
-                        coin.vx *= 0.9; // Floor friction
-                    }
-                    if (coin.y < 20) { coin.y = 20; coin.vy *= -0.6; }
-
-                    // Update DOM
-                    coin.el.style.left = coin.x + 'px';
-                    coin.el.style.top = coin.y + 'px';
-                    coin.el.style.transform = `rotate(${coin.rotation}deg)`;
-                }
-
-                // Reset mouse velocity decay
-                this.mouseVelX *= 0.8;
-                this.mouseVelY *= 0.8;
-
-                requestAnimationFrame(() => this.animate());
-            }
-        };
-
-        const tokenBadge = document.querySelector('.value-card.build .token-badge');
-        if (tokenBadge) {
-            coinPhysics.init();
-
-            tokenBadge.addEventListener('click', function (e) {
-                const rect = this.getBoundingClientRect();
-                const startX = rect.left + rect.width / 2;
-                const startY = rect.top + rect.height / 2;
-
-                const coinEmojis = ['🪙', '💰', '💵', '💎', '✨', '⭐'];
-
-                // Spawn coins with slight delay for explosion effect
-                for (let i = 0; i < 15; i++) {
-                    setTimeout(() => {
-                        const offsetX = (Math.random() - 0.5) * 100;
-                        const offsetY = (Math.random() - 0.5) * 60;
-                        const emoji = coinEmojis[Math.floor(Math.random() * coinEmojis.length)];
-                        coinPhysics.spawnCoin(startX + offsetX, startY + offsetY, emoji);
-                    }, i * 30);
-                }
-
-                // Satisfying click feedback
-                this.style.transform = 'scale(0.9)';
-                setTimeout(() => {
-                    this.style.transform = '';
-                }, 150);
-            });
-        }
-
-        // SUITE Text click - Rocket Launch effect!
-        const suiteText = document.querySelector('.suite-token-text .suite-name');
-        if (suiteText) {
-            suiteText.addEventListener('click', function (e) {
-                const rect = this.getBoundingClientRect();
-                const startX = rect.left + rect.width / 2;
-                const startY = rect.top + rect.height / 2;
-
-                // Rocket emojis with variety
-                const rocketEmojis = ['🚀', '🌟', '⭐', '💫', '✨'];
-
-                // Create rocket container if it doesn't exist
-                let rocketContainer = document.querySelector('.rocket-container');
-                if (!rocketContainer) {
-                    rocketContainer = document.createElement('div');
-                    rocketContainer.className = 'rocket-container';
-                    rocketContainer.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; overflow: hidden; z-index: 9999;';
-                    document.body.appendChild(rocketContainer);
-                }
-
-                // Launch rockets!
-                for (let i = 0; i < 8; i++) {
-                    setTimeout(() => {
-                        const rocket = document.createElement('div');
-                        const emoji = rocketEmojis[Math.floor(Math.random() * rocketEmojis.length)];
-                        const offsetX = (Math.random() - 0.5) * 100;
-                        const angle = -60 + Math.random() * 30; // Upward angles
-                        const speed = 400 + Math.random() * 300;
-
-                        rocket.innerHTML = emoji;
-                        rocket.style.cssText = `
-                            position: absolute;
-                            left: ${startX + offsetX}px;
-                            top: ${startY}px;
-                            font-size: ${1.5 + Math.random() * 1}rem;
-                            transform: rotate(${angle}deg);
-                            pointer-events: none;
-                            animation: rocketLaunch ${0.8 + Math.random() * 0.4}s ease-out forwards;
-                            --launch-angle: ${angle}deg;
-                            --launch-distance: ${speed}px;
-                        `;
-                        rocketContainer.appendChild(rocket);
-
-                        // Remove after animation
-                        setTimeout(() => rocket.remove(), 1500);
-                    }, i * 50);
-                }
-
-                // Pulse effect on text
-                this.style.animation = 'none';
-                this.offsetHeight;
-                this.style.animation = 'rocketPulse 0.6s ease';
-            });
-        }
-    </script>
-
+    <!-- App Expand Modal Styles -->
     <style>
-        @keyframes rainbowShimmer {
-
-            0%,
-            100% {
-                background: linear-gradient(to top, #ff9a8b 0%, #ffb347 100%);
-                -webkit-background-clip: text;
-                background-clip: text;
-                transform: scale(1);
-            }
-
-            25% {
-                background: linear-gradient(to top, #ff6b9d 0%, #ff9500 100%);
-                -webkit-background-clip: text;
-                background-clip: text;
-                transform: scale(1.15);
-            }
-
-            50% {
-                background: linear-gradient(to top, #a855f7 0%, #ff6b9d 100%);
-                -webkit-background-clip: text;
-                background-clip: text;
-                transform: scale(1.1);
-            }
-
-            75% {
-                background: linear-gradient(to top, #3b82f6 0%, #a855f7 100%);
-                -webkit-background-clip: text;
-                background-clip: text;
-                transform: scale(1.12);
-            }
+        .app-expand-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
         }
 
-        @keyframes rocketLaunch {
-            0% {
-                opacity: 1;
-                transform: rotate(var(--launch-angle)) translateY(0) scale(1);
-            }
-
-            100% {
-                opacity: 0;
-                transform: rotate(var(--launch-angle)) translateY(calc(-1 * var(--launch-distance))) scale(0.3);
-            }
+        .app-expand-modal.open {
+            display: flex;
         }
 
-        @keyframes rocketPulse {
+        .app-expand-content {
+            background: white;
+            border-radius: 24px;
+            padding: 32px;
+            max-width: 500px;
+            width: 100%;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
 
-            0%,
-            100% {
-                transform: scale(1);
-                filter: brightness(1);
-            }
+        .expand-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-medium);
+        }
 
-            50% {
-                transform: scale(1.15);
-                filter: brightness(1.3);
+        .expand-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .expand-icon {
+            width: 72px;
+            height: 72px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-pink));
+        }
+
+        .expand-icon img {
+            width: 100%;
+            height: 100%;
+            border-radius: 18px;
+            object-fit: cover;
+        }
+
+        .expand-title h2 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            margin-bottom: 4px;
+        }
+
+        .expand-title p {
+            color: var(--text-medium);
+            font-size: 0.9rem;
+        }
+
+        .expand-description {
+            color: var(--text-medium);
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .expand-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .expand-btn {
+            flex: 1;
+            padding: 14px 24px;
+            border-radius: 100px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            text-decoration: none;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .expand-btn.primary {
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-pink));
+            color: white;
+        }
+
+        .expand-btn.secondary {
+            background: rgba(0, 0, 0, 0.05);
+            color: var(--text-dark);
+        }
+
+        .expand-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Footer Styles */
+        .footer {
+            padding: 60px 24px 30px;
+            max-width: 1200px;
+            margin: 40px auto 0;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .footer-brand .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+            font-size: 1.4rem;
+            margin-bottom: 12px;
+            color: var(--text-dark);
+        }
+
+        .footer-brand .logo .icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .footer-brand p {
+            color: var(--text-medium);
+        }
+
+        .footer-column h5 {
+            font-weight: 800;
+            margin-bottom: 12px;
+            color: var(--text-dark);
+        }
+
+        .footer-column a {
+            display: block;
+            color: var(--text-medium);
+            text-decoration: none;
+            padding: 6px 0;
+            transition: color 0.2s ease;
+        }
+
+        .footer-column a:hover {
+            color: var(--accent-orange);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            color: var(--text-medium);
+            font-size: 0.85rem;
+        }
+
+        @media (min-width: 768px) {
+            .footer-content {
+                grid-template-columns: 2fr 1fr 1fr 1fr;
             }
         }
     </style>
 
-    <script>
-        // LP Pager - Click to Expand & Drag-Drop Easter Egg
-        (function () {
-            const pager = document.getElementById('lpPager');
-            const modal = document.getElementById('lpModal');
-            const closeBtn = document.getElementById('closeLpModal');
-            const suiteToken = document.getElementById('suiteTokenDraggable');
-
-            if (!pager || !modal) return;
-
-            // ============================================
-            // Click to Expand LP Modal
-            // ============================================
-            function openLpModal() {
-                modal.style.display = 'flex';
-                document.body.style.overflow = 'hidden';
-                // Add celebration if dropped
-                if (wasDropped) {
-                    celebrateDrop();
-                    wasDropped = false;
-                }
-            }
-
-            function closeLpModal() {
-                modal.style.display = 'none';
-                document.body.style.overflow = '';
-            }
-
-            pager.addEventListener('click', (e) => {
-                if (!wasDragged) {
-                    openLpModal();
-                }
-            });
-
-            closeBtn.addEventListener('click', closeLpModal);
-
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    closeLpModal();
-                }
-            });
-
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') closeLpModal();
-            });
-
-            // ============================================
-            // Drag-Drop Easter Egg: SUITE Token ? LP Widget
-            // ============================================
-            let wasDropped = false;
-            let wasDragged = false;
-
-            if (suiteToken) {
-                // Add visual feedback that it's draggable
-                suiteToken.style.cursor = 'grab';
-
-                suiteToken.addEventListener('dragstart', (e) => {
-                    suiteToken.style.opacity = '0.5';
-                    suiteToken.style.cursor = 'grabbing';
-                    e.dataTransfer.setData('text/plain', 'suite-token');
-                    e.dataTransfer.effectAllowed = 'move';
-
-                    // Highlight LP pager as drop target
-                    pager.style.transform = 'scale(1.1)';
-                    pager.style.boxShadow = '0 0 30px rgba(34, 197, 94, 0.8)';
-                    pager.style.border = '2px dashed #22c55e';
-                });
-
-                suiteToken.addEventListener('dragend', (e) => {
-                    suiteToken.style.opacity = '1';
-                    suiteToken.style.cursor = 'grab';
-
-                    // Reset LP pager highlight
-                    pager.style.transform = '';
-                    pager.style.boxShadow = '';
-                    pager.style.border = '';
-                });
-            }
-
-            // LP Pager as drop target
-            pager.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'move';
-                pager.style.background = 'linear-gradient(135deg, #22c55e, #10b981)';
-                pager.style.transform = 'scale(1.15)';
-            });
-
-            pager.addEventListener('dragleave', (e) => {
-                pager.style.background = '';
-                pager.style.transform = 'scale(1.1)';
-            });
-
-            pager.addEventListener('drop', (e) => {
-                e.preventDefault();
-                const data = e.dataTransfer.getData('text/plain');
-
-                if (data === 'suite-token') {
-                    wasDropped = true;
-                    pager.style.background = '';
-                    pager.style.transform = '';
-                    openLpModal();
-                }
-            });
-
-            // ============================================
-            // Make LP Pager Draggable (existing functionality)
-            // ============================================
-            let isDragging = false;
-            let startX, startY, initialX, initialY;
-
-            pager.addEventListener('mousedown', (e) => {
-                isDragging = true;
-                wasDragged = false;
-                pager.style.cursor = 'grabbing';
-                pager.style.animation = 'none';
-                pager.style.transition = 'none';
-                pager.style.transform = 'none';
-
-                // Get rect AFTER clearing animation/transform
-                const rect = pager.getBoundingClientRect();
-                initialX = rect.left;
-                initialY = rect.top;
-                startX = e.clientX;
-                startY = e.clientY;
-
-                pager.style.position = 'fixed';
-                pager.style.left = initialX + 'px';
-                pager.style.top = initialY + 'px';
-                pager.style.right = 'auto';
-                pager.style.bottom = 'auto';
-
-                e.preventDefault();
-            });
-
-            document.addEventListener('mousemove', (e) => {
-                if (!isDragging) return;
-
-                const dx = e.clientX - startX;
-                const dy = e.clientY - startY;
-
-                if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
-                    wasDragged = true;
-                }
-
-                pager.style.left = (initialX + dx) + 'px';
-                pager.style.top = (initialY + dy) + 'px';
-            });
-
-            document.addEventListener('mouseup', () => {
-                if (isDragging) {
-                    isDragging = false;
-                    pager.style.cursor = 'pointer';
-
-                    // Reset wasDragged after a short delay so click can be prevented
-                    setTimeout(() => { wasDragged = false; }, 100);
-                }
-            });
-
-            // ============================================
-            // Celebration when token is dropped!
-            // ============================================
-            function celebrateDrop() {
-                // Create confetti
-                for (let i = 0; i < 50; i++) {
-                    const confetti = document.createElement('div');
-                    confetti.innerHTML = ['??', '?', '?', '??', '??'][Math.floor(Math.random() * 5)];
-                    confetti.style.cssText = `
-                        position: fixed;
-                        top: 50%;
-                        left: 50%;
-                        font-size: ${20 + Math.random() * 20}px;
-                        pointer-events: none;
-                        z-index: 10001;
-                        animation: confettiFall ${2 + Math.random() * 2}s ease-out forwards;
-                    `;
-                    confetti.style.setProperty('--confetti-x', `${(Math.random() - 0.5) * 400}px`);
-                    confetti.style.setProperty('--confetti-y', `${Math.random() * -300 - 100}px`);
-                    document.body.appendChild(confetti);
-
-                    setTimeout(() => confetti.remove(), 4000);
-                }
-
-                // Add confetti animation if not exists
-                if (!document.getElementById('confettiStyles')) {
-                    const style = document.createElement('style');
-                    style.id = 'confettiStyles';
-                    style.textContent = `
-                        @keyframes confettiFall {
-                            0% {
-                                transform: translate(0, 0) rotate(0deg) scale(1);
-                                opacity: 1;
-                            }
-                            100% {
-                                transform: translate(var(--confetti-x), var(--confetti-y)) rotate(720deg) scale(0);
-                                opacity: 0;
-                            }
-                        }
-                    `;
-                    document.head.appendChild(style);
-                }
-            }
-        })();
-    </script>
-
-    <!-- Dynamic Discover Apps -->
-    <script>
-        (async function loadDiscoverApps() {
-            const container = document.getElementById('discoverAppsContainer');
-            if (!container || !window.SuiteAppStore) return;
-
-            try {
-                // Fetch published apps from Supabase
-                const apps = await window.SuiteAppStore.fetchAllSuiteApps();
-
-                // Filter to only live apps (approved or featured) and take the 4 most recent
-                const publishedApps = apps
-                    .filter(app => app.status === 'approved' || app.status === 'featured' || app.status === 'published')
-                    .slice(0, 4);
-
-                if (publishedApps.length === 0) {
-                    container.innerHTML = `
-                        <div class="mini-app" style="opacity: 0.6;">
-                            <div class="app-icon" style="background: linear-gradient(135deg, #f3f4f6, #e5e7eb);"></div>
-                            <div class="app-info">
-                                <div class="app-name">Coming Soon</div>
-                            </div>
-                        </div>
-                    `;
-                    return;
-                }
-
-                // Icon colors for variety
-                const iconColors = [
-                    'linear-gradient(135deg, #fef3c7, #fde68a)',
-                    'linear-gradient(135deg, #dcfce7, #bbf7d0)',
-                    'linear-gradient(135deg, #e0e7ff, #c7d2fe)',
-                    'linear-gradient(135deg, #fce7f3, #fbcfe8)',
-                    'linear-gradient(135deg, #dbeafe, #bfdbfe)'
-                ];
-
-                // Default icons based on category or random
-                const defaultIcons = ['📱', '🎯', '💡', '🚀', '⭐', '🎨', '📊', '🔥'];
-
-                // Render each app with real icons
-                container.innerHTML = publishedApps.map((app, i) => {
-                    const iconUrl = app.icon_url;
-                    const iconEmoji = app.icon || defaultIcons[i % defaultIcons.length];
-                    const color = iconColors[i % iconColors.length];
-                    const appUrl = `app.html?slug=${app.slug}`;
-
-                    // Use image if icon_url exists, otherwise emoji with background
-                    const iconContent = iconUrl
-                        ? `<img src="${iconUrl}" alt="${app.name}" style="width: 48px; height: 48px; border-radius: 12px; object-fit: cover;">`
-                        : iconEmoji;
-                    const iconStyle = iconUrl
-                        ? 'background: transparent;'
-                        : `background: ${color};`;
-
-                    return `
-                        <a href="${appUrl}" class="mini-app" style="cursor: pointer; text-decoration: none; color: inherit;">
-                            <div class="app-icon" style="${iconStyle}">${iconContent}</div>
-                            <div class="app-info">
-                                <div class="app-name">${app.name}</div>
-                            </div>
-                        </a>
-                    `;
-                }).join('');
-
-            } catch (err) {
-                console.error('Failed to load discover apps:', err);
-                container.innerHTML = `
-                    <div class="mini-app" style="opacity: 0.5;">
-                        <div class="app-icon" style="background: linear-gradient(135deg, #f3f4f6, #e5e7eb);"></div>
-                        <div class="app-info">
-                            <div class="app-name">Offline</div>
-                            <div class="app-creator">Check connection</div>
-                        </div>
-                    </div>
-                `;
-            }
-        })();
-    </script>
-
-    <!-- Dynamic Stats -->
-    <script>
-        (async function loadStats() {
-            if (!window.SuiteAppStore) return;
-
-            try {
-                const { stats } = await window.SuiteAppStore.fetchAppStats();
-
-                // Update Apps Published (total apps, regardless of status)
-                const appsEl = document.getElementById('statAppsPublished');
-                if (appsEl) {
-                    appsEl.textContent = stats.total > 0 ? `${stats.total}+` : '0';
-                }
-
-                // For Active Users - we'd need a users table, for now estimate from Discord
-                // Using a placeholder that can be connected to real data later
-                const usersEl = document.getElementById('statActiveUsers');
-                if (usersEl) {
-                    // Estimate: multiply apps by avg 50 users + base of 100
-                    const estimated = Math.max(100, stats.total * 50 + 100);
-                    usersEl.textContent = estimated.toLocaleString() + '+';
-                }
-
-            } catch (err) {
-                console.error('Failed to load stats:', err);
-                // Keep the "--" fallback
-            }
-        })();
-    </script>
-
-    <!-- Stu Helper Widget -->
-    <link rel="stylesheet" href="stu-helper.css">
-    <script src="stu-helper.js"></script>
+    <!-- Scripts -->
+    <script src="homepage.js"></script>
+    <script src="wallet-connect.js"></script>
 </body>
 
 </html>
