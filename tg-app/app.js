@@ -231,7 +231,7 @@ function showScreen(screenId) {
     app.classList.toggle('viewing-app', screenId === 'appViewScreen');
 }
 
-// Open app in WebView (iframe)
+// Open app in Telegram browser
 function openApp(slug) {
     const app = apps.find(a => a.slug === slug);
     if (!app) return;
@@ -245,10 +245,12 @@ function openApp(slug) {
         ? app.app_url
         : `https://www.getsuite.app${app.app_url || '/' + slug}`;
 
-    // Open in iframe (keeps user in mini app - better UX, allows camera)
-    document.getElementById('appFrame').src = url;
-    document.getElementById('currentAppName').textContent = app.name;
-    showScreen('appViewScreen');
+    // Open in Telegram's browser (fullscreen, camera works)
+    if (tg) {
+        tg.openLink(url);
+    } else {
+        window.open(url, '_blank');
+    }
 }
 
 // Close app WebView
