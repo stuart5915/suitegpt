@@ -13,7 +13,7 @@ import {
     ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getCurrentUser, useCredits, SuiteUser } from '../services/suiteAuth';
+import { getCurrentUser, useCredits, SuiteUser } from '../services/walletConnect';
 
 export interface PaymentConfig {
     featureName: string;
