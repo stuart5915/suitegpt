@@ -22,6 +22,9 @@ export default function Root({ children }: { children: React.ReactNode }) {
         <meta name="apple-mobile-web-app-title" content="FoodVitals" />
         <link rel="apple-touch-icon" href="/assets/images/icon.png" />
 
+        {/* Web App Manifest */}
+        <link rel="manifest" href="/manifest.json" />
+
         {/* Prevent phone number detection */}
         <meta name="format-detection" content="telephone=no" />
 
