@@ -2106,9 +2106,9 @@
                 document.getElementById('screenshotsSection').style.display = 'none';
             }
 
-            // Open App button - check download_url OR app_url, and status
+            // Open App button - prefer app_url (admin-managed) over download_url
             const openBtn = document.getElementById('openAppBtn');
-            const appUrl = app.download_url || app.app_url;
+            const appUrl = app.app_url || app.download_url;
             if (appUrl && isLive) {
                 openBtn.textContent = 'Open App';
                 openBtn.onclick = () => window.open(appUrl, '_blank');
@@ -3356,6 +3356,15 @@
             deferredPrompt = e;
             console.log('Install prompt ready');
         });
+
+        // Open app function for tier buttons
+        function openApp() {
+            if (!currentApp) return;
+            const url = currentApp.app_url || currentApp.download_url;
+            if (url) {
+                window.open(url, '_blank');
+            }
+        }
 
         function addToHomeScreen() {
             if (!currentApp || !currentApp.app_url) {
