@@ -5912,10 +5912,15 @@ Personalized insights" style="min-height: 120px;"></textarea>
             if (!grid) return;
 
             try {
-                const response = await fetch(`${ADMIN_API_URL}/get-apps?discord_id=${ADMIN_DISCORD_ID}`);
-                const result = await response.json();
-                if (!result.success) throw new Error(result.error);
-                adminApps = result.apps || [];
+                // Fetch directly from Supabase
+                const response = await fetch(`${ADMIN_SUPABASE_URL}/rest/v1/apps?select=*&order=created_at.desc`, {
+                    headers: {
+                        'apikey': ADMIN_SUPABASE_KEY,
+                        'Authorization': `Bearer ${ADMIN_SUPABASE_KEY}`
+                    }
+                });
+                if (!response.ok) throw new Error('Failed to fetch apps');
+                adminApps = await response.json();
                 renderAdminApps();
             } catch (err) {
                 console.error('Error loading admin apps:', err);
@@ -5978,17 +5983,18 @@ Personalized insights" style="min-height: 120px;"></textarea>
         async function toggleAppLive(slug, currentlyLive) {
             const newStatus = currentlyLive ? 'pending' : 'approved';
             try {
-                const response = await fetch(`${ADMIN_API_URL}/update-app`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        discord_id: ADMIN_DISCORD_ID,
-                        slug: slug,
-                        updates: { status: newStatus }
-                    })
+                // Update directly in Supabase
+                const response = await fetch(`${ADMIN_SUPABASE_URL}/rest/v1/apps?slug=eq.${slug}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': ADMIN_SUPABASE_KEY,
+                        'Authorization': `Bearer ${ADMIN_SUPABASE_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({ status: newStatus })
                 });
-                const result = await response.json();
-                if (!result.success) throw new Error(result.error);
+                if (!response.ok) throw new Error('Failed to update app');
 
                 // Update local state
                 const app = adminApps.find(a => a.slug === slug);
@@ -6154,17 +6160,18 @@ Personalized insights" style="min-height: 120px;"></textarea>
             };
 
             try {
-                const response = await fetch(`${ADMIN_API_URL}/update-app`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        discord_id: ADMIN_DISCORD_ID,
-                        slug: slug,
-                        updates: updates
-                    })
+                // Update directly in Supabase
+                const response = await fetch(`${ADMIN_SUPABASE_URL}/rest/v1/apps?slug=eq.${slug}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': ADMIN_SUPABASE_KEY,
+                        'Authorization': `Bearer ${ADMIN_SUPABASE_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify(updates)
                 });
-                const result = await response.json();
-                if (!result.success) throw new Error(result.error);
+                if (!response.ok) throw new Error('Failed to update app');
 
                 // Update local state
                 const app = adminApps.find(a => a.slug === slug);
