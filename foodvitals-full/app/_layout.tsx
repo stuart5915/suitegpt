@@ -3,7 +3,14 @@ import { DarkTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import 'react-native-reanimated';
+
+// Wallet Connect imports (web only)
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { WagmiProvider } from 'wagmi';
+import { wagmiConfig } from '../services/walletConnect';
+import { WalletProvider } from '../contexts/WalletContext';
 
 export {
   ErrorBoundary,
@@ -15,8 +22,10 @@ export const unstable_settings = {
 
 SplashScreen.preventAutoHideAsync();
 
+// Create query client for wagmi
+const queryClient = new QueryClient();
+
 export default function RootLayout() {
-  // Skip custom font loading for web compatibility - use system fonts
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -28,6 +37,25 @@ export default function RootLayout() {
     return null;
   }
 
+  // Wrap with wallet providers on web
+  if (Platform.OS === 'web') {
+    return (
+      <WagmiProvider config={wagmiConfig}>
+        <QueryClientProvider client={queryClient}>
+          <WalletProvider>
+            <ThemeProvider value={DarkTheme}>
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="login" />
+                <Stack.Screen name="(tabs)" />
+              </Stack>
+            </ThemeProvider>
+          </WalletProvider>
+        </QueryClientProvider>
+      </WagmiProvider>
+    );
+  }
+
+  // Native without wallet providers for now
   return (
     <ThemeProvider value={DarkTheme}>
       <Stack screenOptions={{ headerShown: false }}>

@@ -18,45 +18,35 @@ import { supabase } from '../services/supabase';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
 import { router } from 'expo-router';
-import { connectWallet, getCurrentUser, SuiteUser } from '../services/suiteAuth';
+import { useWallet } from '../contexts/WalletContext';
 
 WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
+    const { user: walletUser, isConnecting, connect, isInitialized } = useWallet();
     const [loading, setLoading] = useState(false);
     const [showEmailForm, setShowEmailForm] = useState(false);
     const [isSignUp, setIsSignUp] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [walletUser, setWalletUser] = useState<SuiteUser | null>(null);
 
-    // Handle wallet connection
+    // Handle wallet connection via WalletConnect
     const handleWalletConnect = async () => {
-        setLoading(true);
         try {
-            const user = await connectWallet();
-            if (user) {
-                setWalletUser(user);
-                // Navigate to main app - wallet acts as auth
-                router.replace('/(tabs)/' as any);
-            }
+            await connect();
+            // The wallet context will update and trigger the useEffect below
         } catch (error: any) {
             console.error('Wallet connection failed:', error);
             Alert.alert('Connection Failed', error.message || 'Could not connect wallet');
-        } finally {
-            setLoading(false);
         }
     };
 
-    // Check if wallet already connected
+    // Navigate when wallet connects
     useEffect(() => {
-        getCurrentUser().then((user) => {
-            if (user) {
-                setWalletUser(user);
-                router.replace('/(tabs)/' as any);
-            }
-        });
-    }, []);
+        if (walletUser?.isConnected) {
+            router.replace('/(tabs)/' as any);
+        }
+    }, [walletUser]);
 
     // Check if already logged in
     useEffect(() => {
@@ -339,9 +329,9 @@ export default function LoginScreen() {
                         <TouchableOpacity
                             style={styles.walletButton}
                             onPress={handleWalletConnect}
-                            disabled={loading}
+                            disabled={isConnecting || !isInitialized}
                         >
-                            {loading ? (
+                            {isConnecting ? (
                                 <ActivityIndicator color="#fff" />
                             ) : (
                                 <Text style={styles.walletButtonText}>🔗 Connect Wallet</Text>
