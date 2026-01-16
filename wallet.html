@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>Vault | SUITE</title>
-    <link rel="icon" type="image/png" href="assets/suite-token.png">
+    <link rel="icon" type="image/png" href="assets/suite-logo-new.png">
     <meta name="description"
         content="Your SUITE Vault - deposit, withdraw, earn with Community Arbitrage, and view Treasury stats.">
     <!-- Ethers.js for blockchain interactions -->
@@ -1312,19 +1312,6 @@
     <div class="bg-blob blob-3"></div>
 
     <main class="wallet-page">
-        <!-- Your Wallet Badge - Above Container -->
-        <div
-            style="max-width: 950px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: center; margin-bottom: 12px;">
-            <div
-                style="display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.9); padding: 10px 20px; border-radius: 100px; border: 1px solid rgba(139, 92, 246, 0.2); box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-                <img src="assets/suite-token.png" alt="SUITE" style="width: 28px; height: 28px; border-radius: 50%;"
-                    onerror="this.src='assets/suite-logo.png'">
-                <span style="font-weight: 700; color: #8b5cf6; font-size: 0.9rem;">Your Wallet:</span>
-                <span id="vaultBalanceHero" style="font-weight: 800; color: #2d1b4e; font-size: 1.1rem;">0 SUITE</span>
-                <span style="color: #6b7280; font-size: 0.85rem;">≈ $0.00</span>
-            </div>
-        </div>
-
         <div class="wallet-container">
             <!-- Clay Treasure Chest - Fixed to right side of page (behind everything) -->
             <!-- How It Works Tooltip (Hidden by default, positioned near icon) -->
@@ -2511,6 +2498,291 @@
         </div>
     </div>
 
+    <!-- Full Edit App Modal -->
+    <div class="edit-modal-overlay" id="editModalOverlay">
+        <div class="edit-modal">
+            <h3>✏️ Edit App</h3>
+            <form id="editAppForm">
+                <input type="hidden" id="editAppSlug">
+                <div class="form-group">
+                    <label for="editName">App Name</label>
+                    <input type="text" id="editName" required>
+                </div>
+                <div class="form-group">
+                    <label for="editTagline">Tagline</label>
+                    <input type="text" id="editTagline" placeholder="Short description...">
+                </div>
+                <div class="form-group">
+                    <label for="editDescription">Description</label>
+                    <textarea id="editDescription" placeholder="Detailed description..."></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editCategory">Category</label>
+                        <select id="editCategory">
+                            <option value="productivity">Productivity</option>
+                            <option value="health">Health</option>
+                            <option value="lifestyle">Lifestyle</option>
+                            <option value="fitness">Fitness</option>
+                            <option value="finance">Finance</option>
+                            <option value="entertainment">Entertainment</option>
+                            <option value="education">Education</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editStatus">Status</label>
+                        <select id="editStatus">
+                            <option value="approved">🟢 Live</option>
+                            <option value="development">🟡 Development</option>
+                            <option value="paused">⏸️ Paused</option>
+                            <option value="featured">⭐ Featured</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>App Icon</label>
+                    <div class="upload-zone" id="iconUploadZone" ondrop="handleEditDrop(event, 'editIconUrl')"
+                        ondragover="handleEditDragOver(event)" onclick="document.getElementById('iconFileInput').click()">
+                        <img class="upload-preview" id="iconPreview" style="display: none;">
+                        <div class="upload-placeholder" id="iconPlaceholder">
+                            <span>📷</span>
+                            <span>Drop image or click to upload</span>
+                        </div>
+                        <input type="file" id="iconFileInput" accept="image/*" style="display:none"
+                            onchange="handleEditFileSelect(event, 'editIconUrl', 'iconPreview', 'iconPlaceholder')">
+                    </div>
+                    <input type="hidden" id="editIconUrl">
+                </div>
+                <div class="form-group">
+                    <label for="editAppUrl">App URL (PWA Link)</label>
+                    <input type="url" id="editAppUrl" placeholder="https://yourapp.vercel.app">
+                </div>
+                <div class="form-group">
+                    <label>Screenshots</label>
+                    <div class="screenshots-grid">
+                        <div class="upload-zone small" ondrop="handleEditDrop(event, 'editScreenshot1')"
+                            ondragover="handleEditDragOver(event)" onclick="document.getElementById('ss1FileInput').click()">
+                            <button type="button" class="remove-btn" id="ss1Remove" onclick="event.stopPropagation(); removeScreenshot('editScreenshot1', 'ss1Preview', 'ss1Placeholder', 'ss1Remove')">×</button>
+                            <img class="upload-preview" id="ss1Preview" style="display: none;">
+                            <div class="upload-placeholder" id="ss1Placeholder"><span>📷 1</span></div>
+                            <input type="file" id="ss1FileInput" accept="image/*" style="display:none"
+                                onchange="handleEditFileSelect(event, 'editScreenshot1', 'ss1Preview', 'ss1Placeholder')">
+                        </div>
+                        <div class="upload-zone small" ondrop="handleEditDrop(event, 'editScreenshot2')"
+                            ondragover="handleEditDragOver(event)" onclick="document.getElementById('ss2FileInput').click()">
+                            <button type="button" class="remove-btn" id="ss2Remove" onclick="event.stopPropagation(); removeScreenshot('editScreenshot2', 'ss2Preview', 'ss2Placeholder', 'ss2Remove')">×</button>
+                            <img class="upload-preview" id="ss2Preview" style="display: none;">
+                            <div class="upload-placeholder" id="ss2Placeholder"><span>📷 2</span></div>
+                            <input type="file" id="ss2FileInput" accept="image/*" style="display:none"
+                                onchange="handleEditFileSelect(event, 'editScreenshot2', 'ss2Preview', 'ss2Placeholder')">
+                        </div>
+                        <div class="upload-zone small" ondrop="handleEditDrop(event, 'editScreenshot3')"
+                            ondragover="handleEditDragOver(event)" onclick="document.getElementById('ss3FileInput').click()">
+                            <button type="button" class="remove-btn" id="ss3Remove" onclick="event.stopPropagation(); removeScreenshot('editScreenshot3', 'ss3Preview', 'ss3Placeholder', 'ss3Remove')">×</button>
+                            <img class="upload-preview" id="ss3Preview" style="display: none;">
+                            <div class="upload-placeholder" id="ss3Placeholder"><span>📷 3</span></div>
+                            <input type="file" id="ss3FileInput" accept="image/*" style="display:none"
+                                onchange="handleEditFileSelect(event, 'editScreenshot3', 'ss3Preview', 'ss3Placeholder')">
+                        </div>
+                        <div class="upload-zone small" ondrop="handleEditDrop(event, 'editScreenshot4')"
+                            ondragover="handleEditDragOver(event)" onclick="document.getElementById('ss4FileInput').click()">
+                            <button type="button" class="remove-btn" id="ss4Remove" onclick="event.stopPropagation(); removeScreenshot('editScreenshot4', 'ss4Preview', 'ss4Placeholder', 'ss4Remove')">×</button>
+                            <img class="upload-preview" id="ss4Preview" style="display: none;">
+                            <div class="upload-placeholder" id="ss4Placeholder"><span>📷 4</span></div>
+                            <input type="file" id="ss4FileInput" accept="image/*" style="display:none"
+                                onchange="handleEditFileSelect(event, 'editScreenshot4', 'ss4Preview', 'ss4Placeholder')">
+                        </div>
+                        <div class="upload-zone small" ondrop="handleEditDrop(event, 'editScreenshot5')"
+                            ondragover="handleEditDragOver(event)" onclick="document.getElementById('ss5FileInput').click()">
+                            <button type="button" class="remove-btn" id="ss5Remove" onclick="event.stopPropagation(); removeScreenshot('editScreenshot5', 'ss5Preview', 'ss5Placeholder', 'ss5Remove')">×</button>
+                            <img class="upload-preview" id="ss5Preview" style="display: none;">
+                            <div class="upload-placeholder" id="ss5Placeholder"><span>📷 5</span></div>
+                            <input type="file" id="ss5FileInput" accept="image/*" style="display:none"
+                                onchange="handleEditFileSelect(event, 'editScreenshot5', 'ss5Preview', 'ss5Placeholder')">
+                        </div>
+                    </div>
+                    <input type="hidden" id="editScreenshot1">
+                    <input type="hidden" id="editScreenshot2">
+                    <input type="hidden" id="editScreenshot3">
+                    <input type="hidden" id="editScreenshot4">
+                    <input type="hidden" id="editScreenshot5">
+                </div>
+
+                <!-- Free vs Pro Features Section -->
+                <div style="border-top: 2px dashed #e5e7eb; margin: 20px 0; padding-top: 20px;">
+                    <label style="font-weight: 800; font-size: 1.1rem; color: #1f2937; display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+                        🔓 Feature Tiers
+                        <span style="font-size: 0.75rem; font-weight: 500; color: #6b7280;">(Shown on app store page)</span>
+                    </label>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editFreeFeatures" style="color: #16a34a;">
+                                🆓 Free Features <span style="font-weight: 400; color: #6b7280;">(one per line)</span>
+                            </label>
+                            <textarea id="editFreeFeatures" placeholder="Basic AI analysis
+Barcode scanning
+Food logging
+Weekly summary" style="min-height: 120px;"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="editProFeatures" style="color: #f59e0b;">
+                                <img src="assets/suite-logo-new.png" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;"> AI Features <span style="font-weight: 400; color: #6b7280;">(one per line)</span>
+                            </label>
+                            <textarea id="editProFeatures" placeholder="Advanced AI Pro model
+Photo recognition
+Micronutrient tracking
+Personalized insights" style="min-height: 120px;"></textarea>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="editProPrice">Pro Feature Price</label>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <input type="number" id="editProPrice" placeholder="10" value="10" style="width: 80px;">
+                            <span style="color: #6b7280;">credits per use</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" class="btn-save">💾 Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <style>
+        /* Edit Modal Styles */
+        .edit-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .edit-modal-overlay.active { display: flex; }
+        .edit-modal {
+            background: white;
+            border-radius: 24px;
+            padding: 32px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .edit-modal h3 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin-bottom: 24px;
+        }
+        .edit-modal .form-group { margin-bottom: 20px; }
+        .edit-modal .form-group label {
+            display: block;
+            font-weight: 700;
+            color: #2d1b4e;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        .edit-modal .form-group input,
+        .edit-modal .form-group select,
+        .edit-modal .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+        .edit-modal .form-group input:focus,
+        .edit-modal .form-group select:focus,
+        .edit-modal .form-group textarea:focus {
+            outline: none;
+            border-color: #ff9500;
+        }
+        .edit-modal .form-group textarea { min-height: 100px; resize: vertical; }
+        .edit-modal .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .edit-modal .modal-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; }
+        .edit-modal .btn-cancel {
+            background: #f3f4f6;
+            color: #5a4a6f;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .edit-modal .btn-save {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .edit-modal .upload-zone {
+            border: 2px dashed #d1d5db;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #fafafa;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .edit-modal .upload-zone:hover { border-color: #ff9500; background: #fff8f0; }
+        .edit-modal .upload-zone.small { min-height: 80px; padding: 12px; }
+        .edit-modal .upload-preview {
+            max-width: 100%;
+            max-height: 150px;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+        .edit-modal .upload-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            color: #9ca3af;
+            font-size: 0.85rem;
+        }
+        .edit-modal .screenshots-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+        .edit-modal .upload-zone .remove-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+            border: none;
+            font-size: 14px;
+            line-height: 1;
+            cursor: pointer;
+            display: none;
+            z-index: 10;
+            padding: 0;
+        }
+        .edit-modal .upload-zone .remove-btn:hover {
+            background: #dc2626;
+        }
+    </style>
+
     <style>
         /* Crypto Deposit Modal Styles */
         .network-warning {
@@ -2836,7 +3108,7 @@
         .notification-btn {
             width: 100%;
             padding: 14px;
-            background: var(--accent-primary);
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
             color: white;
             border: none;
             border-radius: 10px;
@@ -2848,7 +3120,7 @@
 
         .notification-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 16px rgba(232, 93, 59, 0.3);
+            box-shadow: 0 4px 16px rgba(255, 149, 0, 0.3);
         }
     </style>
 
@@ -3328,7 +3600,7 @@
 
                 listEl.innerHTML = allocations.map(alloc => `
                     <div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: rgba(168, 85, 247, 0.05); border-radius: 12px;">
-                        <img src="${alloc.apps?.icon_url || 'assets/suite-token.png'}" style="width: 40px; height: 40px; border-radius: 10px; object-fit: cover;" onerror="this.src='assets/suite-token.png'">
+                        <img src="${alloc.apps?.icon_url || 'assets/suite-logo-new.png'}" style="width: 40px; height: 40px; border-radius: 10px; object-fit: cover;" onerror="this.src='assets/suite-logo-new.png'">
                         <div style="flex: 1;">
                             <div style="font-weight: 700; color: #2d1b4e;">${alloc.apps?.name || 'Unknown App'}</div>
                             <div style="font-size: 0.8rem; color: #6b7280;">${formatNumber(alloc.amount_staked)} SUITE allocated</div>
@@ -5433,9 +5705,9 @@
                 return `
                     <div style="background: rgba(255,255,255,0.8); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
                         <div style="display: flex; align-items: center; gap: 12px;">
-                            <img src="${app.icon_url || 'assets/suite-token.png'}" alt="${app.name}" 
+                            <img src="${app.icon_url || 'assets/suite-logo-new.png'}" alt="${app.name}" 
                                 style="width: 48px; height: 48px; border-radius: 12px; object-fit: cover;"
-                                onerror="this.src='assets/suite-token.png'">
+                                onerror="this.src='assets/suite-logo-new.png'">
                             <div style="flex: 1; min-width: 0;">
                                 <div style="font-weight: 700; color: #2d1b4e; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${app.name}</div>
                                 <div style="font-size: 0.8rem; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${app.tagline || 'No tagline'}</div>
@@ -5449,9 +5721,11 @@
                             <span style="background: rgba(168, 85, 247, 0.1); color: #a855f7; padding: 4px 10px; border-radius: 100px; font-size: 0.75rem; font-weight: 600;">${app.category || 'app'}</span>
                         </div>
                         <div style="display: flex; gap: 8px; margin-top: auto;">
-                            <a href="app.html?slug=${app.slug}" target="_blank" 
+                            <a href="app.html?slug=${app.slug}" target="_blank"
                                 style="flex: 1; text-align: center; padding: 8px; background: rgba(0,0,0,0.04); color: #2d1b4e; border-radius: 8px; font-size: 0.8rem; font-weight: 600; text-decoration: none;">View</a>
-                            <button onclick="toggleAppLive('${app.slug}', ${isLive})" 
+                            <button onclick="openEditModal('${app.slug}')"
+                                style="flex: 1; padding: 8px; background: rgba(139, 92, 246, 0.1); color: #8b5cf6; border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">Edit</button>
+                            <button onclick="toggleAppLive('${app.slug}', ${isLive})"
                                 style="flex: 1; padding: 8px; background: ${isLive ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.1)'}; color: ${isLive ? '#ef4444' : '#22c55e'}; border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">
                                 ${isLive ? 'Take Offline' : 'Go Live'}
                             </button>
@@ -5486,6 +5760,176 @@
                 showNotification('⚠️', 'Error', err.message);
             }
         }
+
+        // Edit Modal Functions
+        function openEditModal(slug) {
+            const app = adminApps.find(a => a.slug === slug);
+            if (!app) {
+                showNotification('⚠️', 'Error', 'App not found');
+                return;
+            }
+
+            document.getElementById('editAppSlug').value = slug;
+            document.getElementById('editName').value = app.name || '';
+            document.getElementById('editTagline').value = app.tagline || '';
+            document.getElementById('editDescription').value = app.description || '';
+            document.getElementById('editCategory').value = app.category || 'lifestyle';
+            document.getElementById('editStatus').value = app.status || 'approved';
+            document.getElementById('editAppUrl').value = app.app_url || '';
+            document.getElementById('editIconUrl').value = app.icon_url || '';
+            document.getElementById('editFreeFeatures').value = app.free_features || '';
+            document.getElementById('editProFeatures').value = app.pro_features || '';
+            document.getElementById('editProPrice').value = app.pro_price || 10;
+            document.getElementById('editScreenshot1').value = app.screenshot_1 || '';
+            document.getElementById('editScreenshot2').value = app.screenshot_2 || '';
+            document.getElementById('editScreenshot3').value = app.screenshot_3 || '';
+            document.getElementById('editScreenshot4').value = app.screenshot_4 || '';
+            document.getElementById('editScreenshot5').value = app.screenshot_5 || '';
+
+            // Show existing images
+            showPreviewIfExists('iconPreview', 'iconPlaceholder', app.icon_url);
+            showPreviewIfExists('ss1Preview', 'ss1Placeholder', app.screenshot_1, 'ss1Remove');
+            showPreviewIfExists('ss2Preview', 'ss2Placeholder', app.screenshot_2, 'ss2Remove');
+            showPreviewIfExists('ss3Preview', 'ss3Placeholder', app.screenshot_3, 'ss3Remove');
+            showPreviewIfExists('ss4Preview', 'ss4Placeholder', app.screenshot_4, 'ss4Remove');
+            showPreviewIfExists('ss5Preview', 'ss5Placeholder', app.screenshot_5, 'ss5Remove');
+
+            document.getElementById('editModalOverlay').classList.add('active');
+        }
+
+        function showPreviewIfExists(previewId, placeholderId, url, removeId = null) {
+            const preview = document.getElementById(previewId);
+            const placeholder = document.getElementById(placeholderId);
+            const removeBtn = removeId ? document.getElementById(removeId) : null;
+            if (url) {
+                preview.src = url;
+                preview.style.display = 'block';
+                placeholder.style.display = 'none';
+                if (removeBtn) removeBtn.style.display = 'block';
+            } else {
+                preview.style.display = 'none';
+                placeholder.style.display = 'flex';
+                if (removeBtn) removeBtn.style.display = 'none';
+            }
+        }
+
+        function removeScreenshot(hiddenId, previewId, placeholderId, removeId) {
+            document.getElementById(hiddenId).value = '';
+            document.getElementById(previewId).style.display = 'none';
+            document.getElementById(previewId).src = '';
+            document.getElementById(placeholderId).style.display = 'flex';
+            document.getElementById(removeId).style.display = 'none';
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModalOverlay').classList.remove('active');
+        }
+
+        // Close modal when clicking overlay
+        document.getElementById('editModalOverlay').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeEditModal();
+        });
+
+        function handleEditDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        async function handleEditDrop(e, hiddenInputId) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                await uploadEditImage(file, hiddenInputId);
+            }
+        }
+
+        async function handleEditFileSelect(e, hiddenInputId, previewId, placeholderId) {
+            const file = e.target.files[0];
+            if (file) {
+                const url = await uploadEditImage(file, hiddenInputId);
+                if (url) {
+                    // Derive remove button ID from preview ID (ss1Preview -> ss1Remove)
+                    const removeId = previewId.replace('Preview', 'Remove');
+                    showPreviewIfExists(previewId, placeholderId, url, removeId);
+                }
+            }
+        }
+
+        async function uploadEditImage(file, hiddenInputId) {
+            // Upload to server
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('discord_id', ADMIN_DISCORD_ID);
+
+            try {
+                const response = await fetch(`${ADMIN_API_URL}/upload-image`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                if (result.success) {
+                    document.getElementById(hiddenInputId).value = result.url;
+                    console.log('Uploaded:', result.url);
+                    return result.url;
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (err) {
+                console.error('Upload failed:', err);
+                showNotification('⚠️', 'Upload Failed', err.message);
+                return null;
+            }
+        }
+
+        // Form submission
+        document.getElementById('editAppForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const slug = document.getElementById('editAppSlug').value;
+            const updates = {
+                name: document.getElementById('editName').value,
+                tagline: document.getElementById('editTagline').value,
+                description: document.getElementById('editDescription').value,
+                category: document.getElementById('editCategory').value,
+                status: document.getElementById('editStatus').value,
+                app_url: document.getElementById('editAppUrl').value,
+                icon_url: document.getElementById('editIconUrl').value,
+                free_features: document.getElementById('editFreeFeatures').value,
+                pro_features: document.getElementById('editProFeatures').value,
+                pro_price: parseInt(document.getElementById('editProPrice').value) || 10,
+                screenshot_1: document.getElementById('editScreenshot1').value || null,
+                screenshot_2: document.getElementById('editScreenshot2').value || null,
+                screenshot_3: document.getElementById('editScreenshot3').value || null,
+                screenshot_4: document.getElementById('editScreenshot4').value || null,
+                screenshot_5: document.getElementById('editScreenshot5').value || null
+            };
+
+            try {
+                const response = await fetch(`${ADMIN_API_URL}/update-app`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        discord_id: ADMIN_DISCORD_ID,
+                        slug: slug,
+                        updates: updates
+                    })
+                });
+                const result = await response.json();
+                if (!result.success) throw new Error(result.error);
+
+                // Update local state
+                const app = adminApps.find(a => a.slug === slug);
+                if (app) Object.assign(app, updates);
+
+                renderAdminApps();
+                closeEditModal();
+                showNotification('✅', 'Saved', `${updates.name} has been updated`);
+            } catch (err) {
+                console.error('Save failed:', err);
+                showNotification('⚠️', 'Error', err.message);
+            }
+        });
 
         // Load admin apps when admin dashboard becomes visible
         const adminDashboard = document.getElementById('adminDashboard');

@@ -8,7 +8,7 @@
     const navHTML = `
     <div class="nav-inner">
         <a href="${basePath}index.html" class="nav-logo">
-            <img src="${basePath}assets/suite-token.png" alt="SUITE" class="nav-logo-img">
+            <img src="${basePath}assets/suite-logo-new.png" alt="SUITE" class="nav-logo-img">
             SUITE
         </a>
         <div class="nav-links">

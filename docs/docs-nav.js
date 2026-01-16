@@ -14,16 +14,14 @@ document.addEventListener('DOMContentLoaded', function () {
             <nav class="nav">
                 <div class="nav-inner">
                     <a href="../index.html" class="nav-logo">
-                        <img src="../assets/suite-token.png" alt="SUITE" class="nav-logo-img">
+                        <img src="../assets/suite-logo-new.png" alt="SUITE" class="nav-logo-img">
                         SUITE
                     </a>
                     <div class="nav-links">
                         <a href="../apps.html">Apps</a>
-                        <a href="../developer-portal.html">Build</a>
                         <a href="index.html" class="active">Docs</a>
                         <a href="../learn.html">Learn</a>
                         <a href="../wallet.html">Vault</a>
-                        <a href="../start-building.html" class="nav-cta"><img src="../assets/emojis/clay-rocket.png" alt="" class="nav-cta-emoji"> Start Building</a>
                     </div>
                     <div class="nav-actions">
                         <button class="nav-btn nav-wallet" onclick="connectWallet()">
