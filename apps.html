@@ -1981,23 +1981,48 @@
             currentStatus = urlParams.get('filter');
         }
 
-        // Fetch apps from Cadence suite_apps table
+        // Fetch apps from Supabase
         async function loadAppsFromDatabase() {
             try {
-                if (typeof SuiteAppStore !== 'undefined') {
+                // Try SuiteAppStore first
+                if (typeof SuiteAppStore !== 'undefined' && typeof SuiteAppStore.fetchAppStats === 'function') {
                     const result = await SuiteAppStore.fetchAppStats();
                     apps = result.apps || [];
                     stats = result.stats || {};
-
-                    console.log('Loaded', apps.length, 'apps from suite_apps table');
-                    console.log('Stats:', stats);
-
-                    // Update the hero badge
-                    updateHeroBadge();
+                    console.log('Loaded', apps.length, 'apps via SuiteAppStore');
                 } else {
-                    console.log('SuiteAppStore not available');
-                    apps = [];
-                    stats = { total: 0, published: 0, development: 0, beta: 0 };
+                    // Fallback: direct fetch if SuiteAppStore not available
+                    console.log('SuiteAppStore not available, using direct fetch');
+                    const FALLBACK_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+                    const FALLBACK_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
+
+                    const response = await fetch(`${FALLBACK_URL}/rest/v1/apps?select=*&status=in.(approved,featured,pending)&order=created_at.desc`, {
+                        headers: { 'apikey': FALLBACK_KEY }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        apps = data.map(app => ({
+                            ...app,
+                            displayStatus: ['approved', 'featured'].includes(app.status) ? 'published' : 'development'
+                        }));
+                        stats = {
+                            total: apps.length,
+                            published: apps.filter(a => a.status === 'approved' || a.status === 'featured').length,
+                            development: apps.filter(a => a.status === 'pending').length,
+                            beta: 0
+                        };
+                        console.log('Loaded', apps.length, 'apps via direct fetch');
+                    } else {
+                        console.error('Direct fetch failed:', await response.text());
+                        apps = [];
+                        stats = { total: 0, published: 0, development: 0, beta: 0 };
+                    }
+                }
+
+                // Update the hero badge
+                if (apps.length > 0) {
+                    updateHeroBadge();
                 }
             } catch (error) {
                 console.error('Error loading apps:', error);
