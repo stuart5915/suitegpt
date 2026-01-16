@@ -1975,6 +1975,10 @@
         handleFeedbackOAuthCallback();
 
         // Load app data
+        // Fallback Supabase config (in case supabase-config.js fails to load)
+        const FALLBACK_SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+        const FALLBACK_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
+
         async function loadApp() {
             const slug = getSlugFromUrl();
 
@@ -1984,9 +1988,27 @@
             }
 
             try {
-                // Use the SuiteAppStore helper - fetch from apps table (the main table)
+                // Try SuiteAppStore first
                 if (typeof SuiteAppStore !== 'undefined') {
                     currentApp = await SuiteAppStore.fetchAppBySlug(slug);
+                }
+
+                // Fallback: Direct Supabase fetch if SuiteAppStore unavailable or returned null
+                if (!currentApp) {
+                    console.log('SuiteAppStore unavailable or returned null, using direct Supabase fetch...');
+                    const response = await fetch(
+                        `${FALLBACK_SUPABASE_URL}/rest/v1/apps?slug=eq.${encodeURIComponent(slug)}&select=*`,
+                        {
+                            headers: {
+                                'apikey': FALLBACK_SUPABASE_KEY,
+                                'Authorization': `Bearer ${FALLBACK_SUPABASE_KEY}`
+                            }
+                        }
+                    );
+                    if (response.ok) {
+                        const apps = await response.json();
+                        currentApp = apps && apps.length > 0 ? apps[0] : null;
+                    }
                 }
 
                 if (!currentApp) {
