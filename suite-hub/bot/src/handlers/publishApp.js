@@ -279,30 +279,30 @@ async function buildPWA(appPath) {
 }
 
 /**
- * Deploy to Vercel
+ * Deploy to Vercel - copies dist to main site folder and pushes
+ * Apps are served at getsuite.app/slug/ (not separate subdomains)
  */
 async function deployToVercel(appPath, appSlug) {
     try {
         const distPath = path.join(appPath, 'dist');
 
-        // Deploy using Vercel CLI
-        const { stdout, stderr } = await execAsync(
-            `vercel deploy ${distPath} --prod --yes --name=${appSlug}`,
-            {
-                cwd: appPath,
-                timeout: 120000, // 2 minute timeout
-                env: {
-                    ...process.env,
-                    VERCEL_TOKEN: process.env.VERCEL_TOKEN
-                }
-            }
-        );
+        // Bot runs from suite-hub/bot, main site is 2 levels up
+        const baseDir = path.resolve(process.cwd(), '..', '..');
+        const targetPath = path.join(baseDir, appSlug);
 
-        console.log('Deploy output:', stdout);
+        // Copy dist to main site folder
+        await fs.rm(targetPath, { recursive: true, force: true });
+        await fs.cp(distPath, targetPath, { recursive: true });
 
-        // Extract URL from output
-        const urlMatch = stdout.match(/https:\/\/[^\s]+\.vercel\.app/);
-        const url = urlMatch ? urlMatch[0] : `https://${appSlug}.vercel.app`;
+        // Git add, commit, and push to deploy via Vercel
+        await execAsync(`git add ${appSlug}/`, { cwd: baseDir });
+        await execAsync(`git commit -m "Deploy ${appSlug} to main site"`, { cwd: baseDir });
+        await execAsync('git push', { cwd: baseDir, timeout: 60000 });
+
+        console.log(`Deployed ${appSlug} to main site`);
+
+        // URL is now path-based on main domain
+        const url = `https://getsuite.app/${appSlug}/`;
 
         return { success: true, url };
     } catch (error) {
