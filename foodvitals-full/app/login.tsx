@@ -94,7 +94,7 @@ export default function LoginScreen() {
 
         // Use main site's oauth-callback.html for Discord OAuth
         // Add state param to tell oauth-callback where to redirect after login
-        const redirectUri = 'https://stuarthollinger.com/oauth-callback.html';
+        const redirectUri = 'https://getsuite.app/oauth-callback.html';
         const scope = 'identify';
         const state = encodeURIComponent('/foodvitals/'); // Where to go after auth
         const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}&state=${state}`;
