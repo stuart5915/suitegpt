@@ -36,6 +36,7 @@ export default {
         web: {
             favicon: "./assets/favicon.png",
             bundler: "metro",
+            output: "single",
             description: "Journal through the Bible at your own pace with AI-powered insights",
             themeColor: "#D4AF37",
             backgroundColor: "#F5F2ED",
