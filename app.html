@@ -1354,6 +1354,10 @@
 
                     <div class="app-actions">
                         <button class="btn-primary" id="openAppBtn">Open App</button>
+                        <button class="btn-suite" id="openInSuiteBtn" onclick="openInSuite()"
+                            style="background: linear-gradient(135deg, #0a0a1a, #1a1a2e); color: #ff9500; border: 2px solid #ff9500; padding: 12px 24px; border-radius: 100px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            ⚡ Open in SUITE
+                        </button>
                         <button class="btn-secondary" id="addToHomeBtn" onclick="addToHomeScreen()"
                             style="display: flex; align-items: center; gap: 6px;">
                             📲 Add to Home Screen
@@ -2108,14 +2112,22 @@
 
             // Open App button - prefer app_url (admin-managed) over download_url
             const openBtn = document.getElementById('openAppBtn');
+            const openInSuiteBtn = document.getElementById('openInSuiteBtn');
             const appUrl = app.app_url || app.download_url;
             if (appUrl && isLive) {
                 openBtn.textContent = 'Open App';
                 openBtn.onclick = () => window.open(appUrl, '_blank');
+                // Show "Open in SUITE" for SUITE-hosted apps
+                if (appUrl.includes('getsuite.app') || appUrl.startsWith('/')) {
+                    openInSuiteBtn.style.display = 'flex';
+                } else {
+                    openInSuiteBtn.style.display = 'none';
+                }
             } else {
                 openBtn.textContent = 'Coming Soon';
                 openBtn.disabled = true;
                 openBtn.style.opacity = '0.6';
+                openInSuiteBtn.style.display = 'none';
             }
 
             // Pricing Tiers (Free vs Pro)
@@ -2355,6 +2367,29 @@
             if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M+';
             if (num >= 1000) return (num / 1000).toFixed(1) + 'K+';
             return num + '+';
+        }
+
+        // Open app in SUITE shell (iframe experience with deposit modal)
+        function openInSuite() {
+            if (!currentApp) return;
+
+            // Build SUITE shell URL with app slug
+            const shellUrl = `/suite-shell.html?app=${currentApp.slug}`;
+
+            // Check for logged-in user and pass credentials
+            const telegramUser = JSON.parse(localStorage.getItem('suiteUser') || localStorage.getItem('suiteTelegramUser') || 'null');
+            if (telegramUser && telegramUser.id) {
+                const params = new URLSearchParams({
+                    app: currentApp.slug,
+                    tg_id: telegramUser.id,
+                    tg_username: telegramUser.username || '',
+                    tg_first_name: telegramUser.firstName || telegramUser.first_name || '',
+                    tg_photo: telegramUser.photoUrl || telegramUser.photo_url || ''
+                });
+                window.location.href = `/suite-shell.html?${params.toString()}`;
+            } else {
+                window.location.href = shellUrl;
+            }
         }
 
         function shareApp() {
