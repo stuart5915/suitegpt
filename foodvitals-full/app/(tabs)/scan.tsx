@@ -25,6 +25,13 @@ import { lookupBarcode } from '../../services/openFoodFacts';
 import { GEMINI_MODELS, GeminiModel } from '../../config/keys';
 import { usePaymentGate } from '../../components/PaymentGate';
 import { trackUsage } from '../../services/walletConnect';
+import {
+    smartLookup,
+    lookupPhotoCache,
+    cachePhotoResult,
+    cacheFood,
+    initFoodCache,
+} from '../../services/foodDatabase';
 
 type InputMode = 'text' | 'camera';
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
@@ -73,6 +80,8 @@ export default function LogScreen() {
         supabase.auth.getUser().then(({ data: { user } }) => {
             if (user) setUserId(user.id);
         });
+        // Initialize food cache for smart lookups
+        initFoodCache();
     }, []);
 
     // Cycle through loading messages while processing
@@ -135,18 +144,49 @@ export default function LogScreen() {
             return;
         }
 
-        // Pro model requires payment
-        if (useProModel) {
-            const paymentResult = await requestPayment({
-                featureName: 'AI Pro Analysis',
-                creditCost: 10,
-                appId: 'foodvitals'
-            });
-            if (!paymentResult) return; // Payment cancelled
-        }
-
         setIsProcessing(true);
         try {
+            // TIER 1 & 2: Try smart lookup first (cache + USDA) - FREE!
+            const smartResult = await smartLookup(textInput.trim());
+
+            if (smartResult) {
+                // Found in cache or USDA - no API cost!
+                console.log(`Smart lookup HIT (${smartResult.source}): ${textInput}`);
+                trackUsage('foodvitals', `lookup_${smartResult.source}`);
+
+                const meal: ParsedMeal = {
+                    items: [smartResult.item],
+                    totals: {
+                        calories: smartResult.item.calories,
+                        protein_g: smartResult.item.protein_g,
+                        carbs_g: smartResult.item.carbs_g,
+                        fat_g: smartResult.item.fat_g,
+                        fiber_g: smartResult.item.fiber_g,
+                    },
+                    confidence: smartResult.source === 'cache' ? 0.95 : 0.85,
+                    notes: `Source: ${smartResult.source.toUpperCase()}`,
+                };
+
+                setParsedMeal(meal);
+                setShowResults(true);
+                return;
+            }
+
+            // TIER 3: AI fallback - requires payment for Pro model
+            console.log(`Smart lookup MISS - falling back to AI`);
+
+            if (useProModel) {
+                const paymentResult = await requestPayment({
+                    featureName: 'AI Pro Analysis',
+                    creditCost: 10,
+                    appId: 'foodvitals'
+                });
+                if (!paymentResult) {
+                    setIsProcessing(false);
+                    return;
+                }
+            }
+
             const model: GeminiModel = useProModel ? GEMINI_MODELS.PRO : GEMINI_MODELS.FLASH;
             const result = await parseFoodInput(textInput.trim(), model);
 
@@ -154,6 +194,11 @@ export default function LogScreen() {
             trackUsage('foodvitals', useProModel ? 'ai_pro_text' : 'ai_flash_text');
 
             if (result) {
+                // Cache the AI result for future lookups
+                for (const item of result.items) {
+                    await cacheFood(item.name, item, 'ai');
+                }
+
                 setParsedMeal(result);
                 setShowResults(true);
             } else {
@@ -175,13 +220,56 @@ export default function LogScreen() {
             });
             if (photo?.base64) {
                 setCapturedPhoto(photo.base64);
+
+                // Check photo cache first - FREE if cached!
+                const cachedResult = lookupPhotoCache(photo.base64);
+                if (cachedResult) {
+                    console.log('Photo cache HIT - no API cost!');
+                    trackUsage('foodvitals', 'photo_cache_hit');
+
+                    const meal: ParsedMeal = {
+                        items: cachedResult,
+                        totals: {
+                            calories: cachedResult.reduce((sum, i) => sum + i.calories, 0),
+                            protein_g: cachedResult.reduce((sum, i) => sum + i.protein_g, 0),
+                            carbs_g: cachedResult.reduce((sum, i) => sum + i.carbs_g, 0),
+                            fat_g: cachedResult.reduce((sum, i) => sum + i.fat_g, 0),
+                            fiber_g: cachedResult.reduce((sum, i) => sum + (i.fiber_g || 0), 0),
+                        },
+                        confidence: 0.9,
+                        notes: 'Source: CACHED',
+                    };
+
+                    setParsedMeal(meal);
+                    setShowResults(true);
+                    return;
+                }
+
+                // Photo analysis is expensive - always requires payment
+                const paymentResult = await requestPayment({
+                    featureName: 'Photo Analysis',
+                    creditCost: 10,
+                    appId: 'foodvitals'
+                });
+                if (!paymentResult) return;
+
                 setIsProcessing(true);
 
                 try {
                     const model: GeminiModel = useProModel ? GEMINI_MODELS.PRO : GEMINI_MODELS.FLASH;
                     const result = await analyzeFoodPhoto(photo.base64, textInput || undefined, model);
 
+                    trackUsage('foodvitals', useProModel ? 'photo_ai_pro' : 'photo_ai_flash');
+
                     if (result) {
+                        // Cache the result for future similar photos
+                        await cachePhotoResult(photo.base64, result.items);
+
+                        // Also cache individual items for text lookup
+                        for (const item of result.items) {
+                            await cacheFood(item.name, item, 'ai');
+                        }
+
                         setParsedMeal(result);
                         setShowResults(true);
                     } else {
