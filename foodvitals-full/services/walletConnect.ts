@@ -2,64 +2,12 @@
  * SUITE Wallet Connect Service
  * Uses Reown AppKit (formerly Web3Modal) for mobile wallet connections
  * Works in PWA standalone mode
+ *
+ * NOTE: Uses lazy loading to avoid import.meta errors in non-module contexts
  */
 
-import { createAppKit } from '@reown/appkit';
-import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
-import { mainnet, base } from '@reown/appkit/networks';
-import { reconnect, getAccount, disconnect, watchAccount } from '@wagmi/core';
+// Type imports only (no runtime code)
 import type { Config } from '@wagmi/core';
-
-// WalletConnect Project ID
-const PROJECT_ID = '1b3422192416b1e6228b63dd9cdfad89';
-
-// Metadata for your app (shown in wallet)
-const metadata = {
-  name: 'SUITE Apps',
-  description: 'AI-powered productivity apps',
-  url: 'https://getsuite.app',
-  icons: ['https://getsuite.app/assets/suite-logo-new.png']
-};
-
-// Supported networks
-const networks = [base, mainnet];
-
-// Create wagmi adapter
-const wagmiAdapter = new WagmiAdapter({
-  networks,
-  projectId: PROJECT_ID,
-});
-
-// Export wagmi config for providers
-export const wagmiConfig: Config = wagmiAdapter.wagmiConfig as Config;
-
-// Initialize AppKit (only on web)
-let appKit: ReturnType<typeof createAppKit> | null = null;
-
-export function initWeb3Modal() {
-  if (typeof window === 'undefined') return null;
-
-  if (!appKit) {
-    appKit = createAppKit({
-      adapters: [wagmiAdapter],
-      networks: [base, mainnet],
-      projectId: PROJECT_ID,
-      metadata,
-      themeMode: 'dark',
-      themeVariables: {
-        '--w3m-accent': '#7C3AED',
-        '--w3m-border-radius-master': '12px',
-      },
-      featuredWalletIds: [
-        'c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96', // MetaMask
-        '4622a2b2d6af1c9844944291e5e7351a6aa24cd7b23099efac1b2fd875da31a0', // Trust
-        'fd20dc426fb37566d803205b19bbc1d4096b248ac04548e3cfb6b3a38bd033aa', // Coinbase
-      ],
-    });
-  }
-
-  return appKit;
-}
 
 // Storage keys
 const WALLET_KEY = 'suite_wallet_address';
@@ -69,12 +17,125 @@ const CREDITS_KEY = 'suite_credits';
 const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ4MTAxOTAsImV4cCI6MjA1MDM4NjE5MH0.GRDjsDNkVBzxIlDCl9fOu0d6bfKxNbxOlS4pPXBHyhw';
 
+// WalletConnect Project ID
+const PROJECT_ID = '1b3422192416b1e6228b63dd9cdfad89';
+
 export interface SuiteUser {
   walletAddress: string;
   shortAddress: string;
   credits: number;
   isConnected: boolean;
   chainId?: number;
+}
+
+// Lazy-loaded modules
+let wagmiCore: typeof import('@wagmi/core') | null = null;
+let appKitModule: typeof import('@reown/appkit') | null = null;
+let appKitAdapter: typeof import('@reown/appkit-adapter-wagmi') | null = null;
+let appKitNetworks: typeof import('@reown/appkit/networks') | null = null;
+
+// Cached instances
+let wagmiConfigInstance: Config | null = null;
+let appKit: any = null;
+let wagmiAdapter: any = null;
+
+// Load wagmi modules lazily
+async function loadWagmiModules() {
+  if (!wagmiCore) {
+    wagmiCore = await import('@wagmi/core');
+  }
+  return wagmiCore;
+}
+
+// Load AppKit modules lazily
+async function loadAppKitModules() {
+  if (!appKitModule || !appKitAdapter || !appKitNetworks) {
+    [appKitModule, appKitAdapter, appKitNetworks] = await Promise.all([
+      import('@reown/appkit'),
+      import('@reown/appkit-adapter-wagmi'),
+      import('@reown/appkit/networks'),
+    ]);
+  }
+  return { appKitModule, appKitAdapter, appKitNetworks };
+}
+
+// Create wagmi config lazily
+async function getWagmiConfig(): Promise<Config> {
+  if (wagmiConfigInstance) return wagmiConfigInstance;
+
+  const { appKitAdapter: adapterModule, appKitNetworks: networksModule } = await loadAppKitModules();
+
+  if (!wagmiAdapter) {
+    wagmiAdapter = new adapterModule.WagmiAdapter({
+      networks: [networksModule.base, networksModule.mainnet],
+      projectId: PROJECT_ID,
+    });
+  }
+
+  wagmiConfigInstance = wagmiAdapter.wagmiConfig as Config;
+  return wagmiConfigInstance;
+}
+
+// Dummy config for providers (will be replaced on init)
+const dummyConfig = {
+  chains: [],
+  connectors: [],
+  storage: null,
+  state: { connections: new Map(), current: null },
+} as unknown as Config;
+
+// Export wagmi config (returns dummy until initialized)
+export const wagmiConfig: Config = dummyConfig;
+
+// Initialize AppKit (only on web)
+export async function initWeb3Modal() {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const { appKitModule: appKit_, appKitAdapter: adapterModule, appKitNetworks: networksModule } = await loadAppKitModules();
+
+    // Create adapter if not exists
+    if (!wagmiAdapter) {
+      wagmiAdapter = new adapterModule.WagmiAdapter({
+        networks: [networksModule.base, networksModule.mainnet],
+        projectId: PROJECT_ID,
+      });
+    }
+
+    wagmiConfigInstance = wagmiAdapter.wagmiConfig as Config;
+
+    // Update the exported config
+    Object.assign(wagmiConfig, wagmiConfigInstance);
+
+    if (!appKit) {
+      appKit = appKit_.createAppKit({
+        adapters: [wagmiAdapter],
+        networks: [networksModule.base, networksModule.mainnet],
+        projectId: PROJECT_ID,
+        metadata: {
+          name: 'SUITE Apps',
+          description: 'AI-powered productivity apps',
+          url: 'https://getsuite.app',
+          icons: ['https://getsuite.app/assets/suite-logo-new.png']
+        },
+        themeMode: 'dark',
+        themeVariables: {
+          '--w3m-accent': '#7C3AED',
+          '--w3m-border-radius-master': '12px',
+        },
+        featuredWalletIds: [
+          'c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96', // MetaMask
+          '4622a2b2d6af1c9844944291e5e7351a6aa24cd7b23099efac1b2fd875da31a0', // Trust
+          'fd20dc426fb37566d803205b19bbc1d4096b248ac04548e3cfb6b3a38bd033aa', // Coinbase
+        ],
+      });
+    }
+
+    return appKit;
+  } catch (error) {
+    console.error('Failed to initialize Web3Modal:', error);
+    return null;
+  }
 }
 
 // Format wallet address
@@ -85,25 +146,31 @@ export function formatAddress(address: string): string {
 
 // Open the wallet connection modal
 export async function openConnectModal(): Promise<void> {
-  const modal = initWeb3Modal();
+  const modal = await initWeb3Modal();
   if (modal) {
     await modal.open();
   }
 }
 
 // Check current connection status
-export function getWalletStatus(): { address: string | undefined; isConnected: boolean; chainId: number | undefined } {
-  const account = getAccount(wagmiConfig);
-  return {
-    address: account.address,
-    isConnected: account.isConnected,
-    chainId: account.chainId,
-  };
+export async function getWalletStatus(): Promise<{ address: string | undefined; isConnected: boolean; chainId: number | undefined }> {
+  try {
+    const wagmi = await loadWagmiModules();
+    const config = await getWagmiConfig();
+    const account = wagmi.getAccount(config);
+    return {
+      address: account.address,
+      isConnected: account.isConnected,
+      chainId: account.chainId,
+    };
+  } catch {
+    return { address: undefined, isConnected: false, chainId: undefined };
+  }
 }
 
 // Get current user with credits
 export async function getCurrentUser(): Promise<SuiteUser | null> {
-  const { address, isConnected, chainId } = getWalletStatus();
+  const { address, isConnected, chainId } = await getWalletStatus();
 
   if (!isConnected || !address) {
     // Check localStorage for cached address
@@ -140,7 +207,13 @@ export async function getCurrentUser(): Promise<SuiteUser | null> {
 
 // Disconnect wallet
 export async function disconnectWallet(): Promise<void> {
-  await disconnect(wagmiConfig);
+  try {
+    const wagmi = await loadWagmiModules();
+    const config = await getWagmiConfig();
+    await wagmi.disconnect(config);
+  } catch (error) {
+    console.error('Disconnect error:', error);
+  }
   if (typeof window !== 'undefined') {
     localStorage.removeItem(WALLET_KEY);
     localStorage.removeItem(CREDITS_KEY);
@@ -150,7 +223,9 @@ export async function disconnectWallet(): Promise<void> {
 // Try to reconnect on app start
 export async function tryReconnect(): Promise<SuiteUser | null> {
   try {
-    await reconnect(wagmiConfig);
+    const wagmi = await loadWagmiModules();
+    const config = await getWagmiConfig();
+    await wagmi.reconnect(config);
     return getCurrentUser();
   } catch (error) {
     console.log('No existing connection to restore');
@@ -159,17 +234,23 @@ export async function tryReconnect(): Promise<SuiteUser | null> {
 }
 
 // Watch for account changes
-export function watchWalletChanges(callback: (user: SuiteUser | null) => void): () => void {
-  return watchAccount(wagmiConfig, {
-    onChange: async (account) => {
-      if (account.isConnected && account.address) {
-        const user = await getCurrentUser();
-        callback(user);
-      } else {
-        callback(null);
-      }
-    },
-  });
+export async function watchWalletChanges(callback: (user: SuiteUser | null) => void): Promise<() => void> {
+  try {
+    const wagmi = await loadWagmiModules();
+    const config = await getWagmiConfig();
+    return wagmi.watchAccount(config, {
+      onChange: async (account) => {
+        if (account.isConnected && account.address) {
+          const user = await getCurrentUser();
+          callback(user);
+        } else {
+          callback(null);
+        }
+      },
+    });
+  } catch {
+    return () => {}; // No-op unsubscribe
+  }
 }
 
 // Load credits from Supabase
@@ -204,7 +285,7 @@ export async function loadCredits(walletAddress: string): Promise<number> {
 
 // Use credits for a feature
 export async function useCredits(amount: number, featureName: string, appId?: string): Promise<boolean> {
-  const { address } = getWalletStatus();
+  const { address } = await getWalletStatus();
   if (!address) return false;
 
   try {
@@ -240,7 +321,7 @@ export async function hasCredits(amount: number): Promise<boolean> {
 
 // Track app usage
 export async function trackUsage(appId: string, feature: string): Promise<void> {
-  const { address } = getWalletStatus();
+  const { address } = await getWalletStatus();
 
   try {
     await fetch(`${SUPABASE_URL}/rest/v1/app_usage`, {
