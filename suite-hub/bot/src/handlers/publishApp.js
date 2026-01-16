@@ -302,7 +302,7 @@ async function deployToVercel(appPath, appSlug) {
         console.log(`Deployed ${appSlug} to main site`);
 
         // URL is now path-based on main domain
-        const url = `https://getsuite.app/${appSlug}/`;
+        const url = `https://www.getsuite.app/${appSlug}/`;
 
         return { success: true, url };
     } catch (error) {

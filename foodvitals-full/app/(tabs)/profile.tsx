@@ -111,7 +111,7 @@ export default function ProfileScreen() {
     const handleDiscordLogin = () => {
         if (Platform.OS !== 'web' || typeof window === 'undefined') return;
 
-        const redirectUri = 'https://getsuite.app/oauth-callback.html';
+        const redirectUri = 'https://www.getsuite.app/oauth-callback.html';
         const scope = 'identify';
         const state = encodeURIComponent('/foodvitals/profile');
         const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}&state=${state}`;

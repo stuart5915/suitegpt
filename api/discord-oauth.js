@@ -3,7 +3,7 @@
 
 const DISCORD_CLIENT_ID = '1457474266390986865';
 const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
-const REDIRECT_URI = 'https://getsuite.app/oauth-callback.html';
+const REDIRECT_URI = 'https://www.getsuite.app/oauth-callback.html';
 
 export default async function handler(req, res) {
     // Enable CORS
