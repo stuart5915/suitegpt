@@ -1298,6 +1298,51 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(255, 149, 0, 0.4);
         }
+
+        /* Yield Allocation Slider Styles */
+        .yield-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #e5e7eb;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .yield-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            cursor: pointer;
+            border: 3px solid white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            transition: transform 0.15s ease;
+        }
+
+        .yield-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        .yield-slider::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            cursor: pointer;
+            border: 3px solid white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .yield-slider::-moz-range-track {
+            height: 8px;
+            border-radius: 4px;
+            background: #e5e7eb;
+        }
     </style>
 </head>
 
@@ -1369,8 +1414,7 @@
                                             <span
                                                 style="font-size: 0.65rem; background: rgba(34, 197, 94, 0.15); color: #22c55e; padding: 3px 8px; border-radius: 100px; font-weight: 700;">LIVE</span>
                                         </div>
-                                        <div style="font-size: 0.85rem; color: #6b7280;">Deposit ETH/USDC • Earn ~10%
-                                            APY</div>
+                                        <div style="font-size: 0.85rem; color: #6b7280;">Deposit USDC • Earn ~42% APY</div>
                                     </div>
                                 </div>
 
@@ -1379,8 +1423,8 @@
                                     <div style="text-align: center;">
                                         <div
                                             style="font-size: 0.7rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">
-                                            Est. APY</div>
-                                        <div style="font-size: 1.4rem; font-weight: 800; color: #22c55e;">~10%</div>
+                                            Est. APR</div>
+                                        <div style="font-size: 1.4rem; font-weight: 800; color: #22c55e;">~42%</div>
                                     </div>
                                     <div style="text-align: center;">
                                         <div
@@ -1432,6 +1476,10 @@
                                         style="padding: 8px 16px; background: rgba(0,0,0,0.05); color: #6b7280; border: none; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer;">
                                         Withdraw
                                     </button>
+                                    <button onclick="switchVaultTab('yield')" id="vaultTabYield" class="vault-tab"
+                                        style="padding: 8px 16px; background: rgba(0,0,0,0.05); color: #6b7280; border: none; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer;">
+                                        Yield Allocation
+                                    </button>
                                 </div>
 
                                 <!-- Deposit Tab Content -->
@@ -1449,40 +1497,12 @@
                                                     onmouseover="this.style.borderColor='#a855f7';"
                                                     onmouseout="this.style.borderColor='#e5e7eb';">
                                                     <img id="selectedAssetIcon"
-                                                        src="https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/svg/color/eth.svg"
+                                                        src="https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/svg/color/usdc.svg"
                                                         style="width: 28px; height: 28px; border-radius: 50%;">
                                                     <span id="selectedAssetName"
-                                                        style="flex: 1; text-align: left; color: #2d1b4e;">ETH</span>
-                                                    <span style="color: #9ca3af;">▼</span>
+                                                        style="flex: 1; text-align: left; color: #2d1b4e;">USDC</span>
                                                 </button>
-                                                <div id="assetDropdown"
-                                                    style="display: none; position: absolute; top: calc(100% + 8px); left: 0; right: 0; background: white; border: 2px solid #e5e7eb; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 100; overflow: hidden;">
-                                                    <div onclick="selectAsset('ETH', 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/svg/color/eth.svg')"
-                                                        style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; transition: background 0.2s;"
-                                                        onmouseover="this.style.background='rgba(139,92,246,0.08)';"
-                                                        onmouseout="this.style.background='transparent';">
-                                                        <img src="https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/svg/color/eth.svg"
-                                                            style="width: 28px; height: 28px; border-radius: 50%;">
-                                                        <div>
-                                                            <div style="font-weight: 700; color: #2d1b4e;">ETH</div>
-                                                            <div style="font-size: 0.75rem; color: #6b7280;">Ethereum
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div onclick="selectAsset('USDC', 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/svg/color/usdc.svg')"
-                                                        style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; transition: background 0.2s; border-top: 1px solid #f3f4f6;"
-                                                        onmouseover="this.style.background='rgba(139,92,246,0.08)';"
-                                                        onmouseout="this.style.background='transparent';">
-                                                        <img src="https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/svg/color/usdc.svg"
-                                                            style="width: 28px; height: 28px; border-radius: 50%;">
-                                                        <div>
-                                                            <div style="font-weight: 700; color: #2d1b4e;">USDC</div>
-                                                            <div style="font-size: 0.75rem; color: #6b7280;">USD Coin
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <input type="hidden" id="depositAssetSelect" value="ETH">
+                                                <input type="hidden" id="depositAssetSelect" value="USDC">
                                             </div>
                                         </div>
                                         <div>
@@ -1530,6 +1550,54 @@
                                     </div>
                                 </div>
 
+                                <!-- Yield Allocation Tab Content -->
+                                <div id="vaultYieldTab" style="display: none;">
+                                    <!-- Yield Split Slider -->
+                                    <div style="background: rgba(255,255,255,0.8); border-radius: 16px; padding: 24px; margin-bottom: 20px;">
+                                        <div style="text-align: center; margin-bottom: 20px;">
+                                            <div style="font-size: 0.8rem; color: #6b7280; margin-bottom: 4px;">Your Yield Split</div>
+                                            <div style="font-size: 2rem; font-weight: 800; color: #2d1b4e;">
+                                                <span id="keepPercentDisplay" style="color: #22c55e;">90%</span>
+                                                <span style="color: #9ca3af; font-size: 1rem; margin: 0 8px;">/</span>
+                                                <span id="fundPercentDisplay" style="color: #a855f7;">10%</span>
+                                            </div>
+                                            <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 4px;">
+                                                <span style="color: #22c55e;">You keep</span> / <span style="color: #a855f7;">Fund apps</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Slider -->
+                                        <div style="padding: 0 8px;">
+                                            <input type="range" id="yieldSplitSlider" class="yield-slider" min="0" max="90" value="90"
+                                                oninput="updateYieldSplit(this.value)">
+                                        </div>
+
+                                        <!-- Labels -->
+                                        <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.75rem; color: #9ca3af;">
+                                            <span>100% to apps</span>
+                                            <span>90% keep / 10% to apps</span>
+                                        </div>
+
+                                        <!-- Estimated earnings -->
+                                        <div style="margin-top: 20px; padding: 16px; background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(34, 197, 94, 0.02)); border-radius: 12px;">
+                                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                                <span style="font-size: 0.85rem; color: #6b7280;">Based on $1,000 deposit:</span>
+                                                <span id="estimatedEarnings" style="font-weight: 800; color: #22c55e; font-size: 1.1rem;">~$378/year</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Info Note -->
+                                    <div style="padding: 14px; background: rgba(59, 130, 246, 0.08); border-radius: 12px; display: flex; align-items: flex-start; gap: 10px;">
+                                        <span style="font-size: 1.2rem;">💡</span>
+                                        <div style="font-size: 0.8rem; color: #4b5563; line-height: 1.5;">
+                                            <strong>How it works:</strong> Your deposit earns yield from DeFi protocols.
+                                            You choose how much to keep vs allocate to fund AI Fleet app development.
+                                            Minimum 10% always goes to apps.
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <!-- Info Grid -->
                                 <div
                                     style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
@@ -1555,29 +1623,32 @@
 
                                     <!-- Strategies Card -->
                                     <div style="background: rgba(255,255,255,0.8); border-radius: 16px; padding: 20px;">
-                                        <div
-                                            style="font-weight: 700; color: #2d1b4e; margin-bottom: 12px; font-size: 0.95rem;">
-                                            📊 Active Strategies</div>
-                                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                            <span
-                                                style="width: 8px; height: 8px; background: #22c55e; border-radius: 50%;"></span>
-                                            <span style="font-size: 0.85rem; color: #4b5563;">Kinetic ETH Lending</span>
-                                            <span
-                                                style="margin-left: auto; font-size: 0.8rem; color: #22c55e; font-weight: 600;">~8%</span>
+                                        <div style="font-weight: 700; color: #2d1b4e; margin-bottom: 12px; font-size: 0.95rem;">
+                                            📊 Active Strategy</div>
+
+                                        <!-- USDC yVault Strategy -->
+                                        <div style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(59, 130, 246, 0.05)); border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 12px; padding: 14px;">
+                                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                                <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #2775CA, #1a5fb4); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                                    <span style="color: white; font-weight: 800; font-size: 0.7rem;">USDC</span>
+                                                </div>
+                                                <div style="flex: 1;">
+                                                    <div style="font-weight: 700; color: #2d1b4e; font-size: 0.9rem;">USDC yVault</div>
+                                                    <div style="font-size: 0.7rem; color: #6b7280;">Katana • Vault Bridge</div>
+                                                </div>
+                                                <div style="text-align: right;">
+                                                    <div style="font-weight: 800; color: #22c55e; font-size: 1.1rem;">42.10%</div>
+                                                    <div style="font-size: 0.65rem; color: #6b7280;">APR</div>
+                                                </div>
+                                            </div>
+                                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #6b7280; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.05);">
+                                                <span>TVL: $90.06M</span>
+                                                <a href="https://basescan.org/address/0x80c34BD3A3569E126e7055831036aa7b212cB159" target="_blank" style="color: #3b82f6; text-decoration: none;">View Contract ↗</a>
+                                            </div>
                                         </div>
-                                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                            <span
-                                                style="width: 8px; height: 8px; background: #3b82f6; border-radius: 50%;"></span>
-                                            <span style="font-size: 0.85rem; color: #4b5563;">SparkDex LP</span>
-                                            <span
-                                                style="margin-left: auto; font-size: 0.8rem; color: #22c55e; font-weight: 600;">~25%</span>
-                                        </div>
-                                        <div style="display: flex; align-items: center; gap: 8px;">
-                                            <span
-                                                style="width: 8px; height: 8px; background: #a855f7; border-radius: 50%;"></span>
-                                            <span style="font-size: 0.85rem; color: #4b5563;">Liquid Reserve</span>
-                                            <span
-                                                style="margin-left: auto; font-size: 0.8rem; color: #6b7280; font-weight: 600;">0%</span>
+
+                                        <div style="margin-top: 10px; font-size: 0.7rem; color: #9ca3af; line-height: 1.4;">
+                                            Multi-strategy vault via Yearn. Eligible for STEER points + KAT rewards.
                                         </div>
                                     </div>
 
@@ -1767,107 +1838,20 @@
                             </div>
                         </div>
 
-                        <!-- Tab Content: Yield Allocation -->
+                        <!-- Tab Content: Yield Allocation (redirects to vault) -->
                         <div id="tab-earn" class="tab-content active">
-                            <div class="glass-card" style="padding: 24px;">
-                                <h4
-                                    style="margin: 0 0 8px 0; color: #2d1b4e; font-size: 1.2rem; font-weight: 800; display: flex; align-items: center; gap: 10px;">
-                                    💰 Your Yield Allocation
+                            <div class="glass-card" style="padding: 24px; text-align: center;">
+                                <div style="font-size: 2.5rem; margin-bottom: 16px;">💰</div>
+                                <h4 style="margin: 0 0 12px 0; color: #2d1b4e; font-size: 1.2rem; font-weight: 800;">
+                                    Yield Allocation
                                 </h4>
-                                <p style="margin: 0 0 20px 0; color: #6b7280; font-size: 0.85rem;">
-                                    Treasury generates ~10% APY. Choose how much you keep vs fund apps.
+                                <p style="margin: 0 0 20px 0; color: #6b7280; font-size: 0.9rem; max-width: 300px; margin-left: auto; margin-right: auto;">
+                                    Manage your yield allocation in the Treasury Vault panel above. Click "Deposit" then select the "Yield Allocation" tab.
                                 </p>
-
-                                <!-- APY Breakdown -->
-                                <div
-                                    style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;">
-                                    <div
-                                        style="background: rgba(34, 197, 94, 0.08); border-radius: 12px; padding: 14px; text-align: center;">
-                                        <div
-                                            style="font-size: 0.7rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">
-                                            Treasury APY</div>
-                                        <div style="font-size: 1.2rem; font-weight: 800; color: #22c55e;">~10%</div>
-                                    </div>
-                                    <div
-                                        style="background: rgba(168, 85, 247, 0.08); border-radius: 12px; padding: 14px; text-align: center;">
-                                        <div
-                                            style="font-size: 0.7rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">
-                                            Min to Apps</div>
-                                        <div style="font-size: 1.2rem; font-weight: 800; color: #a855f7;">10%</div>
-                                    </div>
-                                    <div
-                                        style="background: rgba(59, 130, 246, 0.08); border-radius: 12px; padding: 14px; text-align: center;">
-                                        <div
-                                            style="font-size: 0.7rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">
-                                            Your Max APY</div>
-                                        <div id="userApyDisplay"
-                                            style="font-size: 1.2rem; font-weight: 800; color: #3b82f6;">~9%</div>
-                                    </div>
-                                </div>
-
-                                <!-- Yield Split Slider -->
-                                <div
-                                    style="background: rgba(255,255,255,0.6); border: 2px solid rgba(168, 85, 247, 0.15); border-radius: 16px; padding: 20px; margin-bottom: 20px;">
-                                    <div
-                                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                                        <span style="font-weight: 700; color: #2d1b4e; font-size: 0.9rem;">🏦 Keep
-                                            for myself</span>
-                                        <span id="keepPercentDisplay"
-                                            style="font-weight: 800; color: #22c55e; font-size: 1.1rem;">90%</span>
-                                    </div>
-                                    <input type="range" id="yieldSplitSlider" min="0" max="90" value="90"
-                                        style="width: 100%; height: 12px; border-radius: 6px; appearance: none; background: linear-gradient(90deg, #22c55e 90%, rgba(168, 85, 247, 0.2) 90%); cursor: pointer; margin-bottom: 12px;"
-                                        oninput="updateYieldSplit(this.value)">
-                                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                                        <span style="font-weight: 700; color: #2d1b4e; font-size: 0.9rem;">🚀 Fund
-                                            apps</span>
-                                        <span id="fundPercentDisplay"
-                                            style="font-weight: 800; color: #a855f7; font-size: 1.1rem;">10%</span>
-                                    </div>
-
-                                    <!-- Estimated earnings -->
-                                    <div
-                                        style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(0,0,0,0.06);">
-                                        <div
-                                            style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #6b7280;">
-                                            <span>Based on $1,000 deposit:</span>
-                                            <span id="estimatedEarnings"
-                                                style="font-weight: 700; color: #22c55e;">~$90/year to you</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- App Funding Allocation (shows when fund % > 0) -->
-                                <div id="appFundingSection"
-                                    style="display: none; background: linear-gradient(135deg, rgba(168, 85, 247, 0.05), rgba(236, 72, 153, 0.03)); border-radius: 16px; padding: 20px;">
-                                    <div
-                                        style="font-weight: 700; color: #2d1b4e; font-size: 0.95rem; margin-bottom: 12px;">
-                                        📱 Allocate Your App Funding
-                                    </div>
-                                    <p style="font-size: 0.8rem; color: #6b7280; margin-bottom: 16px;">
-                                        Choose which apps receive your yield contribution.
-                                    </p>
-                                    <div id="yieldAppAllocations"
-                                        style="display: flex; flex-direction: column; gap: 10px;">
-                                        <!-- Populated by JS -->
-                                        <div
-                                            style="text-align: center; padding: 20px; color: #9ca3af; font-size: 0.85rem;">
-                                            Select apps from the staking section above to allocate yield
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Info Note -->
-                                <div
-                                    style="margin-top: 16px; padding: 14px; background: rgba(59, 130, 246, 0.08); border-radius: 12px; display: flex; align-items: flex-start; gap: 10px;">
-                                    <span style="font-size: 1.2rem;">💡</span>
-                                    <div style="font-size: 0.8rem; color: #4b5563; line-height: 1.5;">
-                                        <strong>How it works:</strong> Your deposit earns yield from DeFi protocols.
-                                        1% goes to treasury operations. The rest is yours to keep or allocate to
-                                        fund app development.
-                                        Funding apps helps them reach higher development tiers!
-                                    </div>
-                                </div>
+                                <button onclick="toggleVaultDetails(); setTimeout(() => switchVaultTab('yield'), 100);"
+                                    style="padding: 12px 24px; background: linear-gradient(135deg, #a855f7, #ec4899); color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer;">
+                                    Open Yield Settings
+                                </button>
                             </div>
                         </div>
 
@@ -4371,6 +4355,12 @@ Personalized insights" style="min-height: 120px;"></textarea>
                         `Tx: ${txHash}`
                     );
 
+                    // Prompt to link Discord if not logged in (to use credits in apps)
+                    const currentUser = JSON.parse(localStorage.getItem('suiteDev') || 'null');
+                    if (!currentUser?.id) {
+                        setTimeout(() => showDiscordLinkPrompt(fromAddress), 2000);
+                    }
+
                     // Refresh treasury stats after deposit
                     setTimeout(() => {
                         fetchTreasuryStats();
@@ -4443,6 +4433,12 @@ Personalized insights" style="min-height: 120px;"></textarea>
                         `You'll receive ~${suiteReceived.toLocaleString()} SUITE once the transaction confirms.`,
                         `Tx: ${txHash}`
                     );
+
+                    // Prompt to link Discord if not logged in (to use credits in apps)
+                    const currentUserUSDC = JSON.parse(localStorage.getItem('suiteDev') || 'null');
+                    if (!currentUserUSDC?.id) {
+                        setTimeout(() => showDiscordLinkPrompt(fromAddress), 2000);
+                    }
 
                     // Refresh after deposit
                     setTimeout(() => {
@@ -5368,14 +5364,106 @@ Personalized insights" style="min-height: 120px;"></textarea>
         }
 
         // Check if already logged in on page load
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', async function () {
             const currentUser = JSON.parse(localStorage.getItem('suiteDev') || 'null');
             if (currentUser) {
                 updateAuthUI(currentUser);
+                // Check for pending wallet link (after Discord OAuth redirect)
+                await checkPendingWalletLink();
             }
         });
 
         // ========== WALLET CONNECTION ==========
+
+        // Link wallet address to Discord account in Supabase
+        async function linkWalletToDiscord(walletAddress, discordId) {
+            try {
+                // Upsert to user_credits - links wallet to Discord
+                const response = await fetch(`${ADMIN_SUPABASE_URL}/rest/v1/user_credits`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': ADMIN_SUPABASE_KEY,
+                        'Authorization': `Bearer ${ADMIN_SUPABASE_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'resolution=merge-duplicates'
+                    },
+                    body: JSON.stringify({
+                        discord_id: discordId,
+                        wallet_address: walletAddress.toLowerCase(),
+                        updated_at: new Date().toISOString()
+                    })
+                });
+
+                if (response.ok) {
+                    console.log(`Linked wallet ${walletAddress.slice(0,8)}... to Discord ${discordId}`);
+                    showNotification('🔗', 'Wallet Linked', 'Your wallet is now linked to your Discord account');
+                }
+            } catch (error) {
+                console.error('Failed to link wallet to Discord:', error);
+            }
+        }
+
+        // Show prompt to link Discord after deposit (if not logged in)
+        function showDiscordLinkPrompt(walletAddress) {
+            const existing = document.getElementById('discordLinkPrompt');
+            if (existing) existing.remove();
+
+            const prompt = document.createElement('div');
+            prompt.id = 'discordLinkPrompt';
+            prompt.innerHTML = `
+                <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                            background: linear-gradient(135deg, #1a1225 0%, #2d1b4e 100%);
+                            padding: 32px; border-radius: 20px; z-index: 10000; max-width: 400px;
+                            border: 1px solid rgba(139, 92, 246, 0.3); box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
+                    <h3 style="color: white; margin: 0 0 12px 0; font-size: 1.3rem;">🎉 Deposit Successful!</h3>
+                    <p style="color: rgba(255,255,255,0.7); margin: 0 0 20px 0; line-height: 1.5;">
+                        Link your Discord to use credits in SUITE apps like FoodVitals, OpticRep, and more.
+                    </p>
+                    <button onclick="loginWithDiscordForLink('${walletAddress}')"
+                            style="width: 100%; padding: 14px; background: #5865F2; color: white;
+                                   border: none; border-radius: 12px; font-weight: 600; font-size: 1rem;
+                                   cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <svg width="20" height="20" viewBox="0 0 71 55" fill="white">
+                            <path d="M60.1 4.9A58.5 58.5 0 0045.4.2a.2.2 0 00-.2.1 40.8 40.8 0 00-1.8 3.7 54 54 0 00-16.2 0A37.4 37.4 0 0025.4.3a.2.2 0 00-.2-.1 58.4 58.4 0 00-14.7 4.6.2.2 0 00-.1 0A60 60 0 00.4 43.8a.2.2 0 000 .2 58.7 58.7 0 0017.7 9 .2.2 0 00.2-.1 42 42 0 003.6-5.9.2.2 0 00-.1-.3 38.7 38.7 0 01-5.5-2.6.2.2 0 010-.4l1.1-.9a.2.2 0 01.2 0 41.8 41.8 0 0035.6 0 .2.2 0 01.2 0l1.1.9a.2.2 0 010 .4 36.4 36.4 0 01-5.5 2.6.2.2 0 00-.1.3 47.2 47.2 0 003.6 5.9.2.2 0 00.3.1 58.5 58.5 0 0017.7-9 .2.2 0 000-.2c1.2-12.7-2-23.7-8.4-33.5a.2.2 0 00-.1 0zM23.7 35.9c-2.9 0-5.3-2.7-5.3-6s2.3-6 5.3-6 5.4 2.7 5.3 6-2.3 6-5.3 6zm19.6 0c-2.9 0-5.3-2.7-5.3-6s2.3-6 5.3-6 5.4 2.7 5.3 6-2.3 6-5.3 6z"/>
+                        </svg>
+                        Connect Discord
+                    </button>
+                    <button onclick="document.getElementById('discordLinkPrompt').remove()"
+                            style="width: 100%; padding: 12px; background: transparent; color: rgba(255,255,255,0.5);
+                                   border: none; margin-top: 12px; cursor: pointer; font-size: 0.9rem;">
+                        Skip for now
+                    </button>
+                </div>
+                <div onclick="document.getElementById('discordLinkPrompt').remove()"
+                     style="position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+                            background: rgba(0,0,0,0.7); z-index: 9999;"></div>
+            `;
+            document.body.appendChild(prompt);
+        }
+
+        // Login with Discord specifically for linking wallet
+        function loginWithDiscordForLink(walletAddress) {
+            // Store wallet address to link after OAuth
+            localStorage.setItem('pendingWalletLink', walletAddress);
+            // Trigger Discord OAuth
+            const DISCORD_CLIENT_ID = '1311757088540311633';
+            const REDIRECT_URI = window.location.origin + '/wallet.html';
+            const SCOPE = 'identify';
+            const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=${SCOPE}`;
+            window.location.href = authUrl;
+        }
+
+        // Check for pending wallet link after Discord OAuth
+        async function checkPendingWalletLink() {
+            const pendingWallet = localStorage.getItem('pendingWalletLink');
+            const currentUser = JSON.parse(localStorage.getItem('suiteDev') || 'null');
+
+            if (pendingWallet && currentUser?.id) {
+                await linkWalletToDiscord(pendingWallet, currentUser.id);
+                localStorage.removeItem('pendingWalletLink');
+            }
+        }
+
         async function connectWallet() {
             const walletBtn = document.querySelector('.nav-wallet');
 
@@ -5432,6 +5520,23 @@ Personalized insights" style="min-height: 120px;"></textarea>
                 window.walletAddress = address;
                 if (typeof updateAdminDashboardVisibility === 'function') {
                     updateAdminDashboardVisibility();
+                }
+
+                // Load yield allocation from Supabase
+                loadYieldAllocation(address).then(savedKeep => {
+                    if (savedKeep !== null) {
+                        const slider = document.getElementById('yieldSplitSlider');
+                        if (slider) {
+                            slider.value = savedKeep;
+                            updateYieldSplit(savedKeep);
+                        }
+                    }
+                });
+
+                // Auto-link wallet to Discord if logged in
+                const currentUser = JSON.parse(localStorage.getItem('suiteDev') || 'null');
+                if (currentUser?.id) {
+                    await linkWalletToDiscord(address, currentUser.id);
                 }
 
                 console.log('Connected wallet:', address);
@@ -5512,6 +5617,19 @@ Personalized insights" style="min-height: 120px;"></textarea>
                 if (typeof updateAdminDashboardVisibility === 'function') {
                     updateAdminDashboardVisibility();
                 }
+
+                // Load yield allocation from Supabase for saved wallet
+                if (typeof loadYieldAllocation === 'function') {
+                    loadYieldAllocation(savedWallet).then(savedKeep => {
+                        if (savedKeep !== null) {
+                            const slider = document.getElementById('yieldSplitSlider');
+                            if (slider) {
+                                slider.value = savedKeep;
+                                updateYieldSplit(savedKeep);
+                            }
+                        }
+                    });
+                }
             }
         });
 
@@ -5523,31 +5641,92 @@ Personalized insights" style="min-height: 120px;"></textarea>
             const fundPercent = 100 - keepPercent;
 
             // Update display values
-            document.getElementById('keepPercentDisplay').textContent = keepPercent + '%';
-            document.getElementById('fundPercentDisplay').textContent = fundPercent + '%';
+            const keepDisplay = document.getElementById('keepPercentDisplay');
+            const fundDisplay = document.getElementById('fundPercentDisplay');
+            if (keepDisplay) keepDisplay.textContent = keepPercent + '%';
+            if (fundDisplay) fundDisplay.textContent = fundPercent + '%';
 
-            // Update slider gradient (scale to max of 90)
-            const slider = document.getElementById('yieldSplitSlider');
-            const gradientPercent = (keepPercent / 90) * 100;
-            slider.style.background = `linear-gradient(90deg, #22c55e ${gradientPercent}%, rgba(168, 85, 247, 0.3) ${gradientPercent}%)`;
-
-            // Calculate user APY (10% total, user keeps their portion)
-            const totalApy = 10;
+            // Calculate user APY (42% total from yVault, user keeps their portion)
+            const totalApy = 42;
             const userApy = (totalApy * keepPercent / 100).toFixed(1);
-            document.getElementById('userApyDisplay').textContent = '~' + userApy + '%';
 
             // Update estimated earnings (based on $1000)
             const yearlyEarnings = (1000 * totalApy / 100 * keepPercent / 100).toFixed(0);
-            document.getElementById('estimatedEarnings').textContent = '~$' + yearlyEarnings + '/year to you';
-
-            // Always show app funding section (since minimum 10% always goes to apps)
-            const appFundingSection = document.getElementById('appFundingSection');
-            if (appFundingSection) {
-                appFundingSection.style.display = 'block';
-            }
+            const earningsDisplay = document.getElementById('estimatedEarnings');
+            if (earningsDisplay) earningsDisplay.textContent = '~$' + yearlyEarnings + '/year';
 
             // Save to localStorage
             localStorage.setItem('yieldKeepPercent', keepPercent);
+
+            // Save to Supabase if wallet connected
+            if (window.walletAddress) {
+                saveYieldAllocation(window.walletAddress, keepPercent);
+            }
+        }
+
+        // ========== YIELD ALLOCATION DATABASE FUNCTIONS ==========
+        const YIELD_SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+        const YIELD_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.rTqKxT2LYhPt5nQEjLxMxdRDqvVoT7eILWHhBo1MVHU';
+
+        // Save yield allocation to Supabase
+        async function saveYieldAllocation(walletAddress, keepPercent) {
+            if (!walletAddress) return;
+
+            try {
+                // Use upsert to insert or update
+                const response = await fetch(`${YIELD_SUPABASE_URL}/rest/v1/yield_allocations`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': YIELD_SUPABASE_KEY,
+                        'Authorization': `Bearer ${YIELD_SUPABASE_KEY}`,
+                        'Prefer': 'resolution=merge-duplicates'
+                    },
+                    body: JSON.stringify({
+                        wallet_address: walletAddress.toLowerCase(),
+                        keep_percent: parseInt(keepPercent),
+                        updated_at: new Date().toISOString()
+                    })
+                });
+
+                if (!response.ok) {
+                    console.error('Failed to save yield allocation:', await response.text());
+                } else {
+                    console.log('Yield allocation saved:', keepPercent + '% keep');
+                }
+            } catch (error) {
+                console.error('Error saving yield allocation:', error);
+            }
+        }
+
+        // Load yield allocation from Supabase
+        async function loadYieldAllocation(walletAddress) {
+            if (!walletAddress) return null;
+
+            try {
+                const response = await fetch(
+                    `${YIELD_SUPABASE_URL}/rest/v1/yield_allocations?wallet_address=eq.${walletAddress.toLowerCase()}&select=keep_percent`,
+                    {
+                        headers: {
+                            'apikey': YIELD_SUPABASE_KEY,
+                            'Authorization': `Bearer ${YIELD_SUPABASE_KEY}`
+                        }
+                    }
+                );
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && data.length > 0) {
+                        const keepPercent = Math.min(data[0].keep_percent, 90); // Enforce max 90%
+                        console.log('Loaded yield allocation from DB:', keepPercent + '% keep');
+                        return keepPercent;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading yield allocation:', error);
+            }
+
+            return null; // No saved allocation found
         }
 
         // Initialize yield slider on page load
@@ -5576,23 +5755,39 @@ Personalized insights" style="min-height: 120px;"></textarea>
         function switchVaultTab(tab) {
             const depositTab = document.getElementById('vaultDepositTab');
             const withdrawTab = document.getElementById('vaultWithdrawTab');
+            const yieldTab = document.getElementById('vaultYieldTab');
             const depositBtn = document.getElementById('vaultTabDeposit');
             const withdrawBtn = document.getElementById('vaultTabWithdraw');
+            const yieldBtn = document.getElementById('vaultTabYield');
+
+            // Hide all tabs, reset all buttons
+            depositTab.style.display = 'none';
+            withdrawTab.style.display = 'none';
+            if (yieldTab) yieldTab.style.display = 'none';
+
+            depositBtn.style.background = 'rgba(0,0,0,0.05)';
+            depositBtn.style.color = '#6b7280';
+            withdrawBtn.style.background = 'rgba(0,0,0,0.05)';
+            withdrawBtn.style.color = '#6b7280';
+            if (yieldBtn) {
+                yieldBtn.style.background = 'rgba(0,0,0,0.05)';
+                yieldBtn.style.color = '#6b7280';
+            }
 
             if (tab === 'deposit') {
                 depositTab.style.display = 'block';
-                withdrawTab.style.display = 'none';
                 depositBtn.style.background = 'linear-gradient(135deg, #22c55e, #10b981)';
                 depositBtn.style.color = 'white';
-                withdrawBtn.style.background = 'rgba(0,0,0,0.05)';
-                withdrawBtn.style.color = '#6b7280';
-            } else {
-                depositTab.style.display = 'none';
+            } else if (tab === 'withdraw') {
                 withdrawTab.style.display = 'block';
                 withdrawBtn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
                 withdrawBtn.style.color = 'white';
-                depositBtn.style.background = 'rgba(0,0,0,0.05)';
-                depositBtn.style.color = '#6b7280';
+            } else if (tab === 'yield') {
+                if (yieldTab) yieldTab.style.display = 'block';
+                if (yieldBtn) {
+                    yieldBtn.style.background = 'linear-gradient(135deg, #a855f7, #ec4899)';
+                    yieldBtn.style.color = 'white';
+                }
             }
         }
 
