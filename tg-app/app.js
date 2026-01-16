@@ -245,9 +245,9 @@ function openApp(slug) {
         ? app.app_url
         : `https://www.getsuite.app${app.app_url || '/' + slug}`;
 
-    // Open in Telegram's browser (fullscreen, camera works)
+    // Open in device's external browser (no Telegram nav bar)
     if (tg) {
-        tg.openLink(url);
+        tg.openLink(url, { try_browser: true });
     } else {
         window.open(url, '_blank');
     }
