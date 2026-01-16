@@ -18,7 +18,7 @@ function initSupabase() {
     return supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 
-// Fetch ALL apps from apps table (the main source of truth)
+// Fetch LIVE apps from apps table (approved/featured only - for public display)
 async function fetchAllSuiteApps() {
     const client = initSupabase();
     if (!client) return [];
@@ -27,7 +27,7 @@ async function fetchAllSuiteApps() {
         const { data, error } = await client
             .from('apps')
             .select('*')
-            .in('status', ['approved', 'featured', 'pending'])
+            .in('status', ['approved', 'featured'])
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -42,45 +42,41 @@ async function fetchAllSuiteApps() {
     }
 }
 
-// Get app status stats (Live, Development, Beta, etc.)
+// Get app stats for public display (only live apps)
 async function fetchAppStats() {
     const client = initSupabase();
-    if (!client) return { stats: { total: 0, published: 0, development: 0, beta: 0 }, apps: [] };
+    if (!client) return { stats: { total: 0, published: 0 }, apps: [] };
 
     try {
-        // Fetch from apps table (approved and featured are "live")
+        // Fetch only live apps (approved and featured)
         const { data, error } = await client
             .from('apps')
             .select('*')
-            .in('status', ['approved', 'featured', 'pending'])
+            .in('status', ['approved', 'featured'])
             .order('created_at', { ascending: false });
 
         if (error) {
             console.error('Error fetching apps:', error);
-            return { stats: { total: 0, published: 0, development: 0, beta: 0 }, apps: [] };
+            return { stats: { total: 0, published: 0 }, apps: [] };
         }
 
         const apps = data || [];
 
-        // Map statuses: approved/featured = "published" (live), pending = "development"
+        // All fetched apps are live/published
         const mappedApps = apps.map(app => ({
             ...app,
-            // Normalize status for display
-            displayStatus: ['approved', 'featured'].includes(app.status) ? 'published' : 'development'
+            displayStatus: 'published'
         }));
 
         const stats = {
             total: apps.length,
-            published: apps.filter(a => a.status === 'approved' || a.status === 'featured').length,
-            development: apps.filter(a => a.status === 'pending').length,
-            beta: 0,
-            deprecated: apps.filter(a => a.status === 'rejected').length
+            published: apps.length
         };
 
         return { stats, apps: mappedApps };
     } catch (err) {
         console.error('Failed to fetch apps:', err);
-        return { stats: { total: 0, published: 0, development: 0, beta: 0 }, apps: [] };
+        return { stats: { total: 0, published: 0 }, apps: [] };
     }
 }
 
