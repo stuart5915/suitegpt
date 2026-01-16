@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SUITE Hub</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <h1 class="logo">SUITE Hub</h1>
+            </div>
+            <div class="header-right">
+                <div class="credits-badge" id="creditsBadge">
+                    <span class="credits-icon">⚡</span>
+                    <span class="credits-amount" id="creditsAmount">0</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main" id="mainContent">
+            <!-- Home Screen -->
+            <div class="screen active" id="homeScreen">
+                <!-- Welcome Card -->
+                <div class="welcome-card">
+                    <div class="welcome-avatar" id="userAvatar">👤</div>
+                    <div class="welcome-text">
+                        <span class="welcome-greeting">Welcome back,</span>
+                        <span class="welcome-name" id="userName">Guest</span>
+                    </div>
+                </div>
+
+                <!-- Featured App -->
+                <div class="section">
+                    <h2 class="section-title">🔥 Featured Today</h2>
+                    <div class="featured-card" id="featuredApp" onclick="openApp('foodvitals')">
+                        <div class="featured-icon">🍎</div>
+                        <div class="featured-info">
+                            <div class="featured-name">FoodVitals AI</div>
+                            <div class="featured-tagline">Scan your nutrition instantly</div>
+                        </div>
+                        <div class="featured-arrow">→</div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="section">
+                    <h2 class="section-title">Quick Actions</h2>
+                    <div class="actions-grid">
+                        <div class="action-card" onclick="showScreen('appsScreen')">
+                            <span class="action-icon">🤖</span>
+                            <span class="action-label">AI Fleet</span>
+                            <span class="action-sub" id="appsCount">0 apps</span>
+                        </div>
+                        <div class="action-card" onclick="showScreen('walletScreen')">
+                            <span class="action-icon">💰</span>
+                            <span class="action-label">Wallet</span>
+                            <span class="action-sub">Deposit</span>
+                        </div>
+                        <div class="action-card" onclick="openWebApp('https://www.getsuite.app/start-building')">
+                            <span class="action-icon">🏗️</span>
+                            <span class="action-label">Build</span>
+                            <span class="action-sub">Create app</span>
+                        </div>
+                        <div class="action-card" onclick="showScreen('profileScreen')">
+                            <span class="action-icon">👤</span>
+                            <span class="action-label">Profile</span>
+                            <span class="action-sub">Settings</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Apps -->
+                <div class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">Recent Apps</h2>
+                        <span class="view-all" onclick="showScreen('appsScreen')">View all →</span>
+                    </div>
+                    <div class="apps-scroll" id="recentApps">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Apps Screen -->
+            <div class="screen" id="appsScreen">
+                <div class="screen-header">
+                    <button class="back-btn" onclick="showScreen('homeScreen')">← Back</button>
+                    <h2>🤖 AI Fleet</h2>
+                </div>
+                <div class="search-box">
+                    <input type="text" placeholder="Search apps..." id="searchInput" oninput="filterApps()">
+                </div>
+                <div class="apps-list" id="appsList">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Wallet Screen -->
+            <div class="screen" id="walletScreen">
+                <div class="screen-header">
+                    <button class="back-btn" onclick="showScreen('homeScreen')">← Back</button>
+                    <h2>💰 Wallet</h2>
+                </div>
+                <div class="balance-card">
+                    <span class="balance-label">SUITE Credits</span>
+                    <div class="balance-amount">
+                        <span class="balance-icon">⚡</span>
+                        <span id="walletCredits">0</span>
+                    </div>
+                    <span class="balance-usd" id="balanceUsd">≈ $0.00 USD</span>
+                </div>
+                <div class="wallet-actions">
+                    <button class="wallet-btn primary" onclick="openWebApp('https://www.getsuite.app/wallet')">
+                        💳 Deposit
+                    </button>
+                    <button class="wallet-btn secondary" onclick="openWebApp('https://www.getsuite.app/wallet#staking')">
+                        📈 Stake
+                    </button>
+                </div>
+                <div class="section">
+                    <h3 class="section-title">Quick Links</h3>
+                    <div class="link-card" onclick="openWebApp('https://www.getsuite.app/wallet')">
+                        <span class="link-icon">💰</span>
+                        <div class="link-info">
+                            <span class="link-title">Manage Wallet</span>
+                            <span class="link-desc">Deposit, withdraw, transactions</span>
+                        </div>
+                        <span class="link-arrow">→</span>
+                    </div>
+                    <div class="link-card" onclick="openWebApp('https://www.getsuite.app/wallet#staking')">
+                        <span class="link-icon">🥩</span>
+                        <div class="link-info">
+                            <span class="link-title">Staking & Rewards</span>
+                            <span class="link-desc">Earn yield on SUITE</span>
+                        </div>
+                        <span class="link-arrow">→</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Screen -->
+            <div class="screen" id="profileScreen">
+                <div class="screen-header">
+                    <button class="back-btn" onclick="showScreen('homeScreen')">← Back</button>
+                    <h2>👤 Profile</h2>
+                </div>
+                <div class="profile-card">
+                    <div class="profile-avatar" id="profileAvatar">👤</div>
+                    <div class="profile-name" id="profileName">Guest</div>
+                    <div class="profile-badge">
+                        <span>📱</span> Telegram Connected
+                    </div>
+                </div>
+                <div class="section">
+                    <h3 class="section-title">Settings</h3>
+                    <div class="link-card">
+                        <span class="link-icon">🔔</span>
+                        <div class="link-info">
+                            <span class="link-title">Notifications</span>
+                            <span class="link-desc">Manage alerts</span>
+                        </div>
+                        <span class="link-arrow">→</span>
+                    </div>
+                    <div class="link-card" onclick="openWebApp('https://www.getsuite.app/docs')">
+                        <span class="link-icon">📖</span>
+                        <div class="link-info">
+                            <span class="link-title">Documentation</span>
+                            <span class="link-desc">Learn about SUITE</span>
+                        </div>
+                        <span class="link-arrow">→</span>
+                    </div>
+                    <div class="link-card" onclick="joinCommunity()">
+                        <span class="link-icon">💬</span>
+                        <div class="link-info">
+                            <span class="link-title">Community</span>
+                            <span class="link-desc">Join the conversation</span>
+                        </div>
+                        <span class="link-arrow">→</span>
+                    </div>
+                </div>
+                <div class="app-version">SUITE Hub v1.0.0</div>
+            </div>
+
+            <!-- App WebView Screen -->
+            <div class="screen" id="appViewScreen">
+                <iframe id="appFrame" src="" frameborder="0"></iframe>
+                <button class="floating-back-btn" onclick="closeApp()">
+                    ◀ SUITE
+                </button>
+            </div>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav" id="bottomNav">
+            <div class="nav-item active" onclick="showScreen('homeScreen')" data-screen="homeScreen">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">Home</span>
+            </div>
+            <div class="nav-item" onclick="showScreen('appsScreen')" data-screen="appsScreen">
+                <span class="nav-icon">🤖</span>
+                <span class="nav-label">AI Fleet</span>
+            </div>
+            <div class="nav-item" onclick="showScreen('walletScreen')" data-screen="walletScreen">
+                <span class="nav-icon">💰</span>
+                <span class="nav-label">Wallet</span>
+            </div>
+            <div class="nav-item" onclick="showScreen('profileScreen')" data-screen="profileScreen">
+                <span class="nav-icon">👤</span>
+                <span class="nav-label">Profile</span>
+            </div>
+        </nav>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
