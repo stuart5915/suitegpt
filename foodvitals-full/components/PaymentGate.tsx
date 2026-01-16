@@ -11,6 +11,7 @@ import {
     TouchableOpacity,
     StyleSheet,
     ActivityIndicator,
+    Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getCurrentUser, useCredits, SuiteUser } from '../services/walletConnect';
@@ -63,13 +64,18 @@ export const PaymentGate: React.FC<PaymentGateProps> = ({
                 if (prev <= 1) {
                     clearInterval(timer);
                     setShowAd(false);
-                    // Award credits (in real app, verify with backend)
+                    // Award 2 credits (in real app, verify with backend)
                     onComplete(true);
                     return 0;
                 }
                 return prev - 1;
             });
         }, 1000);
+    };
+
+    const handleStakeLP = () => {
+        Linking.openURL('https://getsuite.app/wallet.html#staking');
+        onCancel(); // Close modal, user will stake and come back
     };
 
     const handlePayCard = () => {
@@ -124,6 +130,7 @@ export const PaymentGate: React.FC<PaymentGateProps> = ({
                     )}
 
                     <View style={styles.options}>
+                        {/* Show Use Credits if user has enough */}
                         {user && user.credits >= config.creditCost && (
                             <TouchableOpacity
                                 style={[styles.optionBtn, styles.primaryBtn]}
@@ -146,6 +153,25 @@ export const PaymentGate: React.FC<PaymentGateProps> = ({
                             </TouchableOpacity>
                         )}
 
+                        {/* Stake LP - Primary option for zero-credit users */}
+                        <TouchableOpacity style={[styles.optionBtn, styles.stakingBtn]} onPress={handleStakeLP}>
+                            <Text style={styles.optionIcon}>🌊</Text>
+                            <View style={styles.optionContent}>
+                                <Text style={styles.optionTitle}>Stake LP Tokens</Text>
+                                <Text style={styles.optionDesc}>Earn credits from DeFi yield</Text>
+                            </View>
+                        </TouchableOpacity>
+
+                        {/* Watch Ad - Quick free option */}
+                        <TouchableOpacity style={styles.optionBtn} onPress={handleWatchAd}>
+                            <Text style={styles.optionIcon}>📺</Text>
+                            <View style={styles.optionContent}>
+                                <Text style={styles.optionTitle}>Watch an Ad</Text>
+                                <Text style={styles.optionDesc}>Free! Earn 2 credits</Text>
+                            </View>
+                        </TouchableOpacity>
+
+                        {/* Pay with Fiat */}
                         <TouchableOpacity style={styles.optionBtn} onPress={handlePayCard}>
                             <Text style={styles.optionIcon}>💳</Text>
                             <View style={styles.optionContent}>
@@ -154,19 +180,12 @@ export const PaymentGate: React.FC<PaymentGateProps> = ({
                             </View>
                         </TouchableOpacity>
 
+                        {/* Pay with Crypto */}
                         <TouchableOpacity style={styles.optionBtn} onPress={handlePayCrypto}>
                             <Text style={styles.optionIcon}>💎</Text>
                             <View style={styles.optionContent}>
                                 <Text style={styles.optionTitle}>Pay with Crypto</Text>
                                 <Text style={styles.optionDesc}>SUITE, ETH, or USDC</Text>
-                            </View>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.optionBtn} onPress={handleWatchAd}>
-                            <Text style={styles.optionIcon}>📺</Text>
-                            <View style={styles.optionContent}>
-                                <Text style={styles.optionTitle}>Watch an Ad</Text>
-                                <Text style={styles.optionDesc}>Free! Earn 10 credits</Text>
                             </View>
                         </TouchableOpacity>
                     </View>
@@ -299,6 +318,10 @@ const styles = StyleSheet.create({
     primaryBtn: {
         borderColor: '#22c55e',
         backgroundColor: 'rgba(34, 197, 94, 0.1)',
+    },
+    stakingBtn: {
+        borderColor: '#8B5CF6',
+        backgroundColor: 'rgba(139, 92, 246, 0.1)',
     },
     optionIcon: {
         fontSize: 28,
