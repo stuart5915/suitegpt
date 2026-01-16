@@ -31,6 +31,8 @@ import {
     MealSuggestion,
 } from '../../services/gemini';
 import InsightMealModal from '../../components/InsightMealModal';
+import { usePaymentGate } from '../../components/PaymentGate';
+import { trackUsage } from '../../services/walletConnect';
 
 interface Message {
     id: string;
@@ -74,6 +76,9 @@ export default function InsightsScreen() {
     // Create meal from insight feature
     const [showMealModal, setShowMealModal] = useState(false);
     const [selectedMeal, setSelectedMeal] = useState<MealSuggestion | null>(null);
+
+    // Payment gate for AI chat
+    const { requestPayment, PaymentGateModal } = usePaymentGate();
 
     // Handle incoming tip from home screen
     useEffect(() => {
@@ -232,6 +237,14 @@ export default function InsightsScreen() {
     const handleSend = async (text: string) => {
         if (!text.trim() || isLoading) return;
 
+        // AI chat costs 5 credits per message
+        const paymentResult = await requestPayment({
+            featureName: 'AI Nutrition Coach',
+            creditCost: 5,
+            appId: 'foodvitals'
+        });
+        if (!paymentResult) return;
+
         const userMessage: Message = {
             id: Date.now().toString(),
             text: text.trim(),
@@ -244,6 +257,7 @@ export default function InsightsScreen() {
 
         try {
             const response = await chatWithInsights(text.trim(), nutritionContext);
+            trackUsage('foodvitals', 'insights_chat');
 
             // Try to parse meal data from response
             const parsedMeal = parseMealFromResponse(response);
@@ -533,6 +547,9 @@ export default function InsightsScreen() {
                     if (userId) loadData(userId);
                 }}
             />
+
+            {/* Payment Gate Modal */}
+            <PaymentGateModal />
         </SafeAreaView>
     );
 }

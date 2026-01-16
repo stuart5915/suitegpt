@@ -20,6 +20,8 @@ import {
     addFavoriteToToday,
     FavoriteMeal,
 } from '../services/supabase';
+import { usePaymentGate } from './PaymentGate';
+import { trackUsage } from '../services/walletConnect';
 
 // Style options (excluding exact/under which slider handles)
 type MealStyle = 'balanced' | 'micronutrient' | 'tasty';
@@ -55,6 +57,9 @@ export default function MealSuggestionsModal({
     const [expandedMeal, setExpandedMeal] = useState<string | null>(null);
     const [toast, setToast] = useState<string | null>(null);
     const [showAdvanced, setShowAdvanced] = useState(false);
+
+    // Payment gate for AI meal suggestions
+    const { requestPayment, PaymentGateModal } = usePaymentGate();
 
     // Loading message cycling
     const loadingMessages = [
@@ -115,6 +120,14 @@ export default function MealSuggestionsModal({
     };
 
     const handleGenerate = async () => {
+        // AI meal suggestions cost 5 credits
+        const paymentResult = await requestPayment({
+            featureName: 'AI Meal Suggestions',
+            creditCost: 5,
+            appId: 'foodvitals'
+        });
+        if (!paymentResult) return;
+
         setPhase('loading');
         try {
             // Determine preference based on toggles
@@ -126,6 +139,7 @@ export default function MealSuggestionsModal({
             }
             // Pass adjusted macros (already scaled by percentage)
             const results = await suggestMealsForMacros(adjustedMacros, preference, mealCount);
+            trackUsage('foodvitals', 'meal_suggestions');
             setSuggestions(results);
             setPhase('results');
         } catch (error) {
@@ -567,6 +581,9 @@ export default function MealSuggestionsModal({
                         </View>
                     )
                 }
+
+                {/* Payment Gate Modal */}
+                <PaymentGateModal />
             </View >
         </Modal >
     );

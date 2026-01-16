@@ -12,6 +12,10 @@ import { WagmiProvider } from 'wagmi';
 import { wagmiConfig, initWeb3Modal } from '../services/walletConnect';
 import { WalletProvider } from '../contexts/WalletContext';
 
+// Feature sync for admin panel
+import { syncFeaturesToSupabase } from '../config/features';
+import { supabase } from '../services/supabase';
+
 export {
   ErrorBoundary,
 } from 'expo-router';
@@ -33,6 +37,10 @@ export default function RootLayout() {
     if (Platform.OS === 'web') {
       initWeb3Modal();
     }
+
+    // Sync features to Supabase for admin panel (upsert, safe to run repeatedly)
+    syncFeaturesToSupabase(supabase).catch(console.error);
+
     setLoaded(true);
     SplashScreen.hideAsync();
   }, []);
