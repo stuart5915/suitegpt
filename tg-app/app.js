@@ -250,8 +250,18 @@ function openApp(slug) {
         url += '/';
     }
 
+    // Pass Telegram user data to iframe via URL params (for auth)
+    if (user) {
+        const params = new URLSearchParams({
+            tg_id: user.id.toString(),
+            tg_username: user.username || '',
+            tg_first_name: user.first_name || '',
+            tg_photo: user.photo_url || ''
+        });
+        url += '?' + params.toString();
+    }
+
     // Open in iframe for fullscreen experience (stays in Telegram)
-    // FoodVitals and other apps detect iframe and use file input for camera
     document.getElementById('currentAppName').textContent = app.name;
     document.getElementById('appFrame').src = url;
     showScreen('appViewScreen');

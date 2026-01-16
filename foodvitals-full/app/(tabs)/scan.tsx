@@ -24,7 +24,7 @@ import { saveFoodLog, saveFoodItems, supabase, getFoodLogs, FoodLogEntry } from 
 import { lookupBarcode } from '../../services/openFoodFacts';
 import { GEMINI_MODELS, GeminiModel } from '../../config/keys';
 import { usePaymentGate } from '../../components/PaymentGate';
-import { trackUsage } from '../../contexts/DiscordAuthContext';
+import { trackUsage } from '../../contexts/TelegramAuthContext';
 import {
     smartLookup,
     lookupPhotoCache,

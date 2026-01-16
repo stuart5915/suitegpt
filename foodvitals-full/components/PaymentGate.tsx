@@ -1,7 +1,7 @@
 /**
  * SUITE Payment Gate Component for React Native
  * Shows a modal when user tries to access premium features
- * Uses Discord auth for identity and credits
+ * Uses Telegram auth for identity and credits
  */
 
 import React, { useState } from 'react';
@@ -15,7 +15,7 @@ import {
     Linking,
     Platform,
 } from 'react-native';
-import { getDiscordUser, deductCredits, hasEnoughCredits, DiscordUser } from '../contexts/DiscordAuthContext';
+import { getTelegramUser, deductCredits, loadUserCredits } from '../contexts/TelegramAuthContext';
 
 export interface PaymentConfig {
     featureName: string;
@@ -23,7 +23,7 @@ export interface PaymentConfig {
     appId?: string;
 }
 
-interface DiscordUserWithCredits {
+interface TelegramUserWithCredits {
     id: string;
     username: string;
     credits: number;
@@ -36,52 +36,26 @@ interface PaymentGateProps {
     onCancel: () => void;
 }
 
-// Supabase config for credits
-const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ4MTAxOTAsImV4cCI6MjA1MDM4NjE5MH0.GRDjsDNkVBzxIlDCl9fOu0d6bfKxNbxOlS4pPXBHyhw';
-
-async function loadUserCredits(discordId: string): Promise<number> {
-    try {
-        const response = await fetch(
-            `${SUPABASE_URL}/rest/v1/user_credits?discord_id=eq.${discordId}&select=suite_balance`,
-            {
-                headers: {
-                    'apikey': SUPABASE_ANON_KEY,
-                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-                }
-            }
-        );
-        const data = await response.json();
-        if (data && data.length > 0) {
-            return parseFloat(data[0].suite_balance) || 0;
-        }
-        return 0;
-    } catch (error) {
-        console.error('Failed to load credits:', error);
-        return 0;
-    }
-}
-
 export const PaymentGate: React.FC<PaymentGateProps> = ({
     visible,
     config,
     onComplete,
     onCancel,
 }) => {
-    const [user, setUser] = useState<DiscordUserWithCredits | null>(null);
+    const [user, setUser] = useState<TelegramUserWithCredits | null>(null);
     const [loading, setLoading] = useState(false);
     const [showAd, setShowAd] = useState(false);
     const [adSeconds, setAdSeconds] = useState(30);
 
     React.useEffect(() => {
         if (visible) {
-            // Load Discord user and credits
-            const discordUser = getDiscordUser();
-            if (discordUser) {
-                loadUserCredits(discordUser.id).then(credits => {
+            // Load Telegram user and credits
+            const telegramUser = getTelegramUser();
+            if (telegramUser) {
+                loadUserCredits(telegramUser.id).then(credits => {
                     setUser({
-                        id: discordUser.id,
-                        username: discordUser.username,
+                        id: telegramUser.id,
+                        username: telegramUser.username || telegramUser.firstName,
                         credits,
                     });
                 });
@@ -135,15 +109,13 @@ export const PaymentGate: React.FC<PaymentGateProps> = ({
     };
 
     const handleStakeLP = () => {
-        Linking.openURL('https://stuarthollinger.com/wallet.html#staking');
+        Linking.openURL('https://www.getsuite.app/wallet#staking');
         onCancel(); // Close modal, user will stake and come back
     };
 
-    const handleLoginDiscord = () => {
-        // Redirect to login
-        if (Platform.OS === 'web' && typeof window !== 'undefined') {
-            window.location.href = '/login';
-        }
+    const handleOpenInTelegram = () => {
+        // Open SUITE Hub in Telegram
+        Linking.openURL('https://t.me/SUITEHubBot');
     };
 
     const handlePayCard = () => {
@@ -197,9 +169,9 @@ export const PaymentGate: React.FC<PaymentGateProps> = ({
                         </View>
                     ) : (
                         <View style={styles.loginPrompt}>
-                            <Text style={styles.loginText}>Login with Discord to use credits</Text>
-                            <TouchableOpacity style={styles.loginBtn} onPress={handleLoginDiscord}>
-                                <Text style={styles.loginBtnText}>Login with Discord</Text>
+                            <Text style={styles.loginText}>Open in Telegram to use credits</Text>
+                            <TouchableOpacity style={styles.loginBtn} onPress={handleOpenInTelegram}>
+                                <Text style={styles.loginBtnText}>Open SUITE Hub</Text>
                             </TouchableOpacity>
                         </View>
                     )}
@@ -375,17 +347,17 @@ const styles = StyleSheet.create({
     },
     userText: {
         fontSize: 12,
-        color: '#5865F2',
+        color: '#0088cc',
         fontWeight: '600',
     },
     loginPrompt: {
         alignItems: 'center',
         marginBottom: 16,
         padding: 12,
-        backgroundColor: 'rgba(88, 101, 242, 0.1)',
+        backgroundColor: 'rgba(0, 136, 204, 0.1)',
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: 'rgba(88, 101, 242, 0.3)',
+        borderColor: 'rgba(0, 136, 204, 0.3)',
     },
     loginText: {
         fontSize: 13,
@@ -393,7 +365,7 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     loginBtn: {
-        backgroundColor: '#5865F2',
+        backgroundColor: '#0088cc',
         paddingHorizontal: 24,
         paddingVertical: 10,
         borderRadius: 8,
