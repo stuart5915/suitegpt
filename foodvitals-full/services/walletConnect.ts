@@ -1,11 +1,12 @@
 /**
  * SUITE Wallet Connect Service
- * Uses WalletConnect v2 for mobile wallet connections
+ * Uses Reown AppKit (formerly Web3Modal) for mobile wallet connections
  * Works in PWA standalone mode
  */
 
-import { createWeb3Modal, defaultWagmiConfig } from '@web3modal/wagmi';
-import { mainnet, base } from 'viem/chains';
+import { createAppKit } from '@reown/appkit';
+import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
+import { mainnet, base } from '@reown/appkit/networks';
 import { reconnect, getAccount, disconnect, watchAccount } from '@wagmi/core';
 import type { Config } from '@wagmi/core';
 
@@ -20,26 +21,30 @@ const metadata = {
   icons: ['https://getsuite.app/assets/suite-logo-new.png']
 };
 
-// Supported chains
-const chains = [base, mainnet] as const;
+// Supported networks
+const networks = [base, mainnet];
 
-// Create wagmi config
-export const wagmiConfig: Config = defaultWagmiConfig({
-  chains,
+// Create wagmi adapter
+const wagmiAdapter = new WagmiAdapter({
+  networks,
   projectId: PROJECT_ID,
-  metadata,
 });
 
-// Initialize Web3Modal (only on web)
-let web3Modal: ReturnType<typeof createWeb3Modal> | null = null;
+// Export wagmi config for providers
+export const wagmiConfig: Config = wagmiAdapter.wagmiConfig as Config;
+
+// Initialize AppKit (only on web)
+let appKit: ReturnType<typeof createAppKit> | null = null;
 
 export function initWeb3Modal() {
   if (typeof window === 'undefined') return null;
 
-  if (!web3Modal) {
-    web3Modal = createWeb3Modal({
-      wagmiConfig,
+  if (!appKit) {
+    appKit = createAppKit({
+      adapters: [wagmiAdapter],
+      networks: [base, mainnet],
       projectId: PROJECT_ID,
+      metadata,
       themeMode: 'dark',
       themeVariables: {
         '--w3m-accent': '#7C3AED',
@@ -53,7 +58,7 @@ export function initWeb3Modal() {
     });
   }
 
-  return web3Modal;
+  return appKit;
 }
 
 // Storage keys

@@ -9,7 +9,7 @@ import 'react-native-reanimated';
 // Wallet Connect imports (web only)
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider } from 'wagmi';
-import { wagmiConfig } from '../services/walletConnect';
+import { wagmiConfig, initWeb3Modal } from '../services/walletConnect';
 import { WalletProvider } from '../contexts/WalletContext';
 
 export {
@@ -29,6 +29,10 @@ export default function RootLayout() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    // Initialize Web3Modal/AppKit on web
+    if (Platform.OS === 'web') {
+      initWeb3Modal();
+    }
     setLoaded(true);
     SplashScreen.hideAsync();
   }, []);
