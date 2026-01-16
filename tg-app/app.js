@@ -241,9 +241,14 @@ function openApp(slug) {
         tg.HapticFeedback.impactOccurred('medium');
     }
 
-    const url = app.app_url?.startsWith('http')
+    let url = app.app_url?.startsWith('http')
         ? app.app_url
         : `https://www.getsuite.app${app.app_url || '/' + slug}`;
+
+    // Ensure trailing slash to avoid redirects breaking iframe
+    if (!url.endsWith('/') && !url.includes('?') && !url.includes('#')) {
+        url += '/';
+    }
 
     // Open in iframe for fullscreen experience (stays in Telegram)
     // FoodVitals and other apps detect iframe and use file input for camera
