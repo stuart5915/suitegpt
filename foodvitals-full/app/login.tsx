@@ -13,7 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 
 // Discord OAuth config
-const DISCORD_CLIENT_ID = '1311757088540311633';
+const DISCORD_CLIENT_ID = '1457474266390986865';
 
 interface DiscordUser {
     id: string;

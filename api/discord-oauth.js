@@ -1,7 +1,7 @@
 // Discord OAuth Code Exchange
 // Exchanges authorization code for user info
 
-const DISCORD_CLIENT_ID = '1311757088540311633';
+const DISCORD_CLIENT_ID = '1457474266390986865';
 const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
 const REDIRECT_URI = 'https://getsuite.app/oauth-callback.html';
 
