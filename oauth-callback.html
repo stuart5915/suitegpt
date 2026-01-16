@@ -78,13 +78,11 @@
 
     <script>
         // Discord OAuth Callback Handler
-        const DISCORD_CLIENT_ID = '1311757088540311633';
-        const DISCORD_CLIENT_SECRET = 'YOUR_CLIENT_SECRET'; // Replace with actual secret (or use server-side)
-
         async function handleCallback() {
             const urlParams = new URLSearchParams(window.location.search);
             const code = urlParams.get('code');
             const error = urlParams.get('error');
+            const state = urlParams.get('state'); // Contains redirect path like /foodvitals/
 
             if (error) {
                 showError('Login cancelled or failed. Please try again.');
@@ -97,38 +95,44 @@
             }
 
             try {
-                // For now, we'll use a simpler approach - exchange code for user info client-side
-                // In production, this should go through your backend
+                // Exchange code for user info via our API
+                const response = await fetch('/api/discord-oauth', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ code }),
+                });
 
-                // Get user info directly using the code (simplified flow)
-                // Note: For production, use a proper backend exchange
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to authenticate');
+                }
 
-                // Simulated user for demo - in production, exchange code with Discord API
-                const mockUser = {
-                    id: 'demo_' + Date.now(),
-                    username: 'DiscordUser',
-                    avatar: null,
-                    email: 'user@example.com'
-                };
+                const user = await response.json();
 
-                // Send message to parent window
+                // Store user in localStorage
+                localStorage.setItem('suiteDev', JSON.stringify(user));
+
+                // Send message to parent window (if opened as popup)
                 if (window.opener) {
                     window.opener.postMessage({
                         type: 'discord-auth-success',
-                        user: mockUser
-                    }, window.location.origin);
+                        user: user
+                    }, '*'); // Allow any origin since we're on same domain
 
                     // Close this popup after a short delay
                     setTimeout(() => window.close(), 500);
                 } else {
-                    // If opened directly (not as popup), redirect to main page
-                    localStorage.setItem('suiteDev', JSON.stringify(mockUser));
-                    window.location.href = '/';
+                    // Opened via redirect (mobile) - redirect to the app
+                    // state contains the return path (e.g., /foodvitals/)
+                    const returnPath = state ? decodeURIComponent(state) : '/';
+                    window.location.href = returnPath;
                 }
 
             } catch (err) {
                 console.error('OAuth error:', err);
-                showError('Failed to complete login. Please try again.');
+                showError('Failed to complete login: ' + err.message);
             }
         }
 

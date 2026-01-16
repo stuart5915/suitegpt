@@ -79,7 +79,13 @@ export default function LoginScreen() {
         }
     };
 
-    // Initiate Discord OAuth using popup (same as wallet.html)
+    // Detect if mobile browser
+    const isMobile = () => {
+        if (typeof navigator === 'undefined') return false;
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    };
+
+    // Initiate Discord OAuth
     const handleDiscordLogin = () => {
         if (Platform.OS !== 'web') {
             alert('Discord login is only available on web');
@@ -87,11 +93,22 @@ export default function LoginScreen() {
         }
 
         // Use main site's oauth-callback.html for Discord OAuth
+        // Add state param to tell oauth-callback where to redirect after login
         const redirectUri = 'https://stuarthollinger.com/oauth-callback.html';
         const scope = 'identify';
-        const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}`;
+        const state = encodeURIComponent('/foodvitals/'); // Where to go after auth
+        const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}&state=${state}`;
 
-        // Open Discord auth in a popup
+        // On mobile, use redirect flow (popups don't work well)
+        if (isMobile()) {
+            // Store that we're doing auth so we know to check on return
+            sessionStorage.setItem('discord_auth_pending', 'true');
+            // Redirect the whole page to Discord
+            window.location.href = authUrl;
+            return;
+        }
+
+        // On desktop, use popup flow
         const popup = window.open(authUrl, 'Discord Login', 'width=500,height=700');
 
         // Listen for the callback message from popup
