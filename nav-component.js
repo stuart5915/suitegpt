@@ -1,119 +1,77 @@
-// nav-component.js - Single source of truth for SUITE navigation
-// Include this script and add <nav id="main-nav"></nav> to any page
+// Simple Nav Component - injects nav into <nav id="main-nav"></nav>
+(function() {
+    const nav = document.getElementById('main-nav');
+    if (!nav) return;
 
-(function () {
-    const navHTML = `
-    <div class="nav-inner">
-        <a href="/" class="nav-logo">
-            <img src="/assets/suite-logo-new.png" alt="SUITE" class="nav-logo-img">
-            SUITE
-        </a>
-        <div class="nav-links">
-            <a href="/apps">Apps</a>
-            <a href="/docs/">Docs</a>
-            <a href="/learn">Learn</a>
-            <a href="/wallet">Vault</a>
-        </div>
-        <div class="nav-actions">
-            <button class="nav-btn nav-wallet" onclick="connectWallet()">
-                🔗 Connect Wallet
+    nav.className = 'nav';
+    nav.innerHTML = `
+        <div class="nav-inner">
+            <a href="/" class="nav-logo">
+                <img src="/assets/suite-logo-new.png" alt="SUITE" class="nav-logo-img">
+                SUITE
+            </a>
+            <div class="nav-links">
+                <a href="/apps">Apps</a>
+                <a href="/docs/">Docs</a>
+                <a href="/learn">Learn</a>
+                <a href="/wallet">Vault</a>
+            </div>
+            <div class="nav-actions">
+                <button class="nav-btn nav-wallet" onclick="connectWallet()">Connect Wallet</button>
+            </div>
+            <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
+                <span></span><span></span><span></span>
             </button>
         </div>
-        <button class="mobile-menu-btn" onclick="this.classList.toggle('active'); document.querySelector('.nav-links').classList.toggle('mobile-open'); document.querySelector('.nav-actions').classList.toggle('mobile-open');">
-            <span></span>
-            <span></span>
-            <span></span>
-        </button>
-    </div>
     `;
-
-    // Inject nav when DOM is ready
-    function injectNav() {
-        const navElement = document.getElementById('main-nav');
-        if (navElement) {
-            navElement.className = 'nav';
-            navElement.innerHTML = navHTML;
-        }
-    }
-
-    // Restore wallet state after nav is injected
-    function restoreWalletState() {
-        // Check both possible localStorage keys
-        const savedAddress = localStorage.getItem('suiteWalletAddress') || localStorage.getItem('suiteWallet');
-        if (savedAddress) {
-            const walletBtn = document.querySelector('.nav-wallet');
-            if (walletBtn) {
-                const shortAddress = `${savedAddress.slice(0, 6)}...${savedAddress.slice(-4)}`;
-                walletBtn.classList.add('connected');
-                walletBtn.innerHTML = `✅ ${shortAddress}`;
-                // Sync both keys
-                localStorage.setItem('suiteWalletAddress', savedAddress);
-                localStorage.setItem('suiteWallet', savedAddress);
-            }
-        }
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            injectNav();
-            restoreWalletState();
-        });
-    } else {
-        injectNav();
-        restoreWalletState();
-    }
 })();
 
-// Global wallet connection function
-async function connectWallet() {
-    const walletBtn = document.querySelector('.nav-wallet');
+function toggleMobileMenu() {
+    document.querySelector('.mobile-menu-btn').classList.toggle('active');
+    document.querySelector('.nav-links').classList.toggle('mobile-open');
+}
 
-    // Check if already connected
-    if (walletBtn && walletBtn.classList.contains('connected')) {
-        // Disconnect - clear state
-        walletBtn.classList.remove('connected');
-        walletBtn.innerHTML = '🔗 Connect Wallet';
+async function connectWallet() {
+    const btn = document.querySelector('.nav-wallet');
+    if (!btn) return;
+
+    // If already connected, disconnect
+    if (btn.classList.contains('connected')) {
+        btn.classList.remove('connected');
+        btn.textContent = 'Connect Wallet';
         localStorage.removeItem('suiteWalletAddress');
-        localStorage.removeItem('suiteWallet'); // Also clear wallet.html key
-        window.walletAddress = null;
         return;
     }
 
-    // Check for MetaMask/Ethereum provider
+    // Check for MetaMask
     if (typeof window.ethereum === 'undefined') {
-        alert('Please install MetaMask or another Web3 wallet to connect!');
-        window.open('https://metamask.io/download/', '_blank');
+        alert('Please install MetaMask to connect your wallet');
         return;
     }
 
     try {
-        // Request account access
-        const accounts = await window.ethereum.request({
-            method: 'eth_requestAccounts'
-        });
-
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         if (accounts.length > 0) {
-            const address = accounts[0];
-            const shortAddress = `${address.slice(0, 6)}...${address.slice(-4)}`;
-
-            // Update button state
-            if (walletBtn) {
-                walletBtn.classList.add('connected');
-                walletBtn.innerHTML = `✅ ${shortAddress}`;
-            }
-
-            // Store in localStorage for persistence
-            localStorage.setItem('suiteWalletAddress', address);
-
-            console.log('Wallet connected:', address);
+            const addr = accounts[0];
+            btn.classList.add('connected');
+            btn.textContent = addr.slice(0,6) + '...' + addr.slice(-4);
+            localStorage.setItem('suiteWalletAddress', addr);
         }
-    } catch (error) {
-        console.error('Wallet connection failed:', error);
-        if (error.code === 4001) {
-            // User rejected the request
-            alert('Connection cancelled. Click Connect Wallet to try again.');
-        } else {
-            alert('Failed to connect wallet. Please try again.');
-        }
+    } catch (e) {
+        console.error('Wallet connection failed:', e);
     }
 }
+
+// Restore wallet state on load
+(function() {
+    const saved = localStorage.getItem('suiteWalletAddress');
+    if (saved) {
+        setTimeout(() => {
+            const btn = document.querySelector('.nav-wallet');
+            if (btn) {
+                btn.classList.add('connected');
+                btn.textContent = saved.slice(0,6) + '...' + saved.slice(-4);
+            }
+        }, 100);
+    }
+})();

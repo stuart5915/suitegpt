@@ -19,7 +19,8 @@ import { router } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { useDiscordAuth } from '../../contexts/DiscordAuthContext';
+import { useTelegramAuth } from '../../contexts/TelegramAuthContext';
+import { TelegramLoginButton } from '../../components/TelegramLoginButton';
 import {
     supabase,
     getNutritionGoals,
@@ -36,11 +37,11 @@ import {
 } from '../../services/supabase';
 import { calculateRecommendedMicros, calculateRecommendedMacros, MICRO_LABELS, Gender, ActivityLevel } from '../../utils/nutrition';
 
-// Discord OAuth config
-const DISCORD_CLIENT_ID = '1457474266390986865';
+// Telegram Bot for login widget
+const TELEGRAM_BOT_NAME = 'SUITEHubBot';
 
 export default function ProfileScreen() {
-    const { user: discordUser, isLoading: authLoading, credits, logout, refreshCredits } = useDiscordAuth();
+    const { user: telegramUser, isLoading: authLoading, credits, login, logout, refreshCredits } = useTelegramAuth();
     const [userId, setUserId] = useState<string | null>(null);
     const [userEmail, setUserEmail] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
@@ -107,44 +108,14 @@ export default function ProfileScreen() {
         return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     };
 
-    // Discord login directly from profile page
-    const handleDiscordLogin = () => {
-        if (Platform.OS !== 'web' || typeof window === 'undefined') return;
-
-        const redirectUri = 'https://www.getsuite.app/oauth-callback.html';
-        const scope = 'identify';
-        const state = encodeURIComponent('/foodvitals/profile');
-        const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}&state=${state}`;
-
-        // On mobile, use redirect flow
-        if (isMobile()) {
-            window.location.href = authUrl;
-            return;
-        }
-
-        // On desktop, use popup
-        const popup = window.open(authUrl, 'Discord Login', 'width=500,height=700');
-
-        const checkInterval = setInterval(() => {
-            const stored = localStorage.getItem('suiteDev');
-            if (stored) {
-                try {
-                    const user = JSON.parse(stored);
-                    if (user && user.id) {
-                        clearInterval(checkInterval);
-                        popup?.close();
-                        window.location.reload(); // Reload to pick up new user
-                    }
-                } catch (e) {}
-            }
-        }, 1000);
-
-        setTimeout(() => clearInterval(checkInterval), 120000);
+    // Telegram login callback for web users
+    const handleTelegramAuth = (telegramUserData: { id: number | string; username?: string; first_name: string; photo_url?: string }) => {
+        login(telegramUserData);
     };
 
     useEffect(() => {
         loadProfile();
-    }, [discordUser]);
+    }, [telegramUser]);
 
     // Refresh favorites and tips when tab gains focus
     useFocusEffect(
@@ -158,22 +129,22 @@ export default function ProfileScreen() {
     );
 
     const loadProfile = async () => {
-        // Use Discord user for identity
-        if (discordUser) {
-            setUserId(discordUser.id);
-            setUserEmail(discordUser.username || '');
+        // Use Telegram user for identity
+        if (telegramUser) {
+            setUserId(telegramUser.id);
+            setUserEmail(telegramUser.username || '');
 
-            const { data: goalsData } = await getNutritionGoals(discordUser.id);
+            const { data: goalsData } = await getNutritionGoals(telegramUser.id);
             if (goalsData) {
                 setGoals(goalsData);
                 setHasGoalsSet(true);
             }
 
             // Load favorites
-            await loadFavorites(discordUser.id);
+            await loadFavorites(telegramUser.id);
 
             // Load saved tips
-            await loadTips(discordUser.id);
+            await loadTips(telegramUser.id);
 
             // Load custom prompts
             await loadCustomPrompts();
@@ -317,7 +288,7 @@ export default function ProfileScreen() {
                     text: 'Sign Out',
                     style: 'destructive',
                     onPress: async () => {
-                        logout(); // Discord logout
+                        logout(); // Telegram logout
                         router.replace('/login');
                     }
                 },
@@ -340,8 +311,8 @@ export default function ProfileScreen() {
         );
     }
 
-    // Guest mode - show sign in prompt (check Discord user)
-    if (!discordUser) {
+    // Guest mode - show sign in prompt
+    if (!telegramUser) {
         return (
             <SafeAreaView style={styles.container}>
                 <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -354,20 +325,20 @@ export default function ProfileScreen() {
                         <Text style={styles.guestIcon}>👤</Text>
                         <Text style={styles.guestTitle}>Guest Mode</Text>
                         <Text style={styles.guestText}>
-                            Login with Discord to save your food logs, track nutrition over time, and use SUITE credits for AI features.
+                            Login with Telegram to save your food logs, track nutrition over time, and use SUITE credits for AI features.
                         </Text>
 
-                        <TouchableOpacity
-                            style={styles.discordButton}
-                            onPress={handleDiscordLogin}
-                        >
-                            <Text style={styles.discordButtonText}>Login with Discord</Text>
-                        </TouchableOpacity>
+                        <TelegramLoginButton
+                            botName={TELEGRAM_BOT_NAME}
+                            onAuth={handleTelegramAuth}
+                            buttonSize="large"
+                            cornerRadius={10}
+                        />
                     </View>
 
                     {/* Benefits */}
                     <View style={styles.benefitsCard}>
-                        <Text style={styles.benefitsTitle}>Why login with Discord?</Text>
+                        <Text style={styles.benefitsTitle}>Why login with Telegram?</Text>
                         <View style={styles.benefit}>
                             <Ionicons name="cloud-outline" size={20} color="#4ADE80" />
                             <Text style={styles.benefitText}>Save meals to the cloud</Text>
@@ -399,24 +370,24 @@ export default function ProfileScreen() {
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollContent}>
-                {/* Compact Header with Discord Profile, Credits and Sign Out */}
+                {/* Compact Header with Telegram Profile, Credits and Sign Out */}
                 <View style={styles.compactHeader}>
                     <View style={styles.profileRow}>
-                        {discordUser?.avatar ? (
+                        {telegramUser?.photoUrl ? (
                             <Image
-                                source={{ uri: `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png` }}
-                                style={styles.discordAvatarSmall}
+                                source={{ uri: telegramUser.photoUrl }}
+                                style={styles.telegramAvatarSmall}
                             />
                         ) : (
                             <View style={styles.avatarSmall}>
                                 <Text style={styles.avatarTextSmall}>
-                                    {discordUser?.username?.charAt(0).toUpperCase() || '?'}
+                                    {telegramUser?.firstName?.charAt(0).toUpperCase() || telegramUser?.username?.charAt(0).toUpperCase() || '?'}
                                 </Text>
                             </View>
                         )}
                         <View style={styles.userInfoColumn}>
                             <Text style={styles.userNameSmall} numberOfLines={1}>
-                                @{discordUser?.username || 'User'}
+                                {telegramUser?.username ? `@${telegramUser.username}` : telegramUser?.firstName || 'User'}
                             </Text>
                             <View style={styles.creditsRow}>
                                 <Text style={styles.creditsLabel}>{credits.toFixed(0)} credits</Text>
@@ -1258,25 +1229,12 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
     },
-    discordButton: {
-        backgroundColor: '#5865F2',
-        paddingVertical: 14,
-        paddingHorizontal: 28,
-        borderRadius: 12,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    discordButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: '700',
-    },
-    discordAvatarSmall: {
+    telegramAvatarSmall: {
         width: 36,
         height: 36,
         borderRadius: 18,
         borderWidth: 2,
-        borderColor: '#5865F2',
+        borderColor: '#0088cc',
     },
     userInfoColumn: {
         flex: 1,

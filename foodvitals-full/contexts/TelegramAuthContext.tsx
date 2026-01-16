@@ -22,6 +22,7 @@ interface TelegramAuthContextType {
   user: TelegramUser | null;
   isLoading: boolean;
   credits: number;
+  login: (telegramUser: { id: number | string; username?: string; first_name: string; photo_url?: string }) => void;
   logout: () => void;
   refreshCredits: () => Promise<void>;
 }
@@ -78,6 +79,19 @@ export function TelegramAuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<TelegramUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [credits, setCredits] = useState(0);
+
+  // Login function for Telegram Login Widget
+  const login = (telegramUser: { id: number | string; username?: string; first_name: string; photo_url?: string }) => {
+    const newUser: TelegramUser = {
+      id: telegramUser.id.toString(),
+      username: telegramUser.username || '',
+      firstName: telegramUser.first_name,
+      photoUrl: telegramUser.photo_url || null,
+    };
+    setUser(newUser);
+    saveUser(newUser);
+    loadCredits(newUser.id);
+  };
 
   // Load user on mount - check URL params first, then localStorage
   useEffect(() => {
@@ -152,6 +166,7 @@ export function TelegramAuthProvider({ children }: { children: ReactNode }) {
         user,
         isLoading,
         credits,
+        login,
         logout,
         refreshCredits,
       }}
