@@ -36,10 +36,10 @@ export default function RootLayout() {
     // Initialize Web3Modal/AppKit on web
     if (Platform.OS === 'web') {
       initWeb3Modal();
-    }
 
-    // Sync features to Supabase for admin panel (upsert, safe to run repeatedly)
-    syncFeaturesToSupabase(supabase).catch(console.error);
+      // Sync features to Supabase for admin panel (web only, upsert is safe)
+      syncFeaturesToSupabase(supabase).catch(err => console.log('Feature sync:', err.message));
+    }
 
     setLoaded(true);
     SplashScreen.hideAsync();
