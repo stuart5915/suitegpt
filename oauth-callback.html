@@ -106,7 +106,8 @@
 
                 if (!response.ok) {
                     const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to authenticate');
+                    const details = errorData.details || '';
+                    throw new Error((errorData.error || 'Failed to authenticate') + (details ? ': ' + details : ''));
                 }
 
                 const user = await response.json();
@@ -132,7 +133,17 @@
 
             } catch (err) {
                 console.error('OAuth error:', err);
-                showError('Failed to complete login: ' + err.message);
+                showError('Failed to complete login: ' + (err.message || JSON.stringify(err)));
+            }
+        }
+
+        // Also try to show more details from API response
+        async function showApiError(response) {
+            try {
+                const data = await response.json();
+                return data.details || data.error || 'Unknown error';
+            } catch {
+                return 'Unknown error';
             }
         }
 
