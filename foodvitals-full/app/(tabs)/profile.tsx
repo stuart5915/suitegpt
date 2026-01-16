@@ -36,6 +36,9 @@ import {
 } from '../../services/supabase';
 import { calculateRecommendedMicros, calculateRecommendedMacros, MICRO_LABELS, Gender, ActivityLevel } from '../../utils/nutrition';
 
+// Discord OAuth config
+const DISCORD_CLIENT_ID = '1457474266390986865';
+
 export default function ProfileScreen() {
     const { user: discordUser, isLoading: authLoading, credits, logout, refreshCredits } = useDiscordAuth();
     const [userId, setUserId] = useState<string | null>(null);
@@ -97,6 +100,47 @@ export default function ProfileScreen() {
     // Daily Goals Section
     const [isDailyGoalsExpanded, setIsDailyGoalsExpanded] = useState(true);
     const [showNotificationInfo, setShowNotificationInfo] = useState(false);
+
+    // Detect if mobile browser
+    const isMobile = () => {
+        if (typeof navigator === 'undefined') return false;
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    };
+
+    // Discord login directly from profile page
+    const handleDiscordLogin = () => {
+        if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+
+        const redirectUri = 'https://getsuite.app/oauth-callback.html';
+        const scope = 'identify';
+        const state = encodeURIComponent('/foodvitals/profile');
+        const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}&state=${state}`;
+
+        // On mobile, use redirect flow
+        if (isMobile()) {
+            window.location.href = authUrl;
+            return;
+        }
+
+        // On desktop, use popup
+        const popup = window.open(authUrl, 'Discord Login', 'width=500,height=700');
+
+        const checkInterval = setInterval(() => {
+            const stored = localStorage.getItem('suiteDev');
+            if (stored) {
+                try {
+                    const user = JSON.parse(stored);
+                    if (user && user.id) {
+                        clearInterval(checkInterval);
+                        popup?.close();
+                        window.location.reload(); // Reload to pick up new user
+                    }
+                } catch (e) {}
+            }
+        }, 1000);
+
+        setTimeout(() => clearInterval(checkInterval), 120000);
+    };
 
     useEffect(() => {
         loadProfile();
@@ -315,7 +359,7 @@ export default function ProfileScreen() {
 
                         <TouchableOpacity
                             style={styles.discordButton}
-                            onPress={() => router.replace('/login')}
+                            onPress={handleDiscordLogin}
                         >
                             <Text style={styles.discordButtonText}>Login with Discord</Text>
                         </TouchableOpacity>
