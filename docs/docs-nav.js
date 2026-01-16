@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     </div>
                     <div class="nav-actions">
                         <button class="nav-btn nav-wallet" onclick="connectWallet()">
-                            🔗 Connect Wallet
+                            Connect Wallet
                         </button>
                     </div>
                     <button class="mobile-menu-btn" onclick="this.classList.toggle('active'); document.querySelector('.nav-links').classList.toggle('mobile-open'); document.querySelector('.nav-actions').classList.toggle('mobile-open');">
@@ -65,7 +65,7 @@ async function connectWallet() {
     // Check if already connected - disconnect
     if (walletBtn && walletBtn.classList.contains('connected')) {
         walletBtn.classList.remove('connected');
-        walletBtn.innerHTML = '🔗 Connect Wallet';
+        walletBtn.innerHTML = 'Connect Wallet';
         localStorage.removeItem('suiteWalletAddress');
         localStorage.removeItem('suiteWallet');
         window.walletAddress = null;

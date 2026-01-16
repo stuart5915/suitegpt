@@ -11,10 +11,10 @@
                 SUITE
             </a>
             <div class="nav-links">
-                <a href="/apps">Apps</a>
+                <a href="/apps.html">Apps</a>
                 <a href="/docs/">Docs</a>
-                <a href="/learn">Learn</a>
-                <a href="/wallet">Vault</a>
+                <a href="/learn.html">Learn</a>
+                <a href="/wallet.html">Vault</a>
             </div>
             <div class="nav-actions">
                 <button class="nav-btn nav-wallet" onclick="connectWallet()">Connect Wallet</button>

@@ -389,9 +389,17 @@ export default function ProfileScreen() {
                             <Text style={styles.userNameSmall} numberOfLines={1}>
                                 {telegramUser?.username ? `@${telegramUser.username}` : telegramUser?.firstName || 'User'}
                             </Text>
-                            <View style={styles.creditsRow}>
+                            <TouchableOpacity
+                                style={styles.creditsRow}
+                                onPress={() => {
+                                    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+                                        window.open('/wallet.html', '_blank');
+                                    }
+                                }}
+                            >
+                                <Ionicons name="flash" size={14} color="#ff9500" />
                                 <Text style={styles.creditsLabel}>{credits.toFixed(0)} credits</Text>
-                            </View>
+                            </TouchableOpacity>
                         </View>
                     </View>
                     <TouchableOpacity style={styles.signOutButtonCompact} onPress={handleSignOut}>
@@ -1249,6 +1257,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         marginTop: 2,
+        gap: 4,
     },
     creditsLabel: {
         color: '#ff9500',
