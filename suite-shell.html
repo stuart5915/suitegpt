@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SUITE Shell</title>
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Ethers.js for wallet interactions -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.umd.min.js"></script>
+    <!-- QRCode.js for deposit address QR -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-dark: #0a0a1a;
+            --bg-card: #1a1a2e;
+            --accent-orange: #ff9500;
+            --accent-green: #4ade80;
+            --accent-purple: #a855f7;
+            --text-primary: #ffffff;
+            --text-secondary: #9ca3af;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Shell Header */
+        .shell-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 100;
+        }
+
+        .shell-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .shell-logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 800;
+            font-size: 1.1rem;
+            color: var(--accent-orange);
+        }
+
+        .shell-logo img {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+        }
+
+        .app-name {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            padding-left: 12px;
+            border-left: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .shell-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .credits-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 149, 0, 0.15);
+            border: 1px solid rgba(255, 149, 0, 0.3);
+            padding: 8px 14px;
+            border-radius: 100px;
+            color: var(--accent-orange);
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .credits-btn:hover {
+            background: rgba(255, 149, 0, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .credits-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .close-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 50%;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.2s ease;
+        }
+
+        .close-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        /* App iframe container */
+        .app-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .app-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: var(--bg-dark);
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-dark);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            z-index: 50;
+            transition: opacity 0.3s ease;
+        }
+
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 149, 0, 0.2);
+            border-top-color: var(--accent-orange);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Deposit Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 420px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-header h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        /* Wallet Status */
+        .wallet-status {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .wallet-status.connected {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .wallet-status .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #6b7280;
+        }
+
+        .wallet-status.connected .dot {
+            background: #22c55e;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .wallet-info {
+            flex: 1;
+        }
+
+        .wallet-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .wallet-address {
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        .connect-wallet-btn {
+            background: linear-gradient(135deg, var(--accent-orange), #ff6b9d);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 100px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .connect-wallet-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 149, 0, 0.3);
+        }
+
+        /* Deposit Tabs */
+        .deposit-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .deposit-tab {
+            flex: 1;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .deposit-tab.active {
+            background: rgba(255, 149, 0, 0.15);
+            border-color: var(--accent-orange);
+            color: var(--accent-orange);
+        }
+
+        .deposit-tab:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Amount Input */
+        .amount-section {
+            margin-bottom: 20px;
+        }
+
+        .amount-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .amount-input-wrapper {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 4px;
+        }
+
+        .amount-input-wrapper input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1.2rem;
+            font-weight: 700;
+            padding: 12px 16px;
+            outline: none;
+        }
+
+        .amount-input-wrapper input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .asset-selector {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        .asset-selector img {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+
+        .asset-selector span {
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        /* Quick amounts */
+        .quick-amounts {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .quick-amount {
+            flex: 1;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .quick-amount:hover {
+            background: rgba(255, 149, 0, 0.15);
+            border-color: var(--accent-orange);
+        }
+
+        /* Credits preview */
+        .credits-preview {
+            background: linear-gradient(135deg, rgba(255, 149, 0, 0.1), rgba(168, 85, 247, 0.1));
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .credits-preview-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .credits-preview-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--accent-orange);
+        }
+
+        /* Deposit button */
+        .deposit-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--accent-orange), #ff6b9d);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 800;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .deposit-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(255, 149, 0, 0.4);
+        }
+
+        .deposit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* QR Code Section */
+        .qr-section {
+            text-align: center;
+        }
+
+        .qr-code-container {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            display: inline-block;
+            margin-bottom: 16px;
+        }
+
+        .qr-code-container canvas {
+            display: block;
+        }
+
+        .deposit-address {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .deposit-address code {
+            flex: 1;
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            background: var(--accent-orange);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .copy-btn:hover {
+            opacity: 0.9;
+        }
+
+        .qr-note {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .qr-note strong {
+            color: var(--accent-orange);
+        }
+
+        /* Network badge */
+        .network-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            padding: 6px 12px;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            color: #60a5fa;
+            margin-bottom: 16px;
+        }
+
+        .network-badge img {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* App navigation */
+        .app-nav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: var(--text-secondary);
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.15);
+            color: var(--text-primary);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .nav-indicator {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* User info display */
+        .user-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 100px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .user-badge img {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+        }
+
+        /* Mobile adjustments */
+        @media (max-width: 480px) {
+            .shell-header {
+                padding: 10px 12px;
+            }
+
+            .shell-logo span {
+                display: none;
+            }
+
+            .app-name {
+                max-width: 120px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .credits-btn {
+                padding: 8px 12px;
+                font-size: 0.85rem;
+            }
+
+            .user-badge span {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Shell Header -->
+    <header class="shell-header">
+        <div class="shell-left">
+            <div class="shell-logo">
+                <img src="/assets/suite-logo-new.png" alt="SUITE">
+                <span>SUITE</span>
+            </div>
+            <span class="app-name" id="appName">Loading...</span>
+        </div>
+
+        <div class="shell-right">
+            <!-- User badge (if logged in) -->
+            <div class="user-badge" id="userBadge" style="display: none;">
+                <img id="userAvatar" src="" alt="">
+                <span id="userName"></span>
+            </div>
+
+            <!-- Credits button -->
+            <button class="credits-btn" onclick="openDepositModal()">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+                <span id="creditsDisplay">0</span>
+            </button>
+
+            <!-- Close button -->
+            <button class="close-btn" onclick="exitShell()" title="Exit to App Store">
+                &times;
+            </button>
+        </div>
+    </header>
+
+    <!-- App Container -->
+    <main class="app-container">
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Loading app...</div>
+        </div>
+        <iframe class="app-iframe" id="appIframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"></iframe>
+    </main>
+
+    <!-- App Navigation (optional, for browsing multiple apps) -->
+    <nav class="app-nav" id="appNav" style="display: none;">
+        <button class="nav-btn" id="prevAppBtn" onclick="navigateApp(-1)">
+            &larr; Previous
+        </button>
+        <span class="nav-indicator" id="navIndicator">App 1 of 5</span>
+        <button class="nav-btn" id="nextAppBtn" onclick="navigateApp(1)">
+            Next &rarr;
+        </button>
+    </nav>
+
+    <!-- Deposit Modal -->
+    <div class="modal-overlay" id="depositModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>&#x26A1; Top Up Credits</h2>
+                <button class="modal-close" onclick="closeDepositModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Wallet Status -->
+                <div class="wallet-status" id="walletStatus">
+                    <div class="dot"></div>
+                    <div class="wallet-info">
+                        <div class="wallet-label">Wallet</div>
+                        <div class="wallet-address" id="walletAddressDisplay">Not connected</div>
+                    </div>
+                    <button class="connect-wallet-btn" id="connectWalletBtn" onclick="connectWallet()">
+                        Connect
+                    </button>
+                </div>
+
+                <!-- Deposit Tabs -->
+                <div class="deposit-tabs">
+                    <button class="deposit-tab active" data-tab="crypto" onclick="switchTab('crypto')">
+                        &#x1F4B0; Crypto
+                    </button>
+                    <button class="deposit-tab" data-tab="qr" onclick="switchTab('qr')">
+                        &#x1F4F1; QR Code
+                    </button>
+                </div>
+
+                <!-- Crypto Deposit Tab -->
+                <div class="tab-content active" id="cryptoTab">
+                    <div class="network-badge">
+                        <img src="https://raw.githubusercontent.com/base-org/brand-kit/main/logo/symbol/Base_Symbol_Blue.svg" alt="Base">
+                        Base Network
+                    </div>
+
+                    <div class="amount-section">
+                        <div class="amount-label">Amount</div>
+                        <div class="amount-input-wrapper">
+                            <input type="number" id="depositAmount" placeholder="0.00" step="0.001" min="0" oninput="updateCreditsPreview()">
+                            <div class="asset-selector" onclick="toggleAsset()">
+                                <img id="assetIcon" src="https://cryptologos.cc/logos/ethereum-eth-logo.png" alt="ETH">
+                                <span id="assetSymbol">ETH</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="quick-amounts">
+                        <button class="quick-amount" onclick="setAmount(0.01)">0.01</button>
+                        <button class="quick-amount" onclick="setAmount(0.05)">0.05</button>
+                        <button class="quick-amount" onclick="setAmount(0.1)">0.1</button>
+                        <button class="quick-amount" onclick="setAmount(0.5)">0.5</button>
+                    </div>
+
+                    <div class="credits-preview">
+                        <div class="credits-preview-label">You'll receive</div>
+                        <div class="credits-preview-value" id="creditsPreview">0 credits</div>
+                    </div>
+
+                    <button class="deposit-btn" id="depositBtn" onclick="executeDeposit()" disabled>
+                        &#x1F680; Deposit
+                    </button>
+                </div>
+
+                <!-- QR Code Tab -->
+                <div class="tab-content" id="qrTab">
+                    <div class="qr-section">
+                        <div class="network-badge">
+                            <img src="https://raw.githubusercontent.com/base-org/brand-kit/main/logo/symbol/Base_Symbol_Blue.svg" alt="Base">
+                            Base Network (ETH or USDC)
+                        </div>
+
+                        <div class="qr-code-container" id="qrCodeContainer"></div>
+
+                        <div class="deposit-address">
+                            <code id="treasuryAddress">0x...</code>
+                            <button class="copy-btn" onclick="copyAddress()">Copy</button>
+                        </div>
+
+                        <p class="qr-note">
+                            Send <strong>ETH</strong> or <strong>USDC</strong> on <strong>Base</strong> to this address.<br>
+                            Credits will be added to your account within minutes.<br><br>
+                            <strong>$1 = 1,000 credits</strong>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== CONFIGURATION =====
+        const TREASURY_ADDRESS = '0x036A77Ed6896Fa21C3faBBee36a1a90f30650ffc';
+        const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ4MTAxOTAsImV4cCI6MjA1MDM4NjE5MH0.GRDjsDNkVBzxIlDCl9fOu0d6bfKxNbxOlS4pPXBHyhw';
+        const ETH_PRICE_USD = 3200; // Approximate, could fetch live
+
+        // App registry - could load from Supabase
+        const APPS = {
+            'foodvitals': {
+                name: 'FoodVitals AI',
+                url: '/foodvitals/',
+                icon: '&#x1F957;'
+            },
+            // Add more apps here
+        };
+
+        // ===== STATE =====
+        let currentUser = null;
+        let currentCredits = 0;
+        let connectedWallet = null;
+        let selectedAsset = 'ETH';
+        let currentAppIndex = 0;
+        let appList = Object.keys(APPS);
+
+        // ===== INITIALIZATION =====
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Parse URL params
+            const params = new URLSearchParams(window.location.search);
+            const appSlug = params.get('app') || 'foodvitals';
+
+            // Check for Telegram user data in URL (passed from parent or direct)
+            const tgId = params.get('tg_id');
+            const tgUsername = params.get('tg_username');
+            const tgFirstName = params.get('tg_first_name');
+            const tgPhoto = params.get('tg_photo');
+
+            if (tgId) {
+                currentUser = {
+                    id: tgId,
+                    username: tgUsername || '',
+                    firstName: tgFirstName || 'User',
+                    photoUrl: tgPhoto || null,
+                    source: 'telegram'
+                };
+                saveUser(currentUser);
+            } else {
+                // Check localStorage
+                currentUser = loadUser();
+            }
+
+            // Update UI with user info
+            if (currentUser) {
+                updateUserDisplay();
+                await loadCredits();
+            }
+
+            // Load the app
+            loadApp(appSlug);
+
+            // Generate QR code
+            generateQRCode();
+
+            // Check for existing wallet connection
+            checkWalletConnection();
+
+            // Listen for messages from iframe
+            window.addEventListener('message', handleIframeMessage);
+        });
+
+        // ===== USER MANAGEMENT =====
+        function saveUser(user) {
+            localStorage.setItem('suiteUser', JSON.stringify(user));
+        }
+
+        function loadUser() {
+            const stored = localStorage.getItem('suiteUser');
+            if (stored) {
+                try {
+                    return JSON.parse(stored);
+                } catch (e) {
+                    return null;
+                }
+            }
+            return null;
+        }
+
+        function updateUserDisplay() {
+            if (!currentUser) return;
+
+            const badge = document.getElementById('userBadge');
+            const avatar = document.getElementById('userAvatar');
+            const name = document.getElementById('userName');
+
+            if (currentUser.photoUrl) {
+                avatar.src = currentUser.photoUrl;
+                avatar.style.display = 'block';
+            } else {
+                avatar.style.display = 'none';
+            }
+
+            name.textContent = currentUser.username ? `@${currentUser.username}` : currentUser.firstName;
+            badge.style.display = 'flex';
+        }
+
+        async function loadCredits() {
+            if (!currentUser?.id) return;
+
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/user_credits?telegram_id=eq.${currentUser.id}&select=suite_balance`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    currentCredits = parseFloat(data[0].suite_balance) || 0;
+                }
+            } catch (error) {
+                console.error('Failed to load credits:', error);
+            }
+
+            document.getElementById('creditsDisplay').textContent = Math.floor(currentCredits).toLocaleString();
+        }
+
+        // ===== APP LOADING =====
+        function loadApp(appSlug) {
+            const app = APPS[appSlug];
+            if (!app) {
+                document.getElementById('appName').textContent = 'Unknown App';
+                return;
+            }
+
+            document.getElementById('appName').textContent = app.name;
+            document.title = `${app.name} | SUITE`;
+
+            // Build app URL with user params
+            let appUrl = app.url;
+            if (currentUser) {
+                const userParams = new URLSearchParams({
+                    tg_id: currentUser.id,
+                    tg_username: currentUser.username || '',
+                    tg_first_name: currentUser.firstName || '',
+                    tg_photo: currentUser.photoUrl || ''
+                });
+                appUrl += (app.url.includes('?') ? '&' : '?') + userParams.toString();
+            }
+
+            const iframe = document.getElementById('appIframe');
+            iframe.src = appUrl;
+
+            iframe.onload = () => {
+                document.getElementById('loadingOverlay').classList.add('hidden');
+            };
+
+            // Update nav
+            currentAppIndex = appList.indexOf(appSlug);
+            updateNavigation();
+        }
+
+        function updateNavigation() {
+            if (appList.length <= 1) {
+                document.getElementById('appNav').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('appNav').style.display = 'flex';
+            document.getElementById('prevAppBtn').disabled = currentAppIndex === 0;
+            document.getElementById('nextAppBtn').disabled = currentAppIndex === appList.length - 1;
+            document.getElementById('navIndicator').textContent = `App ${currentAppIndex + 1} of ${appList.length}`;
+        }
+
+        function navigateApp(direction) {
+            const newIndex = currentAppIndex + direction;
+            if (newIndex >= 0 && newIndex < appList.length) {
+                document.getElementById('loadingOverlay').classList.remove('hidden');
+                loadApp(appList[newIndex]);
+            }
+        }
+
+        function exitShell() {
+            window.location.href = '/apps.html';
+        }
+
+        // ===== IFRAME COMMUNICATION =====
+        function handleIframeMessage(event) {
+            // Handle messages from the iframe app
+            if (event.data.type === 'CREDITS_UPDATED') {
+                loadCredits();
+            } else if (event.data.type === 'OPEN_DEPOSIT') {
+                openDepositModal();
+            }
+        }
+
+        // ===== DEPOSIT MODAL =====
+        function openDepositModal() {
+            document.getElementById('depositModal').classList.add('active');
+        }
+
+        function closeDepositModal() {
+            document.getElementById('depositModal').classList.remove('active');
+        }
+
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.deposit-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.tab === tabName);
+            });
+
+            // Update tab content
+            document.getElementById('cryptoTab').classList.toggle('active', tabName === 'crypto');
+            document.getElementById('qrTab').classList.toggle('active', tabName === 'qr');
+        }
+
+        // ===== WALLET CONNECTION =====
+        async function checkWalletConnection() {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                    if (accounts.length > 0) {
+                        connectedWallet = accounts[0];
+                        updateWalletDisplay();
+                    }
+                } catch (e) {
+                    console.log('Wallet check failed:', e);
+                }
+            }
+        }
+
+        async function connectWallet() {
+            if (typeof window.ethereum === 'undefined') {
+                alert('Please install MetaMask or another Web3 wallet to connect.');
+                window.open('https://metamask.io/download/', '_blank');
+                return;
+            }
+
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                if (accounts.length > 0) {
+                    connectedWallet = accounts[0];
+                    updateWalletDisplay();
+
+                    // Link wallet to user account if logged in
+                    if (currentUser?.id) {
+                        linkWalletToUser(connectedWallet, currentUser.id);
+                    }
+                }
+            } catch (error) {
+                console.error('Wallet connection failed:', error);
+            }
+        }
+
+        function updateWalletDisplay() {
+            const status = document.getElementById('walletStatus');
+            const addressDisplay = document.getElementById('walletAddressDisplay');
+            const connectBtn = document.getElementById('connectWalletBtn');
+
+            if (connectedWallet) {
+                status.classList.add('connected');
+                addressDisplay.textContent = `${connectedWallet.slice(0, 6)}...${connectedWallet.slice(-4)}`;
+                connectBtn.textContent = 'Connected';
+                connectBtn.disabled = true;
+                document.getElementById('depositBtn').disabled = false;
+            } else {
+                status.classList.remove('connected');
+                addressDisplay.textContent = 'Not connected';
+                connectBtn.textContent = 'Connect';
+                connectBtn.disabled = false;
+                document.getElementById('depositBtn').disabled = true;
+            }
+        }
+
+        async function linkWalletToUser(walletAddress, telegramId) {
+            try {
+                await fetch(`${SUPABASE_URL}/rest/v1/user_credits`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'resolution=merge-duplicates'
+                    },
+                    body: JSON.stringify({
+                        telegram_id: telegramId,
+                        wallet_address: walletAddress.toLowerCase(),
+                        updated_at: new Date().toISOString()
+                    })
+                });
+            } catch (error) {
+                console.error('Failed to link wallet:', error);
+            }
+        }
+
+        // ===== DEPOSIT FUNCTIONS =====
+        function toggleAsset() {
+            const icon = document.getElementById('assetIcon');
+            const symbol = document.getElementById('assetSymbol');
+
+            if (selectedAsset === 'ETH') {
+                selectedAsset = 'USDC';
+                icon.src = 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png';
+                symbol.textContent = 'USDC';
+            } else {
+                selectedAsset = 'ETH';
+                icon.src = 'https://cryptologos.cc/logos/ethereum-eth-logo.png';
+                symbol.textContent = 'ETH';
+            }
+            updateCreditsPreview();
+        }
+
+        function setAmount(amount) {
+            document.getElementById('depositAmount').value = amount;
+            updateCreditsPreview();
+        }
+
+        function updateCreditsPreview() {
+            const amount = parseFloat(document.getElementById('depositAmount').value) || 0;
+            let usdValue = 0;
+
+            if (selectedAsset === 'ETH') {
+                usdValue = amount * ETH_PRICE_USD;
+            } else {
+                usdValue = amount; // USDC is 1:1 with USD
+            }
+
+            const credits = Math.floor(usdValue * 1000); // $1 = 1000 credits
+            document.getElementById('creditsPreview').textContent = credits.toLocaleString() + ' credits';
+        }
+
+        async function executeDeposit() {
+            const amount = parseFloat(document.getElementById('depositAmount').value) || 0;
+            if (amount <= 0) {
+                alert('Please enter an amount');
+                return;
+            }
+
+            if (!connectedWallet) {
+                alert('Please connect your wallet first');
+                return;
+            }
+
+            const btn = document.getElementById('depositBtn');
+            btn.disabled = true;
+            btn.innerHTML = '&#x23F3; Processing...';
+
+            try {
+                if (selectedAsset === 'ETH') {
+                    // ETH deposit
+                    const amountWei = '0x' + BigInt(Math.floor(amount * 1e18)).toString(16);
+
+                    const txHash = await window.ethereum.request({
+                        method: 'eth_sendTransaction',
+                        params: [{
+                            from: connectedWallet,
+                            to: TREASURY_ADDRESS,
+                            value: amountWei,
+                            data: '0xf6326fb3' // depositETH()
+                        }]
+                    });
+
+                    alert(`Deposit submitted!\n\nTx: ${txHash}\n\nCredits will be added once confirmed.`);
+                    closeDepositModal();
+                } else {
+                    // USDC deposit - needs approval + deposit
+                    alert('USDC deposits coming soon! Please use ETH for now.');
+                }
+            } catch (error) {
+                console.error('Deposit error:', error);
+                alert(error.message || 'Deposit failed');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '&#x1F680; Deposit';
+                updateCreditsPreview();
+            }
+        }
+
+        // ===== QR CODE =====
+        function generateQRCode() {
+            const container = document.getElementById('qrCodeContainer');
+            document.getElementById('treasuryAddress').textContent = TREASURY_ADDRESS;
+
+            if (typeof QRCode !== 'undefined') {
+                QRCode.toCanvas(TREASURY_ADDRESS, {
+                    width: 180,
+                    margin: 2,
+                    color: {
+                        dark: '#000000',
+                        light: '#ffffff'
+                    }
+                }, (error, canvas) => {
+                    if (error) {
+                        console.error('QR generation failed:', error);
+                        container.innerHTML = '<p style="color: #ef4444;">QR code failed to load</p>';
+                    } else {
+                        container.innerHTML = '';
+                        container.appendChild(canvas);
+                    }
+                });
+            }
+        }
+
+        function copyAddress() {
+            navigator.clipboard.writeText(TREASURY_ADDRESS).then(() => {
+                const btn = event.target;
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy', 2000);
+            });
+        }
+
+        // ===== ETHEREUM EVENT LISTENERS =====
+        if (typeof window.ethereum !== 'undefined') {
+            window.ethereum.on('accountsChanged', (accounts) => {
+                if (accounts.length > 0) {
+                    connectedWallet = accounts[0];
+                } else {
+                    connectedWallet = null;
+                }
+                updateWalletDisplay();
+            });
+        }
+    </script>
+</body>
+
+</html>
