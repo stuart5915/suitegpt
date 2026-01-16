@@ -1,4 +1,3 @@
-import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -6,8 +5,8 @@ import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import 'react-native-reanimated';
 
-// Wallet context (works without wagmi now)
-import { WalletProvider } from '../contexts/WalletContext';
+// Discord auth context
+import { DiscordAuthProvider } from '../contexts/DiscordAuthContext';
 
 // Feature sync for admin panel
 import { syncFeaturesToSupabase } from '../config/features';
@@ -40,15 +39,14 @@ export default function RootLayout() {
     return null;
   }
 
-  // Simple layout without wagmi providers (wallet temporarily disabled)
   return (
-    <WalletProvider>
+    <DiscordAuthProvider>
       <ThemeProvider value={DarkTheme}>
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="login" />
           <Stack.Screen name="(tabs)" />
         </Stack>
       </ThemeProvider>
-    </WalletProvider>
+    </DiscordAuthProvider>
   );
 }

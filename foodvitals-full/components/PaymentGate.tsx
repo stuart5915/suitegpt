@@ -1,6 +1,7 @@
 /**
  * SUITE Payment Gate Component for React Native
  * Shows a modal when user tries to access premium features
+ * Uses Discord auth for identity and credits
  */
 
 import React, { useState } from 'react';
@@ -12,14 +13,20 @@ import {
     StyleSheet,
     ActivityIndicator,
     Linking,
+    Platform,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { getCurrentUser, useCredits, SuiteUser } from '../services/walletConnect';
+import { getDiscordUser, deductCredits, hasEnoughCredits, DiscordUser } from '../contexts/DiscordAuthContext';
 
 export interface PaymentConfig {
     featureName: string;
     creditCost: number;
     appId?: string;
+}
+
+interface DiscordUserWithCredits {
+    id: string;
+    username: string;
+    credits: number;
 }
 
 interface PaymentGateProps {
@@ -29,20 +36,58 @@ interface PaymentGateProps {
     onCancel: () => void;
 }
 
+// Supabase config for credits
+const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ4MTAxOTAsImV4cCI6MjA1MDM4NjE5MH0.GRDjsDNkVBzxIlDCl9fOu0d6bfKxNbxOlS4pPXBHyhw';
+
+async function loadUserCredits(discordId: string): Promise<number> {
+    try {
+        const response = await fetch(
+            `${SUPABASE_URL}/rest/v1/user_credits?discord_id=eq.${discordId}&select=suite_balance`,
+            {
+                headers: {
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                }
+            }
+        );
+        const data = await response.json();
+        if (data && data.length > 0) {
+            return parseFloat(data[0].suite_balance) || 0;
+        }
+        return 0;
+    } catch (error) {
+        console.error('Failed to load credits:', error);
+        return 0;
+    }
+}
+
 export const PaymentGate: React.FC<PaymentGateProps> = ({
     visible,
     config,
     onComplete,
     onCancel,
 }) => {
-    const [user, setUser] = useState<SuiteUser | null>(null);
+    const [user, setUser] = useState<DiscordUserWithCredits | null>(null);
     const [loading, setLoading] = useState(false);
     const [showAd, setShowAd] = useState(false);
     const [adSeconds, setAdSeconds] = useState(30);
 
     React.useEffect(() => {
         if (visible) {
-            getCurrentUser().then(setUser);
+            // Load Discord user and credits
+            const discordUser = getDiscordUser();
+            if (discordUser) {
+                loadUserCredits(discordUser.id).then(credits => {
+                    setUser({
+                        id: discordUser.id,
+                        username: discordUser.username,
+                        credits,
+                    });
+                });
+            } else {
+                setUser(null);
+            }
         }
     }, [visible]);
 
@@ -50,7 +95,12 @@ export const PaymentGate: React.FC<PaymentGateProps> = ({
         if (!user || user.credits < config.creditCost) return;
 
         setLoading(true);
-        const success = await useCredits(config.creditCost, config.featureName, config.appId);
+        const success = await deductCredits(
+            user.id,
+            config.creditCost,
+            config.featureName,
+            config.appId || 'foodvitals'
+        );
         setLoading(false);
         onComplete(success);
     };
@@ -74,8 +124,15 @@ export const PaymentGate: React.FC<PaymentGateProps> = ({
     };
 
     const handleStakeLP = () => {
-        Linking.openURL('https://getsuite.app/wallet.html#staking');
+        Linking.openURL('https://stuarthollinger.com/wallet.html#staking');
         onCancel(); // Close modal, user will stake and come back
+    };
+
+    const handleLoginDiscord = () => {
+        // Redirect to login
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+            window.location.href = '/login';
+        }
     };
 
     const handlePayCard = () => {
@@ -93,7 +150,7 @@ export const PaymentGate: React.FC<PaymentGateProps> = ({
             <Modal visible={visible} transparent animationType="fade">
                 <View style={styles.overlay}>
                     <View style={styles.modal}>
-                        <Text style={styles.title}>📺 Watch to Earn</Text>
+                        <Text style={styles.title}>Watch to Earn</Text>
                         <View style={styles.adContainer}>
                             <Text style={styles.adTimer}>{adSeconds}s</Text>
                             <Text style={styles.adPlaceholder}>Ad playing...</Text>
@@ -118,14 +175,21 @@ export const PaymentGate: React.FC<PaymentGateProps> = ({
                     <View style={styles.featureBox}>
                         <Text style={styles.featureName}>{config.featureName}</Text>
                         <Text style={styles.featureCost}>
-                            {config.creditCost} credits • ~${(config.creditCost * 0.01).toFixed(2)}
+                            {config.creditCost} credits • ~${(config.creditCost * 0.001).toFixed(3)}
                         </Text>
                     </View>
 
-                    {user && (
+                    {user ? (
                         <View style={styles.creditsRow}>
-                            <Text style={styles.creditsText}>🪙 {user.credits} credits</Text>
-                            <Text style={styles.walletText}>{user.shortAddress}</Text>
+                            <Text style={styles.creditsText}>{user.credits.toFixed(0)} credits</Text>
+                            <Text style={styles.userText}>@{user.username}</Text>
+                        </View>
+                    ) : (
+                        <View style={styles.loginPrompt}>
+                            <Text style={styles.loginText}>Login with Discord to use credits</Text>
+                            <TouchableOpacity style={styles.loginBtn} onPress={handleLoginDiscord}>
+                                <Text style={styles.loginBtnText}>Login with Discord</Text>
+                            </TouchableOpacity>
                         </View>
                     )}
 
@@ -141,7 +205,7 @@ export const PaymentGate: React.FC<PaymentGateProps> = ({
                                     <ActivityIndicator color="#fff" />
                                 ) : (
                                     <>
-                                        <Text style={styles.optionIcon}>🪙</Text>
+                                        <Text style={styles.optionIcon}>✓</Text>
                                         <View style={styles.optionContent}>
                                             <Text style={styles.optionTitle}>Use Credits</Text>
                                             <Text style={styles.optionDesc}>
@@ -155,7 +219,7 @@ export const PaymentGate: React.FC<PaymentGateProps> = ({
 
                         {/* Stake LP - Primary option for zero-credit users */}
                         <TouchableOpacity style={[styles.optionBtn, styles.stakingBtn]} onPress={handleStakeLP}>
-                            <Text style={styles.optionIcon}>🌊</Text>
+                            <Text style={styles.optionIcon}>~</Text>
                             <View style={styles.optionContent}>
                                 <Text style={styles.optionTitle}>Stake LP Tokens</Text>
                                 <Text style={styles.optionDesc}>Earn credits from DeFi yield</Text>
@@ -164,7 +228,7 @@ export const PaymentGate: React.FC<PaymentGateProps> = ({
 
                         {/* Watch Ad - Quick free option */}
                         <TouchableOpacity style={styles.optionBtn} onPress={handleWatchAd}>
-                            <Text style={styles.optionIcon}>📺</Text>
+                            <Text style={styles.optionIcon}>▶</Text>
                             <View style={styles.optionContent}>
                                 <Text style={styles.optionTitle}>Watch an Ad</Text>
                                 <Text style={styles.optionDesc}>Free! Earn 2 credits</Text>
@@ -173,7 +237,7 @@ export const PaymentGate: React.FC<PaymentGateProps> = ({
 
                         {/* Pay with Fiat */}
                         <TouchableOpacity style={styles.optionBtn} onPress={handlePayCard}>
-                            <Text style={styles.optionIcon}>💳</Text>
+                            <Text style={styles.optionIcon}>$</Text>
                             <View style={styles.optionContent}>
                                 <Text style={styles.optionTitle}>Pay with Card</Text>
                                 <Text style={styles.optionDesc}>One-time via Stripe</Text>
@@ -182,7 +246,7 @@ export const PaymentGate: React.FC<PaymentGateProps> = ({
 
                         {/* Pay with Crypto */}
                         <TouchableOpacity style={styles.optionBtn} onPress={handlePayCrypto}>
-                            <Text style={styles.optionIcon}>💎</Text>
+                            <Text style={styles.optionIcon}>◆</Text>
                             <View style={styles.optionContent}>
                                 <Text style={styles.optionTitle}>Pay with Crypto</Text>
                                 <Text style={styles.optionDesc}>SUITE, ETH, or USDC</Text>
@@ -298,9 +362,35 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: '#ff9500',
     },
-    walletText: {
+    userText: {
         fontSize: 12,
-        color: 'rgba(255,255,255,0.5)',
+        color: '#5865F2',
+        fontWeight: '600',
+    },
+    loginPrompt: {
+        alignItems: 'center',
+        marginBottom: 16,
+        padding: 12,
+        backgroundColor: 'rgba(88, 101, 242, 0.1)',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(88, 101, 242, 0.3)',
+    },
+    loginText: {
+        fontSize: 13,
+        color: 'rgba(255,255,255,0.7)',
+        marginBottom: 12,
+    },
+    loginBtn: {
+        backgroundColor: '#5865F2',
+        paddingHorizontal: 24,
+        paddingVertical: 10,
+        borderRadius: 8,
+    },
+    loginBtnText: {
+        color: '#fff',
+        fontWeight: '700',
+        fontSize: 14,
     },
     options: {
         gap: 12,
@@ -326,6 +416,7 @@ const styles = StyleSheet.create({
     optionIcon: {
         fontSize: 28,
         marginRight: 16,
+        color: '#fff',
     },
     optionContent: {
         flex: 1,

@@ -3,297 +3,158 @@ import {
     StyleSheet,
     View,
     Text,
-    TextInput,
     TouchableOpacity,
     ActivityIndicator,
-    Alert,
-    Linking,
-    KeyboardAvoidingView,
     Platform,
-    ScrollView,
+    Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { supabase } from '../services/supabase';
-import * as WebBrowser from 'expo-web-browser';
-import { makeRedirectUri } from 'expo-auth-session';
 import { router } from 'expo-router';
-import { useWallet } from '../contexts/WalletContext';
 
-WebBrowser.maybeCompleteAuthSession();
+// Discord OAuth config
+const DISCORD_CLIENT_ID = '1311757088540311633';
+
+interface DiscordUser {
+    id: string;
+    username: string;
+    avatar: string | null;
+    email?: string;
+}
 
 export default function LoginScreen() {
-    const { user: walletUser, isConnecting, connect, isInitialized } = useWallet();
-    const [loading, setLoading] = useState(false);
-    const [showEmailForm, setShowEmailForm] = useState(false);
-    const [isSignUp, setIsSignUp] = useState(false);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [discordUser, setDiscordUser] = useState<DiscordUser | null>(null);
 
-    // Handle wallet connection via WalletConnect
-    const handleWalletConnect = async () => {
+    // Check if already logged in on mount
+    useEffect(() => {
+        checkExistingLogin();
+    }, []);
+
+    const checkExistingLogin = () => {
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+            // Check localStorage for existing Discord session
+            const stored = localStorage.getItem('suiteDev');
+            if (stored) {
+                try {
+                    const user = JSON.parse(stored);
+                    if (user && user.id) {
+                        setDiscordUser(user);
+                        // Auto-navigate to app
+                        router.replace('/(tabs)/' as any);
+                        return;
+                    }
+                } catch (e) {
+                    console.error('Failed to parse stored user:', e);
+                }
+            }
+
+            // Check URL for OAuth callback (code parameter)
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            if (code) {
+                handleDiscordCallback(code);
+                return;
+            }
+        }
+        setLoading(false);
+    };
+
+    // Handle Discord OAuth callback (from URL code param)
+    const handleDiscordCallback = async (code: string) => {
+        setLoading(true);
         try {
-            await connect();
-            // The wallet context will update and trigger the useEffect below
-        } catch (error: any) {
-            console.error('Wallet connection failed:', error);
-            Alert.alert('Connection Failed', error.message || 'Could not connect wallet');
+            // For apps deployed to subdomains, we use the main site's oauth-callback
+            // which handles the code exchange and returns user info
+            // For now, redirect to main site oauth flow
+            const mainSiteCallback = 'https://stuarthollinger.com/oauth-callback.html';
+
+            // Clean up URL and show login (user should use popup flow)
+            window.history.replaceState({}, document.title, window.location.pathname);
+            setLoading(false);
+        } catch (error) {
+            console.error('Discord OAuth error:', error);
+            window.history.replaceState({}, document.title, window.location.pathname);
+            setLoading(false);
         }
     };
 
-    // Navigate when wallet connects
-    useEffect(() => {
-        if (walletUser?.isConnected) {
-            router.replace('/(tabs)/' as any);
+    // Initiate Discord OAuth using popup (same as wallet.html)
+    const handleDiscordLogin = () => {
+        if (Platform.OS !== 'web') {
+            alert('Discord login is only available on web');
+            return;
         }
-    }, [walletUser]);
 
-    // Check if already logged in
-    useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            if (session) {
+        // Use main site's oauth-callback.html for Discord OAuth
+        const redirectUri = 'https://stuarthollinger.com/oauth-callback.html';
+        const scope = 'identify';
+        const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}`;
+
+        // Open Discord auth in a popup
+        const popup = window.open(authUrl, 'Discord Login', 'width=500,height=700');
+
+        // Listen for the callback message from popup
+        const handleAuthMessage = (event: MessageEvent) => {
+            // Accept messages from main site
+            if (!event.origin.includes('stuarthollinger.com') && event.origin !== window.location.origin) {
+                return;
+            }
+            if (event.data && event.data.type === 'discord-auth-success') {
+                const user = event.data.user;
+                localStorage.setItem('suiteDev', JSON.stringify(user));
+                setDiscordUser(user);
+                popup?.close();
+                window.removeEventListener('message', handleAuthMessage);
+                // Navigate to app
                 router.replace('/(tabs)/' as any);
             }
-        });
-
-        // Listen for auth state changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-            console.log('Auth state changed:', event);
-            if (event === 'SIGNED_IN' && session) {
-                router.replace('/(tabs)/' as any);
-            }
-        });
-
-        return () => subscription.unsubscribe();
-    }, []);
-
-    // Handle deep links for OAuth callback
-    useEffect(() => {
-        const handleUrl = async (event: { url: string }) => {
-            console.log('Deep link received:', event.url);
-            await handleAuthRedirect(event.url);
         };
 
-        const subscription = Linking.addEventListener('url', handleUrl);
+        window.addEventListener('message', handleAuthMessage);
 
-        // Check if app was opened via deep link
-        Linking.getInitialURL().then((url) => {
-            if (url) handleAuthRedirect(url);
-        });
-
-        return () => subscription.remove();
-    }, []);
-
-    const handleAuthRedirect = async (url: string) => {
-        if (!url.includes('access_token') && !url.includes('refresh_token')) {
-            return;
-        }
-
-        try {
-            const hashPart = url.split('#')[1];
-            if (hashPart) {
-                const params = new URLSearchParams(hashPart);
-                const accessToken = params.get('access_token');
-                const refreshToken = params.get('refresh_token');
-
-                if (accessToken && refreshToken) {
-                    const { error } = await supabase.auth.setSession({
-                        access_token: accessToken,
-                        refresh_token: refreshToken,
-                    });
-                    if (!error) {
+        // Fallback: Check localStorage periodically in case message fails
+        const checkInterval = setInterval(() => {
+            const stored = localStorage.getItem('suiteDev');
+            if (stored) {
+                try {
+                    const user = JSON.parse(stored);
+                    if (user && user.id && !discordUser) {
+                        setDiscordUser(user);
+                        clearInterval(checkInterval);
+                        popup?.close();
                         router.replace('/(tabs)/' as any);
                     }
-                }
+                } catch (e) {}
             }
-        } catch (error) {
-            console.error('Error handling auth redirect:', error);
-        }
+        }, 1000);
+
+        // Clean up after 2 minutes
+        setTimeout(() => {
+            clearInterval(checkInterval);
+            window.removeEventListener('message', handleAuthMessage);
+        }, 120000);
     };
 
-    const handleGoogleSignIn = async () => {
-        setLoading(true);
-        try {
-            const redirectUri = makeRedirectUri({
-                scheme: 'foodvitals',
-                path: 'auth/callback',
-            });
-
-            const { data, error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    redirectTo: redirectUri,
-                    skipBrowserRedirect: true,
-                },
-            });
-
-            if (error) throw error;
-
-            if (data?.url) {
-                const result = await WebBrowser.openAuthSessionAsync(
-                    data.url,
-                    redirectUri,
-                    { showInRecents: true, preferEphemeralSession: false }
-                );
-
-                if (result.type === 'success' && result.url) {
-                    await handleAuthRedirect(result.url);
-                }
-            }
-        } catch (error: any) {
-            console.error('Error signing in:', error);
-            Alert.alert('Sign In Error', error.message || 'Failed to sign in');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Email + Password Sign In
-    const handleEmailPasswordSignIn = async () => {
-        if (!email || !password) {
-            Alert.alert('Error', 'Please enter email and password');
-            return;
-        }
-
-        setLoading(true);
-        try {
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email: email.trim(),
-                password: password,
-            });
-
-            if (error) throw error;
-
-            if (data.session) {
-                router.replace('/(tabs)/' as any);
-            }
-        } catch (error: any) {
-            console.error('Sign in error:', error);
-            Alert.alert('Sign In Failed', error.message);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Email + Password Sign Up
-    const handleEmailPasswordSignUp = async () => {
-        if (!email || !password) {
-            Alert.alert('Error', 'Please enter email and password');
-            return;
-        }
-
-        if (password.length < 6) {
-            Alert.alert('Error', 'Password must be at least 6 characters');
-            return;
-        }
-
-        setLoading(true);
-        try {
-            const { data, error } = await supabase.auth.signUp({
-                email: email.trim(),
-                password: password,
-            });
-
-            if (error) throw error;
-
-            if (data.session) {
-                // Signed up and logged in automatically
-                router.replace('/(tabs)/' as any);
-            } else {
-                // Email confirmation required
-                Alert.alert(
-                    'Check your email! 📧',
-                    'We sent you a confirmation link. Click it to complete sign up.',
-                );
-            }
-        } catch (error: any) {
-            console.error('Sign up error:', error);
-            Alert.alert('Sign Up Failed', error.message);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Guest mode - skip auth for testing
+    // Guest mode - skip auth
     const handleGuestMode = () => {
         router.replace('/(tabs)/' as any);
     };
 
-    // Email form view
-    if (showEmailForm) {
+    // Show loading while checking auth
+    if (loading) {
         return (
             <LinearGradient colors={['#0A0A1A', '#1a472a', '#0A0A1A']} style={styles.container}>
                 <SafeAreaView style={styles.safeArea}>
-                    <KeyboardAvoidingView
-                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                        style={styles.safeArea}
-                    >
-                        <ScrollView contentContainerStyle={styles.formContent}>
-                            <TouchableOpacity onPress={() => setShowEmailForm(false)} style={styles.backButton}>
-                                <Text style={styles.backText}>← Back</Text>
-                            </TouchableOpacity>
-
-                            <View style={styles.formHeader}>
-                                <Text style={styles.emoji}>🥗</Text>
-                                <Text style={styles.title}>
-                                    {isSignUp ? 'Create Account' : 'Welcome Back'}
-                                </Text>
-                                <Text style={styles.subtitle}>
-                                    {isSignUp ? 'Sign up to save your food logs' : 'Sign in to continue'}
-                                </Text>
-                            </View>
-
-                            <View style={styles.formContainer}>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Email"
-                                    placeholderTextColor="#888"
-                                    value={email}
-                                    onChangeText={setEmail}
-                                    keyboardType="email-address"
-                                    autoCapitalize="none"
-                                    autoComplete="email"
-                                />
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Password"
-                                    placeholderTextColor="#888"
-                                    value={password}
-                                    onChangeText={setPassword}
-                                    secureTextEntry
-                                    autoComplete="password"
-                                />
-
-                                <TouchableOpacity
-                                    style={styles.submitButton}
-                                    onPress={isSignUp ? handleEmailPasswordSignUp : handleEmailPasswordSignIn}
-                                    disabled={loading}
-                                >
-                                    {loading ? (
-                                        <ActivityIndicator color="#000" />
-                                    ) : (
-                                        <Text style={styles.submitButtonText}>
-                                            {isSignUp ? 'Create Account' : 'Sign In'}
-                                        </Text>
-                                    )}
-                                </TouchableOpacity>
-
-                                <TouchableOpacity onPress={() => setIsSignUp(!isSignUp)}>
-                                    <Text style={styles.switchText}>
-                                        {isSignUp
-                                            ? 'Already have an account? Sign In'
-                                            : "Don't have an account? Sign Up"}
-                                    </Text>
-                                </TouchableOpacity>
-                            </View>
-                        </ScrollView>
-                    </KeyboardAvoidingView>
+                    <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="large" color="#4ADE80" />
+                        <Text style={styles.loadingText}>Checking login...</Text>
+                    </View>
                 </SafeAreaView>
             </LinearGradient>
         );
     }
 
-    // Main login view
     return (
         <LinearGradient colors={['#0A0A1A', '#1a472a', '#0A0A1A']} style={styles.container}>
             <SafeAreaView style={styles.safeArea}>
@@ -325,18 +186,20 @@ export default function LoginScreen() {
 
                     {/* Sign In Buttons */}
                     <View style={styles.buttonContainer}>
-                        {/* Primary: Wallet Connect */}
+                        {/* Primary: Discord Login */}
                         <TouchableOpacity
-                            style={styles.walletButton}
-                            onPress={handleWalletConnect}
-                            disabled={isConnecting || !isInitialized}
+                            style={styles.discordButton}
+                            onPress={handleDiscordLogin}
                         >
-                            {isConnecting ? (
-                                <ActivityIndicator color="#fff" />
-                            ) : (
-                                <Text style={styles.walletButtonText}>🔗 Connect Wallet</Text>
-                            )}
+                            <View style={styles.discordIcon}>
+                                <Text style={styles.discordIconText}>🎮</Text>
+                            </View>
+                            <Text style={styles.discordButtonText}>Login with Discord</Text>
                         </TouchableOpacity>
+
+                        <Text style={styles.discordHint}>
+                            Login with Discord to use SUITE credits for AI features
+                        </Text>
 
                         <View style={styles.divider}>
                             <View style={styles.dividerLine} />
@@ -345,20 +208,15 @@ export default function LoginScreen() {
                         </View>
 
                         <TouchableOpacity
-                            style={styles.secondaryButton}
-                            onPress={() => setShowEmailForm(true)}
-                            disabled={loading}
-                        >
-                            <Text style={styles.secondaryButtonText}>📧 Sign in with Email</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
                             style={styles.guestButton}
                             onPress={handleGuestMode}
-                            disabled={loading}
                         >
                             <Text style={styles.guestButtonText}>Continue as Guest</Text>
                         </TouchableOpacity>
+
+                        <Text style={styles.guestHint}>
+                            Free features work without login. AI features require credits.
+                        </Text>
 
                         <Text style={styles.disclaimer}>
                             By continuing, you agree to our Terms of Service
@@ -379,6 +237,16 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingTop: 60,
         paddingBottom: 40,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingText: {
+        color: 'rgba(255,255,255,0.7)',
+        marginTop: 16,
+        fontSize: 16,
     },
     header: {
         alignItems: 'center',
@@ -416,116 +284,33 @@ const styles = StyleSheet.create({
     buttonContainer: {
         gap: 12,
     },
-    emailButton: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#4ADE80',
-        borderRadius: 12,
-        padding: 16,
-    },
-    emailButtonText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#000',
-    },
-    googleButton: {
+    discordButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 16,
-        gap: 12,
-    },
-    googleIcon: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#4285F4',
-    },
-    googleButtonText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#000',
-    },
-    guestButton: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        borderRadius: 12,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.2)',
-    },
-    guestButtonText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#fff',
-    },
-    disclaimer: {
-        fontSize: 12,
-        color: 'rgba(255,255,255,0.5)',
-        textAlign: 'center',
-    },
-    // Email form styles
-    formContent: {
-        flexGrow: 1,
-        paddingHorizontal: 24,
-        paddingTop: 20,
-        paddingBottom: 40,
-    },
-    backButton: {
-        marginBottom: 20,
-    },
-    backText: {
-        color: '#4ADE80',
-        fontSize: 16,
-    },
-    formHeader: {
-        alignItems: 'center',
-        marginBottom: 40,
-    },
-    formContainer: {
-        gap: 16,
-    },
-    input: {
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        borderRadius: 12,
-        padding: 16,
-        fontSize: 16,
-        color: '#fff',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.2)',
-    },
-    submitButton: {
-        backgroundColor: '#4ADE80',
-        borderRadius: 12,
-        padding: 16,
-        alignItems: 'center',
-        marginTop: 8,
-    },
-    submitButtonText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#000',
-    },
-    switchText: {
-        color: '#4ADE80',
-        fontSize: 14,
-        textAlign: 'center',
-        marginTop: 16,
-    },
-    // Wallet button styles
-    walletButton: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#8B5CF6',
+        backgroundColor: '#5865F2',
         borderRadius: 12,
         padding: 18,
+        gap: 12,
     },
-    walletButtonText: {
+    discordIcon: {
+        width: 28,
+        height: 28,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    discordIconText: {
+        fontSize: 20,
+    },
+    discordButtonText: {
         fontSize: 18,
         fontWeight: '700',
         color: '#fff',
+    },
+    discordHint: {
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.5)',
+        textAlign: 'center',
     },
     divider: {
         flexDirection: 'row',
@@ -542,7 +327,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         fontSize: 14,
     },
-    secondaryButton: {
+    guestButton: {
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: 'rgba(255,255,255,0.1)',
@@ -551,9 +336,20 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.2)',
     },
-    secondaryButtonText: {
+    guestButtonText: {
         fontSize: 16,
         fontWeight: '600',
         color: '#fff',
+    },
+    guestHint: {
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.4)',
+        textAlign: 'center',
+    },
+    disclaimer: {
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.5)',
+        textAlign: 'center',
+        marginTop: 8,
     },
 });

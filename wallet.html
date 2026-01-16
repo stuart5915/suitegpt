@@ -1424,21 +1424,66 @@
                                         <div
                                             style="font-size: 0.7rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">
                                             Est. APR</div>
-                                        <div style="font-size: 1.4rem; font-weight: 800; color: #22c55e;">~42%</div>
+                                        <div id="vaultAPR" style="font-size: 1.4rem; font-weight: 800; color: #22c55e;">~42%</div>
                                     </div>
                                     <div style="text-align: center;">
                                         <div
                                             style="font-size: 0.7rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">
                                             TVL</div>
                                         <div style="font-size: 1.4rem; font-weight: 800; color: #2d1b4e;" id="vaultTVL">
-                                            $50.2K</div>
+                                            Loading...</div>
                                     </div>
+                                    <script>
+                                    (async function() {
+                                        try {
+                                            const res = await fetch('https://mainnet.base.org', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                    jsonrpc: '2.0',
+                                                    method: 'eth_getBalance',
+                                                    params: ['0xf121C51E18aD8f8C9B38EEAA377aD4393E16e3d1', 'latest'],
+                                                    id: 1
+                                                })
+                                            });
+                                            const data = await res.json();
+                                            const ethBal = parseInt(data.result, 16) / 1e18;
+                                            const usdVal = ethBal * 3650;
+                                            const el = document.getElementById('vaultTVL');
+                                            if (el) {
+                                                let txt = usdVal >= 1000000 ? '$' + (usdVal/1000000).toFixed(2) + 'M' :
+                                                         usdVal >= 1000 ? '$' + (usdVal/1000).toFixed(1) + 'K' :
+                                                         usdVal >= 0.01 ? '$' + usdVal.toFixed(2) :
+                                                         usdVal > 0 ? '$' + usdVal.toFixed(6) : '$0.00';
+                                                el.textContent = txt;
+                                                el.title = ethBal.toFixed(10) + ' ETH\n$' + usdVal.toFixed(8) + ' USD';
+                                                el.style.cursor = 'help';
+                                            }
+                                        } catch(e) {
+                                            const el = document.getElementById('vaultTVL');
+                                            if (el) el.textContent = '$0.00';
+                                        }
+                                    })();
+                                    </script>
                                     <div style="text-align: center;">
                                         <div
                                             style="font-size: 0.7rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">
                                             Your Deposit</div>
                                         <div style="font-size: 1.4rem; font-weight: 800; color: #a855f7;"
                                             id="vaultDeposit">$0.00</div>
+                                    </div>
+
+                                    <!-- Active Strategy Badge -->
+                                    <div style="background: rgba(255,255,255,0.9); border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 12px; padding: 10px 16px; display: flex; align-items: center; gap: 12px;">
+                                        <div style="width: 28px; height: 28px; background: linear-gradient(135deg, #2775CA, #1a5fb4); border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                                            <span style="color: white; font-weight: 800; font-size: 0.55rem;">USDC</span>
+                                        </div>
+                                        <div>
+                                            <div class="strategy-badge-name" style="font-weight: 700; color: #2d1b4e; font-size: 0.85rem;">USDC yVault</div>
+                                            <div class="strategy-badge-desc" style="font-size: 0.65rem; color: #6b7280;">Base • $90.06M TVL</div>
+                                        </div>
+                                        <a id="vaultStrategyLink" href="https://basescan.org/address/0x80c34BD3A3569E126e7055831036aa7b212cB159" target="_blank"
+                                            style="margin-left: auto; font-size: 0.7rem; color: #3b82f6; text-decoration: none;">↗</a>
                                     </div>
                                 </div>
 
@@ -1464,137 +1509,82 @@
                             <div id="vaultDetailsPanel"
                                 style="display: none; margin-top: 24px; padding-top: 24px; border-top: 2px solid rgba(139,92,246,0.1);">
 
-                                <!-- Tabs -->
-                                <div
-                                    style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid rgba(0,0,0,0.05); padding-bottom: 12px;">
-                                    <button onclick="switchVaultTab('deposit')" id="vaultTabDeposit"
-                                        class="vault-tab active"
-                                        style="padding: 8px 16px; background: linear-gradient(135deg, #22c55e, #10b981); color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer;">
-                                        Deposit
-                                    </button>
-                                    <button onclick="switchVaultTab('withdraw')" id="vaultTabWithdraw" class="vault-tab"
-                                        style="padding: 8px 16px; background: rgba(0,0,0,0.05); color: #6b7280; border: none; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer;">
-                                        Withdraw
-                                    </button>
-                                    <button onclick="switchVaultTab('yield')" id="vaultTabYield" class="vault-tab"
-                                        style="padding: 8px 16px; background: rgba(0,0,0,0.05); color: #6b7280; border: none; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer;">
-                                        Yield Allocation
-                                    </button>
-                                </div>
+                                <!-- Deposit & Withdraw Row -->
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
+                                    <!-- Deposit Section -->
+                                    <div style="background: rgba(34, 197, 94, 0.05); border: 2px solid rgba(34, 197, 94, 0.15); border-radius: 16px; padding: 20px;">
+                                        <div style="font-weight: 700; color: #22c55e; margin-bottom: 16px; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+                                            <span>💰</span> Deposit USDC
+                                        </div>
+                                        <div style="display: flex; gap: 12px; align-items: end;">
+                                            <div style="flex: 1;">
+                                                <div style="position: relative;">
+                                                    <input type="number" id="vaultDepositAmount" placeholder="0.00"
+                                                        style="width: 100%; padding: 14px 16px; padding-right: 60px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 1rem; font-weight: 600; background: white;">
+                                                    <button onclick="setMaxDeposit()"
+                                                        style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: rgba(34, 197, 94, 0.15); color: #22c55e; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
+                                                        MAX
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <button onclick="executeVaultDeposit()"
+                                                style="padding: 14px 24px; background: linear-gradient(135deg, #22c55e, #10b981); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 0.9rem; cursor: pointer; white-space: nowrap;">
+                                                Deposit →
+                                            </button>
+                                        </div>
+                                        <input type="hidden" id="depositAssetSelect" value="USDC">
+                                    </div>
 
-                                <!-- Deposit Tab Content -->
-                                <div id="vaultDepositTab">
-                                    <div
-                                        style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 16px; align-items: end; margin-bottom: 24px;">
-                                        <div>
-                                            <label
-                                                style="display: block; font-size: 0.8rem; font-weight: 700; color: #6b7280; margin-bottom: 8px;">Asset</label>
-                                            <!-- Custom Asset Selector -->
-                                            <div id="assetSelector" style="position: relative;">
-                                                <button type="button" onclick="toggleAssetDropdown()"
-                                                    id="assetSelectorBtn"
-                                                    style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 1rem; font-weight: 600; background: white; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: all 0.2s;"
-                                                    onmouseover="this.style.borderColor='#a855f7';"
-                                                    onmouseout="this.style.borderColor='#e5e7eb';">
-                                                    <img id="selectedAssetIcon"
-                                                        src="https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/svg/color/usdc.svg"
-                                                        style="width: 28px; height: 28px; border-radius: 50%;">
-                                                    <span id="selectedAssetName"
-                                                        style="flex: 1; text-align: left; color: #2d1b4e;">USDC</span>
-                                                </button>
-                                                <input type="hidden" id="depositAssetSelect" value="USDC">
-                                            </div>
+                                    <!-- Withdraw Section -->
+                                    <div style="background: rgba(239, 68, 68, 0.05); border: 2px solid rgba(239, 68, 68, 0.15); border-radius: 16px; padding: 20px;">
+                                        <div style="font-weight: 700; color: #ef4444; margin-bottom: 16px; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+                                            <span>📤</span> Withdraw
                                         </div>
-                                        <div>
-                                            <label
-                                                style="display: block; font-size: 0.8rem; font-weight: 700; color: #6b7280; margin-bottom: 8px;">Amount</label>
-                                            <div style="position: relative;">
-                                                <input type="number" id="vaultDepositAmount" placeholder="0.00"
-                                                    style="width: 100%; padding: 14px 16px; padding-right: 60px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 1rem; font-weight: 600;">
-                                                <button onclick="setMaxDeposit()"
-                                                    style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: rgba(168, 85, 247, 0.1); color: #a855f7; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
-                                                    MAX
-                                                </button>
+                                        <div style="display: flex; gap: 12px; align-items: end;">
+                                            <div style="flex: 1;">
+                                                <div style="position: relative;">
+                                                    <input type="number" id="vaultWithdrawAmount" placeholder="0.00"
+                                                        style="width: 100%; padding: 14px 16px; padding-right: 60px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 1rem; font-weight: 600; background: white;">
+                                                    <button onclick="setMaxWithdraw()"
+                                                        style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: rgba(239, 68, 68, 0.15); color: #ef4444; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
+                                                        MAX
+                                                    </button>
+                                                </div>
                                             </div>
+                                            <button onclick="executeVaultWithdraw()"
+                                                style="padding: 14px 24px; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 0.9rem; cursor: pointer; white-space: nowrap;">
+                                                Withdraw →
+                                            </button>
                                         </div>
-                                        <button onclick="executeVaultDeposit()"
-                                            style="padding: 14px 32px; background: linear-gradient(135deg, #22c55e, #10b981); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: all 0.3s; white-space: nowrap;"
-                                            onmouseover="this.style.transform='translateY(-2px)';"
-                                            onmouseout="this.style.transform='translateY(0)';">
-                                            Deposit →
-                                        </button>
                                     </div>
                                 </div>
 
-                                <!-- Withdraw Tab Content (hidden by default) -->
-                                <div id="vaultWithdrawTab" style="display: none;">
-                                    <div
-                                        style="display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: end; margin-bottom: 24px;">
-                                        <div>
-                                            <label
-                                                style="display: block; font-size: 0.8rem; font-weight: 700; color: #6b7280; margin-bottom: 8px;">Amount
-                                                to Withdraw</label>
-                                            <div style="position: relative;">
-                                                <input type="number" id="vaultWithdrawAmount" placeholder="0.00"
-                                                    style="width: 100%; padding: 14px 16px; padding-right: 60px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 1rem; font-weight: 600;">
-                                                <button onclick="setMaxWithdraw()"
-                                                    style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: rgba(239, 68, 68, 0.1); color: #ef4444; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
-                                                    MAX
-                                                </button>
-                                            </div>
+                                <!-- Yield Allocation Section -->
+                                <div style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.05), rgba(236, 72, 153, 0.03)); border: 2px solid rgba(168, 85, 247, 0.15); border-radius: 16px; padding: 20px; margin-bottom: 24px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                                        <div style="font-weight: 700; color: #a855f7; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+                                            <span>⚡</span> Yield Allocation
                                         </div>
-                                        <button onclick="executeVaultWithdraw()"
-                                            style="padding: 14px 32px; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: all 0.3s; white-space: nowrap;">
-                                            Withdraw →
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <!-- Yield Allocation Tab Content -->
-                                <div id="vaultYieldTab" style="display: none;">
-                                    <!-- Yield Split Slider -->
-                                    <div style="background: rgba(255,255,255,0.8); border-radius: 16px; padding: 24px; margin-bottom: 20px;">
-                                        <div style="text-align: center; margin-bottom: 20px;">
-                                            <div style="font-size: 0.8rem; color: #6b7280; margin-bottom: 4px;">Your Yield Split</div>
-                                            <div style="font-size: 2rem; font-weight: 800; color: #2d1b4e;">
-                                                <span id="keepPercentDisplay" style="color: #22c55e;">90%</span>
-                                                <span style="color: #9ca3af; font-size: 1rem; margin: 0 8px;">/</span>
-                                                <span id="fundPercentDisplay" style="color: #a855f7;">10%</span>
-                                            </div>
-                                            <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 4px;">
-                                                <span style="color: #22c55e;">You keep</span> / <span style="color: #a855f7;">Fund apps</span>
-                                            </div>
-                                        </div>
-
-                                        <!-- Slider -->
-                                        <div style="padding: 0 8px;">
-                                            <input type="range" id="yieldSplitSlider" class="yield-slider" min="0" max="90" value="90"
-                                                oninput="updateYieldSplit(this.value)">
-                                        </div>
-
-                                        <!-- Labels -->
-                                        <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.75rem; color: #9ca3af;">
-                                            <span>100% to apps</span>
-                                            <span>90% keep / 10% to apps</span>
-                                        </div>
-
-                                        <!-- Estimated earnings -->
-                                        <div style="margin-top: 20px; padding: 16px; background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(34, 197, 94, 0.02)); border-radius: 12px;">
-                                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                                <span style="font-size: 0.85rem; color: #6b7280;">Based on $1,000 deposit:</span>
-                                                <span id="estimatedEarnings" style="font-weight: 800; color: #22c55e; font-size: 1.1rem;">~$378/year</span>
-                                            </div>
+                                        <div style="text-align: right;">
+                                            <span style="font-weight: 800; color: #22c55e; font-size: 1.2rem;" id="keepPercentDisplay">90%</span>
+                                            <span style="color: #9ca3af; margin: 0 4px;">/</span>
+                                            <span style="font-weight: 800; color: #a855f7; font-size: 1.2rem;" id="fundPercentDisplay">10%</span>
+                                            <div style="font-size: 0.7rem; color: #9ca3af;">You / Apps</div>
                                         </div>
                                     </div>
 
-                                    <!-- Info Note -->
-                                    <div style="padding: 14px; background: rgba(59, 130, 246, 0.08); border-radius: 12px; display: flex; align-items: flex-start; gap: 10px;">
-                                        <span style="font-size: 1.2rem;">💡</span>
-                                        <div style="font-size: 0.8rem; color: #4b5563; line-height: 1.5;">
-                                            <strong>How it works:</strong> Your deposit earns yield from DeFi protocols.
-                                            You choose how much to keep vs allocate to fund AI Fleet app development.
-                                            Minimum 10% always goes to apps.
-                                        </div>
+                                    <div style="padding: 0 4px;">
+                                        <input type="range" id="yieldSplitSlider" class="yield-slider" min="0" max="90" value="90"
+                                            oninput="updateYieldSplit(this.value)">
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; margin-top: 6px; font-size: 0.7rem; color: #9ca3af;">
+                                        <span>100% to apps</span>
+                                        <span>Keep 90%</span>
+                                    </div>
+
+                                    <div style="margin-top: 12px; padding: 12px; background: rgba(255,255,255,0.5); border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="font-size: 0.8rem; color: #6b7280;">Est. yearly on $1,000:</span>
+                                        <span id="estimatedEarnings" style="font-weight: 800; color: #22c55e;">~$378/year</span>
                                     </div>
                                 </div>
 
@@ -1618,37 +1608,6 @@
                                         <div style="display: flex; justify-content: space-between;">
                                             <span style="color: #6b7280; font-size: 0.85rem;">Min App Allocation</span>
                                             <span style="font-weight: 700; color: #a855f7;">10%</span>
-                                        </div>
-                                    </div>
-
-                                    <!-- Strategies Card -->
-                                    <div style="background: rgba(255,255,255,0.8); border-radius: 16px; padding: 20px;">
-                                        <div style="font-weight: 700; color: #2d1b4e; margin-bottom: 12px; font-size: 0.95rem;">
-                                            📊 Active Strategy</div>
-
-                                        <!-- USDC yVault Strategy -->
-                                        <div style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(59, 130, 246, 0.05)); border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 12px; padding: 14px;">
-                                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                                                <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #2775CA, #1a5fb4); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                                                    <span style="color: white; font-weight: 800; font-size: 0.7rem;">USDC</span>
-                                                </div>
-                                                <div style="flex: 1;">
-                                                    <div style="font-weight: 700; color: #2d1b4e; font-size: 0.9rem;">USDC yVault</div>
-                                                    <div style="font-size: 0.7rem; color: #6b7280;">Katana • Vault Bridge</div>
-                                                </div>
-                                                <div style="text-align: right;">
-                                                    <div style="font-weight: 800; color: #22c55e; font-size: 1.1rem;">42.10%</div>
-                                                    <div style="font-size: 0.65rem; color: #6b7280;">APR</div>
-                                                </div>
-                                            </div>
-                                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #6b7280; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.05);">
-                                                <span>TVL: $90.06M</span>
-                                                <a href="https://basescan.org/address/0x80c34BD3A3569E126e7055831036aa7b212cB159" target="_blank" style="color: #3b82f6; text-decoration: none;">View Contract ↗</a>
-                                            </div>
-                                        </div>
-
-                                        <div style="margin-top: 10px; font-size: 0.7rem; color: #9ca3af; line-height: 1.4;">
-                                            Multi-strategy vault via Yearn. Eligible for STEER points + KAT rewards.
                                         </div>
                                     </div>
 
@@ -1799,270 +1758,155 @@
                                 Higher tiers unlock priority updates, new features, and ecosystem benefits
                             </div>
                         </div>
-
-                        <!-- Withdraw Section -->
-                        <div
-                            style="margin-top: 16px; padding: 16px; background: rgba(0,0,0,0.02); border-radius: 12px;">
-                            <div style="font-weight: 700; color: #2d1b4e; font-size: 0.9rem; margin-bottom: 12px;">
-                                Withdraw SUITE</div>
-                            <div style="display: flex; gap: 8px;">
-                                <input type="number" id="withdrawAmountMain" placeholder="Amount to withdraw"
-                                    style="flex: 1; padding: 10px 14px; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; font-size: 0.9rem;">
-                                <button onclick="withdrawStake()"
-                                    style="padding: 10px 20px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px; font-weight: 600; cursor: pointer;">
-                                    Withdraw
-                                </button>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
-                <!-- Dashboard Bottom Grid -->
-                <div class="dashboard-bottom" style="width: 100%;">
 
-                    <!-- Tabs Section -->
-                    <div id="earn">
-                        <div class="wallet-tabs" style="margin-bottom: 16px;">
-                            <div class="wallet-tab active" onclick="switchTab('earn')">Yield</div>
-                            <div class="wallet-tab" onclick="switchTab('activity')">Recent Activity</div>
-                            <div class="wallet-tab" onclick="switchTab('boosts')">Active Boosts</div>
-                            <div class="wallet-tab" onclick="switchTab('governance')">Governance</div>
-                        </div>
+                <!-- ═══════════════════════════════════════════════ -->
+                <!-- HOW CREDITS WORK - Info Section (Visible to All) -->
+                <!-- ═══════════════════════════════════════════════ -->
+                <div class="glass-card" style="margin-top: 20px; padding: 24px; background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(232,245,255,0.9)); border: 1px solid rgba(59,130,246,0.15);">
 
-                        <!-- Tab Content: Activity -->
-                        <div id="tab-activity" class="tab-content" style="display: none;">
-                            <div class="glass-card"
-                                style="min-height: 150px; display: flex; align-items: center; justify-content: center; color: #9ca3af; flex-direction: column; gap: 8px;">
-                                <div style="font-size: 1.5rem;">📭</div>
-                                <div style="font-size: 0.9rem;">No recent activity.</div>
-                            </div>
-                        </div>
-
-                        <!-- Tab Content: Yield Allocation (redirects to vault) -->
-                        <div id="tab-earn" class="tab-content active">
-                            <div class="glass-card" style="padding: 24px; text-align: center;">
-                                <div style="font-size: 2.5rem; margin-bottom: 16px;">💰</div>
-                                <h4 style="margin: 0 0 12px 0; color: #2d1b4e; font-size: 1.2rem; font-weight: 800;">
-                                    Yield Allocation
-                                </h4>
-                                <p style="margin: 0 0 20px 0; color: #6b7280; font-size: 0.9rem; max-width: 300px; margin-left: auto; margin-right: auto;">
-                                    Manage your yield allocation in the Treasury Vault panel above. Click "Deposit" then select the "Yield Allocation" tab.
-                                </p>
-                                <button onclick="toggleVaultDetails(); setTimeout(() => switchVaultTab('yield'), 100);"
-                                    style="padding: 12px 24px; background: linear-gradient(135deg, #a855f7, #ec4899); color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer;">
-                                    Open Yield Settings
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Tab Content: Boosts -->
-                        <div id="tab-boosts" class="tab-content" style="display: none;">
-                            <div class="glass-card">
-                                <h4 style="margin: 0 0 12px 0; color: #2d1b4e; font-size: 1rem;">Your Active
-                                    Boosts
-                                </h4>
-                                <!-- Boosts Lists -->
-                                <div id="databaseBoostsList" style="margin-bottom: 16px;">
-                                    <div
-                                        style="font-size: 0.8rem; font-weight: 700; color: var(--text-medium); margin-bottom: 8px;">
-                                        ?? Account Boosts</div>
-                                    <div id="databaseBoostsContent" style="display: flex; flex-wrap: wrap; gap: 8px;">
-                                        <span style="color: var(--text-tertiary); font-size: 0.8rem;">Connect
-                                            Discord</span>
-                                    </div>
-                                </div>
-                                <div id="nftBoostsList">
-                                    <div
-                                        style="font-size: 0.8rem; font-weight: 700; color: var(--text-medium); margin-bottom: 8px;">
-                                        ?? NFT Boosts</div>
-                                    <div id="nftBoostsContent" style="display: flex; flex-wrap: wrap; gap: 8px;">
-                                        <span style="color: var(--text-tertiary); font-size: 0.8rem;">Connect
-                                            wallet</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Tab Content: Governance -->
-                        <div id="tab-governance" class="tab-content" style="display: none;">
-                            <div class="glass-card" style="text-align: center; padding: 24px;">
-                                <h3 style="font-size: 1.1rem; margin-bottom: 8px;">Governance Portal</h3>
-                                <p style="color: #6b7280; margin-bottom: 16px; font-size: 0.9rem;">Vote on
-                                    treasury
-                                    proposals.</p>
-                                <button
-                                    style="padding: 8px 16px; background: rgba(0,0,0,0.05); border-radius: 100px; border: none; font-weight: 600; color: #6b7280; cursor: not-allowed; font-size: 0.8rem;">Coming
-                                    Soon</button>
-                            </div>
-                        </div>
-
-                        <!-- Tab Content: Staking -->
-                        <div id="tab-staking" class="tab-content" style="display: none;">
-                            <div class="glass-card" style="padding: 24px;">
-                                <!-- Staking Header -->
-                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
-                                    <div
-                                        style="width: 48px; height: 48px; background: linear-gradient(135deg, #a855f7, #ec4899); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
-                                        ⚡</div>
-                                    <div>
-                                        <h4 style="margin: 0; font-size: 1.2rem; font-weight: 800; color: #2d1b4e;">
-                                            Stake LP Tokens</h4>
-                                        <p style="margin: 0; font-size: 0.85rem; color: #6b7280;">Stake tokens
-                                            to power app development</p>
-                                    </div>
-                                </div>
-
-                                <!-- Current Stake Stats -->
-                                <div
-                                    style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;">
-                                    <div
-                                        style="background: rgba(168, 85, 247, 0.08); border-radius: 12px; padding: 16px; text-align: center;">
-                                        <div
-                                            style="font-size: 0.7rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">
-                                            Total Staked</div>
-                                        <div id="stakingTotalStaked"
-                                            style="font-size: 1.3rem; font-weight: 800; color: #a855f7;">0 SUITE
-                                        </div>
-                                    </div>
-                                    <div
-                                        style="background: rgba(34, 197, 94, 0.08); border-radius: 12px; padding: 16px; text-align: center;">
-                                        <div
-                                            style="font-size: 0.7rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">
-                                            Allocated</div>
-                                        <div id="stakingAllocated"
-                                            style="font-size: 1.3rem; font-weight: 800; color: #22c55e;">0 SUITE
-                                        </div>
-                                    </div>
-                                    <div
-                                        style="background: rgba(249, 115, 22, 0.08); border-radius: 12px; padding: 16px; text-align: center;">
-                                        <div
-                                            style="font-size: 0.7rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">
-                                            Available</div>
-                                        <div id="stakingAvailable"
-                                            style="font-size: 1.3rem; font-weight: 800; color: #f97316;">0 SUITE
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Stake/Withdraw Actions -->
-                                <div
-                                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px;">
-                                    <div
-                                        style="background: rgba(168, 85, 247, 0.05); border: 2px solid rgba(168, 85, 247, 0.2); border-radius: 12px; padding: 16px;">
-                                        <div
-                                            style="font-size: 0.8rem; font-weight: 700; color: #a855f7; margin-bottom: 8px;">
-                                            Stake LP Tokens</div>
-                                        <input type="number" id="stakeAmount" placeholder="Amount to stake"
-                                            style="width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 0.9rem; margin-bottom: 8px; box-sizing: border-box;">
-                                        <button onclick="stakeSUITE()"
-                                            style="width: 100%; padding: 10px 16px; background: linear-gradient(135deg, #a855f7, #ec4899); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">Stake</button>
-                                    </div>
-                                    <div
-                                        style="background: rgba(0, 0, 0, 0.02); border: 2px solid rgba(0, 0, 0, 0.08); border-radius: 12px; padding: 16px;">
-                                        <div
-                                            style="font-size: 0.8rem; font-weight: 700; color: #6b7280; margin-bottom: 8px;">
-                                            Withdraw SUITE</div>
-                                        <input type="number" id="withdrawStakeAmount" placeholder="Amount to withdraw"
-                                            style="width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 0.9rem; margin-bottom: 8px; box-sizing: border-box;">
-                                        <button onclick="withdrawStake()"
-                                            style="width: 100%; padding: 10px 16px; background: white; color: #6b7280; border: 1px solid #e5e7eb; border-radius: 8px; font-weight: 600; cursor: pointer;">Withdraw</button>
-                                    </div>
-                                </div>
-
-                                <!-- Allocate Power Section -->
-                                <div style="border-top: 1px solid rgba(0, 0, 0, 0.06); padding-top: 20px;">
-                                    <h5 style="margin: 0 0 12px 0; font-size: 1rem; font-weight: 700; color: #2d1b4e;">
-                                        🎯 Allocate Power to Apps</h5>
-                                    <p style="font-size: 0.85rem; color: #6b7280; margin-bottom: 16px;">Support
-                                        apps to unlock development tiers. Power can be moved freely.</p>
-
-                                    <div
-                                        style="display: grid; grid-template-columns: 2fr 1fr auto; gap: 12px; align-items: end;">
-                                        <div>
-                                            <label
-                                                style="font-size: 0.75rem; color: #6b7280; display: block; margin-bottom: 4px;">Select
-                                                App</label>
-                                            <select id="stakingAppSelect"
-                                                style="width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 0.9rem; background: white;">
-                                                <option value="">Choose an app...</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label
-                                                style="font-size: 0.75rem; color: #6b7280; display: block; margin-bottom: 4px;">Power</label>
-                                            <input type="number" id="allocateAmount" placeholder="0"
-                                                style="width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 0.9rem; box-sizing: border-box;">
-                                        </div>
-                                        <button onclick="allocatePower()"
-                                            style="padding: 10px 20px; background: linear-gradient(135deg, #22c55e, #10b981); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">Allocate</button>
-                                    </div>
-                                </div>
-
-                                <!-- Your Allocations -->
-                                <div
-                                    style="border-top: 1px solid rgba(0, 0, 0, 0.06); padding-top: 20px; margin-top: 20px;">
-                                    <h5 style="margin: 0 0 12px 0; font-size: 1rem; font-weight: 700; color: #2d1b4e;">
-                                        📊 Your Allocations</h5>
-                                    <div id="stakingAllocationsList"
-                                        style="display: flex; flex-direction: column; gap: 10px;">
-                                        <div
-                                            style="text-align: center; padding: 24px; color: #9ca3af; font-size: 0.9rem;">
-                                            Connect wallet to view allocations
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Tier Info -->
-                                <div
-                                    style="border-top: 1px solid rgba(0, 0, 0, 0.06); padding-top: 20px; margin-top: 20px;">
-                                    <h5 style="margin: 0 0 12px 0; font-size: 1rem; font-weight: 700; color: #2d1b4e;">
-                                        🏆 Development Tiers</h5>
-                                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;">
-                                        <div
-                                            style="background: rgba(34, 197, 94, 0.08); border-radius: 8px; padding: 10px; text-align: center;">
-                                            <div style="font-weight: 800; color: #22c55e;">Tier 1</div>
-                                            <div style="font-size: 0.7rem; color: #6b7280;">10k SUITE</div>
-                                            <div style="font-size: 0.65rem; color: #9ca3af; margin-top: 4px;">
-                                                Bug Fixes</div>
-                                        </div>
-                                        <div
-                                            style="background: rgba(59, 130, 246, 0.08); border-radius: 8px; padding: 10px; text-align: center;">
-                                            <div style="font-weight: 800; color: #3b82f6;">Tier 2</div>
-                                            <div style="font-size: 0.7rem; color: #6b7280;">50k SUITE</div>
-                                            <div style="font-size: 0.65rem; color: #9ca3af; margin-top: 4px;">2
-                                                Features/wk</div>
-                                        </div>
-                                        <div
-                                            style="background: rgba(168, 85, 247, 0.08); border-radius: 8px; padding: 10px; text-align: center;">
-                                            <div style="font-weight: 800; color: #a855f7;">Tier 3</div>
-                                            <div style="font-size: 0.7rem; color: #6b7280;">200k SUITE</div>
-                                            <div style="font-size: 0.65rem; color: #9ca3af; margin-top: 4px;">
-                                                Marketing</div>
-                                        </div>
-                                        <div
-                                            style="background: rgba(249, 115, 22, 0.08); border-radius: 8px; padding: 10px; text-align: center;">
-                                            <div style="font-weight: 800; color: #f97316;">Tier 4</div>
-                                            <div style="font-size: 0.7rem; color: #6b7280;">500k SUITE</div>
-                                            <div style="font-size: 0.65rem; color: #9ca3af; margin-top: 4px;">
-                                                Human QA</div>
-                                        </div>
-                                        <div
-                                            style="background: linear-gradient(135deg, rgba(255, 149, 0, 0.15), rgba(255, 107, 157, 0.1)); border-radius: 8px; padding: 10px; text-align: center;">
-                                            <div
-                                                style="font-weight: 800; background: linear-gradient(135deg, #ff9500, #ff6b9d); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                                                Tier 5</div>
-                                            <div style="font-size: 0.7rem; color: #6b7280;">1M SUITE</div>
-                                            <div style="font-size: 0.65rem; color: #9ca3af; margin-top: 4px;">
-                                                Full Team</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    <!-- Collapsible Header -->
+                    <div onclick="toggleCreditsInfo()" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                        <h3 style="margin: 0; font-size: 1.2rem; font-weight: 800; color: #2d1b4e; display: flex; align-items: center; gap: 10px;">
+                            💡 How SUITE Credits Work
+                        </h3>
+                        <span id="creditsInfoToggle" style="font-size: 1.2rem; color: #6b7280; transition: transform 0.3s;">▼</span>
                     </div>
 
-                </div>
+                    <!-- Expandable Content -->
+                    <div id="creditsInfoContent" style="display: none; margin-top: 20px;">
 
+                        <!-- Credit Conversion -->
+                        <div style="background: rgba(255,255,255,0.8); border-radius: 12px; padding: 16px; margin-bottom: 16px; text-align: center;">
+                            <div style="font-size: 0.75rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Conversion Rate</div>
+                            <div style="font-size: 1.8rem; font-weight: 800; color: #2d1b4e;">$1 USD = 1,000 SUITE</div>
+                            <div style="font-size: 0.85rem; color: #6b7280; margin-top: 4px;">1 SUITE = $0.001</div>
+                        </div>
+
+                        <!-- The Flow - Visual Steps -->
+                        <div style="margin-bottom: 20px;">
+                            <div style="font-size: 0.9rem; font-weight: 700; color: #2d1b4e; margin-bottom: 12px;">The Credit Flow</div>
+
+                            <!-- Step 1: Get Credits -->
+                            <div style="display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-start;">
+                                <div style="width: 28px; height: 28px; background: linear-gradient(135deg, #22c55e, #10b981); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 0.85rem; flex-shrink: 0;">1</div>
+                                <div>
+                                    <div style="font-weight: 700; color: #2d1b4e; font-size: 0.9rem;">Get Credits</div>
+                                    <div style="font-size: 0.8rem; color: #6b7280; line-height: 1.6;">
+                                        <div style="margin-bottom: 6px;">
+                                            <span style="background: rgba(59,130,246,0.1); padding: 2px 8px; border-radius: 4px; color: #3b82f6; font-weight: 600;">Card/Fiat</span> Pay with USD/CAD via card or Apple Pay
+                                        </div>
+                                        <div style="margin-bottom: 6px;">
+                                            <span style="background: rgba(34,197,94,0.1); padding: 2px 8px; border-radius: 4px; color: #22c55e; font-weight: 600;">Crypto</span> Deposit ETH/USDC to Treasury
+                                        </div>
+                                        <div style="margin-bottom: 6px;">
+                                            <span style="background: rgba(168,85,247,0.1); padding: 2px 8px; border-radius: 4px; color: #a855f7; font-weight: 600;">Watch Ads</span> Earn 2 credits per ad (free!)
+                                        </div>
+                                        <div>
+                                            <span style="background: rgba(255,149,0,0.1); padding: 2px 8px; border-radius: 4px; color: #ff9500; font-weight: 600;">Stake LP</span> Earn yield in credits passively
+                                        </div>
+                                    </div>
+                                    <div style="font-size: 0.75rem; color: #22c55e; margin-top: 8px; font-style: italic;">
+                                        Your deposits fund app development & AI infrastructure
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 2: Link Identity -->
+                            <div style="display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-start;">
+                                <div style="width: 28px; height: 28px; background: linear-gradient(135deg, #5865F2, #4752C4); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 0.85rem; flex-shrink: 0;">2</div>
+                                <div>
+                                    <div style="font-weight: 700; color: #2d1b4e; font-size: 0.9rem;">Link Your Identity</div>
+                                    <div style="font-size: 0.8rem; color: #6b7280; line-height: 1.5;">
+                                        Connect your <strong>Discord</strong> account to use credits across all SUITE apps.
+                                        Optionally link your <strong>wallet</strong> so deposits auto-credit your account.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 3: Use in Apps -->
+                            <div style="display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-start;">
+                                <div style="width: 28px; height: 28px; background: linear-gradient(135deg, #a855f7, #8b5cf6); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 0.85rem; flex-shrink: 0;">3</div>
+                                <div>
+                                    <div style="font-weight: 700; color: #2d1b4e; font-size: 0.9rem;">Use Credits in Apps</div>
+                                    <div style="font-size: 0.8rem; color: #6b7280; line-height: 1.5;">
+                                        Login with Discord in any SUITE app (FoodVitals, etc.) → AI features show credit cost → Pay per use.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 4: Top Up -->
+                            <div style="display: flex; gap: 12px; align-items: flex-start;">
+                                <div style="width: 28px; height: 28px; background: linear-gradient(135deg, #ff9500, #ff6b9d); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 0.85rem; flex-shrink: 0;">4</div>
+                                <div>
+                                    <div style="font-weight: 700; color: #2d1b4e; font-size: 0.9rem;">Top Up Anytime</div>
+                                    <div style="font-size: 0.8rem; color: #6b7280; line-height: 1.5;">
+                                        Low on credits? Deposit more, watch an ad, or allocate yield from your vault deposit to earn passively.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pricing Reference -->
+                        <div style="background: rgba(168,85,247,0.05); border: 1px solid rgba(168,85,247,0.15); border-radius: 12px; padding: 16px;">
+                            <div style="font-size: 0.85rem; font-weight: 700; color: #a855f7; margin-bottom: 12px;">Typical AI Feature Costs</div>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px;">
+                                <div style="background: white; padding: 10px; border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 1.1rem; font-weight: 800; color: #2d1b4e;">5</div>
+                                    <div style="font-size: 0.7rem; color: #6b7280;">AI Chat/Suggestions</div>
+                                </div>
+                                <div style="background: white; padding: 10px; border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 1.1rem; font-weight: 800; color: #2d1b4e;">10</div>
+                                    <div style="font-size: 0.7rem; color: #6b7280;">Photo Analysis</div>
+                                </div>
+                                <div style="background: white; padding: 10px; border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 1.1rem; font-weight: 800; color: #2d1b4e;">10-20</div>
+                                    <div style="font-size: 0.7rem; color: #6b7280;">Pro AI Models</div>
+                                </div>
+                                <div style="background: white; padding: 10px; border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 1.1rem; font-weight: 800; color: #22c55e;">FREE</div>
+                                    <div style="font-size: 0.7rem; color: #6b7280;">Local Features</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Important: Withdrawing Underlying Value -->
+                        <div style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(59, 130, 246, 0.05)); border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 12px; padding: 16px; margin-top: 16px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                                <span style="font-size: 1.1rem;">🔓</span>
+                                <div style="font-size: 0.9rem; font-weight: 700; color: #22c55e;">Your Crypto is Always Yours</div>
+                            </div>
+                            <div style="font-size: 0.8rem; color: #4b5563; line-height: 1.6; margin-bottom: 12px;">
+                                If you deposited <strong>crypto (ETH/USDC)</strong> to the Treasury Vault and received SUITE credits,
+                                you can <strong>always withdraw your underlying value</strong> back to your wallet. Your principal is never locked.
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div style="background: rgba(34, 197, 94, 0.1); border-radius: 8px; padding: 10px;">
+                                    <div style="font-size: 0.7rem; color: #22c55e; font-weight: 700; margin-bottom: 4px;">✓ WITHDRAWABLE</div>
+                                    <div style="font-size: 0.75rem; color: #4b5563;">
+                                        • Crypto deposits (ETH/USDC)<br>
+                                        • LP tokens from staking<br>
+                                        • Yield earned from vault
+                                    </div>
+                                </div>
+                                <div style="background: rgba(239, 68, 68, 0.08); border-radius: 8px; padding: 10px;">
+                                    <div style="font-size: 0.7rem; color: #ef4444; font-weight: 700; margin-bottom: 4px;">✗ NOT WITHDRAWABLE</div>
+                                    <div style="font-size: 0.75rem; color: #4b5563;">
+                                        • Fiat purchases (card/Apple Pay)<br>
+                                        • Credits from watching ads<br>
+                                        • Bonus/promotional credits
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="font-size: 0.7rem; color: #6b7280; margin-top: 10px; font-style: italic;">
+                                Fiat purchases and ad rewards are converted directly to credits and cannot be converted back to cash.
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
 
                 <!-- ═══════════════════════════════════════════════ -->
                 <!-- ADMIN DASHBOARD (Only visible to admin wallets) -->
@@ -2157,14 +2001,14 @@
                                 <div style="font-weight: 700; color: #dc2626; font-size: 0.9rem; margin-bottom: 12px;">
                                     ⬆️ Withdraw to Admin Wallet</div>
                                 <div style="display: flex; gap: 8px;">
-                                    <input type="number" id="adminWithdrawAmount" placeholder="ETH amount"
+                                    <input type="number" id="adminWithdrawAmount" placeholder="USDC amount"
                                         style="flex: 1; padding: 10px 14px; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; font-size: 0.9rem;">
                                     <button onclick="adminWithdraw()"
                                         style="padding: 10px 16px; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
                                         Withdraw
                                     </button>
                                 </div>
-                                <div style="font-size: 0.75rem; color: #6b7280; margin-top: 8px;">Sends ETH to your
+                                <div style="font-size: 0.75rem; color: #6b7280; margin-top: 8px;">Sends USDC to your
                                     connected admin wallet for deployment</div>
                             </div>
 
@@ -2174,98 +2018,61 @@
                                 <div style="font-weight: 700; color: #22c55e; font-size: 0.9rem; margin-bottom: 12px;">
                                     ⬇️ Deposit from Admin Wallet</div>
                                 <div style="display: flex; gap: 8px;">
-                                    <input type="number" id="adminDepositAmount" placeholder="ETH amount"
+                                    <input type="number" id="adminDepositAmount" placeholder="USDC amount"
                                         style="flex: 1; padding: 10px 14px; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; font-size: 0.9rem;">
                                     <button onclick="adminDeposit()"
                                         style="padding: 10px 16px; background: #22c55e; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
                                         Deposit
                                     </button>
                                 </div>
-                                <div style="font-size: 0.75rem; color: #6b7280; margin-top: 8px;">Return funds from
+                                <div style="font-size: 0.75rem; color: #6b7280; margin-top: 8px;">Return USDC from
                                     your wallet back to treasury</div>
                             </div>
                         </div>
 
-                        <!-- Position Tracking -->
+                        <!-- Active Strategy Selection -->
                         <div
-                            style="background: rgba(255,255,255,0.6); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                            style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(59, 130, 246, 0.05)); border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
                             <div
                                 style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                                <div style="font-weight: 700; color: #2d1b4e; font-size: 0.9rem;">📍 Deployed
-                                    Positions (Manual Tracking)</div>
-                                <button onclick="addPosition()"
-                                    style="padding: 6px 12px; background: rgba(139, 92, 246, 0.1); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer;">
-                                    + Add Position
-                                </button>
+                                <div style="font-weight: 700; color: #2d1b4e; font-size: 0.9rem;">📊 Active Strategy</div>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-size: 0.7rem; color: #6b7280;">Change Strategy:</span>
+                                    <select id="strategySelect" onchange="updateActiveStrategy()"
+                                        style="padding: 6px 12px; border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 6px; font-size: 0.8rem; background: white; cursor: pointer;">
+                                        <option value="usdc_yvault" selected>USDC yVault (Katana) - 42% APR</option>
+                                        <option value="eth_lending">ETH Lending (Kinetic) - 8% APY</option>
+                                        <option value="eth_usdt_lp">ETH/USDT LP (SparkDex) - 25% APY</option>
+                                        <option value="custom">Custom Strategy...</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div id="positionsTable" style="display: flex; flex-direction: column; gap: 8px;">
-                                <div
-                                    style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 8px; padding: 10px 12px; background: rgba(59, 130, 246, 0.05); border-radius: 8px; align-items: center;">
-                                    <div>
-                                        <div style="font-weight: 600; color: #2d1b4e; font-size: 0.85rem;">Kinetic
-                                            (Flare) - ETH Lending</div>
-                                        <div style="font-size: 0.7rem; color: #6b7280;">Collateral for USDT borrow
-                                        </div>
-                                    </div>
-                                    <div style="text-align: center;">
-                                        <div style="font-size: 0.65rem; color: #9ca3af;">Value</div>
-                                        <div style="font-weight: 700; color: #2d1b4e;">$0</div>
-                                    </div>
-                                    <div style="text-align: center;">
-                                        <div style="font-size: 0.65rem; color: #9ca3af;">APY</div>
-                                        <div style="font-weight: 700; color: #22c55e;">~8%</div>
-                                    </div>
-                                    <div style="text-align: center;">
-                                        <div style="font-size: 0.65rem; color: #9ca3af;">Chain</div>
-                                        <div style="font-weight: 600; color: #f97316;">Flare</div>
-                                    </div>
-                                    <button
-                                        style="padding: 4px 8px; background: rgba(0,0,0,0.05); border: none; border-radius: 4px; font-size: 0.7rem; cursor: pointer;">Edit</button>
+
+                            <!-- Current Active Strategy Display -->
+                            <div id="activeStrategyDisplay"
+                                style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 8px; padding: 14px 16px; background: rgba(255,255,255,0.9); border-radius: 10px; align-items: center;">
+                                <div>
+                                    <div id="strategyName" style="font-weight: 700; color: #2d1b4e; font-size: 0.95rem;">USDC yVault</div>
+                                    <div id="strategyDesc" style="font-size: 0.75rem; color: #6b7280;">Katana • Vault Bridge • Yearn</div>
                                 </div>
-                                <div
-                                    style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 8px; padding: 10px 12px; background: rgba(34, 197, 94, 0.05); border-radius: 8px; align-items: center;">
-                                    <div>
-                                        <div style="font-weight: 600; color: #2d1b4e; font-size: 0.85rem;">SparkDex
-                                            - ETH/USDT LP</div>
-                                        <div style="font-size: 0.7rem; color: #6b7280;">Liquidity provision</div>
-                                    </div>
-                                    <div style="text-align: center;">
-                                        <div style="font-size: 0.65rem; color: #9ca3af;">Value</div>
-                                        <div style="font-weight: 700; color: #2d1b4e;">$0</div>
-                                    </div>
-                                    <div style="text-align: center;">
-                                        <div style="font-size: 0.65rem; color: #9ca3af;">APY</div>
-                                        <div style="font-weight: 700; color: #22c55e;">~25%</div>
-                                    </div>
-                                    <div style="text-align: center;">
-                                        <div style="font-size: 0.65rem; color: #9ca3af;">Chain</div>
-                                        <div style="font-weight: 600; color: #f97316;">Flare</div>
-                                    </div>
-                                    <button
-                                        style="padding: 4px 8px; background: rgba(0,0,0,0.05); border: none; border-radius: 4px; font-size: 0.7rem; cursor: pointer;">Edit</button>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 0.65rem; color: #9ca3af;">TVL</div>
+                                    <div id="strategyTVL" style="font-weight: 700; color: #2d1b4e;">$90.06M</div>
                                 </div>
-                                <div
-                                    style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 8px; padding: 10px 12px; background: rgba(139, 92, 246, 0.05); border-radius: 8px; align-items: center;">
-                                    <div>
-                                        <div style="font-weight: 600; color: #2d1b4e; font-size: 0.85rem;">Liquid
-                                            Reserve (Base)</div>
-                                        <div style="font-size: 0.7rem; color: #6b7280;">Instant withdrawals</div>
-                                    </div>
-                                    <div style="text-align: center;">
-                                        <div style="font-size: 0.65rem; color: #9ca3af;">Value</div>
-                                        <div id="liquidReserveValue" style="font-weight: 700; color: #2d1b4e;">$0
-                                        </div>
-                                    </div>
-                                    <div style="text-align: center;">
-                                        <div style="font-size: 0.65rem; color: #9ca3af;">APY</div>
-                                        <div style="font-weight: 700; color: #6b7280;">0%</div>
-                                    </div>
-                                    <div style="text-align: center;">
-                                        <div style="font-size: 0.65rem; color: #9ca3af;">Chain</div>
-                                        <div style="font-weight: 600; color: #3b82f6;">Base</div>
-                                    </div>
-                                    <div style="font-size: 0.7rem; color: #22c55e; font-weight: 600;">Auto</div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 0.65rem; color: #9ca3af;">APR</div>
+                                    <div id="strategyAPR" style="font-weight: 800; color: #22c55e; font-size: 1.1rem;">42.10%</div>
                                 </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 0.65rem; color: #9ca3af;">Chain</div>
+                                    <div id="strategyChain" style="font-weight: 600; color: #3b82f6;">Base</div>
+                                </div>
+                                <a id="strategyLink" href="https://basescan.org/address/0x80c34BD3A3569E126e7055831036aa7b212cB159" target="_blank"
+                                    style="padding: 6px 12px; background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: none; border-radius: 6px; font-size: 0.75rem; font-weight: 600; text-decoration: none;">View ↗</a>
+                            </div>
+
+                            <div style="margin-top: 10px; font-size: 0.7rem; color: #6b7280;">
+                                Multi-strategy vault via Yearn. Eligible for STEER points + KAT rewards. Changing strategy will update display across all user views.
                             </div>
                         </div>
 
@@ -3284,7 +3091,88 @@ Personalized insights" style="min-height: 120px;"></textarea>
             }
         }
 
-        // Withdraw ETH to admin wallet
+        // Strategy configurations
+        const STRATEGIES = {
+            usdc_yvault: {
+                name: 'USDC yVault',
+                desc: 'Katana • Vault Bridge • Yearn',
+                tvl: '$90.06M',
+                apr: '42.10%',
+                chain: 'Base',
+                chainColor: '#3b82f6',
+                link: 'https://basescan.org/address/0x80c34BD3A3569E126e7055831036aa7b212cB159'
+            },
+            eth_lending: {
+                name: 'ETH Lending',
+                desc: 'Kinetic • Collateral lending',
+                tvl: '$15.2M',
+                apr: '8.00%',
+                chain: 'Flare',
+                chainColor: '#f97316',
+                link: 'https://kinetic.market'
+            },
+            eth_usdt_lp: {
+                name: 'ETH/USDT LP',
+                desc: 'SparkDex • Liquidity provision',
+                tvl: '$8.5M',
+                apr: '25.00%',
+                chain: 'Flare',
+                chainColor: '#f97316',
+                link: 'https://sparkdex.ai'
+            },
+            custom: {
+                name: 'Custom Strategy',
+                desc: 'Configure your own strategy',
+                tvl: '-',
+                apr: '-',
+                chain: '-',
+                chainColor: '#6b7280',
+                link: '#'
+            }
+        };
+
+        // Update active strategy from admin dropdown
+        function updateActiveStrategy() {
+            const select = document.getElementById('strategySelect');
+            const strategyKey = select?.value || 'usdc_yvault';
+            const strategy = STRATEGIES[strategyKey];
+
+            if (!strategy) return;
+
+            // Update admin dashboard display
+            const nameEl = document.getElementById('strategyName');
+            const descEl = document.getElementById('strategyDesc');
+            const tvlEl = document.getElementById('strategyTVL');
+            const aprEl = document.getElementById('strategyAPR');
+            const chainEl = document.getElementById('strategyChain');
+            const linkEl = document.getElementById('strategyLink');
+
+            if (nameEl) nameEl.textContent = strategy.name;
+            if (descEl) descEl.textContent = strategy.desc;
+            if (tvlEl) tvlEl.textContent = strategy.tvl;
+            if (aprEl) aprEl.textContent = strategy.apr;
+            if (chainEl) {
+                chainEl.textContent = strategy.chain;
+                chainEl.style.color = strategy.chainColor;
+            }
+            if (linkEl) linkEl.href = strategy.link;
+
+            // Update the user-facing vault header badge
+            const vaultStrategyName = document.querySelector('.strategy-badge-name');
+            const vaultStrategyDesc = document.querySelector('.strategy-badge-desc');
+            const vaultStrategyLinkEl = document.getElementById('vaultStrategyLink');
+            if (vaultStrategyName) vaultStrategyName.textContent = strategy.name;
+            if (vaultStrategyDesc) vaultStrategyDesc.textContent = `${strategy.chain} • ${strategy.tvl} TVL`;
+            if (vaultStrategyLinkEl) vaultStrategyLinkEl.href = strategy.link;
+
+            // Update EST. APR in vault header
+            const vaultAPR = document.getElementById('vaultAPR');
+            if (vaultAPR) vaultAPR.textContent = strategy.apr;
+
+            showNotification('✅', 'Strategy Updated', `Active strategy changed to ${strategy.name}`);
+        }
+
+        // Withdraw USDC to admin wallet
         async function adminWithdraw() {
             const amount = document.getElementById('adminWithdrawAmount')?.value;
 
@@ -4011,7 +3899,73 @@ Personalized insights" style="min-height: 120px;"></textarea>
         // Configuration - DEPLOYED CONTRACTS
         const BASE_CHAIN_ID = '0x2105'; // Base Mainnet: 8453
         const BASE_SEPOLIA_CHAIN_ID = '0x14A34'; // Base Sepolia: 84532
+        const BASE_RPC_URL = 'https://mainnet.base.org';
         const ETH_PRICE_USD = 3650; // For UI display only - V4 uses proportional shares
+
+        // Fetch and display real Treasury TVL on page load
+        async function updateTreasuryTVL() {
+            const tvlDisplay = document.getElementById('vaultTVL');
+            if (!tvlDisplay) {
+                console.log('TVL display element not found, retrying...');
+                setTimeout(updateTreasuryTVL, 500);
+                return;
+            }
+
+            try {
+                const treasuryAddress = '0xf121C51E18aD8f8C9B38EEAA377aD4393E16e3d1';
+
+                // Fetch ETH balance via public RPC
+                const response = await fetch('https://mainnet.base.org', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        method: 'eth_getBalance',
+                        params: [treasuryAddress, 'latest'],
+                        id: 1
+                    })
+                });
+
+                const data = await response.json();
+                console.log('Treasury RPC response:', data);
+
+                if (data.result) {
+                    const ethBalance = parseInt(data.result, 16) / 1e18;
+                    const usdValue = ethBalance * 3650; // ETH price
+
+                    // Format the TVL display
+                    let displayText;
+                    if (usdValue >= 1000000) {
+                        displayText = '$' + (usdValue / 1000000).toFixed(2) + 'M';
+                    } else if (usdValue >= 1000) {
+                        displayText = '$' + (usdValue / 1000).toFixed(1) + 'K';
+                    } else if (usdValue >= 0.01) {
+                        displayText = '$' + usdValue.toFixed(2);
+                    } else if (usdValue > 0) {
+                        // Show very small amounts with more precision
+                        displayText = '$' + usdValue.toFixed(6);
+                    } else {
+                        displayText = '$0.00';
+                    }
+
+                    tvlDisplay.textContent = displayText;
+                    tvlDisplay.title = ethBalance.toFixed(10) + ' ETH\n$' + usdValue.toFixed(8) + ' USD';
+                    tvlDisplay.style.cursor = 'help';
+
+                    console.log('Treasury TVL:', ethBalance.toFixed(10), 'ETH (~$' + usdValue.toFixed(6) + ')');
+                }
+            } catch (error) {
+                console.error('Error fetching treasury TVL:', error);
+                tvlDisplay.textContent = '$0.00';
+            }
+        }
+
+        // Load TVL after page is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => setTimeout(updateTreasuryTVL, 100));
+        } else {
+            setTimeout(updateTreasuryTVL, 100);
+        }
 
         // ===== DEPLOYED SUITE CONTRACTS =====
         const SUITE_TOKEN_ADDRESS = '0xE6892803DF59D79cFB4794e7da9549df4eE70f71';
@@ -5749,6 +5703,20 @@ Personalized insights" style="min-height: 120px;"></textarea>
             panel.style.display = isHidden ? 'block' : 'none';
             if (btn) {
                 btn.textContent = isHidden ? 'Details ▲' : 'Details ▼';
+            }
+        }
+
+        // ========== CREDITS INFO PANEL ==========
+        function toggleCreditsInfo() {
+            const content = document.getElementById('creditsInfoContent');
+            const toggle = document.getElementById('creditsInfoToggle');
+            if (!content) return;
+
+            const isHidden = content.style.display === 'none';
+            content.style.display = isHidden ? 'block' : 'none';
+            if (toggle) {
+                toggle.textContent = isHidden ? '▲' : '▼';
+                toggle.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
             }
         }
 

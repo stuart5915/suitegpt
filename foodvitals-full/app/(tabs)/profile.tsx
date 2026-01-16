@@ -10,6 +10,8 @@ import {
     ActivityIndicator,
     Switch,
     Animated,
+    Platform,
+    Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +19,7 @@ import { router } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { useDiscordAuth } from '../../contexts/DiscordAuthContext';
 import {
     supabase,
     getNutritionGoals,
@@ -34,6 +37,7 @@ import {
 import { calculateRecommendedMicros, calculateRecommendedMacros, MICRO_LABELS, Gender, ActivityLevel } from '../../utils/nutrition';
 
 export default function ProfileScreen() {
+    const { user: discordUser, isLoading: authLoading, credits, logout, refreshCredits } = useDiscordAuth();
     const [userId, setUserId] = useState<string | null>(null);
     const [userEmail, setUserEmail] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
@@ -96,7 +100,7 @@ export default function ProfileScreen() {
 
     useEffect(() => {
         loadProfile();
-    }, []);
+    }, [discordUser]);
 
     // Refresh favorites and tips when tab gains focus
     useFocusEffect(
@@ -104,27 +108,28 @@ export default function ProfileScreen() {
             if (userId) {
                 loadFavorites(userId);
                 loadTips(userId);
+                refreshCredits();
             }
         }, [userId])
     );
 
     const loadProfile = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-            setUserId(user.id);
-            setUserEmail(user.email || '');
+        // Use Discord user for identity
+        if (discordUser) {
+            setUserId(discordUser.id);
+            setUserEmail(discordUser.username || '');
 
-            const { data: goalsData } = await getNutritionGoals(user.id);
+            const { data: goalsData } = await getNutritionGoals(discordUser.id);
             if (goalsData) {
                 setGoals(goalsData);
                 setHasGoalsSet(true);
             }
 
             // Load favorites
-            await loadFavorites(user.id);
+            await loadFavorites(discordUser.id);
 
             // Load saved tips
-            await loadTips(user.id);
+            await loadTips(discordUser.id);
 
             // Load custom prompts
             await loadCustomPrompts();
@@ -268,7 +273,7 @@ export default function ProfileScreen() {
                     text: 'Sign Out',
                     style: 'destructive',
                     onPress: async () => {
-                        await signOut();
+                        logout(); // Discord logout
                         router.replace('/login');
                     }
                 },
@@ -281,7 +286,7 @@ export default function ProfileScreen() {
         setGoals(prev => ({ ...prev, [key]: numValue }));
     };
 
-    if (isLoading) {
+    if (isLoading || authLoading) {
         return (
             <SafeAreaView style={styles.container}>
                 <View style={styles.loadingContainer}>
@@ -291,8 +296,8 @@ export default function ProfileScreen() {
         );
     }
 
-    // Guest mode - show sign in prompt
-    if (!userId) {
+    // Guest mode - show sign in prompt (check Discord user)
+    if (!discordUser) {
         return (
             <SafeAreaView style={styles.container}>
                 <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -305,21 +310,20 @@ export default function ProfileScreen() {
                         <Text style={styles.guestIcon}>👤</Text>
                         <Text style={styles.guestTitle}>Guest Mode</Text>
                         <Text style={styles.guestText}>
-                            Sign in to save your food logs and track your nutrition over time.
+                            Login with Discord to save your food logs, track nutrition over time, and use SUITE credits for AI features.
                         </Text>
 
                         <TouchableOpacity
-                            style={styles.signInButton}
+                            style={styles.discordButton}
                             onPress={() => router.replace('/login')}
                         >
-                            <Ionicons name="log-in-outline" size={20} color="#000" />
-                            <Text style={styles.signInButtonText}>Sign In / Create Account</Text>
+                            <Text style={styles.discordButtonText}>Login with Discord</Text>
                         </TouchableOpacity>
                     </View>
 
                     {/* Benefits */}
                     <View style={styles.benefitsCard}>
-                        <Text style={styles.benefitsTitle}>Why sign in?</Text>
+                        <Text style={styles.benefitsTitle}>Why login with Discord?</Text>
                         <View style={styles.benefit}>
                             <Ionicons name="cloud-outline" size={20} color="#4ADE80" />
                             <Text style={styles.benefitText}>Save meals to the cloud</Text>
@@ -329,12 +333,12 @@ export default function ProfileScreen() {
                             <Text style={styles.benefitText}>Track progress over time</Text>
                         </View>
                         <View style={styles.benefit}>
-                            <Ionicons name="phone-portrait-outline" size={20} color="#4ADE80" />
-                            <Text style={styles.benefitText}>Sync across devices</Text>
+                            <Ionicons name="wallet-outline" size={20} color="#ff9500" />
+                            <Text style={styles.benefitText}>Use SUITE credits for AI features</Text>
                         </View>
                         <View style={styles.benefit}>
                             <Ionicons name="bulb-outline" size={20} color="#4ADE80" />
-                            <Text style={styles.benefitText}>Get weekly AI insights</Text>
+                            <Text style={styles.benefitText}>Get personalized AI insights</Text>
                         </View>
                     </View>
 
@@ -351,17 +355,29 @@ export default function ProfileScreen() {
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollContent}>
-                {/* Compact Header with Profile and Sign Out */}
+                {/* Compact Header with Discord Profile, Credits and Sign Out */}
                 <View style={styles.compactHeader}>
                     <View style={styles.profileRow}>
-                        <View style={styles.avatarSmall}>
-                            <Text style={styles.avatarTextSmall}>
-                                {userEmail.charAt(0).toUpperCase()}
+                        {discordUser?.avatar ? (
+                            <Image
+                                source={{ uri: `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png` }}
+                                style={styles.discordAvatarSmall}
+                            />
+                        ) : (
+                            <View style={styles.avatarSmall}>
+                                <Text style={styles.avatarTextSmall}>
+                                    {discordUser?.username?.charAt(0).toUpperCase() || '?'}
+                                </Text>
+                            </View>
+                        )}
+                        <View style={styles.userInfoColumn}>
+                            <Text style={styles.userNameSmall} numberOfLines={1}>
+                                @{discordUser?.username || 'User'}
                             </Text>
+                            <View style={styles.creditsRow}>
+                                <Text style={styles.creditsLabel}>{credits.toFixed(0)} credits</Text>
+                            </View>
                         </View>
-                        <Text style={styles.userEmailSmall} numberOfLines={1}>
-                            {userEmail}
-                        </Text>
                     </View>
                     <TouchableOpacity style={styles.signOutButtonCompact} onPress={handleSignOut}>
                         <Ionicons name="log-out-outline" size={18} color="#EF4444" />
@@ -1196,6 +1212,45 @@ const styles = StyleSheet.create({
     signInButtonText: {
         color: '#000',
         fontSize: 16,
+        fontWeight: '600',
+    },
+    discordButton: {
+        backgroundColor: '#5865F2',
+        paddingVertical: 14,
+        paddingHorizontal: 28,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    discordButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '700',
+    },
+    discordAvatarSmall: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        borderWidth: 2,
+        borderColor: '#5865F2',
+    },
+    userInfoColumn: {
+        flex: 1,
+        marginLeft: 2,
+    },
+    userNameSmall: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    creditsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 2,
+    },
+    creditsLabel: {
+        color: '#ff9500',
+        fontSize: 12,
         fontWeight: '600',
     },
     benefitsCard: {

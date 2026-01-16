@@ -32,7 +32,7 @@ import {
 } from '../../services/gemini';
 import InsightMealModal from '../../components/InsightMealModal';
 import { usePaymentGate } from '../../components/PaymentGate';
-import { trackUsage } from '../../services/walletConnect';
+import { trackUsage } from '../../contexts/DiscordAuthContext';
 
 interface Message {
     id: string;

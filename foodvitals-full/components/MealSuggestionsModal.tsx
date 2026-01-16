@@ -21,7 +21,7 @@ import {
     FavoriteMeal,
 } from '../services/supabase';
 import { usePaymentGate } from './PaymentGate';
-import { trackUsage } from '../services/walletConnect';
+import { trackUsage } from '../contexts/DiscordAuthContext';
 
 // Style options (excluding exact/under which slider handles)
 type MealStyle = 'balanced' | 'micronutrient' | 'tasty';
