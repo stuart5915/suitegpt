@@ -34,10 +34,13 @@ export async function middleware(request: NextRequest) {
 
     // Public routes that don't require auth
     const publicRoutes = ['/login', '/auth/callback']
+    // Internal API routes that can be called server-to-server
+    const internalApiRoutes = ['/api/generate-dev-update-image', '/api/work-log/cron']
     const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
+    const isInternalApi = internalApiRoutes.some(route => pathname.startsWith(route))
 
     // If user is not logged in and trying to access protected route
-    if (!user && !isPublicRoute) {
+    if (!user && !isPublicRoute && !isInternalApi) {
         const url = request.nextUrl.clone()
         url.pathname = '/login'
         return NextResponse.redirect(url)

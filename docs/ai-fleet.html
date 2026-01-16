@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ai fleet | SUITE Docs</title>
+    <title>AI Fleet | SUITE Docs</title>
     <link rel="icon" type="image/png" href="../assets/suite-logo-new.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -11,8 +11,216 @@
     <link rel="stylesheet" href="../nav.css">
     <link rel="stylesheet" href="docs.css">
     <style>
-        body { font-family: 'Nunito', sans-serif; background: linear-gradient(135deg, #fff5f0 0%, #ffeef5 50%, #f0e6ff 100%); min-height: 100vh; overflow-x: hidden; }
-        .canvas-container { width: 100%; min-height: 100vh; padding: 100px 24px 40px 24px; display: flex; flex-direction: column; align-items: center; box-sizing: border-box; }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #fff5f0 0%, #ffeef5 50%, #f0e6ff 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .canvas-container {
+            width: 100%;
+            min-height: 100vh;
+            padding: 100px 24px 40px 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        /* Fleet Diagram Styles */
+        .fleet-diagram {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 16px;
+            padding: 32px;
+            margin: 24px 0;
+            color: #fff;
+        }
+
+        .diagram-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #ff9500;
+            text-align: center;
+            margin-bottom: 24px;
+            letter-spacing: 0.5px;
+        }
+
+        .flow-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .flow-box {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 16px 20px;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .flow-box.highlight {
+            border-color: #ff9500;
+            background: rgba(255, 149, 0, 0.15);
+        }
+
+        .flow-box.green {
+            border-color: #22c55e;
+            background: rgba(34, 197, 94, 0.15);
+        }
+
+        .flow-box.purple {
+            border-color: #a855f7;
+            background: rgba(168, 85, 247, 0.15);
+        }
+
+        .flow-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .flow-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .flow-sublabel {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 4px;
+        }
+
+        .flow-arrow {
+            font-size: 1.5rem;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* App Grid */
+        .app-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin: 24px 0;
+        }
+
+        .app-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
+        }
+
+        .app-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .app-card .emoji {
+            font-size: 2rem;
+            margin-bottom: 12px;
+        }
+
+        .app-card .name {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #1a1a2e;
+            margin-bottom: 4px;
+        }
+
+        .app-card .desc {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .app-card .status {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-top: 12px;
+        }
+
+        .app-card .status.live {
+            background: rgba(34, 197, 94, 0.15);
+            color: #22c55e;
+        }
+
+        .app-card .status.building {
+            background: rgba(255, 149, 0, 0.15);
+            color: #ff9500;
+        }
+
+        /* Yield Example Box */
+        .yield-example {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 24px 0;
+            border-left: 4px solid #ff9500;
+        }
+
+        .yield-example h4 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 16px;
+        }
+
+        .yield-example .calc {
+            font-family: monospace;
+            background: #1a1a2e;
+            color: #22c55e;
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        /* Stats Row */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin: 24px 0;
+        }
+
+        .stat-box {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-box .value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #ff9500;
+        }
+
+        .stat-box .label {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        @media (max-width: 768px) {
+            .flow-container {
+                flex-direction: column;
+            }
+            .flow-arrow {
+                transform: rotate(90deg);
+            }
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
     </style>
 </head>
 <body>
@@ -23,343 +231,179 @@
             <aside class="docs-sidebar"></aside>
             <script src="sidebar.js"></script>
             <main class="docs-content">
-<h1>🤖 AI Fleet</h1>
-                <p class="subtitle">Autonomous AI agents creating apps 24/7. The factory never sleeps.</p>
+                <h1>AI Fleet</h1>
+                <p class="subtitle">Autonomous AI agents building apps 24/7. The factory never sleeps.</p>
 
                 <div class="concept-card green">
-                    <h4>💡 The Vision</h4>
-                    <p>SUITE's AI Fleet is an autonomous app creation system that researches market gaps, designs apps,
-                        builds them through iterative refinement, and deploys them — all without human intervention.</p>
+                    <h4>The Vision</h4>
+                    <p>SUITE's AI Fleet is an autonomous app creation system. It researches market gaps, designs apps,
+                        builds them through iterative refinement, and deploys them — all funded by the community USDC vault.</p>
+                </div>
+
+                <!-- Main Flywheel Diagram -->
+                <div class="fleet-diagram">
+                    <div class="diagram-title">THE SUITE FLYWHEEL</div>
+                    <div class="flow-container">
+                        <div class="flow-box highlight">
+                            <div class="flow-icon">$</div>
+                            <div class="flow-label">USDC Vault</div>
+                            <div class="flow-sublabel">Deposit & Earn</div>
+                        </div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-box green">
+                            <div class="flow-icon">%</div>
+                            <div class="flow-label">Yield Generated</div>
+                            <div class="flow-sublabel">DeFi Strategies</div>
+                        </div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-box purple">
+                            <div class="flow-icon">AI</div>
+                            <div class="flow-label">AI Fleet</div>
+                            <div class="flow-sublabel">Builds Apps 24/7</div>
+                        </div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-box">
+                            <div class="flow-icon">$</div>
+                            <div class="flow-label">App Revenue</div>
+                            <div class="flow-sublabel">Back to Vault</div>
+                        </div>
+                    </div>
                 </div>
 
                 <h2>How It Works</h2>
 
-                <h3>1. Market Research</h3>
-                <p>The AI continuously analyzes existing app stores, user reviews, and market trends to identify gaps
-                    and opportunities. It looks for:</p>
+                <h3>1. The USDC Vault</h3>
+                <p>Users deposit USDC into the SUITE vault. These funds generate yield through conservative DeFi strategies.
+                   When you deposit, you choose how to allocate your yield:</p>
                 <ul>
-                    <li>Underserved niches with demand</li>
-                    <li>Apps with poor reviews that could be improved</li>
-                    <li>Emerging trends without adequate tools</li>
-                    <li>Cross-category opportunities</li>
+                    <li><strong>Minimum 10% to AI Fleet</strong> — Funds autonomous app development</li>
+                    <li><strong>Up to 90% to yourself</strong> — Keep most of your yield</li>
                 </ul>
 
-                <h3>2. Concept Generation</h3>
-                <p>Once a gap is identified, the AI generates an app concept including:</p>
-                <ul>
-                    <li>Name and branding</li>
-                    <li>Core features and user flows</li>
-                    <li>Target audience</li>
-                    <li>Monetization approach (within SUITE ecosystem)</li>
-                </ul>
+                <div class="yield-example">
+                    <h4>Example: $1,000 USDC Deposit at 10% APY</h4>
+                    <div class="calc">
+Your deposit: $1,000 USDC
+Annual yield: $100 (10% APY)
 
-                <h3>3. Iterative Building</h3>
-                <p>This is where the magic happens. Each app goes through <strong>50 refinement iterations</strong>:</p>
+Your allocation: 80% to self, 20% to AI Fleet
 
-                <div class="flow-diagram">
-                    <span
-                        style="color: #22c55e;">═══════════════════════════════════════════════════════════════════════════════</span>
-                    <span style="color: #ff9500;"> TELOS AI FLEET SYSTEM - COMPLETE ARCHITECTURE</span>
-                    <span
-                        style="color: #22c55e;">═══════════════════════════════════════════════════════════════════════════════</span>
+You receive: $80/year
+AI Fleet receives: $20/year
 
-                    <span
-                        style="color: #888;">┌─────────────────────────────────────────────────────────────────────────────┐</span>
-                    <span style="color: #888;">│</span> <span style="color: #6366f1;">YOUR PC (FORGE)</span> <span
-                        style="color: #888;">│</span>
-                    <span style="color: #888;">│</span>
-                    ┌──────────────────────────────────────────────────────────────────────┐ <span
-                        style="color: #888;">│</span>
-                    <span style="color: #888;">│</span> │ <span style="color: #a855f7;">ANTIGRAVITY IDE</span> (4
-                    windows running in parallel) │ <span style="color: #888;">│</span>
-                    <span style="color: #888;">│</span> │ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ │ <span
-                        style="color: #888;">│</span>
-                    <span style="color: #888;">│</span> │ │ Slot 0 │ │ Slot 1 │ │ Slot 2 │ │ Slot 3 │ │ <span
-                        style="color: #888;">│</span>
-                    <span style="color: #888;">│</span> │ │ 💻 │ │ 💻 │ │ 💻 │ │ 💻 │ ◀── The AI that │ <span
-                        style="color: #888;">│</span>
-                    <span style="color: #888;">│</span> │ │ Working │ │ Idle │ │ Working │ │ Idle │ builds apps │ <span
-                        style="color: #888;">│</span>
-                    <span style="color: #888;">│</span> │ └────▲────┘ └────▲────┘ └────▲────┘ └────▲────┘ │ <span
-                        style="color: #888;">│</span>
-                    <span style="color: #888;">│</span> │ │ │ │ │ │ <span style="color: #888;">│</span>
-                    <span style="color: #888;">│</span> │ ┌────┴──────────┴──────────┴──────────┴────┐ │ <span
-                        style="color: #888;">│</span>
-                    <span style="color: #888;">│</span> │ │ <span style="color: #ff9500;">watcher.py</span>
-                    (Round-Robin) │ │ <span style="color: #888;">│</span>
-                    <span style="color: #888;">│</span> │ │ • Polls Supabase every 5 seconds │ │ <span
-                        style="color: #888;">│</span>
-                    <span style="color: #888;">│</span> │ │ • Injects prompts via PyAutoGUI │ │ <span
-                        style="color: #888;">│</span>
-                    <span style="color: #888;">│</span> │ │ • Clicks Accept when done │ │ <span
-                        style="color: #888;">│</span>
-                    <span style="color: #888;">│</span> │ │ • Git push after each completion │ │ <span
-                        style="color: #888;">│</span>
-                    <span style="color: #888;">│</span> │ └──────────────────▲───────────────────────┘ │ <span
-                        style="color: #888;">│</span>
-                    <span style="color: #888;">│</span>
-                    └───────────────────────┼───────────────────────────────────────────────┘ <span
-                        style="color: #888;">│</span>
-                    <span
-                        style="color: #888;">└──────────────────────────┼──────────────────────────────────────────────────┘</span>
-                    │
-                    │ Polls prompts table
-                    ▼
-                    <span
-                        style="color: #888;">┌──────────────────────────────────────────────────────────────────────────────┐</span>
-                    <span style="color: #888;">│</span> <span style="color: #22c55e;">SUPABASE (Cloud)</span> <span
-                        style="color: #888;">│</span>
-                    <span style="color: #888;">│</span> ┌─────────────────────┐ ┌─────────────────────┐
-                    ┌───────────────────┐ <span style="color: #888;">│</span>
-                    <span style="color: #888;">│</span> │ <span style="color: #ff9500;">prompts</span> table │ │ <span
-                        style="color: #a855f7;">telos_ideas</span> table │ │ <span
-                        style="color: #6366f1;">ai_config</span> │ <span style="color: #888;">│</span>
-                    <span style="color: #888;">│</span> │ ─────────────── │ │ ───────────────── │ │ │ <span
-                        style="color: #888;">│</span>
-                    <span style="color: #888;">│</span> │ id │ │ id │ │ telos_mode: │ <span
-                        style="color: #888;">│</span>
-                    <span style="color: #888;">│</span> │ prompt │ │ name │ │ enabled: true │ <span
-                        style="color: #888;">│</span>
-                    <span style="color: #888;">│</span> │ status │ │ tagline │ │ max_daily: 6 │ <span
-                        style="color: #888;">│</span>
-                    <span style="color: #888;">│</span> │ prompt_type │ │ description │ │ cooldown: 4hr │ <span
-                        style="color: #888;">│</span>
-                    <span style="color: #888;">│</span> │ • human │ │ features │ │ focus_areas: │ <span
-                        style="color: #888;">│</span>
-                    <span style="color: #888;">│</span> │ • telos_idea │ │ status │ │ [Health, │ <span
-                        style="color: #888;">│</span>
-                    <span style="color: #888;">│</span> │ • telos_build │ │ • pending │ │ Finance, │ <span
-                        style="color: #888;">│</span>
-                    <span style="color: #888;">│</span> │ • telos_refine │ │ • approved │ │ Productivity] │ <span
-                        style="color: #888;">│</span>
-                    <span style="color: #888;">│</span> │ │ │ • building │ │ │ <span style="color: #888;">│</span>
-                    <span style="color: #888;">│</span> │ │ │ • review │ │ │ <span style="color: #888;">│</span>
-                    <span style="color: #888;">│</span> │ │ │ • deployed │ │ │ <span style="color: #888;">│</span>
-                    <span style="color: #888;">│</span> └─────────────────────┘ └─────────────────────┘
-                    └───────────────────┘ <span style="color: #888;">│</span>
-                    <span
-                        style="color: #888;">└──────────────────────────────────────────────────────────────────────────────┘</span>
-
-
-                    <span
-                        style="color: #22c55e;">═══════════════════════════════════════════════════════════════════════════════</span>
-                    <span style="color: #ff9500;"> THE IDEA → APPROVAL → BUILD FLOW</span>
-                    <span
-                        style="color: #22c55e;">═══════════════════════════════════════════════════════════════════════════════</span>
-
-                    <span style="color: #6366f1;">STAGE 1: IDEA GENERATION</span>
-                    ─────────────────────────
-                    Queue Empty TELOS Enabled? Under Limits?
-                    │ │ │
-                    ▼ ▼ ▼
-                    ┌─────────┐ ┌─────────┐ ┌─────────┐
-                    │ No human│ YES │ Toggle │ YES │ 6/day │
-                    │ prompts │ ────────▶│ ON │ ─────────▶│ 4hr gap │
-                    └─────────┘ └─────────┘ └────┬────┘
-                    │
-                    ▼
-                    ┌───────────────────────────────────┐
-                    │ <span style="color: #ff9500;">INSERT prompt_type='telos_idea'</span> │
-                    │ "Generate a unique app idea..." │
-                    └─────────────────┬─────────────────┘
-                    │
-                    ▼
-                    ┌───────────────────────────────────┐
-                    │ <span style="color: #a855f7;">Antigravity generates JSON:</span> │
-                    │ { │
-                    │ "name": "WaterWise", │
-                    │ "tagline": "Smart hydration", │
-                    │ "features": [...] │
-                    │ } │
-                    └─────────────────┬─────────────────┘
-                    │
-                    ▼
-                    ┌───────────────────────────────────┐
-                    │ <span style="color: #22c55e;">INSERT into telos_ideas</span> │
-                    │ status: 'pending' │
-                    └───────────────────────────────────┘
-
-
-                    <span style="color: #6366f1;">STAGE 2: HUMAN APPROVAL (Dashboard)</span>
-                    ─────────────────────────────────────
-                    ┌─────────────────────────────────────────────┐
-                    │ <span style="color: #ff9500;">DASHBOARD: Ideas Awaiting Approval</span> │
-                    │ ┌─────────────────────────────────────────┐ │
-                    │ │ 📱 WaterWise │ │
-                    │ │ 💧 Smart hydration tracking │ │
-                    │ │ ┌─────────┐ ┌────────┐ ┌───────────┐ │ │
-                    │ │ │✅ Approve│ │❌ Reject│ │🔄 Regenerate│ │ │
-                    │ │ └─────────┘ └────────┘ └───────────┘ │ │
-                    │ └─────────────────────────────────────────┘ │
-                    └──────────────────────┬──────────────────────┘
-                    │
-                    ┌──────────────────────────┼──────────────────────────┐
-                    │ │ │
-                    ▼ ▼ ▼
-                    ┌───────────────┐ ┌───────────────┐ ┌───────────────┐
-                    │ <span style="color: #22c55e;">APPROVED</span> │ │ <span style="color: #ef4444;">REJECTED</span> │
-                    │ <span style="color: #6366f1;">REGENERATE</span> │
-                    │ │ │ │ │ │
-                    │ • status → │ │ • status → │ │ • Delete old │
-                    │ 'building' │ │ 'rejected' │ │ • Generate │
-                    │ • Create │ │ • Log reason │ │ new idea │
-                    │ build prompt│ │ │ │ │
-                    └───────┬───────┘ └───────────────┘ └───────────────┘
-                    │
-                    ▼
-                    ┌───────────────────────────────────┐
-                    │ <span style="color: #ff9500;">INSERT prompt_type='telos_build'</span> │
-                    │ "Create React Native app..." │
-                    └───────────────┬───────────────────┘
-                    │
-                    ▼
-                    ┌───────────────────────────────────┐
-                    │ Antigravity builds the app │
-                    │ • Creates folder structure │
-                    │ • Writes code │
-                    │ • 50 iterations of refinement │
-                    └───────────────┬───────────────────┘
-                    │
-                    ▼
-                    ┌───────────────────────────────────┐
-                    │ <span style="color: #22c55e;">UPDATE status → 'review'</span> │
-                    └───────────────────────────────────┘
-
-
-                    <span style="color: #6366f1;">STAGE 3: BUILD REVIEW (Dashboard)</span>
-                    ───────────────────────────────────
-                    ┌─────────────────────────────────────────────┐
-                    │ <span style="color: #a855f7;">DASHBOARD: Ready for Review</span> │
-                    │ ┌─────────────────────────────────────────┐ │
-                    │ │ 📱 WaterWise (50 iterations) │ │
-                    │ │ ┌────────┐ ┌─────────┐ ┌──────┐ │ │
-                    │ │ │🏪 Deploy│ │✏️ Refine │ │🗑️ Scrap│ │ │
-                    │ │ └────────┘ └─────────┘ └──────┘ │ │
-                    │ └─────────────────────────────────────────┘ │
-                    └──────────────────────┬──────────────────────┘
-                    │
-                    ┌──────────────────────────┼──────────────────────────┐
-                    │ │ │
-                    ▼ ▼ ▼
-                    ┌───────────────┐ ┌───────────────┐ ┌───────────────┐
-                    │ <span style="color: #22c55e;">DEPLOY</span> │ │ <span style="color: #ff9500;">REFINE</span> │ │
-                    <span style="color: #ef4444;">SCRAP</span> │
-                    │ │ │ │ │ │
-                    │ • EAS Build │ │ • Add notes │ │ • status → │
-                    │ • App Store │ │ • status → │ │ 'scrapped' │
-                    │ • status → │ │ 'building' │ │ │
-                    │ 'deployed' │ │ • More iters │ │ │
-                    └───────────────┘ └───────────────┘ └───────────────┘
-
-
-                    <span
-                        style="color: #22c55e;">═══════════════════════════════════════════════════════════════════════════════</span>
-                    <span style="color: #ff9500;"> HUMAN PRIORITY SYSTEM</span>
-                    <span
-                        style="color: #22c55e;">═══════════════════════════════════════════════════════════════════════════════</span>
-
-                    ┌───────────────────────────────────────┐
-                    │ <span style="color: #ff9500;">PRIORITY QUEUE</span> │
-                    ├───────────────────────────────────────┤
-                    │ <span style="color: #ef4444;">1. HUMAN PROMPTS</span> (Highest) │ ◀── Your Discord commands
-                    │ • Discord /addition │ Laptop submissions
-                    │ • Dashboard submissions │ Always first!
-                    │ • Extension requests │
-                    ├───────────────────────────────────────┤
-                    │ <span style="color: #ff9500;">2. TELOS BUILD</span> (Medium) │ ◀── Approved ideas
-                    │ • Approved app builds │ In progress
-                    │ • Refinement requests │
-                    ├───────────────────────────────────────┤
-                    │ <span style="color: #6366f1;">3. TELOS IDEA GEN</span> (Lowest) │ ◀── Only when idle
-                    │ • New idea generation │ Queue must be empty
-                    │ • Only runs when queue empty │
-                    └───────────────────────────────────────┘
-
-                    <span style="color: #888;"> When you send a prompt via Discord or laptop: </span>
-                    <span style="color: #888;"> → It jumps to the front of the queue</span>
-                    <span style="color: #888;"> → TELOS work pauses</span>
-                    <span style="color: #888;"> → Your work gets processed first</span>
-                    <span style="color: #888;"> → TELOS resumes when you're done</span>
-
-                </div>
-
-                <div class="stats-box">
-                    <div class="stat-item">
-                        <div class="value">50</div>
-                        <div class="label">Iterations/App</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="value">6</div>
-                        <div class="label">Max Apps/Day</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="value">24/7</div>
-                        <div class="label">Always Running</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="value">∞</div>
-                        <div class="label">Potential Apps</div>
+Withdraw anytime: $1,000 + accumulated yield
                     </div>
                 </div>
 
-                <h3>4. Automatic Deployment</h3>
-                <p>After completing all iterations and passing self-tests, apps are automatically deployed to the SUITE
-                    App Store with the "AI Fleet" badge.</p>
-
-                <h2>The Telos System</h2>
-                <p><strong>"Telos"</strong> is the AI's autonomous mission — what it pursues when not serving human
-                    requests.</p>
-
-                <div class="concept-card">
-                    <h4>🧠 Priority System</h4>
-                    <p>The AI follows a hierarchical priority system:</p>
-                </div>
-
+                <h3>2. Autonomous App Creation</h3>
+                <p>The AI Fleet operates 24/7, building apps through a fully automated pipeline:</p>
                 <ol>
-                    <li><strong>Human Interrupts (Highest)</strong> — Bug reports, feature requests, community votes
-                    </li>
-                    <li><strong>Governance Decisions</strong> — DAO proposals affecting the ecosystem</li>
-                    <li><strong>Telos Tasks (Background)</strong> — Autonomous research and app creation</li>
+                    <li><strong>Market Research</strong> — AI analyzes gaps and opportunities in app markets</li>
+                    <li><strong>Concept Design</strong> — Generates app concepts with features and user flows</li>
+                    <li><strong>Iterative Building</strong> — 50+ refinement cycles per app</li>
+                    <li><strong>Deployment</strong> — Automatic deployment to app stores</li>
                 </ol>
 
-                <p>When a human request comes in, the AI pauses its telos work, handles the request, then seamlessly
-                    resumes its autonomous mission.</p>
-
-                <h2>Configuration</h2>
-                <p>Admins can configure the AI Fleet through the <a href="../dashboard.html#ai-fleet"
-                        style="color: #6366f1;">Dashboard</a>:</p>
-
-                <div class="concept-card orange">
-                    <h4>⚙️ Configurable Parameters</h4>
-                    <p><strong>Iterations per App:</strong> How many refinement cycles before deploy (default: 50)<br>
-                        <strong>Max Apps per Day:</strong> Rate limit on new app creation (default: 6)<br>
-                        <strong>Auto-Deploy:</strong> Whether apps go live automatically (default: on)<br>
-                        <strong>Telos Mode:</strong> Whether AI researches autonomously (default: on)
-                    </p>
+                <div class="stats-row">
+                    <div class="stat-box">
+                        <div class="value">50+</div>
+                        <div class="label">Iterations/App</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="value">24/7</div>
+                        <div class="label">Always Building</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="value">6</div>
+                        <div class="label">Apps Live</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="value">$0</div>
+                        <div class="label">Human Dev Cost</div>
+                    </div>
                 </div>
 
-                <h2>App Categories</h2>
-                <p>AI-created apps are tagged with their origin:</p>
+                <h3>3. App Revenue Loop</h3>
+                <p>Apps built by the AI Fleet generate revenue through:</p>
                 <ul>
-                    <li><strong>🤖 AI Fleet</strong> — Fully autonomous creation</li>
-                    <li><strong>👤 Human Made</strong> — Community-built apps</li>
-                    <li><strong>🤝 Hybrid</strong> — AI + Human collaboration</li>
+                    <li><strong>Subscriptions</strong> — Premium features and unlimited usage</li>
+                    <li><strong>In-app purchases</strong> — Credits and consumables</li>
+                    <li><strong>Enterprise licensing</strong> — B2B deployments</li>
+                </ul>
+                <p>This revenue flows back to the vault, creating a self-sustaining flywheel.</p>
+
+                <h2>Current Fleet Apps</h2>
+                <p>These apps are currently live or in development by the AI Fleet:</p>
+
+                <div class="app-grid">
+                    <div class="app-card">
+                        <div class="emoji">🥗</div>
+                        <div class="name">FoodVitals</div>
+                        <div class="desc">AI-powered nutrition tracking and meal analysis</div>
+                        <span class="status live">LIVE</span>
+                    </div>
+                    <div class="app-card">
+                        <div class="emoji">💪</div>
+                        <div class="name">OpticRep</div>
+                        <div class="desc">AI workout trainer with real-time form feedback</div>
+                        <span class="status live">LIVE</span>
+                    </div>
+                    <div class="app-card">
+                        <div class="emoji">🏃</div>
+                        <div class="name">TrueForm</div>
+                        <div class="desc">AI physiotherapist for injury prevention</div>
+                        <span class="status live">LIVE</span>
+                    </div>
+                    <div class="app-card">
+                        <div class="emoji">📊</div>
+                        <div class="name">Cheshbon</div>
+                        <div class="desc">Financial reflections and spending insights</div>
+                        <span class="status live">LIVE</span>
+                    </div>
+                    <div class="app-card">
+                        <div class="emoji">🎙️</div>
+                        <div class="name">RemCast</div>
+                        <div class="desc">AI-powered podcast creation tools</div>
+                        <span class="status building">BUILDING</span>
+                    </div>
+                    <div class="app-card">
+                        <div class="emoji">✨</div>
+                        <div class="name">Cadence AI</div>
+                        <div class="desc">Development automation and workflow tools</div>
+                        <span class="status live">LIVE</span>
+                    </div>
+                </div>
+
+                <h2>Why This Model?</h2>
+
+                <div class="concept-card">
+                    <h4>Traditional App Development</h4>
+                    <p>Hire developers → Pay salaries → Build one app → Hope it succeeds → Repeat</p>
+                    <p style="color: #ef4444; margin-top: 8px;">High cost, slow iteration, single points of failure</p>
+                </div>
+
+                <div class="concept-card green">
+                    <h4>AI Fleet Model</h4>
+                    <p>Community funds vault → AI builds apps 24/7 → Revenue returns to vault → Cycle continues</p>
+                    <p style="color: #22c55e; margin-top: 8px;">Low cost, rapid iteration, diversified portfolio of apps</p>
+                </div>
+
+                <h2>Governance</h2>
+                <p>Vault depositors have governance rights proportional to their deposits:</p>
+                <ul>
+                    <li><strong>App Approval</strong> — Vote on which AI-generated concepts get built</li>
+                    <li><strong>Feature Requests</strong> — Prioritize development focus areas</li>
+                    <li><strong>Yield Strategies</strong> — Approve DeFi allocation changes</li>
                 </ul>
 
-                <h2>Live Monitoring</h2>
-                <p>Watch the AI Fleet in action from the <a href="../dashboard.html#ai-fleet" style="color: #6366f1;">AI
-                        Fleet Dashboard</a>:</p>
-                <ul>
-                    <li>Real-time activity feed (streaming log)</li>
-                    <li>Apps currently in progress with iteration counts</li>
-                    <li>Stats on apps created and deployed</li>
-                    <li>Current research focus areas</li>
-                </ul>
-
-                <h2>Future: Physical AI</h2>
-                <p>The AI Fleet is just the beginning. Our roadmap includes physical AI robots running real-world
-                    businesses, governed by SUITE DAO. <a href="roadmap.html" style="color: #6366f1;">See the full
-                        roadmap →</a></p>
+                <h2>Get Started</h2>
+                <p>Ready to fund the future of autonomous app development?</p>
+                <ol>
+                    <li><a href="../wallet.html" style="color: #6366f1; font-weight: 600;">Connect your wallet</a></li>
+                    <li>Deposit USDC to the vault</li>
+                    <li>Set your yield allocation (min 10% to fleet)</li>
+                    <li>Watch the AI Fleet build</li>
+                </ol>
 
                 <p style="color: #9ca3af; font-size: 0.85rem; margin-top: 32px;"><em>Last updated: January 2026</em></p>
             </main>

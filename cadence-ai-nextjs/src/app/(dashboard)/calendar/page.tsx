@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -11,7 +11,13 @@ import {
     Sparkles,
     Loader2,
     X,
-    Trash2
+    Trash2,
+    CheckCircle2,
+    XCircle,
+    Edit3,
+    Clock,
+    Zap,
+    GitCommit
 } from 'lucide-react'
 import { Project, PLATFORM_CONFIG } from '@/lib/supabase/types'
 import { PlatformIcon, PLATFORM_NAMES } from '@/components/ui/PlatformIcon'
@@ -26,14 +32,60 @@ interface ContentItem {
     status: string
 }
 
+// Scheduled posts from Queue
+interface ScheduledPost {
+    id: string
+    platform: string
+    content_type: string
+    post_text: string
+    images: string[]
+    scheduled_for: string | null
+    status: string
+    created_at: string
+}
+
+// Automation config for placeholders
+interface AutomationConfig {
+    type: string
+    enabled: boolean
+    post_time: string
+    platform: string
+    auto_approve: boolean
+    generate_image: boolean
+    last_run?: string
+    last_result?: string
+}
+
+// Placeholder for scheduled automations
+interface AutomationPlaceholder {
+    type: string
+    time: string
+    platform: string
+    label: string
+    icon: 'work_log' | 'ai_fleet' | 'tips' | 'generic'
+}
+
 interface DayData {
     date: string
     posts: ContentItem[]
+    queuePosts: ScheduledPost[]
+    automationPlaceholders: AutomationPlaceholder[]
     isCurrentMonth: boolean
     isToday: boolean
+    isPast: boolean
 }
 
-export default function CalendarPage() {
+// Status color mapping
+const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }> = {
+    draft: { bg: 'bg-gray-500/20', text: 'text-gray-400', label: 'Draft' },
+    approved: { bg: 'bg-green-500/20', text: 'text-green-400', label: 'Approved' },
+    queued: { bg: 'bg-blue-500/20', text: 'text-blue-400', label: 'Queued' },
+    scheduled: { bg: 'bg-purple-500/20', text: 'text-purple-400', label: 'Scheduled' },
+    posted: { bg: 'bg-emerald-500/20', text: 'text-emerald-400', label: 'Posted' },
+    failed: { bg: 'bg-red-500/20', text: 'text-red-400', label: 'Failed' },
+}
+
+function CalendarPageContent() {
     const searchParams = useSearchParams()
     const supabase = createClient()
 
@@ -44,12 +96,22 @@ export default function CalendarPage() {
     const [selectedProject, setSelectedProject] = useState<string | null>(projectIdParam)
     const [currentDate, setCurrentDate] = useState(new Date())
     const [content, setContent] = useState<ContentItem[]>([])
+    const [queuePosts, setQueuePosts] = useState<ScheduledPost[]>([])
     const [expandedDay, setExpandedDay] = useState<string | null>(null)
     const [draggedPost, setDraggedPost] = useState<ContentItem | null>(null)
     const [dragOverDate, setDragOverDate] = useState<string | null>(null)
-    const [deleteConfirm, setDeleteConfirm] = useState<{ postId: string; title: string } | null>(null)
+    const [deleteConfirm, setDeleteConfirm] = useState<{ postId: string; title: string; isQueue?: boolean } | null>(null)
     const [deleteAllConfirm, setDeleteAllConfirm] = useState(false)
     const [deletingAll, setDeletingAll] = useState(false)
+
+    // Edit modal state
+    const [editingPost, setEditingPost] = useState<ScheduledPost | null>(null)
+    const [editText, setEditText] = useState('')
+    const [editScheduledFor, setEditScheduledFor] = useState('')
+    const [savingEdit, setSavingEdit] = useState(false)
+
+    // Automation configs for placeholders
+    const [automationConfigs, setAutomationConfigs] = useState<AutomationConfig[]>([])
 
     // Request delete confirmation
     const requestDelete = (postId: string, title: string, e?: React.MouseEvent) => {
@@ -145,7 +207,23 @@ export default function CalendarPage() {
         if (selectedProject) {
             loadMonthContent()
         }
+        loadQueuePosts()
+        loadAutomationConfigs()
     }, [selectedProject, currentDate])
+
+    // Load automation configs for placeholders
+    const loadAutomationConfigs = async () => {
+        try {
+            const response = await fetch('/api/work-log/config')
+            const data = await response.json()
+            if (data.success && data.config) {
+                // For now we just have work_log, but this can expand to multiple automations
+                setAutomationConfigs([data.config])
+            }
+        } catch (err) {
+            console.error('Failed to load automation configs:', err)
+        }
+    }
 
     // Helper to format date as YYYY-MM-DD in local time
     const formatLocalDate = (date: Date) => {
@@ -178,7 +256,7 @@ export default function CalendarPage() {
                 .from('content_items')
                 .select('*')
                 .eq('project_id', selectedProject)
-                .in('status', ['approved', 'scheduled', 'posted']) // Only show approved content
+                .in('status', ['draft', 'approved', 'scheduled', 'posted']) // Show all statuses
                 .gte('scheduled_date', formatLocalDate(startDate))
                 .lte('scheduled_date', formatLocalDate(endDate))
                 .order('scheduled_date')
@@ -187,6 +265,79 @@ export default function CalendarPage() {
             setContent(data || [])
         } catch (err) {
             console.error('Failed to load content:', err)
+        }
+    }
+
+    // Load queue posts (scheduled_posts table)
+    const loadQueuePosts = async () => {
+        try {
+            const response = await fetch('/api/queue')
+            const data = await response.json()
+            setQueuePosts(data.posts || [])
+        } catch (err) {
+            console.error('Failed to load queue posts:', err)
+        }
+    }
+
+    // Approve a queue post
+    const approveQueuePost = async (id: string) => {
+        try {
+            await fetch(`/api/queue/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'approved' })
+            })
+            setQueuePosts(prev => prev.map(p => p.id === id ? { ...p, status: 'approved' } : p))
+            if (editingPost?.id === id) {
+                setEditingPost(prev => prev ? { ...prev, status: 'approved' } : null)
+            }
+        } catch (err) {
+            console.error('Failed to approve post:', err)
+        }
+    }
+
+    // Reject/delete a queue post
+    const rejectQueuePost = async (id: string) => {
+        try {
+            await fetch(`/api/queue/${id}`, { method: 'DELETE' })
+            setQueuePosts(prev => prev.filter(p => p.id !== id))
+            setEditingPost(null)
+        } catch (err) {
+            console.error('Failed to reject post:', err)
+        }
+    }
+
+    // Open edit modal for queue post
+    const openEditModal = (post: ScheduledPost) => {
+        setEditingPost(post)
+        setEditText(post.post_text)
+        setEditScheduledFor(post.scheduled_for ? new Date(post.scheduled_for).toISOString().slice(0, 16) : '')
+    }
+
+    // Save edit to queue post
+    const saveQueuePostEdit = async () => {
+        if (!editingPost) return
+
+        setSavingEdit(true)
+        try {
+            await fetch(`/api/queue/${editingPost.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    post_text: editText,
+                    scheduled_for: editScheduledFor || null
+                })
+            })
+            setQueuePosts(prev => prev.map(p =>
+                p.id === editingPost.id
+                    ? { ...p, post_text: editText, scheduled_for: editScheduledFor || null }
+                    : p
+            ))
+            setEditingPost(null)
+        } catch (err) {
+            console.error('Failed to save post:', err)
+        } finally {
+            setSavingEdit(false)
         }
     }
 
@@ -208,6 +359,8 @@ export default function CalendarPage() {
         const year = currentDate.getFullYear()
         const month = currentDate.getMonth()
         const today = formatLocalDate(new Date())
+        const todayDate = new Date()
+        todayDate.setHours(0, 0, 0, 0)
 
         const firstDay = new Date(year, month, 1)
         const lastDay = new Date(year, month + 1, 0)
@@ -224,17 +377,54 @@ export default function CalendarPage() {
         // Generate 6 weeks of days
         for (let i = 0; i < 42; i++) {
             const dateStr = formatLocalDate(current)
+            const currentDateCopy = new Date(current)
+            currentDateCopy.setHours(0, 0, 0, 0)
+            const isPast = currentDateCopy < todayDate
+
+            // Filter queue posts by scheduled_for date
+            const dayQueuePosts = queuePosts.filter(p => {
+                if (!p.scheduled_for) return false
+                const postDate = new Date(p.scheduled_for)
+                return formatLocalDate(postDate) === dateStr
+            })
+
+            // Generate automation placeholders for today and future days
+            const automationPlaceholders: AutomationPlaceholder[] = []
+            if (!isPast) {
+                // Check if there's already a work_log queue post for this day
+                const hasWorkLogPost = dayQueuePosts.some(p => p.content_type === 'work_log')
+
+                for (const config of automationConfigs) {
+                    if (config.enabled && config.type === 'work_log' && !hasWorkLogPost) {
+                        automationPlaceholders.push({
+                            type: 'work_log',
+                            time: config.post_time,
+                            platform: config.platform,
+                            label: 'Work Log',
+                            icon: 'work_log'
+                        })
+                    }
+                    // Add more automation types here as they're added
+                }
+            }
+
             days.push({
                 date: dateStr,
                 posts: content.filter(c => c.scheduled_date === dateStr),
+                queuePosts: dayQueuePosts,
+                automationPlaceholders,
                 isCurrentMonth: current.getMonth() === month,
                 isToday: dateStr === today,
+                isPast,
             })
             current.setDate(current.getDate() + 1)
         }
 
         return days
     }
+
+    // Get unscheduled queue posts (no scheduled_for date)
+    const unscheduledPosts = queuePosts.filter(p => !p.scheduled_for)
 
     const monthName = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })
     const calendarDays = generateCalendarDays()
@@ -343,9 +533,10 @@ export default function CalendarPage() {
                 {/* Calendar Days */}
                 <div className="grid grid-cols-7">
                     {calendarDays.map((day, i) => {
-                        const hasContent = day.posts.length > 0
+                        const hasContent = day.posts.length > 0 || day.queuePosts.length > 0 || day.automationPlaceholders.length > 0
                         const isExpanded = expandedDay === day.date
                         const isDragOver = dragOverDate === day.date
+                        const totalPosts = day.posts.length + day.queuePosts.length
 
                         return (
                             <div
@@ -375,10 +566,31 @@ export default function CalendarPage() {
                                     {new Date(day.date).getDate()}
                                 </div>
 
-                                {/* Post Indicators */}
-                                {hasContent && (
+                                {/* Automation Placeholders */}
+                                {day.automationPlaceholders.length > 0 && (
                                     <div className="space-y-1">
-                                        {day.posts.slice(0, 3).map(post => {
+                                        {day.automationPlaceholders.map((placeholder, idx) => (
+                                            <div
+                                                key={`${placeholder.type}-${idx}`}
+                                                className="text-xs px-1.5 py-0.5 rounded flex items-center gap-1 bg-yellow-500/10 text-yellow-500 border border-dashed border-yellow-500/30"
+                                            >
+                                                {placeholder.icon === 'work_log' ? (
+                                                    <GitCommit className="w-3 h-3" />
+                                                ) : (
+                                                    <Zap className="w-3 h-3" />
+                                                )}
+                                                <span className="truncate flex-1">{placeholder.label}</span>
+                                                <span className="text-[10px] opacity-70">{placeholder.time}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Post Indicators - Content Items */}
+                                {day.posts.length > 0 && (
+                                    <div className="space-y-1 mt-1">
+                                        {day.posts.slice(0, 2).map(post => {
+                                            const statusStyle = STATUS_COLORS[post.status] || STATUS_COLORS.draft
                                             return (
                                                 <div
                                                     key={post.id}
@@ -391,10 +603,7 @@ export default function CalendarPage() {
                                                         setDraggedPost(null)
                                                         setDragOverDate(null)
                                                     }}
-                                                    className={`group text-xs px-1.5 py-0.5 rounded flex items-center gap-1 cursor-grab active:cursor-grabbing ${post.status === 'approved' ? 'bg-[var(--success)]/10 text-[var(--success)]' :
-                                                        post.status === 'scheduled' ? 'bg-[var(--primary)]/10 text-[var(--primary)]' :
-                                                            'bg-[var(--surface)] text-[var(--foreground-muted)]'
-                                                        }`}
+                                                    className={`group text-xs px-1.5 py-0.5 rounded flex items-center gap-1 cursor-grab active:cursor-grabbing ${statusStyle.bg} ${statusStyle.text}`}
                                                 >
                                                     <PlatformIcon platform={post.platform} size={12} />
                                                     <span className="truncate flex-1">{post.ai_reasoning || 'Post'}</span>
@@ -408,11 +617,34 @@ export default function CalendarPage() {
                                                 </div>
                                             )
                                         })}
-                                        {day.posts.length > 3 && (
-                                            <div className="text-xs text-[var(--foreground-muted)] px-1.5">
-                                                +{day.posts.length - 3} more
-                                            </div>
-                                        )}
+                                    </div>
+                                )}
+
+                                {/* Post Indicators - Queue Posts */}
+                                {day.queuePosts.length > 0 && (
+                                    <div className="space-y-1 mt-1">
+                                        {day.queuePosts.slice(0, day.posts.length > 0 ? 1 : 2).map(post => {
+                                            const statusStyle = STATUS_COLORS[post.status] || STATUS_COLORS.draft
+                                            return (
+                                                <div
+                                                    key={post.id}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        openEditModal(post)
+                                                    }}
+                                                    className={`group text-xs px-1.5 py-0.5 rounded flex items-center gap-1 cursor-pointer hover:ring-1 hover:ring-white/20 ${statusStyle.bg} ${statusStyle.text}`}
+                                                >
+                                                    <span className="text-[10px]">📝</span>
+                                                    <span className="truncate flex-1">{post.post_text.slice(0, 20)}...</span>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                )}
+
+                                {totalPosts > 3 && (
+                                    <div className="text-xs text-[var(--foreground-muted)] px-1.5 mt-1">
+                                        +{totalPosts - 3} more
                                     </div>
                                 )}
                             </div>
@@ -420,6 +652,44 @@ export default function CalendarPage() {
                     })}
                 </div>
             </div>
+
+            {/* Unscheduled Queue Posts */}
+            {unscheduledPosts.length > 0 && (
+                <div className="card p-4 mt-6">
+                    <h3 className="text-lg font-semibold text-[var(--foreground)] mb-3 flex items-center gap-2">
+                        <Clock className="w-5 h-5 text-[var(--foreground-muted)]" />
+                        Unscheduled Posts ({unscheduledPosts.length})
+                    </h3>
+                    <p className="text-sm text-[var(--foreground-muted)] mb-4">
+                        These posts are in your queue but haven't been scheduled yet.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {unscheduledPosts.slice(0, 6).map(post => {
+                            const statusStyle = STATUS_COLORS[post.status] || STATUS_COLORS.draft
+                            return (
+                                <div
+                                    key={post.id}
+                                    onClick={() => openEditModal(post)}
+                                    className="p-3 bg-[var(--surface)] rounded-lg cursor-pointer hover:bg-[var(--surface-hover)] transition-colors"
+                                >
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className={`px-2 py-0.5 rounded-full text-xs ${statusStyle.bg} ${statusStyle.text}`}>
+                                            {statusStyle.label}
+                                        </span>
+                                        <span className="text-xs text-[var(--foreground-muted)]">{post.content_type}</span>
+                                    </div>
+                                    <p className="text-sm text-[var(--foreground)] line-clamp-2">{post.post_text}</p>
+                                </div>
+                            )
+                        })}
+                    </div>
+                    {unscheduledPosts.length > 6 && (
+                        <Link href="/queue" className="block text-center mt-4 text-sm text-[var(--primary)] hover:underline">
+                            View all {unscheduledPosts.length} unscheduled posts
+                        </Link>
+                    )}
+                </div>
+            )}
 
             {/* Expanded Day View */}
             {expandedDay && (
@@ -434,16 +704,44 @@ export default function CalendarPage() {
                             </button>
                         </div>
                         <div className="p-4 overflow-y-auto max-h-[60vh] space-y-3">
+                            {/* Automation Placeholders */}
+                            {calendarDays.find(d => d.date === expandedDay)?.automationPlaceholders.map((placeholder, idx) => (
+                                <div key={`${placeholder.type}-${idx}`} className="p-3 rounded-lg bg-yellow-500/10 border border-dashed border-yellow-500/30">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        {placeholder.icon === 'work_log' ? (
+                                            <GitCommit className="w-5 h-5 text-yellow-500" />
+                                        ) : (
+                                            <Zap className="w-5 h-5 text-yellow-500" />
+                                        )}
+                                        <span className="text-sm font-medium text-yellow-500">{placeholder.label}</span>
+                                        <span className="text-xs text-yellow-500/70">@ {placeholder.time}</span>
+                                        <span className="text-xs px-2 py-0.5 rounded-full ml-auto bg-yellow-500/20 text-yellow-500">
+                                            Scheduled
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-[var(--foreground-muted)]">
+                                        This automation will run automatically at {placeholder.time}. Content will be generated based on your activity.
+                                    </p>
+                                    <Link
+                                        href="/work-log"
+                                        className="inline-flex items-center gap-1 mt-2 text-xs text-yellow-500 hover:underline"
+                                    >
+                                        Configure in Work Log settings
+                                    </Link>
+                                </div>
+                            ))}
+
+                            {/* Content Items */}
                             {calendarDays.find(d => d.date === expandedDay)?.posts.map(post => {
+                                const statusStyle = STATUS_COLORS[post.status] || STATUS_COLORS.draft
                                 return (
                                     <div key={post.id} className="p-3 rounded-lg bg-[var(--surface)] border border-[var(--surface-border)]">
                                         <div className="flex items-center gap-2 mb-2">
                                             <PlatformIcon platform={post.platform} size={18} />
                                             <span className="text-sm font-medium text-[var(--foreground)]">{PLATFORM_NAMES[post.platform] || post.platform}</span>
                                             <span className="text-xs text-[var(--foreground-muted)]">{post.scheduled_time?.slice(0, 5)}</span>
-                                            <span className={`text-xs px-2 py-0.5 rounded-full ml-auto ${post.status === 'approved' ? 'bg-[var(--success)]/10 text-[var(--success)]' : 'bg-[var(--surface-border)] text-[var(--foreground-muted)]'
-                                                }`}>
-                                                {post.status}
+                                            <span className={`text-xs px-2 py-0.5 rounded-full ml-auto ${statusStyle.bg} ${statusStyle.text}`}>
+                                                {statusStyle.label}
                                             </span>
                                             <button
                                                 onClick={(e) => requestDelete(post.id, post.ai_reasoning || 'Post', e)}
@@ -455,6 +753,53 @@ export default function CalendarPage() {
                                         </div>
                                         <p className="text-sm font-medium text-[var(--foreground)] mb-1">{post.ai_reasoning}</p>
                                         <p className="text-sm text-[var(--foreground-muted)] line-clamp-3">{post.caption}</p>
+                                    </div>
+                                )
+                            })}
+
+                            {/* Queue Posts */}
+                            {calendarDays.find(d => d.date === expandedDay)?.queuePosts.map(post => {
+                                const statusStyle = STATUS_COLORS[post.status] || STATUS_COLORS.draft
+                                return (
+                                    <div key={post.id} className="p-3 rounded-lg bg-[var(--surface)] border border-[var(--surface-border)]">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="text-lg">📝</span>
+                                            <span className="text-sm font-medium text-[var(--foreground)]">Queue Post</span>
+                                            <span className="text-xs text-[var(--foreground-muted)]">{post.content_type}</span>
+                                            <span className={`text-xs px-2 py-0.5 rounded-full ml-auto ${statusStyle.bg} ${statusStyle.text}`}>
+                                                {statusStyle.label}
+                                            </span>
+                                        </div>
+                                        <p className="text-sm text-[var(--foreground)] line-clamp-3 mb-3">{post.post_text}</p>
+                                        <div className="flex items-center gap-2">
+                                            {!['approved', 'posted', 'scheduled'].includes(post.status) && (
+                                                <button
+                                                    onClick={() => approveQueuePost(post.id)}
+                                                    className="flex items-center gap-1 px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs hover:bg-green-500/30"
+                                                >
+                                                    <CheckCircle2 className="w-3 h-3" />
+                                                    Approve
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => openEditModal(post)}
+                                                className="flex items-center gap-1 px-2 py-1 bg-[var(--surface-hover)] text-[var(--foreground-muted)] rounded text-xs hover:bg-[var(--surface-border)]"
+                                            >
+                                                <Edit3 className="w-3 h-3" />
+                                                Edit
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    if (confirm('Delete this post?')) {
+                                                        rejectQueuePost(post.id)
+                                                    }
+                                                }}
+                                                className="flex items-center gap-1 px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs hover:bg-red-500/30"
+                                            >
+                                                <Trash2 className="w-3 h-3" />
+                                                Delete
+                                            </button>
+                                        </div>
                                     </div>
                                 )
                             })}
@@ -564,6 +909,131 @@ export default function CalendarPage() {
                     </div>
                 </div>
             )}
+
+            {/* Edit Queue Post Modal */}
+            {editingPost && (
+                <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4" onClick={() => setEditingPost(null)}>
+                    <div className="bg-[var(--background)] rounded-xl max-w-lg w-full overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <div className="p-4 border-b border-[var(--surface-border)] flex items-center justify-between">
+                            <div>
+                                <h3 className="text-lg font-semibold text-[var(--foreground)]">Edit Post</h3>
+                                <div className="flex items-center gap-2 mt-1">
+                                    {(() => {
+                                        const statusStyle = STATUS_COLORS[editingPost.status] || STATUS_COLORS.draft
+                                        return (
+                                            <span className={`text-xs px-2 py-0.5 rounded-full ${statusStyle.bg} ${statusStyle.text}`}>
+                                                {statusStyle.label}
+                                            </span>
+                                        )
+                                    })()}
+                                    <span className="text-xs text-[var(--foreground-muted)]">{editingPost.content_type}</span>
+                                </div>
+                            </div>
+                            <button onClick={() => setEditingPost(null)} className="p-2 hover:bg-[var(--surface)] rounded-lg">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="p-4 space-y-4">
+                            {/* Image Preview */}
+                            {editingPost.images && editingPost.images.length > 0 && (
+                                <div>
+                                    <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
+                                        Attached Image
+                                    </label>
+                                    <div className="rounded-lg overflow-hidden border border-[var(--surface-border)]">
+                                        <img
+                                            src={editingPost.images[0]}
+                                            alt="Post image"
+                                            className="w-full h-auto"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Post Text */}
+                            <div>
+                                <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
+                                    Post Content
+                                </label>
+                                <textarea
+                                    value={editText}
+                                    onChange={(e) => setEditText(e.target.value)}
+                                    rows={5}
+                                    className="w-full px-3 py-2 bg-[var(--surface)] border border-[var(--surface-border)] rounded-lg text-[var(--foreground)] resize-none"
+                                />
+                                <p className="text-xs text-[var(--foreground-muted)] mt-1">
+                                    {editText.length} characters
+                                </p>
+                            </div>
+
+                            {/* Schedule */}
+                            <div>
+                                <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
+                                    Schedule For
+                                </label>
+                                <input
+                                    type="datetime-local"
+                                    value={editScheduledFor}
+                                    onChange={(e) => setEditScheduledFor(e.target.value)}
+                                    className="w-full px-3 py-2 bg-[var(--surface)] border border-[var(--surface-border)] rounded-lg text-[var(--foreground)]"
+                                />
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex items-center gap-2 pt-2">
+                                {!['approved', 'posted', 'scheduled'].includes(editingPost.status) && (
+                                    <button
+                                        onClick={() => approveQueuePost(editingPost.id)}
+                                        className="flex items-center gap-1.5 px-4 py-2 bg-green-500/20 text-green-400 rounded-lg text-sm font-medium hover:bg-green-500/30"
+                                    >
+                                        <CheckCircle2 className="w-4 h-4" />
+                                        Approve
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => {
+                                        if (confirm('Delete this post?')) {
+                                            rejectQueuePost(editingPost.id)
+                                        }
+                                    }}
+                                    className="flex items-center gap-1.5 px-4 py-2 bg-red-500/20 text-red-400 rounded-lg text-sm font-medium hover:bg-red-500/30"
+                                >
+                                    <XCircle className="w-4 h-4" />
+                                    Delete
+                                </button>
+                                <div className="flex-1" />
+                                <button
+                                    onClick={() => setEditingPost(null)}
+                                    className="px-4 py-2 text-[var(--foreground-muted)] rounded-lg text-sm font-medium hover:bg-[var(--surface)]"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={saveQueuePostEdit}
+                                    disabled={savingEdit}
+                                    className="flex items-center gap-1.5 px-4 py-2 bg-[var(--primary)] text-white rounded-lg text-sm font-medium hover:bg-[var(--primary)]/90 disabled:opacity-50"
+                                >
+                                    {savingEdit ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <Edit3 className="w-4 h-4" />
+                                    )}
+                                    Save Changes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
+    )
+}
+
+export default function CalendarPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-purple-500" /></div>}>
+            <CalendarPageContent />
+        </Suspense>
     )
 }

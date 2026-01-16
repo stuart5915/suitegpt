@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -26,9 +26,23 @@ import {
     ExternalLink,
     Link2,
     Sparkles,
-    Copy
+    Copy,
+    CalendarPlus,
+    GitCommit,
+    Zap,
+    Image
 } from 'lucide-react'
 import { Project } from '@/lib/supabase/types'
+
+// Global brand settings from Settings page
+interface BrandSettings {
+    brandVoice: string
+    tone: string
+    speakingPerspective: string
+    emojiStyle: string
+    exclusionWords: string
+    defaultHashtags: string
+}
 
 // Loop type definition
 interface ContentLoop {
@@ -55,6 +69,17 @@ interface LoopItem {
     lastUsed?: string
     usageCount: number
     previousPosts?: string[] // Track generated posts to avoid repetition
+}
+
+// Work Log automated loop configuration
+interface WorkLogConfig {
+    enabled: boolean
+    postTime: string // HH:MM format
+    platform: 'x' | 'linkedin'
+    autoApprove: boolean
+    generateImage: boolean
+    lastRun?: string
+    nextRun?: string
 }
 
 // Preset loop templates
@@ -103,7 +128,7 @@ const LOOP_TEMPLATES = [
     },
 ]
 
-export default function LoopsPage() {
+function LoopsPageContent() {
     const searchParams = useSearchParams()
     const supabase = createClient()
 
@@ -123,6 +148,21 @@ export default function LoopsPage() {
     const [generatingPost, setGeneratingPost] = useState(false)
     const [generatedPost, setGeneratedPost] = useState<string>('')
     const [selectedPlatform, setSelectedPlatform] = useState<'x' | 'linkedin' | 'instagram'>('x')
+    const [addingToQueue, setAddingToQueue] = useState(false)
+
+    // Work Log automated loop state
+    const [workLogConfig, setWorkLogConfig] = useState<WorkLogConfig>({
+        enabled: false,
+        postTime: '18:00',
+        platform: 'x',
+        autoApprove: true,
+        generateImage: true
+    })
+    const [showWorkLogModal, setShowWorkLogModal] = useState(false)
+    const [savingWorkLog, setSavingWorkLog] = useState(false)
+
+    // Global brand settings from Settings page
+    const [brandSettings, setBrandSettings] = useState<BrandSettings | null>(null)
 
     // New content form
     const [newContent, setNewContent] = useState({
@@ -132,6 +172,42 @@ export default function LoopsPage() {
         content: '',
         type: 'article' as const
     })
+
+    // Load brand settings from localStorage
+    useEffect(() => {
+        const brandSettingsJson = localStorage.getItem('cadence_brand_settings')
+        if (brandSettingsJson) {
+            try {
+                setBrandSettings(JSON.parse(brandSettingsJson))
+            } catch (e) {
+                console.error('Failed to parse brand settings:', e)
+            }
+        }
+    }, [])
+
+    // Load work log config from API
+    useEffect(() => {
+        async function loadWorkLogConfig() {
+            try {
+                const response = await fetch('/api/work-log/config')
+                const data = await response.json()
+                if (data.success && data.config) {
+                    setWorkLogConfig({
+                        enabled: data.config.enabled || false,
+                        postTime: data.config.post_time || '18:00',
+                        platform: data.config.platform || 'x',
+                        autoApprove: data.config.auto_approve ?? true,
+                        generateImage: data.config.generate_image ?? true,
+                        lastRun: data.config.last_run,
+                        nextRun: data.config.next_run
+                    })
+                }
+            } catch (e) {
+                console.error('Failed to load work log config:', e)
+            }
+        }
+        loadWorkLogConfig()
+    }, [])
 
     // Load projects
     useEffect(() => {
@@ -181,6 +257,80 @@ export default function LoopsPage() {
         if (!selectedProject) return
         localStorage.setItem(`loops-${selectedProject}`, JSON.stringify(updatedLoops))
         setLoops(updatedLoops)
+    }
+
+    // Save work log configuration
+    const saveWorkLogConfig = async (config: WorkLogConfig) => {
+        setSavingWorkLog(true)
+        try {
+            const response = await fetch('/api/work-log/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    enabled: config.enabled,
+                    postTime: config.postTime,
+                    platform: config.platform,
+                    autoApprove: config.autoApprove,
+                    generateImage: config.generateImage
+                })
+            })
+
+            const data = await response.json()
+            if (data.success) {
+                setWorkLogConfig({
+                    ...config,
+                    nextRun: data.config?.next_run
+                })
+                setShowWorkLogModal(false)
+            } else {
+                alert(data.error || 'Failed to save configuration')
+            }
+        } catch (error) {
+            console.error('Error saving work log config:', error)
+            alert('Failed to save configuration')
+        } finally {
+            setSavingWorkLog(false)
+        }
+    }
+
+    // Run work log now (manual trigger)
+    const runWorkLogNow = async () => {
+        setSavingWorkLog(true)
+        try {
+            const response = await fetch('/api/work-log/run', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    platform: workLogConfig.platform,
+                    autoApprove: workLogConfig.autoApprove,
+                    generateImage: workLogConfig.generateImage,
+                    postTime: workLogConfig.postTime
+                })
+            })
+
+            const data = await response.json()
+            console.log('Work log run response:', data)
+            if (response.ok) {
+                if (data.skipped) {
+                    alert('No commits found for today - nothing to post')
+                } else {
+                    const imageStatus = data.imageGenerated ? 'Image attached' : 'No image'
+                    alert(`${data.message}\n\n${imageStatus}`)
+                    // Update last run time in state
+                    setWorkLogConfig(prev => ({
+                        ...prev,
+                        lastRun: new Date().toISOString()
+                    }))
+                }
+            } else {
+                alert(data.error || 'Failed to run work log')
+            }
+        } catch (error) {
+            console.error('Error running work log:', error)
+            alert('Failed to run work log')
+        } finally {
+            setSavingWorkLog(false)
+        }
     }
 
     const createLoop = (template: typeof LOOP_TEMPLATES[0]) => {
@@ -286,6 +436,7 @@ export default function LoopsPage() {
         setGeneratedPost('')
 
         try {
+            // Use global brand settings as fallback for project-specific settings
             const response = await fetch('/api/generate-post', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -294,10 +445,13 @@ export default function LoopsPage() {
                     url: item.url,
                     summary: item.summary,
                     keyPoints: item.content,
-                    brandVoice: project.brand_voice,
-                    brandTone: project.brand_tone,
-                    emojiStyle: project.emoji_style,
-                    hashtags: project.default_hashtags,
+                    // Use project settings first, then global settings as fallback
+                    brandVoice: project.brand_voice || brandSettings?.brandVoice,
+                    brandTone: project.brand_tone || brandSettings?.tone,
+                    emojiStyle: project.emoji_style || brandSettings?.emojiStyle,
+                    speakingPerspective: brandSettings?.speakingPerspective || 'I',
+                    exclusionWords: brandSettings?.exclusionWords,
+                    hashtags: project.default_hashtags || brandSettings?.defaultHashtags?.split(' ').filter(Boolean),
                     projectName: project.name,
                     platform: selectedPlatform,
                     previousPosts: item.previousPosts || []
@@ -332,6 +486,44 @@ export default function LoopsPage() {
             }
         })
         saveLoops(updatedLoops)
+    }
+
+    // Add generated post to queue
+    const addToQueue = async (postText: string, loopId?: string, itemId?: string) => {
+        if (!postText.trim()) return
+
+        setAddingToQueue(true)
+        try {
+            const response = await fetch('/api/queue', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    platform: selectedPlatform,
+                    content_type: 'loop',
+                    post_text: postText,
+                    status: 'draft',
+                    images: []
+                })
+            })
+
+            if (response.ok) {
+                // Save to history as well if we have loop/item context
+                if (loopId && itemId) {
+                    savePostToHistory(loopId, itemId, postText)
+                }
+                alert('Added to queue! View in Queue page.')
+                setShowPostPreview(null)
+                setGeneratedPost('')
+            } else {
+                const data = await response.json()
+                alert(data.error || 'Failed to add to queue')
+            }
+        } catch (err) {
+            console.error('Error adding to queue:', err)
+            alert('Failed to add to queue')
+        } finally {
+            setAddingToQueue(false)
+        }
     }
 
     const getNextPostDate = (loop: ContentLoop) => {
@@ -369,7 +561,7 @@ export default function LoopsPage() {
                 <div>
                     <h1 className="text-2xl font-bold text-[var(--foreground)]">Content Loops</h1>
                     <p className="text-[var(--foreground-muted)]">
-                        Evergreen content that rotates automatically
+                        Automated and scheduled content generation
                     </p>
                 </div>
 
@@ -386,15 +578,140 @@ export default function LoopsPage() {
                             </option>
                         ))}
                     </select>
-
-                    <button
-                        onClick={() => setShowNewLoopModal(true)}
-                        className="btn btn-primary"
-                    >
-                        <Plus className="w-4 h-4" />
-                        New Loop
-                    </button>
                 </div>
+            </div>
+
+            {/* Automated Loops Section */}
+            <div className="card p-5 mb-8">
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
+                            <Zap className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                            <h2 className="font-semibold text-[var(--foreground)]">Automated Loops</h2>
+                            <p className="text-sm text-[var(--foreground-muted)]">System-powered content that runs automatically</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Work Log Loop Card */}
+                <div className="bg-[var(--background)] rounded-xl p-4 border border-[var(--surface-border)]">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center">
+                                <GitCommit className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h3 className="font-semibold text-[var(--foreground)]">Daily Work Log</h3>
+                                    {workLogConfig.enabled ? (
+                                        <span className="px-2 py-0.5 text-xs rounded-full bg-green-500/20 text-green-500">
+                                            Active
+                                        </span>
+                                    ) : (
+                                        <span className="px-2 py-0.5 text-xs rounded-full bg-[var(--surface)] text-[var(--foreground-muted)]">
+                                            Inactive
+                                        </span>
+                                    )}
+                                </div>
+                                <p className="text-sm text-[var(--foreground-muted)]">
+                                    Auto-generates daily dev updates from git commits
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                            {/* Status info */}
+                            {workLogConfig.enabled && (
+                                <div className="text-right mr-4">
+                                    <div className="text-xs text-[var(--foreground-muted)]">Posts daily at</div>
+                                    <div className="text-sm font-medium text-[var(--foreground)]">
+                                        {workLogConfig.postTime}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Quick actions */}
+                            <div className="flex items-center gap-2">
+                                {workLogConfig.enabled && (
+                                    <button
+                                        onClick={runWorkLogNow}
+                                        disabled={savingWorkLog}
+                                        className="btn btn-ghost text-sm"
+                                        title="Run now"
+                                    >
+                                        {savingWorkLog ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            <>
+                                                <Play className="w-4 h-4" />
+                                                Run Now
+                                            </>
+                                        )}
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => setShowWorkLogModal(true)}
+                                    className="btn btn-primary text-sm"
+                                >
+                                    <Settings className="w-4 h-4" />
+                                    Configure
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Config summary when enabled */}
+                    {workLogConfig.enabled && (
+                        <div className="mt-4 pt-4 border-t border-[var(--surface-border)] flex items-center gap-6 text-sm">
+                            <div className="flex items-center gap-2 text-[var(--foreground-muted)]">
+                                <Clock className="w-4 h-4" />
+                                <span>Daily at {workLogConfig.postTime}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-[var(--foreground-muted)]">
+                                <span className="capitalize">{workLogConfig.platform === 'x' ? 'Twitter/X' : 'LinkedIn'}</span>
+                            </div>
+                            {workLogConfig.generateImage && (
+                                <div className="flex items-center gap-2 text-[var(--foreground-muted)]">
+                                    <Image className="w-4 h-4" />
+                                    <span>With image</span>
+                                </div>
+                            )}
+                            {workLogConfig.autoApprove ? (
+                                <div className="flex items-center gap-2 text-green-500">
+                                    <Check className="w-4 h-4" />
+                                    <span>Auto-posts</span>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-2 text-amber-500">
+                                    <Clock className="w-4 h-4" />
+                                    <span>Needs approval</span>
+                                </div>
+                            )}
+                            {workLogConfig.lastRun && (
+                                <div className="flex items-center gap-2 text-[var(--foreground-muted)] ml-auto">
+                                    <span>Last run: {new Date(workLogConfig.lastRun).toLocaleDateString()}</span>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Content Loops Header */}
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h2 className="text-lg font-semibold text-[var(--foreground)]">Content Loops</h2>
+                    <p className="text-sm text-[var(--foreground-muted)]">Evergreen content that rotates on a schedule</p>
+                </div>
+                <button
+                    onClick={() => setShowNewLoopModal(true)}
+                    className="btn btn-secondary"
+                >
+                    <Plus className="w-4 h-4" />
+                    New Loop
+                </button>
             </div>
 
             {/* Loops Grid */}
@@ -901,6 +1218,17 @@ export default function LoopsPage() {
                                 </div>
                             </div>
 
+                            {/* Brand Settings Status */}
+                            {brandSettings ? (
+                                <p className="text-xs text-green-500 bg-green-500/10 rounded-lg p-2">
+                                    Using your brand voice settings from Settings
+                                </p>
+                            ) : (
+                                <p className="text-xs text-[var(--foreground-muted)] bg-[var(--background)] rounded-lg p-2">
+                                    Tip: Set up your brand voice in <a href="/settings" className="text-[var(--primary)] hover:underline">Settings</a> for consistent content
+                                </p>
+                            )}
+
                             {/* Generate Button */}
                             <button
                                 onClick={() => generatePost(showPostPreview.loopId, showPostPreview.itemId)}
@@ -957,6 +1285,26 @@ export default function LoopsPage() {
                                             </div>
                                         </div>
                                     </div>
+
+                                    {/* Add to Queue Button - Primary Action */}
+                                    <button
+                                        onClick={() => addToQueue(generatedPost, showPostPreview.loopId, showPostPreview.itemId)}
+                                        disabled={addingToQueue}
+                                        className="w-full btn btn-primary"
+                                    >
+                                        {addingToQueue ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                Adding to Queue...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <CalendarPlus className="w-4 h-4" />
+                                                Add to Queue
+                                            </>
+                                        )}
+                                    </button>
+
                                     <button
                                         onClick={() => generatePost(showPostPreview.loopId, showPostPreview.itemId)}
                                         className="w-full btn btn-ghost text-sm"
@@ -970,6 +1318,174 @@ export default function LoopsPage() {
                     </div>
                 </div>
             )}
+
+            {/* Work Log Configuration Modal */}
+            {showWorkLogModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-[var(--surface)] rounded-2xl max-w-md w-full">
+                        <div className="p-6 border-b border-[var(--surface-border)]">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center">
+                                        <GitCommit className="w-5 h-5 text-white" />
+                                    </div>
+                                    <h2 className="text-xl font-bold text-[var(--foreground)]">Daily Work Log</h2>
+                                </div>
+                                <button
+                                    onClick={() => setShowWorkLogModal(false)}
+                                    className="p-2 hover:bg-[var(--surface-hover)] rounded-lg"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <p className="text-sm text-[var(--foreground-muted)] mt-2">
+                                Automatically generate and post daily dev updates from your git commits
+                            </p>
+                        </div>
+
+                        <div className="p-6 space-y-5">
+                            {/* Enable Toggle */}
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <label className="font-medium text-[var(--foreground)]">Enable Daily Posts</label>
+                                    <p className="text-sm text-[var(--foreground-muted)]">Run automatically every day</p>
+                                </div>
+                                <button
+                                    onClick={() => setWorkLogConfig({ ...workLogConfig, enabled: !workLogConfig.enabled })}
+                                    className={`w-12 h-6 rounded-full transition-colors relative ${
+                                        workLogConfig.enabled ? 'bg-green-500' : 'bg-[var(--surface-border)]'
+                                    }`}
+                                >
+                                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                                        workLogConfig.enabled ? 'translate-x-7' : 'translate-x-1'
+                                    }`} />
+                                </button>
+                            </div>
+
+                            {/* Post Time */}
+                            <div>
+                                <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
+                                    Post Time
+                                </label>
+                                <input
+                                    type="time"
+                                    value={workLogConfig.postTime}
+                                    onChange={(e) => setWorkLogConfig({ ...workLogConfig, postTime: e.target.value })}
+                                    className="w-full px-4 py-2 bg-[var(--background)] border border-[var(--surface-border)] rounded-lg text-[var(--foreground)]"
+                                />
+                                <p className="text-xs text-[var(--foreground-muted)] mt-1">
+                                    Daily post will be scheduled at this time
+                                </p>
+                            </div>
+
+                            {/* Platform */}
+                            <div>
+                                <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
+                                    Platform
+                                </label>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setWorkLogConfig({ ...workLogConfig, platform: 'x' })}
+                                        className={`flex-1 px-4 py-2 rounded-lg ${
+                                            workLogConfig.platform === 'x'
+                                                ? 'bg-[var(--primary)] text-white'
+                                                : 'bg-[var(--background)] text-[var(--foreground)]'
+                                        }`}
+                                    >
+                                        Twitter/X
+                                    </button>
+                                    <button
+                                        onClick={() => setWorkLogConfig({ ...workLogConfig, platform: 'linkedin' })}
+                                        className={`flex-1 px-4 py-2 rounded-lg ${
+                                            workLogConfig.platform === 'linkedin'
+                                                ? 'bg-[var(--primary)] text-white'
+                                                : 'bg-[var(--background)] text-[var(--foreground)]'
+                                        }`}
+                                    >
+                                        LinkedIn
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Generate Image Toggle */}
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <label className="font-medium text-[var(--foreground)]">Generate Image</label>
+                                    <p className="text-sm text-[var(--foreground-muted)]">Include dashboard image with post</p>
+                                </div>
+                                <button
+                                    onClick={() => setWorkLogConfig({ ...workLogConfig, generateImage: !workLogConfig.generateImage })}
+                                    className={`w-12 h-6 rounded-full transition-colors relative ${
+                                        workLogConfig.generateImage ? 'bg-green-500' : 'bg-[var(--surface-border)]'
+                                    }`}
+                                >
+                                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                                        workLogConfig.generateImage ? 'translate-x-7' : 'translate-x-1'
+                                    }`} />
+                                </button>
+                            </div>
+
+                            {/* Auto Approve Toggle */}
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <label className="font-medium text-[var(--foreground)]">Auto-Approve & Post</label>
+                                    <p className="text-sm text-[var(--foreground-muted)]">Post immediately without review</p>
+                                </div>
+                                <button
+                                    onClick={() => setWorkLogConfig({ ...workLogConfig, autoApprove: !workLogConfig.autoApprove })}
+                                    className={`w-12 h-6 rounded-full transition-colors relative ${
+                                        workLogConfig.autoApprove ? 'bg-green-500' : 'bg-[var(--surface-border)]'
+                                    }`}
+                                >
+                                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                                        workLogConfig.autoApprove ? 'translate-x-7' : 'translate-x-1'
+                                    }`} />
+                                </button>
+                            </div>
+
+                            {!workLogConfig.autoApprove && (
+                                <p className="text-xs text-amber-500 bg-amber-500/10 rounded-lg p-2">
+                                    Posts will be added to your calendar as drafts for manual approval
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="p-6 border-t border-[var(--surface-border)] flex gap-3">
+                            <button
+                                onClick={() => setShowWorkLogModal(false)}
+                                className="flex-1 btn btn-ghost"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => saveWorkLogConfig(workLogConfig)}
+                                disabled={savingWorkLog}
+                                className="flex-1 btn btn-primary"
+                            >
+                                {savingWorkLog ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Saving...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Check className="w-4 h-4" />
+                                        Save Configuration
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
+    )
+}
+
+export default function LoopsPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-purple-500" /></div>}>
+            <LoopsPageContent />
+        </Suspense>
     )
 }

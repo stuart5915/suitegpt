@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -109,7 +109,7 @@ interface WeekContent {
     days: DayContent[]
 }
 
-export default function WeeklyPage() {
+function WeeklyPageContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const supabase = createClient()
@@ -3030,5 +3030,13 @@ No text, no people, just abstract visuals.`
                 </>
             )}
         </div>
+    )
+}
+
+export default function WeeklyPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-purple-500" /></div>}>
+            <WeeklyPageContent />
+        </Suspense>
     )
 }

@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
             video: {
                 uri: videoFile?.uri,
                 mimeType: videoFile?.mimeType,
-                name: videoFile?.name,
+                name: (videoFile as unknown as { name?: string })?.name,
             },
             message: 'Video generated successfully'
         })

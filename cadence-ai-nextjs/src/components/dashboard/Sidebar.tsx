@@ -15,7 +15,8 @@ import {
     User,
     Loader2,
     Rocket,
-    RefreshCw
+    RefreshCw,
+    Calendar
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -26,7 +27,7 @@ const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/ai-fleet', label: 'AI Fleet', icon: Rocket },
     { href: '/loops', label: 'Content Loops', icon: RefreshCw },
-    { href: '/queue', label: 'Content Queue', icon: FileText },
+    { href: '/calendar', label: 'Calendar', icon: Calendar },
     { href: '/settings', label: 'Settings', icon: Settings },
 ]
 

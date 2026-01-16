@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1200, height=675">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 1200px;
+            height: 675px;
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #0a0a0f 0%, #0f0a1a 50%, #0a0510 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Animated grid pattern - more techy */
+        .grid-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                linear-gradient(rgba(168, 85, 247, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(168, 85, 247, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
+            pointer-events: none;
+        }
+
+        /* Scan line effect */
+        .scanline {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.3), transparent);
+            animation: scan 3s linear infinite;
+        }
+
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+
+        /* Glow effects */
+        .glow-1 {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 70%);
+            top: -100px;
+            right: 100px;
+            pointer-events: none;
+        }
+
+        .glow-2 {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(34, 197, 94, 0.1) 0%, transparent 70%);
+            bottom: -50px;
+            left: 100px;
+            pointer-events: none;
+        }
+
+        /* Header */
+        .header {
+            position: absolute;
+            top: 32px;
+            left: 40px;
+            right: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .badge {
+            background: linear-gradient(135deg, #a855f7, #7c3aed);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 20px rgba(168, 85, 247, 0.4);
+        }
+
+        .badge-icon {
+            font-size: 16px;
+        }
+
+        .timestamp {
+            font-family: 'JetBrains Mono', monospace;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            padding: 8px 16px;
+            border-radius: 100px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #22c55e;
+        }
+
+        .status-text {
+            color: #22c55e;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        /* Main content */
+        .content {
+            position: absolute;
+            top: 100px;
+            left: 40px;
+            right: 40px;
+            bottom: 80px;
+            display: flex;
+            gap: 40px;
+        }
+
+        /* Stats section */
+        .stats-section {
+            flex: 0 0 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .stats-title {
+            font-family: 'JetBrains Mono', monospace;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            margin-bottom: 4px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .stat-icon.commits {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(168, 85, 247, 0.1));
+            border: 1px solid rgba(168, 85, 247, 0.3);
+        }
+
+        .stat-icon.apps {
+            background: linear-gradient(135deg, rgba(255, 149, 0, 0.2), rgba(255, 149, 0, 0.1));
+            border: 1px solid rgba(255, 149, 0, 0.3);
+        }
+
+        .stat-icon.files {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.1));
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .stat-info {
+            flex: 1;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 900;
+            color: white;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        /* Apps section */
+        .apps-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .apps-title {
+            font-family: 'JetBrains Mono', monospace;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+        }
+
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            flex: 1;
+        }
+
+        .app-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .app-card.active {
+            border-color: rgba(34, 197, 94, 0.3);
+        }
+
+        .app-card.active::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #22c55e, #10b981);
+        }
+
+        .app-icon-small {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .app-icon-small.foodvitals { background: linear-gradient(135deg, #22c55e, #16a34a); }
+        .app-icon-small.opticrep { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .app-icon-small.trueform { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .app-icon-small.cheshbon { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+        .app-icon-small.remcast { background: linear-gradient(135deg, #ec4899, #db2777); }
+        .app-icon-small.cadence { background: linear-gradient(135deg, #a855f7, #9333ea); }
+        .app-icon-small.platform { background: linear-gradient(135deg, #ff9500, #ff6b9d); }
+
+        .app-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .app-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 2px;
+        }
+
+        .app-status {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .app-status.updated {
+            color: #22c55e;
+        }
+
+        .app-status.live {
+            color: #3b82f6;
+        }
+
+        .app-status.pending {
+            color: #f59e0b;
+        }
+
+        .activity-bar {
+            width: 60px;
+            height: 24px;
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+        }
+
+        .activity-bar-segment {
+            flex: 1;
+            background: rgba(168, 85, 247, 0.3);
+            border-radius: 2px;
+        }
+
+        .activity-bar-segment.active {
+            background: linear-gradient(to top, #a855f7, #c084fc);
+        }
+
+        /* Footer */
+        .footer {
+            position: absolute;
+            bottom: 32px;
+            left: 40px;
+            right: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .footer-left {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .suite-logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 8px 16px;
+            border-radius: 8px;
+        }
+
+        .suite-logo span {
+            color: white;
+            font-weight: 800;
+            font-size: 14px;
+        }
+
+        .footer-url {
+            font-family: 'JetBrains Mono', monospace;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 12px;
+        }
+
+        .footer-tagline {
+            font-family: 'JetBrains Mono', monospace;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 11px;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="grid-overlay"></div>
+    <div class="scanline"></div>
+    <div class="glow-1"></div>
+    <div class="glow-2"></div>
+
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <div class="badge">
+                <span class="badge-icon">⚡</span>
+                AI FLEET DEV UPDATE
+            </div>
+            <span class="timestamp">{{TIMESTAMP}}</span>
+        </div>
+        <div class="status-indicator">
+            <div class="status-dot"></div>
+            <span class="status-text">SYSTEMS ACTIVE</span>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content">
+        <!-- Stats -->
+        <div class="stats-section">
+            <div class="stats-title">// TODAY'S METRICS</div>
+
+            <div class="stat-card">
+                <div class="stat-icon commits">📊</div>
+                <div class="stat-info">
+                    <div class="stat-value">{{COMMITS}}</div>
+                    <div class="stat-label">Commits Pushed</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon apps">🚀</div>
+                <div class="stat-info">
+                    <div class="stat-value">{{APPS_COUNT}}</div>
+                    <div class="stat-label">Apps Updated</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon files">📁</div>
+                <div class="stat-info">
+                    <div class="stat-value">{{FILES}}</div>
+                    <div class="stat-label">Files Modified</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Apps -->
+        <div class="apps-section">
+            <div class="apps-title">// FLEET STATUS</div>
+            <div class="apps-grid">
+                {{APP_CARDS}}
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <div class="footer-left">
+            <div class="suite-logo">
+                <span>SUITE</span>
+            </div>
+            <span class="footer-url">getsuite.app/apps</span>
+        </div>
+        <span class="footer-tagline">Autonomous AI Apps • Shipping Daily</span>
+    </div>
+</body>
+
+</html>

@@ -11,16 +11,54 @@ interface GeneratePostRequest {
     summary?: string
     keyPoints?: string
 
-    // Brand info
+    // Brand info (can be passed directly or fetched from settings)
     brandVoice?: string
     brandTone?: string
     emojiStyle?: string
+    speakingPerspective?: string
+    exclusionWords?: string
     hashtags?: string[]
     projectName?: string
 
     // Context
     platform: 'x' | 'linkedin' | 'instagram'
     previousPosts?: string[] // Avoid repetition
+
+    // Mode
+    mode?: 'single' | 'thread' | 'poll' | 'ai_fleet'
+    pollOptions?: string[] // For poll mode - the 4 app ideas
+    buildNumber?: string // For ai_fleet mode
+    freeFeatures?: string[] // For ai_fleet mode - free features
+    proFeatures?: string[] // For ai_fleet mode - paid features
+}
+
+interface PollResponse {
+    success: true
+    mode: 'poll'
+    mainPost: string
+    poll: {
+        question: string
+        options: string[]
+        durationMinutes: number
+    }
+    platform: string
+}
+
+interface SingleResponse {
+    success: true
+    mode: 'single'
+    post: string
+    platform: string
+    characterCount: number
+    withinLimit: boolean
+}
+
+interface ThreadResponse {
+    success: true
+    mode: 'thread'
+    mainPost: string
+    replyPost: string
+    platform: string
 }
 
 export async function POST(request: NextRequest) {
@@ -35,17 +73,28 @@ export async function POST(request: NextRequest) {
             brandVoice,
             brandTone,
             emojiStyle,
+            speakingPerspective = 'I',
+            exclusionWords,
             hashtags,
             projectName,
             platform,
-            previousPosts = []
+            previousPosts = [],
+            mode = 'single',
+            pollOptions = [],
+            buildNumber = '',
+            freeFeatures = [],
+            proFeatures = []
         } = body
 
-        if (!title) {
+        if (!title && mode !== 'poll') {
             return NextResponse.json({ error: 'Title is required' }, { status: 400 })
         }
 
-        // Build the prompt
+        if (mode === 'poll' && pollOptions.length !== 4) {
+            return NextResponse.json({ error: 'Poll mode requires exactly 4 options' }, { status: 400 })
+        }
+
+        // Platform config
         const platformConfig = {
             x: { maxLength: 280, name: 'Twitter/X' },
             linkedin: { maxLength: 2000, name: 'LinkedIn' },
@@ -53,8 +102,114 @@ export async function POST(request: NextRequest) {
         }
 
         const config = platformConfig[platform] || platformConfig.x
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
 
-        const prompt = `You are a social media copywriter. Generate a unique, engaging ${config.name} post to promote this article/content.
+        // Build brand context section
+        const brandContext = `
+BRAND VOICE & STYLE:
+${brandVoice ? `- Brand Personality: ${brandVoice}` : '- Brand: Direct, helpful, building in public'}
+${brandTone ? `- Tone: ${brandTone}` : '- Tone: Casual but knowledgeable'}
+- Speaking Perspective: Use "${speakingPerspective}" (${speakingPerspective === 'I' ? 'solo founder' : speakingPerspective === 'We' ? 'team' : 'audience-focused'})
+${emojiStyle === 'heavy' ? '- Emoji Style: Use emojis liberally (2-4 per post)' :
+                emojiStyle === 'minimal' ? '- Emoji Style: Use 1 emoji max, or none' :
+                    emojiStyle === 'none' ? '- Emoji Style: Do NOT use any emojis' : '- Emoji Style: Use 1-2 emojis naturally'}
+
+${exclusionWords ? `
+BANNED WORDS - NEVER USE THESE:
+${exclusionWords}
+If you catch yourself using any of these words, rewrite to avoid them.
+` : ''}
+`
+
+        const qualityRules = `
+QUALITY RULES:
+1. Vary your hooks - don't always start with an emoji or "Just..."
+2. Be specific and concrete, not generic or vague
+3. Show personality - sound human, not corporate
+4. Create curiosity or provide immediate value
+5. Keep it conversational, not salesy
+6. ${platform === 'x' ? 'Be punchy - every word must earn its place' : 'Be engaging but get to the point'}
+`
+
+        // POLL MODE - For AI Fleet "what to build next" polls
+        if (mode === 'poll') {
+            const pollPrompt = `You are helping create a Twitter poll for the AI Fleet - a project that ships AI-powered micro apps daily.
+
+CONTEXT:
+The AI Fleet is a collection of autonomous AI apps. The audience votes on what app the Fleet should build next.
+
+THE 4 APP IDEAS FOR THE POLL:
+1. ${pollOptions[0]}
+2. ${pollOptions[1]}
+3. ${pollOptions[2]}
+4. ${pollOptions[3]}
+
+TASK: Generate the poll question only. Keep it short and on-brand for AI Fleet.
+
+Return your response in this EXACT JSON format (no markdown, no code blocks):
+{
+    "pollQuestion": "What should the AI Fleet ship next?",
+    "pollOptions": ["Short name 1", "Short name 2", "Short name 3", "Short name 4"]
+}
+
+RULES:
+- pollQuestion should reference "AI Fleet" - examples: "What should the AI Fleet ship next?", "Next AI Fleet build:", "Voting on the next Fleet app:"
+- pollOptions should be SHORT (max 25 chars each) - just the app names, not descriptions
+- Keep the question punchy and direct
+
+Return ONLY the JSON object, nothing else.`
+
+            const result = await model.generateContent(pollPrompt)
+            const response = await result.response
+            let text = response.text().trim()
+
+            // Clean up markdown code blocks if present
+            if (text.startsWith('```json')) {
+                text = text.slice(7)
+            }
+            if (text.startsWith('```')) {
+                text = text.slice(3)
+            }
+            if (text.endsWith('```')) {
+                text = text.slice(0, -3)
+            }
+            text = text.trim()
+
+            try {
+                const parsed = JSON.parse(text)
+                return NextResponse.json({
+                    success: true,
+                    mode: 'poll',
+                    mainPost: '', // Main post is generated separately via ai_fleet mode
+                    poll: {
+                        question: parsed.pollQuestion || "What should the AI Fleet ship next?",
+                        options: parsed.pollOptions || pollOptions.map(o => o.slice(0, 25)),
+                        durationMinutes: 1440 // 24 hours
+                    },
+                    platform
+                } as PollResponse)
+            } catch (parseError) {
+                console.error('Failed to parse poll response:', text)
+                // Fallback response
+                return NextResponse.json({
+                    success: true,
+                    mode: 'poll',
+                    mainPost: '',
+                    poll: {
+                        question: "What should the AI Fleet ship next?",
+                        options: pollOptions.map(o => o.slice(0, 25)),
+                        durationMinutes: 1440
+                    },
+                    platform
+                } as PollResponse)
+            }
+        }
+
+        // THREAD MODE
+        if (mode === 'thread') {
+            const threadPrompt = `You are a social media expert creating a 2-part thread.
+
+${brandContext}
 
 CONTENT TO PROMOTE:
 - Title: ${title}
@@ -62,43 +217,157 @@ ${url ? `- URL: ${url}` : ''}
 ${summary ? `- Summary: ${summary}` : ''}
 ${keyPoints ? `- Key Points: ${keyPoints}` : ''}
 
-BRAND GUIDELINES:
-${projectName ? `- Brand: ${projectName}` : ''}
-${brandVoice ? `- Voice: ${brandVoice}` : '- Voice: Professional but approachable'}
-${brandTone ? `- Tone: ${brandTone}` : ''}
-${emojiStyle === 'heavy' ? '- Use emojis liberally throughout the post' :
-                emojiStyle === 'minimal' ? '- Use 1-2 emojis max' :
-                    emojiStyle === 'none' ? '- Do not use any emojis' : '- Use emojis naturally where appropriate'}
+${qualityRules}
 
-PLATFORM CONSTRAINTS:
-- Platform: ${config.name}
-- Max Length: ${config.maxLength} characters
-${platform === 'x' ? '- Be concise and punchy' : ''}
-${platform === 'linkedin' ? '- Can be longer, more professional tone' : ''}
-${platform === 'instagram' ? '- Engaging and visual-friendly language' : ''}
+TASK: Generate a 2-tweet thread.
+
+Tweet 1 (Main): The hook that grabs attention and makes people want to read more. Max 280 chars.
+Tweet 2 (Reply): The value/details and call-to-action. Can include the URL. Max 280 chars.
 
 ${previousPosts.length > 0 ? `
-AVOID REPETITION - These posts were already generated for this content, create something DIFFERENT:
-${previousPosts.map((p, i) => `${i + 1}. "${p}"`).join('\n')}
-
-Make sure your new post has a completely different angle, hook, or framing.
+AVOID - These were already generated, be DIFFERENT:
+${previousPosts.slice(0, 3).map((p, i) => `${i + 1}. "${p.slice(0, 100)}..."`).join('\n')}
 ` : ''}
 
-${hashtags && hashtags.length > 0 ? `
-HASHTAGS TO INCLUDE: ${hashtags.join(' ')}
+Return your response in this EXACT JSON format (no markdown):
+{
+    "mainPost": "The attention-grabbing first tweet",
+    "replyPost": "The follow-up with details and CTA"
+}
+
+Return ONLY the JSON object.`
+
+            const result = await model.generateContent(threadPrompt)
+            const response = await result.response
+            let text = response.text().trim()
+
+            // Clean up markdown
+            if (text.startsWith('```json')) text = text.slice(7)
+            if (text.startsWith('```')) text = text.slice(3)
+            if (text.endsWith('```')) text = text.slice(0, -3)
+            text = text.trim()
+
+            try {
+                const parsed = JSON.parse(text)
+                return NextResponse.json({
+                    success: true,
+                    mode: 'thread',
+                    mainPost: parsed.mainPost,
+                    replyPost: parsed.replyPost,
+                    platform
+                } as ThreadResponse)
+            } catch (parseError) {
+                return NextResponse.json({ error: 'Failed to parse thread response' }, { status: 500 })
+            }
+        }
+
+        // AI FLEET MODE - Punchy app launch announcement with features
+        if (mode === 'ai_fleet') {
+            // Extract app name from title (format: "AppName - tagline")
+            const appName = title.split(' - ')[0] || title
+            const tagline = title.split(' - ')[1] || summary || ''
+
+            // Format features for prompt
+            const hasFreeFeatures = freeFeatures && freeFeatures.length > 0
+            const hasProFeatures = proFeatures && proFeatures.length > 0
+            const freeList = hasFreeFeatures ? freeFeatures.slice(0, 3).join(', ') : ''
+            const proList = hasProFeatures ? proFeatures.slice(0, 3).join(', ') : ''
+
+            const aiFleetPrompt = `You are writing a punchy Twitter announcement for an AI Fleet app launch.
+
+CONTEXT:
+- The AI Fleet ships AI-powered micro apps daily
+- This is Build #${buildNumber || '??'}
+- App name: ${appName}
+- What it does: ${tagline}
+${hasFreeFeatures ? `- Free features: ${freeList}` : ''}
+${hasProFeatures ? `- Pro features (paid): ${proList}` : ''}
+
+TASK: Write a short announcement tweet that includes what's free and what's paid (if applicable). NO links. NO hashtags.
+
+FORMAT (follow this structure):
+Line 1: "AI Fleet #${buildNumber || '??'}: ${appName}"
+Line 2: (blank)
+Line 3: 1 line describing what the app does
+Line 4: (blank)
+Line 5: 🆓 [condensed free features]
+Line 6: 💎 [condensed pro features] (only if pro features exist)
+
+EXAMPLES OF GOOD POSTS:
+"AI Fleet #47: FoodVitals
+
+Scan meals → instant nutrition.
+
+🆓 Meal scanning, basic nutrition
+💎 AI meal plans, macro tracking"
+
+"AI Fleet #48: HabitStack
+
+Stack tiny habits. Track streaks.
+
+🆓 Habit tracking, daily streaks
+💎 AI coaching, analytics"
+
+RULES:
+- Maximum 280 characters total
+- NO links
+- NO hashtags
+- Use 🆓 for free features, 💎 for pro features
+- Condense features to short phrases (2-4 words each)
+- If no pro features, skip the 💎 line entirely
+- Be specific, not generic
+
+Return ONLY the tweet text, nothing else.`
+
+            const result = await model.generateContent(aiFleetPrompt)
+            const response = await result.response
+            let text = response.text().trim()
+
+            // Clean up any surrounding quotes
+            if ((text.startsWith('"') && text.endsWith('"')) ||
+                (text.startsWith("'") && text.endsWith("'"))) {
+                text = text.slice(1, -1)
+            }
+
+            return NextResponse.json({
+                success: true,
+                mode: 'single',
+                post: text,
+                platform,
+                characterCount: text.length,
+                withinLimit: text.length <= config.maxLength
+            } as SingleResponse)
+        }
+
+        // SINGLE MODE (default)
+        const singlePrompt = `You are a social media copywriter creating a ${config.name} post.
+
+${brandContext}
+
+CONTENT TO PROMOTE:
+- Title: ${title}
+${url ? `- URL: ${url}` : ''}
+${summary ? `- Summary: ${summary}` : ''}
+${keyPoints ? `- Key Points: ${keyPoints}` : ''}
+${projectName ? `- For: ${projectName}` : ''}
+
+${qualityRules}
+
+PLATFORM: ${config.name}
+MAX LENGTH: ${config.maxLength} characters
+
+${previousPosts.length > 0 ? `
+AVOID REPETITION - These were already generated, create something DIFFERENT:
+${previousPosts.slice(0, 5).map((p, i) => `${i + 1}. "${p.slice(0, 80)}..."`).join('\n')}
+
+Use a completely different angle, hook, or framing.
 ` : ''}
 
-Generate a single post that:
-1. Has an attention-grabbing hook
-2. Communicates the value clearly
-3. ${url ? 'Includes a call-to-action to read/click the link' : 'Has a clear takeaway'}
-4. Fits the platform style
-5. Stays within the character limit
+${hashtags && hashtags.length > 0 ? `INCLUDE HASHTAGS: ${hashtags.join(' ')}` : ''}
 
-Return ONLY the post text, nothing else. Do not include quotes around it.`
+Generate a single engaging post. Return ONLY the post text, no quotes, no explanation.`
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
-        const result = await model.generateContent(prompt)
+        const result = await model.generateContent(singlePrompt)
         const response = await result.response
         let text = response.text().trim()
 
@@ -109,11 +378,13 @@ Return ONLY the post text, nothing else. Do not include quotes around it.`
         }
 
         return NextResponse.json({
+            success: true,
+            mode: 'single',
             post: text,
             platform,
             characterCount: text.length,
             withinLimit: text.length <= config.maxLength
-        })
+        } as SingleResponse)
 
     } catch (error) {
         console.error('Generate post error:', error)

@@ -25,8 +25,8 @@ CREATE INDEX IF NOT EXISTS idx_deposits_wallet ON treasury_deposits(wallet_addre
 -- =====================================================
 CREATE TABLE IF NOT EXISTS yield_allocations (
   wallet_address TEXT PRIMARY KEY,
-  keep_percent INTEGER NOT NULL DEFAULT 90 
-    CHECK (keep_percent >= 0 AND keep_percent <= 90), -- Max 90%, min 10% to apps
+  keep_percent INTEGER NOT NULL DEFAULT 90
+    CHECK (keep_percent >= 0 AND keep_percent <= 90), -- 0-90% keep, 10-100% to apps
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

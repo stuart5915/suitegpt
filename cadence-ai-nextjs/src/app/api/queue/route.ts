@@ -59,7 +59,7 @@ export async function GET() {
         const { data, error } = await supabase
             .from('scheduled_posts')
             .select('*, apps(name, icon_url)')
-            .in('status', ['draft', 'queued'])
+            .in('status', ['draft', 'queued', 'approved', 'scheduled', 'posted', 'failed'])
             .order('scheduled_for', { ascending: true, nullsFirst: false })
             .order('created_at', { ascending: false })
 

@@ -48,10 +48,15 @@ export interface Project {
 }
 
 export interface PostingSchedule {
-    [platform: string]: {
-        days: number[] // 0-6, Sunday-Saturday
-        times: string[] // HH:mm format
-    }
+    [key: string]: unknown
+    day_themes?: Record<string, string>
+    custom_themes?: Array<{
+        id: string
+        label: string
+        emoji: string
+        color: string
+        desc: string
+    }>
 }
 
 export interface WeeklyPlan {

@@ -126,10 +126,9 @@ Generate FRESH, NEW content ideas that are different from the above.`
                 // Use Gemini with search grounding to get current news
                 const researchModel = genAI.getGenerativeModel({
                     model: 'gemini-2.0-flash',
-                    // @ts-ignore - grounding tools may not be in types yet
                     tools: [{
                         googleSearch: {}
-                    }]
+                    }] as unknown as never[]
                 })
 
                 const researchPrompt = `Search for the latest news and trends related to: "${industry}"

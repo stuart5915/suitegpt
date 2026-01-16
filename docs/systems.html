@@ -12,7 +12,6 @@
     <link rel="stylesheet" href="../suite-styles.css">
     <link rel="stylesheet" href="../nav.css">
     <link rel="stylesheet" href="docs.css">
-    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <style>
         body {
             font-family: 'Nunito', sans-serif;
@@ -31,32 +30,59 @@
             box-sizing: border-box;
         }
 
-        .mermaid {
-            background: white;
+        .admin-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff9500, #ff6b00);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .arch-diagram {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             border-radius: 16px;
             padding: 24px;
-            margin: 20px 0;
+            margin: 24px 0;
+            color: #fff;
+            font-family: monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
             overflow-x: auto;
         }
 
-        .diagram-section {
-            margin: 40px 0;
+        .arch-diagram .title {
+            color: #ff9500;
+            font-weight: 700;
+            margin-bottom: 16px;
+            font-family: 'Nunito', sans-serif;
         }
 
-        .diagram-title {
-            font-size: 1.3rem;
-            font-weight: 800;
-            color: #2d1b4e;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
+        .arch-diagram .comment {
+            color: #6b7280;
+        }
+
+        .arch-diagram .highlight {
+            color: #22c55e;
+        }
+
+        .arch-diagram .orange {
+            color: #ff9500;
+        }
+
+        .arch-diagram .purple {
+            color: #a855f7;
         }
 
         .data-table {
             width: 100%;
             border-collapse: collapse;
             margin: 16px 0;
+            background: #fff;
+            border-radius: 12px;
+            overflow: hidden;
         }
 
         .data-table th,
@@ -72,10 +98,6 @@
             color: #374151;
         }
 
-        .data-table tr:hover {
-            background: #fef9f5;
-        }
-
         .tech-badge {
             display: inline-block;
             padding: 4px 10px;
@@ -85,40 +107,35 @@
             margin: 2px;
         }
 
-        .tech-frontend {
-            background: #dbeafe;
-            color: #1d4ed8;
+        .tech-frontend { background: #dbeafe; color: #1d4ed8; }
+        .tech-backend { background: #dcfce7; color: #16a34a; }
+        .tech-blockchain { background: #fef3c7; color: #d97706; }
+        .tech-ai { background: #ede9fe; color: #7c3aed; }
+
+        .component-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin: 24px 0;
         }
 
-        .tech-backend {
-            background: #dcfce7;
-            color: #16a34a;
-        }
-
-        .tech-blockchain {
-            background: #fef3c7;
-            color: #d97706;
-        }
-
-        .tech-ai {
-            background: #ede9fe;
-            color: #7c3aed;
-        }
-
-        .admin-only {
-            background: linear-gradient(135deg, #fef3c7, #fde68a);
-            padding: 16px 20px;
+        .component-card {
+            background: #fff;
             border-radius: 12px;
-            margin-bottom: 24px;
+            padding: 20px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
         }
 
-        .admin-only-badge {
-            background: #f59e0b;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
+        .component-card h4 {
             font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 8px;
+        }
+
+        .component-card p {
+            font-size: 0.9rem;
+            color: #666;
+            line-height: 1.5;
         }
     </style>
 </head>
@@ -131,299 +148,193 @@
             <aside class="docs-sidebar"></aside>
             <script src="sidebar.js"></script>
             <main class="docs-content">
-                <h1>🔧 Systems View</h1>
-                <p style="color: #6b7280; margin-bottom: 24px;">Complete architecture overview of the SUITE ecosystem.
-                </p>
+                <h1>Systems View</h1>
+                <span class="admin-badge">ADMIN</span>
+                <p class="subtitle">Technical architecture of the SUITE ecosystem.</p>
 
-                <div class="admin-only">
-                    <span class="admin-only-badge">🔒 ADMIN</span>
-                    <span style="margin-left: 12px; color: #92400e;">This page is for internal reference. Contains
-                        technical implementation details.</span>
+                <h2>System Architecture</h2>
+
+                <div class="arch-diagram">
+                    <div class="title">SUITE ECOSYSTEM OVERVIEW</div>
+<span class="comment">┌─────────────────────────────────────────────────────────────────┐</span>
+<span class="comment">│</span>  <span class="highlight">USERS</span>                                                          <span class="comment">│</span>
+<span class="comment">│</span>  ├── App Users (mobile apps, credits)                          <span class="comment">│</span>
+<span class="comment">│</span>  └── Depositors (USDC vault, governance)                        <span class="comment">│</span>
+<span class="comment">└─────────────────────────────────────────────────────────────────┘</span>
+                         │                    │
+                         ▼                    ▼
+<span class="comment">┌────────────────────────────┐    ┌────────────────────────────────┐</span>
+<span class="comment">│</span>  <span class="orange">SUITE APPS</span>                <span class="comment">│</span>    <span class="comment">│</span>  <span class="purple">USDC VAULT</span>                     <span class="comment">│</span>
+<span class="comment">│</span>  FoodVitals, OpticRep,     <span class="comment">│</span>    <span class="comment">│</span>  Deposits → Yield → AI Fleet   <span class="comment">│</span>
+<span class="comment">│</span>  TrueForm, Cheshbon,       <span class="comment">│</span>    <span class="comment">│</span>  Base Network (USDC)            <span class="comment">│</span>
+<span class="comment">│</span>  RemCast, Cadence AI       <span class="comment">│</span>    <span class="comment">│</span>  Governance voting              <span class="comment">│</span>
+<span class="comment">└────────────────────────────┘</span>    <span class="comment">└────────────────────────────────┘</span>
+                         │                    │
+                         ▼                    ▼
+<span class="comment">┌─────────────────────────────────────────────────────────────────┐</span>
+<span class="comment">│</span>  <span class="highlight">SUPABASE</span>                                                       <span class="comment">│</span>
+<span class="comment">│</span>  users, suite_credits, apps, scheduled_posts, yield_reports   <span class="comment">│</span>
+<span class="comment">└─────────────────────────────────────────────────────────────────┘</span>
+                                  │
+                                  ▼
+<span class="comment">┌─────────────────────────────────────────────────────────────────┐</span>
+<span class="comment">│</span>  <span class="orange">AI FLEET</span>                                                       <span class="comment">│</span>
+<span class="comment">│</span>  Autonomous app building pipeline                              <span class="comment">│</span>
+<span class="comment">│</span>  ├── Idea generation                                           <span class="comment">│</span>
+<span class="comment">│</span>  ├── Governance approval                                       <span class="comment">│</span>
+<span class="comment">│</span>  ├── Iterative building (50+ cycles)                           <span class="comment">│</span>
+<span class="comment">│</span>  └── Auto deployment                                           <span class="comment">│</span>
+<span class="comment">└─────────────────────────────────────────────────────────────────┘</span>
                 </div>
 
-                <!-- App Creation Flow -->
-                <div class="diagram-section">
-                    <div class="diagram-title">📱 App Creation → Publishing Flow</div>
-                    <div class="mermaid">
-                        flowchart TB
-                        subgraph User["👤 Developer"]
-                        Idea["💡 App Idea"]
-                        end
+                <h2>Core Components</h2>
 
-                        subgraph Discord["💬 Discord"]
-                        DevCreate["/dev-create-app"]
-                        AppFeature["/app feature"]
-                        Preflight["/preflight-check"]
-                        Publish["/publish-app"]
-                        end
-
-                        subgraph Supabase["☁️ Supabase"]
-                        Apps["apps table"]
-                        Prompts["prompts table"]
-                        end
-
-                        subgraph PC["🖥️ Prompt Server"]
-                        Watcher["watcher.py"]
-                        end
-
-                        subgraph IDE["🛠️ Antigravity"]
-                        Agent["AI Agent"]
-                        end
-
-                        subgraph Vercel["🚀 Vercel"]
-                        PWA["Live PWA"]
-                        end
-
-                        subgraph Store["🏪 App Store"]
-                        AppPage["getsuite.app/app"]
-                        end
-
-                        Idea --> DevCreate
-                        DevCreate --> Apps
-                        DevCreate --> Prompts
-                        Prompts --> Watcher
-                        Watcher --> Agent
-                        Agent --> Vercel
-                        AppFeature --> Prompts
-                        Preflight --> Apps
-                        Publish --> Vercel
-                        Vercel --> PWA
-                        PWA --> AppPage
+                <div class="component-grid">
+                    <div class="component-card">
+                        <h4>SUITE Apps</h4>
+                        <p>React Native mobile apps (Expo). Each app connects to shared Supabase for user auth and credit balance. Apps consume credits for AI features.</p>
+                    </div>
+                    <div class="component-card">
+                        <h4>USDC Vault</h4>
+                        <p>Smart contract on Base network. Accepts USDC deposits, tracks LP tokens 1:1, generates yield through DeFi strategies, distributes based on user allocation.</p>
+                    </div>
+                    <div class="component-card">
+                        <h4>AI Fleet</h4>
+                        <p>Autonomous app building system. Uses Claude/Gemini for code generation. Runs 50+ iteration cycles per app. Governed by depositor votes.</p>
+                    </div>
+                    <div class="component-card">
+                        <h4>Cadence AI</h4>
+                        <p>Internal tooling for content automation, social posting, and development workflows. Powers work logs and scheduled content.</p>
                     </div>
                 </div>
 
-                <!-- Full Ecosystem -->
-                <div class="diagram-section">
-                    <div class="diagram-title">🌐 Complete SUITE Ecosystem</div>
-                    <div class="mermaid">
-                        flowchart TB
-                        subgraph Users["👥 Users"]
-                        Dev["Developers"]
-                        Consumer["Consumers"]
-                        end
+                <h2>Data Flow</h2>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Source</th>
+                            <th>Destination</th>
+                            <th>Data</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>User deposits USDC</td>
+                            <td>Vault contract</td>
+                            <td>LP tokens minted 1:1</td>
+                        </tr>
+                        <tr>
+                            <td>Vault yields</td>
+                            <td>User / AI Fleet</td>
+                            <td>Based on allocation %</td>
+                        </tr>
+                        <tr>
+                            <td>User buys credits</td>
+                            <td>Supabase suite_credits</td>
+                            <td>Credit balance updated</td>
+                        </tr>
+                        <tr>
+                            <td>User uses app feature</td>
+                            <td>Supabase suite_credits</td>
+                            <td>Credits deducted</td>
+                        </tr>
+                        <tr>
+                            <td>AI Fleet builds app</td>
+                            <td>GitHub → Vercel</td>
+                            <td>Auto-deployed</td>
+                        </tr>
+                        <tr>
+                            <td>Depositor votes</td>
+                            <td>Supabase governance</td>
+                            <td>Proposal approved/rejected</td>
+                        </tr>
+                    </tbody>
+                </table>
 
-                        subgraph Website["🌐 getsuite.app"]
-                        Home["Homepage"]
-                        AppStore["App Store"]
-                        Wallet["Wallet"]
-                        StartBuild["Start Building"]
-                        Docs["Documentation"]
-                        end
+                <h2>Tech Stack</h2>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Layer</th>
+                            <th>Technologies</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Mobile Apps</td>
+                            <td>
+                                <span class="tech-badge tech-frontend">React Native</span>
+                                <span class="tech-badge tech-frontend">Expo</span>
+                                <span class="tech-badge tech-frontend">TypeScript</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Web Platform</td>
+                            <td>
+                                <span class="tech-badge tech-frontend">Next.js</span>
+                                <span class="tech-badge tech-frontend">HTML/CSS/JS</span>
+                                <span class="tech-badge tech-frontend">Vercel</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Backend</td>
+                            <td>
+                                <span class="tech-badge tech-backend">Supabase</span>
+                                <span class="tech-badge tech-backend">PostgreSQL</span>
+                                <span class="tech-badge tech-backend">Edge Functions</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>AI</td>
+                            <td>
+                                <span class="tech-badge tech-ai">Claude</span>
+                                <span class="tech-badge tech-ai">Gemini</span>
+                                <span class="tech-badge tech-ai">Puppeteer</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Blockchain</td>
+                            <td>
+                                <span class="tech-badge tech-blockchain">Solidity</span>
+                                <span class="tech-badge tech-blockchain">Base Network</span>
+                                <span class="tech-badge tech-blockchain">ethers.js</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
 
-                        subgraph Discord["💬 Discord Bot"]
-                        Stu["🤖 Stu AI"]
-                        Commands["33 Commands"]
-                        Credits["Credit System"]
-                        end
+                <h2>Key Endpoints</h2>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Service</th>
+                            <th>URL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Website</td>
+                            <td><a href="https://getsuite.app" style="color: #ff9500;">https://getsuite.app</a></td>
+                        </tr>
+                        <tr>
+                            <td>Wallet/Vault</td>
+                            <td><a href="https://getsuite.app/wallet" style="color: #ff9500;">https://getsuite.app/wallet</a></td>
+                        </tr>
+                        <tr>
+                            <td>Documentation</td>
+                            <td><a href="https://getsuite.app/docs" style="color: #ff9500;">https://getsuite.app/docs</a></td>
+                        </tr>
+                        <tr>
+                            <td>Cadence AI</td>
+                            <td><a href="https://cadence.getsuite.app" style="color: #ff9500;">https://cadence.getsuite.app</a></td>
+                        </tr>
+                    </tbody>
+                </table>
 
-                        subgraph Database["☁️ Supabase"]
-                        AppsT["apps"]
-                        UsersT["users"]
-                        CreditsT["suite_credits"]
-                        PromptsT["prompts"]
-                        end
-
-                        subgraph Automation["🔧 PC Server"]
-                        WatcherPy["watcher.py"]
-                        Express["Express :3000"]
-                        end
-
-                        subgraph AI["🧠 AI"]
-                        Antigravity["Antigravity"]
-                        Gemini["Gemini API"]
-                        end
-
-                        subgraph Blockchain["⛓️ Base"]
-                        SUITE["$SUITE Token"]
-                        Treasury["Treasury LP"]
-                        CreditsPool["Credits Pool"]
-                        end
-
-                        Dev --> Discord
-                        Dev --> StartBuild
-                        Consumer --> AppStore
-                        Consumer --> Wallet
-
-                        Discord --> Commands
-                        Commands --> Credits
-                        Credits --> CreditsT
-                        Commands --> PromptsT
-
-                        PromptsT --> WatcherPy
-                        WatcherPy --> Antigravity
-                        Antigravity --> Gemini
-
-                        Wallet --> Treasury
-                        Wallet --> CreditsPool
-                        Treasury --> SUITE
-                    </div>
-                </div>
-
-                <!-- Data Flow Table -->
-                <div class="diagram-section">
-                    <div class="diagram-title">📊 Data Flow</div>
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Source</th>
-                                <th>Destination</th>
-                                <th>Data</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Discord /dev-create-app</td>
-                                <td>Supabase apps</td>
-                                <td>New app record</td>
-                            </tr>
-                            <tr>
-                                <td>Discord /dev-create-app</td>
-                                <td>Supabase prompts</td>
-                                <td>Build prompt</td>
-                            </tr>
-                            <tr>
-                                <td>watcher.py</td>
-                                <td>Antigravity IDE</td>
-                                <td>Prompt injection</td>
-                            </tr>
-                            <tr>
-                                <td>Antigravity IDE</td>
-                                <td>GitHub</td>
-                                <td>Generated code</td>
-                            </tr>
-                            <tr>
-                                <td>GitHub</td>
-                                <td>Vercel</td>
-                                <td>Auto deploy</td>
-                            </tr>
-                            <tr>
-                                <td>Vercel</td>
-                                <td>Supabase apps.app_url</td>
-                                <td>Live URL</td>
-                            </tr>
-                            <tr>
-                                <td>Discord /credits load</td>
-                                <td>CreditsPool contract</td>
-                                <td>SUITE transfer</td>
-                            </tr>
-                            <tr>
-                                <td>CreditsPool</td>
-                                <td>Supabase suite_credits</td>
-                                <td>Credit balance</td>
-                            </tr>
-                            <tr>
-                                <td>Wallet deposit</td>
-                                <td>Treasury contract</td>
-                                <td>ETH → SUITE</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Tech Stack -->
-                <div class="diagram-section">
-                    <div class="diagram-title">🛠️ Tech Stack</div>
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Layer</th>
-                                <th>Technologies</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Frontend</td>
-                                <td>
-                                    <span class="tech-badge tech-frontend">HTML/CSS/JS</span>
-                                    <span class="tech-badge tech-frontend">Expo</span>
-                                    <span class="tech-badge tech-frontend">React Native</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Backend</td>
-                                <td>
-                                    <span class="tech-badge tech-backend">Supabase</span>
-                                    <span class="tech-badge tech-backend">PostgreSQL</span>
-                                    <span class="tech-badge tech-backend">Express.js</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>AI</td>
-                                <td>
-                                    <span class="tech-badge tech-ai">Gemini API</span>
-                                    <span class="tech-badge tech-ai">Antigravity</span>
-                                    <span class="tech-badge tech-ai">Perplexity</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Blockchain</td>
-                                <td>
-                                    <span class="tech-badge tech-blockchain">Solidity</span>
-                                    <span class="tech-badge tech-blockchain">Base Network</span>
-                                    <span class="tech-badge tech-blockchain">ethers.js</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Hosting</td>
-                                <td>
-                                    <span class="tech-badge tech-frontend">Vercel</span>
-                                    <span class="tech-badge tech-backend">Railway</span>
-                                    <span class="tech-badge tech-backend">GitHub</span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Key URLs -->
-                <div class="diagram-section">
-                    <div class="diagram-title">🔗 Key URLs</div>
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Service</th>
-                                <th>URL</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Website</td>
-                                <td><a href="https://getsuite.app" style="color: #ff9500;">https://getsuite.app</a></td>
-                            </tr>
-                            <tr>
-                                <td>App Store</td>
-                                <td><a href="https://getsuite.app/apps"
-                                        style="color: #ff9500;">https://getsuite.app/apps</a></td>
-                            </tr>
-                            <tr>
-                                <td>Wallet</td>
-                                <td><a href="https://getsuite.app/wallet"
-                                        style="color: #ff9500;">https://getsuite.app/wallet</a></td>
-                            </tr>
-                            <tr>
-                                <td>Docs</td>
-                                <td><a href="https://getsuite.app/docs"
-                                        style="color: #ff9500;">https://getsuite.app/docs</a></td>
-                            </tr>
-                            <tr>
-                                <td>Discord</td>
-                                <td><a href="https://discord.gg/B2Kz5Rqf3u"
-                                        style="color: #5865F2;">https://discord.gg/B2Kz5Rqf3u</a></td>
-                            </tr>
-                            <tr>
-                                <td>Prompt Server</td>
-                                <td><code>http://10.0.0.142:3000</code></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
+                <p style="color: #9ca3af; font-size: 0.85rem; margin-top: 32px;"><em>Last updated: January 2026</em></p>
             </main>
         </div>
     </div>
-    <script>
-        mermaid.initialize({ startOnLoad: true, theme: 'base', themeVariables: { primaryColor: '#ff9500', primaryTextColor: '#1f2937', lineColor: '#9ca3af' } });
-    </script>
 </body>
 
 </html>

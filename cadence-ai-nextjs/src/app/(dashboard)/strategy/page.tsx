@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -46,7 +46,7 @@ const DEFAULT_PATTERN: Record<number, string> = {
     6: 'motivation',
 }
 
-export default function StrategyPage() {
+function StrategyPageContent() {
     const searchParams = useSearchParams()
     const router = useRouter()
     const supabase = createClient()
@@ -720,5 +720,13 @@ export default function StrategyPage() {
                     </div>
                 )}
         </>
+    )
+}
+
+export default function StrategyPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-purple-500" /></div>}>
+            <StrategyPageContent />
+        </Suspense>
     )
 }
