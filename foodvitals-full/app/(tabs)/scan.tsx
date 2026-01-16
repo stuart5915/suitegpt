@@ -70,6 +70,10 @@ export default function LogScreen() {
     const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
     const [lastScannedBarcode, setLastScannedBarcode] = useState<string | null>(null);
 
+    // Detect if running in iframe (e.g., Telegram Mini App)
+    const [isInIframe, setIsInIframe] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
     // User
     const [userId, setUserId] = useState<string | null>(null);
 
@@ -82,6 +86,16 @@ export default function LogScreen() {
         });
         // Initialize food cache for smart lookups
         initFoodCache();
+
+        // Detect if running in iframe (Telegram Mini App, etc.)
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+            try {
+                setIsInIframe(window.self !== window.top);
+            } catch (e) {
+                // If we can't access window.top due to cross-origin, we're in an iframe
+                setIsInIframe(true);
+            }
+        }
     }, []);
 
     // Cycle through loading messages while processing
@@ -282,6 +296,81 @@ export default function LogScreen() {
                 }
             }
         }
+    };
+
+    // Handle file input for camera (used in iframe/Telegram)
+    const handleFileInputChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        // Convert file to base64
+        const reader = new FileReader();
+        reader.onload = async () => {
+            const base64 = (reader.result as string).split(',')[1]; // Remove data:image/...;base64, prefix
+            if (base64) {
+                setCapturedPhoto(base64);
+
+                // Check photo cache first - FREE if cached!
+                const cachedResult = lookupPhotoCache(base64);
+                if (cachedResult) {
+                    console.log('Photo cache HIT - no API cost!');
+                    trackUsage('foodvitals', 'photo_cache_hit');
+
+                    const meal: ParsedMeal = {
+                        items: cachedResult,
+                        totals: {
+                            calories: cachedResult.reduce((sum, i) => sum + i.calories, 0),
+                            protein_g: cachedResult.reduce((sum, i) => sum + i.protein_g, 0),
+                            carbs_g: cachedResult.reduce((sum, i) => sum + i.carbs_g, 0),
+                            fat_g: cachedResult.reduce((sum, i) => sum + i.fat_g, 0),
+                            fiber_g: cachedResult.reduce((sum, i) => sum + (i.fiber_g || 0), 0),
+                        },
+                        confidence: 0.9,
+                        notes: 'Source: CACHED',
+                    };
+
+                    setParsedMeal(meal);
+                    setShowResults(true);
+                    return;
+                }
+
+                // Photo analysis requires payment
+                const paymentResult = await requestPayment({
+                    featureName: 'Photo Analysis',
+                    creditCost: 10,
+                    appId: 'foodvitals'
+                });
+                if (!paymentResult) return;
+
+                setIsProcessing(true);
+
+                try {
+                    const model: GeminiModel = useProModel ? GEMINI_MODELS.PRO : GEMINI_MODELS.FLASH;
+                    const result = await analyzeFoodPhoto(base64, textInput || undefined, model);
+
+                    trackUsage('foodvitals', useProModel ? 'photo_ai_pro' : 'photo_ai_flash');
+
+                    if (result) {
+                        await cachePhotoResult(base64, result.items);
+                        for (const item of result.items) {
+                            await cacheFood(item.name, item, 'ai');
+                        }
+                        setParsedMeal(result);
+                        setShowResults(true);
+                    } else {
+                        Alert.alert('Analysis Failed', 'Could not analyze photo. Try taking a clearer picture.');
+                    }
+                } catch (error) {
+                    Alert.alert('Error', 'Something went wrong. Please try again.');
+                } finally {
+                    setIsProcessing(false);
+                }
+            }
+        };
+        reader.readAsDataURL(file);
+
+        // Clear the input so the same file can be selected again
+        event.target.value = '';
     };
 
     // Handle barcode detection from camera
@@ -536,6 +625,67 @@ export default function LogScreen() {
     );
 
     const renderCamera = () => {
+        // In iframe (e.g., Telegram Mini App), use file input instead of live camera
+        // getUserMedia is blocked in iframes, but file input with capture works
+        if (isInIframe && Platform.OS === 'web') {
+            return (
+                <View style={styles.cameraContainer}>
+                    <Text style={styles.cameraHelperText}>
+                        📸 Take a photo of your food to analyze
+                    </Text>
+
+                    {/* Hidden file input */}
+                    {Platform.OS === 'web' && (
+                        <input
+                            ref={fileInputRef as any}
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            onChange={handleFileInputChange as any}
+                            style={{ display: 'none' }}
+                        />
+                    )}
+
+                    <View style={styles.iframeCameraWrapper}>
+                        {isProcessing ? (
+                            <View style={styles.iframeProcessing}>
+                                <ActivityIndicator color="#4ADE80" size="large" />
+                                <Text style={styles.processingText}>{LOADING_MESSAGES[loadingMessageIndex]}</Text>
+                                <Text style={styles.processingHint}>This may take a few seconds</Text>
+                            </View>
+                        ) : (
+                            <>
+                                <View style={styles.iframeCameraIcon}>
+                                    <Ionicons name="camera" size={64} color="#4ADE80" />
+                                </View>
+                                <Text style={styles.iframeCameraText}>
+                                    Tap the button below to take a photo
+                                </Text>
+                                <TouchableOpacity
+                                    style={styles.iframeCaptureButton}
+                                    onPress={() => fileInputRef.current?.click()}
+                                >
+                                    <Ionicons name="camera-outline" size={24} color="#fff" />
+                                    <Text style={styles.iframeCaptureButtonText}>Take Photo</Text>
+                                </TouchableOpacity>
+                            </>
+                        )}
+                    </View>
+
+                    {!isProcessing && (
+                        <TextInput
+                            style={styles.cameraHint}
+                            placeholder="Optional: Add context (e.g., 'large portion')"
+                            placeholderTextColor="#888"
+                            value={textInput}
+                            onChangeText={setTextInput}
+                            maxLength={100}
+                        />
+                    )}
+                </View>
+            );
+        }
+
         if (!permission?.granted) {
             return (
                 <View style={styles.cameraPermission}>
@@ -1420,5 +1570,49 @@ const styles = StyleSheet.create({
         color: '#4ADE80',
         fontSize: 16,
         fontWeight: '600',
+    },
+
+    // Iframe Camera Fallback (for Telegram Mini App, etc.)
+    iframeCameraWrapper: {
+        width: '100%',
+        aspectRatio: 4 / 3,
+        borderRadius: 16,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderWidth: 2,
+        borderColor: 'rgba(74,222,128,0.3)',
+        borderStyle: 'dashed',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    iframeCameraIcon: {
+        marginBottom: 16,
+    },
+    iframeCameraText: {
+        color: '#888',
+        fontSize: 14,
+        textAlign: 'center',
+        marginBottom: 24,
+        paddingHorizontal: 20,
+    },
+    iframeCaptureButton: {
+        flexDirection: 'row',
+        backgroundColor: '#4ADE80',
+        paddingVertical: 14,
+        paddingHorizontal: 32,
+        borderRadius: 12,
+        alignItems: 'center',
+        gap: 10,
+    },
+    iframeCaptureButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '700',
+    },
+    iframeProcessing: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
     },
 });

@@ -231,7 +231,7 @@ function showScreen(screenId) {
     app.classList.toggle('viewing-app', screenId === 'appViewScreen');
 }
 
-// Open app in Telegram browser
+// Open app in fullscreen iframe (keeps user in Telegram Mini App)
 function openApp(slug) {
     const app = apps.find(a => a.slug === slug);
     if (!app) return;
@@ -245,12 +245,11 @@ function openApp(slug) {
         ? app.app_url
         : `https://www.getsuite.app${app.app_url || '/' + slug}`;
 
-    // Open in device's external browser (no Telegram nav bar)
-    if (tg) {
-        tg.openLink(url, { try_browser: true });
-    } else {
-        window.open(url, '_blank');
-    }
+    // Open in iframe for fullscreen experience (stays in Telegram)
+    // FoodVitals and other apps detect iframe and use file input for camera
+    document.getElementById('currentAppName').textContent = app.name;
+    document.getElementById('appFrame').src = url;
+    showScreen('appViewScreen');
 }
 
 // Close app WebView
