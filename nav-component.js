@@ -2,20 +2,17 @@
 // Include this script and add <nav id="main-nav"></nav> to any page
 
 (function () {
-    const isSubfolder = window.location.pathname.includes('/docs/') || window.location.pathname.includes('/learn/');
-    const basePath = isSubfolder ? '../' : '';
-
     const navHTML = `
     <div class="nav-inner">
-        <a href="${basePath}index.html" class="nav-logo">
-            <img src="${basePath}assets/suite-logo-new.png" alt="SUITE" class="nav-logo-img">
+        <a href="/" class="nav-logo">
+            <img src="/assets/suite-logo-new.png" alt="SUITE" class="nav-logo-img">
             SUITE
         </a>
         <div class="nav-links">
-            <a href="${basePath}apps.html">Apps</a>
-            <a href="${basePath}docs/">Docs</a>
-            <a href="${basePath}learn.html">Learn</a>
-            <a href="${basePath}wallet.html">Vault</a>
+            <a href="/apps">Apps</a>
+            <a href="/docs/">Docs</a>
+            <a href="/learn">Learn</a>
+            <a href="/wallet">Vault</a>
         </div>
         <div class="nav-actions">
             <button class="nav-btn nav-wallet" onclick="connectWallet()">
