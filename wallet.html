@@ -2634,13 +2634,6 @@ Micronutrient tracking
 Personalized insights" style="min-height: 120px;"></textarea>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label for="editProPrice">Pro Feature Price</label>
-                        <div style="display: flex; gap: 8px; align-items: center;">
-                            <input type="number" id="editProPrice" placeholder="10" value="10" style="width: 80px;">
-                            <span style="color: #6b7280;">credits per use</span>
-                        </div>
-                    </div>
                 </div>
 
                 <div class="modal-actions">
@@ -5664,7 +5657,39 @@ Personalized insights" style="min-height: 120px;"></textarea>
         // ========== ALL APPS ADMIN SECTION ==========
         const ADMIN_DISCORD_ID = '1135315153824993402';
         const ADMIN_API_URL = 'http://10.0.0.142:3000/api/admin';
+        const ADMIN_SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+        const ADMIN_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.rTqKxT2LYhPt5nQEjLxMxdRDqvVoT7eILWHhBo1MVHU';
         let adminApps = [];
+
+        // Fetch features from app_features table for an app
+        async function fetchAppFeatures(appId) {
+            try {
+                const response = await fetch(
+                    `${ADMIN_SUPABASE_URL}/rest/v1/app_features?app_id=eq.${appId}&select=*`,
+                    {
+                        headers: {
+                            'apikey': ADMIN_SUPABASE_KEY,
+                            'Authorization': `Bearer ${ADMIN_SUPABASE_KEY}`
+                        }
+                    }
+                );
+                if (!response.ok) return { free: [], paid: [] };
+                const features = await response.json();
+
+                // Separate free and paid features
+                const free = features
+                    .filter(f => f.type === 'free' || f.type === 'freemium')
+                    .map(f => f.name);
+                const paid = features
+                    .filter(f => f.type === 'paid')
+                    .map(f => `${f.name} (${f.credit_cost || 0} credits)`);
+
+                return { free, paid };
+            } catch (err) {
+                console.error('Error fetching app features:', err);
+                return { free: [], paid: [] };
+            }
+        }
 
         async function loadAllAppsAdmin() {
             const grid = document.getElementById('adminAppsGrid');
@@ -5762,7 +5787,7 @@ Personalized insights" style="min-height: 120px;"></textarea>
         }
 
         // Edit Modal Functions
-        function openEditModal(slug) {
+        async function openEditModal(slug) {
             const app = adminApps.find(a => a.slug === slug);
             if (!app) {
                 showNotification('⚠️', 'Error', 'App not found');
@@ -5777,14 +5802,23 @@ Personalized insights" style="min-height: 120px;"></textarea>
             document.getElementById('editStatus').value = app.status || 'approved';
             document.getElementById('editAppUrl').value = app.app_url || '';
             document.getElementById('editIconUrl').value = app.icon_url || '';
-            document.getElementById('editFreeFeatures').value = app.free_features || '';
-            document.getElementById('editProFeatures').value = app.pro_features || '';
-            document.getElementById('editProPrice').value = app.pro_price || 10;
             document.getElementById('editScreenshot1').value = app.screenshot_1 || '';
             document.getElementById('editScreenshot2').value = app.screenshot_2 || '';
             document.getElementById('editScreenshot3').value = app.screenshot_3 || '';
             document.getElementById('editScreenshot4').value = app.screenshot_4 || '';
             document.getElementById('editScreenshot5').value = app.screenshot_5 || '';
+
+            // Fetch features from app_features table (auto-populate if defined in code)
+            const dbFeatures = await fetchAppFeatures(slug);
+
+            // Use database features if available, otherwise fall back to stored app data
+            if (dbFeatures.free.length > 0 || dbFeatures.paid.length > 0) {
+                document.getElementById('editFreeFeatures').value = dbFeatures.free.join('\n');
+                document.getElementById('editProFeatures').value = dbFeatures.paid.join('\n');
+            } else {
+                document.getElementById('editFreeFeatures').value = app.free_features || '';
+                document.getElementById('editProFeatures').value = app.pro_features || '';
+            }
 
             // Show existing images
             showPreviewIfExists('iconPreview', 'iconPlaceholder', app.icon_url);
@@ -5897,7 +5931,6 @@ Personalized insights" style="min-height: 120px;"></textarea>
                 icon_url: document.getElementById('editIconUrl').value,
                 free_features: document.getElementById('editFreeFeatures').value,
                 pro_features: document.getElementById('editProFeatures').value,
-                pro_price: parseInt(document.getElementById('editProPrice').value) || 10,
                 screenshot_1: document.getElementById('editScreenshot1').value || null,
                 screenshot_2: document.getElementById('editScreenshot2').value || null,
                 screenshot_3: document.getElementById('editScreenshot3').value || null,

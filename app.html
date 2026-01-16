@@ -2170,7 +2170,38 @@
             return Math.round(num).toString();
         }
 
-        function renderPricingTiers(app, appUrl) {
+        // Fetch features from app_features table
+        async function fetchAppFeaturesFromDB(appSlug) {
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/app_features?app_id=eq.${appSlug}&select=*`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+                if (!response.ok) return null;
+                const features = await response.json();
+                if (!features || features.length === 0) return null;
+
+                // Separate free and paid features
+                const free = features
+                    .filter(f => f.type === 'free' || f.type === 'freemium')
+                    .map(f => f.name);
+                const paid = features
+                    .filter(f => f.type === 'paid')
+                    .map(f => `${f.name} (${f.credit_cost || 0} credits)`);
+
+                return { free, paid };
+            } catch (err) {
+                console.error('Error fetching app features:', err);
+                return null;
+            }
+        }
+
+        async function renderPricingTiers(app, appUrl) {
             const section = document.getElementById('pricingSection');
             const container = document.getElementById('pricingTiersContainer');
 
@@ -2180,12 +2211,15 @@
                 return;
             }
 
-            // Parse features from database
-            let freeFeatures = app.free_features || [];
-            let proFeatures = app.pro_features || [];
+            // Try to fetch features from app_features table first
+            const dbFeatures = await fetchAppFeaturesFromDB(app.slug);
+
+            // Use database features if available, otherwise fall back to app data
+            let freeFeatures = dbFeatures?.free || app.free_features || [];
+            let proFeatures = dbFeatures?.paid || app.pro_features || [];
             const proPrice = app.pro_price || 10;
 
-            // Parse if stored as string
+            // Parse if stored as string (for fallback data)
             if (typeof freeFeatures === 'string') {
                 try { freeFeatures = JSON.parse(freeFeatures); } catch (e) { freeFeatures = freeFeatures.split('\n').filter(f => f.trim()); }
             }
