@@ -92,9 +92,20 @@ export const PaymentGate: React.FC<PaymentGateProps> = ({
     }, [visible]);
 
     const handleUseCredits = async () => {
-        if (!user || user.credits < config.creditCost) return;
+        if (!user) return;
 
         setLoading(true);
+
+        // Always refresh credits from server before deducting (prevents stale balance issues)
+        const freshCredits = await loadUserCredits(user.id);
+        setUser(prev => prev ? { ...prev, credits: freshCredits } : null);
+
+        if (freshCredits < config.creditCost) {
+            setLoading(false);
+            alert(`Not enough credits. You have ${freshCredits.toFixed(0)}, need ${config.creditCost}.`);
+            return;
+        }
+
         const success = await deductCredits(
             user.id,
             config.creditCost,
