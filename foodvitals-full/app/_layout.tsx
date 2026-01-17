@@ -5,8 +5,8 @@ import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import 'react-native-reanimated';
 
-// Discord auth context
-import { DiscordAuthProvider } from '../contexts/DiscordAuthContext';
+// Telegram auth context (for SUITE Shell iframe integration)
+import { TelegramAuthProvider } from '../contexts/TelegramAuthContext';
 
 // Feature sync for admin panel
 import { syncFeaturesToSupabase } from '../config/features';
@@ -40,13 +40,13 @@ export default function RootLayout() {
   }
 
   return (
-    <DiscordAuthProvider>
+    <TelegramAuthProvider>
       <ThemeProvider value={DarkTheme}>
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="login" />
           <Stack.Screen name="(tabs)" />
         </Stack>
       </ThemeProvider>
-    </DiscordAuthProvider>
+    </TelegramAuthProvider>
   );
 }

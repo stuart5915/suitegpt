@@ -31,7 +31,7 @@ const TelegramAuthContext = createContext<TelegramAuthContextType | undefined>(u
 
 // Supabase config for credits
 const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ4MTAxOTAsImV4cCI6MjA1MDM4NjE5MH0.GRDjsDNkVBzxIlDCl9fOu0d6bfKxNbxOlS4pPXBHyhw';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
 
 const STORAGE_KEY = 'suiteTelegramUser';
 
@@ -321,6 +321,20 @@ export async function deductCredits(
           created_at: new Date().toISOString()
         })
       }).catch(() => {}); // Don't fail if transaction logging fails
+
+      // Update app's total_revenue for leaderboard tracking
+      await fetch(`${SUPABASE_URL}/rest/v1/rpc/add_app_revenue`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          p_app_slug: appId,
+          p_amount: amount
+        })
+      }).catch(() => {}); // Don't fail if revenue tracking fails
     }
 
     return response.ok;

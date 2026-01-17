@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { getTelegramUser } from '../contexts/TelegramAuthContext';
 
 // Discord OAuth config
 const DISCORD_CLIENT_ID = '1457474266390986865';
@@ -33,6 +34,15 @@ export default function LoginScreen() {
 
     const checkExistingLogin = () => {
         if (Platform.OS === 'web' && typeof window !== 'undefined') {
+            // First check: Telegram user from URL params (SUITE Shell iframe)
+            const telegramUser = getTelegramUser();
+            if (telegramUser && telegramUser.id) {
+                console.log('Telegram user detected from SUITE Shell:', telegramUser.username);
+                // Auto-navigate to app - they're authenticated via SUITE
+                router.replace('/(tabs)/' as any);
+                return;
+            }
+
             // Check localStorage for existing Discord session
             const stored = localStorage.getItem('suiteDev');
             if (stored) {
