@@ -1,7 +1,13 @@
-// Simple Nav Component - injects nav into <nav id="main-nav"></nav>
+// SUITE Nav Component - Single source of truth for all getsuite.app navigation
+// Injects nav into <nav id="main-nav"></nav>
+
 (function() {
     const nav = document.getElementById('main-nav');
     if (!nav) return;
+
+    // Supabase config
+    const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
 
     nav.className = 'nav';
     nav.innerHTML = `
@@ -11,67 +17,94 @@
                 SUITE
             </a>
             <div class="nav-links">
-                <a href="/apps.html">Apps</a>
+                <a href="/suite-shell.html">Apps</a>
                 <a href="/docs/">Docs</a>
                 <a href="/learn.html">Learn</a>
-                <a href="/wallet.html">Vault</a>
+                <a href="/wallet.html">Wallet</a>
             </div>
             <div class="nav-actions">
-                <button class="nav-btn nav-wallet" onclick="connectWallet()">Connect Wallet</button>
+                <a href="/wallet.html" class="nav-credits-btn" title="Your Credits">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                        <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                    <span id="navCreditsDisplay">0</span>
+                </a>
             </div>
             <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
                 <span></span><span></span><span></span>
             </button>
         </div>
     `;
+
+    // Get Telegram user from URL params or localStorage
+    function getTelegramUser() {
+        // Check URL params first (for SUITE Shell iframe)
+        const params = new URLSearchParams(window.location.search);
+        const tgId = params.get('tg_id');
+        if (tgId) {
+            return {
+                id: tgId,
+                username: params.get('tg_username') || '',
+                first_name: params.get('tg_first_name') || '',
+                photo_url: params.get('tg_photo_url') || ''
+            };
+        }
+
+        // Check localStorage
+        const stored = localStorage.getItem('telegram_user');
+        if (stored) {
+            try {
+                return JSON.parse(stored);
+            } catch (e) {}
+        }
+
+        return null;
+    }
+
+    // Load credits from Supabase
+    async function loadCredits() {
+        const user = getTelegramUser();
+        const creditsEl = document.getElementById('navCreditsDisplay');
+        if (!creditsEl) return;
+
+        if (!user || !user.id) {
+            creditsEl.textContent = '0';
+            return;
+        }
+
+        try {
+            const response = await fetch(
+                `${SUPABASE_URL}/rest/v1/user_credits?telegram_id=eq.${user.id}&select=suite_balance`,
+                {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                }
+            );
+            const data = await response.json();
+            if (data && data.length > 0) {
+                const balance = Math.floor(parseFloat(data[0].suite_balance) || 0);
+                creditsEl.textContent = balance.toLocaleString();
+                // Cache for other pages
+                localStorage.setItem('suite_credits', balance.toString());
+            } else {
+                creditsEl.textContent = '0';
+            }
+        } catch (error) {
+            console.error('Failed to load credits:', error);
+            // Fallback to cached value
+            const cached = localStorage.getItem('suite_credits');
+            creditsEl.textContent = cached || '0';
+        }
+    }
+
+    // Load credits on page load
+    loadCredits();
 })();
 
 function toggleMobileMenu() {
     document.querySelector('.mobile-menu-btn').classList.toggle('active');
     document.querySelector('.nav-links').classList.toggle('mobile-open');
+    document.querySelector('.nav-actions')?.classList.toggle('mobile-open');
 }
-
-async function connectWallet() {
-    const btn = document.querySelector('.nav-wallet');
-    if (!btn) return;
-
-    // If already connected, disconnect
-    if (btn.classList.contains('connected')) {
-        btn.classList.remove('connected');
-        btn.textContent = 'Connect Wallet';
-        localStorage.removeItem('suiteWalletAddress');
-        return;
-    }
-
-    // Check for MetaMask
-    if (typeof window.ethereum === 'undefined') {
-        alert('Please install MetaMask to connect your wallet');
-        return;
-    }
-
-    try {
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        if (accounts.length > 0) {
-            const addr = accounts[0];
-            btn.classList.add('connected');
-            btn.textContent = addr.slice(0,6) + '...' + addr.slice(-4);
-            localStorage.setItem('suiteWalletAddress', addr);
-        }
-    } catch (e) {
-        console.error('Wallet connection failed:', e);
-    }
-}
-
-// Restore wallet state on load
-(function() {
-    const saved = localStorage.getItem('suiteWalletAddress');
-    if (saved) {
-        setTimeout(() => {
-            const btn = document.querySelector('.nav-wallet');
-            if (btn) {
-                btn.classList.add('connected');
-                btn.textContent = saved.slice(0,6) + '...' + saved.slice(-4);
-            }
-        }, 100);
-    }
-})();
