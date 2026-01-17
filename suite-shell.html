@@ -1841,6 +1841,13 @@
             height: 100%;
             border: none;
             background: var(--bg-dark);
+            /* Hide scrollbar but allow scrolling */
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
+        }
+
+        .app-iframe::-webkit-scrollbar {
+            display: none; /* Chrome/Safari/Opera */
         }
 
         .loading-overlay {
@@ -1971,12 +1978,28 @@
                 flex-direction: column;
                 width: 360px;
                 height: calc(100vh - 200px);
-                max-height: 750px;
+                max-height: 850px;
                 background: var(--bg-card);
                 border-radius: 20px;
                 border: 1px solid rgba(255, 255, 255, 0.1);
-                overflow: hidden;
+                overflow-y: auto;
+                overflow-x: hidden;
+                scrollbar-width: thin;
+                scrollbar-color: rgba(255,255,255,0.2) transparent;
                 transition: all 0.3s ease;
+            }
+
+            .side-panel::-webkit-scrollbar {
+                width: 4px;
+            }
+
+            .side-panel::-webkit-scrollbar-track {
+                background: transparent;
+            }
+
+            .side-panel::-webkit-scrollbar-thumb {
+                background: rgba(255,255,255,0.2);
+                border-radius: 2px;
             }
 
             .side-panel.collapsed {
@@ -2235,8 +2258,7 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
-            max-height: 250px;
-            overflow-y: auto;
+            /* No max-height - show all requests */
         }
 
         .request-item {
