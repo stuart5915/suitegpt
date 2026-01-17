@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Factory | SUITE</title>
+    <link rel="icon" type="image/png" href="assets/suite-logo-new.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="suite-styles.css">
+    <link rel="stylesheet" href="nav.css">
+    <style>
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.1);
+            --accent: #ff9500;
+            --success: #22c55e;
+            --text: #fff;
+            --text-dim: rgba(255, 255, 255, 0.6);
+        }
+
+        body {
+            background: var(--bg-dark);
+            min-height: 100vh;
+        }
+
+        .factory-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 100px 20px 40px;
+        }
+
+        .factory-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .factory-header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .factory-header p {
+            color: var(--text-dim);
+            font-size: 1.1rem;
+        }
+
+        .factory-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            gap: 24px;
+        }
+
+        @media (max-width: 1200px) {
+            .factory-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Left Panel - Projects */
+        .projects-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .panel-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 16px;
+        }
+
+        .new-project-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--accent);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: all 0.2s;
+        }
+
+        .new-project-btn:hover {
+            filter: brightness(1.1);
+        }
+
+        .projects-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .project-item {
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .project-item:hover,
+        .project-item.active {
+            background: rgba(255, 149, 0, 0.1);
+            border-color: rgba(255, 149, 0, 0.3);
+        }
+
+        .project-name {
+            font-weight: 600;
+            color: var(--text);
+            font-size: 0.95rem;
+        }
+
+        .project-step {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+
+        /* Center Panel - Steps */
+        .steps-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .step-progress {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .step-dot {
+            flex: 1;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            transition: background 0.3s;
+        }
+
+        .step-dot.completed {
+            background: var(--success);
+        }
+
+        .step-dot.active {
+            background: var(--accent);
+        }
+
+        .step-header {
+            margin-bottom: 24px;
+        }
+
+        .step-number {
+            font-size: 0.85rem;
+            color: var(--accent);
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .step-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .step-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-dim);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 12px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        /* Prompt Output */
+        .prompt-output {
+            margin-top: 24px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .prompt-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 12px;
+        }
+
+        .prompt-text {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+            color: var(--text);
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .copy-btn {
+            margin-top: 12px;
+            padding: 10px 20px;
+            background: var(--accent);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            filter: brightness(1.1);
+        }
+
+        .copy-btn.copied {
+            background: var(--success);
+        }
+
+        .step-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .step-btn {
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .step-btn.primary {
+            background: var(--success);
+            border: none;
+            color: #fff;
+        }
+
+        .step-btn.secondary {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        /* Right Panel - Reference */
+        .reference-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .reference-section {
+            margin-bottom: 20px;
+        }
+
+        .reference-section h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 10px;
+        }
+
+        .reference-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .reference-link {
+            font-size: 0.85rem;
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .reference-link:hover {
+            text-decoration: underline;
+        }
+
+        .file-tree {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            line-height: 1.5;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        /* No Project Selected State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+        }
+
+        .empty-state h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            color: var(--text-dim);
+        }
+    </style>
+</head>
+
+<body>
+    <nav id="main-nav"></nav>
+
+    <div class="factory-container">
+        <div class="factory-header">
+            <h1>App Factory</h1>
+            <p>Build SUITE apps fast with guided prompts</p>
+        </div>
+
+        <div class="factory-grid">
+            <!-- Left Panel: Projects -->
+            <div class="projects-panel">
+                <div class="panel-title">Projects</div>
+                <button class="new-project-btn" onclick="newProject()">+ New App</button>
+                <div class="projects-list" id="projectsList">
+                    <!-- Projects populated by JS -->
+                </div>
+            </div>
+
+            <!-- Center Panel: Steps -->
+            <div class="steps-panel" id="stepsPanel">
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-state-icon">🏭</div>
+                    <h3>No Project Selected</h3>
+                    <p>Create a new app or select an existing project</p>
+                </div>
+
+                <div id="stepContent" style="display: none;">
+                    <div class="step-progress" id="stepProgress">
+                        <div class="step-dot" data-step="1"></div>
+                        <div class="step-dot" data-step="2"></div>
+                        <div class="step-dot" data-step="3"></div>
+                        <div class="step-dot" data-step="4"></div>
+                    </div>
+
+                    <div class="step-header">
+                        <div class="step-number" id="stepNumber">Step 1 of 4</div>
+                        <h2 class="step-title" id="stepTitle">Define Your App</h2>
+                    </div>
+
+                    <div class="step-form" id="stepForm">
+                        <!-- Form populated by JS -->
+                    </div>
+
+                    <div class="prompt-output" id="promptOutput">
+                        <div class="prompt-label">Generated Prompt</div>
+                        <div class="prompt-text" id="promptText"></div>
+                        <button class="copy-btn" onclick="copyPrompt()">Copy to Clipboard</button>
+                    </div>
+
+                    <div class="step-actions">
+                        <button class="step-btn secondary" onclick="prevStep()" id="prevBtn">Back</button>
+                        <button class="step-btn primary" onclick="nextStep()" id="nextBtn">Mark Complete & Next</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Reference -->
+            <div class="reference-panel">
+                <div class="panel-title">Reference</div>
+
+                <div class="reference-section">
+                    <h4>Boilerplate Structure</h4>
+                    <div class="file-tree">
+boilerplate/
+├── app/
+│   ├── _layout.tsx
+│   ├── login.tsx
+│   └── (tabs)/
+│       └── index.tsx
+├── contexts/
+│   └── TelegramAuthContext.tsx
+├── components/
+│   └── PaymentGate.tsx
+├── config/
+│   └── features.ts
+└── package.json
+                    </div>
+                </div>
+
+                <div class="reference-section">
+                    <h4>Quick Links</h4>
+                    <div class="reference-list">
+                        <a href="https://github.com/stuart5915/stuart-hollinger-landing/tree/master/boilerplate" class="reference-link" target="_blank">Boilerplate on GitHub</a>
+                        <a href="https://github.com/stuart5915/stuart-hollinger-landing/tree/master/foodvitals-full" class="reference-link" target="_blank">FoodVitals Reference</a>
+                        <a href="https://docs.expo.dev/router/introduction/" class="reference-link" target="_blank">Expo Router Docs</a>
+                    </div>
+                </div>
+
+                <div class="reference-section">
+                    <h4>Deploy Commands</h4>
+                    <div class="file-tree">
+npm install
+npm run build:web
+vercel --prod
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="nav-component.js"></script>
+    <script>
+        // Supabase config
+        const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
+
+        // Step definitions
+        const STEPS = [
+            {
+                title: 'Define Your App',
+                fields: [
+                    { id: 'appName', label: 'App Name', type: 'text', placeholder: 'e.g., TaskMaster AI' },
+                    { id: 'slug', label: 'Slug (lowercase, no spaces)', type: 'text', placeholder: 'e.g., taskmaster' },
+                    { id: 'category', label: 'Category', type: 'select', options: ['productivity', 'health', 'finance', 'entertainment', 'education', 'utilities', 'social'] },
+                    { id: 'oneLiner', label: 'One-liner Description', type: 'text', placeholder: 'e.g., AI-powered task management' },
+                    { id: 'coreFeature', label: 'Core Feature', type: 'textarea', placeholder: 'Describe the main functionality...' },
+                ],
+                promptTemplate: `Create a new SUITE ecosystem app:
+- Name: {appName}
+- Slug: {slug}
+- Category: {category}
+- Description: {oneLiner}
+- Core Feature: {coreFeature}
+
+Use the SUITE App Boilerplate at /boilerplate.
+1. Copy the boilerplate folder: cp -r boilerplate {slug}
+2. Update config/features.ts with APP_ID='{slug}' and APP_NAME='{appName}'
+3. Update app.json with the correct name, slug, and bundle IDs
+4. The TelegramAuthContext and PaymentGate are already set up - don't modify them.`
+            },
+            {
+                title: 'Define Features',
+                fields: [
+                    { id: 'freeFeatures', label: 'Free Features (one per line)', type: 'textarea', placeholder: 'Dashboard\nBasic search\nHistory view' },
+                    { id: 'paidFeatures', label: 'Paid Features (format: Name - cost credits)', type: 'textarea', placeholder: 'AI Analysis - 10 credits\nPro Export - 5 credits' },
+                ],
+                promptTemplate: `Add these features to {appName} ({slug}):
+
+FREE FEATURES:
+{freeFeatures}
+
+PAID FEATURES:
+{paidFeatures}
+
+Update config/features.ts with these features.
+For each paid feature, use the usePaymentGate hook:
+
+const { requestPayment, PaymentGateModal } = usePaymentGate();
+const success = await requestPayment({
+  featureName: 'Feature Name',
+  creditCost: 10,
+  appId: '{slug}'
+});`
+            },
+            {
+                title: 'Build Core Logic',
+                fields: [
+                    { id: 'apiNeeded', label: 'API/Service Needed', type: 'select', options: ['none', 'OpenAI/Claude', 'Gemini', 'Custom API', 'Supabase only'] },
+                    { id: 'dataModel', label: 'Data to Store', type: 'textarea', placeholder: 'e.g., tasks (id, title, completed, user_id)' },
+                    { id: 'mainScreens', label: 'Main Screens/Tabs', type: 'textarea', placeholder: 'Home\nCreate\nHistory\nProfile' },
+                ],
+                promptTemplate: `Implement the core functionality for {appName}:
+
+API: {apiNeeded}
+Data Model: {dataModel}
+
+Main Screens:
+{mainScreens}
+
+Follow these patterns from FoodVitals:
+- Put API calls in services/*.ts
+- Use the PaymentGate for any paid AI features
+- Store user data in Supabase with telegram_id as foreign key
+- Use the dark theme styling (LinearGradient backgrounds, etc.)`
+            },
+            {
+                title: 'Deploy',
+                fields: [
+                    { id: 'deployUrl', label: 'Deploy URL (after vercel --prod)', type: 'text', placeholder: 'https://your-app.vercel.app' },
+                    { id: 'iconUrl', label: 'Icon URL', type: 'text', placeholder: 'https://...' },
+                ],
+                promptTemplate: `Deploy {appName} to production:
+
+1. Build: cd {slug} && npm run build:web
+2. Deploy: vercel --prod
+3. Get the URL: {deployUrl}
+
+Add to SUITE Shell - run this SQL in Supabase:
+
+INSERT INTO apps (name, slug, description, icon_url, app_url, category, status)
+VALUES (
+  '{appName}',
+  '{slug}',
+  '{oneLiner}',
+  '{iconUrl}',
+  '{deployUrl}',
+  '{category}',
+  'live'
+);
+
+4. Test in SUITE Shell at getsuite.app/suite-shell.html`
+            }
+        ];
+
+        // State
+        let projects = JSON.parse(localStorage.getItem('appFactoryProjects') || '[]');
+        let currentProject = null;
+        let currentStep = 0;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            renderProjects();
+        });
+
+        function renderProjects() {
+            const list = document.getElementById('projectsList');
+            if (projects.length === 0) {
+                list.innerHTML = '<div style="color: var(--text-dim); font-size: 0.9rem; text-align: center; padding: 20px;">No projects yet</div>';
+                return;
+            }
+
+            list.innerHTML = projects.map((p, i) => `
+                <div class="project-item ${currentProject === i ? 'active' : ''}" onclick="selectProject(${i})">
+                    <div class="project-name">${p.config.appName || 'Untitled'}</div>
+                    <div class="project-step">Step ${p.step + 1} of 4</div>
+                </div>
+            `).join('');
+        }
+
+        function newProject() {
+            const project = {
+                id: Date.now(),
+                step: 0,
+                config: {},
+                createdAt: new Date().toISOString()
+            };
+            projects.unshift(project);
+            currentProject = 0;
+            currentStep = 0;
+            saveProjects();
+            renderProjects();
+            renderStep();
+        }
+
+        function selectProject(index) {
+            currentProject = index;
+            currentStep = projects[index].step;
+            renderProjects();
+            renderStep();
+        }
+
+        function renderStep() {
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('stepContent').style.display = 'block';
+
+            const step = STEPS[currentStep];
+            const project = projects[currentProject];
+
+            // Update progress dots
+            document.querySelectorAll('.step-dot').forEach((dot, i) => {
+                dot.className = 'step-dot';
+                if (i < currentStep) dot.classList.add('completed');
+                if (i === currentStep) dot.classList.add('active');
+            });
+
+            // Update header
+            document.getElementById('stepNumber').textContent = `Step ${currentStep + 1} of ${STEPS.length}`;
+            document.getElementById('stepTitle').textContent = step.title;
+
+            // Render form
+            const form = document.getElementById('stepForm');
+            form.innerHTML = step.fields.map(field => {
+                const value = project.config[field.id] || '';
+                if (field.type === 'select') {
+                    return `
+                        <div class="form-group">
+                            <label>${field.label}</label>
+                            <select id="${field.id}" onchange="updateField('${field.id}', this.value)">
+                                ${field.options.map(opt => `<option value="${opt}" ${value === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+                            </select>
+                        </div>
+                    `;
+                } else if (field.type === 'textarea') {
+                    return `
+                        <div class="form-group">
+                            <label>${field.label}</label>
+                            <textarea id="${field.id}" placeholder="${field.placeholder || ''}" oninput="updateField('${field.id}', this.value)">${value}</textarea>
+                        </div>
+                    `;
+                } else {
+                    return `
+                        <div class="form-group">
+                            <label>${field.label}</label>
+                            <input type="text" id="${field.id}" value="${value}" placeholder="${field.placeholder || ''}" oninput="updateField('${field.id}', this.value)">
+                        </div>
+                    `;
+                }
+            }).join('');
+
+            // Generate prompt
+            generatePrompt();
+
+            // Update buttons
+            document.getElementById('prevBtn').style.display = currentStep === 0 ? 'none' : 'block';
+            document.getElementById('nextBtn').textContent = currentStep === STEPS.length - 1 ? 'Complete' : 'Mark Complete & Next';
+        }
+
+        function updateField(fieldId, value) {
+            projects[currentProject].config[fieldId] = value;
+            saveProjects();
+            generatePrompt();
+        }
+
+        function generatePrompt() {
+            const step = STEPS[currentStep];
+            const config = projects[currentProject].config;
+
+            let prompt = step.promptTemplate;
+            Object.keys(config).forEach(key => {
+                prompt = prompt.replace(new RegExp(`{${key}}`, 'g'), config[key] || `[${key}]`);
+            });
+
+            document.getElementById('promptText').textContent = prompt;
+        }
+
+        function copyPrompt() {
+            const text = document.getElementById('promptText').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = 'Copy to Clipboard';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        function prevStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                projects[currentProject].step = currentStep;
+                saveProjects();
+                renderStep();
+            }
+        }
+
+        function nextStep() {
+            if (currentStep < STEPS.length - 1) {
+                currentStep++;
+                projects[currentProject].step = currentStep;
+                saveProjects();
+                renderStep();
+            } else {
+                // Complete
+                alert('App complete! Check SUITE Shell to verify.');
+            }
+        }
+
+        function saveProjects() {
+            localStorage.setItem('appFactoryProjects', JSON.stringify(projects));
+        }
+    </script>
+</body>
+
+</html>
