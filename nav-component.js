@@ -495,9 +495,7 @@ function loginWithTelegramWidget() {
         script.src = 'https://telegram.org/js/telegram-widget.js?22';
         script.setAttribute('data-telegram-login', 'SUITEHubBot');
         script.setAttribute('data-size', 'large');
-        script.setAttribute('data-radius', '8');
         script.setAttribute('data-onauth', 'onTelegramAuth(user)');
-        script.setAttribute('data-request-access', 'write');
         container.appendChild(script);
     } else {
         overlay.style.display = 'flex';
