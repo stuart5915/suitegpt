@@ -201,6 +201,27 @@
         .connect-back:hover {
             color: #fff;
         }
+        .connect-option.connected {
+            cursor: default;
+        }
+        .connect-option.connected:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+        .disconnect-btn {
+            padding: 6px 12px;
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 8px;
+            color: #ef4444;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .disconnect-btn:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
         .telegram-login-form label {
             display: block;
             color: #9ca3af;
@@ -444,29 +465,99 @@ function doTelegramAuth(botUsername) {
     );
 }
 
-// Profile menu (disconnect)
+// Profile menu - show account management modal
 function openNavProfileMenu() {
     const wallet = localStorage.getItem('connectedWallet');
     const tgUser = JSON.parse(localStorage.getItem('telegram_user') || 'null');
 
+    // Update modal content for account management
+    const modal = document.querySelector('.connect-modal');
+    if (!modal) return;
+
+    const truncateWallet = (addr) => addr ? addr.slice(0, 6) + '...' + addr.slice(-4) : '';
+
+    let content = '<h3>Your Account</h3><div class="connect-options">';
+
+    // Wallet section
     if (wallet) {
-        if (confirm('Disconnect wallet?')) {
-            localStorage.removeItem('connectedWallet');
-            localStorage.removeItem('walletAddress');
-            localStorage.removeItem('suiteWalletAddress');
-            localStorage.removeItem('suiteWallet');
-            window.walletAddress = null;
-            if (window.refreshNavCredits) {
-                window.refreshNavCredits();
-            }
-        }
-    } else if (tgUser) {
-        if (confirm('Logout from Telegram?')) {
-            localStorage.removeItem('telegram_user');
-            if (window.refreshNavCredits) {
-                window.refreshNavCredits();
-            }
-        }
+        content += `
+            <div class="connect-option connected">
+                <div class="connect-option-icon">🔗</div>
+                <div style="flex:1">
+                    <div class="connect-option-title">Wallet Connected</div>
+                    <div class="connect-option-desc">${truncateWallet(wallet)}</div>
+                </div>
+                <button class="disconnect-btn" onclick="disconnectWallet()">Disconnect</button>
+            </div>
+        `;
+    } else {
+        content += `
+            <div class="connect-option" onclick="connectWalletFromNav()">
+                <div class="connect-option-icon">🔗</div>
+                <div>
+                    <div class="connect-option-title">Connect Wallet</div>
+                    <div class="connect-option-desc">Link your wallet for credits</div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Telegram section
+    if (tgUser) {
+        content += `
+            <div class="connect-option connected">
+                <div class="connect-option-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#0088cc">
+                        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18 1.897-.962 6.502-1.359 8.627-.168.9-.5 1.201-.82 1.23-.697.064-1.226-.461-1.901-.903-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.015-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.139-5.062 3.345-.479.329-.913.489-1.302.481-.428-.009-1.252-.242-1.865-.442-.751-.244-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.831-2.529 6.998-3.015 3.333-1.386 4.025-1.627 4.477-1.635.099-.002.321.023.465.142.121.1.154.234.169.337.015.103.034.337.019.519z"/>
+                    </svg>
+                </div>
+                <div style="flex:1">
+                    <div class="connect-option-title">Telegram Connected</div>
+                    <div class="connect-option-desc">@${tgUser.username || tgUser.first_name}</div>
+                </div>
+                <button class="disconnect-btn" onclick="disconnectTelegram()">Disconnect</button>
+            </div>
+        `;
+    } else {
+        content += `
+            <div class="connect-option telegram" onclick="loginWithTelegramWidget()">
+                <div class="connect-option-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18 1.897-.962 6.502-1.359 8.627-.168.9-.5 1.201-.82 1.23-.697.064-1.226-.461-1.901-.903-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.015-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.139-5.062 3.345-.479.329-.913.489-1.302.481-.428-.009-1.252-.242-1.865-.442-.751-.244-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.831-2.529 6.998-3.015 3.333-1.386 4.025-1.627 4.477-1.635.099-.002.321.023.465.142.121.1.154.234.169.337.015.103.034.337.019.519z"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="connect-option-title">Login with Telegram</div>
+                    <div class="connect-option-desc">Link your Telegram account</div>
+                </div>
+            </div>
+        `;
+    }
+
+    content += '</div>';
+    modal.innerHTML = `<button class="connect-modal-close" onclick="closeNavConnectModal()">&times;</button>${content}`;
+
+    // Open the modal
+    document.getElementById('navConnectModalOverlay').classList.add('active');
+}
+
+function disconnectWallet() {
+    localStorage.removeItem('connectedWallet');
+    localStorage.removeItem('walletAddress');
+    localStorage.removeItem('suiteWalletAddress');
+    localStorage.removeItem('suiteWallet');
+    window.walletAddress = null;
+    closeNavConnectModal();
+    if (window.refreshNavCredits) {
+        window.refreshNavCredits();
+    }
+}
+
+function disconnectTelegram() {
+    localStorage.removeItem('telegram_user');
+    closeNavConnectModal();
+    if (window.refreshNavCredits) {
+        window.refreshNavCredits();
     }
 }
 
