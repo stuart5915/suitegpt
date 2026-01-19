@@ -2054,10 +2054,33 @@
 
         // Check auth state
         async function checkAuth() {
+            // First check for factory_user (legacy)
             const savedUser = localStorage.getItem('factory_user');
             if (savedUser) {
                 currentUser = JSON.parse(savedUser);
-                // Refresh user data from database
+                await refreshUserData();
+                await loadUserVotes();
+                updateUserPanel();
+                return;
+            }
+
+            // Check for nav component auth (wallet or telegram)
+            const walletAddress = localStorage.getItem('connectedWallet');
+            const telegramUser = localStorage.getItem('telegram_user');
+
+            if (walletAddress) {
+                console.log('[checkAuth] Found wallet from nav:', walletAddress);
+                currentUser = { wallet_address: walletAddress.toLowerCase() };
+                await refreshUserData();
+                await loadUserVotes();
+                updateUserPanel();
+            } else if (telegramUser) {
+                const tgUser = JSON.parse(telegramUser);
+                console.log('[checkAuth] Found telegram user from nav:', tgUser);
+                currentUser = {
+                    telegram_id: tgUser.id?.toString(),
+                    display_name: tgUser.username || tgUser.first_name
+                };
                 await refreshUserData();
                 await loadUserVotes();
                 updateUserPanel();
