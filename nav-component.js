@@ -445,82 +445,48 @@ async function connectWalletFromNav() {
     }
 }
 
-// Global callback for Telegram widget
-window.onTelegramAuth = function(user) {
-    console.log('[Telegram Auth] Success! User data:', user);
-    const tgUser = {
-        id: user.id,
-        username: user.username || user.first_name,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        photo_url: user.photo_url,
-        auth_date: user.auth_date,
-        hash: user.hash
-    };
-
-    localStorage.setItem('telegram_user', JSON.stringify(tgUser));
-    closeNavConnectModal();
-
-    if (window.refreshNavCredits) {
-        window.refreshNavCredits();
-    }
-
-    // Reload to reflect login state
-    window.location.reload();
-};
-
-// Telegram login - shows embedded widget
+// Telegram login - clean one-click popup flow
 function loginWithTelegramWidget() {
-    console.log('[Telegram Auth] Starting login flow...');
-    console.log('[Telegram Auth] Current origin:', window.location.origin);
-    console.log('[Telegram Auth] Bot username: SUITEHubBot');
+    const botId = '8341049569'; // SUITEHubBot
 
     closeNavConnectModal();
 
-    // Create overlay with Telegram widget
-    let overlay = document.getElementById('telegramAuthOverlay');
-    if (!overlay) {
-        console.log('[Telegram Auth] Creating widget overlay...');
-        overlay = document.createElement('div');
-        overlay.id = 'telegramAuthOverlay';
-        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:10001;flex-direction:column;gap:20px;';
-        overlay.innerHTML = `
-            <div style="background:#1a1a2e;padding:30px;border-radius:16px;text-align:center;">
-                <h3 style="color:#fff;margin:0 0 20px 0;">Login with Telegram</h3>
-                <div id="telegramWidgetContainer"></div>
-                <p style="color:#9ca3af;font-size:0.85rem;margin-top:16px;">Click the button above to authenticate</p>
-                <p id="telegramDebugInfo" style="color:#666;font-size:0.7rem;margin-top:8px;"></p>
-            </div>
-            <button onclick="document.getElementById('telegramAuthOverlay').remove()" style="background:none;border:1px solid rgba(255,255,255,0.3);color:#fff;padding:10px 24px;border-radius:8px;cursor:pointer;">Cancel</button>
-        `;
-        document.body.appendChild(overlay);
-
-        // Show debug info
-        const debugEl = document.getElementById('telegramDebugInfo');
-        debugEl.textContent = 'Origin: ' + window.location.origin;
-
-        // Inject Telegram widget script
-        const container = document.getElementById('telegramWidgetContainer');
+    // Load Telegram widget script if needed
+    if (!window.Telegram || !window.Telegram.Login) {
         const script = document.createElement('script');
-        script.async = true;
         script.src = 'https://telegram.org/js/telegram-widget.js?22';
-        script.setAttribute('data-telegram-login', 'SUITEHubBot');
-        script.setAttribute('data-size', 'large');
-        script.setAttribute('data-onauth', 'onTelegramAuth(user)');
-
-        script.onload = function() {
-            console.log('[Telegram Auth] Widget script loaded successfully');
-        };
-        script.onerror = function(e) {
-            console.error('[Telegram Auth] Widget script failed to load:', e);
-        };
-
-        container.appendChild(script);
-        console.log('[Telegram Auth] Widget script injected');
+        script.onload = () => openTelegramPopup(botId);
+        document.head.appendChild(script);
     } else {
-        console.log('[Telegram Auth] Showing existing overlay');
-        overlay.style.display = 'flex';
+        openTelegramPopup(botId);
     }
+}
+
+function openTelegramPopup(botId) {
+    window.Telegram.Login.auth(
+        { bot_id: botId, request_access: true },
+        (user) => {
+            if (user) {
+                const tgUser = {
+                    id: user.id,
+                    username: user.username || user.first_name,
+                    first_name: user.first_name,
+                    last_name: user.last_name,
+                    photo_url: user.photo_url,
+                    auth_date: user.auth_date,
+                    hash: user.hash
+                };
+
+                localStorage.setItem('telegram_user', JSON.stringify(tgUser));
+
+                if (window.refreshNavCredits) {
+                    window.refreshNavCredits();
+                }
+
+                window.location.reload();
+            }
+        }
+    );
 }
 
 // Profile menu - show account management modal
