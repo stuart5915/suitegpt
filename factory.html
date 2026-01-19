@@ -444,6 +444,57 @@
             background: rgba(0, 212, 170, 0.3);
         }
 
+        /* Push To Dropdown - Global dropdown positioned at body level */
+        .push-dropdown {
+            position: fixed;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            z-index: 9999;
+            display: none;
+            overflow: hidden;
+            min-width: 200px;
+        }
+
+        .push-dropdown.active {
+            display: block;
+        }
+
+        .push-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            font-size: 0.8rem;
+            color: var(--text);
+            cursor: pointer;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            transition: background 0.15s;
+        }
+
+        .push-dropdown-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .push-dropdown-item.back {
+            color: var(--text-dim);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .push-dropdown-header {
+            padding: 8px 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            color: var(--text-dim);
+            border-bottom: 1px solid var(--border);
+        }
+
         .destination-btn {
             display: flex;
             align-items: center;
@@ -505,7 +556,8 @@
         /* Main Layout */
         .factory-main {
             display: flex;
-            height: calc(100vh - 81px);
+            height: calc(100vh - 80px);
+            margin-top: 80px;
         }
 
         /* Sidebar */
@@ -514,6 +566,8 @@
             background: var(--bg-card);
             border-right: 1px solid var(--border);
             padding: 24px;
+            padding-top: 104px;
+            margin-top: -80px;
             overflow-y: auto;
         }
 
@@ -709,6 +763,36 @@
             display: flex;
             align-items: center;
             gap: 12px;
+        }
+
+        .view-tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--bg-elevated);
+            padding: 4px;
+            border-radius: 10px;
+        }
+
+        .view-tab {
+            padding: 8px 16px;
+            border: none;
+            background: transparent;
+            color: var(--text-dim);
+            font-weight: 600;
+            font-size: 0.9rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .view-tab:hover {
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .view-tab.active {
+            background: var(--accent);
+            color: #000;
         }
 
         .notebox-connect-btn {
@@ -1295,6 +1379,16 @@
 
         .idea-card[draggable="true"] {
             cursor: grab;
+            user-select: none;
+            -webkit-user-drag: element;
+        }
+
+        .idea-card[draggable="true"] * {
+            pointer-events: none;
+        }
+
+        .idea-card[draggable="true"] button {
+            pointer-events: auto;
         }
 
         .idea-card[draggable="true"]:active {
@@ -1387,6 +1481,16 @@
             gap: 10px;
             font-size: 0.75rem;
             color: var(--text-dim);
+        }
+
+        .rejection-reason {
+            font-size: 0.8rem;
+            color: #ef4444;
+            margin-top: 8px;
+            padding: 8px 10px;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 6px;
+            border-left: 3px solid #ef4444;
         }
 
         .vote-buttons {
@@ -1483,24 +1587,11 @@
     <!-- Main Site Navigation -->
     <nav id="main-nav"></nav>
 
-    <!-- Factory Header -->
-    <header class="factory-header" style="margin-top: 80px;">
-        <div class="factory-logo">
-            <h1>get<span>Suite</span> Factory</h1>
-        </div>
-        <div class="factory-tabs">
-            <button class="factory-tab active" data-tab="telos" onclick="switchFactoryTab('telos')">
-                <span class="tab-icon">🏛️</span> Governance
-            </button>
-            <button class="factory-tab" data-tab="notebox" onclick="switchFactoryTab('notebox')">
-                <span class="tab-icon">📦</span> NoteBox
-            </button>
-        </div>
-        <div class="user-panel" id="userPanel">
-            <!-- Populated by JS based on auth state -->
-            <button class="auth-btn" onclick="showAuthModal()">Connect</button>
-        </div>
-    </header>
+    <!-- User Panel (floats top right) -->
+    <div class="factory-user-panel" id="userPanel" style="position: fixed; top: 90px; right: 20px; z-index: 100;">
+        <!-- Populated by JS based on auth state -->
+        <button class="auth-btn" onclick="showAuthModal()">Connect</button>
+    </div>
 
     <!-- Main Layout -->
     <div class="factory-main">
@@ -1577,108 +1668,98 @@
             <main class="factory-content">
                 <div class="content-header">
                     <div class="governance-title-row">
-                        <h2 class="content-title">Governance</h2>
+                        <div class="view-tabs">
+                            <button class="view-tab active" data-view="governance" onclick="switchView('governance')">
+                                🏛️ Governance
+                            </button>
+                            <button class="view-tab" data-view="notebox" onclick="switchView('notebox')">
+                                📦 Stuart Factory - Notebox
+                            </button>
+                        </div>
                         <button class="notebox-connect-btn" onclick="openConnectNoteboxModal()" title="Connect your NoteBox">+</button>
                     </div>
                     <p class="notebox-badge">Powered by <a href="https://getsuite.app/notebox" target="_blank">NoteBox</a>, a getSuite product</p>
                 </div>
 
-                <!-- SUITE Apps Section -->
-                <div class="governance-section" id="suiteAppsSection">
-                    <div class="governance-section-header">
-                        <h3>📱 SUITE Apps</h3>
-                        <span class="governance-section-count" id="suiteAppsCount">0</span>
+                <!-- Governance View -->
+                <div id="governanceView">
+                    <!-- SUITE Apps Section -->
+                    <div class="governance-section" id="suiteAppsSection">
+                        <div class="governance-section-header">
+                            <h3>📱 SUITE Apps</h3>
+                            <span class="governance-section-count" id="suiteAppsCount">0</span>
+                        </div>
+                        <div class="section-kanban" id="suiteAppsKanban">
+                            <!-- Populated by JS -->
+                        </div>
                     </div>
-                    <div class="section-kanban" id="suiteAppsKanban">
-                        <!-- Populated by JS -->
+
+                    <!-- Business/Ecosystem Section -->
+                    <div class="governance-section" id="businessSection">
+                        <div class="governance-section-header">
+                            <h3>💰 Business/Ecosystem</h3>
+                            <span class="governance-section-count" id="businessCount">0</span>
+                        </div>
+                        <div class="section-kanban" id="businessKanban">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Articles/Content Section -->
+                    <div class="governance-section" id="contentSection">
+                        <div class="governance-section-header">
+                            <h3>📝 Articles/Content</h3>
+                            <span class="governance-section-count" id="contentSectionCount">0</span>
+                        </div>
+                        <div class="section-kanban" id="contentKanban">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Social/Cadence Loops Section -->
+                    <div class="governance-section" id="socialSection">
+                        <div class="governance-section-header">
+                            <h3>🔄 Social/Cadence Loops</h3>
+                            <span class="governance-section-count" id="socialCount">0</span>
+                        </div>
+                        <div class="section-kanban" id="socialKanban">
+                            <!-- Populated by JS -->
+                        </div>
                     </div>
                 </div>
 
-                <!-- Business/Ecosystem Section -->
-                <div class="governance-section" id="businessSection">
-                    <div class="governance-section-header">
-                        <h3>💰 Business/Ecosystem</h3>
-                        <span class="governance-section-count" id="businessCount">0</span>
+                <!-- NoteBox View (hidden by default) -->
+                <div id="noteboxView" style="display: none;">
+                    <!-- Auth Prompt (shown when not logged in) -->
+                    <div class="notebox-auth-prompt" id="noteboxAuthPromptInline" style="min-height: 400px;">
+                        <div class="notebox-auth-icon">📦</div>
+                        <div class="notebox-auth-title">Connect to NoteBox</div>
+                        <div class="notebox-auth-subtitle">
+                            Your personal idea capture board. Jot down thoughts, tasks, and inspirations in one place.
+                        </div>
+                        <button class="notebox-connect-btn" onclick="showAuthModal()" style="background: linear-gradient(135deg, #a855f7, #6366f1);">
+                            Connect Account
+                        </button>
                     </div>
-                    <div class="section-kanban" id="businessKanban">
-                        <!-- Populated by JS -->
-                    </div>
-                </div>
 
-                <!-- Articles/Content Section -->
-                <div class="governance-section" id="contentSection">
-                    <div class="governance-section-header">
-                        <h3>📝 Articles/Content</h3>
-                        <span class="governance-section-count" id="contentSectionCount">0</span>
-                    </div>
-                    <div class="section-kanban" id="contentKanban">
-                        <!-- Populated by JS -->
-                    </div>
-                </div>
+                    <!-- NoteBox App (shown when logged in) -->
+                    <div id="noteboxAppInline" style="display: none;">
+                        <div class="sidebar-section" style="margin-bottom: 20px;">
+                            <div class="sidebar-title">Quick Add</div>
+                            <div class="notebox-quick-add">
+                                <input type="text" class="notebox-input" id="noteboxQuickInputInline" placeholder="Type an idea..." onkeypress="if(event.key==='Enter') addNoteboxIdeaInline()">
+                                <button class="notebox-add-btn" onclick="addNoteboxIdeaInline()">+</button>
+                            </div>
+                        </div>
 
-                <!-- Social/Cadence Loops Section -->
-                <div class="governance-section" id="socialSection">
-                    <div class="governance-section-header">
-                        <h3>🔄 Social/Cadence Loops</h3>
-                        <span class="governance-section-count" id="socialCount">0</span>
-                    </div>
-                    <div class="section-kanban" id="socialKanban">
-                        <!-- Populated by JS -->
+                        <div class="notebox-kanban" id="noteboxKanbanInline" style="padding: 0;">
+                            <!-- Populated by JS -->
+                        </div>
                     </div>
                 </div>
             </main>
         </div>
 
-        <!-- NoteBox Tab Content -->
-        <div class="tab-content" id="noteboxContent">
-            <!-- Auth Prompt (shown when not logged in) -->
-            <div class="notebox-auth-prompt" id="noteboxAuthPrompt">
-                <div class="notebox-auth-icon">📦</div>
-                <div class="notebox-auth-title">Connect to NoteBox</div>
-                <div class="notebox-auth-subtitle">
-                    Your personal idea capture board. Jot down thoughts, tasks, and inspirations in one place.
-                </div>
-                <button class="notebox-connect-btn" onclick="showAuthModal()">
-                    Connect Account
-                </button>
-            </div>
-
-            <!-- NoteBox App (shown when logged in) -->
-            <div class="notebox-app" id="noteboxApp" style="display: none; flex: 1;">
-                <!-- NoteBox Sidebar -->
-                <aside class="factory-sidebar notebox-sidebar">
-                    <div class="sidebar-section">
-                        <div class="sidebar-title">Quick Add</div>
-                        <div class="notebox-quick-add">
-                            <input type="text" class="notebox-input" id="noteboxQuickInput" placeholder="Type an idea..." onkeypress="if(event.key==='Enter') addNoteboxIdea()">
-                            <button class="notebox-add-btn" onclick="addNoteboxIdea()">+</button>
-                        </div>
-                    </div>
-
-                    <div class="sidebar-section">
-                        <div class="sidebar-title">Destinations</div>
-                        <div id="noteboxDestinations">
-                            <!-- Populated by JS -->
-                        </div>
-                        <button class="filter-btn add-destination-btn" onclick="showAddDestinationModal()" style="margin-top: 8px; border: 1px dashed var(--border); background: transparent;">
-                            + Add Destination
-                        </button>
-                    </div>
-
-                </aside>
-
-                <!-- NoteBox Content -->
-                <main class="factory-content notebox-content">
-                    <div class="content-header">
-                        <h2 class="content-title">Your Ideas</h2>
-                    </div>
-
-                    <div class="notebox-kanban" id="noteboxKanban">
-                        <!-- Populated by JS -->
-                    </div>
-                </main>
-            </div>
-        </div>
     </div>
 
     <!-- NoteBox Archive Modal -->
@@ -1880,6 +1961,14 @@
         </div>
     </div>
 
+    <!-- Global Push Dropdown (lives at body level to avoid stacking context issues) -->
+    <div class="push-dropdown" id="globalPushDropdown" data-idea-id="" data-step="destinations">
+        <div class="push-dropdown-header">Push to...</div>
+        <button class="push-dropdown-item" onclick="event.stopPropagation(); showSectionSelect()">
+            🏛️ getSUITE Governance
+        </button>
+    </div>
+
     <!-- Connect NoteBox Modal -->
     <div class="modal-overlay" id="connectNoteboxModal">
         <div class="modal-content" style="text-align: center; max-width: 420px;">
@@ -2016,10 +2105,12 @@
                             reputation: dbUser.reputation,
                             active_submissions: dbUser.active_submissions,
                             is_founder: dbUser.is_founder,
-                            display_name: dbUser.display_name
+                            display_name: dbUser.display_name,
+                            // Also grab linked telegram_id if it exists (for NoteBox sync)
+                            telegram_id: dbUser.telegram_id || currentUser.telegram_id
                         };
                         localStorage.setItem('factory_user', JSON.stringify(currentUser));
-                        console.log('[refreshUserData] Updated user - rep:', currentUser.reputation, 'is_founder:', currentUser.is_founder);
+                        console.log('[refreshUserData] Updated user - rep:', currentUser.reputation, 'telegram_id:', currentUser.telegram_id);
                     } else {
                         console.warn('[refreshUserData] No user found in DB for wallet:', currentUser.wallet_address);
                     }
@@ -2231,11 +2322,10 @@
             const formattedDate = new Date(idea.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             const authorName = idea.author?.display_name || idea.author_name || 'SUITE';
             const isAdmin = currentUser?.is_founder || false;
-
-            const dragAttrs = isAdmin ? `draggable="true" ondragstart="handleDragStart(event, '${idea.id}', 'idea', 'suite_apps')" ondragend="handleDragEnd(event)"` : '';
+            const rejectionReason = idea.rejection_reason || idea.reject_reason;
 
             return `
-                <div class="idea-card ${idea.status}" ${dragAttrs}>
+                <div class="idea-card ${idea.status}" draggable="true" ondragstart="handleDragStart(event, '${idea.id}', 'idea', 'suite_apps')" ondragend="handleDragEnd(event)">
                     ${isAdmin ? `<button class="card-delete-btn" onclick="showDeleteModal('${idea.id}', 'idea')" title="Delete">&times;</button>` : ''}
                     <div class="idea-card-title">${escapeHtml(idea.name)}</div>
                     <div class="idea-card-tagline">${escapeHtml(idea.tagline || idea.description || 'No description')}</div>
@@ -2244,6 +2334,7 @@
                         <span>${categoryEmoji} ${idea.category || 'App'}</span>
                         <span>📅 ${formattedDate}</span>
                     </div>
+                    ${idea.status === 'rejected' && rejectionReason ? `<div class="rejection-reason">${escapeHtml(rejectionReason)}</div>` : ''}
                 </div>
             `;
         }
@@ -2289,16 +2380,16 @@
             const formattedDate = new Date(proposal.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             const authorName = proposal.author?.display_name || proposal.author_name || 'Anonymous';
             const isAdmin = currentUser?.is_founder;
-            const draggable = isAdmin ? 'true' : 'false';
-            const dragHandlers = isAdmin ? `ondragstart="handleDragStart(event, '${proposal.id}', 'proposal', '${sectionType}')" ondragend="handleDragEnd(event)"` : '';
             const votesFor = proposal.votes_for || 0;
             const votesAgainst = proposal.votes_against || 0;
             const userVoteCount = getUserVoteCount(proposal.id);
             const nextVoteCost = getVoteCost(userVoteCount + 1);
-            const canVote = currentUser && proposal.status === 'open_voting';
+            const canVote = currentUser && ['submitted', 'open_voting'].includes(proposal.status);
+
+            const rejectionReason = proposal.reject_reason || proposal.rejection_reason;
 
             return `
-                <div class="idea-card ${proposal.status}" draggable="${draggable}" ${dragHandlers}>
+                <div class="idea-card ${proposal.status}" draggable="true" ondragstart="handleDragStart(event, '${proposal.id}', 'proposal', '${sectionType}')" ondragend="handleDragEnd(event)">
                     ${isAdmin ? `<button class="card-delete-btn" onclick="showDeleteModal('${proposal.id}', 'proposal')" title="Delete">&times;</button>` : ''}
                     <div class="idea-card-title">${escapeHtml(proposal.title)}</div>
                     <div class="idea-card-tagline">${escapeHtml(proposal.content || 'No description')}</div>
@@ -2307,6 +2398,7 @@
                         <span>${category.emoji} ${category.label}</span>
                         <span>📅 ${formattedDate}</span>
                     </div>
+                    ${proposal.status === 'rejected' && rejectionReason ? `<div class="rejection-reason">${escapeHtml(rejectionReason)}</div>` : ''}
                     <div class="vote-buttons">
                         <button class="vote-btn for" onclick="showVoteModal('${proposal.id}', 'for')" ${!canVote ? 'disabled' : ''}>
                             👍 <span class="vote-count">${votesFor}</span>
@@ -2323,13 +2415,21 @@
 
         // Drag and Drop Handlers
         function handleDragStart(event, id, type, section) {
-            console.log('[DragStart]', { id, type, section });
+            // Only logged-in users can drag
+            if (!currentUser) {
+                console.log('[DragStart] Blocked - not logged in');
+                event.preventDefault();
+                return;
+            }
+            console.log('[DragStart]', { id, type, section, user: currentUser });
             draggedItem = { id, type, section };
             event.target.classList.add('dragging');
+            event.dataTransfer.setData('text/plain', id);  // Required for drag to work
             event.dataTransfer.effectAllowed = 'move';
         }
 
         function handleDragEnd(event) {
+            console.log('[DragEnd] Drag ended. draggedItem was:', draggedItem);
             event.target.classList.remove('dragging');
             draggedItem = null;
             // Remove drag-over class from all columns
@@ -2348,8 +2448,9 @@
 
         function handleDrop(event, newStatus, section) {
             event.preventDefault();
+            event.stopPropagation();
             event.currentTarget.classList.remove('drag-over');
-            console.log('[Drop]', { newStatus, section, draggedItem });
+            console.log('[handleDrop called]', { newStatus, section, draggedItem });
 
             if (!draggedItem) {
                 console.log('[Drop] No draggedItem!');
@@ -2404,6 +2505,7 @@
         }
 
         async function updateItemStatus(id, type, section, newStatus, rejectionReason) {
+            console.log('[updateItemStatus]', { id, type, section, newStatus, rejectionReason });
             try {
                 let table, updateData;
 
@@ -2421,6 +2523,7 @@
                     }
                 }
 
+                console.log('[updateItemStatus] Updating table:', table, 'with data:', updateData);
                 const response = await fetch(
                     `${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`,
                     {
@@ -2435,17 +2538,22 @@
                     }
                 );
 
+                console.log('[updateItemStatus] Response status:', response.status);
                 if (response.ok) {
+                    console.log('[updateItemStatus] Success! Reloading data...');
                     // Reload and re-render
                     if (section === 'suite_apps') {
                         await loadSuiteAppsIdeas();
                     } else {
                         await loadGovernanceProposals();
                     }
+                    console.log('[updateItemStatus] Re-rendering...');
                     renderGovernanceSections();
+                    console.log('[updateItemStatus] Done!');
                 } else {
-                    console.error('Failed to update status:', await response.text());
-                    alert('Failed to update status');
+                    const errorText = await response.text();
+                    console.error('Failed to update status:', errorText);
+                    alert('Failed to update status: ' + errorText);
                 }
             } catch (err) {
                 console.error('Error updating status:', err);
@@ -2503,7 +2611,309 @@
             }
         }
 
-        // ===== FACTORY TAB SWITCHING =====
+        // ===== VIEW SWITCHING (Governance / NoteBox) =====
+        let currentMainView = 'governance';
+
+        function switchView(view) {
+            currentMainView = view;
+
+            // Update view tab buttons
+            document.querySelectorAll('.view-tab').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.view === view);
+            });
+
+            // Toggle views
+            const governanceView = document.getElementById('governanceView');
+            const noteboxView = document.getElementById('noteboxView');
+
+            if (view === 'governance') {
+                governanceView.style.display = 'block';
+                noteboxView.style.display = 'none';
+            } else {
+                governanceView.style.display = 'none';
+                noteboxView.style.display = 'block';
+                updateNoteboxViewInline();
+            }
+        }
+
+        function updateNoteboxViewInline() {
+            if (currentUser) {
+                // User is logged in - show NoteBox app
+                document.getElementById('noteboxAuthPromptInline').style.display = 'none';
+                document.getElementById('noteboxAppInline').style.display = 'block';
+                // Use the main NoteBox loading function and render to inline container
+                loadNoteboxIdeasForInline();
+            } else {
+                // Not logged in - show auth prompt
+                document.getElementById('noteboxAuthPromptInline').style.display = 'flex';
+                document.getElementById('noteboxAppInline').style.display = 'none';
+            }
+        }
+
+        async function loadNoteboxIdeasForInline() {
+            if (!currentUser) return;
+
+            // Build user_id filters - check both telegram and wallet if available
+            const userIds = [];
+            if (currentUser.telegram_id) {
+                userIds.push(`tg_${currentUser.telegram_id}`);
+            }
+            if (currentUser.wallet_address) {
+                userIds.push(`wallet_${currentUser.wallet_address}`);
+            }
+
+            if (userIds.length === 0) {
+                console.log('No valid user ID for NoteBox');
+                return;
+            }
+
+            try {
+                // Use 'or' filter to match any of the user IDs
+                let url;
+                if (userIds.length === 1) {
+                    url = `${SUPABASE_URL}/rest/v1/personal_ideas?select=*&user_id=eq.${encodeURIComponent(userIds[0])}&order=created_at.desc`;
+                } else {
+                    // Multiple IDs - use or filter
+                    const orFilter = userIds.map(id => `user_id.eq.${id}`).join(',');
+                    url = `${SUPABASE_URL}/rest/v1/personal_ideas?select=*&or=(${encodeURIComponent(orFilter)})&order=created_at.desc`;
+                }
+
+                console.log('Loading NoteBox ideas for:', userIds);
+
+                const response = await fetch(url, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+
+                if (response.ok) {
+                    const ideas = await response.json();
+                    console.log('Loaded', ideas.length, 'NoteBox ideas');
+                    noteboxIdeas = ideas; // Store in global array for Push To functionality
+                    renderNoteboxKanbanInline(ideas);
+                } else {
+                    console.error('Failed to load NoteBox ideas:', await response.text());
+                }
+            } catch (err) {
+                console.error('Error loading NoteBox ideas:', err);
+            }
+        }
+
+        function renderNoteboxKanbanInline(ideas) {
+            const kanban = document.getElementById('noteboxKanbanInline');
+            if (!kanban) return;
+
+            // Filter by status
+            let activeIdeas = ideas.filter(i => i.status === 'inbox');
+            let archivedIdeas = ideas.filter(i => i.status === 'implemented' || i.status === 'dismissed');
+
+            // Group active ideas by category
+            const grouped = {};
+            activeIdeas.forEach(idea => {
+                const cat = idea.category || 'brainstorm';
+                if (!grouped[cat]) grouped[cat] = [];
+                grouped[cat].push(idea);
+            });
+
+            // Render ALL columns in fixed order (even empty ones)
+            let columnsHtml = NOTEBOX_COLUMN_ORDER.map(category => {
+                const cat = NOTEBOX_CATEGORIES[category];
+                const catIdeas = grouped[category] || [];
+                return `
+                    <div class="notebox-column" data-category="${category}">
+                        <div class="notebox-column-header">
+                            <span>${cat.emoji}</span>
+                            <span>${cat.label}</span>
+                            <span class="notebox-column-count">${catIdeas.length}</span>
+                        </div>
+                        <div class="notebox-column-cards" data-category="${category}">
+                            ${catIdeas.map(idea => renderNoteboxCardInline(idea)).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Add Archive column
+            columnsHtml += `
+                <div class="notebox-column archive-column" data-category="archive">
+                    <div class="notebox-column-header" style="opacity: 0.7;">
+                        <span>📁</span>
+                        <span>Archive</span>
+                        <span class="notebox-column-count">${archivedIdeas.length}</span>
+                    </div>
+                    <div class="notebox-column-cards" data-category="archive">
+                        ${archivedIdeas.map(idea => renderNoteboxCardInline(idea)).join('')}
+                    </div>
+                </div>
+            `;
+
+            kanban.innerHTML = columnsHtml;
+
+            // Setup drag and drop for inline kanban
+            setupDragAndDropInline();
+        }
+
+        function setupDragAndDropInline() {
+            const kanban = document.getElementById('noteboxKanbanInline');
+            if (!kanban) return;
+
+            const cards = kanban.querySelectorAll('.notebox-card[draggable="true"]');
+            const dropZones = kanban.querySelectorAll('.notebox-column-cards');
+
+            cards.forEach(card => {
+                card.addEventListener('dragstart', (e) => {
+                    card.classList.add('dragging');
+                    e.dataTransfer.setData('text/plain', card.dataset.id);
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+
+                card.addEventListener('dragend', () => {
+                    card.classList.remove('dragging');
+                    dropZones.forEach(zone => zone.classList.remove('drag-over'));
+                });
+            });
+
+            dropZones.forEach(zone => {
+                zone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    zone.classList.add('drag-over');
+                });
+
+                zone.addEventListener('dragleave', () => {
+                    zone.classList.remove('drag-over');
+                });
+
+                zone.addEventListener('drop', async (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('drag-over');
+
+                    const ideaId = e.dataTransfer.getData('text/plain');
+                    const newCategory = zone.dataset.category;
+                    const draggedCard = kanban.querySelector(`.notebox-card[data-id="${ideaId}"]`);
+                    const currentStatus = draggedCard?.dataset?.status;
+
+                    console.log('[Inline Drop]', { ideaId, newCategory, currentStatus });
+
+                    if (newCategory === 'archive') {
+                        // Show archive modal for archiving
+                        showNoteboxArchiveModal(ideaId, 'done');
+                        return;
+                    }
+
+                    // If dragging FROM archive back to a category, restore it
+                    if (currentStatus === 'implemented' || currentStatus === 'dismissed') {
+                        console.log('[Inline Drop] Restoring from archive to', newCategory);
+                        try {
+                            const response = await fetch(
+                                `${SUPABASE_URL}/rest/v1/personal_ideas?id=eq.${ideaId}`,
+                                {
+                                    method: 'PATCH',
+                                    headers: {
+                                        'apikey': SUPABASE_ANON_KEY,
+                                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({ status: 'inbox', category: newCategory })
+                                }
+                            );
+                            if (response.ok) {
+                                loadNoteboxIdeasForInline();
+                            }
+                        } catch (err) {
+                            console.error('Error restoring idea:', err);
+                        }
+                        return;
+                    }
+
+                    // Update the idea's category (moving between active categories)
+                    try {
+                        const response = await fetch(
+                            `${SUPABASE_URL}/rest/v1/personal_ideas?id=eq.${ideaId}`,
+                            {
+                                method: 'PATCH',
+                                headers: {
+                                    'apikey': SUPABASE_ANON_KEY,
+                                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ category: newCategory })
+                            }
+                        );
+
+                        if (response.ok) {
+                            loadNoteboxIdeasForInline();
+                        }
+                    } catch (err) {
+                        console.error('Error updating idea category:', err);
+                    }
+                });
+            });
+        }
+
+        function renderNoteboxCardInline(idea) {
+            const isArchived = idea.status === 'implemented' || idea.status === 'dismissed';
+            return `
+                <div class="notebox-card" draggable="true" data-id="${idea.id}" data-status="${idea.status}">
+                    <button class="notebox-card-delete" onclick="event.stopPropagation(); deleteNoteboxIdea('${idea.id}')" title="Delete">×</button>
+                    <div class="notebox-card-title">${idea.title || 'Untitled'}</div>
+                    ${idea.content ? `<div class="notebox-card-content">${idea.content}</div>` : ''}
+                    ${idea.ai_reason ? `<div class="notebox-card-reason">💡 ${idea.ai_reason}</div>` : ''}
+                    ${!isArchived ? `
+                        <div class="notebox-card-actions">
+                            <button class="notebox-card-btn done" onclick="event.stopPropagation(); showNoteboxArchiveModal('${idea.id}', 'done')">✓ Done</button>
+                            <button class="notebox-card-btn push" onclick="event.stopPropagation(); togglePushDropdown('${idea.id}', event)">Push To →</button>
+                        </div>
+                    ` : `
+                        <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 8px;">
+                            ${idea.status === 'implemented' ? '✓ Completed' : '✗ Dismissed'}
+                            ${idea.archive_reason ? `: ${idea.archive_reason}` : ''}
+                        </div>
+                    `}
+                </div>
+            `;
+        }
+
+        async function addNoteboxIdeaInline() {
+            const input = document.getElementById('noteboxQuickInputInline');
+            const text = input.value.trim();
+            if (!text || !currentUser) return;
+
+            // Get user_id from currentUser (format: tg_xxx or wallet_xxx)
+            const userId = currentUser.telegram_id ? `tg_${currentUser.telegram_id}` :
+                           currentUser.wallet_address ? `wallet_${currentUser.wallet_address}` : null;
+
+            if (!userId) return;
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/personal_ideas`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify({
+                        raw_input: text,
+                        title: text.length > 60 ? text.slice(0, 60) + '...' : text,
+                        category: 'brainstorm',
+                        status: 'inbox',
+                        user_id: userId
+                    })
+                });
+
+                if (response.ok) {
+                    input.value = '';
+                    loadNoteboxIdeasForInline();
+                }
+            } catch (err) {
+                console.error('Error adding idea:', err);
+            }
+        }
+
+        // Legacy tab switching (kept for compatibility)
         function switchFactoryTab(tab) {
             currentTab = tab;
 
@@ -2527,14 +2937,18 @@
         function updateNoteboxView() {
             if (currentUser) {
                 // User is logged in - show NoteBox app
-                document.getElementById('noteboxAuthPrompt').style.display = 'none';
-                document.getElementById('noteboxApp').style.display = 'flex';
+                const authPrompt = document.getElementById('noteboxAuthPrompt');
+                const app = document.getElementById('noteboxApp');
+                if (authPrompt) authPrompt.style.display = 'none';
+                if (app) app.style.display = 'flex';
                 loadDestinations();
                 loadNoteboxIdeas();
             } else {
                 // Not logged in - show auth prompt
-                document.getElementById('noteboxAuthPrompt').style.display = 'flex';
-                document.getElementById('noteboxApp').style.display = 'none';
+                const authPrompt = document.getElementById('noteboxAuthPrompt');
+                const app = document.getElementById('noteboxApp');
+                if (authPrompt) authPrompt.style.display = 'flex';
+                if (app) app.style.display = 'none';
             }
         }
 
@@ -2853,6 +3267,7 @@
                         hideAuthModal();
                         updateUserPanel();
                         loadLeaderboard(); // Refresh to show user
+                        renderGovernanceSections(); // Re-render to enable drag and drop
 
                         window.removeEventListener('message', handleTelegramAuth);
                     }
@@ -2897,6 +3312,7 @@
                     await refreshUserData();
                     updateUserPanel();
                     loadLeaderboard();
+                    renderGovernanceSections(); // Re-render to enable drag and drop
                 }
             } catch (error) {
                 console.error('Wallet connection failed:', error);
@@ -2920,17 +3336,155 @@
             localStorage.setItem('factory_user', JSON.stringify(demoUser));
             hideAuthModal();
             updateUserPanel();
+            renderGovernanceSections(); // Re-render to enable drag and drop
         }
 
         // User menu (logout)
         function showUserMenu() {
-            if (confirm(`Logged in as ${currentUser.display_name}\n\nDo you want to logout?`)) {
-                currentUser = null;
-                localStorage.removeItem('factory_user');
-                localStorage.removeItem('telegram_user');
-                localStorage.removeItem('connectedWallet');
-                updateUserPanel();
-                loadLeaderboard();
+            // Build menu options
+            let menuText = `👤 ${currentUser.display_name}\n`;
+            menuText += `⭐ ${currentUser.reputation || 0} REP\n\n`;
+
+            // Show linked accounts status
+            menuText += `Linked Accounts:\n`;
+            menuText += currentUser.telegram_id ? `✅ Telegram: ${currentUser.telegram_id}\n` : `❌ Telegram: Not linked\n`;
+            menuText += currentUser.wallet_address ? `✅ Wallet: ${currentUser.wallet_address.slice(0,6)}...${currentUser.wallet_address.slice(-4)}\n` : `❌ Wallet: Not linked\n`;
+            menuText += `\n`;
+
+            // Determine what actions to offer
+            const canLinkTelegram = !currentUser.telegram_id && currentUser.wallet_address;
+            const canLinkWallet = !currentUser.wallet_address && currentUser.telegram_id;
+
+            if (canLinkTelegram) {
+                menuText += `Press OK to link your Telegram account, or Cancel to logout.`;
+                if (confirm(menuText)) {
+                    linkTelegramAccount();
+                    return;
+                }
+            } else if (canLinkWallet) {
+                menuText += `Press OK to link your Wallet, or Cancel to logout.`;
+                if (confirm(menuText)) {
+                    linkWalletAccount();
+                    return;
+                }
+            } else {
+                menuText += `Press OK to logout.`;
+                if (!confirm(menuText)) return;
+            }
+
+            // Logout
+            currentUser = null;
+            localStorage.removeItem('factory_user');
+            localStorage.removeItem('telegram_user');
+            localStorage.removeItem('connectedWallet');
+            updateUserPanel();
+            loadLeaderboard();
+            renderGovernanceSections();
+        }
+
+        // Link Telegram to existing wallet account
+        async function linkTelegramAccount() {
+            const origin = window.location.origin;
+            const width = 550;
+            const height = 470;
+            const left = Math.max(0, (screen.width - width) / 2);
+            const top = Math.max(0, (screen.height - height) / 2);
+
+            const authUrl = `https://oauth.telegram.org/auth?bot_id=8341049569&origin=${encodeURIComponent(origin)}&request_access=write`;
+
+            const popup = window.open(
+                authUrl,
+                'telegram_auth',
+                `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+            );
+
+            window.addEventListener('message', async function handleTelegramLink(event) {
+                if (event.origin !== 'https://oauth.telegram.org') return;
+
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.event === 'auth_result' && data.result) {
+                        const telegramUser = data.result;
+                        const telegramId = telegramUser.id.toString();
+
+                        // Update the existing factory_users record to add telegram_id
+                        const response = await fetch(
+                            `${SUPABASE_URL}/rest/v1/factory_users?wallet_address=eq.${currentUser.wallet_address}`,
+                            {
+                                method: 'PATCH',
+                                headers: {
+                                    'apikey': SUPABASE_ANON_KEY,
+                                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                                    'Content-Type': 'application/json',
+                                    'Prefer': 'return=representation'
+                                },
+                                body: JSON.stringify({ telegram_id: telegramId })
+                            }
+                        );
+
+                        if (response.ok) {
+                            currentUser.telegram_id = telegramId;
+                            localStorage.setItem('factory_user', JSON.stringify(currentUser));
+                            localStorage.setItem('telegram_user', JSON.stringify(telegramUser));
+                            alert('✅ Telegram account linked successfully!');
+                            updateUserPanel();
+                            // Reload NoteBox to show Telegram ideas
+                            if (document.getElementById('noteboxKanbanInline')) {
+                                loadNoteboxIdeasForInline();
+                            }
+                        } else {
+                            console.error('Failed to link Telegram:', await response.text());
+                            alert('Failed to link Telegram account. Try again.');
+                        }
+
+                        window.removeEventListener('message', handleTelegramLink);
+                    }
+                } catch (e) {
+                    console.error('Telegram link error:', e);
+                }
+            });
+        }
+
+        // Link Wallet to existing Telegram account
+        async function linkWalletAccount() {
+            if (typeof window.ethereum === 'undefined') {
+                alert('Please install MetaMask or another Web3 wallet!');
+                return;
+            }
+
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                if (accounts.length > 0) {
+                    const walletAddress = accounts[0].toLowerCase();
+
+                    // Update the existing factory_users record to add wallet_address
+                    const response = await fetch(
+                        `${SUPABASE_URL}/rest/v1/factory_users?telegram_id=eq.${currentUser.telegram_id}`,
+                        {
+                            method: 'PATCH',
+                            headers: {
+                                'apikey': SUPABASE_ANON_KEY,
+                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                                'Content-Type': 'application/json',
+                                'Prefer': 'return=representation'
+                            },
+                            body: JSON.stringify({ wallet_address: walletAddress })
+                        }
+                    );
+
+                    if (response.ok) {
+                        currentUser.wallet_address = walletAddress;
+                        localStorage.setItem('factory_user', JSON.stringify(currentUser));
+                        localStorage.setItem('connectedWallet', walletAddress);
+                        alert('✅ Wallet linked successfully!');
+                        updateUserPanel();
+                    } else {
+                        console.error('Failed to link wallet:', await response.text());
+                        alert('Failed to link wallet. Try again.');
+                    }
+                }
+            } catch (error) {
+                console.error('Wallet link error:', error);
             }
         }
 
@@ -3082,6 +3636,9 @@
             question: { emoji: '❓', label: 'Question' }
         };
 
+        // Fixed column order
+        const NOTEBOX_COLUMN_ORDER = ['action_item', 'suite_feature', 'suite_business', 'app_idea', 'article', 'personal', 'brainstorm', 'question'];
+
         async function loadNoteboxIdeas() {
             if (!currentUser) return;
 
@@ -3124,6 +3681,7 @@
 
         function renderNoteboxKanban() {
             const container = document.getElementById('noteboxKanban');
+            if (!container) return; // Not in NoteBox view
 
             // Filter by destination
             let activeIdeas = noteboxIdeas.filter(i => i.status === 'inbox');
@@ -3208,7 +3766,7 @@
                     ${idea.content ? `<div class="notebox-card-content">${escapeHtml(idea.content)}</div>` : ''}
                     ${idea.status === 'inbox' ? `
                         <div class="notebox-card-actions">
-                            <button class="notebox-card-btn push" onclick="event.stopPropagation(); showPushToModal('${idea.id}')">Push To →</button>
+                            <button class="notebox-card-btn push" onclick="event.stopPropagation(); togglePushDropdown('${idea.id}', event)">Push To →</button>
                             <button class="notebox-card-btn done" onclick="markNoteboxDone('${idea.id}')">✓</button>
                         </div>
                     ` : `
@@ -3227,28 +3785,31 @@
         function setupDragAndDrop() {
             const cards = document.querySelectorAll('.notebox-card[draggable="true"]');
             const dropZones = document.querySelectorAll('.notebox-column-cards');
+            console.log('[setupDragAndDrop] Found', cards.length, 'cards and', dropZones.length, 'drop zones');
 
             cards.forEach(card => {
-                card.addEventListener('dragstart', handleDragStart);
-                card.addEventListener('dragend', handleDragEnd);
+                card.addEventListener('dragstart', noteboxHandleDragStart);
+                card.addEventListener('dragend', noteboxHandleDragEnd);
             });
 
             dropZones.forEach(zone => {
-                zone.addEventListener('dragover', handleDragOver);
-                zone.addEventListener('dragenter', handleDragEnter);
-                zone.addEventListener('dragleave', handleDragLeave);
-                zone.addEventListener('drop', handleDrop);
+                zone.addEventListener('dragover', noteboxHandleDragOver);
+                zone.addEventListener('dragenter', noteboxHandleDragEnter);
+                zone.addEventListener('dragleave', noteboxHandleDragLeave);
+                zone.addEventListener('drop', noteboxHandleDrop);
             });
         }
 
-        function handleDragStart(e) {
+        function noteboxHandleDragStart(e) {
+            console.log('[NoteBox DragStart]', e.target.dataset.id);
             draggedCard = e.target;
             e.target.classList.add('dragging');
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/plain', e.target.dataset.id);
         }
 
-        function handleDragEnd(e) {
+        function noteboxHandleDragEnd(e) {
+            console.log('[NoteBox DragEnd]', draggedCard?.dataset?.id);
             e.target.classList.remove('dragging');
             document.querySelectorAll('.notebox-column-cards').forEach(zone => {
                 zone.classList.remove('drag-over');
@@ -3256,12 +3817,12 @@
             draggedCard = null;
         }
 
-        function handleDragOver(e) {
+        function noteboxHandleDragOver(e) {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
         }
 
-        function handleDragEnter(e) {
+        function noteboxHandleDragEnter(e) {
             e.preventDefault();
             const dropZone = e.target.closest('.notebox-column-cards');
             if (dropZone) {
@@ -3269,38 +3830,46 @@
             }
         }
 
-        function handleDragLeave(e) {
+        function noteboxHandleDragLeave(e) {
             const dropZone = e.target.closest('.notebox-column-cards');
             if (dropZone && !dropZone.contains(e.relatedTarget)) {
                 dropZone.classList.remove('drag-over');
             }
         }
 
-        async function handleDrop(e) {
+        async function noteboxHandleDrop(e) {
             e.preventDefault();
             const dropZone = e.target.closest('.notebox-column-cards');
-            if (!dropZone || !draggedCard) return;
+            console.log('[NoteBox Drop]', { dropZone: dropZone?.dataset?.category, draggedCard: draggedCard?.dataset });
+            if (!dropZone || !draggedCard) {
+                console.log('[NoteBox Drop] No dropZone or draggedCard!');
+                return;
+            }
 
             dropZone.classList.remove('drag-over');
 
             const ideaId = draggedCard.dataset.id;
             const targetCategory = dropZone.dataset.category;
             const currentStatus = draggedCard.dataset.status;
+            console.log('[NoteBox Drop] Moving:', { ideaId, from: currentStatus, to: targetCategory });
 
             // If dropping to archive, mark as implemented
             if (targetCategory === 'archive' && currentStatus === 'inbox') {
+                console.log('[NoteBox Drop] -> Archive');
                 await archiveNoteboxIdea(ideaId, 'implemented', 'Moved to archive');
                 return;
             }
 
             // If dropping from archive back to a category, restore it
             if (targetCategory !== 'archive' && (currentStatus === 'implemented' || currentStatus === 'dismissed')) {
+                console.log('[NoteBox Drop] -> Restore from archive to', targetCategory);
                 await updateNoteboxIdea(ideaId, { status: 'inbox', category: targetCategory });
                 return;
             }
 
             // If moving between active categories, just update category
             if (targetCategory !== 'archive' && currentStatus === 'inbox') {
+                console.log('[NoteBox Drop] -> Change category to', targetCategory);
                 await updateNoteboxIdea(ideaId, { category: targetCategory });
             }
         }
@@ -3367,6 +3936,7 @@
         }
 
         async function deleteNoteboxIdea(ideaId) {
+            console.log('[deleteNoteboxIdea] Deleting:', ideaId);
             if (!confirm('Delete this idea permanently?')) return;
 
             try {
@@ -3381,10 +3951,14 @@
                     }
                 );
 
+                console.log('[deleteNoteboxIdea] Response:', response.status);
                 if (response.ok) {
                     noteboxIdeas = noteboxIdeas.filter(i => i.id !== ideaId);
                     updateNoteboxCounts();
                     renderNoteboxKanban();
+                    console.log('[deleteNoteboxIdea] Done!');
+                } else {
+                    console.error('[deleteNoteboxIdea] Failed:', await response.text());
                 }
             } catch (err) {
                 console.error('Error deleting idea:', err);
@@ -3418,6 +3992,7 @@
 
         function renderDestinationsSidebar() {
             const container = document.getElementById('noteboxDestinations');
+            if (!container) return; // Not in NoteBox view
 
             // Add "All" option first
             let html = `
@@ -3444,6 +4019,183 @@
             renderDestinationsSidebar();
             renderNoteboxKanban();
         }
+
+        // Push To Dropdown Functions
+        let activePushDropdown = null;
+
+        function togglePushDropdown(ideaId, event) {
+            const dropdown = document.getElementById('globalPushDropdown');
+            const button = event ? event.target.closest('.notebox-card-btn.push') : null;
+
+            // If clicking same button, close dropdown
+            if (dropdown.classList.contains('active') && dropdown.dataset.ideaId === ideaId) {
+                closePushDropdown();
+                return;
+            }
+
+            // Store the idea ID on the dropdown
+            dropdown.dataset.ideaId = ideaId;
+            dropdown.dataset.step = 'destinations';
+            resetDropdownContent();
+
+            // Position the dropdown relative to the button
+            if (button) {
+                const rect = button.getBoundingClientRect();
+                dropdown.style.top = (rect.bottom + 4) + 'px';
+                dropdown.style.left = rect.left + 'px';
+            }
+
+            dropdown.classList.add('active');
+            activePushDropdown = dropdown;
+        }
+
+        function closePushDropdown() {
+            const dropdown = document.getElementById('globalPushDropdown');
+            dropdown.classList.remove('active');
+            dropdown.dataset.ideaId = '';
+            dropdown.dataset.step = 'destinations';
+            resetDropdownContent();
+            activePushDropdown = null;
+        }
+
+        function resetDropdownContent() {
+            const dropdown = document.getElementById('globalPushDropdown');
+            dropdown.innerHTML = `
+                <div class="push-dropdown-header">Push to...</div>
+                <button class="push-dropdown-item" onclick="event.stopPropagation(); showSectionSelect()">
+                    🏛️ getSUITE Governance
+                </button>
+            `;
+        }
+
+        function showSectionSelect() {
+            const dropdown = document.getElementById('globalPushDropdown');
+            const ideaId = dropdown.dataset.ideaId;
+
+            if (!ideaId) {
+                console.error('No ideaId found in dropdown');
+                alert('Error: Please try clicking the Push To button again');
+                closePushDropdown();
+                return;
+            }
+
+            console.log('showSectionSelect for idea:', ideaId);
+            dropdown.dataset.step = 'sections';
+            dropdown.innerHTML = `
+                <button class="push-dropdown-item back" onclick="event.stopPropagation(); backToDestinations()">
+                    ← Back
+                </button>
+                <div class="push-dropdown-header">Select Section</div>
+                <button class="push-dropdown-item" onclick="event.stopPropagation(); pushToGovernance('${ideaId}', 'suite_apps')">
+                    📱 SUITE Apps
+                </button>
+                <button class="push-dropdown-item" onclick="event.stopPropagation(); pushToGovernance('${ideaId}', 'business')">
+                    💼 Business
+                </button>
+                <button class="push-dropdown-item" onclick="event.stopPropagation(); pushToGovernance('${ideaId}', 'content')">
+                    📝 Content
+                </button>
+                <button class="push-dropdown-item" onclick="event.stopPropagation(); pushToGovernance('${ideaId}', 'social')">
+                    💬 Social
+                </button>
+            `;
+        }
+
+        function backToDestinations() {
+            const dropdown = document.getElementById('globalPushDropdown');
+            dropdown.dataset.step = 'destinations';
+            resetDropdownContent();
+        }
+
+        async function pushToGovernance(ideaId, section) {
+            console.log('pushToGovernance called:', ideaId, section);
+            console.log('noteboxIdeas count:', noteboxIdeas.length);
+            console.log('noteboxIdeas IDs:', noteboxIdeas.map(i => ({ id: i.id, type: typeof i.id })));
+
+            // Compare as strings to handle type mismatches
+            const idea = noteboxIdeas.find(i => String(i.id) === String(ideaId));
+            if (!idea) {
+                console.error('Idea not found. Looking for:', ideaId, 'Type:', typeof ideaId);
+                alert('Error: Could not find the idea. Check console for details.');
+                closePushDropdown();
+                return;
+            }
+
+            console.log('Found idea:', idea);
+
+            // Close dropdown and show loading state
+            closePushDropdown();
+
+            try {
+                // Create a proposal from the idea
+                const payload = {
+                    content: idea.title + (idea.content ? '\n\n' + idea.content : ''),
+                    section: section,
+                    wallet_address: currentUser?.wallet_address || null,
+                    telegram_auth: currentUser?.telegram_id ? { id: currentUser.telegram_id } : null
+                };
+
+                console.log('Submitting proposal:', payload);
+
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/factory-submit`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                console.log('Response status:', response.status);
+
+                if (response.ok) {
+                    // Mark the idea as pushed/implemented
+                    await fetch(`${SUPABASE_URL}/rest/v1/personal_ideas?id=eq.${ideaId}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ status: 'implemented', dismiss_reason: `Pushed to Governance → ${section}` })
+                    });
+
+                    // Reload and re-render (wrapped in try-catch to not break on missing elements)
+                    try {
+                        await loadGovernanceProposals();
+                        renderGovernanceSections();
+                    } catch (e) { console.log('Error reloading governance:', e); }
+
+                    // Reload NoteBox for whichever view is active
+                    try {
+                        // Try inline view first (Stuart Factory tab)
+                        if (document.getElementById('noteboxKanbanInline')) {
+                            await loadNoteboxIdeasForInline();
+                        }
+                        // Also try regular NoteBox view
+                        if (document.getElementById('noteboxKanban')) {
+                            await loadNoteboxIdeas();
+                            renderNoteboxKanban();
+                        }
+                    } catch (e) { console.log('Error reloading notebox:', e); }
+                } else {
+                    const data = await response.json();
+                    console.error('Push failed:', data);
+                    alert('Failed to push: ' + (data.error || 'Unknown error'));
+                }
+            } catch (err) {
+                console.error('Push to governance error:', err);
+                alert('Failed to push idea: ' + err.message);
+            }
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (activePushDropdown && !e.target.closest('.push-dropdown') && !e.target.closest('.notebox-card-btn.push')) {
+                closePushDropdown();
+            }
+        });
 
         function showPushToModal(ideaId) {
             pushingIdeaId = ideaId;
