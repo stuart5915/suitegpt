@@ -2445,14 +2445,13 @@
                     </div>
                     ${proposal.status === 'rejected' && rejectionReason ? `<div class="rejection-reason">${escapeHtml(rejectionReason)}</div>` : ''}
                     <div class="vote-buttons">
-                        <button class="vote-btn for" onclick="showVoteModal('${proposal.id}', 'for')" ${!canVote ? 'disabled' : ''}>
+                        <button class="vote-btn for" onclick="addVote('${proposal.id}')" ${!canVote ? 'disabled' : ''} title="Add vote (${nextVoteCost === 0 ? 'FREE' : nextVoteCost + ' REP'})">
                             👍 <span class="vote-count">${votesFor}</span>
                         </button>
-                        <button class="vote-btn against" onclick="showVoteModal('${proposal.id}', 'against')" ${!canVote ? 'disabled' : ''}>
-                            👎 <span class="vote-count">${votesAgainst}</span>
+                        <button class="vote-btn against" onclick="removeVote('${proposal.id}')" ${!canVote || userVoteCount === 0 ? 'disabled' : ''} title="Remove vote (+${userVoteCount > 0 ? getRefundAmount(userVoteCount) : 0} REP)">
+                            👎 <span class="vote-count">${userVoteCount}</span>
                         </button>
-                        ${userVoteCount > 0 ? `<span class="your-votes">Your votes: ${userVoteCount}</span>` : ''}
-                        ${canVote ? `<button class="add-vote-btn" onclick="showVoteModal('${proposal.id}', 'for')">+ Vote (${nextVoteCost === 0 ? 'FREE' : nextVoteCost + ' REP'})</button>` : ''}
+                        ${userVoteCount > 0 ? `<span class="your-votes">${userVoteCount} vote${userVoteCount > 1 ? 's' : ''} · ${nextVoteCost} REP next</span>` : `<span class="your-votes">${nextVoteCost === 0 ? 'First vote FREE' : nextVoteCost + ' REP'}</span>`}
                     </div>
                 </div>
             `;
@@ -3032,18 +3031,27 @@
             const content = document.getElementById('connectNoteboxContent');
 
             if (currentUser) {
-                // User is logged in - show success state
+                // User is logged in - show coming soon state
                 content.innerHTML = `
                     <div style="background: var(--bg); border-radius: 12px; padding: 20px; margin-bottom: 16px; text-align: center;">
                         <div style="font-size: 2.5rem; margin-bottom: 8px;">📦</div>
-                        <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 4px;">Make your NoteBox</div>
-                        <div style="font-size: 0.85rem; color: var(--text-dim);">Capture ideas on the go with our Telegram bot</div>
+                        <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 4px;">NoteBox</div>
+                        <div style="font-size: 0.85rem; color: var(--accent); font-weight: 600; margin-bottom: 8px;">Coming Soon</div>
+                        <div style="font-size: 0.85rem; color: var(--text-dim);">Kanban on the go, powered by AI</div>
                     </div>
-                    <a href="https://t.me/StuartFactoryBot" target="_blank" style="display: block; width: 100%; background: #0088cc; color: white; border: none; padding: 14px 28px; border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-bottom: 12px; text-decoration: none; text-align: center;">
-                        Open @StuartFactoryBot
-                    </a>
-                    <p style="font-size: 0.8rem; color: var(--text-dim);">
-                        Message the bot to save ideas, then push them to Governance from your NoteBox.
+                    <div style="background: var(--bg); border-radius: 10px; padding: 16px; margin-bottom: 16px;">
+                        <div style="font-size: 0.9rem; color: var(--text); margin-bottom: 12px; font-weight: 600;">What you'll be able to do:</div>
+                        <ul style="font-size: 0.85rem; color: var(--text-dim); margin: 0; padding-left: 20px; line-height: 1.8;">
+                            <li>Capture ideas on the go via Telegram</li>
+                            <li>AI-powered insights and research</li>
+                            <li>Create and publish X posts & articles</li>
+                            <li>Connect with friends and businesses</li>
+                            <li>Collaborate and share ideas back and forth</li>
+                            <li>Push directly to Governance</li>
+                        </ul>
+                    </div>
+                    <p style="font-size: 0.8rem; color: var(--text-dim); text-align: center;">
+                        Your personal AI-connected workspace for capturing, creating, and collaborating.
                     </p>
                 `;
             } else {
@@ -3543,6 +3551,133 @@
         // Get user's vote count for a proposal
         function getUserVoteCount(proposalId) {
             return userVotes[proposalId] || 0;
+        }
+
+        // Get refund amount for removing a vote (reverse of cost)
+        function getRefundAmount(currentVotes) {
+            if (currentVotes <= 1) return 0; // First vote was free, no refund
+            return Math.floor(currentVotes * (currentVotes - 1) / 2);
+        }
+
+        // Add a vote directly (no modal)
+        async function addVote(proposalId) {
+            if (!currentUser) {
+                alert('Please connect your wallet or Telegram to vote');
+                return;
+            }
+
+            const currentVotes = getUserVoteCount(proposalId);
+            const cost = getVoteCost(currentVotes + 1);
+            const userRep = currentUser.reputation || 0;
+
+            if (cost > userRep) {
+                alert(`Not enough REP! You need ${cost} REP but have ${userRep}.`);
+                return;
+            }
+
+            // Disable all vote buttons temporarily
+            const btns = document.querySelectorAll('.vote-btn');
+            btns.forEach(btn => btn.disabled = true);
+
+            try {
+                const payload = {
+                    proposal_id: proposalId,
+                    direction: 'for',
+                    vote_power: 1
+                };
+
+                if (currentUser.telegram_id) {
+                    payload.telegram_auth = { id: currentUser.telegram_id, username: currentUser.display_name };
+                } else if (currentUser.wallet_address) {
+                    payload.wallet_address = currentUser.wallet_address;
+                }
+
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/factory-vote`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    userVotes[proposalId] = (userVotes[proposalId] || 0) + 1;
+                    if (result.user) {
+                        currentUser.reputation = result.user.reputation;
+                        localStorage.setItem('factory_user', JSON.stringify(currentUser));
+                        updateUserPanel();
+                    }
+                    await loadGovernanceProposals();
+                    renderGovernanceSections();
+                } else {
+                    alert(result.error || 'Failed to add vote');
+                }
+            } catch (err) {
+                console.error('Vote error:', err);
+                alert('Error adding vote');
+            } finally {
+                btns.forEach(btn => btn.disabled = false);
+            }
+        }
+
+        // Remove a vote and refund REP
+        async function removeVote(proposalId) {
+            if (!currentUser) {
+                alert('Please connect your wallet or Telegram');
+                return;
+            }
+
+            const currentVotes = getUserVoteCount(proposalId);
+            if (currentVotes <= 0) {
+                alert('No votes to remove');
+                return;
+            }
+
+            const refund = getRefundAmount(currentVotes);
+
+            // Disable all vote buttons temporarily
+            const btns = document.querySelectorAll('.vote-btn');
+            btns.forEach(btn => btn.disabled = true);
+
+            try {
+                const payload = {
+                    proposal_id: proposalId,
+                    direction: 'remove',
+                    vote_power: 1
+                };
+
+                if (currentUser.telegram_id) {
+                    payload.telegram_auth = { id: currentUser.telegram_id, username: currentUser.display_name };
+                } else if (currentUser.wallet_address) {
+                    payload.wallet_address = currentUser.wallet_address;
+                }
+
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/factory-vote`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    userVotes[proposalId] = Math.max(0, (userVotes[proposalId] || 0) - 1);
+                    if (result.user) {
+                        currentUser.reputation = result.user.reputation;
+                        localStorage.setItem('factory_user', JSON.stringify(currentUser));
+                        updateUserPanel();
+                    }
+                    await loadGovernanceProposals();
+                    renderGovernanceSections();
+                } else {
+                    alert(result.error || 'Failed to remove vote');
+                }
+            } catch (err) {
+                console.error('Remove vote error:', err);
+                alert('Error removing vote');
+            } finally {
+                btns.forEach(btn => btn.disabled = false);
+            }
         }
 
         // Load user's votes from database
