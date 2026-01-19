@@ -268,16 +268,17 @@ async function handleNewMessage(chatId, userId, username, text) {
       : '🤷';
 
     // Build destination buttons (show all, in rows of 2)
+    // Use | delimiter to avoid issues with underscores in slugs
     const keyboard = [];
     for (let i = 0; i < destinations.length; i += 2) {
-      const row = [{ text: `${destinations[i].icon} ${destinations[i].name}`, callback_data: `dest_${conv.id}_${destinations[i].slug}` }];
+      const row = [{ text: `${destinations[i].icon} ${destinations[i].name}`, callback_data: `dest|${conv.id}|${destinations[i].slug}` }];
       if (destinations[i + 1]) {
-        row.push({ text: `${destinations[i + 1].icon} ${destinations[i + 1].name}`, callback_data: `dest_${conv.id}_${destinations[i + 1].slug}` });
+        row.push({ text: `${destinations[i + 1].icon} ${destinations[i + 1].name}`, callback_data: `dest|${conv.id}|${destinations[i + 1].slug}` });
       }
       keyboard.push(row);
     }
-    keyboard.push([{ text: '➕ Add New Destination', callback_data: `newdest_${conv.id}` }]);
-    keyboard.push([{ text: '❌ Cancel', callback_data: `cancel_${conv.id}` }]);
+    keyboard.push([{ text: '➕ Add New Destination', callback_data: `newdest|${conv.id}` }]);
+    keyboard.push([{ text: '❌ Cancel', callback_data: `cancel|${conv.id}` }]);
 
     const messageText = destination
       ? `${confidenceEmoji} *Got it!*\n\n` +
@@ -440,7 +441,14 @@ async function handleDestinationConfirm(chatId, convId, destSlug) {
 }
 
 async function showContentForReview(chatId, convId, destination, conv) {
-  const title = conv.extracted_title || 'Untitled';
+  // Use extracted title, or generate from raw message
+  let title = conv.extracted_title;
+  if (!title || title === 'null') {
+    // Generate title from first 50 chars of raw message
+    title = (conv.raw_message || '').slice(0, 50);
+    if (conv.raw_message && conv.raw_message.length > 50) title += '...';
+    if (!title) title = 'Untitled';
+  }
   const content = conv.extracted_content || conv.raw_message || '';
 
   const preview = content.length > 500 ? content.slice(0, 500) + '...' : content;
@@ -454,8 +462,8 @@ async function showContentForReview(chatId, convId, destination, conv) {
       reply_markup: {
         inline_keyboard: [
           [
-            { text: '✅ Save it!', callback_data: `confirm_save_${convId}` },
-            { text: '❌ Cancel', callback_data: `cancel_${convId}` }
+            { text: '✅ Save it!', callback_data: `confirm_save|${convId}` },
+            { text: '❌ Cancel', callback_data: `cancel|${convId}` }
           ]
         ]
       }
@@ -590,8 +598,16 @@ async function saveToNoteBox(chatId, convId, destination, answers) {
 
   if (!conv) return;
 
+  // Get title with fallback
+  let title = conv.extracted_title;
+  if (!title || title === 'null') {
+    title = (conv.raw_message || '').slice(0, 50);
+    if (conv.raw_message && conv.raw_message.length > 50) title += '...';
+    if (!title) title = 'Untitled';
+  }
+
   // Build enriched content from answers
-  let enrichedContent = conv.extracted_content || '';
+  let enrichedContent = conv.extracted_content || conv.raw_message || '';
   if (Object.keys(answers).length > 0) {
     const answersText = Object.entries(answers)
       .map(([key, value]) => `${key}: ${value}`)
@@ -605,7 +621,7 @@ async function saveToNoteBox(chatId, convId, destination, answers) {
   await supabaseRequest('POST', 'personal_ideas', {
     raw_input: conv.raw_message,
     category: destination.slug || 'brainstorm',
-    title: conv.extracted_title,
+    title: title,
     content: enrichedContent,
     destination_slug: destination.slug,
     status: 'inbox',
@@ -743,24 +759,24 @@ async function handleCallback(query) {
 
   await answerCallback(query.id);
 
-  // Parse callback data
-  if (data.startsWith('dest_')) {
-    // dest_convId_slug
-    const [, convId, slug] = data.split('_');
+  // Parse callback data (using | delimiter)
+  if (data.startsWith('dest|')) {
+    // dest|convId|slug
+    const [, convId, slug] = data.split('|');
     await handleDestinationConfirm(chatId, convId, slug);
     return;
   }
 
-  if (data.startsWith('newdest_')) {
-    // newdest_convId - start new destination creation flow
-    const convId = data.replace('newdest_', '');
+  if (data.startsWith('newdest|')) {
+    // newdest|convId
+    const convId = data.split('|')[1];
     await startNewDestinationFlow(chatId, convId);
     return;
   }
 
-  if (data.startsWith('confirm_save_')) {
-    // confirm_save_convId - save to NoteBox
-    const convId = data.replace('confirm_save_', '');
+  if (data.startsWith('confirm_save|')) {
+    // confirm_save|convId
+    const convId = data.split('|')[1];
     const convs = await supabaseRequest('GET', `intake_conversations?id=eq.${convId}`);
     const conv = convs[0];
     if (!conv) return;
@@ -824,8 +840,8 @@ async function handleCallback(query) {
     return;
   }
 
-  if (data.startsWith('cancel_')) {
-    const convId = data.replace('cancel_', '');
+  if (data.startsWith('cancel_') || data.startsWith('cancel|')) {
+    const convId = data.includes('|') ? data.split('|')[1] : data.replace('cancel_', '');
     await updateConversation(convId, { status: 'cancelled' });
     await sendMessage(chatId, "❌ Cancelled. Send me something new whenever you're ready!");
     return;
@@ -860,14 +876,13 @@ module.exports = async (req, res) => {
       // Handle /start
       if (text === '/start') {
         await sendMessage(chatId,
-          `🏭 *Welcome to StuartFactoryBot!*\n\n` +
-          `Just send me any idea, note, or task and I'll:\n` +
-          `1. Figure out where it should go\n` +
-          `2. Ask a few clarifying questions\n` +
-          `3. Generate a prompt for Claude\n` +
-          `4. Send it to your PC for execution\n\n` +
-          `Try it! Send me something like:\n` +
-          `_"New article idea: exploring the nature of time"_`
+          `📝 *Welcome to NoteBox Bot!*\n\n` +
+          `Send me any idea, note, or thought and I'll:\n` +
+          `1. Ask where it should go (or create a new section)\n` +
+          `2. Show you a summary to confirm or refine\n` +
+          `3. Save it to your NoteBox\n\n` +
+          `Your notes appear in Factory → NoteBox, organized by destination.\n\n` +
+          `_Try it! Just send me anything._`
         );
         return res.status(200).send('OK');
       }
