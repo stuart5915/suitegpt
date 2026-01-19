@@ -1669,13 +1669,13 @@
                             <button class="view-tab active" data-view="governance" onclick="switchView('governance')">
                                 🏛️ Governance
                             </button>
-                            <button class="view-tab" data-view="notebox" onclick="switchView('notebox')">
+                            <button class="view-tab" data-view="notebox" onclick="switchView('notebox')" id="noteboxTab" style="display: none;">
                                 📦 Stuart Factory - Notebox
                             </button>
                         </div>
-                        <button class="notebox-connect-btn" onclick="openConnectNoteboxModal()" title="Connect your NoteBox">+</button>
+                        <button class="notebox-connect-btn" onclick="openConnectNoteboxModal()" title="Submit an idea">+</button>
                     </div>
-                    <p class="notebox-badge">Powered by <a href="https://getsuite.app/notebox" target="_blank">NoteBox</a>, a getSuite product</p>
+                    <p class="notebox-badge" id="noteboxBadge" style="display: none;">Powered by <a href="https://getsuite.app/notebox" target="_blank">NoteBox</a>, a getSuite product</p>
                 </div>
 
                 <!-- Governance View -->
@@ -2085,6 +2085,31 @@
                 await loadUserVotes();
                 updateUserPanel();
             }
+
+            // Check if Stuart and show NoteBox tab
+            updateNoteboxVisibility();
+        }
+
+        // Stuart's identifiers - only show NoteBox tab for Stuart
+        const STUART_WALLET = '0x92d67d8ad8b986e78b369be0272e121ae5acad59';
+        const STUART_TELEGRAM_ID = '1202786230';
+
+        function isStuart() {
+            if (!currentUser) return false;
+            const wallet = currentUser.wallet_address?.toLowerCase();
+            const tgId = currentUser.telegram_id?.toString();
+            return wallet === STUART_WALLET || tgId === STUART_TELEGRAM_ID;
+        }
+
+        function updateNoteboxVisibility() {
+            const noteboxTab = document.getElementById('noteboxTab');
+            const noteboxBadge = document.getElementById('noteboxBadge');
+            const showNotebox = isStuart();
+
+            if (noteboxTab) noteboxTab.style.display = showNotebox ? 'inline-flex' : 'none';
+            if (noteboxBadge) noteboxBadge.style.display = showNotebox ? 'block' : 'none';
+
+            console.log('[NoteBox] Visibility:', showNotebox, 'isStuart:', isStuart());
         }
 
         // Refresh user data from database
