@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         <a href="../suite-shell.html">Apps</a>
                         <a href="index.html" class="active">Docs</a>
                         <a href="../learn.html">Learn</a>
+                        <a href="../factory.html">Governance</a>
                         <a href="../wallet.html">Wallet</a>
                     </div>
                     <div class="nav-actions">
