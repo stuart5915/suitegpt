@@ -20,15 +20,30 @@
                 <a href="/suite-shell.html">Apps</a>
                 <a href="/docs/">Docs</a>
                 <a href="/learn.html">Learn</a>
+                <a href="/factory.html">Governance</a>
                 <a href="/wallet.html">Wallet</a>
             </div>
-            <div class="nav-actions">
-                <a href="/wallet.html" class="nav-credits-btn" title="Your Credits">
-                    <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-                        <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            <div class="nav-actions" id="navAuthArea">
+                <!-- Not logged in: Connect button -->
+                <button class="connect-btn" onclick="openNavConnectModal()" id="navConnectBtn">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                     </svg>
-                    <span id="navCreditsDisplay">0</span>
-                </a>
+                    Connect
+                </button>
+
+                <!-- Logged in: Credits + Identity (hidden by default) -->
+                <div class="auth-display" id="navAuthDisplay" style="display: none;">
+                    <a href="/wallet.html" class="auth-credits" title="Your Credits">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                            <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                        <span id="navCreditsDisplay">0</span>
+                    </a>
+                    <div class="auth-identity" id="navAuthIdentity" onclick="openNavProfileMenu()">
+                        <span id="navAuthIdentityText">@user</span>
+                    </div>
+                </div>
             </div>
             <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
                 <span></span><span></span><span></span>
@@ -36,75 +51,438 @@
         </div>
     `;
 
-    // Get Telegram user from URL params or localStorage
-    function getTelegramUser() {
-        // Check URL params first (for SUITE Shell iframe)
-        const params = new URLSearchParams(window.location.search);
-        const tgId = params.get('tg_id');
-        if (tgId) {
-            return {
-                id: tgId,
-                username: params.get('tg_username') || '',
-                first_name: params.get('tg_first_name') || '',
-                photo_url: params.get('tg_photo_url') || ''
-            };
+    // Inject connect modal
+    const modalHtml = `
+        <div class="connect-modal-overlay" id="navConnectModalOverlay" onclick="if(event.target === this) closeNavConnectModal()">
+            <div class="connect-modal">
+                <button class="connect-modal-close" onclick="closeNavConnectModal()">&times;</button>
+                <h3>Connect to SUITE</h3>
+
+                <div class="connect-options">
+                    <div class="connect-option" onclick="connectWalletFromNav()">
+                        <div class="connect-option-icon">🔗</div>
+                        <div>
+                            <div class="connect-option-title">Connect Wallet</div>
+                            <div class="connect-option-desc">Full access with credits</div>
+                        </div>
+                    </div>
+
+                    <div class="connect-divider">
+                        <span>or</span>
+                    </div>
+
+                    <div class="connect-option telegram" onclick="loginWithTelegramWidget()">
+                        <div class="connect-option-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18 1.897-.962 6.502-1.359 8.627-.168.9-.5 1.201-.82 1.23-.697.064-1.226-.461-1.901-.903-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.015-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.139-5.062 3.345-.479.329-.913.489-1.302.481-.428-.009-1.252-.242-1.865-.442-.751-.244-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.831-2.529 6.998-3.015 3.333-1.386 4.025-1.627 4.477-1.635.099-.002.321.023.465.142.121.1.154.234.169.337.015.103.034.337.019.519z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="connect-option-title">Login with Telegram</div>
+                            <div class="connect-option-desc">Vote & submit ideas (link wallet for credits)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Inject styles for connect modal only (button/pill styles are in nav.css)
+    const styleEl = document.createElement('style');
+    styleEl.textContent = `
+        /* Connect Modal */
+        .connect-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        .connect-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .connect-modal {
+            background: #1a1a2e;
+            border-radius: 20px;
+            padding: 24px;
+            width: 90%;
+            max-width: 380px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+        .connect-modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            color: #9ca3af;
+            font-size: 1.5rem;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .connect-modal h3 {
+            margin: 0 0 20px 0;
+            color: #fff;
+            font-size: 1.2rem;
+        }
+        .connect-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .connect-option {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .connect-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        .connect-option-icon {
+            font-size: 1.5rem;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        .connect-option.telegram .connect-option-icon {
+            background: rgba(0, 136, 204, 0.2);
+            color: #0088cc;
+        }
+        .connect-option-title {
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 2px;
+        }
+        .connect-option-desc {
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+        .connect-divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #6b7280;
+            font-size: 0.8rem;
+        }
+        .connect-divider::before, .connect-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .connect-back {
+            color: #9ca3af;
+            font-size: 0.85rem;
+            cursor: pointer;
+            margin-bottom: 16px;
+        }
+        .connect-back:hover {
+            color: #fff;
+        }
+        .telegram-login-form label {
+            display: block;
+            color: #9ca3af;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+        }
+        .telegram-input-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 16px;
+        }
+        .telegram-input-group span {
+            color: #6b7280;
+        }
+        .telegram-input-group input {
+            flex: 1;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+        }
+        .telegram-login-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px;
+            background: #0088cc;
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .telegram-login-btn:hover {
+            background: #0099dd;
         }
 
-        // Check localStorage
-        const stored = localStorage.getItem('telegram_user');
-        if (stored) {
-            try {
-                return JSON.parse(stored);
-            } catch (e) {}
-        }
-
-        return null;
-    }
-
-    // Load credits from Supabase
-    async function loadCredits() {
-        const user = getTelegramUser();
-        const creditsEl = document.getElementById('navCreditsDisplay');
-        if (!creditsEl) return;
-
-        if (!user || !user.id) {
-            creditsEl.textContent = '0';
-            return;
-        }
-
-        try {
-            const response = await fetch(
-                `${SUPABASE_URL}/rest/v1/user_credits?telegram_id=eq.${user.id}&select=suite_balance`,
-                {
-                    headers: {
-                        'apikey': SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-                    }
-                }
-            );
-            const data = await response.json();
-            if (data && data.length > 0) {
-                const balance = Math.floor(parseFloat(data[0].suite_balance) || 0);
-                creditsEl.textContent = balance.toLocaleString();
-                // Cache for other pages
-                localStorage.setItem('suite_credits', balance.toString());
-            } else {
-                creditsEl.textContent = '0';
+        @media (max-width: 768px) {
+            .nav-actions .connect-btn {
+                padding: 6px 12px;
+                font-size: 0.8rem;
             }
-        } catch (error) {
-            console.error('Failed to load credits:', error);
-            // Fallback to cached value
-            const cached = localStorage.getItem('suite_credits');
-            creditsEl.textContent = cached || '0';
+            .nav-actions .auth-display {
+                gap: 6px;
+            }
+            .nav-actions .auth-credits,
+            .nav-actions .auth-identity {
+                padding: 5px 10px;
+                font-size: 0.75rem;
+            }
+        }
+    `;
+    document.head.appendChild(styleEl);
+
+    // Get connected wallet from localStorage
+    function getConnectedWallet() {
+        return localStorage.getItem('connectedWallet') || localStorage.getItem('walletAddress') || localStorage.getItem('suiteWalletAddress') || localStorage.getItem('suiteWallet') || null;
+    }
+
+    // Get telegram user
+    function getTelegramUser() {
+        return JSON.parse(localStorage.getItem('telegram_user') || 'null');
+    }
+
+    // Truncate wallet address
+    function truncateWallet(address) {
+        if (!address) return '';
+        return address.slice(0, 6) + '...' + address.slice(-4);
+    }
+
+    // Update auth display
+    async function updateNavAuthDisplay() {
+        const wallet = getConnectedWallet();
+        const tgUser = getTelegramUser();
+        const connectBtn = document.getElementById('navConnectBtn');
+        const authDisplay = document.getElementById('navAuthDisplay');
+        const creditsEl = document.getElementById('navCreditsDisplay');
+        const identityEl = document.getElementById('navAuthIdentityText');
+
+        if (!connectBtn || !authDisplay) return;
+
+        if (wallet) {
+            // Wallet connected
+            connectBtn.style.display = 'none';
+            authDisplay.style.display = 'flex';
+            identityEl.textContent = truncateWallet(wallet);
+
+            // Load credits
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/suite_credits?wallet_address=eq.${wallet.toLowerCase()}&select=balance,locked_balance`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    const balance = Math.floor(parseFloat(data[0].balance || 0) + parseFloat(data[0].locked_balance || 0));
+                    creditsEl.textContent = balance.toLocaleString();
+                    localStorage.setItem('suite_credits', balance.toString());
+                } else {
+                    creditsEl.textContent = '0';
+                }
+            } catch (error) {
+                console.error('Failed to load credits:', error);
+                const cached = localStorage.getItem('suite_credits');
+                creditsEl.textContent = cached || '0';
+            }
+        } else if (tgUser) {
+            // Telegram only
+            connectBtn.style.display = 'none';
+            authDisplay.style.display = 'flex';
+            identityEl.textContent = '@' + tgUser.username;
+            creditsEl.textContent = '0';
+        } else {
+            // Not logged in
+            connectBtn.style.display = 'flex';
+            authDisplay.style.display = 'none';
         }
     }
 
-    // Load credits on page load
-    loadCredits();
+    // Initialize
+    updateNavAuthDisplay();
+
+    // Listen for storage changes
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'connectedWallet' || e.key === 'walletAddress' || e.key === 'telegram_user') {
+            updateNavAuthDisplay();
+        }
+    });
+
+    // Expose globally
+    window.refreshNavCredits = updateNavAuthDisplay;
 })();
 
 function toggleMobileMenu() {
     document.querySelector('.mobile-menu-btn').classList.toggle('active');
     document.querySelector('.nav-links').classList.toggle('mobile-open');
     document.querySelector('.nav-actions')?.classList.toggle('mobile-open');
+}
+
+// Modal functions
+function openNavConnectModal() {
+    document.getElementById('navConnectModalOverlay').classList.add('active');
+}
+
+function closeNavConnectModal() {
+    document.getElementById('navConnectModalOverlay').classList.remove('active');
+}
+
+// Connect wallet from nav
+async function connectWalletFromNav() {
+    if (typeof window.ethereum === 'undefined') {
+        alert('Please install MetaMask or another Web3 wallet to connect!');
+        window.open('https://metamask.io/download/', '_blank');
+        return;
+    }
+
+    try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        if (accounts.length > 0) {
+            const address = accounts[0];
+            localStorage.setItem('connectedWallet', address);
+            localStorage.setItem('suiteWalletAddress', address);
+            localStorage.setItem('suiteWallet', address);
+            window.walletAddress = address;
+
+            console.log('Wallet connected:', address);
+            closeNavConnectModal();
+
+            if (window.refreshNavCredits) {
+                window.refreshNavCredits();
+            }
+        }
+    } catch (error) {
+        console.error('Wallet connection failed:', error);
+        if (error.code === 4001) {
+            console.log('Connection cancelled by user');
+        }
+    }
+}
+
+// Telegram login widget - opens Telegram OAuth popup
+function loginWithTelegramWidget() {
+    const botUsername = 'suitehubbot';
+    const origin = window.location.origin;
+
+    // Calculate popup position (center of screen)
+    const width = 550;
+    const height = 470;
+    const left = Math.max(0, (screen.width - width) / 2);
+    const top = Math.max(0, (screen.height - height) / 2);
+
+    // Open Telegram OAuth popup
+    const authUrl = `https://oauth.telegram.org/auth?bot_id=8341049569&origin=${encodeURIComponent(origin)}&request_access=write`;
+
+    const popup = window.open(
+        authUrl,
+        'telegram_auth',
+        `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+    );
+
+    // Listen for the auth response
+    window.addEventListener('message', function handleTelegramAuth(event) {
+        if (event.origin !== 'https://oauth.telegram.org') return;
+
+        try {
+            const data = JSON.parse(event.data);
+            if (data.event === 'auth_result' && data.result) {
+                const user = data.result;
+                const tgUser = {
+                    id: user.id,
+                    username: user.username || user.first_name,
+                    first_name: user.first_name,
+                    last_name: user.last_name,
+                    photo_url: user.photo_url,
+                    auth_date: user.auth_date,
+                    hash: user.hash
+                };
+
+                localStorage.setItem('telegram_user', JSON.stringify(tgUser));
+
+                closeNavConnectModal();
+
+                if (window.refreshNavCredits) {
+                    window.refreshNavCredits();
+                }
+
+                window.removeEventListener('message', handleTelegramAuth);
+            }
+        } catch (e) {
+            console.error('Telegram auth error:', e);
+        }
+    });
+
+    // Fallback: check if popup was blocked
+    if (!popup || popup.closed) {
+        alert('Popup was blocked. Please allow popups for this site.');
+    }
+}
+
+// Profile menu (disconnect)
+function openNavProfileMenu() {
+    const wallet = localStorage.getItem('connectedWallet');
+    const tgUser = JSON.parse(localStorage.getItem('telegram_user') || 'null');
+
+    if (wallet) {
+        if (confirm('Disconnect wallet?')) {
+            localStorage.removeItem('connectedWallet');
+            localStorage.removeItem('walletAddress');
+            localStorage.removeItem('suiteWalletAddress');
+            localStorage.removeItem('suiteWallet');
+            window.walletAddress = null;
+            if (window.refreshNavCredits) {
+                window.refreshNavCredits();
+            }
+        }
+    } else if (tgUser) {
+        if (confirm('Logout from Telegram?')) {
+            localStorage.removeItem('telegram_user');
+            if (window.refreshNavCredits) {
+                window.refreshNavCredits();
+            }
+        }
+    }
+}
+
+// Legacy support
+async function handleNavCreditsClick(event) {
+    event.preventDefault();
+    openNavConnectModal();
+    return false;
 }
