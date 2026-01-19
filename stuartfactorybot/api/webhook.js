@@ -1,10 +1,10 @@
 // StuartFactoryBot - Personal Intake Webhook Handler
 // Captures ideas via Telegram, classifies with AI, routes to Claude CLI
 
-const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://rdsmdywbdiskxknluiym.supabase.co';
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY; // Free tier available!
+const TELEGRAM_TOKEN = (process.env.TELEGRAM_BOT_TOKEN || '').trim();
+const SUPABASE_URL = (process.env.SUPABASE_URL || 'https://rdsmdywbdiskxknluiym.supabase.co').trim();
+const SUPABASE_SERVICE_KEY = (process.env.SUPABASE_SERVICE_KEY || '').trim();
+const GEMINI_API_KEY = (process.env.GEMINI_API_KEY || '').trim();
 
 // Only allow Stuart (set your Telegram user ID)
 const ALLOWED_USER_IDS = (process.env.ALLOWED_USER_IDS || '').split(',').filter(Boolean);
@@ -250,17 +250,12 @@ async function handleNewMessage(chatId, userId, username, text) {
     const classification = await classifyMessage(text, destinations);
     console.log('Classification:', classification);
 
-    const destination = destinations.find(d => d.slug === classification.destination_slug);
-
-    if (!destination) {
-      await sendMessage(chatId, "I couldn't figure out where this should go. Can you try rephrasing?");
-      await updateConversation(conv.id, { status: 'cancelled' });
-      return;
-    }
+    // Find suggested destination (may not exist if AI suggests something new)
+    let destination = destinations.find(d => d.slug === classification.destination_slug);
 
     // Update conversation with classification
     await updateConversation(conv.id, {
-      detected_destination_id: destination.id,
+      detected_destination_id: destination?.id || null,
       confidence: classification.confidence,
       extracted_title: classification.title,
       extracted_content: classification.content,
@@ -268,8 +263,9 @@ async function handleNewMessage(chatId, userId, username, text) {
     });
 
     // Ask for destination confirmation
-    const confidenceEmoji = classification.confidence >= 0.8 ? '🎯' :
-                            classification.confidence >= 0.6 ? '🤔' : '❓';
+    const confidenceEmoji = destination
+      ? (classification.confidence >= 0.8 ? '🎯' : classification.confidence >= 0.6 ? '🤔' : '❓')
+      : '🤷';
 
     // Build destination buttons (show all, in rows of 2)
     const keyboard = [];
@@ -283,15 +279,18 @@ async function handleNewMessage(chatId, userId, username, text) {
     keyboard.push([{ text: '➕ Add New Destination', callback_data: `newdest_${conv.id}` }]);
     keyboard.push([{ text: '❌ Cancel', callback_data: `cancel_${conv.id}` }]);
 
-    await sendMessage(chatId,
-      `${confidenceEmoji} *Got it!*\n\n` +
-      `"${classification.title}"\n\n` +
-      `This looks like it's for *${destination.name}*.\n` +
-      `Is that right, or should it go somewhere else?`,
-      {
-        reply_markup: { inline_keyboard: keyboard }
-      }
-    );
+    const messageText = destination
+      ? `${confidenceEmoji} *Got it!*\n\n` +
+        `"${classification.title}"\n\n` +
+        `This looks like it's for *${destination.name}*.\n` +
+        `Is that right, or should it go somewhere else?`
+      : `${confidenceEmoji} *Got it!*\n\n` +
+        `"${classification.title}"\n\n` +
+        `Where should this go?`;
+
+    await sendMessage(chatId, messageText, {
+      reply_markup: { inline_keyboard: keyboard }
+    });
   } catch (err) {
     console.error('handleNewMessage error:', err);
     await sendMessage(chatId, `❌ Error processing message: ${err.message || 'Unknown error'}`);
