@@ -447,24 +447,24 @@ async function connectWalletFromNav() {
 
 // Telegram login using official widget script
 function loginWithTelegramWidget() {
-    const botUsername = 'suitehubbot';
+    const botId = '8341049569'; // suitehubbot numeric ID
 
     // Load Telegram widget script if not already loaded
     if (!window.Telegram || !window.Telegram.Login) {
         const script = document.createElement('script');
         script.src = 'https://telegram.org/js/telegram-widget.js?22';
         script.async = true;
-        script.onload = () => doTelegramAuth(botUsername);
+        script.onload = () => doTelegramAuth(botId);
         document.head.appendChild(script);
     } else {
-        doTelegramAuth(botUsername);
+        doTelegramAuth(botId);
     }
 }
 
-function doTelegramAuth(botUsername) {
+function doTelegramAuth(botId) {
     // Use Telegram's official auth method
     window.Telegram.Login.auth(
-        { bot_id: botUsername, request_access: true },
+        { bot_id: botId, request_access: true },
         (user) => {
             if (user) {
                 const tgUser = {
