@@ -30,9 +30,16 @@ import {
     CalendarPlus,
     GitCommit,
     Zap,
-    Image
+    Image,
+    Users,
+    Layers,
+    FileText
 } from 'lucide-react'
-import { Project } from '@/lib/supabase/types'
+import { Project, Audience, ContentVariant } from '@/lib/supabase/types'
+import AudienceManager from '@/components/loops/AudienceManager'
+import VariantEditor from '@/components/loops/VariantEditor'
+import AudienceSelector from '@/components/loops/AudienceSelector'
+import { SUITE_AUDIENCES } from '@/lib/audiences/templates'
 
 // Global brand settings from Settings page
 interface BrandSettings {
@@ -52,10 +59,12 @@ interface ContentLoop {
     color: string
     description: string
     rotationDays: number
+    postsPerDay: number  // How many posts to generate per day
     isActive: boolean
     items: LoopItem[]
     lastPosted?: string
     nextPost?: string
+    audiences?: Audience[]
 }
 
 interface LoopItem {
@@ -69,6 +78,7 @@ interface LoopItem {
     lastUsed?: string
     usageCount: number
     previousPosts?: string[] // Track generated posts to avoid repetition
+    variants?: ContentVariant[]
 }
 
 // Work Log automated loop configuration
@@ -82,8 +92,33 @@ interface WorkLogConfig {
     nextRun?: string
 }
 
+// Generated post for content calendar
+interface ScheduledPost {
+    id: string
+    loopId: string
+    audienceId: string
+    audienceName: string
+    audienceEmoji: string
+    scheduledDate: string // YYYY-MM-DD
+    content: string
+    status: 'pending' | 'approved' | 'rejected'
+    messagingAngle: string
+    referenceLink?: { url: string; title: string; notes?: string }
+    generatedAt: string
+    platform: 'x' | 'linkedin' | 'instagram'
+}
+
 // Preset loop templates
 const LOOP_TEMPLATES = [
+    {
+        name: 'SUITE User Audiences',
+        emoji: '👥',
+        color: '#8b5cf6',
+        description: 'Pre-configured with 4 audience segments: Entrepreneurs, Contributors, Passive Users, Influencers',
+        rotationDays: 7,
+        withAudiences: true, // Flag to pre-load SUITE audiences
+        featured: true
+    },
     {
         name: 'Education',
         emoji: '🎓',
@@ -115,7 +150,7 @@ const LOOP_TEMPLATES = [
     {
         name: 'Growth CTAs',
         emoji: '📢',
-        color: '#8b5cf6',
+        color: '#6366f1',
         description: 'Call-to-actions: join, try, earn',
         rotationDays: 1
     },
@@ -149,6 +184,13 @@ function LoopsPageContent() {
     const [generatedPost, setGeneratedPost] = useState<string>('')
     const [selectedPlatform, setSelectedPlatform] = useState<'x' | 'linkedin' | 'instagram'>('x')
     const [addingToQueue, setAddingToQueue] = useState(false)
+    const [selectedAudience, setSelectedAudience] = useState<string | null>(null)
+
+    // Audience & Variant management
+    const [showAudienceManager, setShowAudienceManager] = useState<string | null>(null)
+    const [showVariantEditor, setShowVariantEditor] = useState<{ loopId: string, itemId: string } | null>(null)
+    const [editingAudience, setEditingAudience] = useState<{ loopId: string, audience: Audience } | null>(null)
+    const [editingReferenceLinks, setEditingReferenceLinks] = useState<{ url: string; title: string; notes?: string }[]>([])
 
     // Work Log automated loop state
     const [workLogConfig, setWorkLogConfig] = useState<WorkLogConfig>({
@@ -160,6 +202,14 @@ function LoopsPageContent() {
     })
     const [showWorkLogModal, setShowWorkLogModal] = useState(false)
     const [savingWorkLog, setSavingWorkLog] = useState(false)
+
+    // Generate Week state
+    const [showGenerateWeekModal, setShowGenerateWeekModal] = useState<string | null>(null) // loopId
+    const [generateDays, setGenerateDays] = useState(7)
+    const [generatingWeek, setGeneratingWeek] = useState(false)
+    const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 })
+    const [scheduledPosts, setScheduledPosts] = useState<ScheduledPost[]>([])
+    const [showContentCalendar, setShowContentCalendar] = useState(false)
 
     // Global brand settings from Settings page
     const [brandSettings, setBrandSettings] = useState<BrandSettings | null>(null)
@@ -173,16 +223,29 @@ function LoopsPageContent() {
         type: 'article' as const
     })
 
-    // Load brand settings from localStorage
+    // Load brand settings from API
     useEffect(() => {
-        const brandSettingsJson = localStorage.getItem('cadence_brand_settings')
-        if (brandSettingsJson) {
+        async function loadBrandSettings() {
             try {
-                setBrandSettings(JSON.parse(brandSettingsJson))
+                const response = await fetch('/api/settings')
+                const data = await response.json()
+                if (data.settings) {
+                    setBrandSettings(data.settings)
+                }
             } catch (e) {
-                console.error('Failed to parse brand settings:', e)
+                console.error('Failed to load brand settings:', e)
+                // Fallback to localStorage for migration
+                const brandSettingsJson = localStorage.getItem('cadence_brand_settings')
+                if (brandSettingsJson) {
+                    try {
+                        setBrandSettings(JSON.parse(brandSettingsJson))
+                    } catch (parseError) {
+                        console.error('Failed to parse brand settings:', parseError)
+                    }
+                }
             }
         }
+        loadBrandSettings()
     }, [])
 
     // Load work log config from API
@@ -244,19 +307,66 @@ function LoopsPageContent() {
     const loadLoops = async () => {
         if (!selectedProject) return
 
-        // For now, use localStorage until we add Supabase table
-        const savedLoops = localStorage.getItem(`loops-${selectedProject}`)
-        if (savedLoops) {
-            setLoops(JSON.parse(savedLoops))
-        } else {
-            setLoops([])
+        try {
+            const response = await fetch(`/api/loops?project_id=${selectedProject}`)
+            const data = await response.json()
+            if (data.loops) {
+                setLoops(data.loops)
+            } else {
+                // Fallback to localStorage for migration
+                const savedLoops = localStorage.getItem(`loops-${selectedProject}`)
+                if (savedLoops) {
+                    const parsedLoops = JSON.parse(savedLoops)
+                    setLoops(parsedLoops)
+                    // Migrate to database
+                    for (const loop of parsedLoops) {
+                        await fetch('/api/loops', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ ...loop, projectId: selectedProject })
+                        })
+                    }
+                } else {
+                    setLoops([])
+                }
+            }
+        } catch (e) {
+            console.error('Failed to load loops:', e)
+            // Fallback to localStorage
+            const savedLoops = localStorage.getItem(`loops-${selectedProject}`)
+            if (savedLoops) {
+                setLoops(JSON.parse(savedLoops))
+            } else {
+                setLoops([])
+            }
         }
     }
 
-    const saveLoops = (updatedLoops: ContentLoop[]) => {
+    const saveLoops = async (updatedLoops: ContentLoop[]) => {
         if (!selectedProject) return
+        // Also save to localStorage as backup
         localStorage.setItem(`loops-${selectedProject}`, JSON.stringify(updatedLoops))
         setLoops(updatedLoops)
+    }
+
+    const saveLoopToApi = async (loop: ContentLoop) => {
+        try {
+            await fetch('/api/loops', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(loop)
+            })
+        } catch (e) {
+            console.error('Failed to save loop to API:', e)
+        }
+    }
+
+    const deleteLoopFromApi = async (loopId: string) => {
+        try {
+            await fetch(`/api/loops?id=${loopId}`, { method: 'DELETE' })
+        } catch (e) {
+            console.error('Failed to delete loop from API:', e)
+        }
     }
 
     // Save work log configuration
@@ -333,7 +443,13 @@ function LoopsPageContent() {
         }
     }
 
-    const createLoop = (template: typeof LOOP_TEMPLATES[0]) => {
+    const createLoop = async (template: typeof LOOP_TEMPLATES[0] & { withAudiences?: boolean; featured?: boolean }) => {
+        // Import SUITE audiences if template has withAudiences flag
+        const audiences = template.withAudiences ? SUITE_AUDIENCES.map(a => ({
+            ...a,
+            id: crypto.randomUUID()
+        })) : []
+
         const newLoop: ContentLoop = {
             id: crypto.randomUUID(),
             name: template.name,
@@ -341,27 +457,59 @@ function LoopsPageContent() {
             color: template.color,
             description: template.description,
             rotationDays: template.rotationDays,
+            postsPerDay: 1, // Default to 1 post per day
             isActive: true,
-            items: []
+            items: [],
+            audiences: audiences
         }
 
-        saveLoops([...loops, newLoop])
+        // Create in API
+        try {
+            const response = await fetch('/api/loops', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...newLoop, projectId: selectedProject })
+            })
+            const data = await response.json()
+            if (data.loop) {
+                // Use the ID from the API
+                saveLoops([...loops, { ...newLoop, id: data.loop.id }])
+                // Auto-expand the new loop to show audiences
+                setExpandedLoop(data.loop.id)
+            } else {
+                saveLoops([...loops, newLoop])
+                setExpandedLoop(newLoop.id)
+            }
+        } catch (e) {
+            console.error('Failed to create loop in API:', e)
+            saveLoops([...loops, newLoop])
+            setExpandedLoop(newLoop.id)
+        }
         setShowNewLoopModal(false)
     }
 
-    const toggleLoop = (loopId: string) => {
-        const updatedLoops = loops.map(loop =>
-            loop.id === loopId ? { ...loop, isActive: !loop.isActive } : loop
+    const toggleLoop = async (loopId: string) => {
+        const loop = loops.find(l => l.id === loopId)
+        if (!loop) return
+
+        const updatedLoops = loops.map(l =>
+            l.id === loopId ? { ...l, isActive: !l.isActive } : l
         )
         saveLoops(updatedLoops)
+
+        // Update in API
+        await saveLoopToApi({ ...loop, isActive: !loop.isActive })
     }
 
-    const deleteLoop = (loopId: string) => {
+    const deleteLoop = async (loopId: string) => {
         if (!confirm('Delete this loop and all its content?')) return
         saveLoops(loops.filter(loop => loop.id !== loopId))
+
+        // Delete from API
+        await deleteLoopFromApi(loopId)
     }
 
-    const addContentToLoop = (loopId: string) => {
+    const addContentToLoop = async (loopId: string) => {
         if (!newContent.title.trim()) return
 
         const newItem: LoopItem = {
@@ -375,24 +523,59 @@ function LoopsPageContent() {
             previousPosts: []
         }
 
-        const updatedLoops = loops.map(loop =>
-            loop.id === loopId
-                ? { ...loop, items: [...loop.items, newItem] }
-                : loop
-        )
+        const loop = loops.find(l => l.id === loopId)
+        if (!loop) return
+
+        const updatedLoop = { ...loop, items: [...loop.items, newItem] }
+        const updatedLoops = loops.map(l => l.id === loopId ? updatedLoop : l)
 
         saveLoops(updatedLoops)
+        await saveLoopToApi(updatedLoop)
+
         setNewContent({ url: '', title: '', summary: '', content: '', type: 'article' })
         setShowAddContentModal(null)
     }
 
-    const removeContentFromLoop = (loopId: string, itemId: string) => {
-        const updatedLoops = loops.map(loop =>
-            loop.id === loopId
-                ? { ...loop, items: loop.items.filter(item => item.id !== itemId) }
-                : loop
-        )
+    const removeContentFromLoop = async (loopId: string, itemId: string) => {
+        const loop = loops.find(l => l.id === loopId)
+        if (!loop) return
+
+        const updatedLoop = { ...loop, items: loop.items.filter(item => item.id !== itemId) }
+        const updatedLoops = loops.map(l => l.id === loopId ? updatedLoop : l)
+
         saveLoops(updatedLoops)
+        await saveLoopToApi(updatedLoop)
+    }
+
+    // Save audiences for a loop
+    const saveAudiences = async (loopId: string, audiences: Audience[]) => {
+        const loop = loops.find(l => l.id === loopId)
+        if (!loop) return
+
+        const updatedLoop = { ...loop, audiences }
+        const updatedLoops = loops.map(l => l.id === loopId ? updatedLoop : l)
+
+        saveLoops(updatedLoops)
+        await saveLoopToApi(updatedLoop)
+    }
+
+    // Save variants for a content item
+    const saveVariants = async (loopId: string, itemId: string, variants: ContentVariant[]) => {
+        const loop = loops.find(l => l.id === loopId)
+        if (!loop) return
+
+        const updatedLoop = {
+            ...loop,
+            items: loop.items.map(item =>
+                item.id === itemId
+                    ? { ...item, variants }
+                    : item
+            )
+        }
+        const updatedLoops = loops.map(l => l.id === loopId ? updatedLoop : l)
+
+        saveLoops(updatedLoops)
+        await saveLoopToApi(updatedLoop)
     }
 
     // Scrape URL to extract title and summary
@@ -435,6 +618,14 @@ function LoopsPageContent() {
         setGeneratingPost(true)
         setGeneratedPost('')
 
+        // Get audience context if selected
+        const audience = selectedAudience
+            ? loop?.audiences?.find(a => a.id === selectedAudience)
+            : null
+        const variant = selectedAudience
+            ? item.variants?.find(v => v.audienceId === selectedAudience)
+            : null
+
         try {
             // Use global brand settings as fallback for project-specific settings
             const response = await fetch('/api/generate-post', {
@@ -454,13 +645,41 @@ function LoopsPageContent() {
                     hashtags: project.default_hashtags || brandSettings?.defaultHashtags?.split(' ').filter(Boolean),
                     projectName: project.name,
                     platform: selectedPlatform,
-                    previousPosts: item.previousPosts || []
+                    previousPosts: item.previousPosts || [],
+                    // Audience targeting with cycling support
+                    audience: audience ? {
+                        name: audience.name,
+                        description: audience.description,
+                        painPoints: audience.painPoints,
+                        desires: audience.desires,
+                        // Support both legacy and new format
+                        messagingAngle: Array.isArray(audience.messagingAngles) ? undefined : (audience as unknown as { messagingAngle?: string }).messagingAngle,
+                        messagingAngles: audience.messagingAngles,
+                        cta: audience.cta,
+                        referenceLinks: audience.referenceLinks,
+                        usageHistory: audience.usageHistory
+                    } : undefined,
+                    variant: variant ? {
+                        hook: variant.hook,
+                        keyPoints: variant.keyPoints,
+                        cta: variant.cta
+                    } : undefined
                 })
             })
 
             if (response.ok) {
                 const data = await response.json()
                 setGeneratedPost(data.post)
+
+                // Update audience usage history if returned
+                if (data.updatedUsageHistory && audience && loop) {
+                    const updatedAudiences = loop.audiences?.map(a =>
+                        a.id === audience.id
+                            ? { ...a, usageHistory: data.updatedUsageHistory }
+                            : a
+                    ) || []
+                    saveAudiences(loopId, updatedAudiences)
+                }
             }
         } catch (err) {
             console.error('Error generating post:', err)
@@ -486,6 +705,183 @@ function LoopsPageContent() {
             }
         })
         saveLoops(updatedLoops)
+    }
+
+    // Generate a week's worth of content for a loop
+    const generateWeekContent = async (loopId: string, days: number) => {
+        const loop = loops.find(l => l.id === loopId)
+        const project = projects.find(p => p.id === selectedProject)
+        if (!loop || !project) return
+
+        const enabledAudiences = loop.audiences?.filter(a => a.enabled !== false) || []
+        if (enabledAudiences.length === 0) {
+            alert('No enabled audiences to generate content for')
+            return
+        }
+
+        const postsPerDay = loop.postsPerDay || 1
+        const totalPosts = postsPerDay * days
+
+        setGeneratingWeek(true)
+        setGenerationProgress({ current: 0, total: totalPosts })
+
+        const newPosts: ScheduledPost[] = []
+        const today = new Date()
+
+        // Create a working copy of audiences with their usage history
+        const audiencesCopy = enabledAudiences.map(a => ({ ...a }))
+        let audienceIndex = 0
+
+        try {
+            for (let day = 0; day < days; day++) {
+                const scheduledDate = new Date(today)
+                scheduledDate.setDate(today.getDate() + day)
+                const dateStr = scheduledDate.toISOString().split('T')[0]
+
+                for (let postNum = 0; postNum < postsPerDay; postNum++) {
+                    // Get next audience in rotation
+                    const audience = audiencesCopy[audienceIndex % audiencesCopy.length]
+                    audienceIndex++
+
+                    // Generate content for this audience
+                    const response = await fetch('/api/generate-post', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            title: `${loop.name} content for ${audience.name}`,
+                            summary: loop.description,
+                            brandVoice: project.brand_voice || brandSettings?.brandVoice,
+                            brandTone: project.brand_tone || brandSettings?.tone,
+                            emojiStyle: project.emoji_style || brandSettings?.emojiStyle,
+                            speakingPerspective: brandSettings?.speakingPerspective || 'I',
+                            exclusionWords: brandSettings?.exclusionWords,
+                            hashtags: project.default_hashtags || brandSettings?.defaultHashtags?.split(' ').filter(Boolean),
+                            projectName: project.name,
+                            platform: selectedPlatform,
+                            previousPosts: newPosts.filter(p => p.audienceId === audience.id).map(p => p.content).slice(-3),
+                            audience: {
+                                name: audience.name,
+                                description: audience.description,
+                                painPoints: audience.painPoints,
+                                desires: audience.desires,
+                                messagingAngles: audience.messagingAngles,
+                                cta: audience.cta,
+                                referenceLinks: audience.referenceLinks,
+                                usageHistory: audience.usageHistory
+                            }
+                        })
+                    })
+
+                    if (response.ok) {
+                        const data = await response.json()
+
+                        // Update audience usage history for next iteration
+                        if (data.updatedUsageHistory) {
+                            const idx = audiencesCopy.findIndex(a => a.id === audience.id)
+                            if (idx !== -1) {
+                                audiencesCopy[idx].usageHistory = data.updatedUsageHistory
+                            }
+                        }
+
+                        newPosts.push({
+                            id: crypto.randomUUID(),
+                            loopId: loop.id,
+                            audienceId: audience.id,
+                            audienceName: audience.name,
+                            audienceEmoji: audience.emoji,
+                            scheduledDate: dateStr,
+                            content: data.post,
+                            status: 'pending',
+                            messagingAngle: data.selectedAngle || audience.messagingAngles?.[0] || '',
+                            referenceLink: data.selectedReferenceLink,
+                            generatedAt: new Date().toISOString(),
+                            platform: selectedPlatform
+                        })
+                    }
+
+                    setGenerationProgress({ current: newPosts.length, total: totalPosts })
+                }
+            }
+
+            // Update audiences with final usage history
+            const updatedAudiences = loop.audiences?.map(a => {
+                const updated = audiencesCopy.find(ac => ac.id === a.id)
+                return updated ? { ...a, usageHistory: updated.usageHistory } : a
+            }) || []
+            saveAudiences(loopId, updatedAudiences)
+
+            // Save scheduled posts
+            setScheduledPosts(prev => [...prev, ...newPosts])
+
+            // Save to localStorage
+            const allPosts = [...scheduledPosts, ...newPosts]
+            localStorage.setItem(`cadence_scheduled_posts_${loopId}`, JSON.stringify(allPosts.filter(p => p.loopId === loopId)))
+
+            // Show content calendar
+            setShowGenerateWeekModal(null)
+            setShowContentCalendar(true)
+
+        } catch (err) {
+            console.error('Error generating week content:', err)
+            alert('Error generating content. Check console for details.')
+        } finally {
+            setGeneratingWeek(false)
+            setGenerationProgress({ current: 0, total: 0 })
+        }
+    }
+
+    // Load scheduled posts from localStorage
+    const loadScheduledPosts = (loopId: string) => {
+        const saved = localStorage.getItem(`cadence_scheduled_posts_${loopId}`)
+        if (saved) {
+            try {
+                const posts = JSON.parse(saved) as ScheduledPost[]
+                setScheduledPosts(prev => {
+                    const filtered = prev.filter(p => p.loopId !== loopId)
+                    return [...filtered, ...posts]
+                })
+            } catch (e) {
+                console.error('Error loading scheduled posts:', e)
+            }
+        }
+    }
+
+    // Update post status
+    const updatePostStatus = (postId: string, status: 'pending' | 'approved' | 'rejected') => {
+        setScheduledPosts(prev => {
+            const updated = prev.map(p => p.id === postId ? { ...p, status } : p)
+            // Save to localStorage
+            const loopId = prev.find(p => p.id === postId)?.loopId
+            if (loopId) {
+                localStorage.setItem(`cadence_scheduled_posts_${loopId}`, JSON.stringify(updated.filter(p => p.loopId === loopId)))
+            }
+            return updated
+        })
+    }
+
+    // Delete a scheduled post
+    const deleteScheduledPost = (postId: string) => {
+        setScheduledPosts(prev => {
+            const post = prev.find(p => p.id === postId)
+            const updated = prev.filter(p => p.id !== postId)
+            if (post) {
+                localStorage.setItem(`cadence_scheduled_posts_${post.loopId}`, JSON.stringify(updated.filter(p => p.loopId === post.loopId)))
+            }
+            return updated
+        })
+    }
+
+    // Approve all pending posts
+    const approveAllPosts = (loopId: string) => {
+        setScheduledPosts(prev => {
+            const updated = prev.map(p =>
+                p.loopId === loopId && p.status === 'pending'
+                    ? { ...p, status: 'approved' as const }
+                    : p
+            )
+            localStorage.setItem(`cadence_scheduled_posts_${loopId}`, JSON.stringify(updated.filter(p => p.loopId === loopId)))
+            return updated
+        })
     }
 
     // Add generated post to queue
@@ -715,24 +1111,7 @@ function LoopsPageContent() {
             </div>
 
             {/* Loops Grid */}
-            {loops.length === 0 ? (
-                <div className="card p-12 text-center">
-                    <div className="w-16 h-16 rounded-2xl bg-[var(--surface)] flex items-center justify-center mx-auto mb-4">
-                        <RefreshCw className="w-8 h-8 text-[var(--foreground-muted)]" />
-                    </div>
-                    <h2 className="text-xl font-bold text-[var(--foreground)] mb-2">No Content Loops Yet</h2>
-                    <p className="text-[var(--foreground-muted)] mb-6 max-w-md mx-auto">
-                        Create loops of evergreen content that automatically rotate on a schedule.
-                    </p>
-                    <button
-                        onClick={() => setShowNewLoopModal(true)}
-                        className="btn btn-primary"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Create Your First Loop
-                    </button>
-                </div>
-            ) : (
+            {loops.length > 0 && (
                 <div className="space-y-4">
                     {loops.map(loop => (
                         <div
@@ -841,69 +1220,289 @@ function LoopsPageContent() {
 
                             {/* Expanded Content */}
                             {expandedLoop === loop.id && (
-                                <div className="border-t border-[var(--surface-border)] p-5 bg-[var(--background)]">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h4 className="font-medium text-[var(--foreground)]">
-                                            Content Items ({loop.items.length})
-                                        </h4>
-                                        <button
-                                            onClick={() => setShowAddContentModal(loop.id)}
-                                            className="btn btn-ghost text-sm"
-                                            style={{ color: loop.color }}
-                                        >
-                                            <Plus className="w-4 h-4" />
-                                            Add Content
-                                        </button>
-                                    </div>
-
-                                    {loop.items.length === 0 ? (
-                                        <div className="text-center py-8 text-[var(--foreground-muted)]">
-                                            <p>No content in this loop yet.</p>
+                                <div className="border-t border-[var(--surface-border)] bg-[var(--background)]">
+                                    {/* Audiences Section - PROMINENT */}
+                                    <div className="p-5 border-b border-[var(--surface-border)]">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="flex items-center gap-2">
+                                                <Users className="w-5 h-5 text-purple-500" />
+                                                <h4 className="font-semibold text-[var(--foreground)]">
+                                                    Target Audiences
+                                                </h4>
+                                                <span className="text-sm text-[var(--foreground-muted)]">
+                                                    ({loop.audiences?.length || 0})
+                                                </span>
+                                            </div>
                                             <button
-                                                onClick={() => setShowAddContentModal(loop.id)}
-                                                className="text-[var(--primary)] hover:underline mt-2"
+                                                onClick={() => setShowAudienceManager(loop.id)}
+                                                className="btn btn-ghost text-sm text-purple-400"
                                             >
-                                                Add your first item
+                                                <Plus className="w-4 h-4" />
+                                                Add Audience
                                             </button>
                                         </div>
-                                    ) : (
-                                        <div className="space-y-2">
-                                            {loop.items.map((item, idx) => (
-                                                <div
-                                                    key={item.id}
-                                                    className="flex items-center gap-3 p-3 bg-[var(--surface)] rounded-lg group"
+
+                                        {(!loop.audiences || loop.audiences.length === 0) ? (
+                                            <div className="text-center py-6 border-2 border-dashed border-[var(--surface-border)] rounded-xl">
+                                                <Users className="w-8 h-8 text-[var(--foreground-muted)] mx-auto mb-2" />
+                                                <p className="text-[var(--foreground-muted)] mb-2">No audiences configured</p>
+                                                <button
+                                                    onClick={() => setShowAudienceManager(loop.id)}
+                                                    className="text-purple-400 hover:underline text-sm"
                                                 >
-                                                    <span className="text-sm font-medium text-[var(--foreground-muted)] w-6">
-                                                        {idx + 1}.
-                                                    </span>
-                                                    <div className="flex-1 min-w-0">
+                                                    Add audiences to tailor content
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                {loop.audiences.map(audience => (
+                                                    <div
+                                                        key={audience.id}
+                                                        className={`p-4 bg-[var(--surface)] rounded-xl border transition-colors group ${
+                                                            audience.enabled === false
+                                                                ? 'border-[var(--surface-border)] opacity-50'
+                                                                : 'border-[var(--surface-border)] hover:border-purple-500/50'
+                                                        }`}
+                                                    >
+                                                        <div className="flex items-start gap-3">
+                                                            {/* Enable/Disable Toggle */}
+                                                            <button
+                                                                onClick={() => {
+                                                                    const updatedAudiences = loop.audiences!.map(a =>
+                                                                        a.id === audience.id
+                                                                            ? { ...a, enabled: a.enabled === false ? true : false }
+                                                                            : a
+                                                                    )
+                                                                    saveAudiences(loop.id, updatedAudiences)
+                                                                }}
+                                                                className={`mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                                                                    audience.enabled === false
+                                                                        ? 'border-[var(--foreground-muted)] bg-transparent'
+                                                                        : 'border-purple-500 bg-purple-500'
+                                                                }`}
+                                                                title={audience.enabled === false ? 'Click to enable' : 'Click to disable'}
+                                                            >
+                                                                {audience.enabled !== false && (
+                                                                    <Check className="w-3 h-3 text-white" />
+                                                                )}
+                                                            </button>
+                                                            <div className="text-2xl">{audience.emoji}</div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <h5 className={`font-semibold ${audience.enabled === false ? 'text-[var(--foreground-muted)]' : 'text-[var(--foreground)]'}`}>
+                                                                            {audience.name}
+                                                                        </h5>
+                                                                        {audience.enabled === false && (
+                                                                            <span className="px-1.5 py-0.5 text-[10px] rounded bg-gray-500/20 text-gray-400">
+                                                                                Disabled
+                                                                            </span>
+                                                                        )}
+                                                                        {audience.emailCapture && audience.enabled !== false && (
+                                                                            <span className="px-1.5 py-0.5 text-[10px] rounded bg-blue-500/20 text-blue-400">
+                                                                                Email
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setEditingAudience({ loopId: loop.id, audience })
+                                                                            setEditingReferenceLinks(audience.referenceLinks || [])
+                                                                        }}
+                                                                        className="p-1.5 rounded hover:bg-purple-500/20 text-[var(--foreground-muted)] hover:text-purple-400 transition-colors opacity-0 group-hover:opacity-100"
+                                                                        title="Edit audience"
+                                                                    >
+                                                                        <Edit3 className="w-4 h-4" />
+                                                                    </button>
+                                                                </div>
+                                                                <p className="text-xs text-[var(--foreground-muted)] line-clamp-2 mt-1">
+                                                                    {audience.description}
+                                                                </p>
+                                                                <div className="flex items-center gap-4 mt-3 text-xs">
+                                                                    {/* Usage Stats */}
+                                                                    <div className="flex items-center gap-3 text-[var(--foreground-muted)]">
+                                                                        <span>
+                                                                            <span className="text-purple-400 font-medium">
+                                                                                {audience.usageHistory?.generatedCount || 0}
+                                                                            </span> posts
+                                                                        </span>
+                                                                        {audience.messagingAngles && audience.messagingAngles.length > 1 && (
+                                                                            <span className="text-[var(--foreground-muted)]">
+                                                                                · {audience.messagingAngles.length} angles
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    <span className="text-[var(--foreground-muted)] truncate">
+                                                                        CTA: <span className="text-purple-400">{audience.cta}</span>
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Loop Posting Config */}
+                                        {loop.audiences && loop.audiences.length > 0 && (
+                                            <div className="mt-4 p-4 bg-purple-500/10 rounded-lg space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-4 text-sm">
                                                         <div className="flex items-center gap-2">
-                                                            <p className="font-medium text-[var(--foreground)] truncate">
-                                                                {item.title}
-                                                            </p>
-                                                            {item.url && (
-                                                                <a
-                                                                    href={item.url}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    onClick={(e) => e.stopPropagation()}
-                                                                    className="p-1 hover:bg-[var(--primary)]/20 rounded text-[var(--primary)]"
-                                                                    title="Open article"
-                                                                >
-                                                                    <ExternalLink className="w-3 h-3" />
-                                                                </a>
+                                                            <Calendar className="w-4 h-4 text-purple-400" />
+                                                            <span className="text-[var(--foreground-muted)]">Posts per day:</span>
+                                                            <select
+                                                                value={loop.postsPerDay || 1}
+                                                                onChange={(e) => {
+                                                                    const updatedLoops = loops.map(l =>
+                                                                        l.id === loop.id
+                                                                            ? { ...l, postsPerDay: parseInt(e.target.value) }
+                                                                            : l
+                                                                    )
+                                                                    saveLoops(updatedLoops)
+                                                                }}
+                                                                className="px-2 py-1 text-sm bg-[var(--background)] border border-[var(--surface-border)] rounded text-[var(--foreground)] font-medium"
+                                                            >
+                                                                <option value={1}>1</option>
+                                                                <option value={2}>2</option>
+                                                                <option value={3}>3</option>
+                                                                <option value={4}>4</option>
+                                                                <option value={5}>5</option>
+                                                            </select>
+                                                        </div>
+                                                        <span className="text-[var(--foreground-muted)]">
+                                                            = <span className="text-purple-400 font-semibold">{(loop.postsPerDay || 1) * 7}</span> posts/week
+                                                        </span>
+                                                        <span className="text-[var(--foreground-muted)]">
+                                                            across <span className="text-purple-400">{loop.audiences.filter(a => a.enabled !== false).length}</span> audiences
+                                                            {loop.audiences.some(a => a.enabled === false) && (
+                                                                <span className="text-gray-500"> ({loop.audiences.filter(a => a.enabled === false).length} disabled)</span>
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => setShowAudienceManager(loop.id)}
+                                                        className="text-xs text-purple-400 hover:underline"
+                                                    >
+                                                        Edit audiences
+                                                    </button>
+                                                </div>
+
+                                                {/* Generate Week Button */}
+                                                <div className="flex items-center gap-3">
+                                                    <button
+                                                        onClick={() => {
+                                                            loadScheduledPosts(loop.id)
+                                                            setShowGenerateWeekModal(loop.id)
+                                                        }}
+                                                        className="flex-1 btn btn-primary"
+                                                    >
+                                                        <Sparkles className="w-4 h-4" />
+                                                        Generate Week
+                                                    </button>
+                                                    {scheduledPosts.filter(p => p.loopId === loop.id).length > 0 && (
+                                                        <button
+                                                            onClick={() => {
+                                                                loadScheduledPosts(loop.id)
+                                                                setShowContentCalendar(true)
+                                                            }}
+                                                            className="btn btn-ghost text-purple-400"
+                                                        >
+                                                            <Calendar className="w-4 h-4" />
+                                                            View Calendar ({scheduledPosts.filter(p => p.loopId === loop.id && p.status === 'pending').length} pending)
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Content Items Section */}
+                                    <div className="p-5">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="flex items-center gap-2">
+                                                <FileText className="w-5 h-5" style={{ color: loop.color }} />
+                                                <h4 className="font-semibold text-[var(--foreground)]">
+                                                    Content Items
+                                                </h4>
+                                                <span className="text-sm text-[var(--foreground-muted)]">
+                                                    ({loop.items.length})
+                                                </span>
+                                            </div>
+                                            <button
+                                                onClick={() => setShowAddContentModal(loop.id)}
+                                                className="btn btn-ghost text-sm"
+                                                style={{ color: loop.color }}
+                                            >
+                                                <Plus className="w-4 h-4" />
+                                                Add Content
+                                            </button>
+                                        </div>
+
+                                        {loop.items.length === 0 ? (
+                                            <div className="text-center py-6 border-2 border-dashed border-[var(--surface-border)] rounded-xl">
+                                                <FileText className="w-8 h-8 text-[var(--foreground-muted)] mx-auto mb-2" />
+                                                <p className="text-[var(--foreground-muted)] mb-2">No content in this loop yet</p>
+                                                <button
+                                                    onClick={() => setShowAddContentModal(loop.id)}
+                                                    className="hover:underline text-sm"
+                                                    style={{ color: loop.color }}
+                                                >
+                                                    Add your first content item
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                {loop.items.map((item, idx) => (
+                                                    <div
+                                                        key={item.id}
+                                                        className="flex items-center gap-3 p-3 bg-[var(--surface)] rounded-lg group"
+                                                    >
+                                                        <span className="text-sm font-medium text-[var(--foreground-muted)] w-6">
+                                                            {idx + 1}.
+                                                        </span>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center gap-2">
+                                                                <p className="font-medium text-[var(--foreground)] truncate">
+                                                                    {item.title}
+                                                                </p>
+                                                                {item.url && (
+                                                                    <a
+                                                                        href={item.url}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                        className="p-1 hover:bg-[var(--primary)]/20 rounded text-[var(--primary)]"
+                                                                        title="Open article"
+                                                                    >
+                                                                        <ExternalLink className="w-3 h-3" />
+                                                                    </a>
+                                                                )}
+                                                            </div>
+                                                            {(item.summary || item.content) && (
+                                                                <p className="text-sm text-[var(--foreground-muted)] truncate">
+                                                                    {item.summary || item.content}
+                                                                </p>
                                                             )}
                                                         </div>
-                                                        {(item.summary || item.content) && (
-                                                            <p className="text-sm text-[var(--foreground-muted)] truncate">
-                                                                {item.summary || item.content}
-                                                            </p>
+                                                        {item.url && (
+                                                            <span title="Has URL">
+                                                                <Link2 className="w-4 h-4 text-[var(--primary)]" />
+                                                            </span>
                                                         )}
-                                                    </div>
-                                                    {item.url && (
-                                                        <span title="Has URL">
-                                                            <Link2 className="w-4 h-4 text-[var(--primary)]" />
-                                                        </span>
+                                                    {/* Variants badge */}
+                                                    {loop.audiences && loop.audiences.length > 0 && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                setShowVariantEditor({ loopId: loop.id, itemId: item.id })
+                                                            }}
+                                                            className="px-2 py-0.5 text-xs rounded-full bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors flex items-center gap-1"
+                                                            title="Edit variants"
+                                                        >
+                                                            <Layers className="w-3 h-3" />
+                                                            {item.variants?.length || 0}/{loop.audiences.length} variants
+                                                        </button>
                                                     )}
                                                     <span className="text-xs text-[var(--foreground-muted)]">
                                                         Used {item.usageCount}x
@@ -913,6 +1512,7 @@ function LoopsPageContent() {
                                                             e.stopPropagation()
                                                             setShowPostPreview({ loopId: loop.id, itemId: item.id })
                                                             setGeneratedPost('')
+                                                            setSelectedAudience(null)
                                                         }}
                                                         className="p-1.5 rounded opacity-0 group-hover:opacity-100 hover:bg-[var(--primary)]/20 text-[var(--primary)] transition-all"
                                                         title="Generate post"
@@ -930,6 +1530,7 @@ function LoopsPageContent() {
                                         </div>
                                     )}
                                 </div>
+                            </div>
                             )}
                         </div>
                     ))}
@@ -1037,34 +1638,81 @@ function LoopsPageContent() {
                             </p>
                         </div>
 
-                        <div className="p-4 space-y-2">
-                            {LOOP_TEMPLATES.map(template => (
+                        <div className="p-4 space-y-4">
+                            {/* Featured Template */}
+                            {LOOP_TEMPLATES.filter(t => (t as any).featured).map(template => (
                                 <button
                                     key={template.name}
                                     onClick={() => createLoop(template)}
-                                    className="w-full p-4 bg-[var(--background)] hover:bg-[var(--surface-hover)] rounded-xl text-left transition-colors group"
+                                    className="w-full p-5 bg-gradient-to-r from-purple-500/20 to-blue-500/20 hover:from-purple-500/30 hover:to-blue-500/30 border-2 border-purple-500/50 rounded-xl text-left transition-all group"
                                 >
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="px-2 py-0.5 text-xs font-semibold bg-purple-500 text-white rounded-full">
+                                            RECOMMENDED
+                                        </span>
+                                    </div>
                                     <div className="flex items-center gap-4">
                                         <div
-                                            className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
-                                            style={{ background: `${template.color}20` }}
+                                            className="w-14 h-14 rounded-xl flex items-center justify-center text-3xl"
+                                            style={{ background: `${template.color}30` }}
                                         >
                                             {template.emoji}
                                         </div>
                                         <div className="flex-1">
-                                            <div className="font-semibold text-[var(--foreground)] group-hover:text-[var(--primary)]">
+                                            <div className="font-bold text-lg text-[var(--foreground)] group-hover:text-purple-400">
                                                 {template.name}
                                             </div>
                                             <div className="text-sm text-[var(--foreground-muted)]">
                                                 {template.description}
                                             </div>
-                                        </div>
-                                        <div className="text-sm text-[var(--foreground-muted)]">
-                                            {template.rotationDays === 0 ? 'Manual' : `Every ${template.rotationDays}d`}
+                                            <div className="flex items-center gap-3 mt-2">
+                                                <span className="text-xs text-purple-400">
+                                                    <Users className="w-3 h-3 inline mr-1" />
+                                                    4 audiences included
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                 </button>
                             ))}
+
+                            {/* Divider */}
+                            <div className="flex items-center gap-3">
+                                <div className="flex-1 border-t border-[var(--surface-border)]" />
+                                <span className="text-xs text-[var(--foreground-muted)]">Or choose a basic template</span>
+                                <div className="flex-1 border-t border-[var(--surface-border)]" />
+                            </div>
+
+                            {/* Other Templates */}
+                            <div className="space-y-2">
+                                {LOOP_TEMPLATES.filter(t => !(t as any).featured).map(template => (
+                                    <button
+                                        key={template.name}
+                                        onClick={() => createLoop(template)}
+                                        className="w-full p-4 bg-[var(--background)] hover:bg-[var(--surface-hover)] rounded-xl text-left transition-colors group"
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div
+                                                className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+                                                style={{ background: `${template.color}20` }}
+                                            >
+                                                {template.emoji}
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="font-semibold text-[var(--foreground)] group-hover:text-[var(--primary)]">
+                                                    {template.name}
+                                                </div>
+                                                <div className="text-sm text-[var(--foreground-muted)]">
+                                                    {template.description}
+                                                </div>
+                                            </div>
+                                            <div className="text-sm text-[var(--foreground-muted)]">
+                                                {template.rotationDays === 0 ? 'Manual' : `Every ${template.rotationDays}d`}
+                                            </div>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1218,14 +1866,29 @@ function LoopsPageContent() {
                                 </div>
                             </div>
 
+                            {/* Audience Selector */}
+                            {(() => {
+                                const loop = loops.find(l => l.id === showPostPreview.loopId)
+                                if (loop?.audiences && loop.audiences.length > 0) {
+                                    return (
+                                        <AudienceSelector
+                                            audiences={loop.audiences}
+                                            selectedId={selectedAudience}
+                                            onSelect={setSelectedAudience}
+                                        />
+                                    )
+                                }
+                                return null
+                            })()}
+
                             {/* Brand Settings Status */}
-                            {brandSettings ? (
+                            {selectedProjectData?.brand_voice ? (
                                 <p className="text-xs text-green-500 bg-green-500/10 rounded-lg p-2">
-                                    Using your brand voice settings from Settings
+                                    Using brand voice from project settings
                                 </p>
                             ) : (
                                 <p className="text-xs text-[var(--foreground-muted)] bg-[var(--background)] rounded-lg p-2">
-                                    Tip: Set up your brand voice in <a href="/settings" className="text-[var(--primary)] hover:underline">Settings</a> for consistent content
+                                    Tip: Set up your brand voice in <a href={`/projects/${selectedProject}`} className="text-[var(--primary)] hover:underline">Project Settings</a> for consistent content
                                 </p>
                             )}
 
@@ -1478,6 +2141,686 @@ function LoopsPageContent() {
                     </div>
                 </div>
             )}
+
+            {/* Audience Manager Modal */}
+            {showAudienceManager && (
+                <AudienceManager
+                    audiences={loops.find(l => l.id === showAudienceManager)?.audiences || []}
+                    onSave={(audiences) => saveAudiences(showAudienceManager, audiences)}
+                    onClose={() => setShowAudienceManager(null)}
+                />
+            )}
+
+            {/* Edit Single Audience Modal */}
+            {editingAudience && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-[var(--surface)] rounded-2xl max-w-xl w-full max-h-[90vh] overflow-auto">
+                        <div className="p-6 border-b border-[var(--surface-border)]">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="text-3xl">{editingAudience.audience.emoji}</div>
+                                    <div>
+                                        <h2 className="text-xl font-bold text-[var(--foreground)]">
+                                            Edit Audience
+                                        </h2>
+                                        <p className="text-sm text-[var(--foreground-muted)]">
+                                            {editingAudience.audience.name}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setEditingAudience(null)}
+                                    className="p-2 hover:bg-[var(--surface-hover)] rounded-lg"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </div>
+
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault()
+                                const formData = new FormData(e.currentTarget)
+                                const loop = loops.find(l => l.id === editingAudience.loopId)
+                                if (!loop?.audiences) return
+
+                                // Parse reference links from JSON hidden input
+                                const referenceLinksJson = formData.get('referenceLinks') as string
+                                let referenceLinks = []
+                                try {
+                                    referenceLinks = referenceLinksJson ? JSON.parse(referenceLinksJson) : []
+                                } catch (e) {
+                                    referenceLinks = []
+                                }
+
+                                const updatedAudiences = loop.audiences.map(a =>
+                                    a.id === editingAudience.audience.id
+                                        ? {
+                                            ...a,
+                                            name: formData.get('name') as string,
+                                            emoji: formData.get('emoji') as string || '👤',
+                                            description: formData.get('description') as string,
+                                            painPoints: (formData.get('painPoints') as string).split('\n').filter(Boolean),
+                                            desires: (formData.get('desires') as string).split('\n').filter(Boolean),
+                                            messagingAngles: (formData.get('messagingAngles') as string).split('\n').filter(Boolean),
+                                            cta: formData.get('cta') as string,
+                                            emailCapture: formData.get('emailCapture') === 'on',
+                                            referenceLinks: referenceLinks.length > 0 ? referenceLinks : undefined,
+                                            usageHistory: a.usageHistory // Preserve existing usage history
+                                        }
+                                        : a
+                                )
+                                saveAudiences(editingAudience.loopId, updatedAudiences)
+                                setEditingAudience(null)
+                            }}
+                            className="p-6 space-y-4"
+                        >
+                            {/* Name & Emoji */}
+                            <div className="grid grid-cols-[80px_1fr] gap-3">
+                                <div>
+                                    <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Emoji</label>
+                                    <input
+                                        type="text"
+                                        name="emoji"
+                                        defaultValue={editingAudience.audience.emoji}
+                                        className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--surface-border)] rounded-lg text-center text-2xl"
+                                        maxLength={2}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Name</label>
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        defaultValue={editingAudience.audience.name}
+                                        className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--surface-border)] rounded-lg text-[var(--foreground)]"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Description */}
+                            <div>
+                                <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Description</label>
+                                <input
+                                    type="text"
+                                    name="description"
+                                    defaultValue={editingAudience.audience.description}
+                                    placeholder="Brief description of this audience segment"
+                                    className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--surface-border)] rounded-lg text-[var(--foreground)]"
+                                />
+                            </div>
+
+                            {/* Pain Points */}
+                            <div>
+                                <label className="block text-sm font-medium text-[var(--foreground)] mb-1">
+                                    Pain Points
+                                    <span className="font-normal text-[var(--foreground-muted)] ml-2">(one per line)</span>
+                                </label>
+                                <textarea
+                                    name="painPoints"
+                                    defaultValue={editingAudience.audience.painPoints?.join('\n') || ''}
+                                    placeholder="What problems does this audience face?"
+                                    rows={3}
+                                    className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--surface-border)] rounded-lg text-[var(--foreground)] resize-none"
+                                />
+                            </div>
+
+                            {/* Desires */}
+                            <div>
+                                <label className="block text-sm font-medium text-[var(--foreground)] mb-1">
+                                    Desires
+                                    <span className="font-normal text-[var(--foreground-muted)] ml-2">(one per line)</span>
+                                </label>
+                                <textarea
+                                    name="desires"
+                                    defaultValue={editingAudience.audience.desires?.join('\n') || ''}
+                                    placeholder="What does this audience want to achieve?"
+                                    rows={3}
+                                    className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--surface-border)] rounded-lg text-[var(--foreground)] resize-none"
+                                />
+                            </div>
+
+                            {/* Messaging Angles */}
+                            <div>
+                                <label className="block text-sm font-medium text-[var(--foreground)] mb-1">
+                                    Messaging Angles
+                                    <span className="font-normal text-[var(--foreground-muted)] ml-2">(one per line - AI cycles through these)</span>
+                                </label>
+                                <textarea
+                                    name="messagingAngles"
+                                    defaultValue={
+                                        // Support both legacy single string and new array format
+                                        Array.isArray(editingAudience.audience.messagingAngles)
+                                            ? editingAudience.audience.messagingAngles.join('\n')
+                                            : (editingAudience.audience as unknown as { messagingAngle?: string }).messagingAngle || ''
+                                    }
+                                    placeholder="How should content be positioned for this audience? Add multiple angles for variety."
+                                    rows={4}
+                                    className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--surface-border)] rounded-lg text-[var(--foreground)] resize-none"
+                                />
+                            </div>
+
+                            {/* CTA */}
+                            <div>
+                                <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Call to Action (CTA)</label>
+                                <input
+                                    type="text"
+                                    name="cta"
+                                    defaultValue={editingAudience.audience.cta}
+                                    placeholder="e.g., Start your free trial today"
+                                    className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--surface-border)] rounded-lg text-[var(--foreground)]"
+                                />
+                            </div>
+
+                            {/* Email Capture */}
+                            <label className="flex items-center gap-3 p-3 bg-[var(--background)] rounded-lg cursor-pointer hover:bg-[var(--surface-hover)]">
+                                <input
+                                    type="checkbox"
+                                    name="emailCapture"
+                                    defaultChecked={editingAudience.audience.emailCapture}
+                                    className="w-4 h-4 rounded"
+                                />
+                                <div>
+                                    <span className="text-sm font-medium text-[var(--foreground)]">Enable Email Capture</span>
+                                    <p className="text-xs text-[var(--foreground-muted)]">
+                                        Show email capture form when targeting this audience
+                                    </p>
+                                </div>
+                            </label>
+
+                            {/* Reference Links */}
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <label className="block text-sm font-medium text-[var(--foreground)]">
+                                        Reference Links
+                                        <span className="font-normal text-[var(--foreground-muted)] ml-2">(optional articles/links for context)</span>
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setEditingReferenceLinks([...editingReferenceLinks, { url: '', title: '' }])}
+                                        className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1"
+                                    >
+                                        <Plus className="w-3 h-3" />
+                                        Add Link
+                                    </button>
+                                </div>
+
+                                {/* Hidden input to store JSON of reference links */}
+                                <input
+                                    type="hidden"
+                                    name="referenceLinks"
+                                    value={JSON.stringify(editingReferenceLinks.filter(l => l.url.trim() && l.title.trim()))}
+                                />
+
+                                {editingReferenceLinks.length === 0 ? (
+                                    <p className="text-sm text-[var(--foreground-muted)] italic py-2">
+                                        No reference links. Add articles or links the AI can reference when generating content.
+                                    </p>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {editingReferenceLinks.map((link, index) => (
+                                            <div key={index} className="p-3 bg-[var(--background)] rounded-lg space-y-2">
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Title"
+                                                        value={link.title}
+                                                        onChange={(e) => {
+                                                            const updated = [...editingReferenceLinks]
+                                                            updated[index] = { ...link, title: e.target.value }
+                                                            setEditingReferenceLinks(updated)
+                                                        }}
+                                                        className="flex-1 px-2 py-1 bg-[var(--surface)] border border-[var(--surface-border)] rounded text-sm text-[var(--foreground)]"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setEditingReferenceLinks(editingReferenceLinks.filter((_, i) => i !== index))
+                                                        }}
+                                                        className="p-1 text-red-400 hover:text-red-300"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                                <input
+                                                    type="url"
+                                                    placeholder="URL (https://...)"
+                                                    value={link.url}
+                                                    onChange={(e) => {
+                                                        const updated = [...editingReferenceLinks]
+                                                        updated[index] = { ...link, url: e.target.value }
+                                                        setEditingReferenceLinks(updated)
+                                                    }}
+                                                    className="w-full px-2 py-1 bg-[var(--surface)] border border-[var(--surface-border)] rounded text-sm text-[var(--foreground)]"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Notes (optional - what's this article about?)"
+                                                    value={link.notes || ''}
+                                                    onChange={(e) => {
+                                                        const updated = [...editingReferenceLinks]
+                                                        updated[index] = { ...link, notes: e.target.value || undefined }
+                                                        setEditingReferenceLinks(updated)
+                                                    }}
+                                                    className="w-full px-2 py-1 bg-[var(--surface)] border border-[var(--surface-border)] rounded text-sm text-[var(--foreground)]"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Usage Stats (if available) */}
+                            {editingAudience.audience.usageHistory && (
+                                <div className="p-3 bg-[var(--background)] rounded-lg">
+                                    <h4 className="text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
+                                        <Zap className="w-4 h-4 text-purple-400" />
+                                        Generation Stats
+                                    </h4>
+                                    <div className="grid grid-cols-3 gap-3 text-center">
+                                        <div>
+                                            <div className="text-lg font-bold text-[var(--foreground)]">
+                                                {editingAudience.audience.usageHistory.generatedCount}
+                                            </div>
+                                            <div className="text-xs text-[var(--foreground-muted)]">Posts Generated</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-lg font-bold text-[var(--foreground)]">
+                                                {(editingAudience.audience.usageHistory.lastAngleIndex % (editingAudience.audience.messagingAngles?.length || 1)) + 1}
+                                            </div>
+                                            <div className="text-xs text-[var(--foreground-muted)]">Last Angle #</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-lg font-bold text-[var(--foreground)]">
+                                                {editingAudience.audience.referenceLinks?.length
+                                                    ? (editingAudience.audience.usageHistory.lastLinkIndex % editingAudience.audience.referenceLinks.length) + 1
+                                                    : 'N/A'}
+                                            </div>
+                                            <div className="text-xs text-[var(--foreground-muted)]">Last Link #</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Actions */}
+                            <div className="flex gap-3 pt-4 border-t border-[var(--surface-border)]">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (confirm('Are you sure you want to delete this audience?')) {
+                                            const loop = loops.find(l => l.id === editingAudience.loopId)
+                                            if (loop?.audiences) {
+                                                const updatedAudiences = loop.audiences.filter(a => a.id !== editingAudience.audience.id)
+                                                saveAudiences(editingAudience.loopId, updatedAudiences)
+                                            }
+                                            setEditingAudience(null)
+                                        }
+                                    }}
+                                    className="px-4 py-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors flex items-center gap-2"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                    Delete
+                                </button>
+                                <div className="flex-1" />
+                                <button
+                                    type="button"
+                                    onClick={() => setEditingAudience(null)}
+                                    className="px-4 py-2 hover:bg-[var(--surface-hover)] rounded-lg"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="btn btn-primary"
+                                >
+                                    <Check className="w-4 h-4" />
+                                    Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Variant Editor Modal */}
+            {showVariantEditor && (() => {
+                const loop = loops.find(l => l.id === showVariantEditor.loopId)
+                const item = loop?.items.find(i => i.id === showVariantEditor.itemId)
+                if (!loop || !item || !loop.audiences?.length) return null
+                return (
+                    <VariantEditor
+                        item={item}
+                        audiences={loop.audiences}
+                        onSave={(variants) => saveVariants(showVariantEditor.loopId, showVariantEditor.itemId, variants)}
+                        onClose={() => setShowVariantEditor(null)}
+                    />
+                )
+            })()}
+
+            {/* Generate Week Modal */}
+            {showGenerateWeekModal && (() => {
+                const loop = loops.find(l => l.id === showGenerateWeekModal)
+                if (!loop) return null
+                const enabledAudiences = loop.audiences?.filter(a => a.enabled !== false) || []
+                const postsPerDay = loop.postsPerDay || 1
+                const totalPosts = postsPerDay * generateDays
+
+                return (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-[var(--surface)] rounded-2xl max-w-md w-full">
+                            <div className="p-6 border-b border-[var(--surface-border)]">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                                            <Sparkles className="w-5 h-5 text-purple-500" />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-xl font-bold text-[var(--foreground)]">Generate Content</h2>
+                                            <p className="text-sm text-[var(--foreground-muted)]">{loop.name}</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowGenerateWeekModal(null)}
+                                        className="p-2 hover:bg-[var(--surface-hover)] rounded-lg"
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="p-6 space-y-6">
+                                {/* Days Selector */}
+                                <div>
+                                    <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
+                                        Generate for how many days?
+                                    </label>
+                                    <div className="flex gap-2">
+                                        {[3, 5, 7, 14, 30].map(days => (
+                                            <button
+                                                key={days}
+                                                onClick={() => setGenerateDays(days)}
+                                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                                    generateDays === days
+                                                        ? 'bg-purple-500 text-white'
+                                                        : 'bg-[var(--background)] text-[var(--foreground-muted)] hover:text-[var(--foreground)]'
+                                                }`}
+                                            >
+                                                {days}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Summary */}
+                                <div className="p-4 bg-[var(--background)] rounded-xl space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-[var(--foreground-muted)]">Posts per day</span>
+                                        <span className="text-[var(--foreground)] font-medium">{postsPerDay}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-[var(--foreground-muted)]">Days</span>
+                                        <span className="text-[var(--foreground)] font-medium">{generateDays}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-[var(--foreground-muted)]">Enabled audiences</span>
+                                        <span className="text-[var(--foreground)] font-medium">{enabledAudiences.length}</span>
+                                    </div>
+                                    <div className="border-t border-[var(--surface-border)] pt-2 mt-2">
+                                        <div className="flex justify-between">
+                                            <span className="text-[var(--foreground)] font-medium">Total posts to generate</span>
+                                            <span className="text-purple-400 font-bold text-lg">{totalPosts}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Audience Preview */}
+                                <div>
+                                    <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
+                                        Cycling through audiences:
+                                    </label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {enabledAudiences.map(a => (
+                                            <span key={a.id} className="px-2 py-1 bg-purple-500/20 text-purple-400 rounded-full text-xs">
+                                                {a.emoji} {a.name}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Progress */}
+                                {generatingWeek && (
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-[var(--foreground-muted)]">Generating...</span>
+                                            <span className="text-[var(--foreground)]">
+                                                {generationProgress.current} / {generationProgress.total}
+                                            </span>
+                                        </div>
+                                        <div className="h-2 bg-[var(--background)] rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-purple-500 transition-all duration-300"
+                                                style={{ width: `${(generationProgress.current / generationProgress.total) * 100}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="p-6 border-t border-[var(--surface-border)] flex gap-3">
+                                <button
+                                    onClick={() => setShowGenerateWeekModal(null)}
+                                    disabled={generatingWeek}
+                                    className="flex-1 btn btn-ghost"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => generateWeekContent(showGenerateWeekModal, generateDays)}
+                                    disabled={generatingWeek || enabledAudiences.length === 0}
+                                    className="flex-1 btn btn-primary"
+                                >
+                                    {generatingWeek ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Generating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Sparkles className="w-4 h-4" />
+                                            Generate {totalPosts} Posts
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            })()}
+
+            {/* Content Calendar Modal */}
+            {showContentCalendar && (() => {
+                // Get posts for all loops with audiences
+                const loopsWithPosts = loops.filter(l => l.audiences && l.audiences.length > 0)
+                const currentLoopId = loopsWithPosts[0]?.id
+                const loopPosts = scheduledPosts.filter(p => loopsWithPosts.some(l => l.id === p.loopId))
+
+                // Group posts by date
+                const postsByDate = loopPosts.reduce((acc, post) => {
+                    if (!acc[post.scheduledDate]) {
+                        acc[post.scheduledDate] = []
+                    }
+                    acc[post.scheduledDate].push(post)
+                    return acc
+                }, {} as Record<string, ScheduledPost[]>)
+
+                const sortedDates = Object.keys(postsByDate).sort()
+                const pendingCount = loopPosts.filter(p => p.status === 'pending').length
+                const approvedCount = loopPosts.filter(p => p.status === 'approved').length
+
+                return (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-[var(--surface)] rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+                            <div className="p-6 border-b border-[var(--surface-border)]">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                                            <Calendar className="w-5 h-5 text-purple-500" />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-xl font-bold text-[var(--foreground)]">Content Calendar</h2>
+                                            <p className="text-sm text-[var(--foreground-muted)]">
+                                                {pendingCount} pending · {approvedCount} approved
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        {pendingCount > 0 && (
+                                            <button
+                                                onClick={() => {
+                                                    if (confirm(`Approve all ${pendingCount} pending posts?`)) {
+                                                        loopsWithPosts.forEach(l => approveAllPosts(l.id))
+                                                    }
+                                                }}
+                                                className="btn btn-primary text-sm"
+                                            >
+                                                <Check className="w-4 h-4" />
+                                                Approve All
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={() => setShowContentCalendar(false)}
+                                            className="p-2 hover:bg-[var(--surface-hover)] rounded-lg"
+                                        >
+                                            <X className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex-1 overflow-auto p-6">
+                                {sortedDates.length === 0 ? (
+                                    <div className="text-center py-12">
+                                        <Calendar className="w-12 h-12 text-[var(--foreground-muted)] mx-auto mb-3" />
+                                        <p className="text-[var(--foreground-muted)]">No scheduled posts yet</p>
+                                        <p className="text-sm text-[var(--foreground-muted)] mt-1">
+                                            Use "Generate Week" to create content
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-6">
+                                        {sortedDates.map(date => {
+                                            const datePosts = postsByDate[date]
+                                            const dateObj = new Date(date)
+                                            const isToday = new Date().toISOString().split('T')[0] === date
+                                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' })
+                                            const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+
+                                            return (
+                                                <div key={date}>
+                                                    <div className="flex items-center gap-2 mb-3">
+                                                        <h3 className={`font-semibold ${isToday ? 'text-purple-400' : 'text-[var(--foreground)]'}`}>
+                                                            {dayName}
+                                                        </h3>
+                                                        <span className="text-sm text-[var(--foreground-muted)]">{dateStr}</span>
+                                                        {isToday && (
+                                                            <span className="px-2 py-0.5 text-xs bg-purple-500/20 text-purple-400 rounded-full">
+                                                                Today
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="space-y-3">
+                                                        {datePosts.map(post => (
+                                                            <div
+                                                                key={post.id}
+                                                                className={`p-4 rounded-xl border ${
+                                                                    post.status === 'approved'
+                                                                        ? 'bg-green-500/5 border-green-500/30'
+                                                                        : post.status === 'rejected'
+                                                                            ? 'bg-red-500/5 border-red-500/30'
+                                                                            : 'bg-[var(--background)] border-[var(--surface-border)]'
+                                                                }`}
+                                                            >
+                                                                <div className="flex items-start gap-3">
+                                                                    <span className="text-2xl">{post.audienceEmoji}</span>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="flex items-center gap-2 mb-2">
+                                                                            <span className="text-sm font-medium text-purple-400">
+                                                                                {post.audienceName}
+                                                                            </span>
+                                                                            <span className={`px-2 py-0.5 text-xs rounded-full ${
+                                                                                post.status === 'approved'
+                                                                                    ? 'bg-green-500/20 text-green-400'
+                                                                                    : post.status === 'rejected'
+                                                                                        ? 'bg-red-500/20 text-red-400'
+                                                                                        : 'bg-yellow-500/20 text-yellow-400'
+                                                                            }`}>
+                                                                                {post.status}
+                                                                            </span>
+                                                                        </div>
+                                                                        <p className="text-sm text-[var(--foreground)] whitespace-pre-wrap">
+                                                                            {post.content}
+                                                                        </p>
+                                                                        {post.messagingAngle && (
+                                                                            <p className="text-xs text-[var(--foreground-muted)] mt-2 italic">
+                                                                                Angle: {post.messagingAngle.slice(0, 80)}...
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex flex-col gap-1">
+                                                                        {post.status === 'pending' && (
+                                                                            <>
+                                                                                <button
+                                                                                    onClick={() => updatePostStatus(post.id, 'approved')}
+                                                                                    className="p-2 hover:bg-green-500/20 rounded-lg text-green-400"
+                                                                                    title="Approve"
+                                                                                >
+                                                                                    <Check className="w-4 h-4" />
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={() => updatePostStatus(post.id, 'rejected')}
+                                                                                    className="p-2 hover:bg-red-500/20 rounded-lg text-red-400"
+                                                                                    title="Reject"
+                                                                                >
+                                                                                    <X className="w-4 h-4" />
+                                                                                </button>
+                                                                            </>
+                                                                        )}
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                navigator.clipboard.writeText(post.content)
+                                                                            }}
+                                                                            className="p-2 hover:bg-[var(--surface-hover)] rounded-lg text-[var(--foreground-muted)]"
+                                                                            title="Copy"
+                                                                        >
+                                                                            <Copy className="w-4 h-4" />
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                if (confirm('Delete this post?')) {
+                                                                                    deleteScheduledPost(post.id)
+                                                                                }
+                                                                            }}
+                                                                            className="p-2 hover:bg-red-500/20 rounded-lg text-[var(--foreground-muted)] hover:text-red-400"
+                                                                            title="Delete"
+                                                                        >
+                                                                            <Trash2 className="w-4 h-4" />
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )
+            })()}
         </div>
     )
 }

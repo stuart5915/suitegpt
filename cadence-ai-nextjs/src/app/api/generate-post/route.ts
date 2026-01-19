@@ -30,6 +30,32 @@ interface GeneratePostRequest {
     buildNumber?: string // For ai_fleet mode
     freeFeatures?: string[] // For ai_fleet mode - free features
     proFeatures?: string[] // For ai_fleet mode - paid features
+
+    // Audience targeting (supports both legacy and new format)
+    audience?: {
+        name: string
+        description: string
+        painPoints: string[]
+        desires: string[]
+        messagingAngle?: string           // Legacy single angle
+        messagingAngles?: string[]        // New array of angles
+        cta: string
+        referenceLinks?: {
+            url: string
+            title: string
+            notes?: string
+        }[]
+        usageHistory?: {
+            lastAngleIndex: number
+            lastLinkIndex: number
+            generatedCount: number
+        }
+    }
+    variant?: {
+        hook?: string
+        keyPoints?: string[]
+        cta?: string
+    }
 }
 
 interface PollResponse {
@@ -51,6 +77,18 @@ interface SingleResponse {
     platform: string
     characterCount: number
     withinLimit: boolean
+    // For audience cycling - return updated history to persist
+    updatedUsageHistory?: {
+        lastAngleIndex: number
+        lastLinkIndex: number
+        generatedCount: number
+    }
+    selectedAngle?: string
+    selectedReferenceLink?: {
+        url: string
+        title: string
+        notes?: string
+    }
 }
 
 interface ThreadResponse {
@@ -83,7 +121,9 @@ export async function POST(request: NextRequest) {
             pollOptions = [],
             buildNumber = '',
             freeFeatures = [],
-            proFeatures = []
+            proFeatures = [],
+            audience,
+            variant
         } = body
 
         if (!title && mode !== 'poll') {
@@ -339,6 +379,78 @@ Return ONLY the tweet text, nothing else.`
             } as SingleResponse)
         }
 
+        // Build audience targeting context with cycling logic
+        let selectedAngle: string | undefined
+        let selectedReferenceLink: { url: string; title: string; notes?: string } | undefined
+        let updatedUsageHistory: { lastAngleIndex: number; lastLinkIndex: number; generatedCount: number } | undefined
+
+        let audienceContext = ''
+        if (audience) {
+            // Get messaging angles array (support legacy single string)
+            const messagingAngles = audience.messagingAngles && audience.messagingAngles.length > 0
+                ? audience.messagingAngles
+                : audience.messagingAngle
+                    ? [audience.messagingAngle]
+                    : ['Address their needs directly']
+
+            // Calculate next angle index (round-robin cycling)
+            const currentAngleIndex = audience.usageHistory?.lastAngleIndex ?? -1
+            const nextAngleIndex = (currentAngleIndex + 1) % messagingAngles.length
+            selectedAngle = messagingAngles[nextAngleIndex]
+
+            // Calculate next reference link index (if any)
+            let nextLinkIndex = audience.usageHistory?.lastLinkIndex ?? -1
+            if (audience.referenceLinks && audience.referenceLinks.length > 0) {
+                nextLinkIndex = (nextLinkIndex + 1) % audience.referenceLinks.length
+                selectedReferenceLink = audience.referenceLinks[nextLinkIndex]
+            }
+
+            // Build updated usage history
+            const currentGeneratedCount = audience.usageHistory?.generatedCount ?? 0
+            updatedUsageHistory = {
+                lastAngleIndex: nextAngleIndex,
+                lastLinkIndex: nextLinkIndex,
+                generatedCount: currentGeneratedCount + 1
+            }
+
+            // Build the context string
+            audienceContext = `
+TARGET AUDIENCE: ${audience.name}
+${audience.description}
+
+Their Pain Points:
+${audience.painPoints.map(p => `- ${p}`).join('\n')}
+
+What They Want:
+${audience.desires.map(d => `- ${d}`).join('\n')}
+
+MESSAGING ANGLE FOR THIS POST: ${selectedAngle}
+${selectedReferenceLink ? `
+REFERENCE ARTICLE (use if relevant, don't force it):
+- Title: ${selectedReferenceLink.title}
+- URL: ${selectedReferenceLink.url}
+${selectedReferenceLink.notes ? `- Context: ${selectedReferenceLink.notes}` : ''}
+` : ''}
+CALL TO ACTION: ${audience.cta}
+
+VARIATION REQUIREMENTS:
+- This is post #${updatedUsageHistory.generatedCount} for ${audience.name}
+- You are using messaging angle ${nextAngleIndex + 1} of ${messagingAngles.length}
+${messagingAngles.length > 1 ? `- Other angles NOT to use this time: ${messagingAngles.filter((_, i) => i !== nextAngleIndex).slice(0, 2).map(a => `"${a.slice(0, 50)}..."`).join(', ')}` : ''}
+- Create something fresh and novel for this audience
+
+IMPORTANT: Write this post specifically for ${audience.name}. Address their pain points and desires directly. Use the messaging angle provided.
+`
+        }
+
+        // Build variant overrides
+        const variantContext = variant ? `
+CONTENT OVERRIDES FOR THIS AUDIENCE:
+${variant.hook ? `- Custom Hook: "${variant.hook}"` : ''}
+${variant.keyPoints && variant.keyPoints.length > 0 ? `- Key Points to Emphasize:\n${variant.keyPoints.map(k => `  • ${k}`).join('\n')}` : ''}
+${variant.cta ? `- Custom CTA: "${variant.cta}"` : ''}
+` : ''
+
         // SINGLE MODE (default)
         const singlePrompt = `You are a social media copywriter creating a ${config.name} post.
 
@@ -350,6 +462,9 @@ ${url ? `- URL: ${url}` : ''}
 ${summary ? `- Summary: ${summary}` : ''}
 ${keyPoints ? `- Key Points: ${keyPoints}` : ''}
 ${projectName ? `- For: ${projectName}` : ''}
+
+${audienceContext}
+${variantContext}
 
 ${qualityRules}
 
@@ -383,7 +498,11 @@ Generate a single engaging post. Return ONLY the post text, no quotes, no explan
             post: text,
             platform,
             characterCount: text.length,
-            withinLimit: text.length <= config.maxLength
+            withinLimit: text.length <= config.maxLength,
+            // Include cycling info for caller to update audience
+            ...(updatedUsageHistory && { updatedUsageHistory }),
+            ...(selectedAngle && { selectedAngle }),
+            ...(selectedReferenceLink && { selectedReferenceLink })
         } as SingleResponse)
 
     } catch (error) {

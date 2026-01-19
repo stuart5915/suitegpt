@@ -136,6 +136,70 @@
             flex-shrink: 0;
         }
 
+        /* Tag Filtering */
+        .tag-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 32px;
+        }
+
+        .tag-filter {
+            padding: 8px 16px;
+            border-radius: 100px;
+            border: 2px solid rgba(255, 149, 0, 0.3);
+            background: white;
+            color: #5a4a6f;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tag-filter:hover {
+            border-color: #ff9500;
+            color: #ff9500;
+        }
+
+        .tag-filter.active {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            border-color: transparent;
+            color: white;
+        }
+
+        .article-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .article-tag-pill {
+            display: inline-block;
+            background: rgba(255, 149, 0, 0.1);
+            color: #ff9500;
+            padding: 3px 10px;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .article-card.hidden {
+            display: none;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 48px 24px;
+            color: #5a4a6f;
+        }
+
+        .no-results-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+
         .footer {
             background: #1a0a2e;
             padding: 40px 24px;
@@ -169,13 +233,29 @@
             <p class="articles-subtitle">Deep dives into our philosophy, tokenomics, and vision.</p>
         </section>
 
+        <!-- Tag Filters -->
+        <div class="tag-filters">
+            <button class="tag-filter active" data-tag="all">All</button>
+            <button class="tag-filter" data-tag="ai">AI</button>
+            <button class="tag-filter" data-tag="defi">DeFi</button>
+            <button class="tag-filter" data-tag="tokenomics">Tokenomics</button>
+            <button class="tag-filter" data-tag="philosophy">Philosophy</button>
+            <button class="tag-filter" data-tag="apps">Apps</button>
+        </div>
+
         <div class="articles-list">
             <!-- AI Fleet Article - Featured -->
-            <a href="ai-fleet.html" class="article-card featured"
+            <a href="ai-fleet.html" class="article-card featured" data-tags="ai,apps,tokenomics,philosophy"
                 style="background: linear-gradient(135deg, #faf5ff 0%, #fdf4ff 100%); border-color: #a855f7;">
                 <div class="article-icon">🤖</div>
                 <div class="article-content">
                     <span class="article-tag" style="background: linear-gradient(135deg, #a855f7, #ec4899);">NEW</span>
+                    <div class="article-tags">
+                        <span class="article-tag-pill">AI</span>
+                        <span class="article-tag-pill">Apps</span>
+                        <span class="article-tag-pill">Tokenomics</span>
+                        <span class="article-tag-pill">Philosophy</span>
+                    </div>
                     <div class="article-title">The AI Fleet: Apps That Build Themselves</div>
                     <p class="article-desc">Every day, our AI builds a new app. Stake to keep it alive. Earn from its
                         success. This is inside-out UBI.</p>
@@ -185,9 +265,14 @@
             </a>
 
             <!-- Yield-Powered App Article -->
-            <a href="yield-powered-app.html" class="article-card">
+            <a href="yield-powered-app.html" class="article-card" data-tags="defi,tokenomics,apps">
                 <div class="article-icon">💰</div>
                 <div class="article-content">
+                    <div class="article-tags">
+                        <span class="article-tag-pill">DeFi</span>
+                        <span class="article-tag-pill">Tokenomics</span>
+                        <span class="article-tag-pill">Apps</span>
+                    </div>
                     <div class="article-title">The Yield-Powered App: Free to Use, Paid by DeFi</div>
                     <p class="article-desc">How we killed the monthly subscription. Your deposit generates yield that
                         pays for AI — forever.</p>
@@ -195,6 +280,12 @@
                 </div>
                 <div class="article-arrow">→</div>
             </a>
+
+            <!-- No results message (hidden by default) -->
+            <div class="no-results" id="noResults" style="display: none;">
+                <div class="no-results-icon">🔍</div>
+                <p>No articles found with that tag.</p>
+            </div>
 
             <!-- More articles will go here as they're added -->
         </div>
@@ -204,6 +295,52 @@
     <footer class="footer">
         <p>© 2026 SUITE. Anyone Can Build. Everyone Gets Paid.</p>
     </footer>
+
+    <script>
+        // Tag filtering
+        document.addEventListener('DOMContentLoaded', () => {
+            const filters = document.querySelectorAll('.tag-filter');
+            const articles = document.querySelectorAll('.article-card');
+            const noResults = document.getElementById('noResults');
+
+            filters.forEach(filter => {
+                filter.addEventListener('click', () => {
+                    // Update active state
+                    filters.forEach(f => f.classList.remove('active'));
+                    filter.classList.add('active');
+
+                    const selectedTag = filter.dataset.tag;
+                    let visibleCount = 0;
+
+                    articles.forEach(article => {
+                        const articleTags = (article.dataset.tags || '').toLowerCase().split(',');
+
+                        if (selectedTag === 'all' || articleTags.includes(selectedTag)) {
+                            article.classList.remove('hidden');
+                            visibleCount++;
+                        } else {
+                            article.classList.add('hidden');
+                        }
+                    });
+
+                    // Show/hide no results message
+                    if (noResults) {
+                        noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+                    }
+                });
+            });
+
+            // Check URL for tag parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const tagParam = urlParams.get('tag');
+            if (tagParam) {
+                const matchingFilter = document.querySelector(`.tag-filter[data-tag="${tagParam.toLowerCase()}"]`);
+                if (matchingFilter) {
+                    matchingFilter.click();
+                }
+            }
+        });
+    </script>
 </body>
 
 </html>

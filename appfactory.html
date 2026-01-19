@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="suite-styles.css">
     <link rel="stylesheet" href="nav.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
             --bg-dark: #0a0a0f;
@@ -355,6 +356,646 @@
         .empty-state p {
             color: var(--text-dim);
         }
+
+        /* Tab Navigation */
+        .factory-tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--bg-card);
+            padding: 4px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .factory-tab {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            background: transparent;
+            color: var(--text-dim);
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .factory-tab:hover {
+            color: var(--text);
+        }
+
+        .factory-tab.active {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        /* Idea Factory Styles */
+        .idea-factory-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title .step-num {
+            background: var(--accent);
+            color: #fff;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+
+        .idea-section {
+            margin-bottom: 32px;
+            padding-bottom: 32px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .idea-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .input-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .status-badges {
+            display: flex;
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: var(--success);
+        }
+
+        .status-badge.loading {
+            background: rgba(255, 149, 0, 0.1);
+            border-color: rgba(255, 149, 0, 0.3);
+            color: var(--accent);
+        }
+
+        .research-inputs {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        @media (max-width: 900px) {
+            .research-inputs {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .research-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .research-input-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-dim);
+        }
+
+        .research-input-group textarea {
+            padding: 12px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 0.9rem;
+            font-family: inherit;
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        .research-input-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .generate-btn {
+            padding: 14px 28px;
+            background: var(--accent);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 16px;
+        }
+
+        .generate-btn:hover {
+            filter: brightness(1.1);
+        }
+
+        .apps-summary {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin: 16px 0;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        /* Ideas Kanban Styles */
+        .ideas-panel {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.02);
+            border: 2px solid rgba(255, 149, 0, 0.2);
+            border-radius: 20px;
+            padding: 24px;
+        }
+
+        .ideas-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .ideas-header h2 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ideas-header h2::before {
+            content: '⚡';
+        }
+
+        .ideas-toggle {
+            display: flex;
+            gap: 8px;
+        }
+
+        .toggle-btn {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .toggle-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        .quick-add-container {
+            margin-bottom: 20px;
+        }
+
+        .quick-add-input-wrap {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .quick-add-input-wrap textarea {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 14px 16px;
+            color: var(--text);
+            font-size: 0.95rem;
+            font-family: inherit;
+            resize: none;
+            transition: border-color 0.2s;
+        }
+
+        .quick-add-input-wrap textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .quick-add-input-wrap textarea::placeholder {
+            color: var(--text-dim);
+        }
+
+        .quick-add-btn {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 24px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .quick-add-btn:hover {
+            background: #ffaa33;
+            transform: translateY(-1px);
+        }
+
+        .quick-add-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .kanban-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 16px;
+            align-items: start;
+        }
+
+        .kanban-section {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 16px;
+        }
+
+        .kanban-section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .kanban-section-header:hover {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .kanban-section-toggle {
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            transition: transform 0.2s;
+        }
+
+        .kanban-section.collapsed .kanban-section-toggle {
+            transform: rotate(-90deg);
+        }
+
+        .kanban-section-emoji {
+            font-size: 1.3rem;
+        }
+
+        .kanban-section-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .kanban-section-count {
+            background: var(--accent);
+            color: #000;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 10px;
+            margin-left: auto;
+        }
+
+        .kanban-section-columns {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .kanban-section.collapsed .kanban-section-columns {
+            display: none;
+        }
+
+        .kanban-column {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px;
+        }
+
+        .kanban-column:hover {
+            border-color: rgba(255, 149, 0, 0.3);
+        }
+
+        .kanban-column-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+            padding: 10px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+        }
+
+        .kanban-column-emoji {
+            font-size: 1.4rem;
+        }
+
+        .kanban-column-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text);
+            flex: 1;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .kanban-column-count {
+            background: var(--accent);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .kanban-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .idea-card {
+            position: relative;
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 14px;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .idea-card:hover {
+            border-color: var(--accent);
+            background: rgba(255, 149, 0, 0.08);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 149, 0, 0.15);
+        }
+
+        .idea-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .idea-card-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text);
+            flex: 1;
+            line-height: 1.3;
+        }
+
+        .idea-card-actions {
+            display: flex;
+            gap: 6px;
+            margin-left: 10px;
+        }
+
+        .idea-action-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .idea-action-btn.dismiss {
+            color: #ef4444;
+        }
+
+        .idea-action-btn.dismiss:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: #ef4444;
+        }
+
+        .idea-action-btn.implement {
+            color: var(--success);
+        }
+
+        .idea-action-btn.implement:hover {
+            background: rgba(34, 197, 94, 0.2);
+            border-color: var(--success);
+        }
+
+        .idea-action-btn.revert {
+            color: var(--accent);
+        }
+
+        .idea-action-btn.revert:hover {
+            background: rgba(255, 149, 0, 0.2);
+            border-color: var(--accent);
+        }
+
+        .idea-action-btn.push {
+            color: #3b82f6;
+            font-weight: 700;
+            font-size: 0.8rem;
+        }
+
+        .idea-action-btn.push:hover {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: #3b82f6;
+        }
+
+        .idea-action-btn.push-artstu {
+            color: #a855f7;
+            font-weight: 700;
+            font-size: 0.8rem;
+        }
+
+        .idea-action-btn.push-artstu:hover {
+            background: rgba(168, 85, 247, 0.2);
+            border-color: #a855f7;
+        }
+
+        .idea-card-content {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+
+        .idea-card-meta {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .idea-card.dismissed {
+            opacity: 0.6;
+        }
+
+        .idea-card.dismissed .idea-card-title {
+            text-decoration: line-through;
+        }
+
+        .idea-card.implemented {
+            border-color: rgba(34, 197, 94, 0.3);
+            background: rgba(34, 197, 94, 0.05);
+        }
+
+        .dismiss-reason {
+            font-size: 0.8rem;
+            color: #ef4444;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed rgba(239, 68, 68, 0.3);
+        }
+
+        /* Dismiss Modal */
+        .dismiss-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .dismiss-modal-content {
+            background: #1a1a1f;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .dismiss-modal h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 16px;
+        }
+
+        .dismiss-modal textarea {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 0.9rem;
+            font-family: inherit;
+            min-height: 80px;
+            resize: vertical;
+            margin-bottom: 16px;
+        }
+
+        .dismiss-modal textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .dismiss-modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .dismiss-modal-actions button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .dismiss-modal-actions .cancel-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .dismiss-modal-actions .confirm-btn {
+            background: #ef4444;
+            border: none;
+            color: #fff;
+        }
+
+        .dismiss-modal-actions .confirm-btn:hover {
+            filter: brightness(1.1);
+        }
+
+        .empty-column {
+            text-align: center;
+            padding: 30px 20px;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin-top: 8px;
+        }
     </style>
 </head>
 
@@ -365,9 +1006,176 @@
         <div class="factory-header">
             <h1>App Factory</h1>
             <p>Build SUITE apps fast with guided prompts</p>
+
+            <div class="factory-tabs">
+                <button class="factory-tab active" id="ideasTab" onclick="switchTab('ideas')">🧠 Stuart Factory</button>
+                <button class="factory-tab" id="ideaTab" onclick="switchTab('idea')">Idea Factory</button>
+                <button class="factory-tab" id="buildTab" onclick="switchTab('build')">App Factory</button>
+            </div>
         </div>
 
-        <div class="factory-grid">
+        <!-- Ideas Kanban Panel -->
+        <div id="ideasPanel">
+            <div class="ideas-panel">
+                <div class="ideas-header">
+                    <h2>🧠 Stuart Factory</h2>
+                    <div class="ideas-toggle">
+                        <button class="toggle-btn active" id="stuartToggle" onclick="toggleIdeasView('stuart')">Stuart</button>
+                        <button class="toggle-btn" id="suiteToggle" onclick="toggleIdeasView('suite')">SUITE</button>
+                        <button class="toggle-btn" id="artstuToggle" onclick="toggleIdeasView('artstu')">ArtStu</button>
+                        <button class="toggle-btn" id="archiveToggle" onclick="toggleIdeasView('archive')">Archive</button>
+                    </div>
+                </div>
+
+                <!-- Quick Add Input -->
+                <div class="quick-add-container" id="quickAddContainer">
+                    <div class="quick-add-input-wrap">
+                        <textarea id="quickAddInput" placeholder="Type an idea, note, or task... AI will categorize it automatically" rows="2"></textarea>
+                        <button class="quick-add-btn" onclick="quickAddIdea()" id="quickAddBtn">
+                            <span class="btn-text">Add</span>
+                            <span class="btn-loading" style="display: none;">...</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="kanban-container" id="kanbanContainer">
+                    <!-- Kanban columns populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Push to Claude Modal -->
+        <div class="dismiss-modal" id="pushModal" style="display: none;">
+            <div class="dismiss-modal-content" style="max-width: 600px;">
+                <h3 id="pushModalTitle">Push to SUITE</h3>
+                <p style="color: var(--text-dim); margin-bottom: 16px; font-size: 0.9rem;">Review and edit the prompt, then send to Claude:</p>
+                <div class="form-group">
+                    <label>Prompt for Claude</label>
+                    <textarea id="claudePrompt" style="min-height: 150px;"></textarea>
+                </div>
+                <div id="claudeResponseSection" style="display: none; margin-top: 16px;">
+                    <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-dim); display: block; margin-bottom: 8px;">Claude's Response</label>
+                    <div id="claudeResponse" style="background: rgba(0,0,0,0.3); border-radius: 10px; padding: 16px; max-height: 200px; overflow-y: auto; font-size: 0.9rem; color: var(--text); white-space: pre-wrap;"></div>
+                </div>
+                <div class="dismiss-modal-actions" style="margin-top: 20px;">
+                    <button class="cancel-btn" onclick="closePushModal()">Cancel</button>
+                    <button class="confirm-btn" id="pushConfirmBtn" style="background: #3b82f6;" onclick="sendToClaudeAndPush()">
+                        <span id="pushBtnText">Send to Claude & Approve</span>
+                        <span id="pushBtnLoading" style="display: none;">Waiting for Claude...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dismiss Modal -->
+        <div class="dismiss-modal" id="dismissModal" style="display: none;">
+            <div class="dismiss-modal-content">
+                <h3>Why dismiss this idea?</h3>
+                <textarea id="dismissReason" placeholder="Enter reason for dismissing..."></textarea>
+                <div class="dismiss-modal-actions">
+                    <button class="cancel-btn" onclick="closeDismissModal()">Cancel</button>
+                    <button class="confirm-btn" onclick="confirmDismiss()">Dismiss</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Implement Modal -->
+        <div class="dismiss-modal" id="implementModal" style="display: none;">
+            <div class="dismiss-modal-content">
+                <h3>What did you do?</h3>
+                <textarea id="implementNote" placeholder="Describe how you handled this..."></textarea>
+                <div class="dismiss-modal-actions">
+                    <button class="cancel-btn" onclick="closeImplementModal()">Cancel</button>
+                    <button class="confirm-btn" style="background: var(--success);" onclick="confirmImplement()">Done</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Idea Factory Panel -->
+        <div id="ideaFactoryPanel" style="display: none;">
+            <div class="idea-factory-panel">
+                <!-- Step 1: Generate Research Prompt -->
+                <div class="idea-section">
+                    <div class="section-title">
+                        <span class="step-num">1</span>
+                        Generate Research Prompt
+                    </div>
+
+                    <div class="input-row">
+                        <div class="form-group">
+                            <label>Focus Areas (optional)</label>
+                            <input type="text" id="focusAreas" placeholder="e.g., AI tools, health tech, productivity" oninput="saveIdeaFactoryState()">
+                        </div>
+                        <div class="form-group">
+                            <label>Constraints (optional)</label>
+                            <input type="text" id="constraints" placeholder="e.g., Must work offline, No API needed" oninput="saveIdeaFactoryState()">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Manual Ideas to Research</label>
+                        <textarea id="manualIdeas" placeholder="Enter ideas you want to explore (one per line):&#10;- Calorie tracker with AI&#10;- Voice note summarizer&#10;- Habit streak app" oninput="saveIdeaFactoryState()"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ideas to Exclude (already considered/rejected)</label>
+                        <textarea id="excludeIdeas" placeholder="Ideas to skip (one per line):&#10;- Budget tracker (too similar to existing)" oninput="saveIdeaFactoryState()"></textarea>
+                    </div>
+
+                    <div class="status-badges">
+                        <span class="status-badge loading" id="appsStatus">Loading apps...</span>
+                        <span class="status-badge loading" id="revenueStatus">Loading revenue data...</span>
+                    </div>
+
+                    <div class="apps-summary" id="appsSummary">
+                        Loading existing apps...
+                    </div>
+
+                    <button class="generate-btn" onclick="generateResearchPrompt()">Generate Research Prompt</button>
+
+                    <div class="prompt-output" id="researchPromptOutput" style="display: none;">
+                        <div class="prompt-label">Research Prompt</div>
+                        <div class="prompt-text" id="researchPromptText"></div>
+                        <button class="copy-btn" onclick="copyResearchPrompt()">Copy to Clipboard</button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Paste AI Research -->
+                <div class="idea-section">
+                    <div class="section-title">
+                        <span class="step-num">2</span>
+                        Paste AI Research
+                    </div>
+                    <p style="color: var(--text-dim); margin-bottom: 16px;">After running the research prompt in Grok, Gemini, and Claude, paste their outputs below.</p>
+
+                    <div class="research-inputs">
+                        <div class="research-input-group">
+                            <label>Grok Output</label>
+                            <textarea id="grokOutput" placeholder="Paste Grok Deep Research output here..." oninput="saveIdeaFactoryState()"></textarea>
+                        </div>
+                        <div class="research-input-group">
+                            <label>Gemini Output</label>
+                            <textarea id="geminiOutput" placeholder="Paste Gemini Deep Research output here..." oninput="saveIdeaFactoryState()"></textarea>
+                        </div>
+                        <div class="research-input-group">
+                            <label>Claude Output</label>
+                            <textarea id="claudeOutput" placeholder="Paste Claude Deep Research output here..." oninput="saveIdeaFactoryState()"></textarea>
+                        </div>
+                    </div>
+
+                    <button class="generate-btn" onclick="generateSynthesisPrompt()">Generate Synthesis Prompt</button>
+
+                    <div class="prompt-output" id="synthesisPromptOutput" style="display: none;">
+                        <div class="prompt-label">Synthesis Prompt</div>
+                        <div class="prompt-text" id="synthesisPromptText"></div>
+                        <button class="copy-btn" onclick="copySynthesisPrompt()">Copy to Clipboard</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- App Factory Panel (existing) -->
+        <div id="appFactoryPanel" class="factory-grid" style="display: none;">
             <!-- Left Panel: Projects -->
             <div class="projects-panel">
                 <div class="panel-title">Projects</div>
@@ -457,6 +1265,7 @@ vercel --prod
                 </div>
             </div>
         </div>
+        </div>
     </div>
 
     <script src="nav-component.js"></script>
@@ -464,6 +1273,1131 @@ vercel --prod
         // Supabase config
         const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
+
+        // ========================================
+        // IDEA FACTORY
+        // ========================================
+
+        let existingApps = [];
+        let topRevenueApps = [];
+        let currentTab = 'build';
+
+        // Tab switching
+        function switchTab(tab) {
+            currentTab = tab;
+            document.getElementById('ideasTab').classList.toggle('active', tab === 'ideas');
+            document.getElementById('ideaTab').classList.toggle('active', tab === 'idea');
+            document.getElementById('buildTab').classList.toggle('active', tab === 'build');
+            document.getElementById('ideasPanel').style.display = tab === 'ideas' ? 'block' : 'none';
+            document.getElementById('ideaFactoryPanel').style.display = tab === 'idea' ? 'block' : 'none';
+            document.getElementById('appFactoryPanel').style.display = tab === 'build' ? 'grid' : 'none';
+
+            if (tab === 'idea') {
+                loadAppsData();
+            }
+            if (tab === 'ideas') {
+                loadIdeas();
+            }
+        }
+
+        // Load existing apps from Supabase
+        async function loadAppsData() {
+            try {
+                // Load all apps
+                const appsResponse = await fetch(
+                    `${SUPABASE_URL}/rest/v1/apps?select=name,slug,description,category,total_revenue&status=eq.live&order=total_revenue.desc`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+
+                if (appsResponse.ok) {
+                    existingApps = await appsResponse.json();
+                    topRevenueApps = existingApps.filter(a => a.total_revenue > 0).slice(0, 5);
+
+                    // Update status badges
+                    document.getElementById('appsStatus').textContent = `${existingApps.length} apps loaded`;
+                    document.getElementById('appsStatus').classList.remove('loading');
+                    document.getElementById('revenueStatus').textContent = `${topRevenueApps.length} with revenue`;
+                    document.getElementById('revenueStatus').classList.remove('loading');
+
+                    // Update apps summary
+                    const summary = existingApps.map(a => `• ${a.name} (${a.category}): ${a.description || 'No description'}`).join('\n');
+                    document.getElementById('appsSummary').textContent = summary || 'No apps found';
+                } else {
+                    throw new Error('Failed to load apps');
+                }
+            } catch (err) {
+                console.error('Error loading apps:', err);
+                document.getElementById('appsStatus').textContent = 'Failed to load';
+                document.getElementById('revenueStatus').textContent = 'Failed to load';
+            }
+        }
+
+        // Generate research prompt
+        function generateResearchPrompt() {
+            const focusAreas = document.getElementById('focusAreas').value.trim();
+            const constraints = document.getElementById('constraints').value.trim();
+            const manualIdeas = document.getElementById('manualIdeas').value.trim();
+            const excludeIdeas = document.getElementById('excludeIdeas').value.trim();
+
+            // Build existing apps list
+            const existingAppsList = existingApps.length > 0
+                ? existingApps.map(a => `- ${a.name} (${a.category}): ${a.description || 'No description'}`).join('\n')
+                : 'No existing apps yet';
+
+            // Build top performing apps list
+            const topPerforming = topRevenueApps.length > 0
+                ? topRevenueApps.map(a => `- ${a.name}: ${a.total_revenue || 0} credits earned`).join('\n')
+                : 'No revenue data yet';
+
+            // Build gaps/opportunities based on categories
+            const categoryCounts = {};
+            existingApps.forEach(a => {
+                categoryCounts[a.category] = (categoryCounts[a.category] || 0) + 1;
+            });
+            const allCategories = ['productivity', 'health', 'finance', 'entertainment', 'education', 'utilities', 'social'];
+            const gaps = allCategories
+                .filter(c => !categoryCounts[c] || categoryCounts[c] < 2)
+                .map(c => `- ${c}: ${categoryCounts[c] || 0} apps (opportunity)`)
+                .join('\n') || 'All categories have coverage';
+
+            const prompt = `Research novel app ideas for the SUITE ecosystem.
+
+CONTEXT:
+- SUITE is an app store where apps monetize via credits (microtransactions)
+- Apps are PWAs built with Expo/React Native
+- Target: AI-powered tools, productivity, health, finance, utilities
+${focusAreas ? `- Focus on: ${focusAreas}` : ''}
+${constraints ? `- Constraints: ${constraints}` : ''}
+
+EXISTING APPS (avoid similar):
+${existingAppsList}
+
+TOP PERFORMING (learn from):
+${topPerforming}
+
+GAPS/OPPORTUNITIES:
+${gaps}
+
+${manualIdeas ? `MANUAL IDEAS TO CONSIDER:
+${manualIdeas}
+
+` : ''}${excludeIdeas ? `MANUAL IDEAS TO EXCLUDE:
+${excludeIdeas}
+
+` : ''}RESEARCH TASK:
+Find 5-10 novel app concepts that:
+1. Don't duplicate existing apps
+2. Have clear revenue potential (people will pay)
+3. Can be built as a PWA in 1-2 days
+4. Leverage AI or provide unique utility
+5. Target underserved niches
+
+For each idea, provide:
+- Name
+- One-liner description
+- Revenue model (what users pay for)
+- Why it's novel/unique
+- Estimated demand`;
+
+            document.getElementById('researchPromptText').textContent = prompt;
+            document.getElementById('researchPromptOutput').style.display = 'block';
+
+            // Save to localStorage
+            localStorage.setItem('ideaFactory_research', JSON.stringify({
+                focusAreas, constraints, manualIdeas, excludeIdeas, prompt
+            }));
+        }
+
+        function copyResearchPrompt() {
+            const text = document.getElementById('researchPromptText').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.querySelector('#researchPromptOutput .copy-btn');
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = 'Copy to Clipboard';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        // Generate synthesis prompt
+        function generateSynthesisPrompt() {
+            const grokOutput = document.getElementById('grokOutput').value.trim();
+            const geminiOutput = document.getElementById('geminiOutput').value.trim();
+            const claudeOutput = document.getElementById('claudeOutput').value.trim();
+
+            if (!grokOutput && !geminiOutput && !claudeOutput) {
+                alert('Please paste at least one AI research output.');
+                return;
+            }
+
+            // Build existing apps list for context
+            const existingAppsList = existingApps.length > 0
+                ? existingApps.map(a => `- ${a.name}`).join('\n')
+                : 'None';
+
+            const prompt = `Synthesize these research outputs into 4-10 final app ideas.
+
+EXISTING SUITE APPS (avoid duplicates):
+${existingAppsList}
+
+${grokOutput ? `GROK RESEARCH:
+${grokOutput}
+
+` : ''}${geminiOutput ? `GEMINI RESEARCH:
+${geminiOutput}
+
+` : ''}${claudeOutput ? `CLAUDE RESEARCH:
+${claudeOutput}
+
+` : ''}SYNTHESIS TASK:
+1. Find common themes across all research outputs
+2. Identify the strongest unique ideas from each
+3. Filter out anything similar to existing SUITE apps
+4. Rank by revenue potential
+5. Output 4-10 final ideas, each with:
+   - Name
+   - Tagline
+   - Core feature (what it does)
+   - Revenue model (paid features with credit costs)
+   - Why it will make money
+   - Build complexity (1-5)
+
+Format as a numbered list from most to least promising.`;
+
+            document.getElementById('synthesisPromptText').textContent = prompt;
+            document.getElementById('synthesisPromptOutput').style.display = 'block';
+
+            // Save to localStorage
+            localStorage.setItem('ideaFactory_synthesis', JSON.stringify({
+                grokOutput, geminiOutput, claudeOutput, prompt
+            }));
+        }
+
+        function copySynthesisPrompt() {
+            const text = document.getElementById('synthesisPromptText').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.querySelector('#synthesisPromptOutput .copy-btn');
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = 'Copy to Clipboard';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        // Save Idea Factory state on every keystroke
+        function saveIdeaFactoryState() {
+            const state = {
+                focusAreas: document.getElementById('focusAreas').value,
+                constraints: document.getElementById('constraints').value,
+                manualIdeas: document.getElementById('manualIdeas').value,
+                excludeIdeas: document.getElementById('excludeIdeas').value,
+                grokOutput: document.getElementById('grokOutput').value,
+                geminiOutput: document.getElementById('geminiOutput').value,
+                claudeOutput: document.getElementById('claudeOutput').value
+            };
+            localStorage.setItem('ideaFactory_state', JSON.stringify(state));
+        }
+
+        // Restore saved Idea Factory data
+        function restoreIdeaFactoryData() {
+            // Try new unified state first
+            const state = JSON.parse(localStorage.getItem('ideaFactory_state') || '{}');
+            if (state.focusAreas) document.getElementById('focusAreas').value = state.focusAreas;
+            if (state.constraints) document.getElementById('constraints').value = state.constraints;
+            if (state.manualIdeas) document.getElementById('manualIdeas').value = state.manualIdeas;
+            if (state.excludeIdeas) document.getElementById('excludeIdeas').value = state.excludeIdeas;
+            if (state.grokOutput) document.getElementById('grokOutput').value = state.grokOutput;
+            if (state.geminiOutput) document.getElementById('geminiOutput').value = state.geminiOutput;
+            if (state.claudeOutput) document.getElementById('claudeOutput').value = state.claudeOutput;
+
+            // Fallback to old keys for backward compatibility
+            if (!state.focusAreas) {
+                const research = JSON.parse(localStorage.getItem('ideaFactory_research') || '{}');
+                if (research.focusAreas) document.getElementById('focusAreas').value = research.focusAreas;
+                if (research.constraints) document.getElementById('constraints').value = research.constraints;
+                if (research.manualIdeas) document.getElementById('manualIdeas').value = research.manualIdeas;
+                if (research.excludeIdeas) document.getElementById('excludeIdeas').value = research.excludeIdeas;
+            }
+            if (!state.grokOutput) {
+                const synthesis = JSON.parse(localStorage.getItem('ideaFactory_synthesis') || '{}');
+                if (synthesis.grokOutput) document.getElementById('grokOutput').value = synthesis.grokOutput;
+                if (synthesis.geminiOutput) document.getElementById('geminiOutput').value = synthesis.geminiOutput;
+                if (synthesis.claudeOutput) document.getElementById('claudeOutput').value = synthesis.claudeOutput;
+            }
+        }
+
+        // ========================================
+        // IDEAS KANBAN
+        // ========================================
+
+        const CATEGORIES = {
+            action_item: { emoji: '✅', title: 'Action Items' },
+            suite_feature: { emoji: '⚡', title: 'SUITE Features' },
+            suite_business: { emoji: '💰', title: 'SUITE Business' },
+            app_idea: { emoji: '💡', title: 'App Ideas' },
+            article: { emoji: '📝', title: 'Articles' },
+            personal: { emoji: '🏠', title: 'Personal' },
+            brainstorm: { emoji: '💭', title: 'Brainstorm' },
+            question: { emoji: '❓', title: 'Questions' }
+        };
+
+        // Group categories into sections
+        const SECTIONS = {
+            suite: {
+                title: 'SUITE',
+                emoji: '◈',
+                categories: ['suite_feature', 'suite_business', 'app_idea']
+            },
+            personal: {
+                title: 'Personal',
+                emoji: '🏠',
+                categories: ['personal', 'action_item']
+            },
+            content: {
+                title: 'Content',
+                emoji: '📝',
+                categories: ['article']
+            },
+            thinking: {
+                title: 'Thinking',
+                emoji: '💭',
+                categories: ['brainstorm', 'question']
+            }
+        };
+
+        let ideas = [];
+        let ideasView = 'stuart'; // 'stuart', 'suite', 'artstu', or 'archive'
+        let dismissingIdeaId = null;
+        let implementingIdeaId = null;
+
+        // Toggle between stuart, suite, artstu, and archive views
+        function toggleIdeasView(view) {
+            ideasView = view;
+            document.getElementById('stuartToggle').classList.toggle('active', view === 'stuart');
+            document.getElementById('suiteToggle').classList.toggle('active', view === 'suite');
+            document.getElementById('artstuToggle').classList.toggle('active', view === 'artstu');
+            document.getElementById('archiveToggle').classList.toggle('active', view === 'archive');
+            renderKanban();
+        }
+
+        // Track collapsed sections (persists during session)
+        const collapsedSections = new Set();
+
+        // Quick add idea with auto-categorization
+        async function quickAddIdea() {
+            const input = document.getElementById('quickAddInput');
+            const btn = document.getElementById('quickAddBtn');
+            const text = input.value.trim();
+
+            if (!text) return;
+
+            // Show loading state
+            btn.disabled = true;
+            btn.querySelector('.btn-text').style.display = 'none';
+            btn.querySelector('.btn-loading').style.display = 'inline';
+
+            try {
+                // Auto-categorize based on keywords
+                const categorized = autoCategorize(text);
+
+                // Insert into Supabase
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/personal_ideas`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=representation'
+                        },
+                        body: JSON.stringify({
+                            raw_input: text,
+                            category: categorized.category,
+                            title: categorized.title,
+                            content: categorized.content,
+                            status: 'inbox'
+                        })
+                    }
+                );
+
+                if (response.ok) {
+                    const [newIdea] = await response.json();
+                    ideas.unshift(newIdea);
+                    input.value = '';
+                    renderKanban();
+                } else {
+                    console.error('Failed to add idea:', await response.text());
+                    alert('Failed to add idea.');
+                }
+            } catch (err) {
+                console.error('Error adding idea:', err);
+                alert('Error adding idea.');
+            } finally {
+                btn.disabled = false;
+                btn.querySelector('.btn-text').style.display = 'inline';
+                btn.querySelector('.btn-loading').style.display = 'none';
+            }
+        }
+
+        // Auto-categorize based on keywords
+        function autoCategorize(text) {
+            const lower = text.toLowerCase();
+
+            // SUITE app names
+            const suiteApps = ['foodvitals', 'cheshbon', 'opticrep', 'trueform', 'remcast', 'cadence'];
+            const hasSuiteApp = suiteApps.some(app => lower.includes(app));
+
+            // Keyword patterns
+            const patterns = {
+                suite_feature: hasSuiteApp || /\b(feature|add|implement|update|fix|bug|ui|ux)\b/i.test(text),
+                suite_business: /\b(token|treasury|revenue|defi|dao|liquidity|investor|business model)\b/i.test(text),
+                app_idea: /\b(new app|app idea|app concept|build an app)\b/i.test(text),
+                article: /\b(article|blog|write about|post about|artstu)\b/i.test(text),
+                action_item: /\b(call|email|contact|meet|schedule|buy|get|pick up|appointment)\b/i.test(text),
+                personal: /\b(remember|don't forget|reminder|personal|home|family)\b/i.test(text),
+                question: /\?$|\b(research|look into|find out|how to|what is|why)\b/i.test(text)
+            };
+
+            // Determine category (priority order)
+            let category = 'brainstorm';
+            if (patterns.suite_feature && hasSuiteApp) category = 'suite_feature';
+            else if (patterns.suite_business) category = 'suite_business';
+            else if (patterns.app_idea) category = 'app_idea';
+            else if (patterns.article) category = 'article';
+            else if (patterns.action_item) category = 'action_item';
+            else if (patterns.personal) category = 'personal';
+            else if (patterns.question) category = 'question';
+            else if (patterns.suite_feature) category = 'suite_feature';
+
+            // Generate title (first ~50 chars or until period/newline)
+            let title = text.split(/[.\n]/)[0].trim();
+            if (title.length > 50) {
+                title = title.substring(0, 47) + '...';
+            }
+
+            // Content is the full text if longer than title
+            const content = text.length > 50 ? text : '';
+
+            return { category, title, content };
+        }
+
+        // Handle Enter key in quick add (Shift+Enter for newline)
+        document.addEventListener('DOMContentLoaded', () => {
+            const quickInput = document.getElementById('quickAddInput');
+            if (quickInput) {
+                quickInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        quickAddIdea();
+                    }
+                });
+            }
+        });
+
+        // Toggle section collapse
+        function toggleSection(sectionKey) {
+            const section = document.getElementById(`section-${sectionKey}`);
+            if (section) {
+                section.classList.toggle('collapsed');
+                if (section.classList.contains('collapsed')) {
+                    collapsedSections.add(sectionKey);
+                } else {
+                    collapsedSections.delete(sectionKey);
+                }
+            }
+        }
+
+        // Load ideas from Supabase
+        async function loadIdeas() {
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/personal_ideas?select=*&order=created_at.desc`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+
+                if (response.ok) {
+                    ideas = await response.json();
+                    renderKanban();
+                } else {
+                    console.error('Failed to load ideas:', await response.text());
+                    document.getElementById('kanbanContainer').innerHTML = '<div class="empty-column">Failed to load ideas. Make sure the table exists.</div>';
+                }
+            } catch (err) {
+                console.error('Error loading ideas:', err);
+                document.getElementById('kanbanContainer').innerHTML = '<div class="empty-column">Error loading ideas.</div>';
+            }
+        }
+
+        // Render Kanban board
+        function renderKanban() {
+            const container = document.getElementById('kanbanContainer');
+
+            // Filter ideas based on view
+            const filteredIdeas = ideas.filter(idea => {
+                if (ideasView === 'stuart') {
+                    return idea.status === 'inbox';
+                } else if (ideasView === 'suite') {
+                    return idea.status === 'pushed';
+                } else if (ideasView === 'artstu') {
+                    return idea.status === 'artstu';
+                } else {
+                    return idea.status === 'dismissed' || idea.status === 'implemented';
+                }
+            });
+
+            // Group by category
+            const grouped = {};
+            Object.keys(CATEGORIES).forEach(cat => {
+                grouped[cat] = filteredIdeas.filter(i => i.category === cat);
+            });
+
+            if (filteredIdeas.length === 0) {
+                const emptyMessages = {
+                    stuart: 'No ideas yet. Text @stuartfactorybot to capture ideas!',
+                    suite: 'No ideas pushed to SUITE yet. Push ideas from Stuart!',
+                    artstu: 'No ideas pushed to ArtStu yet. Push ideas from Stuart!',
+                    archive: 'No archived ideas yet.'
+                };
+                container.innerHTML = `<div class="empty-column" style="grid-column: 1 / -1;">${emptyMessages[ideasView]}</div>`;
+                return;
+            }
+
+            // Render by sections
+            container.innerHTML = Object.entries(SECTIONS).map(([sectionKey, section]) => {
+                // Get all ideas for this section
+                const sectionIdeas = section.categories.flatMap(cat => grouped[cat] || []);
+                const sectionCount = sectionIdeas.length;
+
+                // For archive view, only show sections with items
+                if (ideasView === 'archive' && sectionCount === 0) {
+                    return '';
+                }
+
+                return `
+                    <div class="kanban-section" id="section-${sectionKey}">
+                        <div class="kanban-section-header" onclick="toggleSection('${sectionKey}')">
+                            <span class="kanban-section-toggle">▼</span>
+                            <span class="kanban-section-emoji">${section.emoji}</span>
+                            <span class="kanban-section-title">${section.title}</span>
+                            <span class="kanban-section-count">${sectionCount}</span>
+                        </div>
+                        <div class="kanban-section-columns">
+                            ${section.categories.map(cat => {
+                                const catInfo = CATEGORIES[cat];
+                                const catIdeas = grouped[cat] || [];
+
+                                // For archive, skip empty columns
+                                if (ideasView === 'archive' && catIdeas.length === 0) {
+                                    return '';
+                                }
+
+                                return `
+                                    <div class="kanban-column">
+                                        <div class="kanban-column-header">
+                                            <span class="kanban-column-emoji">${catInfo.emoji}</span>
+                                            <span class="kanban-column-title">${catInfo.title}</span>
+                                            <span class="kanban-column-count">${catIdeas.length}</span>
+                                        </div>
+                                        <div class="kanban-cards">
+                                            ${catIdeas.length === 0
+                                                ? '<div class="empty-column">—</div>'
+                                                : catIdeas.map(idea => renderIdeaCard(idea)).join('')
+                                            }
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Render a single idea card
+        function renderIdeaCard(idea) {
+            const isArchived = idea.status === 'dismissed' || idea.status === 'implemented';
+            const isStuart = idea.status === 'inbox';
+            const isSuite = idea.status === 'pushed';
+            const isArtstu = idea.status === 'artstu';
+            const timeAgo = getTimeAgo(new Date(idea.created_at));
+
+            let actionsHtml = '';
+            if (isStuart) {
+                // Stuart Factory: dismiss, push to SUITE, push to ArtStu, implement
+                actionsHtml = `
+                    <div class="idea-card-actions">
+                        <button class="idea-action-btn dismiss" onclick="openDismissModal('${idea.id}')" title="Dismiss">✕</button>
+                        <button class="idea-action-btn push" onclick="openPushModal('${idea.id}', 'suite')" title="Push to SUITE">S</button>
+                        <button class="idea-action-btn push-artstu" onclick="openPushModal('${idea.id}', 'artstu')" title="Push to ArtStu">A</button>
+                        <button class="idea-action-btn implement" onclick="openImplementModal('${idea.id}')" title="Mark as done">✓</button>
+                    </div>
+                `;
+            } else if (isSuite || isArtstu) {
+                // SUITE/ArtStu Factory: dismiss, implement
+                actionsHtml = `
+                    <div class="idea-card-actions">
+                        <button class="idea-action-btn dismiss" onclick="openDismissModal('${idea.id}')" title="Dismiss">✕</button>
+                        <button class="idea-action-btn implement" onclick="openImplementModal('${idea.id}')" title="Mark as done">✓</button>
+                    </div>
+                `;
+            } else if (isArchived) {
+                // Archive: revert button
+                actionsHtml = `
+                    <div class="idea-card-actions">
+                        <button class="idea-action-btn revert" onclick="revertIdea('${idea.id}')" title="Revert to inbox">↩</button>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="idea-card ${idea.status}">
+                    <div class="idea-card-header">
+                        <div class="idea-card-title">${escapeHtml(idea.title)}</div>
+                        ${actionsHtml}
+                    </div>
+                    ${idea.content ? `<div class="idea-card-content">${escapeHtml(idea.content)}</div>` : ''}
+                    <div class="idea-card-meta">${timeAgo}</div>
+                    ${idea.status === 'dismissed' && idea.dismiss_reason ? `<div class="dismiss-reason">❌ ${escapeHtml(idea.dismiss_reason)}</div>` : ''}
+                    ${idea.status === 'implemented' ? `<div class="dismiss-reason" style="color: var(--success); border-color: rgba(34, 197, 94, 0.3);">✓ ${idea.dismiss_reason ? escapeHtml(idea.dismiss_reason) : 'Implemented'}</div>` : ''}
+                </div>
+            `;
+        }
+
+        // Open dismiss modal
+        function openDismissModal(ideaId) {
+            dismissingIdeaId = ideaId;
+            document.getElementById('dismissReason').value = '';
+            document.getElementById('dismissModal').style.display = 'flex';
+            document.getElementById('dismissReason').focus();
+        }
+
+        // Close dismiss modal
+        function closeDismissModal() {
+            dismissingIdeaId = null;
+            document.getElementById('dismissModal').style.display = 'none';
+        }
+
+        // Confirm dismiss with reason
+        async function confirmDismiss() {
+            if (!dismissingIdeaId) return;
+
+            const reason = document.getElementById('dismissReason').value.trim();
+            if (!reason) {
+                alert('Please enter a reason for dismissing.');
+                return;
+            }
+
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/personal_ideas?id=eq.${dismissingIdeaId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({
+                            status: 'dismissed',
+                            dismiss_reason: reason
+                        })
+                    }
+                );
+
+                if (response.ok) {
+                    // Update local state
+                    const idea = ideas.find(i => i.id === dismissingIdeaId);
+                    if (idea) {
+                        idea.status = 'dismissed';
+                        idea.dismiss_reason = reason;
+                    }
+                    closeDismissModal();
+                    renderKanban();
+                } else {
+                    console.error('Failed to dismiss idea:', await response.text());
+                    alert('Failed to dismiss idea.');
+                }
+            } catch (err) {
+                console.error('Error dismissing idea:', err);
+                alert('Error dismissing idea.');
+            }
+        }
+
+        // Prompt templates by category
+        const PROMPT_TEMPLATES = {
+            suite_feature: (title, content) => `Implement this feature in the SUITE app ecosystem:
+
+**Feature:** ${title}
+${content ? `**Details:** ${content}` : ''}
+
+Please:
+1. Identify which SUITE app this belongs to (FoodVitals, Cheshbon, OpticRep, TrueForm, REMcast, or new)
+2. Plan the implementation
+3. Write the code changes needed`,
+
+            app_idea: (title, content) => `Create a new SUITE app:
+
+**App Name:** ${title}
+${content ? `**Concept:** ${content}` : ''}
+
+Please:
+1. Use the boilerplate at /boilerplate
+2. Set up the basic structure
+3. Implement the core feature
+4. Prepare for deployment`,
+
+            suite_business: (title, content) => `Analyze this SUITE business/ecosystem idea:
+
+**Idea:** ${title}
+${content ? `**Details:** ${content}` : ''}
+
+Please provide:
+1. Feasibility analysis
+2. Implementation steps
+3. Potential challenges
+4. Recommended next actions`,
+
+            article: (title, content) => `Write a blog post for artstu.ca:
+
+**Topic:** ${title}
+${content ? `**Notes:** ${content}` : ''}
+
+Please write a thoughtful article that:
+1. Explores the topic from multiple angles
+2. Connects to themes of faith, technology, or philosophy
+3. Is engaging and well-structured`,
+
+            brainstorm: (title, content) => `Help me develop this idea further:
+
+**Idea:** ${title}
+${content ? `**Current thoughts:** ${content}` : ''}
+
+Please:
+1. Explore different angles
+2. Identify opportunities
+3. Suggest concrete next steps`,
+
+            question: (title, content) => `Research this topic:
+
+**Question:** ${title}
+${content ? `**Context:** ${content}` : ''}
+
+Please provide a thorough answer with sources where applicable.`,
+
+            action_item: (title, content) => `Help me complete this action:
+
+**Task:** ${title}
+${content ? `**Details:** ${content}` : ''}
+
+Please help me accomplish this task.`,
+
+            personal: (title, content) => `Help with this personal task:
+
+**Task:** ${title}
+${content ? `**Details:** ${content}` : ''}
+
+Please provide helpful guidance.`
+        };
+
+        // Push modal state
+        let pushingIdeaId = null;
+        let pushTarget = null;
+        let currentTaskId = null;
+
+        // Open push modal
+        function openPushModal(ideaId, target) {
+            const idea = ideas.find(i => i.id === ideaId);
+            if (!idea) return;
+
+            pushingIdeaId = ideaId;
+            pushTarget = target;
+            currentTaskId = null;
+
+            // Set modal title
+            document.getElementById('pushModalTitle').textContent =
+                target === 'suite' ? 'Push to SUITE' : 'Push to ArtStu';
+
+            // Generate prompt based on category
+            const template = PROMPT_TEMPLATES[idea.category] || PROMPT_TEMPLATES.brainstorm;
+            const prompt = template(idea.title, idea.content || '');
+            document.getElementById('claudePrompt').value = prompt;
+
+            // Reset response section
+            document.getElementById('claudeResponseSection').style.display = 'none';
+            document.getElementById('claudeResponse').textContent = '';
+            document.getElementById('pushBtnText').style.display = 'inline';
+            document.getElementById('pushBtnLoading').style.display = 'none';
+            document.getElementById('pushConfirmBtn').disabled = false;
+
+            // Show modal
+            document.getElementById('pushModal').style.display = 'flex';
+        }
+
+        // Close push modal
+        function closePushModal() {
+            pushingIdeaId = null;
+            pushTarget = null;
+            currentTaskId = null;
+            document.getElementById('pushModal').style.display = 'none';
+        }
+
+        // Send to Claude and push
+        async function sendToClaudeAndPush() {
+            if (!pushingIdeaId || !pushTarget) return;
+
+            const prompt = document.getElementById('claudePrompt').value.trim();
+            if (!prompt) {
+                alert('Please enter a prompt');
+                return;
+            }
+
+            // Update UI to loading state
+            document.getElementById('pushBtnText').style.display = 'none';
+            document.getElementById('pushBtnLoading').style.display = 'inline';
+            document.getElementById('pushConfirmBtn').disabled = true;
+
+            try {
+                // 1. Create claude_task
+                const taskResponse = await fetch(
+                    `${SUPABASE_URL}/rest/v1/claude_tasks`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=representation'
+                        },
+                        body: JSON.stringify({
+                            idea_id: pushingIdeaId,
+                            prompt: prompt,
+                            target: pushTarget,
+                            status: 'pending'
+                        })
+                    }
+                );
+
+                if (!taskResponse.ok) {
+                    throw new Error('Failed to create task');
+                }
+
+                const [task] = await taskResponse.json();
+                currentTaskId = task.id;
+
+                // 2. Move idea to target
+                const newStatus = pushTarget === 'suite' ? 'pushed' : 'artstu';
+                await fetch(
+                    `${SUPABASE_URL}/rest/v1/personal_ideas?id=eq.${pushingIdeaId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({ status: newStatus })
+                    }
+                );
+
+                // Update local state
+                const idea = ideas.find(i => i.id === pushingIdeaId);
+                if (idea) {
+                    idea.status = newStatus;
+                }
+                renderKanban();
+
+                // 3. Poll for response
+                pollForResponse(task.id);
+
+            } catch (err) {
+                console.error('Error sending to Claude:', err);
+                alert('Failed to send to Claude. Check console for details.');
+                document.getElementById('pushBtnText').style.display = 'inline';
+                document.getElementById('pushBtnLoading').style.display = 'none';
+                document.getElementById('pushConfirmBtn').disabled = false;
+            }
+        }
+
+        // Poll for Claude response
+        async function pollForResponse(taskId) {
+            const maxAttempts = 120; // 10 minutes at 5 second intervals
+            let attempts = 0;
+
+            const poll = async () => {
+                attempts++;
+
+                try {
+                    const response = await fetch(
+                        `${SUPABASE_URL}/rest/v1/claude_tasks?id=eq.${taskId}&select=*`,
+                        {
+                            headers: {
+                                'apikey': SUPABASE_ANON_KEY,
+                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                            }
+                        }
+                    );
+
+                    if (!response.ok) throw new Error('Failed to poll');
+
+                    const [task] = await response.json();
+
+                    if (task.status === 'completed' || task.status === 'error' || task.status === 'needs_input') {
+                        // Show response
+                        document.getElementById('claudeResponseSection').style.display = 'block';
+                        document.getElementById('claudeResponse').textContent =
+                            task.response || task.error_message || 'No response received';
+
+                        // Update button
+                        document.getElementById('pushBtnText').textContent = 'Done';
+                        document.getElementById('pushBtnText').style.display = 'inline';
+                        document.getElementById('pushBtnLoading').style.display = 'none';
+                        document.getElementById('pushConfirmBtn').disabled = false;
+                        document.getElementById('pushConfirmBtn').onclick = closePushModal;
+
+                        return;
+                    }
+
+                    if (task.status === 'processing') {
+                        document.getElementById('pushBtnLoading').textContent = 'Claude is working...';
+                    }
+
+                    if (attempts < maxAttempts) {
+                        setTimeout(poll, 5000);
+                    } else {
+                        document.getElementById('claudeResponseSection').style.display = 'block';
+                        document.getElementById('claudeResponse').textContent = 'Timeout waiting for response. Check if claude-watcher is running.';
+                        document.getElementById('pushBtnText').textContent = 'Close';
+                        document.getElementById('pushBtnText').style.display = 'inline';
+                        document.getElementById('pushBtnLoading').style.display = 'none';
+                        document.getElementById('pushConfirmBtn').disabled = false;
+                        document.getElementById('pushConfirmBtn').onclick = closePushModal;
+                    }
+                } catch (err) {
+                    console.error('Poll error:', err);
+                    if (attempts < maxAttempts) {
+                        setTimeout(poll, 5000);
+                    }
+                }
+            };
+
+            poll();
+        }
+
+        // Push idea to ArtStu (direct, without Claude - keeping for backwards compatibility)
+        async function pushToArtstu(ideaId) {
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/personal_ideas?id=eq.${ideaId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({
+                            status: 'artstu'
+                        })
+                    }
+                );
+
+                if (response.ok) {
+                    const idea = ideas.find(i => i.id === ideaId);
+                    if (idea) {
+                        idea.status = 'artstu';
+                    }
+                    renderKanban();
+                } else {
+                    console.error('Failed to push idea:', await response.text());
+                    alert('Failed to push to ArtStu.');
+                }
+            } catch (err) {
+                console.error('Error pushing idea:', err);
+                alert('Error pushing to ArtStu.');
+            }
+        }
+
+        // Push idea to SUITE Factory
+        async function pushToSuite(ideaId) {
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/personal_ideas?id=eq.${ideaId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({
+                            status: 'pushed'
+                        })
+                    }
+                );
+
+                if (response.ok) {
+                    const idea = ideas.find(i => i.id === ideaId);
+                    if (idea) {
+                        idea.status = 'pushed';
+                    }
+                    renderKanban();
+                } else {
+                    console.error('Failed to push idea:', await response.text());
+                    alert('Failed to push to SUITE.');
+                }
+            } catch (err) {
+                console.error('Error pushing idea:', err);
+                alert('Error pushing to SUITE.');
+            }
+        }
+
+        // Open implement modal
+        function openImplementModal(ideaId) {
+            implementingIdeaId = ideaId;
+            document.getElementById('implementNote').value = '';
+            document.getElementById('implementModal').style.display = 'flex';
+            document.getElementById('implementNote').focus();
+        }
+
+        // Close implement modal
+        function closeImplementModal() {
+            implementingIdeaId = null;
+            document.getElementById('implementModal').style.display = 'none';
+        }
+
+        // Confirm implement with note
+        async function confirmImplement() {
+            if (!implementingIdeaId) return;
+
+            const note = document.getElementById('implementNote').value.trim();
+
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/personal_ideas?id=eq.${implementingIdeaId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({
+                            status: 'implemented',
+                            dismiss_reason: note ? `Done: ${note}` : 'Done'
+                        })
+                    }
+                );
+
+                if (response.ok) {
+                    const idea = ideas.find(i => i.id === implementingIdeaId);
+                    if (idea) {
+                        idea.status = 'implemented';
+                        idea.dismiss_reason = note ? `Done: ${note}` : 'Done';
+                    }
+                    closeImplementModal();
+                    renderKanban();
+                } else {
+                    console.error('Failed to implement idea:', await response.text());
+                    alert('Failed to mark as implemented.');
+                }
+            } catch (err) {
+                console.error('Error implementing idea:', err);
+                alert('Error marking as implemented.');
+            }
+        }
+
+        // Revert idea back to inbox
+        async function revertIdea(ideaId) {
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/personal_ideas?id=eq.${ideaId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({
+                            status: 'inbox',
+                            dismiss_reason: null
+                        })
+                    }
+                );
+
+                if (response.ok) {
+                    const idea = ideas.find(i => i.id === ideaId);
+                    if (idea) {
+                        idea.status = 'inbox';
+                        idea.dismiss_reason = null;
+                    }
+                    renderKanban();
+                } else {
+                    console.error('Failed to revert idea:', await response.text());
+                    alert('Failed to revert idea.');
+                }
+            } catch (err) {
+                console.error('Error reverting idea:', err);
+                alert('Error reverting idea.');
+            }
+        }
+
+        // Utility: escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Utility: get time ago string
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            if (seconds < 60) return 'just now';
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `${minutes}m ago`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours}h ago`;
+            const days = Math.floor(hours / 24);
+            if (days < 7) return `${days}d ago`;
+            return date.toLocaleDateString();
+        }
+
+        // Close modal on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (document.getElementById('dismissModal').style.display === 'flex') {
+                    closeDismissModal();
+                }
+                if (document.getElementById('implementModal').style.display === 'flex') {
+                    closeImplementModal();
+                }
+            }
+        });
+
+        // ========================================
+        // APP FACTORY (existing code below)
+        // ========================================
 
         // Step definitions
         const STEPS = [
@@ -568,9 +2502,33 @@ VALUES (
         let currentProject = null;
         let currentStep = 0;
 
+        // Telegram Web App detection
+        const isTelegram = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData;
+        if (isTelegram) {
+            Telegram.WebApp.expand();
+            Telegram.WebApp.ready();
+            // Hide nav in Telegram Mini App
+            document.addEventListener('DOMContentLoaded', () => {
+                const nav = document.getElementById('main-nav');
+                if (nav) nav.style.display = 'none';
+                document.querySelector('.factory-container').style.paddingTop = '20px';
+            });
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             renderProjects();
+            restoreIdeaFactoryData();
+
+            // Check URL for tab parameter, default to Stuart Factory
+            const urlParams = new URLSearchParams(window.location.search);
+            const tabParam = urlParams.get('tab');
+            if (tabParam && ['idea', 'build'].includes(tabParam)) {
+                switchTab(tabParam);
+            } else {
+                // Stuart Factory is default in HTML, just load the ideas
+                loadIdeas();
+            }
         });
 
         function renderProjects() {

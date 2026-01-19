@@ -1,46 +1,37 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { Settings, User, Bell, Palette, Key, HelpCircle, MessageSquare, Loader2, Check, Twitter } from 'lucide-react'
+import { User, Bell, Palette, Key, HelpCircle, Loader2, Twitter, Mail, Download, Trash2 } from 'lucide-react'
+import { useTelegramAuth } from '@/contexts/TelegramAuthContext'
 
-interface BrandSettings {
-    brandVoice: string
-    tone: string
-    speakingPerspective: string
-    emojiStyle: string
-    exclusionWords: string
-    defaultHashtags: string
-}
-
-const DEFAULT_BRAND_SETTINGS: BrandSettings = {
-    brandVoice: '',
-    tone: 'casual',
-    speakingPerspective: 'I',
-    emojiStyle: 'moderate',
-    exclusionWords: '',
-    defaultHashtags: '#buildinpublic #ai'
+interface EmailCapture {
+    email: string
+    loopId: string
+    audienceId: string
+    audienceName: string
+    capturedAt: string
 }
 
 export default function SettingsPage() {
-    const [brandSettings, setBrandSettings] = useState<BrandSettings>(DEFAULT_BRAND_SETTINGS)
-    const [saving, setSaving] = useState(false)
-    const [saved, setSaved] = useState(false)
+    const { user } = useTelegramAuth()
     const [twitterStatus, setTwitterStatus] = useState<{ connected: boolean; user?: any; loading: boolean }>({
         connected: false,
         loading: true
     })
+    const [emailCaptures, setEmailCaptures] = useState<EmailCapture[]>([])
 
-    // Load brand settings from localStorage on mount
+    // Load email captures and check Twitter status
     useEffect(() => {
-        const stored = localStorage.getItem('cadence_brand_settings')
-        if (stored) {
+        // Load email captures from localStorage (will migrate later)
+        const captures = localStorage.getItem('email_captures')
+        if (captures) {
             try {
-                setBrandSettings(JSON.parse(stored))
+                setEmailCaptures(JSON.parse(captures))
             } catch (e) {
-                console.error('Failed to parse brand settings:', e)
+                console.error('Failed to parse email captures:', e)
             }
         }
+
         checkTwitterStatus()
     }, [])
 
@@ -55,20 +46,43 @@ export default function SettingsPage() {
         }
     }
 
-    // Save brand settings
-    const saveBrandSettings = () => {
-        setSaving(true)
-        localStorage.setItem('cadence_brand_settings', JSON.stringify(brandSettings))
-        setTimeout(() => {
-            setSaving(false)
-            setSaved(true)
-            setTimeout(() => setSaved(false), 2000)
-        }, 500)
+    // Export email captures as CSV
+    const exportCapturesCSV = () => {
+        if (emailCaptures.length === 0) return
+
+        const headers = ['Email', 'Audience', 'Captured At']
+        const rows = emailCaptures.map(c => [
+            c.email,
+            c.audienceName,
+            new Date(c.capturedAt).toLocaleString()
+        ])
+
+        const csvContent = [
+            headers.join(','),
+            ...rows.map(row => row.join(','))
+        ].join('\n')
+
+        const blob = new Blob([csvContent], { type: 'text/csv' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `email-captures-${new Date().toISOString().split('T')[0]}.csv`
+        a.click()
+        URL.revokeObjectURL(url)
     }
 
-    // Update a single field
-    const updateField = (field: keyof BrandSettings, value: string) => {
-        setBrandSettings(prev => ({ ...prev, [field]: value }))
+    // Delete a single capture
+    const deleteCapture = (email: string) => {
+        const updated = emailCaptures.filter(c => c.email !== email)
+        setEmailCaptures(updated)
+        localStorage.setItem('email_captures', JSON.stringify(updated))
+    }
+
+    // Clear all captures
+    const clearAllCaptures = () => {
+        if (!confirm('Are you sure you want to delete all email captures?')) return
+        setEmailCaptures([])
+        localStorage.removeItem('email_captures')
     }
 
     return (
@@ -114,134 +128,6 @@ export default function SettingsPage() {
                     </div>
                 </section>
 
-                {/* Brand Voice - NEW SECTION */}
-                <section className="card p-6">
-                    <div className="flex items-center gap-4 mb-4">
-                        <div className="p-2 rounded-lg bg-purple-500/10">
-                            <MessageSquare className="w-5 h-5 text-purple-500" />
-                        </div>
-                        <div>
-                            <h2 className="text-lg font-semibold text-[var(--foreground)]">Brand Voice</h2>
-                            <p className="text-sm text-[var(--foreground-muted)]">Configure how AI generates your content</p>
-                        </div>
-                    </div>
-
-                    <div className="space-y-4">
-                        {/* Brand Voice Description */}
-                        <div className="p-4 bg-[var(--background-elevated)] rounded-lg">
-                            <label className="block font-medium text-[var(--foreground)] mb-2">Brand Voice</label>
-                            <textarea
-                                value={brandSettings.brandVoice}
-                                onChange={(e) => updateField('brandVoice', e.target.value)}
-                                rows={3}
-                                placeholder="Describe your brand personality... e.g., 'We're a solo dev building AI-powered micro apps. We're direct, slightly nerdy, and genuinely helpful.'"
-                                className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--surface-border)] rounded-lg text-sm text-[var(--foreground)] resize-none"
-                            />
-                        </div>
-
-                        {/* Tone & Perspective Row */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 bg-[var(--background-elevated)] rounded-lg">
-                                <label className="block font-medium text-[var(--foreground)] mb-2">Tone</label>
-                                <select
-                                    value={brandSettings.tone}
-                                    onChange={(e) => updateField('tone', e.target.value)}
-                                    className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--surface-border)] rounded-lg text-sm text-[var(--foreground)]"
-                                >
-                                    <option value="casual">Casual</option>
-                                    <option value="professional">Professional</option>
-                                    <option value="witty">Witty</option>
-                                    <option value="inspirational">Inspirational</option>
-                                    <option value="educational">Educational</option>
-                                </select>
-                            </div>
-
-                            <div className="p-4 bg-[var(--background-elevated)] rounded-lg">
-                                <label className="block font-medium text-[var(--foreground)] mb-2">Speaking Perspective</label>
-                                <select
-                                    value={brandSettings.speakingPerspective}
-                                    onChange={(e) => updateField('speakingPerspective', e.target.value)}
-                                    className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--surface-border)] rounded-lg text-sm text-[var(--foreground)]"
-                                >
-                                    <option value="I">I (Solo founder)</option>
-                                    <option value="We">We (Team)</option>
-                                    <option value="You">You (Audience-focused)</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        {/* Emoji Style */}
-                        <div className="p-4 bg-[var(--background-elevated)] rounded-lg">
-                            <label className="block font-medium text-[var(--foreground)] mb-2">Emoji Style</label>
-                            <div className="flex gap-2">
-                                {['heavy', 'moderate', 'minimal', 'none'].map((style) => (
-                                    <button
-                                        key={style}
-                                        onClick={() => updateField('emojiStyle', style)}
-                                        className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors ${
-                                            brandSettings.emojiStyle === style
-                                                ? 'bg-[var(--primary)] text-white'
-                                                : 'bg-[var(--surface)] text-[var(--foreground-muted)] hover:bg-[var(--surface-hover)]'
-                                        }`}
-                                    >
-                                        {style === 'heavy' && '🚀 '}
-                                        {style === 'moderate' && '✨ '}
-                                        {style}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Exclusion Words */}
-                        <div className="p-4 bg-[var(--background-elevated)] rounded-lg">
-                            <label className="block font-medium text-[var(--foreground)] mb-2">
-                                Exclusion Words
-                                <span className="font-normal text-[var(--foreground-muted)] ml-2">Words the AI should never use</span>
-                            </label>
-                            <textarea
-                                value={brandSettings.exclusionWords}
-                                onChange={(e) => updateField('exclusionWords', e.target.value)}
-                                rows={2}
-                                placeholder="revolutionary, game-changing, cutting-edge, leverage, synergy, disrupt, unlock, empower, seamless..."
-                                className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--surface-border)] rounded-lg text-sm text-[var(--foreground)] resize-none"
-                            />
-                        </div>
-
-                        {/* Default Hashtags */}
-                        <div className="p-4 bg-[var(--background-elevated)] rounded-lg">
-                            <label className="block font-medium text-[var(--foreground)] mb-2">Default Hashtags</label>
-                            <input
-                                type="text"
-                                value={brandSettings.defaultHashtags}
-                                onChange={(e) => updateField('defaultHashtags', e.target.value)}
-                                placeholder="#buildinpublic #ai #indiehacker"
-                                className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--surface-border)] rounded-lg text-sm text-[var(--foreground)]"
-                            />
-                        </div>
-
-                        {/* Save Button */}
-                        <button
-                            onClick={saveBrandSettings}
-                            disabled={saving}
-                            className="btn btn-primary w-full"
-                        >
-                            {saving ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    Saving...
-                                </>
-                            ) : saved ? (
-                                <>
-                                    <Check className="w-4 h-4" />
-                                    Saved!
-                                </>
-                            ) : (
-                                'Save Brand Settings'
-                            )}
-                        </button>
-                    </div>
-                </section>
-
                 {/* Twitter Connection Status */}
                 <section className="card p-6">
                     <div className="flex items-center gap-4 mb-4">
@@ -283,6 +169,77 @@ export default function SettingsPage() {
                             </div>
                         )}
                     </div>
+                </section>
+
+                {/* Email Captures */}
+                <section className="card p-6">
+                    <div className="flex items-center gap-4 mb-4">
+                        <div className="p-2 rounded-lg bg-purple-500/10">
+                            <Mail className="w-5 h-5 text-purple-500" />
+                        </div>
+                        <div className="flex-1">
+                            <h2 className="text-lg font-semibold text-[var(--foreground)]">Email Captures</h2>
+                            <p className="text-sm text-[var(--foreground-muted)]">Emails collected from audience capture pages</p>
+                        </div>
+                        {emailCaptures.length > 0 && (
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={exportCapturesCSV}
+                                    className="btn btn-ghost text-sm"
+                                >
+                                    <Download className="w-4 h-4" />
+                                    Export CSV
+                                </button>
+                                <button
+                                    onClick={clearAllCaptures}
+                                    className="btn btn-ghost text-sm text-red-400 hover:text-red-300"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                    Clear All
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {emailCaptures.length === 0 ? (
+                        <div className="p-8 bg-[var(--background-elevated)] rounded-lg text-center">
+                            <Mail className="w-10 h-10 text-[var(--foreground-muted)] mx-auto mb-3" />
+                            <p className="text-[var(--foreground-muted)]">No email captures yet</p>
+                            <p className="text-sm text-[var(--foreground-muted)] mt-1">
+                                Create a loop with audiences and share capture links to collect emails
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            <div className="px-4 py-2 text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wide">
+                                {emailCaptures.length} email{emailCaptures.length !== 1 ? 's' : ''} captured
+                            </div>
+                            {emailCaptures.map((capture, idx) => (
+                                <div
+                                    key={idx}
+                                    className="flex items-center justify-between p-4 bg-[var(--background-elevated)] rounded-lg group"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+                                            <Mail className="w-5 h-5 text-purple-400" />
+                                        </div>
+                                        <div>
+                                            <p className="font-medium text-[var(--foreground)]">{capture.email}</p>
+                                            <p className="text-sm text-[var(--foreground-muted)]">
+                                                {capture.audienceName} - {new Date(capture.capturedAt).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => deleteCapture(capture.email)}
+                                        className="p-2 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-500/20 hover:text-red-400 transition-all"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </section>
 
                 {/* Notifications */}

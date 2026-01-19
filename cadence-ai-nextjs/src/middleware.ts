@@ -1,59 +1,47 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// Session cookie name (must match the one in API routes)
+const SESSION_COOKIE_NAME = 'cadence_session'
+
 export async function middleware(request: NextRequest) {
-    let supabaseResponse = NextResponse.next({
-        request,
-    })
-
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                getAll() {
-                    return request.cookies.getAll()
-                },
-                setAll(cookiesToSet) {
-                    cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
-                    supabaseResponse = NextResponse.next({
-                        request,
-                    })
-                    cookiesToSet.forEach(({ name, value, options }) =>
-                        supabaseResponse.cookies.set(name, value, options)
-                    )
-                },
-            },
-        }
-    )
-
-    // Get the current user
-    const { data: { user } } = await supabase.auth.getUser()
-
     const { pathname } = request.nextUrl
 
     // Public routes that don't require auth
     const publicRoutes = ['/login', '/auth/callback']
+
     // Internal API routes that can be called server-to-server
-    const internalApiRoutes = ['/api/generate-dev-update-image', '/api/work-log/cron']
+    const internalApiRoutes = [
+        '/api/generate-dev-update-image',
+        '/api/work-log/cron',
+        '/api/auth/telegram', // Auth endpoints should be public
+        '/api/twitter/latest-poll', // Public poll embed API
+    ]
+
     const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
     const isInternalApi = internalApiRoutes.some(route => pathname.startsWith(route))
 
+    // Check for Telegram session cookie
+    const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME)?.value
+    const isAuthenticated = !!sessionCookie
+
+    // Also check for Mini App URL params (tg_id)
+    const hasTelegramParams = request.nextUrl.searchParams.has('tg_id')
+
     // If user is not logged in and trying to access protected route
-    if (!user && !isPublicRoute && !isInternalApi) {
+    if (!isAuthenticated && !hasTelegramParams && !isPublicRoute && !isInternalApi) {
         const url = request.nextUrl.clone()
         url.pathname = '/login'
         return NextResponse.redirect(url)
     }
 
-    // If user is logged in and trying to access login page
-    if (user && pathname === '/login') {
+    // If user is logged in and trying to access login page (without tg params)
+    if (isAuthenticated && pathname === '/login' && !hasTelegramParams) {
         const url = request.nextUrl.clone()
         url.pathname = '/dashboard'
         return NextResponse.redirect(url)
     }
 
-    return supabaseResponse
+    return NextResponse.next()
 }
 
 export const config = {

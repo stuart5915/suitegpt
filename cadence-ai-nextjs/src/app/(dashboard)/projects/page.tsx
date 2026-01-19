@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useTelegramAuth } from '@/contexts/TelegramAuthContext'
 import {
     Plus,
     Search,
@@ -19,6 +20,7 @@ import { Project } from '@/lib/supabase/types'
 export default function ProjectsPage() {
     const router = useRouter()
     const supabase = createClient()
+    const { user, isLoading: authLoading } = useTelegramAuth()
 
     const [loading, setLoading] = useState(true)
     const [projects, setProjects] = useState<Project[]>([])
@@ -28,10 +30,17 @@ export default function ProjectsPage() {
 
     useEffect(() => {
         async function loadProjects() {
+            if (!user?.id) {
+                setLoading(false)
+                return
+            }
+
             try {
+                // Filter projects by telegram_id
                 const { data, error } = await supabase
                     .from('projects')
                     .select('*')
+                    .eq('telegram_id', user.id)
                     .order('created_at', { ascending: false })
 
                 if (error) {
@@ -46,8 +55,10 @@ export default function ProjectsPage() {
             }
         }
 
-        loadProjects()
-    }, [supabase])
+        if (!authLoading) {
+            loadProjects()
+        }
+    }, [supabase, user, authLoading])
 
     const handleDelete = async (id: string) => {
         if (!confirm('Are you sure you want to delete this project? This cannot be undone.')) {
@@ -79,7 +90,7 @@ export default function ProjectsPage() {
         project.description?.toLowerCase().includes(searchQuery.toLowerCase())
     )
 
-    if (loading) {
+    if (loading || authLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-[var(--primary)]" />

@@ -757,6 +757,165 @@
             background: rgba(255, 255, 255, 0.25);
         }
 
+        /* Ideas Section */
+        .ideas-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .idea-card {
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+        }
+
+        .idea-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+        }
+
+        .idea-card.rejected {
+            opacity: 0.7;
+            background: rgba(255, 255, 255, 0.6);
+        }
+
+        .idea-card.building {
+            border: 2px solid #ff9500;
+            background: linear-gradient(135deg, rgba(255, 149, 0, 0.05), rgba(255, 255, 255, 0.9));
+        }
+
+        .idea-card.live {
+            border: 2px solid #22c55e;
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.05), rgba(255, 255, 255, 0.9));
+        }
+
+        .idea-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .idea-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #2d1b4e;
+        }
+
+        .idea-status {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 100px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .idea-status.considering {
+            background: rgba(99, 102, 241, 0.15);
+            color: #6366f1;
+        }
+
+        .idea-status.rejected {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+        }
+
+        .idea-status.building {
+            background: rgba(255, 149, 0, 0.15);
+            color: #ff9500;
+        }
+
+        .idea-status.live {
+            background: rgba(34, 197, 94, 0.15);
+            color: #22c55e;
+        }
+
+        .idea-tagline {
+            font-size: 0.9rem;
+            color: #5a4a6f;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .idea-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 12px;
+        }
+
+        .idea-meta span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .idea-reason {
+            font-size: 0.85rem;
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.08);
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-top: 8px;
+        }
+
+        .idea-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 12px;
+            padding: 8px 14px;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .idea-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+        }
+
+        .ideas-section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .ideas-section-header h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #2d1b4e;
+            margin: 0;
+        }
+
+        .ideas-section-header .count {
+            background: rgba(0, 0, 0, 0.08);
+            padding: 2px 8px;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #5a4a6f;
+        }
+
+        .ideas-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: #5a4a6f;
+        }
+
         /* Apps Container */
         .apps-container {
             max-width: 1200px;
@@ -1877,6 +2036,58 @@
                 </div>
             </div>
 
+            <!-- Ideas Pipeline Section (hidden by default, shown when Ideas tab is clicked) -->
+            <div class="apps-container" id="ideasContainer" style="padding: 0; display: none;">
+                <div class="section-header">
+                    <h2 class="section-title">💡 Ideas Pipeline</h2>
+                    <span class="results-count">Showing <strong id="ideasCount">0</strong> ideas</span>
+                </div>
+
+                <!-- Building Now -->
+                <div id="buildingSection" style="margin-bottom: 32px;">
+                    <div class="ideas-section-header">
+                        <h3>🔨 Building Now</h3>
+                        <span class="count" id="buildingCount">0</span>
+                    </div>
+                    <div class="ideas-grid" id="buildingIdeas">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Considering -->
+                <div id="consideringSection" style="margin-bottom: 32px;">
+                    <div class="ideas-section-header">
+                        <h3>🤔 Considering</h3>
+                        <span class="count" id="consideringCount">0</span>
+                    </div>
+                    <div class="ideas-grid" id="consideringIdeas">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Launched (became apps) -->
+                <div id="launchedSection" style="margin-bottom: 32px;">
+                    <div class="ideas-section-header">
+                        <h3>🚀 Launched</h3>
+                        <span class="count" id="launchedCount">0</span>
+                    </div>
+                    <div class="ideas-grid" id="launchedIdeas">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Rejected -->
+                <div id="rejectedSection">
+                    <div class="ideas-section-header">
+                        <h3>❌ Rejected</h3>
+                        <span class="count" id="rejectedCount">0</span>
+                    </div>
+                    <div class="ideas-grid" id="rejectedIdeas">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
             <!-- Symbiosis Explainer Section - 50/50 Split -->
             <div class="symbiosis-section" style="padding: 0; overflow: hidden;">
                 <!-- Header -->
@@ -1967,10 +2178,12 @@
         // Simplified categories - just All Apps and Extensions
         const statusCategories = [
             { id: 'all', name: 'All Apps', emoji: '' },
+            { id: 'ideas', name: 'Ideas', emoji: '💡' },
             { id: 'extensions', name: 'Extensions', emoji: '🧩' }
         ];
 
         let apps = [];
+        let ideas = [];
         let stats = {};
         let currentStatus = 'all';
         let searchQuery = '';
@@ -2030,8 +2243,9 @@
                 stats = { total: 0, published: 0, development: 0, beta: 0 };
             }
 
-            // Load review campaigns
+            // Load review campaigns and ideas
             await loadReviewCampaigns();
+            await loadIdeas();
 
             renderTabs();
             renderApps();
@@ -2053,6 +2267,107 @@
             } catch (err) {
                 console.error('Error loading review campaigns:', err);
             }
+        }
+
+        // Load ideas from Supabase
+        async function loadIdeas() {
+            try {
+                const FALLBACK_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+                const FALLBACK_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
+
+                const response = await fetch(`${FALLBACK_URL}/rest/v1/ideas?select=*&order=created_at.desc`, {
+                    headers: { 'apikey': FALLBACK_KEY }
+                });
+
+                if (response.ok) {
+                    ideas = await response.json();
+                    console.log('Loaded', ideas.length, 'ideas');
+                } else {
+                    console.error('Failed to load ideas:', await response.text());
+                    ideas = [];
+                }
+            } catch (err) {
+                console.error('Error loading ideas:', err);
+                ideas = [];
+            }
+        }
+
+        // Render ideas in the Ideas container
+        function renderIdeas() {
+            const building = ideas.filter(i => i.status === 'building');
+            const considering = ideas.filter(i => i.status === 'considering');
+            const live = ideas.filter(i => i.status === 'live');
+            const rejected = ideas.filter(i => i.status === 'rejected');
+
+            // Update counts
+            document.getElementById('ideasCount').textContent = ideas.length;
+            document.getElementById('buildingCount').textContent = building.length;
+            document.getElementById('consideringCount').textContent = considering.length;
+            document.getElementById('launchedCount').textContent = live.length;
+            document.getElementById('rejectedCount').textContent = rejected.length;
+
+            // Hide sections with no ideas
+            document.getElementById('buildingSection').style.display = building.length ? 'block' : 'none';
+            document.getElementById('consideringSection').style.display = considering.length ? 'block' : 'none';
+            document.getElementById('launchedSection').style.display = live.length ? 'block' : 'none';
+            document.getElementById('rejectedSection').style.display = rejected.length ? 'block' : 'none';
+
+            // Render each section
+            document.getElementById('buildingIdeas').innerHTML = building.map(renderIdeaCard).join('') || '<div class="ideas-empty">No ideas currently being built</div>';
+            document.getElementById('consideringIdeas').innerHTML = considering.map(renderIdeaCard).join('') || '<div class="ideas-empty">No ideas under consideration</div>';
+            document.getElementById('launchedIdeas').innerHTML = live.map(renderIdeaCard).join('') || '<div class="ideas-empty">No launched ideas yet</div>';
+            document.getElementById('rejectedIdeas').innerHTML = rejected.map(renderIdeaCard).join('') || '<div class="ideas-empty">No rejected ideas</div>';
+        }
+
+        // Render a single idea card
+        function renderIdeaCard(idea) {
+            const statusLabels = {
+                considering: 'Considering',
+                building: 'Building',
+                live: 'Launched',
+                rejected: 'Rejected'
+            };
+
+            const categoryEmojis = {
+                productivity: '📋',
+                health: '💪',
+                finance: '💰',
+                entertainment: '🎮',
+                education: '📚',
+                utilities: '🔧',
+                social: '👥'
+            };
+
+            const categoryEmoji = categoryEmojis[idea.category] || '📱';
+            const formattedDate = new Date(idea.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+            let extraContent = '';
+
+            // Show rejection reason if rejected
+            if (idea.status === 'rejected' && idea.rejection_reason) {
+                extraContent = `<div class="idea-reason">💭 ${idea.rejection_reason}</div>`;
+            }
+
+            // Show link to app if live
+            if (idea.status === 'live' && idea.app_slug) {
+                extraContent = `<a href="/app?slug=${idea.app_slug}" class="idea-link">View App →</a>`;
+            }
+
+            return `
+                <div class="idea-card ${idea.status}">
+                    <div class="idea-header">
+                        <div class="idea-name">${idea.name}</div>
+                        <span class="idea-status ${idea.status}">${statusLabels[idea.status]}</span>
+                    </div>
+                    <div class="idea-tagline">${idea.tagline || idea.description || 'No description'}</div>
+                    <div class="idea-meta">
+                        <span>${categoryEmoji} ${idea.category || 'Uncategorized'}</span>
+                        <span>📅 ${formattedDate}</span>
+                        ${idea.complexity ? `<span>⚡ Complexity: ${idea.complexity}/5</span>` : ''}
+                    </div>
+                    ${extraContent}
+                </div>
+            `;
         }
 
         // Render Top Charts from loaded apps
@@ -2127,6 +2442,7 @@
                 published: stats.published || 0,
                 development: stats.development || 0,
                 beta: stats.beta || 0,
+                ideas: ideas.length,
                 extensions: 4 // Always show extensions tab
             };
 
@@ -2145,23 +2461,32 @@
                 tab.addEventListener('click', () => {
                     currentStatus = tab.dataset.category;
 
-                    // Toggle sections based on whether Extensions is selected
+                    // Toggle sections based on which tab is selected
                     const appRowsContainer = document.getElementById('appRowsContainer');
                     const extensionsContainer = document.getElementById('extensionsContainer');
+                    const ideasContainer = document.getElementById('ideasContainer');
                     const searchBarParent = document.querySelector('.search-bar')?.parentElement;
 
                     if (currentStatus === 'extensions') {
                         if (appRowsContainer) appRowsContainer.style.display = 'none';
                         if (extensionsContainer) extensionsContainer.style.display = 'block';
+                        if (ideasContainer) ideasContainer.style.display = 'none';
                         if (searchBarParent) searchBarParent.style.display = 'none';
+                    } else if (currentStatus === 'ideas') {
+                        if (appRowsContainer) appRowsContainer.style.display = 'none';
+                        if (extensionsContainer) extensionsContainer.style.display = 'none';
+                        if (ideasContainer) ideasContainer.style.display = 'block';
+                        if (searchBarParent) searchBarParent.style.display = 'none';
+                        renderIdeas();
                     } else {
                         if (appRowsContainer) appRowsContainer.style.display = 'block';
                         if (extensionsContainer) extensionsContainer.style.display = 'none';
+                        if (ideasContainer) ideasContainer.style.display = 'none';
                         if (searchBarParent) searchBarParent.style.display = 'block';
                     }
 
                     renderTabs();
-                    if (currentStatus !== 'extensions') {
+                    if (currentStatus !== 'extensions' && currentStatus !== 'ideas') {
                         renderApps();
                     }
                 });
@@ -2535,9 +2860,6 @@
             .catch(err => console.error('Failed to load footer:', err));
     </script>
 
-    <!-- Stu Helper Widget -->
-    <link rel="stylesheet" href="stu-helper.css">
-    <script src="/stu-helper.js"></script>
 </body>
 
 </html>

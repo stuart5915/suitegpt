@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useTelegramAuth } from '@/contexts/TelegramAuthContext'
 import {
     ArrowLeft,
     Save,
@@ -36,6 +37,7 @@ const PRESET_COLORS = [
 export default function NewProjectPage() {
     const router = useRouter()
     const supabase = createClient()
+    const { user } = useTelegramAuth()
 
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -63,8 +65,7 @@ export default function NewProjectPage() {
         setError(null)
 
         try {
-            const { data: { user } } = await supabase.auth.getUser()
-            if (!user) {
+            if (!user?.id) {
                 router.push('/login')
                 return
             }
@@ -83,7 +84,7 @@ export default function NewProjectPage() {
             const { data, error: insertError } = await supabase
                 .from('projects')
                 .insert({
-                    user_id: user.id,
+                    telegram_id: user.id,
                     name: formData.name,
                     description: formData.description || null,
                     brand_voice: formData.brand_voice || null,
@@ -328,9 +329,9 @@ export default function NewProjectPage() {
                                 <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
                                     Primary Color
                                 </label>
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 mb-2">
                                     <div
-                                        className="w-12 h-12 rounded-lg border-2 border-[var(--surface-border)] cursor-pointer"
+                                        className="w-12 h-12 rounded-lg border-2 border-[var(--surface-border)] cursor-pointer flex-shrink-0"
                                         style={{ backgroundColor: formData.primary_color }}
                                         onClick={() => document.getElementById('primary-color-input')?.click()}
                                     />
@@ -341,18 +342,32 @@ export default function NewProjectPage() {
                                         onChange={(e) => setFormData(prev => ({ ...prev, primary_color: e.target.value }))}
                                         className="sr-only"
                                     />
-                                    <div className="flex flex-wrap gap-2">
-                                        {PRESET_COLORS.slice(0, 5).map((color) => (
-                                            <button
-                                                key={color}
-                                                type="button"
-                                                onClick={() => setFormData(prev => ({ ...prev, primary_color: color }))}
-                                                className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 ${formData.primary_color === color ? 'border-white' : 'border-transparent'
-                                                    }`}
-                                                style={{ backgroundColor: color }}
-                                            />
-                                        ))}
-                                    </div>
+                                    <input
+                                        type="text"
+                                        value={formData.primary_color}
+                                        onChange={(e) => {
+                                            let value = e.target.value
+                                            if (!value.startsWith('#')) value = '#' + value
+                                            if (/^#[0-9A-Fa-f]{0,6}$/.test(value)) {
+                                                setFormData(prev => ({ ...prev, primary_color: value }))
+                                            }
+                                        }}
+                                        placeholder="#6366f1"
+                                        className="input flex-1 font-mono text-sm"
+                                        maxLength={7}
+                                    />
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {PRESET_COLORS.slice(0, 5).map((color) => (
+                                        <button
+                                            key={color}
+                                            type="button"
+                                            onClick={() => setFormData(prev => ({ ...prev, primary_color: color }))}
+                                            className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 ${formData.primary_color === color ? 'border-white' : 'border-transparent'
+                                                }`}
+                                            style={{ backgroundColor: color }}
+                                        />
+                                    ))}
                                 </div>
                             </div>
 
@@ -360,9 +375,9 @@ export default function NewProjectPage() {
                                 <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
                                     Secondary/Accent Color
                                 </label>
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 mb-2">
                                     <div
-                                        className="w-12 h-12 rounded-lg border-2 border-[var(--surface-border)] cursor-pointer"
+                                        className="w-12 h-12 rounded-lg border-2 border-[var(--surface-border)] cursor-pointer flex-shrink-0"
                                         style={{ backgroundColor: formData.secondary_color }}
                                         onClick={() => document.getElementById('secondary-color-input')?.click()}
                                     />
@@ -373,18 +388,32 @@ export default function NewProjectPage() {
                                         onChange={(e) => setFormData(prev => ({ ...prev, secondary_color: e.target.value }))}
                                         className="sr-only"
                                     />
-                                    <div className="flex flex-wrap gap-2">
-                                        {PRESET_COLORS.slice(5).map((color) => (
-                                            <button
-                                                key={color}
-                                                type="button"
-                                                onClick={() => setFormData(prev => ({ ...prev, secondary_color: color }))}
-                                                className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 ${formData.secondary_color === color ? 'border-white' : 'border-transparent'
-                                                    }`}
-                                                style={{ backgroundColor: color }}
-                                            />
-                                        ))}
-                                    </div>
+                                    <input
+                                        type="text"
+                                        value={formData.secondary_color}
+                                        onChange={(e) => {
+                                            let value = e.target.value
+                                            if (!value.startsWith('#')) value = '#' + value
+                                            if (/^#[0-9A-Fa-f]{0,6}$/.test(value)) {
+                                                setFormData(prev => ({ ...prev, secondary_color: value }))
+                                            }
+                                        }}
+                                        placeholder="#f97316"
+                                        className="input flex-1 font-mono text-sm"
+                                        maxLength={7}
+                                    />
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {PRESET_COLORS.slice(5).map((color) => (
+                                        <button
+                                            key={color}
+                                            type="button"
+                                            onClick={() => setFormData(prev => ({ ...prev, secondary_color: color }))}
+                                            className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 ${formData.secondary_color === color ? 'border-white' : 'border-transparent'
+                                                }`}
+                                            style={{ backgroundColor: color }}
+                                        />
+                                    ))}
                                 </div>
                             </div>
                         </div>
@@ -632,31 +661,45 @@ export default function NewProjectPage() {
                 </section>
 
                 {/* Submit */}
-                <div className="flex items-center justify-end gap-4">
-                    <button
-                        type="button"
-                        onClick={() => router.back()}
-                        className="btn btn-ghost"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="submit"
-                        disabled={saving || !formData.name || formData.platforms.length === 0}
-                        className="btn btn-primary"
-                    >
-                        {saving ? (
-                            <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                Saving...
-                            </>
-                        ) : (
-                            <>
-                                <Save className="w-4 h-4" />
-                                Create Project
-                            </>
-                        )}
-                    </button>
+                <div className="space-y-3">
+                    {/* Validation message */}
+                    {(!formData.name || formData.platforms.length === 0) && (
+                        <div className="text-sm text-[var(--warning)] text-right">
+                            {!formData.name && !formData.platforms.length ? (
+                                'Please enter a project name and select at least one platform'
+                            ) : !formData.name ? (
+                                'Please enter a project name'
+                            ) : (
+                                'Please select at least one platform (X, Instagram, etc.)'
+                            )}
+                        </div>
+                    )}
+                    <div className="flex items-center justify-end gap-4">
+                        <button
+                            type="button"
+                            onClick={() => router.back()}
+                            className="btn btn-ghost"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={saving || !formData.name || formData.platforms.length === 0}
+                            className="btn btn-primary"
+                        >
+                            {saving ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    Saving...
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="w-4 h-4" />
+                                    Create Project
+                                </>
+                            )}
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>

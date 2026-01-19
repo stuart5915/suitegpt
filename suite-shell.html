@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SUITE Shell</title>
     <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -13,6 +13,29 @@
     <!-- QRCode.js for deposit address QR -->
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <style>
+        /* Dark theme override for nav on this page */
+        .nav-inner {
+            background: rgba(26, 26, 46, 0.95) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .nav-logo {
+            color: #ffffff !important;
+        }
+        .nav-links a {
+            color: #9ca3af !important;
+        }
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: #ffffff !important;
+        }
+        .mobile-menu-btn span {
+            background: #ffffff !important;
+        }
+        .connect-btn {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+        }
+
+        /* Global reset - same as homepage.css */
         * {
             margin: 0;
             padding: 0;
@@ -33,11 +56,10 @@
             font-family: 'Nunito', sans-serif;
             background: var(--bg-dark);
             color: var(--text-primary);
-            height: 100vh;
-            overflow: hidden;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            padding-top: 80px;
+            padding-top: 70px;
             position: relative;
         }
 
@@ -187,6 +209,230 @@
             fill: white;
         }
 
+        /* Connect Button (not logged in) */
+        .connect-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #818cf8, #6366f1);
+            border: none;
+            border-radius: 100px;
+            color: white;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .connect-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(129, 140, 248, 0.4);
+        }
+
+        .connect-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Auth Display (logged in) */
+        .auth-display {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .auth-credits {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #ff9500, #f97316);
+            border-radius: 100px;
+            color: white;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .auth-credits:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 149, 0, 0.3);
+        }
+
+        .auth-credits svg {
+            width: 14px;
+            height: 14px;
+            fill: white;
+        }
+
+        .auth-identity {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 100px;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .auth-identity:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .auth-identity.telegram {
+            color: #29b6f6;
+        }
+
+        .auth-identity.wallet {
+            color: #a78bfa;
+        }
+
+        /* Link wallet prompt */
+        .link-wallet-hint {
+            font-size: 0.7rem;
+            color: var(--text-tertiary);
+            margin-left: 4px;
+        }
+
+        /* Connect Modal */
+        .connect-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .connect-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .connect-modal {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 28px;
+            width: 90%;
+            max-width: 380px;
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+
+        .connect-modal-overlay.active .connect-modal {
+            transform: scale(1);
+        }
+
+        .connect-modal h3 {
+            margin: 0 0 8px;
+            font-size: 1.2rem;
+            color: var(--text-primary);
+            text-align: center;
+        }
+
+        .connect-modal-subtitle {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+
+        .connect-option {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 12px;
+        }
+
+        .connect-option:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .connect-option-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+        }
+
+        .connect-option-icon.wallet {
+            background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+        }
+
+        .connect-option-icon.telegram {
+            background: linear-gradient(135deg, #29b6f6, #0288d1);
+        }
+
+        .connect-option-text {
+            flex: 1;
+        }
+
+        .connect-option-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
+        .connect-option-desc {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .connect-divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 16px 0;
+            color: var(--text-tertiary);
+            font-size: 0.75rem;
+        }
+
+        .connect-divider::before,
+        .connect-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .connect-modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+        }
+
         /* User info display */
         .user-badge {
             display: flex;
@@ -319,23 +565,23 @@
 
         /* Tabs Navigation */
         .apps-tabs {
-            display: flex;
+            display: inline-flex;
             justify-content: center;
-            gap: 8px;
+            gap: 4px;
             margin: 24px auto;
-            max-width: 500px;
             background: rgba(255, 255, 255, 0.05);
-            padding: 6px;
+            padding: 4px;
             border-radius: 100px;
+            width: fit-content;
         }
 
         .apps-tab {
-            flex: 1;
-            padding: 12px 20px;
+            flex: 0 0 auto;
+            padding: 8px 12px;
             border: none;
             background: transparent;
             color: var(--text-secondary);
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             font-weight: 700;
             border-radius: 100px;
             cursor: pointer;
@@ -343,7 +589,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 6px;
+            white-space: nowrap;
         }
 
         .apps-tab:hover {
@@ -357,7 +604,7 @@
         }
 
         .apps-tab-icon {
-            font-size: 1rem;
+            font-size: 0.9rem;
         }
 
         /* Tab Content */
@@ -460,6 +707,535 @@
         .leaderboard-empty-icon {
             font-size: 3rem;
             margin-bottom: 16px;
+        }
+
+        /* Ideas Kanban Styles */
+        .ideas-container {
+            padding: 12px;
+            display: flex;
+            justify-content: center;
+            margin-bottom: 100px;
+        }
+
+        .ideas-kanban {
+            display: flex;
+            gap: 12px;
+        }
+
+        .ideas-column {
+            flex: 0 0 200px;
+            min-width: 200px;
+            max-height: 500px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ideas-column-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .ideas-column-content::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .ideas-column-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .ideas-column-content::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+
+        .ideas-column-header {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .ideas-column-header .count {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 100px;
+            font-size: 0.7rem;
+        }
+
+        .idea-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+
+        .idea-card.building {
+            border-left: 3px solid #ff9500;
+        }
+
+        .idea-card.live {
+            border-left: 3px solid #22c55e;
+        }
+
+        .idea-card.rejected {
+            opacity: 0.5;
+        }
+
+        .idea-card.considering {
+            border-left: 3px solid #818cf8;
+        }
+
+        .idea-name {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+
+        .idea-tagline {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            line-height: 1.4;
+        }
+
+        .idea-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            font-size: 0.65rem;
+            color: var(--text-tertiary);
+        }
+
+        .idea-reason {
+            font-size: 0.7rem;
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+            padding: 6px 8px;
+            border-radius: 4px;
+            margin-top: 6px;
+        }
+
+        .idea-link {
+            display: inline-block;
+            margin-top: 6px;
+            padding: 4px 8px;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        /* Voting Styles */
+        .idea-votes {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .vote-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: none;
+            border-radius: 6px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+        }
+
+        .vote-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .vote-btn.upvote:hover {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .vote-btn.downvote:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .vote-btn.voted-up {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .vote-btn.voted-down {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .vote-count {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            min-width: 24px;
+            text-align: center;
+        }
+
+        .vote-count.positive {
+            color: #22c55e;
+        }
+
+        .vote-count.negative {
+            color: #ef4444;
+        }
+
+        /* Admin Controls */
+        .admin-controls {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .admin-btn {
+            flex: 1;
+            padding: 6px 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .admin-btn.reject-quick {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+        }
+
+        .admin-btn.reject-quick:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        .admin-btn.reject-reason {
+            background: rgba(251, 191, 36, 0.15);
+            color: #fbbf24;
+        }
+
+        .admin-btn.reject-reason:hover {
+            background: rgba(251, 191, 36, 0.3);
+        }
+
+        /* Reject Reason Modal */
+        .reject-reason-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .reject-reason-modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .reject-reason-content {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 24px;
+            width: 90%;
+            max-width: 400px;
+            border: 1px solid var(--border);
+        }
+
+        .reject-reason-content h3 {
+            margin: 0 0 16px 0;
+            color: var(--text-primary);
+        }
+
+        .reject-reason-content textarea {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--background);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.9rem;
+            resize: vertical;
+            min-height: 100px;
+            margin-bottom: 16px;
+        }
+
+        .reject-reason-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .reject-reason-buttons button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .reject-reason-buttons .cancel-btn {
+            background: var(--surface-light);
+            color: var(--text-secondary);
+        }
+
+        .reject-reason-buttons .confirm-btn {
+            background: #ef4444;
+            color: white;
+        }
+
+        /* Add Idea Button */
+        .ideas-header {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .add-idea-btn {
+            background: linear-gradient(135deg, #818cf8, #6366f1);
+            color: white;
+            border: none;
+            border-radius: 100px;
+            padding: 10px 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .add-idea-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(129, 140, 248, 0.3);
+        }
+
+        /* Add Idea Modal */
+        .idea-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .idea-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .idea-modal {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            width: 90%;
+            max-width: 400px;
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+
+        .idea-modal-overlay.active .idea-modal {
+            transform: scale(1);
+        }
+
+        .idea-modal h3 {
+            margin: 0 0 20px;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+        }
+
+        .idea-form-group {
+            margin-bottom: 16px;
+        }
+
+        .idea-form-group label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .idea-form-group input,
+        .idea-form-group select,
+        .idea-form-group textarea {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            box-sizing: border-box;
+        }
+
+        .idea-form-group textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .idea-modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .idea-modal-actions button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+        }
+
+        .idea-cancel-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .idea-submit-btn {
+            background: linear-gradient(135deg, #818cf8, #6366f1);
+            color: white;
+        }
+
+        .idea-submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .idea-auth-prompt {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .idea-auth-prompt p {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 16px;
+        }
+
+        .telegram-login-btn {
+            background: #0088cc;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Similarity Warning */
+        .similarity-warning {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 16px;
+        }
+
+        .similarity-warning-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #ef4444;
+            margin-bottom: 10px;
+        }
+
+        .similarity-warning-content {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .rejected-idea-box {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+
+        .rejected-idea-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .rejected-idea-reason {
+            font-size: 0.75rem;
+            color: #ef4444;
+        }
+
+        .similarity-warning-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .similarity-warning-actions button {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+        }
+
+        .modify-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .submit-anyway-btn {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
         }
 
         .app-card {
@@ -744,34 +1520,62 @@
             padding: 24px;
         }
 
-        .fund-tier-section {
+        .fund-tier-compact {
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 20px;
-            margin-bottom: 16px;
-            padding: 16px;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 10px 12px;
             background: rgba(255, 255, 255, 0.03);
-            border-radius: 12px;
+            border-radius: 10px;
         }
 
-        .fund-tier-current, .fund-tier-next {
+        .fund-tier-left, .fund-tier-right {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 6px;
         }
 
-        .fund-tier-arrow {
-            color: #6b7280;
+        .tier-emoji {
             font-size: 1.2rem;
         }
 
-        .fund-tier-benefits {
-            padding: 12px 16px;
+        .tier-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .tier-name.current {
+            color: #22c55e;
+        }
+
+        .tier-name.next {
+            color: #a855f7;
+        }
+
+        .fund-tier-progress-text {
+            font-size: 0.75rem;
+            color: #9ca3af;
+        }
+
+        .fund-tier-benefits-compact {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
             background: rgba(168, 85, 247, 0.1);
-            border-radius: 10px;
-            margin-bottom: 16px;
-            border-left: 3px solid #a855f7;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-size: 0.8rem;
+        }
+
+        .fund-tier-benefits-compact .benefits-label {
+            color: #a855f7;
+            font-weight: 600;
+        }
+
+        .fund-tier-benefits-compact .benefits-text {
+            color: #e5e7eb;
         }
 
         .fund-revenue-banner {
@@ -3202,18 +4006,21 @@
                 padding: 18px;
             }
 
-            .fund-tier-section {
-                flex-direction: column;
-                gap: 12px;
-                padding: 12px;
+            .fund-tier-compact {
+                padding: 8px 10px;
             }
 
-            .fund-tier-benefits {
-                padding: 10px 12px;
+            .tier-emoji {
+                font-size: 1rem;
             }
 
-            .fund-tier-benefits li {
-                font-size: 0.8rem;
+            .tier-name {
+                font-size: 0.75rem;
+            }
+
+            .fund-tier-benefits-compact {
+                padding: 6px 10px;
+                font-size: 0.75rem;
             }
 
             /* Mobile tiers section */
@@ -3347,34 +4154,9 @@
 </head>
 
 <body>
-    <!-- Main Site Navigation -->
-    <nav class="nav">
-        <div class="nav-inner">
-            <a href="index.html" class="nav-logo">
-                <img src="assets/suite-logo-new.png" alt="SUITE" class="nav-logo-img">
-                SUITE
-            </a>
-            <div class="nav-links">
-                <a href="suite-shell.html" class="active">Apps</a>
-                <a href="docs/index.html">Docs</a>
-                <a href="learn.html">Learn</a>
-                <a href="wallet.html">Wallet</a>
-            </div>
-            <div class="nav-actions">
-                <a href="wallet.html" class="credits-btn" title="Your Credits">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                    </svg>
-                    <span id="creditsDisplay">0</span>
-                </a>
-            </div>
-            <button class="mobile-menu-btn" onclick="this.classList.toggle('active'); document.querySelector('.nav-links').classList.toggle('mobile-open'); document.querySelector('.nav-actions').classList.toggle('mobile-open');">
-                <span></span>
-                <span></span>
-                <span></span>
-            </button>
-        </div>
-    </nav>
+    <!-- Main Site Navigation (injected by nav-component.js) -->
+    <nav id="main-nav"></nav>
+    <script src="nav-component.js"></script>
 
     <!-- Top Nav Bar (visible when app is open) -->
     <nav class="top-nav" id="topNav">
@@ -3722,19 +4504,25 @@
         </style>
 
         <!-- Tabs Navigation -->
-        <div class="apps-tabs">
-            <button class="apps-tab active" onclick="switchAppsTab('apps')" id="tabApps">
-                <span class="apps-tab-icon">🏠</span>
-                All Apps
-            </button>
-            <button class="apps-tab" onclick="switchAppsTab('leaderboard')" id="tabLeaderboard">
-                <span class="apps-tab-icon">🏆</span>
-                Leaderboard
-            </button>
-            <button class="apps-tab" onclick="switchAppsTab('funded')" id="tabFunded">
-                <span class="apps-tab-icon">💎</span>
-                My Funded
-            </button>
+        <div style="display: flex; justify-content: center;">
+            <div class="apps-tabs">
+                <button class="apps-tab active" onclick="switchAppsTab('apps')" id="tabApps">
+                    <span class="apps-tab-icon">🏠</span>
+                    All Apps
+                </button>
+                <button class="apps-tab" onclick="switchAppsTab('leaderboard')" id="tabLeaderboard">
+                    <span class="apps-tab-icon">🏆</span>
+                    Leaderboard
+                </button>
+                <button class="apps-tab" onclick="switchAppsTab('funded')" id="tabFunded">
+                    <span class="apps-tab-icon">💎</span>
+                    My Funded
+                </button>
+                <button class="apps-tab" onclick="switchAppsTab('ideas')" id="tabIdeas">
+                    <span class="apps-tab-icon">💡</span>
+                    Ideas
+                </button>
+            </div>
         </div>
 
         <!-- All Apps Tab Content -->
@@ -3763,6 +4551,16 @@
                     <div class="leaderboard-empty-icon">💎</div>
                     <div style="font-weight: 700; margin-bottom: 8px;">Connect wallet to see your funded apps</div>
                     <div style="font-size: 0.9rem;">Fund apps to earn revenue and request features</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ideas Tab Content -->
+        <div class="tab-content" id="contentIdeas">
+            <div class="ideas-container" id="ideasContainer">
+                <div class="leaderboard-empty">
+                    <div class="leaderboard-empty-icon">💡</div>
+                    <div>Loading ideas...</div>
                 </div>
             </div>
         </div>
@@ -3997,6 +4795,27 @@
                     </button>
                 </div>
 
+                <!-- App Features Section -->
+                <div class="input-section" id="appFeaturesSection" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(168, 85, 247, 0.05)); border: 1px solid rgba(59, 130, 246, 0.2);">
+                    <div class="input-section-header">
+                        <span class="input-section-icon">⚡</span>
+                        <span class="input-section-title">What You Can Do</span>
+                    </div>
+
+                    <div id="appFeaturesList" style="display: flex; flex-direction: column; gap: 8px;">
+                        <!-- Features populated by JS -->
+                        <div style="text-align: center; padding: 16px; color: var(--text-secondary); font-size: 0.85rem;">
+                            Loading features...
+                        </div>
+                    </div>
+
+                    <!-- Features Summary -->
+                    <div id="featuresSummary" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; font-size: 0.75rem;">
+                        <span style="color: #22c55e;"><span id="freeFeatureCount">0</span> free</span>
+                        <span style="color: #a855f7;"><span id="paidFeatureCount">0</span> premium</span>
+                    </div>
+                </div>
+
                 <!-- Feature Request Input -->
                 <div class="input-section">
                     <div class="input-section-header">
@@ -4198,34 +5017,28 @@
                 <button class="fund-modal-close" onclick="closeFundModal()">&times;</button>
             </div>
             <div class="fund-modal-body">
-                <!-- Tier Status Section -->
-                <div class="fund-tier-section">
-                    <div class="fund-tier-current">
-                        <span id="fundTierBadge" style="font-size: 1.5rem;">🌱</span>
-                        <div>
-                            <div id="fundTierName" style="font-weight: 700; color: #22c55e;">Seed</div>
-                            <div id="fundProgressText" style="font-size: 0.8rem; color: #9ca3af;">$0 / $1,000</div>
-                        </div>
+                <!-- Compact Tier Status Section -->
+                <div class="fund-tier-compact">
+                    <div class="fund-tier-left">
+                        <span id="fundTierBadge" class="tier-emoji">🌱</span>
+                        <span id="fundTierName" class="tier-name current">Seed</span>
                     </div>
-                    <div class="fund-tier-arrow">→</div>
-                    <div class="fund-tier-next">
-                        <span id="fundNextTierBadge" style="font-size: 1.5rem;">🌿</span>
-                        <div>
-                            <div id="fundNextTierName" style="font-weight: 700; color: #4ade80;">Sprout</div>
-                            <div style="font-size: 0.75rem; color: #9ca3af;">Next tier</div>
-                        </div>
+                    <div class="fund-tier-progress-text" id="fundProgressText">$0 / $1,000</div>
+                    <div class="fund-tier-right">
+                        <span id="fundNextTierName" class="tier-name next">Sprout</span>
+                        <span id="fundNextTierBadge" class="tier-emoji">🌿</span>
                     </div>
                 </div>
 
                 <!-- Progress Bar -->
-                <div class="fund-progress-bar" style="margin-bottom: 16px;">
+                <div class="fund-progress-bar" style="margin-bottom: 12px;">
                     <div class="fund-progress-fill" id="fundProgressFill" style="width: 0%"></div>
                 </div>
 
-                <!-- Next Tier Benefits Preview -->
-                <div id="fundTierBenefits" class="fund-tier-benefits">
-                    <div style="font-size: 0.75rem; color: #9ca3af; margin-bottom: 6px;">At next tier:</div>
-                    <div id="fundBenefitsList" style="font-size: 0.8rem; color: #e5e7eb;">• Polished user experience</div>
+                <!-- Next Tier Benefits (inline) -->
+                <div id="fundTierBenefits" class="fund-tier-benefits-compact">
+                    <span class="benefits-label">Next:</span>
+                    <span id="fundBenefitsList" class="benefits-text">Polished user experience</span>
                 </div>
 
                 <!-- Investment Details Toggle -->
@@ -4438,6 +5251,7 @@
 
         // Graduation threshold in USD
         const GRADUATION_THRESHOLD = 5000;
+        const ADMIN_WALLET = '0x3fb53bc498abe67132bdce0d5f5569f5dcf1f748';
 
         // ===== STATE =====
         let currentUser = null;
@@ -4493,13 +5307,37 @@
             generateQRCode();
 
             // Check for existing wallet connection
-            checkWalletConnection();
+            await checkWalletConnection();
+
+            // Check for saved telegram user
+            const savedTgUser = JSON.parse(localStorage.getItem('telegram_user') || 'null');
+            if (savedTgUser && !currentUser) {
+                currentUser = savedTgUser;
+                // Check if telegram is linked to a wallet
+                await checkTelegramWalletLink(savedTgUser.username);
+            }
+
+            // Update auth display (Connect button vs logged in state)
+            updateAuthDisplay();
 
             // Listen for messages from iframe
             window.addEventListener('message', handleIframeMessage);
 
             // Handle back button / popstate
             window.addEventListener('popstate', handlePopState);
+
+            // Sync wallet state when nav-component changes it
+            // Override refreshNavCredits to also update suite-shell state
+            const originalRefresh = window.refreshNavCredits;
+            window.refreshNavCredits = function() {
+                // Sync connectedWallet from localStorage
+                connectedWallet = localStorage.getItem('connectedWallet');
+                // Update suite-shell's auth display
+                updateAuthDisplay();
+                loadCredits();
+                // Call original nav-component function
+                if (originalRefresh) originalRefresh();
+            };
         });
 
         // ===== APPS TABS SWITCHING =====
@@ -4512,9 +5350,11 @@
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             document.getElementById('content' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
 
-            // Load leaderboard data if switching to leaderboard tab
+            // Load data based on tab
             if (tab === 'leaderboard') {
                 renderLeaderboard();
+            } else if (tab === 'ideas') {
+                loadAndRenderIdeas();
             }
         }
 
@@ -4575,6 +5415,489 @@
             container.innerHTML = html;
         }
 
+        // ===== IDEAS =====
+        let ideas = [];
+
+        async function loadAndRenderIdeas() {
+            const container = document.getElementById('ideasContainer');
+
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/ideas?select=*&order=created_at.desc`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+                ideas = await response.json();
+                console.log('Loaded ideas:', ideas);
+
+                if (ideas.error || !Array.isArray(ideas)) {
+                    throw new Error(ideas.message || 'Failed to load ideas');
+                }
+
+                renderIdeas(container);
+            } catch (error) {
+                console.error('Error loading ideas:', error);
+                container.innerHTML = `
+                    <div class="leaderboard-empty">
+                        <div class="leaderboard-empty-icon">💡</div>
+                        <div>No ideas yet</div>
+                    </div>
+                `;
+            }
+        }
+
+        function renderIdeas(container) {
+            // Sort considering by votes (highest first)
+            const considering = ideas.filter(i => i.status === 'considering').sort((a, b) => (b.votes || 0) - (a.votes || 0));
+            const rejected = ideas.filter(i => i.status === 'rejected');
+
+            // Apps in testing/funding phase (not yet at $5000)
+            const testingApps = apps.filter(a => (a.total_revenue || 0) < 5000);
+            // Apps that hit $5000+ are "graduated"
+            const graduatedApps = apps.filter(a => (a.total_revenue || 0) >= 5000);
+
+            container.innerHTML = `
+                <div class="ideas-kanban">
+                    <div class="ideas-column">
+                        <div class="ideas-column-header">
+                            ❌ Rejected <span class="count">${rejected.length}</span>
+                        </div>
+                        <div class="ideas-column-content">
+                            ${rejected.length > 0 ? rejected.map(renderIdeaCard).join('') : '<div style="color: var(--text-tertiary); font-size: 0.75rem; text-align: center; padding: 20px 0;">None</div>'}
+                        </div>
+                    </div>
+                    <div class="ideas-column">
+                        <div class="ideas-column-header">
+                            🤔 Considering <span class="count">${considering.length}</span>
+                        </div>
+                        <button class="add-idea-btn" onclick="openAddIdeaModal()" style="width: 100%; margin-bottom: 8px; justify-content: center;">
+                            <span>➕</span> Submit Idea
+                        </button>
+                        <div class="ideas-column-content">
+                            ${considering.length > 0 ? considering.map(renderIdeaCard).join('') : '<div style="color: var(--text-tertiary); font-size: 0.75rem; text-align: center; padding: 20px 0;">None</div>'}
+                        </div>
+                    </div>
+                    <div class="ideas-column">
+                        <div class="ideas-column-header">
+                            🧪 Testing/Funding <span class="count">${testingApps.length}</span>
+                        </div>
+                        <div class="ideas-column-content">
+                            ${testingApps.length > 0 ? testingApps.map(renderTestingAppCard).join('') : '<div style="color: var(--text-tertiary); font-size: 0.75rem; text-align: center; padding: 20px 0;">None</div>'}
+                        </div>
+                    </div>
+                    <div class="ideas-column">
+                        <div class="ideas-column-header">
+                            🚀 Graduated <span class="count">${graduatedApps.length}</span>
+                        </div>
+                        <div class="ideas-column-content">
+                            ${graduatedApps.length > 0 ? graduatedApps.map(renderTestingAppCard).join('') : '<div style="color: var(--text-tertiary); font-size: 0.75rem; text-align: center; padding: 20px 0;">None</div>'}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderTestingAppCard(app) {
+            const revenue = app.total_revenue || 0;
+            const progress = Math.min((revenue / 5000) * 100, 100);
+            const isGraduated = revenue >= 5000;
+
+            return `
+                <div class="idea-card ${isGraduated ? 'live' : 'considering'}" onclick="openApp('${app.slug}')" style="cursor: pointer;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                        <img src="${app.icon_url || '/assets/suite-icon.png'}"
+                             style="width: 28px; height: 28px; border-radius: 6px; object-fit: cover;"
+                             onerror="this.src='/assets/suite-icon.png'">
+                        <div class="idea-name" style="margin-bottom: 0;">${app.name}</div>
+                    </div>
+                    <div class="idea-tagline">${app.tagline || app.description || ''}</div>
+                    <div style="margin-top: 8px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 4px;">
+                            <span>$${revenue.toLocaleString()}</span>
+                            <span>$5,000</span>
+                        </div>
+                        <div style="height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;">
+                            <div style="height: 100%; width: ${progress}%; background: ${isGraduated ? '#22c55e' : '#818cf8'}; border-radius: 2px;"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderIdeaCard(idea) {
+            const categoryEmojis = {
+                productivity: '📋',
+                health: '💪',
+                finance: '💰',
+                entertainment: '🎮',
+                education: '📚',
+                utilities: '🔧',
+                social: '👥'
+            };
+
+            const categoryEmoji = categoryEmojis[idea.category] || '📱';
+            const userVote = getUserVote(idea.id);
+            const voteCount = idea.votes || 0;
+            const voteColorClass = voteCount > 0 ? 'positive' : voteCount < 0 ? 'negative' : '';
+
+            let extraContent = '';
+            if (idea.status === 'rejected' && idea.rejection_reason) {
+                extraContent = `<div class="idea-reason">${idea.rejection_reason}</div>`;
+            }
+            if (idea.status === 'live' && idea.app_slug) {
+                extraContent = `<a href="javascript:openApp('${idea.app_slug}')" class="idea-link">Open App →</a>`;
+            }
+
+            // Add voting for considering ideas
+            let votingContent = '';
+            if (idea.status === 'considering') {
+                votingContent = `
+                    <div class="idea-votes">
+                        <button class="vote-btn upvote ${userVote === 1 ? 'voted-up' : ''}" onclick="voteIdea('${idea.id}', 1)">▲</button>
+                        <span class="vote-count ${voteColorClass}">${voteCount}</span>
+                        <button class="vote-btn downvote ${userVote === -1 ? 'voted-down' : ''}" onclick="voteIdea('${idea.id}', -1)">▼</button>
+                    </div>
+                `;
+            }
+
+            // Add admin controls for considering ideas
+            let adminContent = '';
+            if (idea.status === 'considering' && isAdmin()) {
+                adminContent = `
+                    <div class="admin-controls">
+                        <button class="admin-btn reject-quick" onclick="event.stopPropagation(); rejectIdea('${idea.id}')" title="Quick reject">
+                            ✕ Reject
+                        </button>
+                        <button class="admin-btn reject-reason" onclick="event.stopPropagation(); openRejectReasonModal('${idea.id}')" title="Reject with reason">
+                            📝 With Note
+                        </button>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="idea-card ${idea.status}">
+                    <div class="idea-name">${idea.name}</div>
+                    <div class="idea-tagline">${idea.tagline || idea.description || ''}</div>
+                    <div class="idea-meta">
+                        <span>${categoryEmoji} ${idea.category || ''}</span>
+                        ${idea.complexity ? `<span>⚡${idea.complexity}</span>` : ''}
+                    </div>
+                    ${extraContent}
+                    ${votingContent}
+                    ${adminContent}
+                </div>
+            `;
+        }
+
+        // ===== VOTING & ADD IDEA =====
+        let userVotes = JSON.parse(localStorage.getItem('idea_votes') || '{}');
+
+        function getUserVote(ideaId) {
+            return userVotes[ideaId] || 0;
+        }
+
+        async function voteIdea(ideaId, direction) {
+            // Check if user is logged in (wallet or telegram)
+            const tgUser = JSON.parse(localStorage.getItem('telegram_user') || 'null');
+            if (!tgUser && !connectedWallet) {
+                openConnectModal(); // Show connect modal
+                return;
+            }
+
+            const currentVote = getUserVote(ideaId);
+            let newVote = direction;
+
+            // Toggle off if same direction clicked
+            if (currentVote === direction) {
+                newVote = 0;
+            }
+
+            // Calculate vote delta
+            const delta = newVote - currentVote;
+
+            // Update local state
+            userVotes[ideaId] = newVote;
+            localStorage.setItem('idea_votes', JSON.stringify(userVotes));
+
+            // Update in Supabase
+            try {
+                const idea = ideas.find(i => i.id === ideaId);
+                const newVotes = (idea.votes || 0) + delta;
+
+                await fetch(
+                    `${SUPABASE_URL}/rest/v1/ideas?id=eq.${ideaId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({ votes: newVotes })
+                    }
+                );
+
+                // Update local ideas array
+                idea.votes = newVotes;
+            } catch (err) {
+                console.error('Vote error:', err);
+            }
+
+            // Re-render
+            const container = document.getElementById('ideasContainer');
+            if (container) renderIdeas(container);
+        }
+
+        // ===== ADMIN FUNCTIONS =====
+        function isAdmin() {
+            return connectedWallet && connectedWallet.toLowerCase() === ADMIN_WALLET.toLowerCase();
+        }
+
+        async function rejectIdea(ideaId, reason = null) {
+            if (!isAdmin()) return;
+
+            try {
+                const updateData = { status: 'rejected' };
+                if (reason) {
+                    updateData.rejection_reason = reason;
+                }
+
+                await fetch(
+                    `${SUPABASE_URL}/rest/v1/ideas?id=eq.${ideaId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify(updateData)
+                    }
+                );
+
+                // Update local ideas array
+                const idea = ideas.find(i => i.id === ideaId);
+                if (idea) {
+                    idea.status = 'rejected';
+                    if (reason) idea.rejection_reason = reason;
+                }
+
+                // Re-render
+                const container = document.getElementById('ideasContainer');
+                if (container) renderIdeas(container);
+            } catch (err) {
+                console.error('Reject error:', err);
+                alert('Failed to reject idea');
+            }
+        }
+
+        function openRejectReasonModal(ideaId) {
+            document.getElementById('rejectIdeaId').value = ideaId;
+            document.getElementById('rejectReasonText').value = '';
+            document.getElementById('rejectReasonModal').classList.add('active');
+        }
+
+        function closeRejectReasonModal() {
+            document.getElementById('rejectReasonModal').classList.remove('active');
+        }
+
+        async function confirmRejectWithReason() {
+            const ideaId = document.getElementById('rejectIdeaId').value;
+            const reason = document.getElementById('rejectReasonText').value.trim();
+
+            if (!reason) {
+                alert('Please enter a reason for rejection');
+                return;
+            }
+
+            await rejectIdea(ideaId, reason);
+            closeRejectReasonModal();
+        }
+
+        function openAddIdeaModal() {
+            const tgUser = JSON.parse(localStorage.getItem('telegram_user') || 'null');
+            const modal = document.getElementById('ideaModalOverlay');
+            const formContent = document.getElementById('ideaFormContent');
+            const authPrompt = document.getElementById('ideaAuthPrompt');
+
+            // Check if user is logged in (wallet or telegram)
+            if (!tgUser && !connectedWallet) {
+                // Not logged in - show connect modal instead
+                openConnectModal();
+                return;
+            }
+
+            // Logged in - show the idea form directly
+            formContent.style.display = 'block';
+            authPrompt.style.display = 'none';
+            modal.classList.add('active');
+        }
+
+        function closeIdeaModal() {
+            document.getElementById('ideaModalOverlay').classList.remove('active');
+            // Reset form
+            document.getElementById('ideaName').value = '';
+            document.getElementById('ideaTagline').value = '';
+            document.getElementById('ideaCategory').value = 'productivity';
+        }
+
+        // Check similarity between two strings (returns 0-1 score)
+        function calculateSimilarity(str1, str2) {
+            const s1 = str1.toLowerCase();
+            const s2 = str2.toLowerCase();
+
+            // Extract meaningful words (3+ chars)
+            const words1 = s1.split(/\s+/).filter(w => w.length >= 3);
+            const words2 = s2.split(/\s+/).filter(w => w.length >= 3);
+
+            if (words1.length === 0 || words2.length === 0) return 0;
+
+            // Count matching words
+            let matches = 0;
+            for (const w1 of words1) {
+                for (const w2 of words2) {
+                    // Check for exact match or one contains the other
+                    if (w1 === w2 || w1.includes(w2) || w2.includes(w1)) {
+                        matches++;
+                        break;
+                    }
+                }
+            }
+
+            return matches / Math.max(words1.length, words2.length);
+        }
+
+        function findSimilarRejected(name, tagline) {
+            const rejected = ideas.filter(i => i.status === 'rejected');
+            const inputText = `${name} ${tagline}`.toLowerCase();
+
+            for (const idea of rejected) {
+                const rejectedText = `${idea.name} ${idea.tagline || ''} ${idea.description || ''}`;
+                const similarity = calculateSimilarity(inputText, rejectedText);
+
+                // Also check if key terms match directly
+                const nameMatch = idea.name.toLowerCase().split(/\s+/).some(word =>
+                    word.length >= 4 && inputText.includes(word)
+                );
+
+                if (similarity > 0.4 || nameMatch) {
+                    return idea;
+                }
+            }
+            return null;
+        }
+
+        let bypassSimilarityCheck = false;
+
+        async function submitIdea() {
+            const tgUser = JSON.parse(localStorage.getItem('telegram_user') || 'null');
+            // Require either telegram or wallet to submit
+            if (!tgUser && !connectedWallet) return;
+
+            const name = document.getElementById('ideaName').value.trim();
+            const tagline = document.getElementById('ideaTagline').value.trim();
+            const category = document.getElementById('ideaCategory').value;
+
+            if (!name) {
+                alert('Please enter an idea name');
+                return;
+            }
+
+            const submitBtn = document.querySelector('.idea-submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Analyzing...';
+
+            // Check for similar rejected ideas (unless bypassed)
+            if (!bypassSimilarityCheck) {
+                const similarRejected = findSimilarRejected(name, tagline);
+                if (similarRejected) {
+                    showSimilarityWarning(similarRejected);
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Submit Idea';
+                    return;
+                }
+            }
+
+            submitBtn.textContent = 'Submitting...';
+            bypassSimilarityCheck = false; // Reset for next time
+
+            try {
+                await fetch(
+                    `${SUPABASE_URL}/rest/v1/ideas`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({
+                            name,
+                            tagline,
+                            category,
+                            status: 'considering',
+                            votes: 0
+                        })
+                    }
+                );
+
+                closeIdeaModal();
+                hideSimilarityWarning();
+                // Reload ideas
+                await loadAndRenderIdeas();
+            } catch (err) {
+                console.error('Submit error:', err);
+                alert('Failed to submit idea');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Idea';
+            }
+        }
+
+        function showSimilarityWarning(rejectedIdea) {
+            const warning = document.getElementById('similarityWarning');
+            const rejectedName = document.getElementById('rejectedIdeaName');
+            const rejectedReason = document.getElementById('rejectedIdeaReason');
+
+            rejectedName.textContent = rejectedIdea.name;
+            rejectedReason.textContent = rejectedIdea.rejection_reason || 'No specific reason provided';
+            warning.style.display = 'block';
+        }
+
+        function hideSimilarityWarning() {
+            document.getElementById('similarityWarning').style.display = 'none';
+        }
+
+        function submitAnyway() {
+            bypassSimilarityCheck = true;
+            hideSimilarityWarning();
+            submitIdea();
+        }
+
+        function saveTelegramUsername() {
+            const username = document.getElementById('telegramUsername').value.trim().replace('@', '');
+            if (!username) {
+                alert('Please enter your Telegram username');
+                return;
+            }
+
+            // Save to localStorage
+            const tgUser = { username: username };
+            localStorage.setItem('telegram_user', JSON.stringify(tgUser));
+
+            // Show the form
+            document.getElementById('ideaAuthPrompt').style.display = 'none';
+            document.getElementById('ideaFormContent').style.display = 'block';
+        }
+
         // ===== APPS LOADING =====
         async function loadApps() {
             try {
@@ -4608,7 +5931,8 @@
             'cheshbon': '/assets/icons/cheshbon-icon.jpg',
             'opticrep': '/assets/icons/opticrep-icon.jpg',
             'remcast': '/assets/icons/remcast-icon.jpg',
-            'trueform': '/assets/icons/trueform-icon.jpg'
+            'trueform': '/assets/icons/trueform-icon.jpg',
+            'notebox': '/assets/icons/notebox-icon.jpg'
         };
 
         function getAppIcon(app) {
@@ -4841,8 +6165,67 @@
             // Render top nav
             renderTopNav();
 
+            // Load app features
+            loadAppFeatures(app);
+
             // Load app in iframe
             loadAppInIframe(app);
+        }
+
+        // Load and render app features in side panel
+        async function loadAppFeatures(app) {
+            const featuresList = document.getElementById('appFeaturesList');
+            const freeCountEl = document.getElementById('freeFeatureCount');
+            const paidCountEl = document.getElementById('paidFeatureCount');
+
+            if (!featuresList) return;
+
+            featuresList.innerHTML = '<div style="text-align: center; padding: 16px; color: var(--text-secondary); font-size: 0.85rem;">Loading features...</div>';
+
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/app_features?app_id=eq.${app.id}&is_active=eq.true&order=sort_order,credits_cost,name`,
+                    { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+                );
+                const features = await response.json();
+
+                if (!features || features.length === 0) {
+                    featuresList.innerHTML = '<div style="text-align: center; padding: 16px; color: var(--text-secondary); font-size: 0.85rem;">No features listed yet</div>';
+                    if (freeCountEl) freeCountEl.textContent = '0';
+                    if (paidCountEl) paidCountEl.textContent = '0';
+                    return;
+                }
+
+                const freeCount = features.filter(f => f.credits_cost === 0).length;
+                const paidCount = features.filter(f => f.credits_cost > 0).length;
+
+                if (freeCountEl) freeCountEl.textContent = freeCount;
+                if (paidCountEl) paidCountEl.textContent = paidCount;
+
+                featuresList.innerHTML = features.map(feature => {
+                    const isFree = feature.credits_cost === 0;
+                    const costText = isFree
+                        ? '<span style="color: #22c55e; font-weight: 600;">FREE</span>'
+                        : `<span style="color: #a855f7; font-weight: 600;">${feature.credits_cost} credits</span>`;
+
+                    return `
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: rgba(255,255,255,0.03); border-radius: 10px; border-left: 3px solid ${isFree ? '#22c55e' : '#a855f7'};">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span style="font-size: 1.1rem;">${feature.icon || '✓'}</span>
+                                <div>
+                                    <div style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;">${feature.name}</div>
+                                    ${feature.description ? `<div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px;">${feature.description}</div>` : ''}
+                                </div>
+                            </div>
+                            <div style="font-size: 0.8rem; white-space: nowrap;">${costText}</div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('Failed to load app features:', error);
+                featuresList.innerHTML = '<div style="text-align: center; padding: 16px; color: var(--text-secondary); font-size: 0.85rem;">Features unavailable</div>';
+            }
         }
 
         function renderTopNav() {
@@ -4871,6 +6254,9 @@
 
             // Update active state in nav
             renderTopNav();
+
+            // Load app features for side panel
+            loadAppFeatures(app);
 
             // Show loading and load app
             document.getElementById('loadingOverlay').classList.remove('hidden');
@@ -5020,7 +6406,7 @@
                 console.error('Failed to load credits:', error);
             }
 
-            document.getElementById('creditsDisplay').textContent = Math.floor(currentCredits).toLocaleString();
+            document.getElementById('navCreditsDisplay').textContent = Math.floor(currentCredits).toLocaleString();
         }
 
         // ===== IFRAME COMMUNICATION =====
@@ -5051,12 +6437,23 @@
 
         // ===== WALLET CONNECTION =====
         async function checkWalletConnection() {
+            // Only auto-connect if user previously connected (stored in localStorage)
+            const savedWallet = localStorage.getItem('connectedWallet');
+            if (!savedWallet) {
+                // No saved wallet - don't auto-connect
+                return;
+            }
+
             if (typeof window.ethereum !== 'undefined') {
                 try {
                     const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-                    if (accounts.length > 0) {
+                    if (accounts.length > 0 && accounts[0].toLowerCase() === savedWallet.toLowerCase()) {
                         connectedWallet = accounts[0];
                         updateWalletDisplay();
+                        await loadCreditsForWallet(connectedWallet);
+                    } else {
+                        // Wallet changed or disconnected in MetaMask - clear localStorage
+                        localStorage.removeItem('connectedWallet');
                     }
                 } catch (e) {
                     console.log('Wallet check failed:', e);
@@ -5075,14 +6472,64 @@
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 if (accounts.length > 0) {
                     connectedWallet = accounts[0];
-                    updateWalletDisplay();
 
-                    if (currentUser?.id) {
-                        linkWalletToUser(connectedWallet, currentUser.id);
-                    }
+                    // Save to localStorage so we stay connected on page reload
+                    localStorage.setItem('connectedWallet', connectedWallet);
+
+                    updateWalletDisplay();
+                    closeConnectModal();
+                    updateAuthDisplay();
+
+                    // Load credits for this wallet
+                    await loadCreditsForWallet(connectedWallet);
                 }
             } catch (error) {
                 console.error('Wallet connection failed:', error);
+            }
+        }
+
+        async function loadCreditsForWallet(walletAddress) {
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/suite_credits?wallet_address=eq.${walletAddress.toLowerCase()}&select=balance,locked_balance,linked_telegram_username`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+                const data = await response.json();
+
+                if (data && data.length > 0) {
+                    currentCredits = parseFloat(data[0].balance || 0) + parseFloat(data[0].locked_balance || 0);
+                    // If wallet has linked telegram, store it
+                    if (data[0].linked_telegram_username) {
+                        const tgUser = { username: data[0].linked_telegram_username.replace('@', ''), authType: 'telegram' };
+                        localStorage.setItem('telegram_user', JSON.stringify(tgUser));
+                    }
+                } else {
+                    // Create new wallet record with 0 balance
+                    currentCredits = 0;
+                    await fetch(`${SUPABASE_URL}/rest/v1/suite_credits`, {
+                        method: 'POST',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({
+                            wallet_address: walletAddress.toLowerCase(),
+                            balance: 0,
+                            locked_balance: 0
+                        })
+                    });
+                }
+
+                document.getElementById('navCreditsDisplay').textContent = Math.floor(currentCredits).toLocaleString();
+            } catch (error) {
+                console.error('Failed to load wallet credits:', error);
             }
         }
 
@@ -5107,24 +6554,184 @@
         }
 
         async function linkWalletToUser(walletAddress, telegramId) {
-            try {
-                await fetch(`${SUPABASE_URL}/rest/v1/user_credits`, {
-                    method: 'POST',
-                    headers: {
-                        'apikey': SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                        'Content-Type': 'application/json',
-                        'Prefer': 'resolution=merge-duplicates'
-                    },
-                    body: JSON.stringify({
-                        telegram_id: telegramId,
-                        wallet_address: walletAddress.toLowerCase(),
-                        updated_at: new Date().toISOString()
-                    })
-                });
-            } catch (error) {
-                console.error('Failed to link wallet:', error);
+            // This is now handled via bot verification flow
+            // Kept for backwards compatibility
+            console.log('Link wallet to user - use bot verification flow');
+        }
+
+        // ===== UNIFIED AUTH FUNCTIONS =====
+        // Use nav-component's connect modal (injected by nav-component.js)
+        function openConnectModal() {
+            if (typeof openNavConnectModal === 'function') {
+                openNavConnectModal();
             }
+        }
+
+        function closeConnectModal() {
+            if (typeof closeNavConnectModal === 'function') {
+                closeNavConnectModal();
+            }
+        }
+
+        // Telegram login widget - opens Telegram OAuth popup
+        function loginWithTelegramWidget() {
+            const botId = '8341049569';
+            const origin = window.location.origin;
+
+            // Calculate popup position (center of screen)
+            const width = 550;
+            const height = 470;
+            const left = Math.max(0, (screen.width - width) / 2);
+            const top = Math.max(0, (screen.height - height) / 2);
+
+            // Open Telegram OAuth popup
+            const authUrl = `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${encodeURIComponent(origin)}&request_access=write`;
+
+            const popup = window.open(
+                authUrl,
+                'telegram_auth',
+                `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+            );
+
+            // Listen for the auth response
+            window.addEventListener('message', function handleTelegramAuth(event) {
+                if (event.origin !== 'https://oauth.telegram.org') return;
+
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.event === 'auth_result' && data.result) {
+                        const user = data.result;
+                        const tgUser = {
+                            id: user.id,
+                            username: user.username || user.first_name,
+                            first_name: user.first_name,
+                            last_name: user.last_name,
+                            photo_url: user.photo_url,
+                            auth_date: user.auth_date,
+                            hash: user.hash,
+                            authType: 'telegram'
+                        };
+
+                        localStorage.setItem('telegram_user', JSON.stringify(tgUser));
+                        currentUser = tgUser;
+
+                        // Close modal and update display
+                        closeConnectModal();
+                        updateAuthDisplay();
+
+                        // Check if this telegram is linked to a wallet
+                        if (tgUser.username) {
+                            checkTelegramWalletLink(tgUser.username);
+                        }
+
+                        window.removeEventListener('message', handleTelegramAuth);
+                    }
+                } catch (e) {
+                    console.error('Telegram auth error:', e);
+                }
+            });
+
+            // Fallback: check if popup was blocked
+            if (!popup || popup.closed) {
+                alert('Popup was blocked. Please allow popups for this site.');
+            }
+        }
+
+        async function checkTelegramWalletLink(username) {
+            try {
+                // Check if telegram is linked to any wallet
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/suite_credits?linked_telegram_username=eq.@${username}&select=wallet_address,balance,locked_balance`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+                const data = await response.json();
+
+                if (data && data.length > 0) {
+                    // Telegram is linked to a wallet - load those credits
+                    currentCredits = parseFloat(data[0].balance || 0) + parseFloat(data[0].locked_balance || 0);
+                    connectedWallet = data[0].wallet_address;
+                } else {
+                    // Not linked - show 0 credits
+                    currentCredits = 0;
+                }
+
+                document.getElementById('navCreditsDisplay').textContent = Math.floor(currentCredits).toLocaleString();
+                updateAuthDisplay();
+            } catch (error) {
+                console.error('Failed to check telegram link:', error);
+            }
+        }
+
+        function updateAuthDisplay() {
+            // Use nav-component's IDs (injected by nav-component.js)
+            const connectBtn = document.getElementById('navConnectBtn');
+            const authDisplay = document.getElementById('navAuthDisplay');
+            const authIdentity = document.getElementById('navAuthIdentity');
+            const authIdentityText = document.getElementById('navAuthIdentityText');
+            const creditsDisplay = document.getElementById('navCreditsDisplay');
+
+            // Elements may not exist yet if nav-component hasn't loaded
+            if (!connectBtn || !authDisplay) return;
+
+            const tgUser = JSON.parse(localStorage.getItem('telegram_user') || 'null');
+
+            if (connectedWallet) {
+                // Wallet connected - show full auth display
+                connectBtn.style.display = 'none';
+                authDisplay.style.display = 'flex';
+                authIdentity.className = 'auth-identity wallet';
+                authIdentityText.textContent = `${connectedWallet.slice(0, 6)}...${connectedWallet.slice(-4)}`;
+            } else if (tgUser) {
+                // Telegram only - show telegram identity
+                connectBtn.style.display = 'none';
+                authDisplay.style.display = 'flex';
+                authIdentity.className = 'auth-identity telegram';
+                authIdentityText.textContent = `@${tgUser.username}`;
+            } else {
+                // Not logged in - show connect button
+                connectBtn.style.display = 'flex';
+                authDisplay.style.display = 'none';
+            }
+        }
+
+        function openProfileMenu() {
+            // TODO: Show profile dropdown with options like:
+            // - Link Telegram (if wallet only)
+            // - Link Wallet (if telegram only)
+            // - View Profile
+            // - Disconnect
+            const tgUser = JSON.parse(localStorage.getItem('telegram_user') || 'null');
+
+            if (connectedWallet && !tgUser) {
+                // Wallet connected but no telegram - offer to link
+                if (confirm('Would you like to link your Telegram account?\n\nThis lets you access credits via Telegram login.')) {
+                    window.open(`https://t.me/suitehubbot?start=link_${connectedWallet}`, '_blank');
+                }
+            } else if (tgUser && !connectedWallet) {
+                // Telegram only - offer to connect wallet
+                if (confirm('Would you like to connect a wallet?\n\nThis gives you access to deposits, withdrawals, and paid features.')) {
+                    openConnectModal();
+                }
+            } else {
+                // Both connected or just view profile
+                window.location.href = 'wallet.html';
+            }
+        }
+
+        function disconnectAuth() {
+            connectedWallet = null;
+            currentUser = null;
+            currentCredits = 0;
+            localStorage.removeItem('connectedWallet');
+            localStorage.removeItem('telegram_user');
+            localStorage.removeItem('suiteUser');
+            updateAuthDisplay();
+            document.getElementById('navCreditsDisplay').textContent = '0';
         }
 
         // ===== DEPOSIT FUNCTIONS =====
@@ -5340,25 +6947,23 @@
             document.getElementById('fundProgressFill').style.width = `${progressPercent}%`;
             document.getElementById('fundProgressFill').style.background = tier.color;
 
-            // Update next tier info
-            const nextTierSection = document.querySelector('.fund-tier-next');
+            // Update next tier info (compact layout)
+            const tierRight = document.querySelector('.fund-tier-right');
             const tierBenefits = document.getElementById('fundTierBenefits');
             if (tier.next) {
                 const nextTier = getAppTier(tier.nextAmount);
                 document.getElementById('fundNextTierBadge').textContent = nextTier.icon;
                 document.getElementById('fundNextTierName').textContent = tier.next;
                 document.getElementById('fundNextTierName').style.color = nextTier.color;
-                nextTierSection.style.display = 'flex';
-                document.querySelector('.fund-tier-arrow').style.display = 'block';
+                tierRight.style.display = 'flex';
 
-                // Show benefits of next tier
+                // Show benefits of next tier (compact single line)
                 const nextTierKey = tier.next.toLowerCase();
                 const benefits = TIER_BENEFITS[nextTierKey] || [];
-                document.getElementById('fundBenefitsList').innerHTML = benefits.join('<br>');
-                tierBenefits.style.display = 'block';
+                document.getElementById('fundBenefitsList').textContent = benefits[0] || '';
+                tierBenefits.style.display = 'flex';
             } else {
-                nextTierSection.style.display = 'none';
-                document.querySelector('.fund-tier-arrow').style.display = 'none';
+                tierRight.style.display = 'none';
                 tierBenefits.style.display = 'none';
             }
 
@@ -6114,6 +7719,91 @@
             renderSheetRequests();
         };
     </script>
+
+    <!-- Add Idea Modal -->
+    <div class="idea-modal-overlay" id="ideaModalOverlay" onclick="if(event.target === this) closeIdeaModal()">
+        <div class="idea-modal">
+            <h3>💡 Submit an App Idea</h3>
+
+            <!-- Auth Prompt (shown if not logged in) -->
+            <div id="ideaAuthPrompt" class="idea-auth-prompt" style="display: none;">
+                <p>Enter your Telegram username to submit ideas and vote</p>
+                <div class="idea-form-group" style="text-align: left;">
+                    <label>Telegram Username</label>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="color: var(--text-secondary);">@</span>
+                        <input type="text" id="telegramUsername" placeholder="username" style="flex: 1;">
+                    </div>
+                </div>
+                <button class="telegram-login-btn" onclick="saveTelegramUsername()" style="width: 100%; justify-content: center;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18 1.897-.962 6.502-1.359 8.627-.168.9-.5 1.201-.82 1.23-.697.064-1.226-.461-1.901-.903-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.015-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.139-5.062 3.345-.479.329-.913.489-1.302.481-.428-.009-1.252-.242-1.865-.442-.751-.244-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.831-2.529 6.998-3.015 3.333-1.386 4.025-1.627 4.477-1.635.099-.002.321.023.465.142.121.1.154.234.169.337.015.103.034.337.019.519z"/>
+                    </svg>
+                    Continue
+                </button>
+            </div>
+
+            <!-- Form (shown if logged in) -->
+            <div id="ideaFormContent">
+                <!-- Similarity Warning (hidden by default) -->
+                <div class="similarity-warning" id="similarityWarning" style="display: none;">
+                    <div class="similarity-warning-header">
+                        ⚠️ Similar to a Rejected Idea
+                    </div>
+                    <div class="similarity-warning-content">
+                        Your idea seems similar to one that was previously rejected:
+                        <div class="rejected-idea-box">
+                            <div class="rejected-idea-name" id="rejectedIdeaName"></div>
+                            <div class="rejected-idea-reason">Reason: <span id="rejectedIdeaReason"></span></div>
+                        </div>
+                        Consider making your idea more specific or different.
+                    </div>
+                    <div class="similarity-warning-actions">
+                        <button class="modify-btn" onclick="hideSimilarityWarning()">Modify Idea</button>
+                        <button class="submit-anyway-btn" onclick="submitAnyway()">Submit Anyway</button>
+                    </div>
+                </div>
+
+                <div class="idea-form-group">
+                    <label>App Name *</label>
+                    <input type="text" id="ideaName" placeholder="e.g., Voice Memo AI">
+                </div>
+                <div class="idea-form-group">
+                    <label>Tagline / Description</label>
+                    <textarea id="ideaTagline" placeholder="What does it do? Why would people pay for it?"></textarea>
+                </div>
+                <div class="idea-form-group">
+                    <label>Category</label>
+                    <select id="ideaCategory">
+                        <option value="productivity">📋 Productivity</option>
+                        <option value="health">💪 Health & Fitness</option>
+                        <option value="finance">💰 Finance</option>
+                        <option value="entertainment">🎮 Entertainment</option>
+                        <option value="education">📚 Education</option>
+                        <option value="utilities">🔧 Utilities</option>
+                        <option value="social">👥 Social</option>
+                    </select>
+                </div>
+                <div class="idea-modal-actions">
+                    <button class="idea-cancel-btn" onclick="closeIdeaModal()">Cancel</button>
+                    <button class="idea-submit-btn" onclick="submitIdea()">Submit Idea</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reject Reason Modal -->
+    <div class="reject-reason-modal" id="rejectReasonModal" onclick="if(event.target === this) closeRejectReasonModal()">
+        <div class="reject-reason-content">
+            <h3>📝 Reject with Reason</h3>
+            <input type="hidden" id="rejectIdeaId">
+            <textarea id="rejectReasonText" placeholder="Explain why this idea is being rejected..."></textarea>
+            <div class="reject-reason-buttons">
+                <button class="cancel-btn" onclick="closeRejectReasonModal()">Cancel</button>
+                <button class="confirm-btn" onclick="confirmRejectWithReason()">Reject Idea</button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

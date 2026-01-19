@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Stuart Factory</title>
+    <link rel="icon" type="image/png" href="assets/suite-logo-new.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --bg-card: rgba(255, 255, 255, 0.04);
+            --bg-input: rgba(255, 255, 255, 0.06);
+            --border: rgba(255, 255, 255, 0.1);
+            --accent: #ff9500;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --text: #fff;
+            --text-dim: rgba(255, 255, 255, 0.6);
+            --text-muted: rgba(255, 255, 255, 0.4);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding-bottom: 80px;
+        }
+
+        /* Telegram Web App adjustments */
+        body.tg-webapp {
+            background: var(--tg-theme-bg-color, var(--bg));
+        }
+
+        /* Header */
+        .header {
+            position: sticky;
+            top: 0;
+            background: var(--bg);
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .header-stats {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 6px;
+        }
+
+        .view-btn {
+            padding: 8px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .view-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        /* Category Filter */
+        .category-filter {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 12px 20px;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        .category-filter::-webkit-scrollbar {
+            display: none;
+        }
+
+        .filter-chip {
+            flex-shrink: 0;
+            padding: 6px 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-chip.active {
+            background: rgba(255, 149, 0, 0.15);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .filter-chip .count {
+            margin-left: 4px;
+            opacity: 0.6;
+        }
+
+        /* Ideas List */
+        .ideas-list {
+            padding: 12px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .idea-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px;
+            transition: all 0.2s;
+        }
+
+        .idea-card:active {
+            transform: scale(0.98);
+        }
+
+        .idea-card.implemented {
+            border-color: rgba(34, 197, 94, 0.3);
+            background: rgba(34, 197, 94, 0.08);
+        }
+
+        .idea-card.dismissed {
+            opacity: 0.6;
+        }
+
+        .idea-card-top {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .idea-emoji {
+            font-size: 1.3rem;
+            line-height: 1;
+        }
+
+        .idea-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .idea-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            line-height: 1.3;
+            margin-bottom: 4px;
+        }
+
+        .idea-content {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            line-height: 1.4;
+        }
+
+        .idea-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+        }
+
+        .idea-time {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            flex: 1;
+        }
+
+        .idea-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .action-btn.dismiss {
+            color: var(--danger);
+        }
+
+        .action-btn.dismiss:active {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .action-btn.implement {
+            color: var(--success);
+        }
+
+        .action-btn.implement:active {
+            background: rgba(34, 197, 94, 0.2);
+        }
+
+        .action-btn.edit {
+            color: var(--text-dim);
+        }
+
+        .action-btn.edit:active {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .dismiss-reason {
+            margin-top: 8px;
+            padding: 8px 10px;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: var(--danger);
+        }
+
+        .implemented-badge {
+            margin-top: 8px;
+            padding: 8px 10px;
+            background: rgba(34, 197, 94, 0.1);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: var(--success);
+        }
+
+        /* Add Button */
+        .add-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            background: var(--accent);
+            border: none;
+            color: #fff;
+            font-size: 1.8rem;
+            font-weight: 300;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(255, 149, 0, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            z-index: 100;
+        }
+
+        .add-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: #1a1a1f;
+            border-radius: 20px 20px 0 0;
+            width: 100%;
+            max-width: 500px;
+            max-height: 85vh;
+            overflow-y: auto;
+            transform: translateY(100%);
+            transition: transform 0.3s ease-out;
+        }
+
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-header h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--bg-card);
+            border: none;
+            color: var(--text-dim);
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .form-group select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23999' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 20px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            padding: 16px 20px 24px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-btn.secondary {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .modal-btn.primary {
+            background: var(--accent);
+            border: none;
+            color: #fff;
+        }
+
+        .modal-btn.danger {
+            background: var(--danger);
+            border: none;
+            color: #fff;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-dim);
+        }
+
+        .empty-state-emoji {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+
+        .empty-state h3 {
+            font-size: 1.1rem;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-dim);
+        }
+
+        /* Desktop adjustments */
+        @media (min-width: 768px) {
+            body {
+                padding: 20px;
+                padding-bottom: 40px;
+            }
+
+            .header {
+                max-width: 800px;
+                margin: 0 auto 20px;
+                border-radius: 16px;
+                border: 1px solid var(--border);
+            }
+
+            .category-filter {
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 0 0 20px;
+            }
+
+            .ideas-list {
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 0;
+            }
+
+            .add-btn {
+                bottom: 40px;
+                right: calc(50% - 420px);
+            }
+
+            .modal {
+                border-radius: 20px;
+                margin: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-top">
+            <h1>Stuart Factory</h1>
+            <span class="header-stats" id="statsDisplay">Loading...</span>
+        </div>
+        <div class="view-toggle">
+            <button class="view-btn active" id="inboxBtn" onclick="setView('inbox')">Inbox</button>
+            <button class="view-btn" id="archiveBtn" onclick="setView('archive')">Archive</button>
+        </div>
+    </div>
+
+    <div class="category-filter" id="categoryFilter">
+        <!-- Populated by JS -->
+    </div>
+
+    <div class="ideas-list" id="ideasList">
+        <div class="loading">Loading ideas...</div>
+    </div>
+
+    <button class="add-btn" onclick="openAddModal()">+</button>
+
+    <!-- Add/Edit Modal -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add Idea</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="ideaTitle" placeholder="What's the idea?">
+                </div>
+                <div class="form-group">
+                    <label>Details (optional)</label>
+                    <textarea id="ideaContent" placeholder="Any additional context..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="ideaCategory">
+                        <option value="brainstorm">Brainstorm</option>
+                        <option value="action_item">Action Item</option>
+                        <option value="suite_feature">SUITE Feature</option>
+                        <option value="suite_business">SUITE Business</option>
+                        <option value="app_idea">App Idea</option>
+                        <option value="article">Article</option>
+                        <option value="personal">Personal</option>
+                        <option value="question">Question</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn secondary" onclick="closeModal()">Cancel</button>
+                <button class="modal-btn primary" id="saveBtn" onclick="saveIdea()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dismiss Modal -->
+    <div class="modal-overlay" id="dismissModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Dismiss Idea</h2>
+                <button class="modal-close" onclick="closeDismissModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Why are you dismissing this?</label>
+                    <textarea id="dismissReason" placeholder="Enter reason..."></textarea>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn secondary" onclick="closeDismissModal()">Cancel</button>
+                <button class="modal-btn danger" onclick="confirmDismiss()">Dismiss</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Config
+        const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
+
+        const CATEGORIES = {
+            action_item: { emoji: '✅', title: 'Action' },
+            suite_feature: { emoji: '⚡', title: 'SUITE' },
+            suite_business: { emoji: '💰', title: 'Business' },
+            app_idea: { emoji: '💡', title: 'App' },
+            article: { emoji: '📝', title: 'Article' },
+            personal: { emoji: '🏠', title: 'Personal' },
+            brainstorm: { emoji: '💭', title: 'Brainstorm' },
+            question: { emoji: '❓', title: 'Question' }
+        };
+
+        // State
+        let ideas = [];
+        let currentView = 'inbox';
+        let currentCategory = 'all';
+        let editingIdeaId = null;
+        let dismissingIdeaId = null;
+
+        // Telegram Web App detection
+        const isTelegram = window.Telegram && window.Telegram.WebApp;
+        if (isTelegram) {
+            document.body.classList.add('tg-webapp');
+            Telegram.WebApp.expand();
+            Telegram.WebApp.ready();
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadIdeas();
+        });
+
+        // API helpers
+        async function supabaseFetch(endpoint, options = {}) {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, {
+                ...options,
+                headers: {
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': options.method === 'POST' ? 'return=representation' : 'return=minimal',
+                    ...options.headers
+                }
+            });
+            return response;
+        }
+
+        // Load ideas
+        async function loadIdeas() {
+            try {
+                const response = await supabaseFetch('personal_ideas?select=*&order=created_at.desc');
+                if (response.ok) {
+                    ideas = await response.json();
+                    renderCategoryFilter();
+                    renderIdeas();
+                    updateStats();
+                } else {
+                    document.getElementById('ideasList').innerHTML = '<div class="empty-state"><div class="empty-state-emoji">⚠️</div><h3>Failed to load</h3><p>Check your connection</p></div>';
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                document.getElementById('ideasList').innerHTML = '<div class="empty-state"><div class="empty-state-emoji">⚠️</div><h3>Error</h3><p>' + err.message + '</p></div>';
+            }
+        }
+
+        // Set view (inbox/archive)
+        function setView(view) {
+            currentView = view;
+            document.getElementById('inboxBtn').classList.toggle('active', view === 'inbox');
+            document.getElementById('archiveBtn').classList.toggle('active', view === 'archive');
+            renderCategoryFilter();
+            renderIdeas();
+        }
+
+        // Set category filter
+        function setCategory(cat) {
+            currentCategory = cat;
+            document.querySelectorAll('.filter-chip').forEach(chip => {
+                chip.classList.toggle('active', chip.dataset.category === cat);
+            });
+            renderIdeas();
+        }
+
+        // Get filtered ideas
+        function getFilteredIdeas() {
+            let filtered = ideas.filter(idea => {
+                if (currentView === 'inbox') {
+                    return idea.status === 'inbox';
+                } else {
+                    return idea.status === 'dismissed' || idea.status === 'implemented';
+                }
+            });
+
+            if (currentCategory !== 'all') {
+                filtered = filtered.filter(idea => idea.category === currentCategory);
+            }
+
+            return filtered;
+        }
+
+        // Render category filter
+        function renderCategoryFilter() {
+            const viewIdeas = ideas.filter(idea => {
+                if (currentView === 'inbox') return idea.status === 'inbox';
+                return idea.status === 'dismissed' || idea.status === 'implemented';
+            });
+
+            const counts = { all: viewIdeas.length };
+            viewIdeas.forEach(idea => {
+                counts[idea.category] = (counts[idea.category] || 0) + 1;
+            });
+
+            let html = `<div class="filter-chip ${currentCategory === 'all' ? 'active' : ''}" data-category="all" onclick="setCategory('all')">All<span class="count">${counts.all}</span></div>`;
+
+            Object.entries(CATEGORIES).forEach(([key, val]) => {
+                if (counts[key]) {
+                    html += `<div class="filter-chip ${currentCategory === key ? 'active' : ''}" data-category="${key}" onclick="setCategory('${key}')">${val.emoji} ${val.title}<span class="count">${counts[key]}</span></div>`;
+                }
+            });
+
+            document.getElementById('categoryFilter').innerHTML = html;
+        }
+
+        // Render ideas list
+        function renderIdeas() {
+            const filtered = getFilteredIdeas();
+
+            if (filtered.length === 0) {
+                document.getElementById('ideasList').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-emoji">${currentView === 'inbox' ? '📥' : '📦'}</div>
+                        <h3>${currentView === 'inbox' ? 'No ideas in inbox' : 'No archived ideas'}</h3>
+                        <p>${currentView === 'inbox' ? 'Text @stuartfactorybot to capture ideas!' : 'Dismissed and implemented ideas appear here'}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            document.getElementById('ideasList').innerHTML = filtered.map(idea => {
+                const cat = CATEGORIES[idea.category] || { emoji: '📌', title: 'Other' };
+                const isArchived = idea.status !== 'inbox';
+
+                return `
+                    <div class="idea-card ${idea.status}">
+                        <div class="idea-card-top">
+                            <span class="idea-emoji">${cat.emoji}</span>
+                            <div class="idea-info">
+                                <div class="idea-title">${escapeHtml(idea.title)}</div>
+                                ${idea.content ? `<div class="idea-content">${escapeHtml(idea.content)}</div>` : ''}
+                            </div>
+                        </div>
+                        ${idea.dismiss_reason ? `<div class="dismiss-reason">Dismissed: ${escapeHtml(idea.dismiss_reason)}</div>` : ''}
+                        ${idea.status === 'implemented' ? '<div class="implemented-badge">✓ Implemented</div>' : ''}
+                        <div class="idea-meta">
+                            <span class="idea-time">${getTimeAgo(new Date(idea.created_at))}</span>
+                            ${!isArchived ? `
+                                <div class="idea-actions">
+                                    <button class="action-btn edit" onclick="openEditModal('${idea.id}')">✎</button>
+                                    <button class="action-btn dismiss" onclick="openDismissModal('${idea.id}')">✕</button>
+                                    <button class="action-btn implement" onclick="implementIdea('${idea.id}')">✓</button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Update stats
+        function updateStats() {
+            const inboxCount = ideas.filter(i => i.status === 'inbox').length;
+            document.getElementById('statsDisplay').textContent = `${inboxCount} in inbox`;
+        }
+
+        // Open add modal
+        function openAddModal() {
+            editingIdeaId = null;
+            document.getElementById('modalTitle').textContent = 'Add Idea';
+            document.getElementById('ideaTitle').value = '';
+            document.getElementById('ideaContent').value = '';
+            document.getElementById('ideaCategory').value = 'brainstorm';
+            document.getElementById('saveBtn').textContent = 'Save';
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        // Open edit modal
+        function openEditModal(ideaId) {
+            const idea = ideas.find(i => i.id === ideaId);
+            if (!idea) return;
+
+            editingIdeaId = ideaId;
+            document.getElementById('modalTitle').textContent = 'Edit Idea';
+            document.getElementById('ideaTitle').value = idea.title;
+            document.getElementById('ideaContent').value = idea.content || '';
+            document.getElementById('ideaCategory').value = idea.category;
+            document.getElementById('saveBtn').textContent = 'Update';
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('editModal').classList.remove('active');
+            editingIdeaId = null;
+        }
+
+        // Save idea
+        async function saveIdea() {
+            const title = document.getElementById('ideaTitle').value.trim();
+            const content = document.getElementById('ideaContent').value.trim();
+            const category = document.getElementById('ideaCategory').value;
+
+            if (!title) {
+                alert('Please enter a title');
+                return;
+            }
+
+            try {
+                if (editingIdeaId) {
+                    // Update existing
+                    await supabaseFetch(`personal_ideas?id=eq.${editingIdeaId}`, {
+                        method: 'PATCH',
+                        body: JSON.stringify({ title, content, category })
+                    });
+                    const idea = ideas.find(i => i.id === editingIdeaId);
+                    if (idea) {
+                        idea.title = title;
+                        idea.content = content;
+                        idea.category = category;
+                    }
+                } else {
+                    // Create new
+                    const response = await supabaseFetch('personal_ideas', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            title,
+                            content: content || null,
+                            category,
+                            raw_input: title,
+                            status: 'inbox'
+                        })
+                    });
+                    if (response.ok) {
+                        const [newIdea] = await response.json();
+                        ideas.unshift(newIdea);
+                    }
+                }
+
+                closeModal();
+                renderCategoryFilter();
+                renderIdeas();
+                updateStats();
+
+                // Haptic feedback in Telegram
+                if (isTelegram) {
+                    Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+                }
+            } catch (err) {
+                console.error('Error saving:', err);
+                alert('Failed to save');
+            }
+        }
+
+        // Open dismiss modal
+        function openDismissModal(ideaId) {
+            dismissingIdeaId = ideaId;
+            document.getElementById('dismissReason').value = '';
+            document.getElementById('dismissModal').classList.add('active');
+        }
+
+        // Close dismiss modal
+        function closeDismissModal() {
+            document.getElementById('dismissModal').classList.remove('active');
+            dismissingIdeaId = null;
+        }
+
+        // Confirm dismiss
+        async function confirmDismiss() {
+            const reason = document.getElementById('dismissReason').value.trim();
+            if (!reason) {
+                alert('Please enter a reason');
+                return;
+            }
+
+            try {
+                await supabaseFetch(`personal_ideas?id=eq.${dismissingIdeaId}`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ status: 'dismissed', dismiss_reason: reason })
+                });
+
+                const idea = ideas.find(i => i.id === dismissingIdeaId);
+                if (idea) {
+                    idea.status = 'dismissed';
+                    idea.dismiss_reason = reason;
+                }
+
+                closeDismissModal();
+                renderCategoryFilter();
+                renderIdeas();
+                updateStats();
+
+                if (isTelegram) {
+                    Telegram.WebApp.HapticFeedback.notificationOccurred('warning');
+                }
+            } catch (err) {
+                console.error('Error dismissing:', err);
+                alert('Failed to dismiss');
+            }
+        }
+
+        // Implement idea
+        async function implementIdea(ideaId) {
+            try {
+                await supabaseFetch(`personal_ideas?id=eq.${ideaId}`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ status: 'implemented' })
+                });
+
+                const idea = ideas.find(i => i.id === ideaId);
+                if (idea) {
+                    idea.status = 'implemented';
+                }
+
+                renderCategoryFilter();
+                renderIdeas();
+                updateStats();
+
+                if (isTelegram) {
+                    Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+                }
+            } catch (err) {
+                console.error('Error implementing:', err);
+                alert('Failed to mark as implemented');
+            }
+        }
+
+        // Utilities
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            if (seconds < 60) return 'just now';
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `${minutes}m ago`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours}h ago`;
+            const days = Math.floor(hours / 24);
+            if (days < 7) return `${days}d ago`;
+            return date.toLocaleDateString();
+        }
+
+        // Close modals on escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                closeDismissModal();
+            }
+        });
+
+        // Close modals on overlay click
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    closeModal();
+                    closeDismissModal();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

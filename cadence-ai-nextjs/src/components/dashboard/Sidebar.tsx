@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { usePathname } from 'next/navigation'
+import { useTelegramAuth } from '@/contexts/TelegramAuthContext'
 import {
     LayoutDashboard,
-    FileText,
     Settings,
     ChevronLeft,
     ChevronRight,
@@ -16,7 +15,8 @@ import {
     Loader2,
     Rocket,
     RefreshCw,
-    Calendar
+    Calendar,
+    MessageCircle
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -27,40 +27,32 @@ const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/ai-fleet', label: 'AI Fleet', icon: Rocket },
     { href: '/loops', label: 'Content Loops', icon: RefreshCw },
+    { href: '/engagement', label: 'Engagement', icon: MessageCircle },
     { href: '/calendar', label: 'Calendar', icon: Calendar },
     { href: '/settings', label: 'Settings', icon: Settings },
 ]
 
 export default function DashboardLayout({ children }: SidebarProps) {
     const pathname = usePathname()
-    const router = useRouter()
-    const supabase = createClient()
+    const { user, logout, isLoading } = useTelegramAuth()
 
     const [collapsed, setCollapsed] = useState(false)
-    const [userEmail, setUserEmail] = useState<string | null>(null)
     const [signingOut, setSigningOut] = useState(false)
-
-    useEffect(() => {
-        async function getUser() {
-            const { data: { user } } = await supabase.auth.getUser()
-            if (user) {
-                setUserEmail(user.email || null)
-            }
-        }
-        getUser()
-    }, [supabase])
 
     const handleSignOut = async () => {
         setSigningOut(true)
         try {
-            await supabase.auth.signOut()
-            router.push('/login')
-            router.refresh()
+            await logout()
         } catch (err) {
             console.error('Error signing out:', err)
             setSigningOut(false)
         }
     }
+
+    // Get display name
+    const displayName = user?.username
+        ? `@${user.username}`
+        : user?.firstName || 'Account'
 
     return (
         <div className="flex min-h-screen bg-[var(--background)]">
@@ -135,13 +127,22 @@ export default function DashboardLayout({ children }: SidebarProps) {
                 {/* User Section */}
                 <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-[var(--surface-border)]">
                     <div className={`flex items-center gap-3 ${collapsed ? 'justify-center' : ''}`}>
-                        <div className="w-8 h-8 rounded-full bg-[var(--primary)] flex items-center justify-center flex-shrink-0">
-                            <User className="w-4 h-4 text-white" />
-                        </div>
+                        {/* User Avatar */}
+                        {user?.photoUrl ? (
+                            <img
+                                src={user.photoUrl}
+                                alt={user.firstName || 'User'}
+                                className="w-8 h-8 rounded-full flex-shrink-0 object-cover"
+                            />
+                        ) : (
+                            <div className="w-8 h-8 rounded-full bg-[var(--primary)] flex items-center justify-center flex-shrink-0">
+                                <User className="w-4 h-4 text-white" />
+                            </div>
+                        )}
                         {!collapsed && (
                             <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-[var(--foreground)] truncate">
-                                    {userEmail || 'Account'}
+                                    {isLoading ? 'Loading...' : displayName}
                                 </p>
                                 <button
                                     onClick={handleSignOut}

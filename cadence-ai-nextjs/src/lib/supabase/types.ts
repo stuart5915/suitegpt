@@ -4,6 +4,44 @@
 
 export type Platform = 'x' | 'instagram' | 'linkedin' | 'tiktok' | 'youtube'
 
+// ================================
+// AUDIENCE VARIANTS TYPES
+// ================================
+
+export interface ReferenceLink {
+    url: string
+    title: string
+    notes?: string  // What this article is about
+}
+
+export interface AudienceUsageHistory {
+    lastAngleIndex: number      // Track cycling through angles
+    lastLinkIndex: number       // Track cycling through links
+    generatedCount: number      // Total posts generated for this audience
+}
+
+export interface Audience {
+    id: string
+    name: string
+    emoji: string
+    description: string
+    painPoints: string[]
+    desires: string[]
+    messagingAngles: string[]   // Array of messaging angles for variation
+    cta: string
+    enabled?: boolean           // Whether to include in rotation (default true)
+    emailCapture?: boolean      // For influencer waitlist
+    referenceLinks?: ReferenceLink[]  // Optional reference articles/links
+    usageHistory?: AudienceUsageHistory  // Track what's been used
+}
+
+export interface ContentVariant {
+    audienceId: string
+    hook?: string
+    keyPoints?: string[]
+    cta?: string
+}
+
 export type ContentType =
     | 'text'
     | 'image'

@@ -27,15 +27,77 @@ Idea Generated → Community Votes (X/Twitter) → App Factory Builds → Listed
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│  /ideagenerator │ →   │   X/Twitter     │ →   │   /appfactory   │ →   │   SUITE Shell   │
+│  Idea Factory   │ →   │   X/Twitter     │ →   │   App Factory   │ →   │   SUITE Shell   │
 │                 │     │     Vote        │     │                 │     │                 │
-│ • Research      │     │ • Post ideas    │     │ • Prompt wizard │     │ • Live app      │
-│ • Generate ideas│     │ • Likes = votes │     │ • Stuart guides │     │ • Earns revenue │
-│ • Novel concepts│     │ • Most liked    │     │ • Claude builds │     │                 │
+│ • Multi-AI      │     │ • Post ideas    │     │ • Prompt wizard │     │ • Live app      │
+│   research      │     │ • Likes = votes │     │ • Stuart guides │     │ • Earns revenue │
+│ • Synthesize    │     │ • Most liked    │     │ • Claude builds │     │                 │
 └─────────────────┘     └─────────────────┘     └─────────────────┘     └─────────────────┘
 ```
 
 **Voting = X/Twitter engagement.** Post ideas, most likes wins, that app gets built.
+
+---
+
+## Idea Factory
+
+**Tab:** "Idea Factory" in `appfactory.html`
+
+**Purpose:** Generate 4-10 novel, revenue-focused app ideas using multi-AI research.
+
+### The Multi-AI Research Flow
+
+```
+1. Generate Research Prompt    →    2. Run in Multiple AIs    →    3. Paste Back    →    4. Synthesize
+   • Load existing apps              • Grok (Twitter trends)        • Paste outputs        • Combine insights
+   • Load revenue data               • Gemini (market analysis)     • All 3 text areas     • Rank by potential
+   • Manual ideas to research        • Claude (feasibility)                                • Output 4-10 ideas
+   • Ideas to exclude
+```
+
+### Step 1: Research Prompt Generator
+
+**Auto-loaded from Supabase:**
+- Existing apps (to avoid duplicates)
+- Top revenue apps (to learn from)
+- Category gaps (opportunities)
+
+**User inputs:**
+- Focus areas (optional)
+- Constraints (optional)
+- Manual ideas to research
+- Ideas to exclude
+
+**Output:** Research prompt with all context, ready to copy to Grok/Gemini/Claude.
+
+### Step 2: Paste AI Research
+
+Three text areas:
+- **Grok Output** - Real-time X/Twitter trends
+- **Gemini Output** - Broad market analysis
+- **Claude Output** - Deep reasoning, feasibility
+
+### Step 3: Synthesis Prompt
+
+Combines all 3 research outputs into a synthesis prompt that:
+1. Finds common themes
+2. Identifies strongest unique ideas
+3. Filters duplicates of existing apps
+4. Ranks by revenue potential
+5. Outputs 4-10 final ideas with:
+   - Name, Tagline
+   - Core feature
+   - Revenue model (credit costs)
+   - Why it will make money
+   - Build complexity (1-5)
+
+### Why Multi-AI?
+
+- Each AI has different training data and perspectives
+- Grok sees real-time X/Twitter trends
+- Gemini is strong at market analysis
+- Claude is strong at feasibility
+- Synthesis catches overlap (validates ideas) and unique gems
 
 ---
 

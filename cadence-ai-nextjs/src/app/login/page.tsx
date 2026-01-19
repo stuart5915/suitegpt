@@ -1,103 +1,68 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { useTelegramAuth } from '@/contexts/TelegramAuthContext'
+import TelegramLoginButton from '@/components/auth/TelegramLoginButton'
 import {
     Sparkles,
-    Mail,
-    Lock,
-    Eye,
-    EyeOff,
-    ArrowRight,
     Zap,
     Calendar,
     MessageSquare,
-    AlertCircle
+    Loader2,
+    Code
 } from 'lucide-react'
 
 export default function LoginPage() {
     const router = useRouter()
-    const supabase = createClient()
+    const { isAuthenticated, isLoading, login } = useTelegramAuth()
 
-    const [isLogin, setIsLogin] = useState(true)
-    const [showPassword, setShowPassword] = useState(false)
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
-    const [formData, setFormData] = useState({
-        email: '',
-        password: '',
-        name: ''
-    })
+    // Dev mode state
+    const [showDevLogin, setShowDevLogin] = useState(false)
+    const [devTelegramId, setDevTelegramId] = useState('')
+    const [devUsername, setDevUsername] = useState('')
+    const [devLoading, setDevLoading] = useState(false)
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const isDev = process.env.NODE_ENV === 'development'
+
+    // Redirect if already authenticated
+    useEffect(() => {
+        if (isAuthenticated && !isLoading) {
+            router.push('/dashboard')
+        }
+    }, [isAuthenticated, isLoading, router])
+
+    // Dev login handler
+    const handleDevLogin = async (e: React.FormEvent) => {
         e.preventDefault()
-        setLoading(true)
-        setError(null)
+        if (!devTelegramId.trim()) return
 
+        setDevLoading(true)
         try {
-            if (isLogin) {
-                // Sign In
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email: formData.email,
-                    password: formData.password,
-                })
-
-                if (error) throw error
-
-                // Successfully signed in
-                router.push('/dashboard')
-                router.refresh()
-            } else {
-                // Sign Up
-                const { data, error } = await supabase.auth.signUp({
-                    email: formData.email,
-                    password: formData.password,
-                    options: {
-                        data: {
-                            full_name: formData.name,
-                        }
-                    }
-                })
-
-                if (error) throw error
-
-                // Check if email confirmation is required
-                if (data.user && !data.session) {
-                    setError('Check your email for a confirmation link!')
-                    setLoading(false)
-                    return
-                }
-
-                // Successfully signed up and auto-confirmed (for local dev)
-                router.push('/onboarding')
-                router.refresh()
-            }
-        } catch (err: any) {
-            console.error('Auth error:', err)
-            setError(err.message || 'An error occurred')
+            await login({
+                id: devTelegramId.trim(),
+                first_name: devUsername.trim() || 'Dev User',
+                username: devUsername.trim() || undefined,
+                auth_date: Math.floor(Date.now() / 1000),
+                hash: '' // Empty hash for dev mode
+            })
+        } catch (err) {
+            console.error('Dev login error:', err)
         } finally {
-            setLoading(false)
+            setDevLoading(false)
         }
     }
 
-    const handleGoogleSignIn = async () => {
-        setLoading(true)
-        setError(null)
-
-        try {
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    redirectTo: `${window.location.origin}/auth/callback`
-                }
-            })
-
-            if (error) throw error
-        } catch (err: any) {
-            setError(err.message || 'Failed to sign in with Google')
-            setLoading(false)
-        }
+    // Show loading while checking auth state
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
+                <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="w-8 h-8 animate-spin text-[var(--primary)]" />
+                    <p className="text-[var(--foreground-muted)]">Loading...</p>
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -174,154 +139,106 @@ export default function LoginPage() {
                     {/* Header */}
                     <div className="text-center mb-8">
                         <h2 className="text-2xl font-bold text-[var(--foreground)] mb-2">
-                            {isLogin ? 'Welcome back' : 'Create your account'}
+                            Welcome to Cadence AI
                         </h2>
                         <p className="text-[var(--foreground-muted)]">
-                            {isLogin
-                                ? 'Sign in to continue to your dashboard'
-                                : 'Start your AI-powered marketing journey'}
+                            Sign in with Telegram to get started
                         </p>
                     </div>
 
-                    {/* Error Message */}
-                    {error && (
-                        <div className={`mb-6 p-4 rounded-lg flex items-center gap-3 ${error.includes('Check your email')
-                            ? 'bg-[var(--success)]/10 text-[var(--success)]'
-                            : 'bg-[var(--error)]/10 text-[var(--error)]'
-                            }`}>
-                            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                            <p className="text-sm">{error}</p>
+                    {/* Telegram Login Button */}
+                    <div className="flex flex-col items-center gap-6">
+                        <TelegramLoginButton
+                            buttonSize="large"
+                            cornerRadius={12}
+                            showUserPhoto={true}
+                        />
+
+                        <p className="text-sm text-[var(--foreground-muted)] text-center max-w-xs">
+                            By signing in, you agree to our Terms of Service and Privacy Policy
+                        </p>
+                    </div>
+
+                    {/* Dev Mode Login */}
+                    {isDev && (
+                        <div className="mt-8 pt-8 border-t border-[var(--surface-border)]">
+                            <button
+                                onClick={() => setShowDevLogin(!showDevLogin)}
+                                className="w-full flex items-center justify-center gap-2 text-sm text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
+                            >
+                                <Code className="w-4 h-4" />
+                                {showDevLogin ? 'Hide' : 'Show'} Dev Login
+                            </button>
+
+                            {showDevLogin && (
+                                <form onSubmit={handleDevLogin} className="mt-4 space-y-4">
+                                    <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                                        <p className="text-xs text-yellow-500">
+                                            Dev mode only - bypasses Telegram verification
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
+                                            Telegram ID *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={devTelegramId}
+                                            onChange={(e) => setDevTelegramId(e.target.value)}
+                                            placeholder="e.g., 123456789"
+                                            className="input"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
+                                            Username (optional)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={devUsername}
+                                            onChange={(e) => setDevUsername(e.target.value)}
+                                            placeholder="e.g., johndoe"
+                                            className="input"
+                                        />
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        disabled={devLoading || !devTelegramId.trim()}
+                                        className="w-full btn btn-primary"
+                                    >
+                                        {devLoading ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            'Dev Login'
+                                        )}
+                                    </button>
+                                </form>
+                            )}
                         </div>
                     )}
 
-                    {/* Google Sign In - Disabled for now */}
-                    <button
-                        onClick={handleGoogleSignIn}
-                        disabled={true}
-                        className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[var(--surface)] text-[var(--foreground-muted)] rounded-xl font-medium cursor-not-allowed mb-6 opacity-50"
-                        title="Google OAuth coming soon"
-                    >
-                        <svg className="w-5 h-5" viewBox="0 0 24 24">
-                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                        </svg>
-                        Continue with Google (Coming Soon)
-                    </button>
-
-                    {/* Divider */}
-                    <div className="relative mb-6">
-                        <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t border-[var(--surface-border)]" />
-                        </div>
-                        <div className="relative flex justify-center text-sm">
-                            <span className="px-4 bg-[var(--background)] text-[var(--foreground-muted)]">
-                                {isLogin ? 'sign in with email' : 'sign up with email'}
-                            </span>
-                        </div>
+                    {/* Info Section */}
+                    <div className="mt-8 p-4 rounded-xl bg-[var(--surface)] border border-[var(--surface-border)]">
+                        <h3 className="font-medium text-[var(--foreground)] mb-2">Why Telegram?</h3>
+                        <ul className="text-sm text-[var(--foreground-muted)] space-y-2">
+                            <li className="flex items-start gap-2">
+                                <span className="text-[var(--success)]">✓</span>
+                                <span>Quick and secure authentication</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <span className="text-[var(--success)]">✓</span>
+                                <span>No password to remember</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <span className="text-[var(--success)]">✓</span>
+                                <span>Works seamlessly in Telegram Mini Apps</span>
+                            </li>
+                        </ul>
                     </div>
-
-                    {/* Form */}
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        {/* Name (Sign Up only) */}
-                        {!isLogin && (
-                            <div>
-                                <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
-                                    Full Name
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.name}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                                    placeholder="John Doe"
-                                    className="input"
-                                    required={!isLogin}
-                                />
-                            </div>
-                        )}
-
-                        {/* Email */}
-                        <div>
-                            <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
-                                Email
-                            </label>
-                            <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--foreground-muted)]" />
-                                <input
-                                    type="email"
-                                    value={formData.email}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                                    placeholder="you@example.com"
-                                    className="input"
-                                    style={{ paddingLeft: '44px' }}
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        {/* Password */}
-                        <div>
-                            <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
-                                Password
-                            </label>
-                            <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--foreground-muted)]" />
-                                <input
-                                    type={showPassword ? 'text' : 'password'}
-                                    value={formData.password}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                                    placeholder="••••••••"
-                                    className="input"
-                                    style={{ paddingLeft: '44px', paddingRight: '44px' }}
-                                    required
-                                    minLength={6}
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
-                                >
-                                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                </button>
-                            </div>
-                            {!isLogin && (
-                                <p className="text-xs text-[var(--foreground-muted)] mt-1">
-                                    Must be at least 6 characters
-                                </p>
-                            )}
-                        </div>
-
-                        {/* Submit */}
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full btn btn-primary py-3"
-                        >
-                            {loading ? (
-                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            ) : (
-                                <>
-                                    {isLogin ? 'Sign In' : 'Create Account'}
-                                    <ArrowRight className="w-4 h-4" />
-                                </>
-                            )}
-                        </button>
-                    </form>
-
-                    {/* Toggle */}
-                    <p className="mt-6 text-center text-[var(--foreground-muted)]">
-                        {isLogin ? "Don't have an account?" : 'Already have an account?'}
-                        <button
-                            onClick={() => {
-                                setIsLogin(!isLogin)
-                                setError(null)
-                            }}
-                            className="ml-2 text-[var(--primary)] font-medium hover:underline"
-                        >
-                            {isLogin ? 'Sign up' : 'Sign in'}
-                        </button>
-                    </p>
                 </div>
             </div>
         </div>

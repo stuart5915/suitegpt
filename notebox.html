@@ -1,0 +1,3119 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NoteBox | SUITE</title>
+    <link rel="icon" type="image/png" href="assets/suite-logo-new.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="suite-styles.css">
+    <link rel="stylesheet" href="nav.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        /* Dark theme override for nav */
+        .nav-inner {
+            background: rgba(10, 10, 15, 0.95) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .nav-logo { color: #ffffff !important; }
+        .nav-links a { color: #9ca3af !important; }
+        .nav-links a:hover, .nav-links a.active { color: #ffffff !important; }
+        .mobile-menu-btn span { background: #ffffff !important; }
+
+        /* Auth Screen */
+        .auth-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-dark);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        .auth-screen.hidden { display: none; }
+        .auth-logo { font-size: 4rem; margin-bottom: 20px; }
+        .auth-title { font-size: 2.5rem; font-weight: 800; color: #fff; margin-bottom: 8px; }
+        .auth-subtitle { color: rgba(255,255,255,0.6); margin-bottom: 32px; font-size: 1.1rem; }
+        .auth-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            margin-bottom: 12px;
+            min-width: 280px;
+            justify-content: center;
+        }
+        .auth-btn.telegram {
+            background: #0088cc;
+            color: white;
+        }
+        .auth-btn.wallet {
+            background: linear-gradient(135deg, #627eea, #8b5cf6);
+            color: white;
+        }
+        .auth-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.1);
+            --accent: #ff9500;
+            --success: #22c55e;
+            --text: #fff;
+            --text-dim: rgba(255, 255, 255, 0.6);
+        }
+
+        body {
+            background: var(--bg-dark);
+            min-height: 100vh;
+        }
+
+        .factory-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 100px 20px 40px;
+        }
+
+        .factory-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .factory-header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .factory-header p {
+            color: var(--text-dim);
+            font-size: 1.1rem;
+        }
+
+        .factory-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            gap: 24px;
+        }
+
+        @media (max-width: 1200px) {
+            .factory-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Left Panel - Projects */
+        .projects-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .panel-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 16px;
+        }
+
+        .new-project-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--accent);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: all 0.2s;
+        }
+
+        .new-project-btn:hover {
+            filter: brightness(1.1);
+        }
+
+        .projects-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .project-item {
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .project-item:hover,
+        .project-item.active {
+            background: rgba(255, 149, 0, 0.1);
+            border-color: rgba(255, 149, 0, 0.3);
+        }
+
+        .project-name {
+            font-weight: 600;
+            color: var(--text);
+            font-size: 0.95rem;
+        }
+
+        .project-step {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+
+        /* Center Panel - Steps */
+        .steps-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .step-progress {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .step-dot {
+            flex: 1;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            transition: background 0.3s;
+        }
+
+        .step-dot.completed {
+            background: var(--success);
+        }
+
+        .step-dot.active {
+            background: var(--accent);
+        }
+
+        .step-header {
+            margin-bottom: 24px;
+        }
+
+        .step-number {
+            font-size: 0.85rem;
+            color: var(--accent);
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .step-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .step-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-dim);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 12px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        /* Prompt Output */
+        .prompt-output {
+            margin-top: 24px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .prompt-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 12px;
+        }
+
+        .prompt-text {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+            color: var(--text);
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .copy-btn {
+            margin-top: 12px;
+            padding: 10px 20px;
+            background: var(--accent);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            filter: brightness(1.1);
+        }
+
+        .copy-btn.copied {
+            background: var(--success);
+        }
+
+        .step-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .step-btn {
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .step-btn.primary {
+            background: var(--success);
+            border: none;
+            color: #fff;
+        }
+
+        .step-btn.secondary {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        /* Right Panel - Reference */
+        .reference-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .reference-section {
+            margin-bottom: 20px;
+        }
+
+        .reference-section h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 10px;
+        }
+
+        .reference-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .reference-link {
+            font-size: 0.85rem;
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .reference-link:hover {
+            text-decoration: underline;
+        }
+
+        .file-tree {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            line-height: 1.5;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        /* No Project Selected State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+        }
+
+        .empty-state h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            color: var(--text-dim);
+        }
+
+        /* Tab Navigation */
+        .factory-tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--bg-card);
+            padding: 4px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .factory-tab {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            background: transparent;
+            color: var(--text-dim);
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .factory-tab:hover {
+            color: var(--text);
+        }
+
+        .factory-tab.active {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        /* Idea Factory Styles */
+        .idea-factory-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title .step-num {
+            background: var(--accent);
+            color: #fff;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+
+        .idea-section {
+            margin-bottom: 32px;
+            padding-bottom: 32px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .idea-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .input-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .status-badges {
+            display: flex;
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: var(--success);
+        }
+
+        .status-badge.loading {
+            background: rgba(255, 149, 0, 0.1);
+            border-color: rgba(255, 149, 0, 0.3);
+            color: var(--accent);
+        }
+
+        .research-inputs {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        @media (max-width: 900px) {
+            .research-inputs {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .research-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .research-input-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-dim);
+        }
+
+        .research-input-group textarea {
+            padding: 12px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 0.9rem;
+            font-family: inherit;
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        .research-input-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .generate-btn {
+            padding: 14px 28px;
+            background: var(--accent);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 16px;
+        }
+
+        .generate-btn:hover {
+            filter: brightness(1.1);
+        }
+
+        .apps-summary {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin: 16px 0;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        /* Ideas Kanban Styles */
+        .ideas-panel {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.02);
+            border: 2px solid rgba(255, 149, 0, 0.2);
+            border-radius: 20px;
+            padding: 24px;
+        }
+
+        .ideas-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .ideas-header h2 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ideas-header h2::before {
+            content: '⚡';
+        }
+
+        .ideas-toggle {
+            display: flex;
+            gap: 8px;
+        }
+
+        .toggle-btn {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .toggle-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        .toggle-btn.add-dest-btn {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-style: dashed;
+            opacity: 0.7;
+        }
+
+        .toggle-btn.add-dest-btn:hover {
+            opacity: 1;
+            background: rgba(255, 149, 0, 0.1);
+            border-color: var(--accent);
+        }
+
+        .ideas-toggle {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .quick-add-container {
+            margin-bottom: 20px;
+        }
+
+        .quick-add-input-wrap {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .quick-add-input-wrap textarea {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 14px 16px;
+            color: var(--text);
+            font-size: 0.95rem;
+            font-family: inherit;
+            resize: none;
+            transition: border-color 0.2s;
+        }
+
+        .quick-add-input-wrap textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .quick-add-input-wrap textarea::placeholder {
+            color: var(--text-dim);
+        }
+
+        .quick-add-btn {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 24px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .quick-add-btn:hover {
+            background: #ffaa33;
+            transform: translateY(-1px);
+        }
+
+        .quick-add-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .kanban-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .kanban-section {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 16px;
+        }
+
+        .kanban-section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .kanban-section-header:hover {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .kanban-section-toggle {
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            transition: transform 0.2s;
+        }
+
+        .kanban-section.collapsed .kanban-section-toggle {
+            transform: rotate(-90deg);
+        }
+
+        .kanban-section-emoji {
+            font-size: 1.3rem;
+        }
+
+        .kanban-section-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .kanban-section-count {
+            background: var(--accent);
+            color: #000;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 10px;
+            margin-left: auto;
+        }
+
+        .kanban-section-columns {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .kanban-section.collapsed .kanban-section-columns {
+            display: none;
+        }
+
+        .kanban-column {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px;
+        }
+
+        .kanban-column:hover {
+            border-color: rgba(255, 149, 0, 0.3);
+        }
+
+        .kanban-column-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+            padding: 10px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+        }
+
+        .kanban-column-emoji {
+            font-size: 1.4rem;
+        }
+
+        .kanban-column-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text);
+            flex: 1;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .kanban-column-count {
+            background: var(--accent);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .kanban-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .idea-card {
+            position: relative;
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 14px;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .idea-card:hover {
+            border-color: var(--accent);
+            background: rgba(255, 149, 0, 0.08);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 149, 0, 0.15);
+        }
+
+        .idea-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .idea-card-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text);
+            flex: 1;
+            line-height: 1.3;
+        }
+
+        .idea-card-actions {
+            display: flex;
+            gap: 6px;
+            margin-left: 10px;
+        }
+
+        .idea-action-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .idea-action-btn.dismiss {
+            color: #ef4444;
+        }
+
+        .idea-action-btn.dismiss:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: #ef4444;
+        }
+
+        .idea-action-btn.implement {
+            color: var(--success);
+        }
+
+        .idea-action-btn.implement:hover {
+            background: rgba(34, 197, 94, 0.2);
+            border-color: var(--success);
+        }
+
+        .idea-action-btn.revert {
+            color: var(--accent);
+        }
+
+        .idea-action-btn.revert:hover {
+            background: rgba(255, 149, 0, 0.2);
+            border-color: var(--accent);
+        }
+
+        .idea-action-btn.push {
+            color: #3b82f6;
+            font-weight: 700;
+            font-size: 0.8rem;
+        }
+
+        .idea-action-btn.push:hover {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: #3b82f6;
+        }
+
+        .idea-action-btn.push-artstu {
+            color: #a855f7;
+            font-weight: 700;
+            font-size: 0.8rem;
+        }
+
+        .idea-action-btn.push-artstu:hover {
+            background: rgba(168, 85, 247, 0.2);
+            border-color: #a855f7;
+        }
+
+        .idea-card-content {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+
+        .idea-card-meta {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .idea-card.dismissed {
+            opacity: 0.6;
+        }
+
+        .idea-card.dismissed .idea-card-title {
+            text-decoration: line-through;
+        }
+
+        .idea-card.implemented {
+            border-color: rgba(34, 197, 94, 0.3);
+            background: rgba(34, 197, 94, 0.05);
+        }
+
+        .dismiss-reason {
+            font-size: 0.8rem;
+            color: #ef4444;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed rgba(239, 68, 68, 0.3);
+        }
+
+        /* Dismiss Modal */
+        .dismiss-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .dismiss-modal-content {
+            background: #1a1a1f;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .dismiss-modal h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 16px;
+        }
+
+        .dismiss-modal textarea {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 0.9rem;
+            font-family: inherit;
+            min-height: 80px;
+            resize: vertical;
+            margin-bottom: 16px;
+        }
+
+        .dismiss-modal textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .dismiss-modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .dismiss-modal-actions button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .dismiss-modal-actions .cancel-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .dismiss-modal-actions .confirm-btn {
+            background: #ef4444;
+            border: none;
+            color: #fff;
+        }
+
+        .dismiss-modal-actions .confirm-btn:hover {
+            filter: brightness(1.1);
+        }
+
+        .empty-column {
+            text-align: center;
+            padding: 30px 20px;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Auth Screen -->
+    <div class="auth-screen" id="authScreen">
+        <div class="auth-logo">📦</div>
+        <div class="auth-title">NoteBox</div>
+        <div class="auth-subtitle">Capture ideas, notes & tasks instantly</div>
+        <button class="auth-btn telegram" onclick="authWithTelegram()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
+            </svg>
+            Connect with Telegram
+        </button>
+        <button class="auth-btn wallet" onclick="authWithWallet()">
+            🔗 Connect Wallet
+        </button>
+    </div>
+
+    <nav id="main-nav"></nav>
+
+    <div class="factory-container" id="mainApp" style="display: none;">
+        <div class="factory-header">
+            <h1>📦 NoteBox</h1>
+            <p>Capture ideas, notes & tasks instantly</p>
+        </div>
+
+        <!-- Ideas Kanban Panel -->
+        <div id="ideasPanel">
+            <div class="ideas-panel">
+                <div class="ideas-header">
+                    <h2>📦 My Notes</h2>
+                    <div class="ideas-toggle" id="destinationTabs">
+                        <!-- Dynamic destination tabs loaded by JS -->
+                        <button class="toggle-btn active" data-dest="inbox">📥 Inbox</button>
+                        <button class="toggle-btn" data-dest="archive">📁 Archive</button>
+                        <button class="toggle-btn add-dest-btn" onclick="openAddDestinationModal()">➕</button>
+                    </div>
+                </div>
+
+                <!-- Quick Add Input -->
+                <div class="quick-add-container" id="quickAddContainer">
+                    <div class="quick-add-input-wrap">
+                        <textarea id="quickAddInput" placeholder="Type an idea, note, or task... AI will categorize it automatically" rows="2"></textarea>
+                        <button class="quick-add-btn" onclick="quickAddIdea()" id="quickAddBtn">
+                            <span class="btn-text">Add</span>
+                            <span class="btn-loading" style="display: none;">...</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="kanban-container" id="kanbanContainer">
+                    <!-- Kanban columns populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Push to Claude Modal -->
+        <div class="dismiss-modal" id="pushModal" style="display: none;">
+            <div class="dismiss-modal-content" style="max-width: 600px;">
+                <h3 id="pushModalTitle">Push to SUITE</h3>
+                <p style="color: var(--text-dim); margin-bottom: 16px; font-size: 0.9rem;">Review and edit the prompt, then send to Claude:</p>
+                <div class="form-group">
+                    <label>Prompt for Claude</label>
+                    <textarea id="claudePrompt" style="min-height: 150px;"></textarea>
+                </div>
+                <div id="claudeResponseSection" style="display: none; margin-top: 16px;">
+                    <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-dim); display: block; margin-bottom: 8px;">Claude's Response</label>
+                    <div id="claudeResponse" style="background: rgba(0,0,0,0.3); border-radius: 10px; padding: 16px; max-height: 200px; overflow-y: auto; font-size: 0.9rem; color: var(--text); white-space: pre-wrap;"></div>
+                </div>
+                <div class="dismiss-modal-actions" style="margin-top: 20px;">
+                    <button class="cancel-btn" onclick="closePushModal()">Cancel</button>
+                    <button class="confirm-btn" id="pushConfirmBtn" style="background: #3b82f6;" onclick="sendToClaudeAndPush()">
+                        <span id="pushBtnText">Send to Claude & Approve</span>
+                        <span id="pushBtnLoading" style="display: none;">Waiting for Claude...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dismiss Modal -->
+        <div class="dismiss-modal" id="dismissModal" style="display: none;">
+            <div class="dismiss-modal-content">
+                <h3>Why dismiss this idea?</h3>
+                <textarea id="dismissReason" placeholder="Enter reason for dismissing..."></textarea>
+                <div class="dismiss-modal-actions">
+                    <button class="cancel-btn" onclick="closeDismissModal()">Cancel</button>
+                    <button class="confirm-btn" onclick="confirmDismiss()">Dismiss</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Implement Modal -->
+        <div class="dismiss-modal" id="implementModal" style="display: none;">
+            <div class="dismiss-modal-content">
+                <h3>What did you do?</h3>
+                <textarea id="implementNote" placeholder="Describe how you handled this..."></textarea>
+                <div class="dismiss-modal-actions">
+                    <button class="cancel-btn" onclick="closeImplementModal()">Cancel</button>
+                    <button class="confirm-btn" style="background: var(--success);" onclick="confirmImplement()">Done</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Destination Modal -->
+        <div class="dismiss-modal" id="addDestModal" style="display: none;">
+            <div class="dismiss-modal-content" style="max-width: 400px;">
+                <h3>➕ Add New Destination</h3>
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div>
+                        <label style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 4px; display: block;">Name</label>
+                        <input type="text" id="newDestName" placeholder="e.g., VoiceForge, Client Work" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: var(--text);">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 4px; display: block;">Icon (emoji)</label>
+                        <input type="text" id="newDestIcon" placeholder="e.g., 🎙️ 📓 💼" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: var(--text);">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 4px; display: block;">Description</label>
+                        <input type="text" id="newDestDesc" placeholder="What goes in this destination?" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: var(--text);">
+                    </div>
+                </div>
+                <div class="dismiss-modal-actions" style="margin-top: 16px;">
+                    <button class="cancel-btn" onclick="closeAddDestinationModal()">Cancel</button>
+                    <button class="confirm-btn" onclick="confirmAddDestination()">Add</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manage Destinations Modal -->
+        <div class="dismiss-modal" id="manageDestModal" style="display: none;">
+            <div class="dismiss-modal-content" style="max-width: 500px;">
+                <h3>⚙️ Manage Destinations</h3>
+                <div id="destList" style="max-height: 300px; overflow-y: auto; margin: 16px 0;">
+                    <!-- Populated by JS -->
+                </div>
+                <div class="dismiss-modal-actions">
+                    <button class="cancel-btn" onclick="closeManageDestModal()">Done</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Idea Factory Panel -->
+        <div id="ideaFactoryPanel" style="display: none;">
+            <div class="idea-factory-panel">
+                <!-- Step 1: Generate Research Prompt -->
+                <div class="idea-section">
+                    <div class="section-title">
+                        <span class="step-num">1</span>
+                        Generate Research Prompt
+                    </div>
+
+                    <div class="input-row">
+                        <div class="form-group">
+                            <label>Focus Areas (optional)</label>
+                            <input type="text" id="focusAreas" placeholder="e.g., AI tools, health tech, productivity" oninput="saveIdeaFactoryState()">
+                        </div>
+                        <div class="form-group">
+                            <label>Constraints (optional)</label>
+                            <input type="text" id="constraints" placeholder="e.g., Must work offline, No API needed" oninput="saveIdeaFactoryState()">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Manual Ideas to Research</label>
+                        <textarea id="manualIdeas" placeholder="Enter ideas you want to explore (one per line):&#10;- Calorie tracker with AI&#10;- Voice note summarizer&#10;- Habit streak app" oninput="saveIdeaFactoryState()"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ideas to Exclude (already considered/rejected)</label>
+                        <textarea id="excludeIdeas" placeholder="Ideas to skip (one per line):&#10;- Budget tracker (too similar to existing)" oninput="saveIdeaFactoryState()"></textarea>
+                    </div>
+
+                    <div class="status-badges">
+                        <span class="status-badge loading" id="appsStatus">Loading apps...</span>
+                        <span class="status-badge loading" id="revenueStatus">Loading revenue data...</span>
+                    </div>
+
+                    <div class="apps-summary" id="appsSummary">
+                        Loading existing apps...
+                    </div>
+
+                    <button class="generate-btn" onclick="generateResearchPrompt()">Generate Research Prompt</button>
+
+                    <div class="prompt-output" id="researchPromptOutput" style="display: none;">
+                        <div class="prompt-label">Research Prompt</div>
+                        <div class="prompt-text" id="researchPromptText"></div>
+                        <button class="copy-btn" onclick="copyResearchPrompt()">Copy to Clipboard</button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Paste AI Research -->
+                <div class="idea-section">
+                    <div class="section-title">
+                        <span class="step-num">2</span>
+                        Paste AI Research
+                    </div>
+                    <p style="color: var(--text-dim); margin-bottom: 16px;">After running the research prompt in Grok, Gemini, and Claude, paste their outputs below.</p>
+
+                    <div class="research-inputs">
+                        <div class="research-input-group">
+                            <label>Grok Output</label>
+                            <textarea id="grokOutput" placeholder="Paste Grok Deep Research output here..." oninput="saveIdeaFactoryState()"></textarea>
+                        </div>
+                        <div class="research-input-group">
+                            <label>Gemini Output</label>
+                            <textarea id="geminiOutput" placeholder="Paste Gemini Deep Research output here..." oninput="saveIdeaFactoryState()"></textarea>
+                        </div>
+                        <div class="research-input-group">
+                            <label>Claude Output</label>
+                            <textarea id="claudeOutput" placeholder="Paste Claude Deep Research output here..." oninput="saveIdeaFactoryState()"></textarea>
+                        </div>
+                    </div>
+
+                    <button class="generate-btn" onclick="generateSynthesisPrompt()">Generate Synthesis Prompt</button>
+
+                    <div class="prompt-output" id="synthesisPromptOutput" style="display: none;">
+                        <div class="prompt-label">Synthesis Prompt</div>
+                        <div class="prompt-text" id="synthesisPromptText"></div>
+                        <button class="copy-btn" onclick="copySynthesisPrompt()">Copy to Clipboard</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- App Factory Panel (existing) -->
+        <div id="appFactoryPanel" class="factory-grid" style="display: none;">
+            <!-- Left Panel: Projects -->
+            <div class="projects-panel">
+                <div class="panel-title">Projects</div>
+                <button class="new-project-btn" onclick="newProject()">+ New App</button>
+                <div class="projects-list" id="projectsList">
+                    <!-- Projects populated by JS -->
+                </div>
+            </div>
+
+            <!-- Center Panel: Steps -->
+            <div class="steps-panel" id="stepsPanel">
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-state-icon">🏭</div>
+                    <h3>No Project Selected</h3>
+                    <p>Create a new app or select an existing project</p>
+                </div>
+
+                <div id="stepContent" style="display: none;">
+                    <div class="step-progress" id="stepProgress">
+                        <div class="step-dot" data-step="1"></div>
+                        <div class="step-dot" data-step="2"></div>
+                        <div class="step-dot" data-step="3"></div>
+                        <div class="step-dot" data-step="4"></div>
+                    </div>
+
+                    <div class="step-header">
+                        <div class="step-number" id="stepNumber">Step 1 of 4</div>
+                        <h2 class="step-title" id="stepTitle">Define Your App</h2>
+                    </div>
+
+                    <div class="step-form" id="stepForm">
+                        <!-- Form populated by JS -->
+                    </div>
+
+                    <div class="prompt-output" id="promptOutput">
+                        <div class="prompt-label">Generated Prompt</div>
+                        <div class="prompt-text" id="promptText"></div>
+                        <button class="copy-btn" onclick="copyPrompt()">Copy to Clipboard</button>
+                    </div>
+
+                    <div class="step-actions">
+                        <button class="step-btn secondary" onclick="prevStep()" id="prevBtn">Back</button>
+                        <button class="step-btn primary" onclick="nextStep()" id="nextBtn">Mark Complete & Next</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Reference -->
+            <div class="reference-panel">
+                <div class="panel-title">Reference</div>
+
+                <div class="reference-section">
+                    <h4>Boilerplate Structure</h4>
+                    <div class="file-tree">
+boilerplate/
+├── app/
+│   ├── _layout.tsx
+│   ├── login.tsx
+│   └── (tabs)/
+│       └── index.tsx
+├── contexts/
+│   └── TelegramAuthContext.tsx
+├── components/
+│   └── PaymentGate.tsx
+├── config/
+│   └── features.ts
+└── package.json
+                    </div>
+                </div>
+
+                <div class="reference-section">
+                    <h4>Quick Links</h4>
+                    <div class="reference-list">
+                        <a href="https://github.com/stuart5915/stuart-hollinger-landing/tree/master/boilerplate" class="reference-link" target="_blank">Boilerplate on GitHub</a>
+                        <a href="https://github.com/stuart5915/stuart-hollinger-landing/tree/master/foodvitals-full" class="reference-link" target="_blank">FoodVitals Reference</a>
+                        <a href="https://docs.expo.dev/router/introduction/" class="reference-link" target="_blank">Expo Router Docs</a>
+                    </div>
+                </div>
+
+                <div class="reference-section">
+                    <h4>Deploy Commands</h4>
+                    <div class="file-tree">
+npm install
+npm run build:web
+vercel --prod
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <script src="nav-component.js"></script>
+    <script>
+        // Supabase config
+        const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
+
+        // ========================================
+        // AUTH - NoteBox User Authentication
+        // ========================================
+        let currentUser = null;
+
+        function checkAuth() {
+            const savedUser = localStorage.getItem('notebox_user');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                showApp();
+                return true;
+            }
+            return false;
+        }
+
+        function showApp() {
+            document.getElementById('authScreen').classList.add('hidden');
+            document.getElementById('mainApp').style.display = 'block';
+            loadDestinations(); // Load dynamic destinations first
+            loadIdeas();
+        }
+
+        function authWithTelegram() {
+            const origin = window.location.origin;
+            const width = 550;
+            const height = 470;
+            const left = Math.max(0, (screen.width - width) / 2);
+            const top = Math.max(0, (screen.height - height) / 2);
+
+            const authUrl = `https://oauth.telegram.org/auth?bot_id=8341049569&origin=${encodeURIComponent(origin)}&request_access=write`;
+
+            const popup = window.open(
+                authUrl,
+                'telegram_auth',
+                `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+            );
+
+            window.addEventListener('message', function handleTelegramAuth(event) {
+                if (event.origin !== 'https://oauth.telegram.org') return;
+
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.event === 'auth_result' && data.result) {
+                        const user = data.result;
+                        currentUser = {
+                            id: 'tg_' + user.id,
+                            telegram_id: user.id.toString(),
+                            display_name: user.username || user.first_name,
+                            auth_type: 'telegram'
+                        };
+                        localStorage.setItem('notebox_user', JSON.stringify(currentUser));
+                        localStorage.setItem('telegram_user', JSON.stringify(user));
+                        showApp();
+                        window.removeEventListener('message', handleTelegramAuth);
+                    }
+                } catch (e) {
+                    console.error('Telegram auth error:', e);
+                }
+            });
+
+            if (!popup || popup.closed) {
+                alert('Popup was blocked. Please allow popups for this site.');
+            }
+        }
+
+        async function authWithWallet() {
+            if (typeof window.ethereum === 'undefined') {
+                alert('Please install MetaMask or another Web3 wallet!');
+                window.open('https://metamask.io/download/', '_blank');
+                return;
+            }
+
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                if (accounts.length > 0) {
+                    const address = accounts[0].toLowerCase();
+                    currentUser = {
+                        id: 'wallet_' + address,
+                        wallet_address: address,
+                        display_name: address.slice(0, 6) + '...' + address.slice(-4),
+                        auth_type: 'wallet'
+                    };
+                    localStorage.setItem('notebox_user', JSON.stringify(currentUser));
+                    localStorage.setItem('connectedWallet', address);
+                    showApp();
+                }
+            } catch (error) {
+                console.error('Wallet connection failed:', error);
+                alert('Failed to connect wallet.');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('notebox_user');
+            document.getElementById('authScreen').classList.remove('hidden');
+            document.getElementById('mainApp').style.display = 'none';
+        }
+
+        // Check auth on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!checkAuth()) {
+                // Not logged in, show auth screen (already visible by default)
+            }
+        });
+
+        // ========================================
+        // IDEA FACTORY
+        // ========================================
+
+        let existingApps = [];
+        let topRevenueApps = [];
+        let currentTab = 'build';
+
+        // Tab switching
+        function switchTab(tab) {
+            currentTab = tab;
+            document.getElementById('ideasTab').classList.toggle('active', tab === 'ideas');
+            document.getElementById('ideaTab').classList.toggle('active', tab === 'idea');
+            document.getElementById('buildTab').classList.toggle('active', tab === 'build');
+            document.getElementById('ideasPanel').style.display = tab === 'ideas' ? 'block' : 'none';
+            document.getElementById('ideaFactoryPanel').style.display = tab === 'idea' ? 'block' : 'none';
+            document.getElementById('appFactoryPanel').style.display = tab === 'build' ? 'grid' : 'none';
+
+            if (tab === 'idea') {
+                loadAppsData();
+            }
+            if (tab === 'ideas') {
+                loadIdeas();
+            }
+        }
+
+        // Load existing apps from Supabase
+        async function loadAppsData() {
+            try {
+                // Load all apps
+                const appsResponse = await fetch(
+                    `${SUPABASE_URL}/rest/v1/apps?select=name,slug,description,category,total_revenue&status=eq.live&order=total_revenue.desc`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+
+                if (appsResponse.ok) {
+                    existingApps = await appsResponse.json();
+                    topRevenueApps = existingApps.filter(a => a.total_revenue > 0).slice(0, 5);
+
+                    // Update status badges
+                    document.getElementById('appsStatus').textContent = `${existingApps.length} apps loaded`;
+                    document.getElementById('appsStatus').classList.remove('loading');
+                    document.getElementById('revenueStatus').textContent = `${topRevenueApps.length} with revenue`;
+                    document.getElementById('revenueStatus').classList.remove('loading');
+
+                    // Update apps summary
+                    const summary = existingApps.map(a => `• ${a.name} (${a.category}): ${a.description || 'No description'}`).join('\n');
+                    document.getElementById('appsSummary').textContent = summary || 'No apps found';
+                } else {
+                    throw new Error('Failed to load apps');
+                }
+            } catch (err) {
+                console.error('Error loading apps:', err);
+                document.getElementById('appsStatus').textContent = 'Failed to load';
+                document.getElementById('revenueStatus').textContent = 'Failed to load';
+            }
+        }
+
+        // Generate research prompt
+        function generateResearchPrompt() {
+            const focusAreas = document.getElementById('focusAreas').value.trim();
+            const constraints = document.getElementById('constraints').value.trim();
+            const manualIdeas = document.getElementById('manualIdeas').value.trim();
+            const excludeIdeas = document.getElementById('excludeIdeas').value.trim();
+
+            // Build existing apps list
+            const existingAppsList = existingApps.length > 0
+                ? existingApps.map(a => `- ${a.name} (${a.category}): ${a.description || 'No description'}`).join('\n')
+                : 'No existing apps yet';
+
+            // Build top performing apps list
+            const topPerforming = topRevenueApps.length > 0
+                ? topRevenueApps.map(a => `- ${a.name}: ${a.total_revenue || 0} credits earned`).join('\n')
+                : 'No revenue data yet';
+
+            // Build gaps/opportunities based on categories
+            const categoryCounts = {};
+            existingApps.forEach(a => {
+                categoryCounts[a.category] = (categoryCounts[a.category] || 0) + 1;
+            });
+            const allCategories = ['productivity', 'health', 'finance', 'entertainment', 'education', 'utilities', 'social'];
+            const gaps = allCategories
+                .filter(c => !categoryCounts[c] || categoryCounts[c] < 2)
+                .map(c => `- ${c}: ${categoryCounts[c] || 0} apps (opportunity)`)
+                .join('\n') || 'All categories have coverage';
+
+            const prompt = `Research novel app ideas for the SUITE ecosystem.
+
+CONTEXT:
+- SUITE is an app store where apps monetize via credits (microtransactions)
+- Apps are PWAs built with Expo/React Native
+- Target: AI-powered tools, productivity, health, finance, utilities
+${focusAreas ? `- Focus on: ${focusAreas}` : ''}
+${constraints ? `- Constraints: ${constraints}` : ''}
+
+EXISTING APPS (avoid similar):
+${existingAppsList}
+
+TOP PERFORMING (learn from):
+${topPerforming}
+
+GAPS/OPPORTUNITIES:
+${gaps}
+
+${manualIdeas ? `MANUAL IDEAS TO CONSIDER:
+${manualIdeas}
+
+` : ''}${excludeIdeas ? `MANUAL IDEAS TO EXCLUDE:
+${excludeIdeas}
+
+` : ''}RESEARCH TASK:
+Find 5-10 novel app concepts that:
+1. Don't duplicate existing apps
+2. Have clear revenue potential (people will pay)
+3. Can be built as a PWA in 1-2 days
+4. Leverage AI or provide unique utility
+5. Target underserved niches
+
+For each idea, provide:
+- Name
+- One-liner description
+- Revenue model (what users pay for)
+- Why it's novel/unique
+- Estimated demand`;
+
+            document.getElementById('researchPromptText').textContent = prompt;
+            document.getElementById('researchPromptOutput').style.display = 'block';
+
+            // Save to localStorage
+            localStorage.setItem('ideaFactory_research', JSON.stringify({
+                focusAreas, constraints, manualIdeas, excludeIdeas, prompt
+            }));
+        }
+
+        function copyResearchPrompt() {
+            const text = document.getElementById('researchPromptText').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.querySelector('#researchPromptOutput .copy-btn');
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = 'Copy to Clipboard';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        // Generate synthesis prompt
+        function generateSynthesisPrompt() {
+            const grokOutput = document.getElementById('grokOutput').value.trim();
+            const geminiOutput = document.getElementById('geminiOutput').value.trim();
+            const claudeOutput = document.getElementById('claudeOutput').value.trim();
+
+            if (!grokOutput && !geminiOutput && !claudeOutput) {
+                alert('Please paste at least one AI research output.');
+                return;
+            }
+
+            // Build existing apps list for context
+            const existingAppsList = existingApps.length > 0
+                ? existingApps.map(a => `- ${a.name}`).join('\n')
+                : 'None';
+
+            const prompt = `Synthesize these research outputs into 4-10 final app ideas.
+
+EXISTING SUITE APPS (avoid duplicates):
+${existingAppsList}
+
+${grokOutput ? `GROK RESEARCH:
+${grokOutput}
+
+` : ''}${geminiOutput ? `GEMINI RESEARCH:
+${geminiOutput}
+
+` : ''}${claudeOutput ? `CLAUDE RESEARCH:
+${claudeOutput}
+
+` : ''}SYNTHESIS TASK:
+1. Find common themes across all research outputs
+2. Identify the strongest unique ideas from each
+3. Filter out anything similar to existing SUITE apps
+4. Rank by revenue potential
+5. Output 4-10 final ideas, each with:
+   - Name
+   - Tagline
+   - Core feature (what it does)
+   - Revenue model (paid features with credit costs)
+   - Why it will make money
+   - Build complexity (1-5)
+
+Format as a numbered list from most to least promising.`;
+
+            document.getElementById('synthesisPromptText').textContent = prompt;
+            document.getElementById('synthesisPromptOutput').style.display = 'block';
+
+            // Save to localStorage
+            localStorage.setItem('ideaFactory_synthesis', JSON.stringify({
+                grokOutput, geminiOutput, claudeOutput, prompt
+            }));
+        }
+
+        function copySynthesisPrompt() {
+            const text = document.getElementById('synthesisPromptText').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.querySelector('#synthesisPromptOutput .copy-btn');
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = 'Copy to Clipboard';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        // Save Idea Factory state on every keystroke
+        function saveIdeaFactoryState() {
+            const state = {
+                focusAreas: document.getElementById('focusAreas').value,
+                constraints: document.getElementById('constraints').value,
+                manualIdeas: document.getElementById('manualIdeas').value,
+                excludeIdeas: document.getElementById('excludeIdeas').value,
+                grokOutput: document.getElementById('grokOutput').value,
+                geminiOutput: document.getElementById('geminiOutput').value,
+                claudeOutput: document.getElementById('claudeOutput').value
+            };
+            localStorage.setItem('ideaFactory_state', JSON.stringify(state));
+        }
+
+        // Restore saved Idea Factory data
+        function restoreIdeaFactoryData() {
+            // Try new unified state first
+            const state = JSON.parse(localStorage.getItem('ideaFactory_state') || '{}');
+            if (state.focusAreas) document.getElementById('focusAreas').value = state.focusAreas;
+            if (state.constraints) document.getElementById('constraints').value = state.constraints;
+            if (state.manualIdeas) document.getElementById('manualIdeas').value = state.manualIdeas;
+            if (state.excludeIdeas) document.getElementById('excludeIdeas').value = state.excludeIdeas;
+            if (state.grokOutput) document.getElementById('grokOutput').value = state.grokOutput;
+            if (state.geminiOutput) document.getElementById('geminiOutput').value = state.geminiOutput;
+            if (state.claudeOutput) document.getElementById('claudeOutput').value = state.claudeOutput;
+
+            // Fallback to old keys for backward compatibility
+            if (!state.focusAreas) {
+                const research = JSON.parse(localStorage.getItem('ideaFactory_research') || '{}');
+                if (research.focusAreas) document.getElementById('focusAreas').value = research.focusAreas;
+                if (research.constraints) document.getElementById('constraints').value = research.constraints;
+                if (research.manualIdeas) document.getElementById('manualIdeas').value = research.manualIdeas;
+                if (research.excludeIdeas) document.getElementById('excludeIdeas').value = research.excludeIdeas;
+            }
+            if (!state.grokOutput) {
+                const synthesis = JSON.parse(localStorage.getItem('ideaFactory_synthesis') || '{}');
+                if (synthesis.grokOutput) document.getElementById('grokOutput').value = synthesis.grokOutput;
+                if (synthesis.geminiOutput) document.getElementById('geminiOutput').value = synthesis.geminiOutput;
+                if (synthesis.claudeOutput) document.getElementById('claudeOutput').value = synthesis.claudeOutput;
+            }
+        }
+
+        // ========================================
+        // IDEAS KANBAN
+        // ========================================
+
+        const CATEGORIES = {
+            action_item: { emoji: '✅', title: 'Action Items' },
+            suite_feature: { emoji: '⚡', title: 'SUITE Features' },
+            suite_business: { emoji: '💰', title: 'SUITE Business' },
+            app_idea: { emoji: '💡', title: 'App Ideas' },
+            article: { emoji: '📝', title: 'Articles' },
+            personal: { emoji: '🏠', title: 'Personal' },
+            brainstorm: { emoji: '💭', title: 'Brainstorm' },
+            question: { emoji: '❓', title: 'Questions' }
+        };
+
+        // Group categories into sections
+        const SECTIONS = {
+            suite: {
+                title: 'SUITE',
+                emoji: '◈',
+                categories: ['suite_feature', 'suite_business', 'app_idea']
+            },
+            personal: {
+                title: 'Personal',
+                emoji: '🏠',
+                categories: ['personal', 'action_item']
+            },
+            content: {
+                title: 'Content',
+                emoji: '📝',
+                categories: ['article']
+            },
+            thinking: {
+                title: 'Thinking',
+                emoji: '💭',
+                categories: ['brainstorm', 'question']
+            }
+        };
+
+        let ideas = [];
+        let destinations = []; // Dynamic destinations from intake_destinations
+        let currentDestination = 'inbox'; // Current selected destination slug or 'inbox'/'archive'
+        let dismissingIdeaId = null;
+        let implementingIdeaId = null;
+
+        // Load destinations from Supabase
+        async function loadDestinations() {
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/intake_destinations?active=eq.true&order=sort_order`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+                if (response.ok) {
+                    destinations = await response.json();
+                    renderDestinationTabs();
+                }
+            } catch (err) {
+                console.error('Error loading destinations:', err);
+            }
+        }
+
+        // Render destination tabs dynamically
+        function renderDestinationTabs() {
+            const container = document.getElementById('destinationTabs');
+            if (!container) return;
+
+            // Build tabs: Inbox + custom destinations + Archive + Add button
+            let html = `<button class="toggle-btn ${currentDestination === 'inbox' ? 'active' : ''}" onclick="selectDestination('inbox')">📥 Inbox</button>`;
+
+            // Add custom destination tabs
+            destinations.forEach(dest => {
+                // Skip the built-in ones that map to inbox
+                if (['stuart', 'suite', 'artstu'].includes(dest.slug)) return;
+                html += `<button class="toggle-btn ${currentDestination === dest.slug ? 'active' : ''}" onclick="selectDestination('${dest.slug}')" oncontextmenu="openDestContextMenu(event, '${dest.id}', '${dest.slug}')">${dest.icon || '📌'} ${dest.name}</button>`;
+            });
+
+            html += `<button class="toggle-btn ${currentDestination === 'archive' ? 'active' : ''}" onclick="selectDestination('archive')">📁 Archive</button>`;
+            html += `<button class="toggle-btn add-dest-btn" onclick="openAddDestinationModal()" title="Add destination">➕</button>`;
+            html += `<button class="toggle-btn add-dest-btn" onclick="openManageDestModal()" title="Manage destinations">⚙️</button>`;
+
+            container.innerHTML = html;
+        }
+
+        // Select a destination
+        function selectDestination(destSlug) {
+            currentDestination = destSlug;
+            renderDestinationTabs();
+            renderKanban();
+        }
+
+        // Open Add Destination Modal
+        function openAddDestinationModal() {
+            document.getElementById('newDestName').value = '';
+            document.getElementById('newDestIcon').value = '';
+            document.getElementById('newDestDesc').value = '';
+            document.getElementById('addDestModal').style.display = 'flex';
+            document.getElementById('newDestName').focus();
+        }
+
+        function closeAddDestinationModal() {
+            document.getElementById('addDestModal').style.display = 'none';
+        }
+
+        // Confirm add destination
+        async function confirmAddDestination() {
+            const name = document.getElementById('newDestName').value.trim();
+            const icon = document.getElementById('newDestIcon').value.trim() || '📌';
+            const description = document.getElementById('newDestDesc').value.trim();
+
+            if (!name) {
+                alert('Please enter a name');
+                return;
+            }
+
+            const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/intake_destinations`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=representation'
+                        },
+                        body: JSON.stringify({
+                            name,
+                            slug,
+                            icon: icon.match(/\p{Emoji}/u)?.[0] || '📌',
+                            description,
+                            target_type: 'notebox',
+                            notebox_status: slug,
+                            keywords: name.toLowerCase().split(' '),
+                            template_questions: [],
+                            prompt_template: `New item for ${name}:\n\nTitle: {title}\nContent: {content}`,
+                            active: true,
+                            sort_order: 50
+                        })
+                    }
+                );
+
+                if (response.ok) {
+                    const [newDest] = await response.json();
+                    destinations.push(newDest);
+                    closeAddDestinationModal();
+                    renderDestinationTabs();
+                    selectDestination(slug);
+                } else {
+                    console.error('Failed to add destination:', await response.text());
+                    alert('Failed to add destination.');
+                }
+            } catch (err) {
+                console.error('Error adding destination:', err);
+                alert('Error adding destination.');
+            }
+        }
+
+        // Manage Destinations Modal
+        function openManageDestModal() {
+            renderDestList();
+            document.getElementById('manageDestModal').style.display = 'flex';
+        }
+
+        function closeManageDestModal() {
+            document.getElementById('manageDestModal').style.display = 'none';
+        }
+
+        function renderDestList() {
+            const container = document.getElementById('destList');
+            if (!container) return;
+
+            const customDests = destinations.filter(d => !['stuart', 'suite', 'artstu'].includes(d.slug));
+
+            if (customDests.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: var(--text-dim); padding: 20px;">No custom destinations yet. Click ➕ to add one!</div>';
+                return;
+            }
+
+            container.innerHTML = customDests.map(dest => `
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px; margin-bottom: 8px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 1.5rem;">${dest.icon || '📌'}</span>
+                        <div>
+                            <div style="font-weight: 600; color: var(--text);">${dest.name}</div>
+                            <div style="font-size: 0.8rem; color: var(--text-dim);">${dest.description || 'No description'}</div>
+                        </div>
+                    </div>
+                    <button onclick="deleteDestination('${dest.id}', '${dest.name}')" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">Delete</button>
+                </div>
+            `).join('');
+        }
+
+        // Delete destination
+        async function deleteDestination(destId, destName) {
+            if (!confirm(`Delete "${destName}"? Ideas in this destination will be moved to Inbox.`)) return;
+
+            try {
+                // First, move any ideas with this destination to inbox
+                const dest = destinations.find(d => d.id === destId);
+                if (dest) {
+                    await fetch(
+                        `${SUPABASE_URL}/rest/v1/personal_ideas?destination_slug=eq.${dest.slug}`,
+                        {
+                            method: 'PATCH',
+                            headers: {
+                                'apikey': SUPABASE_ANON_KEY,
+                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                                'Content-Type': 'application/json',
+                                'Prefer': 'return=minimal'
+                            },
+                            body: JSON.stringify({ destination_slug: null, status: 'inbox' })
+                        }
+                    );
+                }
+
+                // Delete the destination
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/intake_destinations?id=eq.${destId}`,
+                    {
+                        method: 'DELETE',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+
+                if (response.ok) {
+                    destinations = destinations.filter(d => d.id !== destId);
+                    renderDestList();
+                    renderDestinationTabs();
+                    if (currentDestination === dest?.slug) {
+                        selectDestination('inbox');
+                    }
+                    await loadIdeas(); // Reload ideas
+                } else {
+                    alert('Failed to delete destination.');
+                }
+            } catch (err) {
+                console.error('Error deleting destination:', err);
+                alert('Error deleting destination.');
+            }
+        }
+
+        // Track collapsed sections (persists during session)
+        const collapsedSections = new Set();
+
+        // Quick add idea with auto-categorization
+        async function quickAddIdea() {
+            const input = document.getElementById('quickAddInput');
+            const btn = document.getElementById('quickAddBtn');
+            const text = input.value.trim();
+
+            if (!text) return;
+
+            // Show loading state
+            btn.disabled = true;
+            btn.querySelector('.btn-text').style.display = 'none';
+            btn.querySelector('.btn-loading').style.display = 'inline';
+
+            try {
+                // Auto-categorize based on keywords
+                const categorized = autoCategorize(text);
+
+                // Insert into Supabase
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/personal_ideas`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=representation'
+                        },
+                        body: JSON.stringify({
+                            raw_input: text,
+                            category: categorized.category,
+                            title: categorized.title,
+                            content: categorized.content,
+                            status: 'inbox',
+                            user_id: currentUser?.id || null
+                        })
+                    }
+                );
+
+                if (response.ok) {
+                    const [newIdea] = await response.json();
+                    ideas.unshift(newIdea);
+                    input.value = '';
+                    renderKanban();
+                } else {
+                    console.error('Failed to add idea:', await response.text());
+                    alert('Failed to add idea.');
+                }
+            } catch (err) {
+                console.error('Error adding idea:', err);
+                alert('Error adding idea.');
+            } finally {
+                btn.disabled = false;
+                btn.querySelector('.btn-text').style.display = 'inline';
+                btn.querySelector('.btn-loading').style.display = 'none';
+            }
+        }
+
+        // Auto-categorize based on keywords
+        function autoCategorize(text) {
+            const lower = text.toLowerCase();
+
+            // SUITE app names
+            const suiteApps = ['foodvitals', 'cheshbon', 'opticrep', 'trueform', 'remcast', 'cadence'];
+            const hasSuiteApp = suiteApps.some(app => lower.includes(app));
+
+            // Keyword patterns
+            const patterns = {
+                suite_feature: hasSuiteApp || /\b(feature|add|implement|update|fix|bug|ui|ux)\b/i.test(text),
+                suite_business: /\b(token|treasury|revenue|defi|dao|liquidity|investor|business model)\b/i.test(text),
+                app_idea: /\b(new app|app idea|app concept|build an app)\b/i.test(text),
+                article: /\b(article|blog|write about|post about|artstu)\b/i.test(text),
+                action_item: /\b(call|email|contact|meet|schedule|buy|get|pick up|appointment)\b/i.test(text),
+                personal: /\b(remember|don't forget|reminder|personal|home|family)\b/i.test(text),
+                question: /\?$|\b(research|look into|find out|how to|what is|why)\b/i.test(text)
+            };
+
+            // Determine category (priority order)
+            let category = 'brainstorm';
+            if (patterns.suite_feature && hasSuiteApp) category = 'suite_feature';
+            else if (patterns.suite_business) category = 'suite_business';
+            else if (patterns.app_idea) category = 'app_idea';
+            else if (patterns.article) category = 'article';
+            else if (patterns.action_item) category = 'action_item';
+            else if (patterns.personal) category = 'personal';
+            else if (patterns.question) category = 'question';
+            else if (patterns.suite_feature) category = 'suite_feature';
+
+            // Generate title (first ~50 chars or until period/newline)
+            let title = text.split(/[.\n]/)[0].trim();
+            if (title.length > 50) {
+                title = title.substring(0, 47) + '...';
+            }
+
+            // Content is the full text if longer than title
+            const content = text.length > 50 ? text : '';
+
+            return { category, title, content };
+        }
+
+        // Handle Enter key in quick add (Shift+Enter for newline)
+        document.addEventListener('DOMContentLoaded', () => {
+            const quickInput = document.getElementById('quickAddInput');
+            if (quickInput) {
+                quickInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        quickAddIdea();
+                    }
+                });
+            }
+        });
+
+        // Toggle section collapse
+        function toggleSection(sectionKey) {
+            const section = document.getElementById(`section-${sectionKey}`);
+            if (section) {
+                section.classList.toggle('collapsed');
+                if (section.classList.contains('collapsed')) {
+                    collapsedSections.add(sectionKey);
+                } else {
+                    collapsedSections.delete(sectionKey);
+                }
+            }
+        }
+
+        // Load ideas from Supabase (filtered by current user)
+        async function loadIdeas() {
+            if (!currentUser || !currentUser.id) {
+                console.log('No user logged in, skipping load');
+                return;
+            }
+
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/personal_ideas?select=*&user_id=eq.${encodeURIComponent(currentUser.id)}&order=created_at.desc`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+
+                if (response.ok) {
+                    ideas = await response.json();
+                    renderKanban();
+                } else {
+                    console.error('Failed to load ideas:', await response.text());
+                    document.getElementById('kanbanContainer').innerHTML = '<div class="empty-column">Failed to load ideas. Make sure the table exists.</div>';
+                }
+            } catch (err) {
+                console.error('Error loading ideas:', err);
+                document.getElementById('kanbanContainer').innerHTML = '<div class="empty-column">Error loading ideas.</div>';
+            }
+        }
+
+        // Render Kanban board
+        function renderKanban() {
+            const container = document.getElementById('kanbanContainer');
+
+            // Filter ideas based on selected destination
+            const filteredIdeas = ideas.filter(idea => {
+                if (currentDestination === 'inbox') {
+                    // Inbox shows items with status='inbox' and no destination_slug (or null)
+                    return idea.status === 'inbox' && (!idea.destination_slug || idea.destination_slug === 'stuart');
+                } else if (currentDestination === 'archive') {
+                    return idea.status === 'dismissed' || idea.status === 'implemented';
+                } else {
+                    // Custom destination - filter by destination_slug
+                    return idea.destination_slug === currentDestination && idea.status !== 'dismissed' && idea.status !== 'implemented';
+                }
+            });
+
+            // Group by category
+            const grouped = {};
+            Object.keys(CATEGORIES).forEach(cat => {
+                grouped[cat] = filteredIdeas.filter(i => i.category === cat);
+            });
+
+            if (filteredIdeas.length === 0) {
+                let emptyMsg = 'No ideas yet.';
+                if (currentDestination === 'inbox') {
+                    emptyMsg = 'No ideas in Inbox. Text @stuartfactorybot to capture ideas!';
+                } else if (currentDestination === 'archive') {
+                    emptyMsg = 'No archived ideas yet.';
+                } else {
+                    const dest = destinations.find(d => d.slug === currentDestination);
+                    emptyMsg = `No ideas in ${dest?.name || currentDestination} yet.`;
+                }
+                container.innerHTML = `<div class="empty-column" style="grid-column: 1 / -1;">${emptyMsg}</div>`;
+                return;
+            }
+
+            // Render by sections
+            container.innerHTML = Object.entries(SECTIONS).map(([sectionKey, section]) => {
+                // Get all ideas for this section
+                const sectionIdeas = section.categories.flatMap(cat => grouped[cat] || []);
+                const sectionCount = sectionIdeas.length;
+
+                // For archive view, only show sections with items
+                if (currentDestination === 'archive' && sectionCount === 0) {
+                    return '';
+                }
+
+                return `
+                    <div class="kanban-section" id="section-${sectionKey}">
+                        <div class="kanban-section-header" onclick="toggleSection('${sectionKey}')">
+                            <span class="kanban-section-toggle">▼</span>
+                            <span class="kanban-section-emoji">${section.emoji}</span>
+                            <span class="kanban-section-title">${section.title}</span>
+                            <span class="kanban-section-count">${sectionCount}</span>
+                        </div>
+                        <div class="kanban-section-columns">
+                            ${section.categories.map(cat => {
+                                const catInfo = CATEGORIES[cat];
+                                const catIdeas = grouped[cat] || [];
+
+                                // For archive, skip empty columns
+                                if (currentDestination === 'archive' && catIdeas.length === 0) {
+                                    return '';
+                                }
+
+                                return `
+                                    <div class="kanban-column">
+                                        <div class="kanban-column-header">
+                                            <span class="kanban-column-emoji">${catInfo.emoji}</span>
+                                            <span class="kanban-column-title">${catInfo.title}</span>
+                                            <span class="kanban-column-count">${catIdeas.length}</span>
+                                        </div>
+                                        <div class="kanban-cards">
+                                            ${catIdeas.length === 0
+                                                ? '<div class="empty-column">—</div>'
+                                                : catIdeas.map(idea => renderIdeaCard(idea)).join('')
+                                            }
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Render a single idea card
+        function renderIdeaCard(idea) {
+            const isArchived = idea.status === 'dismissed' || idea.status === 'implemented';
+            const isStuart = idea.status === 'inbox';
+            const isSuite = idea.status === 'pushed';
+            const isArtstu = idea.status === 'artstu';
+            const timeAgo = getTimeAgo(new Date(idea.created_at));
+
+            let actionsHtml = '';
+            if (isStuart) {
+                // Stuart Factory: dismiss, push to SUITE, push to ArtStu, implement
+                actionsHtml = `
+                    <div class="idea-card-actions">
+                        <button class="idea-action-btn dismiss" onclick="openDismissModal('${idea.id}')" title="Dismiss">✕</button>
+                        <button class="idea-action-btn push" onclick="openPushModal('${idea.id}', 'suite')" title="Push to SUITE">S</button>
+                        <button class="idea-action-btn push-artstu" onclick="openPushModal('${idea.id}', 'artstu')" title="Push to ArtStu">A</button>
+                        <button class="idea-action-btn implement" onclick="openImplementModal('${idea.id}')" title="Mark as done">✓</button>
+                    </div>
+                `;
+            } else if (isSuite || isArtstu) {
+                // SUITE/ArtStu Factory: dismiss, implement
+                actionsHtml = `
+                    <div class="idea-card-actions">
+                        <button class="idea-action-btn dismiss" onclick="openDismissModal('${idea.id}')" title="Dismiss">✕</button>
+                        <button class="idea-action-btn implement" onclick="openImplementModal('${idea.id}')" title="Mark as done">✓</button>
+                    </div>
+                `;
+            } else if (isArchived) {
+                // Archive: revert button
+                actionsHtml = `
+                    <div class="idea-card-actions">
+                        <button class="idea-action-btn revert" onclick="revertIdea('${idea.id}')" title="Revert to inbox">↩</button>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="idea-card ${idea.status}">
+                    <div class="idea-card-header">
+                        <div class="idea-card-title">${escapeHtml(idea.title)}</div>
+                        ${actionsHtml}
+                    </div>
+                    ${idea.content ? `<div class="idea-card-content">${escapeHtml(idea.content)}</div>` : ''}
+                    <div class="idea-card-meta">${timeAgo}</div>
+                    ${idea.status === 'dismissed' && idea.dismiss_reason ? `<div class="dismiss-reason">❌ ${escapeHtml(idea.dismiss_reason)}</div>` : ''}
+                    ${idea.status === 'implemented' ? `<div class="dismiss-reason" style="color: var(--success); border-color: rgba(34, 197, 94, 0.3);">✓ ${idea.dismiss_reason ? escapeHtml(idea.dismiss_reason) : 'Implemented'}</div>` : ''}
+                </div>
+            `;
+        }
+
+        // Open dismiss modal
+        function openDismissModal(ideaId) {
+            dismissingIdeaId = ideaId;
+            document.getElementById('dismissReason').value = '';
+            document.getElementById('dismissModal').style.display = 'flex';
+            document.getElementById('dismissReason').focus();
+        }
+
+        // Close dismiss modal
+        function closeDismissModal() {
+            dismissingIdeaId = null;
+            document.getElementById('dismissModal').style.display = 'none';
+        }
+
+        // Confirm dismiss with reason
+        async function confirmDismiss() {
+            if (!dismissingIdeaId) return;
+
+            const reason = document.getElementById('dismissReason').value.trim();
+            if (!reason) {
+                alert('Please enter a reason for dismissing.');
+                return;
+            }
+
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/personal_ideas?id=eq.${dismissingIdeaId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({
+                            status: 'dismissed',
+                            dismiss_reason: reason
+                        })
+                    }
+                );
+
+                if (response.ok) {
+                    // Update local state
+                    const idea = ideas.find(i => i.id === dismissingIdeaId);
+                    if (idea) {
+                        idea.status = 'dismissed';
+                        idea.dismiss_reason = reason;
+                    }
+                    closeDismissModal();
+                    renderKanban();
+                } else {
+                    console.error('Failed to dismiss idea:', await response.text());
+                    alert('Failed to dismiss idea.');
+                }
+            } catch (err) {
+                console.error('Error dismissing idea:', err);
+                alert('Error dismissing idea.');
+            }
+        }
+
+        // Prompt templates by category
+        const PROMPT_TEMPLATES = {
+            suite_feature: (title, content) => `Implement this feature in the SUITE app ecosystem:
+
+**Feature:** ${title}
+${content ? `**Details:** ${content}` : ''}
+
+Please:
+1. Identify which SUITE app this belongs to (FoodVitals, Cheshbon, OpticRep, TrueForm, REMcast, or new)
+2. Plan the implementation
+3. Write the code changes needed`,
+
+            app_idea: (title, content) => `Create a new SUITE app:
+
+**App Name:** ${title}
+${content ? `**Concept:** ${content}` : ''}
+
+Please:
+1. Use the boilerplate at /boilerplate
+2. Set up the basic structure
+3. Implement the core feature
+4. Prepare for deployment`,
+
+            suite_business: (title, content) => `Analyze this SUITE business/ecosystem idea:
+
+**Idea:** ${title}
+${content ? `**Details:** ${content}` : ''}
+
+Please provide:
+1. Feasibility analysis
+2. Implementation steps
+3. Potential challenges
+4. Recommended next actions`,
+
+            article: (title, content) => `Write a blog post for artstu.ca:
+
+**Topic:** ${title}
+${content ? `**Notes:** ${content}` : ''}
+
+Please write a thoughtful article that:
+1. Explores the topic from multiple angles
+2. Connects to themes of faith, technology, or philosophy
+3. Is engaging and well-structured`,
+
+            brainstorm: (title, content) => `Help me develop this idea further:
+
+**Idea:** ${title}
+${content ? `**Current thoughts:** ${content}` : ''}
+
+Please:
+1. Explore different angles
+2. Identify opportunities
+3. Suggest concrete next steps`,
+
+            question: (title, content) => `Research this topic:
+
+**Question:** ${title}
+${content ? `**Context:** ${content}` : ''}
+
+Please provide a thorough answer with sources where applicable.`,
+
+            action_item: (title, content) => `Help me complete this action:
+
+**Task:** ${title}
+${content ? `**Details:** ${content}` : ''}
+
+Please help me accomplish this task.`,
+
+            personal: (title, content) => `Help with this personal task:
+
+**Task:** ${title}
+${content ? `**Details:** ${content}` : ''}
+
+Please provide helpful guidance.`
+        };
+
+        // Push modal state
+        let pushingIdeaId = null;
+        let pushTarget = null;
+        let currentTaskId = null;
+
+        // Open push modal
+        function openPushModal(ideaId, target) {
+            const idea = ideas.find(i => i.id === ideaId);
+            if (!idea) return;
+
+            pushingIdeaId = ideaId;
+            pushTarget = target;
+            currentTaskId = null;
+
+            // Set modal title
+            document.getElementById('pushModalTitle').textContent =
+                target === 'suite' ? 'Push to SUITE' : 'Push to ArtStu';
+
+            // Generate prompt based on category
+            const template = PROMPT_TEMPLATES[idea.category] || PROMPT_TEMPLATES.brainstorm;
+            const prompt = template(idea.title, idea.content || '');
+            document.getElementById('claudePrompt').value = prompt;
+
+            // Reset response section
+            document.getElementById('claudeResponseSection').style.display = 'none';
+            document.getElementById('claudeResponse').textContent = '';
+            document.getElementById('pushBtnText').style.display = 'inline';
+            document.getElementById('pushBtnLoading').style.display = 'none';
+            document.getElementById('pushConfirmBtn').disabled = false;
+
+            // Show modal
+            document.getElementById('pushModal').style.display = 'flex';
+        }
+
+        // Close push modal
+        function closePushModal() {
+            pushingIdeaId = null;
+            pushTarget = null;
+            currentTaskId = null;
+            document.getElementById('pushModal').style.display = 'none';
+        }
+
+        // Send to Claude and push
+        async function sendToClaudeAndPush() {
+            if (!pushingIdeaId || !pushTarget) return;
+
+            const prompt = document.getElementById('claudePrompt').value.trim();
+            if (!prompt) {
+                alert('Please enter a prompt');
+                return;
+            }
+
+            // Update UI to loading state
+            document.getElementById('pushBtnText').style.display = 'none';
+            document.getElementById('pushBtnLoading').style.display = 'inline';
+            document.getElementById('pushConfirmBtn').disabled = true;
+
+            try {
+                // 1. Create claude_task
+                const taskResponse = await fetch(
+                    `${SUPABASE_URL}/rest/v1/claude_tasks`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=representation'
+                        },
+                        body: JSON.stringify({
+                            idea_id: pushingIdeaId,
+                            prompt: prompt,
+                            target: pushTarget,
+                            status: 'pending'
+                        })
+                    }
+                );
+
+                if (!taskResponse.ok) {
+                    throw new Error('Failed to create task');
+                }
+
+                const [task] = await taskResponse.json();
+                currentTaskId = task.id;
+
+                // 2. Move idea to target
+                const newStatus = pushTarget === 'suite' ? 'pushed' : 'artstu';
+                await fetch(
+                    `${SUPABASE_URL}/rest/v1/personal_ideas?id=eq.${pushingIdeaId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({ status: newStatus })
+                    }
+                );
+
+                // Update local state
+                const idea = ideas.find(i => i.id === pushingIdeaId);
+                if (idea) {
+                    idea.status = newStatus;
+                }
+                renderKanban();
+
+                // 3. Poll for response
+                pollForResponse(task.id);
+
+            } catch (err) {
+                console.error('Error sending to Claude:', err);
+                alert('Failed to send to Claude. Check console for details.');
+                document.getElementById('pushBtnText').style.display = 'inline';
+                document.getElementById('pushBtnLoading').style.display = 'none';
+                document.getElementById('pushConfirmBtn').disabled = false;
+            }
+        }
+
+        // Poll for Claude response
+        async function pollForResponse(taskId) {
+            const maxAttempts = 120; // 10 minutes at 5 second intervals
+            let attempts = 0;
+
+            const poll = async () => {
+                attempts++;
+
+                try {
+                    const response = await fetch(
+                        `${SUPABASE_URL}/rest/v1/claude_tasks?id=eq.${taskId}&select=*`,
+                        {
+                            headers: {
+                                'apikey': SUPABASE_ANON_KEY,
+                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                            }
+                        }
+                    );
+
+                    if (!response.ok) throw new Error('Failed to poll');
+
+                    const [task] = await response.json();
+
+                    if (task.status === 'completed' || task.status === 'error' || task.status === 'needs_input') {
+                        // Show response
+                        document.getElementById('claudeResponseSection').style.display = 'block';
+                        document.getElementById('claudeResponse').textContent =
+                            task.response || task.error_message || 'No response received';
+
+                        // Update button
+                        document.getElementById('pushBtnText').textContent = 'Done';
+                        document.getElementById('pushBtnText').style.display = 'inline';
+                        document.getElementById('pushBtnLoading').style.display = 'none';
+                        document.getElementById('pushConfirmBtn').disabled = false;
+                        document.getElementById('pushConfirmBtn').onclick = closePushModal;
+
+                        return;
+                    }
+
+                    if (task.status === 'processing') {
+                        document.getElementById('pushBtnLoading').textContent = 'Claude is working...';
+                    }
+
+                    if (attempts < maxAttempts) {
+                        setTimeout(poll, 5000);
+                    } else {
+                        document.getElementById('claudeResponseSection').style.display = 'block';
+                        document.getElementById('claudeResponse').textContent = 'Timeout waiting for response. Check if claude-watcher is running.';
+                        document.getElementById('pushBtnText').textContent = 'Close';
+                        document.getElementById('pushBtnText').style.display = 'inline';
+                        document.getElementById('pushBtnLoading').style.display = 'none';
+                        document.getElementById('pushConfirmBtn').disabled = false;
+                        document.getElementById('pushConfirmBtn').onclick = closePushModal;
+                    }
+                } catch (err) {
+                    console.error('Poll error:', err);
+                    if (attempts < maxAttempts) {
+                        setTimeout(poll, 5000);
+                    }
+                }
+            };
+
+            poll();
+        }
+
+        // Push idea to ArtStu (direct, without Claude - keeping for backwards compatibility)
+        async function pushToArtstu(ideaId) {
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/personal_ideas?id=eq.${ideaId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({
+                            status: 'artstu'
+                        })
+                    }
+                );
+
+                if (response.ok) {
+                    const idea = ideas.find(i => i.id === ideaId);
+                    if (idea) {
+                        idea.status = 'artstu';
+                    }
+                    renderKanban();
+                } else {
+                    console.error('Failed to push idea:', await response.text());
+                    alert('Failed to push to ArtStu.');
+                }
+            } catch (err) {
+                console.error('Error pushing idea:', err);
+                alert('Error pushing to ArtStu.');
+            }
+        }
+
+        // Push idea to SUITE Factory
+        async function pushToSuite(ideaId) {
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/personal_ideas?id=eq.${ideaId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({
+                            status: 'pushed'
+                        })
+                    }
+                );
+
+                if (response.ok) {
+                    const idea = ideas.find(i => i.id === ideaId);
+                    if (idea) {
+                        idea.status = 'pushed';
+                    }
+                    renderKanban();
+                } else {
+                    console.error('Failed to push idea:', await response.text());
+                    alert('Failed to push to SUITE.');
+                }
+            } catch (err) {
+                console.error('Error pushing idea:', err);
+                alert('Error pushing to SUITE.');
+            }
+        }
+
+        // Open implement modal
+        function openImplementModal(ideaId) {
+            implementingIdeaId = ideaId;
+            document.getElementById('implementNote').value = '';
+            document.getElementById('implementModal').style.display = 'flex';
+            document.getElementById('implementNote').focus();
+        }
+
+        // Close implement modal
+        function closeImplementModal() {
+            implementingIdeaId = null;
+            document.getElementById('implementModal').style.display = 'none';
+        }
+
+        // Confirm implement with note
+        async function confirmImplement() {
+            if (!implementingIdeaId) return;
+
+            const note = document.getElementById('implementNote').value.trim();
+
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/personal_ideas?id=eq.${implementingIdeaId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({
+                            status: 'implemented',
+                            dismiss_reason: note ? `Done: ${note}` : 'Done'
+                        })
+                    }
+                );
+
+                if (response.ok) {
+                    const idea = ideas.find(i => i.id === implementingIdeaId);
+                    if (idea) {
+                        idea.status = 'implemented';
+                        idea.dismiss_reason = note ? `Done: ${note}` : 'Done';
+                    }
+                    closeImplementModal();
+                    renderKanban();
+                } else {
+                    console.error('Failed to implement idea:', await response.text());
+                    alert('Failed to mark as implemented.');
+                }
+            } catch (err) {
+                console.error('Error implementing idea:', err);
+                alert('Error marking as implemented.');
+            }
+        }
+
+        // Revert idea back to inbox
+        async function revertIdea(ideaId) {
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/personal_ideas?id=eq.${ideaId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({
+                            status: 'inbox',
+                            dismiss_reason: null
+                        })
+                    }
+                );
+
+                if (response.ok) {
+                    const idea = ideas.find(i => i.id === ideaId);
+                    if (idea) {
+                        idea.status = 'inbox';
+                        idea.dismiss_reason = null;
+                    }
+                    renderKanban();
+                } else {
+                    console.error('Failed to revert idea:', await response.text());
+                    alert('Failed to revert idea.');
+                }
+            } catch (err) {
+                console.error('Error reverting idea:', err);
+                alert('Error reverting idea.');
+            }
+        }
+
+        // Utility: escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Utility: get time ago string
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            if (seconds < 60) return 'just now';
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `${minutes}m ago`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours}h ago`;
+            const days = Math.floor(hours / 24);
+            if (days < 7) return `${days}d ago`;
+            return date.toLocaleDateString();
+        }
+
+        // Close modal on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (document.getElementById('dismissModal').style.display === 'flex') {
+                    closeDismissModal();
+                }
+                if (document.getElementById('implementModal').style.display === 'flex') {
+                    closeImplementModal();
+                }
+            }
+        });
+
+        // ========================================
+        // APP FACTORY (existing code below)
+        // ========================================
+
+        // Step definitions
+        const STEPS = [
+            {
+                title: 'Define Your App',
+                fields: [
+                    { id: 'appName', label: 'App Name', type: 'text', placeholder: 'e.g., TaskMaster AI' },
+                    { id: 'slug', label: 'Slug (lowercase, no spaces)', type: 'text', placeholder: 'e.g., taskmaster' },
+                    { id: 'category', label: 'Category', type: 'select', options: ['productivity', 'health', 'finance', 'entertainment', 'education', 'utilities', 'social'] },
+                    { id: 'oneLiner', label: 'One-liner Description', type: 'text', placeholder: 'e.g., AI-powered task management' },
+                    { id: 'coreFeature', label: 'Core Feature', type: 'textarea', placeholder: 'Describe the main functionality...' },
+                ],
+                promptTemplate: `Create a new SUITE ecosystem app:
+- Name: {appName}
+- Slug: {slug}
+- Category: {category}
+- Description: {oneLiner}
+- Core Feature: {coreFeature}
+
+Use the SUITE App Boilerplate at /boilerplate.
+1. Copy the boilerplate folder: cp -r boilerplate {slug}
+2. Update config/features.ts with APP_ID='{slug}' and APP_NAME='{appName}'
+3. Update app.json with the correct name, slug, and bundle IDs
+4. The TelegramAuthContext and PaymentGate are already set up - don't modify them.`
+            },
+            {
+                title: 'Define Features',
+                fields: [
+                    { id: 'freeFeatures', label: 'Free Features (one per line)', type: 'textarea', placeholder: 'Dashboard\nBasic search\nHistory view' },
+                    { id: 'paidFeatures', label: 'Paid Features (format: Name - cost credits)', type: 'textarea', placeholder: 'AI Analysis - 10 credits\nPro Export - 5 credits' },
+                ],
+                promptTemplate: `Add these features to {appName} ({slug}):
+
+FREE FEATURES:
+{freeFeatures}
+
+PAID FEATURES:
+{paidFeatures}
+
+Update config/features.ts with these features.
+For each paid feature, use the usePaymentGate hook:
+
+const { requestPayment, PaymentGateModal } = usePaymentGate();
+const success = await requestPayment({
+  featureName: 'Feature Name',
+  creditCost: 10,
+  appId: '{slug}'
+});`
+            },
+            {
+                title: 'Build Core Logic',
+                fields: [
+                    { id: 'apiNeeded', label: 'API/Service Needed', type: 'select', options: ['none', 'OpenAI/Claude', 'Gemini', 'Custom API', 'Supabase only'] },
+                    { id: 'dataModel', label: 'Data to Store', type: 'textarea', placeholder: 'e.g., tasks (id, title, completed, user_id)' },
+                    { id: 'mainScreens', label: 'Main Screens/Tabs', type: 'textarea', placeholder: 'Home\nCreate\nHistory\nProfile' },
+                ],
+                promptTemplate: `Implement the core functionality for {appName}:
+
+API: {apiNeeded}
+Data Model: {dataModel}
+
+Main Screens:
+{mainScreens}
+
+Follow these patterns from FoodVitals:
+- Put API calls in services/*.ts
+- Use the PaymentGate for any paid AI features
+- Store user data in Supabase with telegram_id as foreign key
+- Use the dark theme styling (LinearGradient backgrounds, etc.)`
+            },
+            {
+                title: 'Deploy',
+                fields: [
+                    { id: 'deployUrl', label: 'Deploy URL (after vercel --prod)', type: 'text', placeholder: 'https://your-app.vercel.app' },
+                    { id: 'iconUrl', label: 'Icon URL', type: 'text', placeholder: 'https://...' },
+                ],
+                promptTemplate: `Deploy {appName} to production:
+
+1. Build: cd {slug} && npm run build:web
+2. Deploy: vercel --prod
+3. Get the URL: {deployUrl}
+
+Add to SUITE Shell - run this SQL in Supabase:
+
+INSERT INTO apps (name, slug, description, icon_url, app_url, category, status)
+VALUES (
+  '{appName}',
+  '{slug}',
+  '{oneLiner}',
+  '{iconUrl}',
+  '{deployUrl}',
+  '{category}',
+  'live'
+);
+
+4. Test in SUITE Shell at getsuite.app/suite-shell.html`
+            }
+        ];
+
+        // State
+        let projects = JSON.parse(localStorage.getItem('appFactoryProjects') || '[]');
+        let currentProject = null;
+        let currentStep = 0;
+
+        // Telegram Web App detection
+        const isTelegram = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData;
+        if (isTelegram) {
+            Telegram.WebApp.expand();
+            Telegram.WebApp.ready();
+            // Hide nav in Telegram Mini App
+            document.addEventListener('DOMContentLoaded', () => {
+                const nav = document.getElementById('main-nav');
+                if (nav) nav.style.display = 'none';
+                document.querySelector('.factory-container').style.paddingTop = '20px';
+            });
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            renderProjects();
+            restoreIdeaFactoryData();
+
+            // Check URL for tab parameter, default to Stuart Factory
+            const urlParams = new URLSearchParams(window.location.search);
+            const tabParam = urlParams.get('tab');
+            if (tabParam && ['idea', 'build'].includes(tabParam)) {
+                switchTab(tabParam);
+            } else {
+                // Stuart Factory is default in HTML, just load the ideas
+                loadIdeas();
+            }
+        });
+
+        function renderProjects() {
+            const list = document.getElementById('projectsList');
+            if (projects.length === 0) {
+                list.innerHTML = '<div style="color: var(--text-dim); font-size: 0.9rem; text-align: center; padding: 20px;">No projects yet</div>';
+                return;
+            }
+
+            list.innerHTML = projects.map((p, i) => `
+                <div class="project-item ${currentProject === i ? 'active' : ''}" onclick="selectProject(${i})">
+                    <div class="project-name">${p.config.appName || 'Untitled'}</div>
+                    <div class="project-step">Step ${p.step + 1} of 4</div>
+                </div>
+            `).join('');
+        }
+
+        function newProject() {
+            const project = {
+                id: Date.now(),
+                step: 0,
+                config: {},
+                createdAt: new Date().toISOString()
+            };
+            projects.unshift(project);
+            currentProject = 0;
+            currentStep = 0;
+            saveProjects();
+            renderProjects();
+            renderStep();
+        }
+
+        function selectProject(index) {
+            currentProject = index;
+            currentStep = projects[index].step;
+            renderProjects();
+            renderStep();
+        }
+
+        function renderStep() {
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('stepContent').style.display = 'block';
+
+            const step = STEPS[currentStep];
+            const project = projects[currentProject];
+
+            // Update progress dots
+            document.querySelectorAll('.step-dot').forEach((dot, i) => {
+                dot.className = 'step-dot';
+                if (i < currentStep) dot.classList.add('completed');
+                if (i === currentStep) dot.classList.add('active');
+            });
+
+            // Update header
+            document.getElementById('stepNumber').textContent = `Step ${currentStep + 1} of ${STEPS.length}`;
+            document.getElementById('stepTitle').textContent = step.title;
+
+            // Render form
+            const form = document.getElementById('stepForm');
+            form.innerHTML = step.fields.map(field => {
+                const value = project.config[field.id] || '';
+                if (field.type === 'select') {
+                    return `
+                        <div class="form-group">
+                            <label>${field.label}</label>
+                            <select id="${field.id}" onchange="updateField('${field.id}', this.value)">
+                                ${field.options.map(opt => `<option value="${opt}" ${value === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+                            </select>
+                        </div>
+                    `;
+                } else if (field.type === 'textarea') {
+                    return `
+                        <div class="form-group">
+                            <label>${field.label}</label>
+                            <textarea id="${field.id}" placeholder="${field.placeholder || ''}" oninput="updateField('${field.id}', this.value)">${value}</textarea>
+                        </div>
+                    `;
+                } else {
+                    return `
+                        <div class="form-group">
+                            <label>${field.label}</label>
+                            <input type="text" id="${field.id}" value="${value}" placeholder="${field.placeholder || ''}" oninput="updateField('${field.id}', this.value)">
+                        </div>
+                    `;
+                }
+            }).join('');
+
+            // Generate prompt
+            generatePrompt();
+
+            // Update buttons
+            document.getElementById('prevBtn').style.display = currentStep === 0 ? 'none' : 'block';
+            document.getElementById('nextBtn').textContent = currentStep === STEPS.length - 1 ? 'Complete' : 'Mark Complete & Next';
+        }
+
+        function updateField(fieldId, value) {
+            projects[currentProject].config[fieldId] = value;
+            saveProjects();
+            generatePrompt();
+        }
+
+        function generatePrompt() {
+            const step = STEPS[currentStep];
+            const config = projects[currentProject].config;
+
+            let prompt = step.promptTemplate;
+            Object.keys(config).forEach(key => {
+                prompt = prompt.replace(new RegExp(`{${key}}`, 'g'), config[key] || `[${key}]`);
+            });
+
+            document.getElementById('promptText').textContent = prompt;
+        }
+
+        function copyPrompt() {
+            const text = document.getElementById('promptText').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = 'Copy to Clipboard';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        function prevStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                projects[currentProject].step = currentStep;
+                saveProjects();
+                renderStep();
+            }
+        }
+
+        function nextStep() {
+            if (currentStep < STEPS.length - 1) {
+                currentStep++;
+                projects[currentProject].step = currentStep;
+                saveProjects();
+                renderStep();
+            } else {
+                // Complete
+                alert('App complete! Check SUITE Shell to verify.');
+            }
+        }
+
+        function saveProjects() {
+            localStorage.setItem('appFactoryProjects', JSON.stringify(projects));
+        }
+    </script>
+</body>
+
+</html>

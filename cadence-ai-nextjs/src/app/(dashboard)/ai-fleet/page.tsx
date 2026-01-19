@@ -272,29 +272,6 @@ export default function AIFleetPage() {
                 </p>
             </div>
 
-            {/* Flywheel Diagram */}
-            <div className="card p-6 mb-6">
-                <div className="flex items-center justify-center gap-2 flex-wrap text-sm">
-                    <span className="px-3 py-1.5 bg-[var(--primary)]/20 text-[var(--primary)] rounded-full font-medium">Your Deposit</span>
-                    <span className="text-[var(--foreground-muted)]">→</span>
-                    <span className="px-3 py-1.5 bg-[var(--surface)] text-[var(--foreground)] rounded-full">Generates Yield</span>
-                    <span className="text-[var(--foreground-muted)]">→</span>
-                    <span className="px-3 py-1.5 bg-[var(--surface)] text-[var(--foreground)] rounded-full">Funds Apps</span>
-                    <span className="text-[var(--foreground-muted)]">→</span>
-                    <span className="px-3 py-1.5 bg-[var(--surface)] text-[var(--foreground)] rounded-full">Apps Generate Revenue</span>
-                    <span className="text-[var(--foreground-muted)]">→</span>
-                    <span className="px-3 py-1.5 bg-[var(--surface)] text-[var(--foreground)] rounded-full">Revenue Funds Vault</span>
-                    <span className="text-[var(--foreground-muted)]">→</span>
-                    <span className="px-3 py-1.5 bg-[var(--success)]/20 text-[var(--success)] rounded-full font-medium">Larger Deposit ↻</span>
-                </div>
-                <p className="text-center text-[var(--foreground-muted)] text-sm mt-4">
-                    The AI Fleet builds autonomous revenue-generating apps. All profits flow to the Treasury, which earns yield and benefits depositors.
-                    <a href="https://getsuite.app/learn/ai-fleet-manifesto" target="_blank" rel="noopener noreferrer" className="text-[var(--primary)] hover:underline ml-1">
-                        Learn more →
-                    </a>
-                </p>
-            </div>
-
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Input Form */}
                 <div className="card p-6 space-y-4">

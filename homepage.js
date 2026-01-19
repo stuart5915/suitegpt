@@ -65,15 +65,15 @@ async function loadFleetLatestApp() {
         // Update UI
         if (iconEl) {
             if (latestApp.icon_url && !latestApp.icon_url.includes('example.com')) {
-                iconEl.innerHTML = `<img src="${latestApp.icon_url}" alt="${latestApp.name}" style="width: 100%; height: 100%; border-radius: 16px; object-fit: cover;">`;
+                iconEl.innerHTML = `<a href="suite-shell.html" class="fleet-icon-link"><img src="${latestApp.icon_url}" alt="${latestApp.name}"></a>`;
             } else {
-                iconEl.textContent = latestApp.icon || latestApp.icon_emoji || '📱';
+                iconEl.innerHTML = `<a href="suite-shell.html" class="fleet-icon-link">${latestApp.icon || latestApp.icon_emoji || '📱'}</a>`;
             }
         }
 
         nameEl.textContent = latestApp.name;
         if (taglineEl) taglineEl.textContent = latestApp.tagline || latestApp.category || 'AI-powered app';
-        if (stakeEl) stakeEl.textContent = `💎 $${latestApp.total_staked || 0} staked`;
+        if (stakeEl) stakeEl.textContent = `💎 $${latestApp.total_staked || 0} funded`;
         if (daysEl) {
             const createdDate = new Date(latestApp.created_at);
             const daysSinceLaunch = Math.floor((Date.now() - createdDate) / (1000 * 60 * 60 * 24));

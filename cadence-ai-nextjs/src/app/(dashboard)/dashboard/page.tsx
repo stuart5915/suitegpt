@@ -4,30 +4,25 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useTelegramAuth } from '@/contexts/TelegramAuthContext'
 import {
-    Rocket,
-    FileText,
+    Plus,
     Loader2,
     ArrowRight,
-    Calendar,
-    Sparkles
+    FolderOpen,
+    RefreshCw,
+    Settings
 } from 'lucide-react'
-
-interface QueueItem {
-    id: string
-    status: string
-    scheduled_for: string | null
-}
+import { Project } from '@/lib/supabase/types'
 
 export default function DashboardPage() {
     const router = useRouter()
     const supabase = createClient()
+    const { user, isLoading: authLoading } = useTelegramAuth()
 
     const [loading, setLoading] = useState(true)
-    const [userName, setUserName] = useState<string | null>(null)
     const [greeting, setGreeting] = useState('Good morning')
-    const [queueCount, setQueueCount] = useState(0)
-    const [scheduledCount, setScheduledCount] = useState(0)
+    const [projects, setProjects] = useState<Project[]>([])
 
     useEffect(() => {
         const hour = new Date().getHours()
@@ -38,29 +33,22 @@ export default function DashboardPage() {
 
     useEffect(() => {
         async function loadData() {
+            if (!user?.id) {
+                setLoading(false)
+                return
+            }
+
             try {
-                // Get current user
-                const { data: { user } } = await supabase.auth.getUser()
-                if (!user) {
-                    router.push('/login')
-                    return
-                }
+                // Fetch user's projects
+                const { data, error } = await supabase
+                    .from('projects')
+                    .select('*')
+                    .eq('telegram_id', user.id)
+                    .order('updated_at', { ascending: false })
+                    .limit(6)
 
-                setUserName(user.user_metadata?.full_name || user.email?.split('@')[0] || 'there')
-
-                // Try to fetch queue stats (may not exist yet)
-                try {
-                    const { data: queueData, count } = await supabase
-                        .from('scheduled_posts')
-                        .select('id, status, scheduled_for', { count: 'exact' })
-
-                    if (queueData) {
-                        setQueueCount(count || 0)
-                        setScheduledCount(queueData.filter(p => p.status === 'queued').length)
-                    }
-                } catch {
-                    // Table may not exist yet - that's fine
-                    console.log('scheduled_posts table not available yet')
+                if (!error && data) {
+                    setProjects(data)
                 }
             } catch (err) {
                 console.error('Error loading data:', err)
@@ -69,10 +57,12 @@ export default function DashboardPage() {
             }
         }
 
-        loadData()
-    }, [supabase, router])
+        if (!authLoading) {
+            loadData()
+        }
+    }, [supabase, user, authLoading])
 
-    if (loading) {
+    if (loading || authLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-[var(--primary)]" />
@@ -85,124 +75,97 @@ export default function DashboardPage() {
             {/* Header */}
             <header className="mb-8">
                 <h1 className="text-3xl font-bold text-[var(--foreground)]">
-                    {greeting}, {userName} 👋
+                    {greeting}, {user?.firstName || user?.username || 'there'}
                 </h1>
                 <p className="text-[var(--foreground-muted)] mt-1">
-                    Post your daily AI Fleet builds and manage your content queue
+                    Select a project to manage content, or create a new one
                 </p>
             </header>
 
-            {/* Quick Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                {/* AI Fleet Card */}
-                <Link
-                    href="/ai-fleet"
-                    className="card p-6 hover:border-[var(--primary)] transition-colors group"
-                >
-                    <div className="flex items-start gap-4">
-                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center">
-                            <Rocket className="w-7 h-7 text-white" />
-                        </div>
-                        <div className="flex-1">
-                            <h2 className="text-xl font-bold text-[var(--foreground)] group-hover:text-[var(--primary)] transition-colors">
-                                AI Fleet Builder
-                            </h2>
-                            <p className="text-[var(--foreground-muted)] text-sm mt-1">
-                                Create branded social posts for new app launches
-                            </p>
-                            <div className="flex items-center gap-1 mt-3 text-[var(--primary)] text-sm font-medium">
-                                Create Post <ArrowRight className="w-4 h-4" />
-                            </div>
-                        </div>
-                    </div>
-                </Link>
+            {/* Projects Section */}
+            <section>
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-semibold text-[var(--foreground)]">Your Projects</h2>
+                    <Link href="/projects" className="text-sm text-[var(--primary)] hover:underline">
+                        View all
+                    </Link>
+                </div>
 
-                {/* Content Queue Card */}
-                <Link
-                    href="/queue"
-                    className="card p-6 hover:border-[var(--primary)] transition-colors group"
-                >
-                    <div className="flex items-start gap-4">
-                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#4ade80] to-[#22c55e] flex items-center justify-center">
-                            <FileText className="w-7 h-7 text-white" />
+                {projects.length === 0 ? (
+                    /* Empty State */
+                    <div className="card p-12 flex flex-col items-center justify-center text-center">
+                        <div className="w-16 h-16 rounded-2xl bg-[var(--surface)] flex items-center justify-center mb-4">
+                            <FolderOpen className="w-8 h-8 text-[var(--foreground-muted)]" />
                         </div>
-                        <div className="flex-1">
-                            <h2 className="text-xl font-bold text-[var(--foreground)] group-hover:text-[var(--primary)] transition-colors">
-                                Content Queue
-                            </h2>
-                            <p className="text-[var(--foreground-muted)] text-sm mt-1">
-                                Review and schedule your pending posts
-                            </p>
-                            <div className="flex items-center gap-3 mt-3">
-                                {queueCount > 0 ? (
-                                    <>
-                                        <span className="text-sm text-[var(--foreground)]">
-                                            <span className="font-bold">{queueCount}</span> in queue
-                                        </span>
-                                        {scheduledCount > 0 && (
-                                            <span className="text-sm text-[var(--foreground-muted)]">
-                                                • {scheduledCount} scheduled
-                                            </span>
-                                        )}
-                                    </>
-                                ) : (
-                                    <span className="text-sm text-[var(--foreground-muted)]">
-                                        No posts queued yet
+                        <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">
+                            No projects yet
+                        </h3>
+                        <p className="text-[var(--foreground-muted)] mb-6 max-w-sm">
+                            Create your first project to start generating AI-powered content with your brand voice.
+                        </p>
+                        <Link href="/projects/new" className="btn btn-primary">
+                            <Plus className="w-4 h-4" />
+                            Create Your First Project
+                        </Link>
+                    </div>
+                ) : (
+                    /* Projects Grid */
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {projects.map((project) => (
+                            <Link
+                                key={project.id}
+                                href={`/projects/${project.id}`}
+                                className="card p-5 hover:border-[var(--primary)] transition-all group"
+                            >
+                                <div className="flex items-start gap-4">
+                                    <div
+                                        className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg font-bold flex-shrink-0"
+                                        style={{
+                                            background: `linear-gradient(135deg, ${(project.posting_schedule as any)?.primary_color || 'var(--primary)'}, ${(project.posting_schedule as any)?.secondary_color || 'var(--secondary)'})`
+                                        }}
+                                    >
+                                        {project.name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="font-semibold text-[var(--foreground)] truncate group-hover:text-[var(--primary)] transition-colors">
+                                            {project.name}
+                                        </h3>
+                                        <p className="text-sm text-[var(--foreground-muted)] line-clamp-2 mt-1">
+                                            {project.description || 'No description'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Quick Actions */}
+                                <div className="flex items-center gap-2 mt-4 pt-4 border-t border-[var(--surface-border)]">
+                                    <span className="flex items-center gap-1 text-xs text-[var(--foreground-muted)]">
+                                        <RefreshCw className="w-3 h-3" />
+                                        Loops
                                     </span>
-                                )}
+                                    <span className="flex items-center gap-1 text-xs text-[var(--foreground-muted)]">
+                                        <Settings className="w-3 h-3" />
+                                        Settings
+                                    </span>
+                                    <ArrowRight className="w-4 h-4 text-[var(--foreground-muted)] ml-auto group-hover:text-[var(--primary)] transition-colors" />
+                                </div>
+                            </Link>
+                        ))}
+
+                        {/* Add New Project Card */}
+                        <Link
+                            href="/projects/new"
+                            className="card p-5 flex flex-col items-center justify-center min-h-[160px] border-dashed border-2 border-[var(--surface-border)] hover:border-[var(--primary)] group"
+                        >
+                            <div className="w-12 h-12 rounded-full bg-[var(--surface-hover)] flex items-center justify-center group-hover:bg-[var(--primary)]/10 transition-colors">
+                                <Plus className="w-6 h-6 text-[var(--foreground-muted)] group-hover:text-[var(--primary)]" />
                             </div>
-                        </div>
-                    </div>
-                </Link>
-            </div>
-
-            {/* Quick Start Section */}
-            <div className="card p-6">
-                <div className="flex items-center gap-2 mb-4">
-                    <Sparkles className="w-5 h-5 text-[var(--primary)]" />
-                    <h2 className="text-lg font-semibold text-[var(--foreground)]">
-                        Daily Workflow
-                    </h2>
-                </div>
-
-                <div className="space-y-3">
-                    <div className="flex items-start gap-3 p-3 rounded-lg bg-[var(--surface)]">
-                        <div className="w-6 h-6 rounded-full bg-[var(--primary)] text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
-                            1
-                        </div>
-                        <div>
-                            <p className="font-medium text-[var(--foreground)]">Build a new app</p>
-                            <p className="text-sm text-[var(--foreground-muted)]">
-                                Use Antigravity to create today's AI Fleet app
+                            <p className="mt-3 font-medium text-[var(--foreground-muted)] group-hover:text-[var(--foreground)]">
+                                New Project
                             </p>
-                        </div>
+                        </Link>
                     </div>
-
-                    <div className="flex items-start gap-3 p-3 rounded-lg bg-[var(--surface)]">
-                        <div className="w-6 h-6 rounded-full bg-[var(--primary)] text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
-                            2
-                        </div>
-                        <div>
-                            <p className="font-medium text-[var(--foreground)]">Create marketing post</p>
-                            <p className="text-sm text-[var(--foreground-muted)]">
-                                Go to <Link href="/ai-fleet" className="text-[var(--primary)] hover:underline">AI Fleet</Link> → Select app → Generate branded image → Add to Queue
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-start gap-3 p-3 rounded-lg bg-[var(--surface)]">
-                        <div className="w-6 h-6 rounded-full bg-[var(--primary)] text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
-                            3
-                        </div>
-                        <div>
-                            <p className="font-medium text-[var(--foreground)]">Review & Post</p>
-                            <p className="text-sm text-[var(--foreground-muted)]">
-                                Check <Link href="/queue" className="text-[var(--primary)] hover:underline">Content Queue</Link> → Edit if needed → Copy to X/Twitter
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                )}
+            </section>
         </div>
     )
 }
