@@ -217,63 +217,85 @@ function generatePrompt(destination, title, content, answers) {
 // ═══════════════════════════════════════════════════════════════
 
 async function handleNewMessage(chatId, userId, username, text) {
-  // Check if there's an active conversation
-  let conv = await getConversation(chatId);
+  try {
+    // Check if there's an active conversation
+    let conv = await getConversation(chatId);
+    console.log('Existing conversation:', conv);
 
-  if (conv) {
-    // Continue existing conversation based on status
-    return handleConversationResponse(chatId, conv, text);
-  }
-
-  // Start new conversation
-  conv = await createConversation(chatId, userId, username, text);
-
-  // Classify the message
-  const destinations = await getDestinations();
-  const classification = await classifyMessage(text, destinations);
-
-  const destination = destinations.find(d => d.slug === classification.destination_slug);
-
-  if (!destination) {
-    await sendMessage(chatId, "I couldn't figure out where this should go. Can you try rephrasing?");
-    await updateConversation(conv.id, { status: 'cancelled' });
-    return;
-  }
-
-  // Update conversation with classification
-  await updateConversation(conv.id, {
-    detected_destination_id: destination.id,
-    confidence: classification.confidence,
-    extracted_title: classification.title,
-    extracted_content: classification.content,
-    status: 'confirming_destination'
-  });
-
-  // Ask for destination confirmation
-  const confidenceEmoji = classification.confidence >= 0.8 ? '🎯' :
-                          classification.confidence >= 0.6 ? '🤔' : '❓';
-
-  // Build destination buttons (show all, in rows of 2)
-  const keyboard = [];
-  for (let i = 0; i < destinations.length; i += 2) {
-    const row = [{ text: `${destinations[i].icon} ${destinations[i].name}`, callback_data: `dest_${conv.id}_${destinations[i].slug}` }];
-    if (destinations[i + 1]) {
-      row.push({ text: `${destinations[i + 1].icon} ${destinations[i + 1].name}`, callback_data: `dest_${conv.id}_${destinations[i + 1].slug}` });
+    if (conv) {
+      // Continue existing conversation based on status
+      return handleConversationResponse(chatId, conv, text);
     }
-    keyboard.push(row);
-  }
-  keyboard.push([{ text: '➕ Add New Destination', callback_data: `newdest_${conv.id}` }]);
-  keyboard.push([{ text: '❌ Cancel', callback_data: `cancel_${conv.id}` }]);
 
-  await sendMessage(chatId,
-    `${confidenceEmoji} *Got it!*\n\n` +
-    `"${classification.title}"\n\n` +
-    `This looks like it's for *${destination.name}*.\n` +
-    `Is that right, or should it go somewhere else?`,
-    {
-      reply_markup: { inline_keyboard: keyboard }
+    // Start new conversation
+    conv = await createConversation(chatId, userId, username, text);
+    console.log('Created conversation:', conv);
+
+    if (!conv || !conv.id) {
+      console.error('Failed to create conversation');
+      await sendMessage(chatId, "❌ Error: Could not create conversation. Please try again.");
+      return;
     }
-  );
+
+    // Classify the message
+    const destinations = await getDestinations();
+    console.log('Destinations:', destinations?.length || 0, 'found');
+
+    if (!destinations || destinations.length === 0) {
+      await sendMessage(chatId, "⚠️ No destinations configured yet. Please add destinations in Factory first.");
+      await updateConversation(conv.id, { status: 'cancelled' });
+      return;
+    }
+
+    const classification = await classifyMessage(text, destinations);
+    console.log('Classification:', classification);
+
+    const destination = destinations.find(d => d.slug === classification.destination_slug);
+
+    if (!destination) {
+      await sendMessage(chatId, "I couldn't figure out where this should go. Can you try rephrasing?");
+      await updateConversation(conv.id, { status: 'cancelled' });
+      return;
+    }
+
+    // Update conversation with classification
+    await updateConversation(conv.id, {
+      detected_destination_id: destination.id,
+      confidence: classification.confidence,
+      extracted_title: classification.title,
+      extracted_content: classification.content,
+      status: 'confirming_destination'
+    });
+
+    // Ask for destination confirmation
+    const confidenceEmoji = classification.confidence >= 0.8 ? '🎯' :
+                            classification.confidence >= 0.6 ? '🤔' : '❓';
+
+    // Build destination buttons (show all, in rows of 2)
+    const keyboard = [];
+    for (let i = 0; i < destinations.length; i += 2) {
+      const row = [{ text: `${destinations[i].icon} ${destinations[i].name}`, callback_data: `dest_${conv.id}_${destinations[i].slug}` }];
+      if (destinations[i + 1]) {
+        row.push({ text: `${destinations[i + 1].icon} ${destinations[i + 1].name}`, callback_data: `dest_${conv.id}_${destinations[i + 1].slug}` });
+      }
+      keyboard.push(row);
+    }
+    keyboard.push([{ text: '➕ Add New Destination', callback_data: `newdest_${conv.id}` }]);
+    keyboard.push([{ text: '❌ Cancel', callback_data: `cancel_${conv.id}` }]);
+
+    await sendMessage(chatId,
+      `${confidenceEmoji} *Got it!*\n\n` +
+      `"${classification.title}"\n\n` +
+      `This looks like it's for *${destination.name}*.\n` +
+      `Is that right, or should it go somewhere else?`,
+      {
+        reply_markup: { inline_keyboard: keyboard }
+      }
+    );
+  } catch (err) {
+    console.error('handleNewMessage error:', err);
+    await sendMessage(chatId, `❌ Error processing message: ${err.message || 'Unknown error'}`);
+  }
 }
 
 async function handleConversationResponse(chatId, conv, text) {
