@@ -445,53 +445,63 @@ async function connectWalletFromNav() {
     }
 }
 
-// Telegram login using official widget script
-function loginWithTelegramWidget() {
-    const botId = '8341049569'; // suitehubbot numeric ID
+// Global callback for Telegram widget
+window.onTelegramAuth = function(user) {
+    const tgUser = {
+        id: user.id,
+        username: user.username || user.first_name,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        photo_url: user.photo_url,
+        auth_date: user.auth_date,
+        hash: user.hash
+    };
 
-    // Load Telegram widget script if not already loaded
-    if (!window.Telegram || !window.Telegram.Login) {
-        const script = document.createElement('script');
-        script.src = 'https://telegram.org/js/telegram-widget.js?22';
-        script.async = true;
-        script.onload = () => doTelegramAuth(botId);
-        document.head.appendChild(script);
-    } else {
-        doTelegramAuth(botId);
+    localStorage.setItem('telegram_user', JSON.stringify(tgUser));
+    closeNavConnectModal();
+
+    if (window.refreshNavCredits) {
+        window.refreshNavCredits();
     }
-}
 
-function doTelegramAuth(botId) {
-    // Use Telegram's official auth method
-    window.Telegram.Login.auth(
-        { bot_id: botId, request_access: true },
-        (user) => {
-            if (user) {
-                const tgUser = {
-                    id: user.id,
-                    username: user.username || user.first_name,
-                    first_name: user.first_name,
-                    last_name: user.last_name,
-                    photo_url: user.photo_url,
-                    auth_date: user.auth_date,
-                    hash: user.hash
-                };
+    // Reload to reflect login state
+    window.location.reload();
+};
 
-                localStorage.setItem('telegram_user', JSON.stringify(tgUser));
+// Telegram login - shows embedded widget
+function loginWithTelegramWidget() {
+    closeNavConnectModal();
 
-                closeNavConnectModal();
+    // Create overlay with Telegram widget
+    let overlay = document.getElementById('telegramAuthOverlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'telegramAuthOverlay';
+        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:10001;flex-direction:column;gap:20px;';
+        overlay.innerHTML = `
+            <div style="background:#1a1a2e;padding:30px;border-radius:16px;text-align:center;">
+                <h3 style="color:#fff;margin:0 0 20px 0;">Login with Telegram</h3>
+                <div id="telegramWidgetContainer"></div>
+                <p style="color:#9ca3af;font-size:0.85rem;margin-top:16px;">Click the button above to authenticate</p>
+            </div>
+            <button onclick="document.getElementById('telegramAuthOverlay').remove()" style="background:none;border:1px solid rgba(255,255,255,0.3);color:#fff;padding:10px 24px;border-radius:8px;cursor:pointer;">Cancel</button>
+        `;
+        document.body.appendChild(overlay);
 
-                if (window.refreshNavCredits) {
-                    window.refreshNavCredits();
-                }
-
-                // Reload page to reflect login state
-                window.location.reload();
-            } else {
-                console.log('Telegram auth cancelled or failed');
-            }
-        }
-    );
+        // Inject Telegram widget script
+        const container = document.getElementById('telegramWidgetContainer');
+        const script = document.createElement('script');
+        script.async = true;
+        script.src = 'https://telegram.org/js/telegram-widget.js?22';
+        script.setAttribute('data-telegram-login', 'suitehubbot');
+        script.setAttribute('data-size', 'large');
+        script.setAttribute('data-radius', '8');
+        script.setAttribute('data-onauth', 'onTelegramAuth(user)');
+        script.setAttribute('data-request-access', 'write');
+        container.appendChild(script);
+    } else {
+        overlay.style.display = 'flex';
+    }
 }
 
 // Profile menu - show account management modal
