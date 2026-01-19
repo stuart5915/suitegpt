@@ -253,12 +253,15 @@ async function handleNewMessage(chatId, userId, username, text) {
     // Find suggested destination (may not exist if AI suggests something new)
     let destination = destinations.find(d => d.slug === classification.destination_slug);
 
+    // Get title with fallback
+    const extractedTitle = classification.title || text.slice(0, 60) + (text.length > 60 ? '...' : '');
+
     // Update conversation with classification
     await updateConversation(conv.id, {
       detected_destination_id: destination?.id || null,
       confidence: classification.confidence,
-      extracted_title: classification.title,
-      extracted_content: classification.content,
+      extracted_title: extractedTitle,
+      extracted_content: classification.content || text,
       status: 'confirming_destination'
     });
 
@@ -280,13 +283,16 @@ async function handleNewMessage(chatId, userId, username, text) {
     keyboard.push([{ text: '➕ Add New Destination', callback_data: `newdest|${conv.id}` }]);
     keyboard.push([{ text: '❌ Cancel', callback_data: `cancel|${conv.id}` }]);
 
+    // Use the extracted title (already has fallback)
+    const displayTitle = extractedTitle;
+
     const messageText = destination
       ? `${confidenceEmoji} *Got it!*\n\n` +
-        `"${classification.title}"\n\n` +
+        `"${displayTitle}"\n\n` +
         `This looks like it's for *${destination.name}*.\n` +
         `Is that right, or should it go somewhere else?`
       : `${confidenceEmoji} *Got it!*\n\n` +
-        `"${classification.title}"\n\n` +
+        `"${displayTitle}"\n\n` +
         `Where should this go?`;
 
     await sendMessage(chatId, messageText, {
@@ -633,7 +639,7 @@ async function saveToNoteBox(chatId, convId, destination, answers) {
   await sendMessage(chatId,
     `✅ *Saved to NoteBox!*\n\n` +
     `📁 *${destination.name}*\n` +
-    `📝 "${conv.extracted_title}"\n\n` +
+    `📝 "${title}"\n\n` +
     `_Check your Factory → NoteBox to see it._`
   );
 }
