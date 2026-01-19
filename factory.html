@@ -1,0 +1,2843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>getSuite Factory - Community Governance</title>
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/nav.css">
+    <style>
+        /* Dark theme override for nav on this page */
+        .nav-inner {
+            background: rgba(10, 10, 10, 0.95) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .nav-logo {
+            color: #ffffff !important;
+        }
+        .nav-links a {
+            color: #9ca3af !important;
+        }
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: #ffffff !important;
+        }
+        .mobile-menu-btn span {
+            background: #ffffff !important;
+        }
+        .connect-btn {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+        }
+
+        :root {
+            --bg: #0a0a0a;
+            --bg-card: #111111;
+            --bg-elevated: #1a1a1a;
+            --text: #ffffff;
+            --text-dim: #888888;
+            --accent: #ff9500;
+            --accent-dim: rgba(255, 149, 0, 0.2);
+            --success: #22c55e;
+            --error: #ef4444;
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .factory-header {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .factory-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .factory-logo h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .factory-logo span {
+            color: var(--accent);
+        }
+
+        .user-panel {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-rep {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-elevated);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .auth-btn {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .auth-btn:hover {
+            background: #ffaa33;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* Factory Tabs */
+        .factory-tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--bg-elevated);
+            padding: 4px;
+            border-radius: 12px;
+        }
+
+        .factory-tab {
+            padding: 10px 24px;
+            border: none;
+            background: transparent;
+            color: var(--text-dim);
+            font-weight: 600;
+            font-size: 0.9rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .factory-tab:hover {
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .factory-tab.active {
+            background: var(--accent);
+            color: #000;
+        }
+
+        .factory-tab .tab-icon {
+            font-size: 1.1rem;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: flex;
+            flex: 1;
+        }
+
+        /* NoteBox Auth Prompt */
+        .notebox-auth-prompt {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .notebox-auth-icon {
+            font-size: 4rem;
+        }
+
+        .notebox-auth-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .notebox-auth-subtitle {
+            color: var(--text-dim);
+            max-width: 400px;
+        }
+
+        .notebox-connect-btn {
+            background: linear-gradient(135deg, #a855f7, #6366f1);
+            color: #fff;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .notebox-connect-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(168, 85, 247, 0.3);
+        }
+
+        /* NoteBox App Styles */
+        .notebox-app {
+            display: flex;
+        }
+
+        .notebox-quick-add {
+            display: flex;
+            gap: 8px;
+        }
+
+        .notebox-input {
+            flex: 1;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--text);
+            font-size: 0.9rem;
+        }
+
+        .notebox-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .notebox-add-btn {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .notebox-add-btn:hover {
+            background: #ffaa33;
+        }
+
+        .notebox-kanban { display: flex; flex-wrap: wrap; gap: 16px; padding: 20px; overflow-y: auto; flex: 1; align-content: flex-start; }
+
+        .notebox-kanban.grid-view {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        }
+
+        .notebox-column { width: 280px; flex-shrink: 0;
+            background: var(--bg-elevated);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            
+        }
+
+        .notebox-column-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .notebox-column-count {
+            background: var(--bg-card);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-left: auto;
+        }
+
+        .notebox-column-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .notebox-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            cursor: grab;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .notebox-card:active {
+            cursor: grabbing;
+        }
+
+        .notebox-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        .notebox-card.dragging {
+            opacity: 0.5;
+            transform: scale(0.95);
+            border-color: var(--accent);
+        }
+
+        .notebox-column-cards.drag-over {
+            background: rgba(0, 212, 170, 0.1);
+            border: 2px dashed var(--accent);
+            border-radius: 8px;
+            min-height: 100px;
+        }
+
+        .archive-column {
+            opacity: 0.8;
+        }
+
+        .archive-column .notebox-card {
+            opacity: 0.7;
+        }
+
+        .archive-column .notebox-card:hover {
+            opacity: 1;
+        }
+
+        .notebox-card-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .notebox-card-emoji {
+            font-size: 1.2rem;
+        }
+
+        .notebox-card-category {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-dim);
+        }
+
+        .notebox-card-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+
+        .notebox-card-content {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            margin-bottom: 12px;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .notebox-card-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .notebox-card-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.8rem;
+        }
+
+        .notebox-card-btn.done {
+            background: rgba(34, 197, 94, 0.2);
+            color: var(--success);
+        }
+
+        .notebox-card-btn.done:hover {
+            background: rgba(34, 197, 94, 0.3);
+        }
+
+        .notebox-card-reason {
+            font-size: 0.8rem;
+            color: var(--accent);
+            background: var(--accent-dim);
+            padding: 8px 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-style: italic;
+        }
+
+        .notebox-empty {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-dim);
+        }
+
+        .notebox-empty-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+
+        /* Main Layout */
+        .factory-main {
+            display: flex;
+            height: calc(100vh - 81px);
+        }
+
+        /* Sidebar */
+        .factory-sidebar {
+            width: 280px;
+            background: var(--bg-card);
+            border-right: 1px solid var(--border);
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+
+        .sidebar-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-dim);
+            margin-bottom: 12px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: var(--accent);
+            color: #000;
+            border: none;
+            padding: 14px 20px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 20px;
+        }
+
+        .submit-btn:hover {
+            background: #ffaa33;
+            transform: translateY(-1px);
+        }
+
+        .stat-card {
+            background: var(--bg-elevated);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .stat-value.accent {
+            color: var(--accent);
+        }
+
+        .filter-btn {
+            width: 100%;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            margin-bottom: 8px;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            background: var(--accent-dim);
+            border-color: var(--accent);
+        }
+
+        .filter-count {
+            background: var(--bg);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+        }
+
+        /* Content Area */
+        .factory-content {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .content-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 8px;
+        }
+
+        .view-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .view-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #000;
+        }
+
+        /* Kanban Board */
+        .kanban-board {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .kanban-column {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 16px;
+            min-height: 400px;
+        }
+
+        .column-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .column-icon {
+            font-size: 1.2rem;
+        }
+
+        .column-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .column-count {
+            margin-left: auto;
+            background: var(--bg-elevated);
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        /* Proposal Cards */
+        .proposal-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .proposal-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        .proposal-category {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+        }
+
+        .proposal-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 10px;
+            line-height: 1.3;
+        }
+
+        .proposal-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+
+        .proposal-author {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .author-avatar {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--accent);
+            font-size: 0.6rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+            font-weight: 700;
+        }
+
+        .proposal-votes {
+            display: flex;
+            gap: 12px;
+        }
+
+        .vote-count {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .vote-count.for {
+            color: var(--success);
+        }
+
+        .vote-count.against {
+            color: var(--error);
+        }
+
+        /* Quick Vote Buttons */
+        .quick-vote {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+        }
+
+        .quick-vote-btn {
+            flex: 1;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: transparent;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .quick-vote-btn.for:hover {
+            background: rgba(34, 197, 94, 0.2);
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        .quick-vote-btn.against:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: var(--error);
+            color: var(--error);
+        }
+
+        .quick-vote-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Time remaining badge */
+        .time-badge {
+            background: var(--accent-dim);
+            color: var(--accent);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* Submit Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 24px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 14px;
+            color: var(--text);
+            font-size: 0.95rem;
+            font-family: inherit;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .form-select {
+            cursor: pointer;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-btn.cancel {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .modal-btn.submit {
+            background: var(--accent);
+            border: none;
+            color: #000;
+        }
+
+        .modal-btn.submit:hover {
+            background: #ffaa33;
+        }
+
+        /* Category badges */
+        .category-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .category-badge.feature { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+        .category-badge.bug { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .category-badge.app_idea { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
+        .category-badge.improvement { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+        .category-badge.docs { background: rgba(107, 114, 128, 0.2); color: #9ca3af; }
+        .category-badge.integration { background: rgba(20, 184, 166, 0.2); color: #14b8a6; }
+        .category-badge.tokenomics { background: rgba(255, 149, 0, 0.2); color: #ff9500; }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-dim);
+        }
+
+        .empty-state-icon {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+        }
+
+        /* Leaderboard */
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--bg-elevated);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+        }
+
+        .leaderboard-item:hover {
+            border-color: var(--accent);
+        }
+
+        .leaderboard-item.gold {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.05));
+            border-color: rgba(255, 215, 0, 0.3);
+        }
+
+        .leaderboard-item.silver {
+            background: linear-gradient(135deg, rgba(192, 192, 192, 0.1), rgba(192, 192, 192, 0.05));
+            border-color: rgba(192, 192, 192, 0.3);
+        }
+
+        .leaderboard-item.bronze {
+            background: linear-gradient(135deg, rgba(205, 127, 50, 0.1), rgba(205, 127, 50, 0.05));
+            border-color: rgba(205, 127, 50, 0.3);
+        }
+
+        .leaderboard-rank {
+            font-size: 1.2rem;
+            width: 32px;
+            text-align: center;
+        }
+
+        .leaderboard-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .leaderboard-name {
+            font-weight: 600;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .leaderboard-stats {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            display: flex;
+            gap: 8px;
+        }
+
+        .leaderboard-rep {
+            color: var(--accent);
+            font-weight: 700;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .founder-badge {
+            background: linear-gradient(135deg, #ff9500, #ff6b00);
+            color: #000;
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 700;
+            margin-left: 6px;
+        }
+
+        /* Auth required overlay */
+        .auth-required {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+
+        .auth-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            max-width: 400px;
+        }
+
+        .auth-card h2 {
+            margin-bottom: 12px;
+        }
+
+        .auth-card p {
+            color: var(--text-dim);
+            margin-bottom: 24px;
+        }
+
+        .telegram-btn {
+            background: #0088cc;
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0 auto;
+        }
+
+        .telegram-btn:hover {
+            background: #0099dd;
+        }
+
+        /* Governance Sections */
+        .governance-section {
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .governance-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .governance-section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .governance-section-header h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .governance-section-count {
+            background: var(--accent-dim);
+            color: var(--accent);
+            padding: 2px 10px;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .section-kanban {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        .section-column {
+            background: var(--bg-elevated);
+            border-radius: 12px;
+            padding: 12px;
+            min-height: 120px;
+        }
+
+        .section-column-header {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-dim);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .section-column-header span {
+            opacity: 0.7;
+        }
+
+        .section-add-btn {
+            width: 100%;
+            padding: 8px 12px;
+            margin-bottom: 12px;
+            background: var(--accent);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .section-add-btn:hover {
+            background: #ffaa33;
+        }
+
+        /* Drag and Drop */
+        .section-column.drag-over {
+            background: rgba(255, 149, 0, 0.1);
+            border: 2px dashed var(--accent);
+        }
+
+        .idea-card[draggable="true"] {
+            cursor: grab;
+        }
+
+        .idea-card[draggable="true"]:active {
+            cursor: grabbing;
+        }
+
+        .idea-card.dragging {
+            opacity: 0.5;
+        }
+
+        .empty-column {
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            text-align: center;
+            padding: 20px 10px;
+            opacity: 0.6;
+        }
+
+        .idea-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+        }
+
+        .idea-card:hover {
+            border-color: var(--accent);
+        }
+
+        .idea-card.building {
+            border-left: 3px solid #ff9500;
+        }
+
+        .idea-card.considering {
+            border-left: 3px solid #6366f1;
+        }
+
+        .idea-card.live {
+            border-left: 3px solid #22c55e;
+        }
+
+        .idea-card.rejected {
+            border-left: 3px solid #ef4444;
+            opacity: 0.7;
+        }
+
+        .idea-card-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 6px;
+        }
+
+        .idea-card-tagline {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .idea-card-meta {
+            display: flex;
+            gap: 10px;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .factory-sidebar {
+                display: none;
+            }
+
+            .factory-header {
+                padding: 16px 20px;
+            }
+
+            .factory-content {
+                padding: 16px;
+            }
+
+            .kanban-board {
+                grid-template-columns: 1fr;
+            }
+
+            .section-kanban {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Main Site Navigation -->
+    <nav id="main-nav"></nav>
+
+    <!-- Factory Header -->
+    <header class="factory-header" style="margin-top: 80px;">
+        <div class="factory-logo">
+            <h1>get<span>Suite</span> Factory</h1>
+        </div>
+        <div class="factory-tabs">
+            <button class="factory-tab active" data-tab="telos" onclick="switchFactoryTab('telos')">
+                <span class="tab-icon">🏛️</span> Governance
+            </button>
+            <button class="factory-tab" data-tab="notebox" onclick="switchFactoryTab('notebox')">
+                <span class="tab-icon">📦</span> NoteBox
+            </button>
+        </div>
+        <div class="user-panel" id="userPanel">
+            <!-- Populated by JS based on auth state -->
+            <button class="auth-btn" onclick="showAuthModal()">Connect</button>
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+    <div class="factory-main">
+        <!-- TELOS Tab Content -->
+        <div class="tab-content active" id="telosContent">
+            <!-- Sidebar -->
+            <aside class="factory-sidebar">
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Your Stats</div>
+                    <div class="stat-card">
+                        <div class="stat-label">Reputation</div>
+                        <div class="stat-value accent" id="userRep">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Active Submissions</div>
+                        <div class="stat-value" id="userSubmissions">0 / 5</div>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-title" style="display: flex; align-items: center; gap: 8px;">
+                        <span>🏆</span> Leaderboard
+                    </div>
+                    <div id="leaderboard">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Content -->
+            <main class="factory-content">
+                <div class="content-header">
+                    <h2 class="content-title">Governance</h2>
+                </div>
+
+                <!-- SUITE Apps Section -->
+                <div class="governance-section" id="suiteAppsSection">
+                    <div class="governance-section-header">
+                        <h3>📱 SUITE Apps</h3>
+                        <span class="governance-section-count" id="suiteAppsCount">0</span>
+                    </div>
+                    <div class="section-kanban" id="suiteAppsKanban">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Business/Ecosystem Section -->
+                <div class="governance-section" id="businessSection">
+                    <div class="governance-section-header">
+                        <h3>💰 Business/Ecosystem</h3>
+                        <span class="governance-section-count" id="businessCount">0</span>
+                    </div>
+                    <div class="section-kanban" id="businessKanban">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Articles/Content Section -->
+                <div class="governance-section" id="contentSection">
+                    <div class="governance-section-header">
+                        <h3>📝 Articles/Content</h3>
+                        <span class="governance-section-count" id="contentSectionCount">0</span>
+                    </div>
+                    <div class="section-kanban" id="contentKanban">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Social/Cadence Loops Section -->
+                <div class="governance-section" id="socialSection">
+                    <div class="governance-section-header">
+                        <h3>🔄 Social/Cadence Loops</h3>
+                        <span class="governance-section-count" id="socialCount">0</span>
+                    </div>
+                    <div class="section-kanban" id="socialKanban">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- NoteBox Tab Content -->
+        <div class="tab-content" id="noteboxContent">
+            <!-- Auth Prompt (shown when not logged in) -->
+            <div class="notebox-auth-prompt" id="noteboxAuthPrompt">
+                <div class="notebox-auth-icon">📦</div>
+                <div class="notebox-auth-title">Connect to NoteBox</div>
+                <div class="notebox-auth-subtitle">
+                    Your personal idea capture board. Jot down thoughts, tasks, and inspirations in one place.
+                </div>
+                <button class="notebox-connect-btn" onclick="showAuthModal()">
+                    Connect Account
+                </button>
+            </div>
+
+            <!-- NoteBox App (shown when logged in) -->
+            <div class="notebox-app" id="noteboxApp" style="display: none; flex: 1;">
+                <!-- NoteBox Sidebar -->
+                <aside class="factory-sidebar notebox-sidebar">
+                    <div class="sidebar-section">
+                        <div class="sidebar-title">Quick Add</div>
+                        <div class="notebox-quick-add">
+                            <input type="text" class="notebox-input" id="noteboxQuickInput" placeholder="Type an idea..." onkeypress="if(event.key==='Enter') addNoteboxIdea()">
+                            <button class="notebox-add-btn" onclick="addNoteboxIdea()">+</button>
+                        </div>
+                    </div>
+
+                    <div class="sidebar-section">
+                        <div class="sidebar-title">Filter by Category</div>
+                        <button class="filter-btn active" data-category="all" onclick="filterNoteboxCategory('all')">
+                            All Ideas <span class="filter-count" id="noteboxCountAll">0</span>
+                        </button>
+                        <button class="filter-btn" data-category="inbox" onclick="filterNoteboxCategory('inbox')">
+                            📥 Inbox <span class="filter-count" id="noteboxCountInbox">0</span>
+                        </button>
+                        <button class="filter-btn" data-category="suite_feature" onclick="filterNoteboxCategory('suite_feature')">
+                            ⚡ SUITE <span class="filter-count" id="noteboxCountSuite">0</span>
+                        </button>
+                        <button class="filter-btn" data-category="app_idea" onclick="filterNoteboxCategory('app_idea')">
+                            💡 App Ideas <span class="filter-count" id="noteboxCountApps">0</span>
+                        </button>
+                    </div>
+
+                </aside>
+
+                <!-- NoteBox Content -->
+                <main class="factory-content notebox-content">
+                    <div class="content-header">
+                        <h2 class="content-title">Your Ideas</h2>
+                    </div>
+
+                    <div class="notebox-kanban" id="noteboxKanban">
+                        <!-- Populated by JS -->
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <!-- NoteBox Archive Modal -->
+    <div class="modal-overlay" id="noteboxArchiveModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 class="modal-title" id="noteboxArchiveTitle">Mark as Done</h3>
+                <button class="modal-close" onclick="hideNoteboxArchiveModal()">&times;</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label" id="noteboxArchiveLabel">What did you accomplish?</label>
+                <textarea class="form-textarea" id="noteboxArchiveReason" rows="3" placeholder="Briefly describe what was done or why you're archiving this..."></textarea>
+            </div>
+            <div style="display: flex; gap: 12px; margin-top: 16px;">
+                <button class="form-btn secondary" onclick="hideNoteboxArchiveModal()" style="flex: 1;">Cancel</button>
+                <button class="form-btn" id="noteboxArchiveConfirm" onclick="confirmNoteboxArchive()" style="flex: 1;">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submit Modal -->
+    <div class="modal-overlay" id="submitModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">New Proposal</h3>
+                <button class="modal-close" onclick="hideSubmitModal()">&times;</button>
+            </div>
+            <form id="submitForm" onsubmit="submitProposal(event)">
+                <input type="hidden" id="proposalSection" value="">
+
+                <div class="form-group">
+                    <label class="form-label">What's your idea?</label>
+                    <textarea class="form-textarea" id="proposalContent"
+                        placeholder="Describe your idea, feature request, bug, or suggestion..."
+                        rows="6" required></textarea>
+                </div>
+
+                <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 16px;">
+                    AI will auto-generate title and category from your description.
+                </p>
+
+                <div class="modal-actions">
+                    <button type="button" class="modal-btn cancel" onclick="hideSubmitModal()">Cancel</button>
+                    <button type="submit" class="modal-btn submit" id="submitBtn">Submit Proposal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div class="modal-overlay" id="authModal">
+        <div class="modal-content" style="text-align: center;">
+            <div class="modal-header">
+                <h3 class="modal-title">Connect to Participate</h3>
+                <button class="modal-close" onclick="hideAuthModal()">&times;</button>
+            </div>
+            <p style="color: var(--text-dim); margin-bottom: 24px;">
+                Connect your Telegram account to submit proposals, vote, and earn reputation.
+            </p>
+            <button class="telegram-btn" onclick="connectTelegram()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
+                </svg>
+                Connect with Telegram
+            </button>
+            <div style="display: flex; align-items: center; gap: 12px; margin: 16px 0; color: var(--text-dim); font-size: 0.85rem;">
+                <div style="flex: 1; height: 1px; background: var(--border);"></div>
+                <span>or</span>
+                <div style="flex: 1; height: 1px; background: var(--border);"></div>
+            </div>
+            <button onclick="connectWallet()" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; background: linear-gradient(135deg, #627eea, #8b5cf6); color: white; border: none; padding: 14px 28px; border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer;">
+                <span style="font-size: 1.2rem;">🔗</span>
+                Connect Wallet
+            </button>
+            <button onclick="connectDemo()" style="margin-top: 16px; background: transparent; border: 1px solid var(--border); color: var(--text-dim); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.8rem;">
+                Try Demo Mode
+            </button>
+        </div>
+    </div>
+
+    <!-- Rejection Reason Modal -->
+    <div class="modal-overlay" id="rejectionModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 class="modal-title">❌ Rejection Reason</h3>
+                <button class="modal-close" onclick="hideRejectionModal()">&times;</button>
+            </div>
+            <p style="color: var(--text-dim); margin-bottom: 16px;">
+                Please provide a reason for rejecting this item:
+            </p>
+            <div class="form-group">
+                <textarea class="form-textarea" id="rejectionReason" placeholder="Why is this being rejected?" rows="3"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="modal-btn cancel" onclick="hideRejectionModal()">Cancel</button>
+                <button type="button" class="modal-btn submit" onclick="confirmRejection()" style="background: #ef4444;">Reject</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Supabase config
+        const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
+
+        // State
+        let currentUser = null;
+        let proposals = [];
+        let users = [];
+        let currentFilter = 'all';
+        let currentView = 'kanban';
+
+        // Factory Tab State
+        let currentTab = 'telos';
+
+        // NoteBox State
+        let noteboxIdeas = [];
+        let noteboxCategoryFilter = 'all';
+        let noteboxArchiveIdeaId = null;
+        let noteboxArchiveAction = null; // 'done' or 'dismiss'
+
+        // Governance Sections State
+        let suiteAppsIdeas = [];  // From 'ideas' table (shared with /apps)
+        let governanceProposals = [];  // From 'telos_proposals' table
+
+        // Drag-Drop State
+        let draggedItem = null;  // { id, type: 'idea' | 'proposal', section }
+        let pendingRejection = null;  // { id, type, section, newStatus }
+
+        // Category config
+        const CATEGORIES = {
+            feature: { emoji: '⚡', label: 'Feature', color: '#3b82f6' },
+            bug: { emoji: '🐛', label: 'Bug', color: '#ef4444' },
+            app_idea: { emoji: '💡', label: 'App Idea', color: '#a855f7' },
+            improvement: { emoji: '✨', label: 'Improvement', color: '#22c55e' },
+            docs: { emoji: '📚', label: 'Docs', color: '#9ca3af' },
+            integration: { emoji: '🔗', label: 'Integration', color: '#14b8a6' },
+            tokenomics: { emoji: '💰', label: 'Tokenomics', color: '#ff9500' }
+        };
+
+        // Status config
+        const STATUSES = {
+            submitted: { icon: '📥', label: 'Submitted' },
+            open_voting: { icon: '🗳️', label: 'Voting' },
+            passed: { icon: '✅', label: 'Passed' },
+            rejected: { icon: '❌', label: 'Rejected' },
+            implemented: { icon: '🚀', label: 'Implemented' },
+            duplicate: { icon: '🔄', label: 'Duplicate' }
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth();  // Wait for user data including is_founder
+            loadProposals();
+            loadLeaderboard();
+            await loadSuiteAppsIdeas();
+            await loadGovernanceProposals();
+            renderGovernanceSections();
+            console.log('Initialized. currentUser:', currentUser);
+        });
+
+        // Check auth state
+        async function checkAuth() {
+            const savedUser = localStorage.getItem('factory_user');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                // Refresh user data from database
+                await refreshUserData();
+                updateUserPanel();
+            }
+        }
+
+        // Refresh user data from database
+        async function refreshUserData() {
+            if (!currentUser) return;
+
+            try {
+                let query = '';
+                if (currentUser.telegram_id) {
+                    query = `telegram_id=eq.${currentUser.telegram_id}`;
+                } else if (currentUser.wallet_address) {
+                    // Use ilike for case-insensitive matching
+                    query = `wallet_address=ilike.${currentUser.wallet_address}`;
+                } else {
+                    return; // Demo user, no database record
+                }
+
+                console.log('[refreshUserData] Query:', query);
+
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/factory_users?${query}&select=*`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+
+                if (response.ok) {
+                    const users = await response.json();
+                    console.log('[refreshUserData] Found users:', users);
+                    if (users.length > 0) {
+                        const dbUser = users[0];
+                        currentUser = {
+                            ...currentUser,
+                            id: dbUser.id,
+                            reputation: dbUser.reputation,
+                            active_submissions: dbUser.active_submissions,
+                            is_founder: dbUser.is_founder,
+                            display_name: dbUser.display_name
+                        };
+                        localStorage.setItem('factory_user', JSON.stringify(currentUser));
+                        console.log('[refreshUserData] Updated user - rep:', currentUser.reputation, 'is_founder:', currentUser.is_founder);
+                    } else {
+                        console.warn('[refreshUserData] No user found in DB for wallet:', currentUser.wallet_address);
+                    }
+                } else {
+                    console.error('[refreshUserData] Fetch failed:', await response.text());
+                }
+            } catch (err) {
+                console.error('Error refreshing user data:', err);
+            }
+        }
+
+        // Update user panel based on auth state
+        function updateUserPanel() {
+            const panel = document.getElementById('userPanel');
+            if (currentUser) {
+                // User is connected - panel is empty since wallet shown in nav
+                panel.innerHTML = '';
+                document.getElementById('userRep').textContent = currentUser.reputation || 0;
+                const limit = 5 + Math.min(Math.floor((currentUser.reputation || 0) / 100), 10);
+                document.getElementById('userSubmissions').textContent = `${currentUser.active_submissions || 0} / ${limit}`;
+            } else {
+                panel.innerHTML = '<button class="auth-btn" onclick="showAuthModal()">Connect</button>';
+            }
+
+            // Also update NoteBox view if on that tab
+            if (currentTab === 'notebox') {
+                updateNoteboxView();
+            }
+        }
+
+        // Load proposals from Supabase
+        async function loadProposals() {
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/factory_proposals?select=*,author:factory_users(id,display_name,reputation)&order=created_at.desc`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+
+                if (response.ok) {
+                    proposals = await response.json();
+                    // Old kanban removed - sections now render via renderGovernanceSections()
+                }
+            } catch (err) {
+                console.error('Error loading proposals:', err);
+            }
+        }
+
+        // Load leaderboard
+        async function loadLeaderboard() {
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/factory_users?select=id,display_name,telegram_id,wallet_address,reputation,is_founder,active_submissions&order=reputation.desc&limit=10`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+
+                if (response.ok) {
+                    users = await response.json();
+                    renderLeaderboard();
+                }
+            } catch (err) {
+                console.error('Error loading leaderboard:', err);
+            }
+        }
+
+        // Render leaderboard
+        function renderLeaderboard() {
+            const container = document.getElementById('leaderboard');
+            if (users.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-dim); font-size: 0.85rem;">No contributors yet. Be the first!</p>';
+                return;
+            }
+
+            const rankMedals = ['🥇', '🥈', '🥉'];
+            const rankClasses = ['gold', 'silver', 'bronze'];
+
+            container.innerHTML = users.map((user, i) => {
+                const medal = i < 3 ? rankMedals[i] : `#${i + 1}`;
+                const rankClass = i < 3 ? rankClasses[i] : '';
+                // Show telegram_id if available, otherwise wallet address
+                const userIdentity = user.telegram_id || (user.wallet_address ? `${user.wallet_address.slice(0, 6)}...${user.wallet_address.slice(-4)}` : 'Anonymous');
+
+                return `
+                    <div class="leaderboard-item ${rankClass}">
+                        <span class="leaderboard-rank">${medal}</span>
+                        <div class="leaderboard-info">
+                            <div class="leaderboard-name">${escapeHtml(userIdentity)}</div>
+                            <div class="leaderboard-stats">
+                                <span>${user.active_submissions || 0} proposals</span>
+                            </div>
+                        </div>
+                        <div class="leaderboard-rep">
+                            <span>${user.reputation} REP</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Load SUITE Apps from ideas table (same as /apps page)
+        async function loadSuiteAppsIdeas() {
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/ideas?select=*&order=created_at.desc`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+
+                if (response.ok) {
+                    suiteAppsIdeas = await response.json();
+                    console.log('Loaded', suiteAppsIdeas.length, 'SUITE app ideas');
+                }
+            } catch (err) {
+                console.error('Error loading SUITE apps ideas:', err);
+            }
+        }
+
+        // Load governance proposals (Business, Content, Social sections)
+        async function loadGovernanceProposals() {
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/factory_proposals?select=*,author:factory_users(id,display_name,reputation)&section=in.(business,content,social)&order=created_at.desc`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+
+                if (response.ok) {
+                    governanceProposals = await response.json();
+                    console.log('Loaded', governanceProposals.length, 'governance proposals');
+                }
+            } catch (err) {
+                console.error('Error loading governance proposals:', err);
+            }
+        }
+
+        // Render all governance sections
+        function renderGovernanceSections() {
+            console.log('[renderGovernanceSections] currentUser:', currentUser, 'is_founder:', currentUser?.is_founder);
+            renderSuiteAppsSection();
+            renderGovernanceSection('business', 'businessKanban', 'businessCount');
+            renderGovernanceSection('content', 'contentKanban', 'contentSectionCount');
+            renderGovernanceSection('social', 'socialKanban', 'socialCount');
+        }
+
+        // Render SUITE Apps section (from ideas table)
+        function renderSuiteAppsSection() {
+            const building = suiteAppsIdeas.filter(i => i.status === 'building');
+            const considering = suiteAppsIdeas.filter(i => i.status === 'considering');
+            const live = suiteAppsIdeas.filter(i => i.status === 'live');
+            const rejected = suiteAppsIdeas.filter(i => i.status === 'rejected');
+
+            document.getElementById('suiteAppsCount').textContent = suiteAppsIdeas.length;
+
+            document.getElementById('suiteAppsKanban').innerHTML = `
+                <div class="section-column" data-status="considering" data-section="suite_apps"
+                     ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'considering', 'suite_apps')">
+                    <div class="section-column-header">🤔 Considering <span>(${considering.length})</span></div>
+                    <button class="section-add-btn" onclick="showSubmitModal('suite_apps')">+ New Proposal</button>
+                    ${considering.map(renderIdeaCard).join('') || '<div class="empty-column">No ideas under consideration</div>'}
+                </div>
+                <div class="section-column" data-status="building" data-section="suite_apps"
+                     ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'building', 'suite_apps')">
+                    <div class="section-column-header">🔨 Building <span>(${building.length})</span></div>
+                    ${building.map(renderIdeaCard).join('') || '<div class="empty-column">No ideas being built</div>'}
+                </div>
+                <div class="section-column" data-status="live" data-section="suite_apps"
+                     ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'live', 'suite_apps')">
+                    <div class="section-column-header">🚀 Live <span>(${live.length})</span></div>
+                    ${live.map(renderIdeaCard).join('') || '<div class="empty-column">No launched apps</div>'}
+                </div>
+                <div class="section-column" data-status="rejected" data-section="suite_apps"
+                     ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'rejected', 'suite_apps')">
+                    <div class="section-column-header">❌ Rejected <span>(${rejected.length})</span></div>
+                    ${rejected.map(renderIdeaCard).join('') || '<div class="empty-column">No rejected ideas</div>'}
+                </div>
+            `;
+        }
+
+        // Render a single idea card (from ideas table)
+        function renderIdeaCard(idea) {
+            const categoryEmojis = {
+                productivity: '📋',
+                health: '💪',
+                finance: '💰',
+                entertainment: '🎮',
+                education: '📚',
+                utilities: '🔧',
+                social: '👥'
+            };
+
+            const categoryEmoji = categoryEmojis[idea.category] || '📱';
+            const formattedDate = new Date(idea.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const authorName = idea.author?.display_name || idea.author_name || 'SUITE';
+            const isAdmin = currentUser?.is_founder || false;
+
+            return `
+                <div class="idea-card ${idea.status}"
+                     ${isAdmin ? `draggable="true"
+                     ondragstart="handleDragStart(event, '${idea.id}', 'idea', 'suite_apps')"
+                     ondragend="handleDragEnd(event)"` : ''}>
+                    <div class="idea-card-title">${escapeHtml(idea.name)}</div>
+                    <div class="idea-card-tagline">${escapeHtml(idea.tagline || idea.description || 'No description')}</div>
+                    <div class="idea-card-meta">
+                        <span>👤 ${escapeHtml(authorName)}</span>
+                        <span>${categoryEmoji} ${idea.category || 'App'}</span>
+                        <span>📅 ${formattedDate}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render governance section (for Business, Content, Social)
+        function renderGovernanceSection(sectionType, containerId, countId) {
+            const sectionProposals = governanceProposals.filter(p => p.section === sectionType);
+            const submitted = sectionProposals.filter(p => p.status === 'submitted');
+            const voting = sectionProposals.filter(p => p.status === 'open_voting');
+            const passed = sectionProposals.filter(p => p.status === 'passed' || p.status === 'implemented');
+            const rejected = sectionProposals.filter(p => p.status === 'rejected');
+
+            document.getElementById(countId).textContent = sectionProposals.length;
+
+            document.getElementById(containerId).innerHTML = `
+                <div class="section-column" data-status="submitted" data-section="${sectionType}"
+                     ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'submitted', '${sectionType}')">
+                    <div class="section-column-header">📥 Submitted <span>(${submitted.length})</span></div>
+                    <button class="section-add-btn" onclick="showSubmitModal('${sectionType}')">+ New Proposal</button>
+                    ${submitted.map(p => renderGovernanceProposalCard(p, sectionType)).join('') || '<div class="empty-column">No proposals</div>'}
+                </div>
+                <div class="section-column" data-status="open_voting" data-section="${sectionType}"
+                     ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'open_voting', '${sectionType}')">
+                    <div class="section-column-header">🗳️ Voting <span>(${voting.length})</span></div>
+                    ${voting.map(p => renderGovernanceProposalCard(p, sectionType)).join('') || '<div class="empty-column">No proposals</div>'}
+                </div>
+                <div class="section-column" data-status="passed" data-section="${sectionType}"
+                     ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'passed', '${sectionType}')">
+                    <div class="section-column-header">✅ Passed <span>(${passed.length})</span></div>
+                    ${passed.map(p => renderGovernanceProposalCard(p, sectionType)).join('') || '<div class="empty-column">No proposals</div>'}
+                </div>
+                <div class="section-column" data-status="rejected" data-section="${sectionType}"
+                     ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'rejected', '${sectionType}')">
+                    <div class="section-column-header">❌ Rejected <span>(${rejected.length})</span></div>
+                    ${rejected.map(p => renderGovernanceProposalCard(p, sectionType)).join('') || '<div class="empty-column">No proposals</div>'}
+                </div>
+            `;
+        }
+
+        // Render a governance proposal card
+        function renderGovernanceProposalCard(proposal, sectionType) {
+            const category = CATEGORIES[proposal.category] || { emoji: '📋', label: 'General' };
+            const formattedDate = new Date(proposal.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const authorName = proposal.author?.display_name || proposal.author_name || 'Anonymous';
+            const isAdmin = currentUser?.is_founder;
+            const draggable = isAdmin ? 'true' : 'false';
+            const dragHandlers = isAdmin ? `ondragstart="handleDragStart(event, '${proposal.id}', 'proposal', '${sectionType}')" ondragend="handleDragEnd(event)"` : '';
+
+            return `
+                <div class="idea-card ${proposal.status}" draggable="${draggable}" ${dragHandlers}>
+                    ${isAdmin ? `<button class="card-delete-btn" onclick="deleteProposal('${proposal.id}')" title="Delete">&times;</button>` : ''}
+                    <div class="idea-card-title">${escapeHtml(proposal.title)}</div>
+                    <div class="idea-card-tagline">${escapeHtml(proposal.content || 'No description')}</div>
+                    <div class="idea-card-meta">
+                        <span>👤 ${escapeHtml(authorName)}</span>
+                        <span>${category.emoji} ${category.label}</span>
+                        <span>📅 ${formattedDate}</span>
+                        ${proposal.votes_for !== undefined ? `<span>👍 ${proposal.votes_for}</span>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Drag and Drop Handlers
+        function handleDragStart(event, id, type, section) {
+            draggedItem = { id, type, section };
+            event.target.classList.add('dragging');
+            event.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragEnd(event) {
+            event.target.classList.remove('dragging');
+            draggedItem = null;
+            // Remove drag-over class from all columns
+            document.querySelectorAll('.section-column').forEach(col => col.classList.remove('drag-over'));
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            event.currentTarget.classList.add('drag-over');
+        }
+
+        function handleDragLeave(event) {
+            event.currentTarget.classList.remove('drag-over');
+        }
+
+        function handleDrop(event, newStatus, section) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('drag-over');
+
+            if (!draggedItem) return;
+
+            // Only allow drops in the same section type
+            if (draggedItem.section !== section) {
+                alert('Cannot move items between different sections');
+                return;
+            }
+
+            // If dropping on rejected, show rejection reason modal
+            if (newStatus === 'rejected') {
+                pendingRejection = { ...draggedItem, newStatus };
+                showRejectionModal();
+                return;
+            }
+
+            // Otherwise, update status directly
+            updateItemStatus(draggedItem.id, draggedItem.type, draggedItem.section, newStatus, null);
+        }
+
+        function showRejectionModal() {
+            document.getElementById('rejectionReason').value = '';
+            document.getElementById('rejectionModal').classList.add('active');
+        }
+
+        function hideRejectionModal() {
+            document.getElementById('rejectionModal').classList.remove('active');
+            pendingRejection = null;
+        }
+
+        async function confirmRejection() {
+            const reason = document.getElementById('rejectionReason').value.trim();
+            if (!reason) {
+                alert('Please provide a rejection reason');
+                return;
+            }
+
+            if (!pendingRejection) return;
+
+            await updateItemStatus(
+                pendingRejection.id,
+                pendingRejection.type,
+                pendingRejection.section,
+                pendingRejection.newStatus,
+                reason
+            );
+
+            hideRejectionModal();
+        }
+
+        async function updateItemStatus(id, type, section, newStatus, rejectionReason) {
+            try {
+                let table, updateData;
+
+                if (section === 'suite_apps') {
+                    table = 'ideas';
+                    updateData = { status: newStatus };
+                    if (rejectionReason) {
+                        updateData.rejection_reason = rejectionReason;
+                    }
+                } else {
+                    table = 'telos_proposals';
+                    updateData = { status: newStatus, section: section };
+                    if (rejectionReason) {
+                        updateData.reject_reason = rejectionReason;
+                    }
+                }
+
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify(updateData)
+                    }
+                );
+
+                if (response.ok) {
+                    // Reload and re-render
+                    if (section === 'suite_apps') {
+                        await loadSuiteAppsIdeas();
+                    }
+                    renderGovernanceSections();
+                } else {
+                    console.error('Failed to update status:', await response.text());
+                    alert('Failed to update status');
+                }
+            } catch (err) {
+                console.error('Error updating status:', err);
+                alert('Error updating status');
+            }
+        }
+
+        // ===== FACTORY TAB SWITCHING =====
+        function switchFactoryTab(tab) {
+            currentTab = tab;
+
+            // Update tab buttons
+            document.querySelectorAll('.factory-tab').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === tab);
+            });
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tab === 'telos' ? 'telosContent' : 'noteboxContent').classList.add('active');
+
+            // Handle NoteBox tab
+            if (tab === 'notebox') {
+                updateNoteboxView();
+            }
+        }
+
+        function updateNoteboxView() {
+            if (currentUser) {
+                // User is logged in - show NoteBox app
+                document.getElementById('noteboxAuthPrompt').style.display = 'none';
+                document.getElementById('noteboxApp').style.display = 'flex';
+                loadNoteboxIdeas();
+            } else {
+                // Not logged in - show auth prompt
+                document.getElementById('noteboxAuthPrompt').style.display = 'flex';
+                document.getElementById('noteboxApp').style.display = 'none';
+            }
+        }
+
+        // Show/hide modals
+        function showSubmitModal(section = null) {
+            if (!currentUser) {
+                showAuthModal();
+                return;
+            }
+            // Pre-select section if provided
+            if (section) {
+                const sectionSelect = document.getElementById('proposalSection');
+                if (sectionSelect) {
+                    sectionSelect.value = section;
+                }
+            }
+            document.getElementById('submitModal').classList.add('active');
+        }
+
+        function hideSubmitModal() {
+            document.getElementById('submitModal').classList.remove('active');
+            document.getElementById('submitForm').reset();
+        }
+
+        function showAuthModal() {
+            document.getElementById('authModal').classList.add('active');
+        }
+
+        function hideAuthModal() {
+            document.getElementById('authModal').classList.remove('active');
+        }
+
+        // Submit proposal via edge function
+        async function submitProposal(event) {
+            event.preventDefault();
+            if (!currentUser) {
+                showAuthModal();
+                return;
+            }
+
+            const section = document.getElementById('proposalSection').value;
+            const content = document.getElementById('proposalContent').value.trim();
+
+            if (!content) {
+                alert('Please describe your idea');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Analyzing & Submitting...';
+
+            try {
+                const payload = {
+                    content,
+                    section
+                };
+
+                // Add auth based on user type
+                if (currentUser.telegram_id) {
+                    payload.telegram_auth = { id: currentUser.telegram_id, username: currentUser.display_name };
+                } else if (currentUser.wallet_address) {
+                    payload.wallet_address = currentUser.wallet_address;
+                } else {
+                    // Demo mode - use telegram auth with demo ID
+                    payload.telegram_auth = { id: currentUser.id, username: currentUser.display_name };
+                }
+
+                const response = await fetch(
+                    `${SUPABASE_URL}/functions/v1/factory-submit`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    }
+                );
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    // Update local user with returned data
+                    if (result.user) {
+                        currentUser = { ...currentUser, ...result.user };
+                        localStorage.setItem('factory_user', JSON.stringify(currentUser));
+                        updateUserPanel();
+                    }
+                    hideSubmitModal();
+                    // Reload governance data and re-render
+                    await loadGovernanceProposals();
+                    renderGovernanceSections();
+                    alert('Proposal submitted! AI generated title and category.');
+                } else {
+                    console.error('Submit error:', result);
+                    alert(result.error || 'Failed to submit proposal.');
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                alert('Error submitting proposal.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Proposal';
+            }
+        }
+
+        // Quick vote via edge function (1 free vote)
+        async function quickVote(proposalId, direction) {
+            if (!currentUser) {
+                showAuthModal();
+                return;
+            }
+
+            // Disable vote buttons temporarily
+            const btns = document.querySelectorAll(`.quick-vote-btn`);
+            btns.forEach(btn => btn.disabled = true);
+
+            try {
+                const payload = {
+                    proposal_id: proposalId,
+                    direction: direction,
+                    vote_power: 1
+                };
+
+                // Add auth based on user type
+                if (currentUser.telegram_id) {
+                    payload.telegram_auth = { id: currentUser.telegram_id, username: currentUser.display_name };
+                } else if (currentUser.wallet_address) {
+                    payload.wallet_address = currentUser.wallet_address;
+                } else {
+                    // Demo mode
+                    payload.telegram_auth = { id: currentUser.id, username: currentUser.display_name };
+                }
+
+                const response = await fetch(
+                    `${SUPABASE_URL}/functions/v1/factory-vote`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    }
+                );
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    // Update local user with returned data
+                    if (result.user) {
+                        currentUser.reputation = result.user.reputation;
+                        localStorage.setItem('factory_user', JSON.stringify(currentUser));
+                        updateUserPanel();
+                    }
+                    loadProposals();
+                } else {
+                    console.error('Vote error:', result);
+                    alert(result.error || 'Failed to vote.');
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                alert('Error voting.');
+            } finally {
+                btns.forEach(btn => btn.disabled = false);
+            }
+        }
+
+        // Award reputation
+        async function awardRep(userId, amount, reason, proposalId = null) {
+            try {
+                // Add to history
+                await fetch(
+                    `${SUPABASE_URL}/rest/v1/factory_rep_history`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            user_id: userId,
+                            amount,
+                            reason,
+                            proposal_id: proposalId
+                        })
+                    }
+                );
+
+                // Update user rep (this should be done via edge function for security)
+                // For now, update locally
+                if (currentUser && currentUser.id === userId) {
+                    currentUser.reputation += amount;
+                    localStorage.setItem('factory_user', JSON.stringify(currentUser));
+                    updateUserPanel();
+                }
+            } catch (err) {
+                console.error('Error awarding rep:', err);
+            }
+        }
+
+        // View proposal detail
+        function viewProposal(proposalId) {
+            // TODO: Open detail modal
+            console.log('View proposal:', proposalId);
+        }
+
+        // Telegram OAuth
+        function connectTelegram() {
+            const botUsername = 'suitehubbot';
+            const origin = window.location.origin;
+
+            const width = 550;
+            const height = 470;
+            const left = Math.max(0, (screen.width - width) / 2);
+            const top = Math.max(0, (screen.height - height) / 2);
+
+            const authUrl = `https://oauth.telegram.org/auth?bot_id=8341049569&origin=${encodeURIComponent(origin)}&request_access=write`;
+
+            const popup = window.open(
+                authUrl,
+                'telegram_auth',
+                `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+            );
+
+            window.addEventListener('message', function handleTelegramAuth(event) {
+                if (event.origin !== 'https://oauth.telegram.org') return;
+
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.event === 'auth_result' && data.result) {
+                        const user = data.result;
+
+                        // Create factory user object
+                        const factoryUser = {
+                            id: user.id.toString(),
+                            telegram_id: user.id.toString(),
+                            display_name: user.username || user.first_name,
+                            reputation: 0,
+                            active_submissions: 0
+                        };
+
+                        currentUser = factoryUser;
+                        localStorage.setItem('factory_user', JSON.stringify(factoryUser));
+                        localStorage.setItem('telegram_user', JSON.stringify(user));
+
+                        hideAuthModal();
+                        updateUserPanel();
+                        loadLeaderboard(); // Refresh to show user
+
+                        window.removeEventListener('message', handleTelegramAuth);
+                    }
+                } catch (e) {
+                    console.error('Telegram auth error:', e);
+                }
+            });
+
+            if (!popup || popup.closed) {
+                alert('Popup was blocked. Please allow popups for this site.');
+            }
+        }
+
+        // Wallet connect via MetaMask
+        async function connectWallet() {
+            if (typeof window.ethereum === 'undefined') {
+                alert('Please install MetaMask or another Web3 wallet to connect!');
+                window.open('https://metamask.io/download/', '_blank');
+                return;
+            }
+
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                if (accounts.length > 0) {
+                    const address = accounts[0].toLowerCase();
+                    const displayName = `${address.slice(0, 6)}...${address.slice(-4)}`;
+
+                    const walletUser = {
+                        id: address,
+                        wallet_address: address,
+                        display_name: displayName,
+                        reputation: 0,
+                        active_submissions: 0
+                    };
+
+                    currentUser = walletUser;
+                    localStorage.setItem('factory_user', JSON.stringify(walletUser));
+                    localStorage.setItem('connectedWallet', address);
+
+                    hideAuthModal();
+                    // Fetch actual user data from database (including rep)
+                    await refreshUserData();
+                    updateUserPanel();
+                    loadLeaderboard();
+                }
+            } catch (error) {
+                console.error('Wallet connection failed:', error);
+                if (error.code === 4001) {
+                    console.log('Connection cancelled by user');
+                } else {
+                    alert('Failed to connect wallet. Please try again.');
+                }
+            }
+        }
+
+        // Demo mode for testing
+        function connectDemo() {
+            const demoUser = {
+                id: 'demo_' + Date.now(),
+                display_name: 'Demo User',
+                reputation: 0,
+                active_submissions: 0
+            };
+            currentUser = demoUser;
+            localStorage.setItem('factory_user', JSON.stringify(demoUser));
+            hideAuthModal();
+            updateUserPanel();
+        }
+
+        // User menu (logout)
+        function showUserMenu() {
+            if (confirm(`Logged in as ${currentUser.display_name}\n\nDo you want to logout?`)) {
+                currentUser = null;
+                localStorage.removeItem('factory_user');
+                localStorage.removeItem('telegram_user');
+                localStorage.removeItem('connectedWallet');
+                updateUserPanel();
+                loadLeaderboard();
+            }
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
+
+        // ===== NOTEBOX FUNCTIONS =====
+        const NOTEBOX_CATEGORIES = {
+            action_item: { emoji: '✅', label: 'Action' },
+            suite_feature: { emoji: '⚡', label: 'SUITE' },
+            suite_business: { emoji: '💰', label: 'Business' },
+            app_idea: { emoji: '💡', label: 'App Idea' },
+            article: { emoji: '📝', label: 'Article' },
+            personal: { emoji: '🏠', label: 'Personal' },
+            brainstorm: { emoji: '💭', label: 'Brainstorm' },
+            question: { emoji: '❓', label: 'Question' }
+        };
+
+        async function loadNoteboxIdeas() {
+            if (!currentUser) return;
+
+            // Get user_id from currentUser (format: tg_xxx or wallet_xxx)
+            const userId = currentUser.telegram_id ? `tg_${currentUser.telegram_id}` :
+                           currentUser.wallet_address ? `wallet_${currentUser.wallet_address}` : null;
+
+            if (!userId) {
+                console.log('No valid user ID for NoteBox');
+                return;
+            }
+
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/personal_ideas?select=*&user_id=eq.${encodeURIComponent(userId)}&order=created_at.desc`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+
+                if (response.ok) {
+                    noteboxIdeas = await response.json();
+                    updateNoteboxCounts();
+                    renderNoteboxKanban();
+                } else {
+                    console.error('Failed to load NoteBox ideas:', await response.text());
+                }
+            } catch (err) {
+                console.error('Error loading NoteBox ideas:', err);
+            }
+        }
+
+        function updateNoteboxCounts() {
+            const active = noteboxIdeas.filter(i => i.status === 'inbox');
+            const suite = noteboxIdeas.filter(i => i.category === 'suite_feature' && i.status === 'inbox');
+            const apps = noteboxIdeas.filter(i => i.category === 'app_idea' && i.status === 'inbox');
+
+            document.getElementById('noteboxCountAll').textContent = noteboxIdeas.length;
+            document.getElementById('noteboxCountInbox').textContent = active.length;
+            document.getElementById('noteboxCountSuite').textContent = suite.length;
+            document.getElementById('noteboxCountApps').textContent = apps.length;
+        }
+
+        function renderNoteboxKanban() {
+            const container = document.getElementById('noteboxKanban');
+
+            // Separate active and archived ideas
+            const activeIdeas = noteboxIdeas.filter(i => i.status === 'inbox');
+            const archivedIdeas = noteboxIdeas.filter(i => i.status === 'implemented' || i.status === 'dismissed');
+
+            // Apply category filter to active ideas only
+            let filtered = activeIdeas;
+            if (noteboxCategoryFilter !== 'all' && noteboxCategoryFilter !== 'inbox') {
+                filtered = filtered.filter(i => i.category === noteboxCategoryFilter);
+            }
+
+            if (filtered.length === 0 && archivedIdeas.length === 0) {
+                container.innerHTML = `
+                    <div class="notebox-empty">
+                        <div class="notebox-empty-icon">📦</div>
+                        <div>No ideas yet. Add one above!</div>
+                    </div>
+                `;
+                return;
+            }
+
+            // Group by category for "all" view, otherwise just show cards
+            if (noteboxCategoryFilter === 'all' || noteboxCategoryFilter === 'inbox') {
+                // Group active ideas by category
+                const grouped = {};
+                filtered.forEach(idea => {
+                    if (!grouped[idea.category]) {
+                        grouped[idea.category] = [];
+                    }
+                    grouped[idea.category].push(idea);
+                });
+
+                // Render grouped columns + Archive column
+                let columnsHtml = Object.entries(grouped).map(([category, ideas]) => {
+                    const cat = NOTEBOX_CATEGORIES[category] || { emoji: '📝', label: category };
+                    return `
+                        <div class="notebox-column" data-category="${category}">
+                            <div class="notebox-column-header">
+                                <span>${cat.emoji}</span>
+                                <span>${cat.label}</span>
+                                <span class="notebox-column-count">${ideas.length}</span>
+                            </div>
+                            <div class="notebox-column-cards" data-category="${category}">
+                                ${ideas.map(idea => renderNoteboxCard(idea)).join('')}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Add Archive column at the end
+                columnsHtml += `
+                    <div class="notebox-column archive-column" data-category="archive">
+                        <div class="notebox-column-header" style="opacity: 0.7;">
+                            <span>📁</span>
+                            <span>Archive</span>
+                            <span class="notebox-column-count">${archivedIdeas.length}</span>
+                        </div>
+                        <div class="notebox-column-cards" data-category="archive">
+                            ${archivedIdeas.map(idea => renderNoteboxCard(idea)).join('')}
+                        </div>
+                    </div>
+                `;
+
+                container.innerHTML = columnsHtml;
+            } else {
+                // Single category - show cards + archive column
+                let html = filtered.map(idea => renderNoteboxCard(idea)).join('');
+                html += `
+                    <div class="notebox-column archive-column" data-category="archive">
+                        <div class="notebox-column-header" style="opacity: 0.7;">
+                            <span>📁</span>
+                            <span>Archive</span>
+                            <span class="notebox-column-count">${archivedIdeas.length}</span>
+                        </div>
+                        <div class="notebox-column-cards" data-category="archive">
+                            ${archivedIdeas.map(idea => renderNoteboxCard(idea)).join('')}
+                        </div>
+                    </div>
+                `;
+                container.innerHTML = html;
+            }
+
+            // Setup drag and drop
+            setupDragAndDrop();
+        }
+
+        function renderNoteboxCard(idea) {
+            const cat = NOTEBOX_CATEGORIES[idea.category] || { emoji: '📝', label: idea.category };
+            const isArchived = idea.status === 'implemented' || idea.status === 'dismissed';
+            return `
+                <div class="notebox-card" draggable="true" data-id="${idea.id}" data-status="${idea.status}">
+                    <div class="notebox-card-header">
+                        <span class="notebox-card-emoji">${cat.emoji}</span>
+                        <span class="notebox-card-category">${cat.label}</span>
+                    </div>
+                    <div class="notebox-card-title">${escapeHtml(idea.title)}</div>
+                    ${idea.content ? `<div class="notebox-card-content">${escapeHtml(idea.content)}</div>` : ''}
+                    ${idea.status === 'inbox' ? `
+                        <div class="notebox-card-actions">
+                            <button class="notebox-card-btn done" onclick="markNoteboxDone('${idea.id}')">✓ Done</button>
+                        </div>
+                    ` : `
+                        ${idea.dismiss_reason ? `<div class="notebox-card-reason">${escapeHtml(idea.dismiss_reason)}</div>` : ''}
+                        <div class="notebox-card-status">
+                            <span style="font-size: 0.75rem; color: var(--text-dim);">${idea.status === 'implemented' ? '✓ Completed' : '✕ Dismissed'}</span>
+                        </div>
+                    `}
+                </div>
+            `;
+        }
+
+        // Drag and drop functionality
+        let draggedCard = null;
+
+        function setupDragAndDrop() {
+            const cards = document.querySelectorAll('.notebox-card[draggable="true"]');
+            const dropZones = document.querySelectorAll('.notebox-column-cards');
+
+            cards.forEach(card => {
+                card.addEventListener('dragstart', handleDragStart);
+                card.addEventListener('dragend', handleDragEnd);
+            });
+
+            dropZones.forEach(zone => {
+                zone.addEventListener('dragover', handleDragOver);
+                zone.addEventListener('dragenter', handleDragEnter);
+                zone.addEventListener('dragleave', handleDragLeave);
+                zone.addEventListener('drop', handleDrop);
+            });
+        }
+
+        function handleDragStart(e) {
+            draggedCard = e.target;
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', e.target.dataset.id);
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            document.querySelectorAll('.notebox-column-cards').forEach(zone => {
+                zone.classList.remove('drag-over');
+            });
+            draggedCard = null;
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        }
+
+        function handleDragEnter(e) {
+            e.preventDefault();
+            const dropZone = e.target.closest('.notebox-column-cards');
+            if (dropZone) {
+                dropZone.classList.add('drag-over');
+            }
+        }
+
+        function handleDragLeave(e) {
+            const dropZone = e.target.closest('.notebox-column-cards');
+            if (dropZone && !dropZone.contains(e.relatedTarget)) {
+                dropZone.classList.remove('drag-over');
+            }
+        }
+
+        async function handleDrop(e) {
+            e.preventDefault();
+            const dropZone = e.target.closest('.notebox-column-cards');
+            if (!dropZone || !draggedCard) return;
+
+            dropZone.classList.remove('drag-over');
+
+            const ideaId = draggedCard.dataset.id;
+            const targetCategory = dropZone.dataset.category;
+            const currentStatus = draggedCard.dataset.status;
+
+            // If dropping to archive, mark as implemented
+            if (targetCategory === 'archive' && currentStatus === 'inbox') {
+                await archiveNoteboxIdea(ideaId, 'implemented', 'Moved to archive');
+                return;
+            }
+
+            // If dropping from archive back to a category, restore it
+            if (targetCategory !== 'archive' && (currentStatus === 'implemented' || currentStatus === 'dismissed')) {
+                await updateNoteboxIdea(ideaId, { status: 'inbox', category: targetCategory });
+                return;
+            }
+
+            // If moving between active categories, just update category
+            if (targetCategory !== 'archive' && currentStatus === 'inbox') {
+                await updateNoteboxIdea(ideaId, { category: targetCategory });
+            }
+        }
+
+        async function updateNoteboxIdea(ideaId, updates) {
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/personal_ideas?id=eq.${ideaId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(updates)
+                    }
+                );
+
+                if (response.ok) {
+                    // Update local data
+                    const idea = noteboxIdeas.find(i => i.id === ideaId);
+                    if (idea) {
+                        Object.assign(idea, updates);
+                    }
+                    updateNoteboxCounts();
+                    renderNoteboxKanban();
+                }
+            } catch (err) {
+                console.error('Error updating idea:', err);
+            }
+        }
+
+        async function archiveNoteboxIdea(ideaId, status, reason) {
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/personal_ideas?id=eq.${ideaId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            status: status,
+                            dismiss_reason: reason
+                        })
+                    }
+                );
+
+                if (response.ok) {
+                    const idea = noteboxIdeas.find(i => i.id === ideaId);
+                    if (idea) {
+                        idea.status = status;
+                        idea.dismiss_reason = reason;
+                    }
+                    updateNoteboxCounts();
+                    renderNoteboxKanban();
+                }
+            } catch (err) {
+                console.error('Error archiving idea:', err);
+            }
+        }
+
+        async function addNoteboxIdea() {
+            const input = document.getElementById('noteboxQuickInput');
+            const text = input.value.trim();
+            if (!text || !currentUser) return;
+
+            const userId = currentUser.telegram_id ? `tg_${currentUser.telegram_id}` :
+                           currentUser.wallet_address ? `wallet_${currentUser.wallet_address}` : null;
+
+            if (!userId) return;
+
+            // Simple auto-categorization
+            const categorized = autoCategorizeIdea(text);
+
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/personal_ideas`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=representation'
+                        },
+                        body: JSON.stringify({
+                            raw_input: text,
+                            category: categorized.category,
+                            title: categorized.title,
+                            content: categorized.content,
+                            status: 'inbox',
+                            user_id: userId
+                        })
+                    }
+                );
+
+                if (response.ok) {
+                    const [newIdea] = await response.json();
+                    noteboxIdeas.unshift(newIdea);
+                    input.value = '';
+                    updateNoteboxCounts();
+                    renderNoteboxKanban();
+                } else {
+                    console.error('Failed to add idea:', await response.text());
+                }
+            } catch (err) {
+                console.error('Error adding idea:', err);
+            }
+        }
+
+        function autoCategorizeIdea(text) {
+            const lower = text.toLowerCase();
+            let category = 'brainstorm';
+
+            if (lower.includes('suite') || lower.includes('foodvitals') || lower.includes('cheshbon') || lower.includes('opticrep')) {
+                category = 'suite_feature';
+            } else if (lower.includes('app idea') || lower.includes('new app')) {
+                category = 'app_idea';
+            } else if (lower.includes('article') || lower.includes('blog') || lower.includes('write')) {
+                category = 'article';
+            } else if (lower.includes('todo') || lower.includes('call') || lower.includes('email') || lower.includes('contact')) {
+                category = 'action_item';
+            } else if (lower.includes('?')) {
+                category = 'question';
+            }
+
+            return {
+                category,
+                title: text.length > 60 ? text.substring(0, 60) + '...' : text,
+                content: text.length > 60 ? text : ''
+            };
+        }
+
+        function markNoteboxDone(ideaId) {
+            showNoteboxArchiveModal(ideaId, 'done');
+        }
+
+        function dismissNoteboxIdea(ideaId) {
+            showNoteboxArchiveModal(ideaId, 'dismiss');
+        }
+
+        function showNoteboxArchiveModal(ideaId, action) {
+            noteboxArchiveIdeaId = ideaId;
+            noteboxArchiveAction = action;
+
+            const modal = document.getElementById('noteboxArchiveModal');
+            const title = document.getElementById('noteboxArchiveTitle');
+            const label = document.getElementById('noteboxArchiveLabel');
+            const textarea = document.getElementById('noteboxArchiveReason');
+            const confirmBtn = document.getElementById('noteboxArchiveConfirm');
+
+            if (action === 'done') {
+                title.textContent = 'Mark as Done';
+                label.textContent = 'What did you accomplish?';
+                textarea.placeholder = 'Briefly describe what was done...';
+                confirmBtn.textContent = '✓ Mark Done';
+                confirmBtn.style.background = 'var(--success)';
+            } else {
+                title.textContent = 'Dismiss Idea';
+                label.textContent = 'Why are you dismissing this?';
+                textarea.placeholder = 'Reason for dismissing (not relevant, duplicate, etc.)...';
+                confirmBtn.textContent = '✕ Dismiss';
+                confirmBtn.style.background = 'var(--error)';
+            }
+
+            textarea.value = '';
+            modal.classList.add('active');
+            textarea.focus();
+        }
+
+        function hideNoteboxArchiveModal() {
+            document.getElementById('noteboxArchiveModal').classList.remove('active');
+            noteboxArchiveIdeaId = null;
+            noteboxArchiveAction = null;
+        }
+
+        async function confirmNoteboxArchive() {
+            if (!noteboxArchiveIdeaId || !noteboxArchiveAction) return;
+
+            const reason = document.getElementById('noteboxArchiveReason').value.trim();
+            if (!reason) {
+                document.getElementById('noteboxArchiveReason').style.borderColor = 'var(--error)';
+                return;
+            }
+
+            const status = noteboxArchiveAction === 'done' ? 'implemented' : 'dismissed';
+            await updateNoteboxIdeaStatus(noteboxArchiveIdeaId, status, reason);
+            hideNoteboxArchiveModal();
+        }
+
+        async function updateNoteboxIdeaStatus(ideaId, status, reason = null) {
+            try {
+                const updateData = { status };
+                if (reason !== null) {
+                    updateData.dismiss_reason = reason; // Using dismiss_reason for both done and dismiss
+                }
+
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/personal_ideas?id=eq.${ideaId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(updateData)
+                    }
+                );
+
+                if (response.ok) {
+                    // Update local state
+                    const idea = noteboxIdeas.find(i => i.id === ideaId);
+                    if (idea) {
+                        idea.status = status;
+                        if (reason !== null) idea.dismiss_reason = reason;
+                    }
+                    updateNoteboxCounts();
+                    renderNoteboxKanban();
+                }
+            } catch (err) {
+                console.error('Error updating idea:', err);
+            }
+        }
+
+        function filterNoteboxCategory(category) {
+            noteboxCategoryFilter = category;
+
+            // Update filter buttons
+            document.querySelectorAll('.notebox-sidebar .filter-btn[data-category]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.category === category);
+            });
+
+            renderNoteboxKanban();
+        }
+
+        // Close modals on escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                hideSubmitModal();
+                hideAuthModal();
+                hideNoteboxArchiveModal();
+            }
+        });
+    </script>
+
+    <!-- Main Site Navigation Component -->
+    <script src="/nav-component.js"></script>
+</body>
+</html>

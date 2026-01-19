@@ -1,0 +1,778 @@
+// StuartFactoryBot - Personal Intake Webhook Handler
+// Captures ideas via Telegram, classifies with AI, routes to Claude CLI
+
+const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://rdsmdywbdiskxknluiym.supabase.co';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY; // Free tier available!
+
+// Only allow Stuart (set your Telegram user ID)
+const ALLOWED_USER_IDS = (process.env.ALLOWED_USER_IDS || '').split(',').filter(Boolean);
+
+// ═══════════════════════════════════════════════════════════════
+// TELEGRAM API HELPERS
+// ═══════════════════════════════════════════════════════════════
+
+async function sendMessage(chatId, text, options = {}) {
+  const fetch = (await import('node-fetch')).default;
+  await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text,
+      parse_mode: 'Markdown',
+      ...options
+    })
+  });
+}
+
+async function editMessage(chatId, messageId, text, options = {}) {
+  const fetch = (await import('node-fetch')).default;
+  await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/editMessageText`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: chatId,
+      message_id: messageId,
+      text,
+      parse_mode: 'Markdown',
+      ...options
+    })
+  });
+}
+
+async function answerCallback(callbackId, text = '') {
+  const fetch = (await import('node-fetch')).default;
+  await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/answerCallbackQuery`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      callback_query_id: callbackId,
+      text
+    })
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SUPABASE HELPERS
+// ═══════════════════════════════════════════════════════════════
+
+async function supabaseRequest(method, endpoint, data = null) {
+  const fetch = (await import('node-fetch')).default;
+  const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
+
+  const headers = {
+    'apikey': SUPABASE_SERVICE_KEY,
+    'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+    'Content-Type': 'application/json',
+    'Prefer': method === 'POST' ? 'return=representation' : 'return=minimal'
+  };
+
+  const options = { method, headers };
+  if (data) options.body = JSON.stringify(data);
+
+  const response = await fetch(url, options);
+
+  if (method === 'GET' || method === 'POST') {
+    return response.json();
+  }
+  return response.ok;
+}
+
+async function getDestinations() {
+  return supabaseRequest('GET', 'intake_destinations?active=eq.true&order=sort_order');
+}
+
+async function getConversation(chatId) {
+  const convs = await supabaseRequest('GET',
+    `intake_conversations?telegram_chat_id=eq.${chatId}&status=neq.done&status=neq.cancelled&order=created_at.desc&limit=1`
+  );
+  return convs[0] || null;
+}
+
+async function createConversation(chatId, userId, username, rawMessage) {
+  const convs = await supabaseRequest('POST', 'intake_conversations', {
+    telegram_chat_id: String(chatId),
+    telegram_user_id: String(userId),
+    telegram_username: username,
+    raw_message: rawMessage,
+    status: 'classifying'
+  });
+  return convs[0];
+}
+
+async function updateConversation(convId, data) {
+  return supabaseRequest('PATCH', `intake_conversations?id=eq.${convId}`, data);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AI CLASSIFICATION (using Gemini Flash - FREE TIER!)
+// ═══════════════════════════════════════════════════════════════
+
+async function classifyMessage(message, destinations) {
+  const fetch = (await import('node-fetch')).default;
+
+  // Build destination descriptions for the prompt
+  const destDescriptions = destinations.map(d =>
+    `- ${d.slug}: ${d.name} - ${d.description}. Keywords: ${(d.keywords || []).join(', ')}`
+  ).join('\n');
+
+  const prompt = `You are classifying a message to route it to the correct destination.
+
+Available destinations:
+${destDescriptions}
+
+Message to classify:
+"${message}"
+
+Respond with JSON only (no markdown, no code blocks):
+{
+  "destination_slug": "the best matching slug",
+  "confidence": 0.0 to 1.0,
+  "title": "extracted title/summary (brief)",
+  "content": "the main content/details"
+}`;
+
+  try {
+    // Using Gemini 1.5 Flash - free tier has 15 RPM, 1M TPM
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 500
+          }
+        })
+      }
+    );
+
+    const result = await response.json();
+    const text = result.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+
+    // Extract JSON from response (handle markdown code blocks)
+    let jsonStr = text;
+    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) || text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      jsonStr = jsonMatch[1] || jsonMatch[0];
+    }
+
+    return JSON.parse(jsonStr);
+  } catch (err) {
+    console.error('Classification error:', err);
+  }
+
+  // Fallback - use keyword matching
+  const lowerMessage = message.toLowerCase();
+  for (const dest of destinations) {
+    const keywords = dest.keywords || [];
+    if (keywords.some(kw => lowerMessage.includes(kw.toLowerCase()))) {
+      return {
+        destination_slug: dest.slug,
+        confidence: 0.6,
+        title: message.slice(0, 50),
+        content: message
+      };
+    }
+  }
+
+  // Default fallback
+  return {
+    destination_slug: 'stuart',
+    confidence: 0.5,
+    title: message.slice(0, 50),
+    content: message
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PROMPT GENERATION
+// ═══════════════════════════════════════════════════════════════
+
+function generatePrompt(destination, title, content, answers) {
+  let prompt = destination.prompt_template ||
+    `New item for ${destination.name}:\n\nTitle: {title}\nContent: {content}`;
+
+  // Replace placeholders
+  prompt = prompt.replace(/\{title\}/g, title);
+  prompt = prompt.replace(/\{content\}/g, content || '(no additional details)');
+
+  // Replace answer placeholders
+  for (const [key, value] of Object.entries(answers || {})) {
+    prompt = prompt.replace(new RegExp(`\\{${key}\\}`, 'g'), value);
+  }
+
+  // Clean up any remaining placeholders
+  prompt = prompt.replace(/\{[^}]+\}/g, '(not specified)');
+
+  return prompt;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CONVERSATION STATE HANDLERS
+// ═══════════════════════════════════════════════════════════════
+
+async function handleNewMessage(chatId, userId, username, text) {
+  // Check if there's an active conversation
+  let conv = await getConversation(chatId);
+
+  if (conv) {
+    // Continue existing conversation based on status
+    return handleConversationResponse(chatId, conv, text);
+  }
+
+  // Start new conversation
+  conv = await createConversation(chatId, userId, username, text);
+
+  // Classify the message
+  const destinations = await getDestinations();
+  const classification = await classifyMessage(text, destinations);
+
+  const destination = destinations.find(d => d.slug === classification.destination_slug);
+
+  if (!destination) {
+    await sendMessage(chatId, "I couldn't figure out where this should go. Can you try rephrasing?");
+    await updateConversation(conv.id, { status: 'cancelled' });
+    return;
+  }
+
+  // Update conversation with classification
+  await updateConversation(conv.id, {
+    detected_destination_id: destination.id,
+    confidence: classification.confidence,
+    extracted_title: classification.title,
+    extracted_content: classification.content,
+    status: 'confirming_destination'
+  });
+
+  // Ask for destination confirmation
+  const confidenceEmoji = classification.confidence >= 0.8 ? '🎯' :
+                          classification.confidence >= 0.6 ? '🤔' : '❓';
+
+  // Build destination buttons (show all, in rows of 2)
+  const keyboard = [];
+  for (let i = 0; i < destinations.length; i += 2) {
+    const row = [{ text: `${destinations[i].icon} ${destinations[i].name}`, callback_data: `dest_${conv.id}_${destinations[i].slug}` }];
+    if (destinations[i + 1]) {
+      row.push({ text: `${destinations[i + 1].icon} ${destinations[i + 1].name}`, callback_data: `dest_${conv.id}_${destinations[i + 1].slug}` });
+    }
+    keyboard.push(row);
+  }
+  keyboard.push([{ text: '➕ Add New Destination', callback_data: `newdest_${conv.id}` }]);
+  keyboard.push([{ text: '❌ Cancel', callback_data: `cancel_${conv.id}` }]);
+
+  await sendMessage(chatId,
+    `${confidenceEmoji} *Got it!*\n\n` +
+    `"${classification.title}"\n\n` +
+    `This looks like it's for *${destination.name}*.\n` +
+    `Is that right, or should it go somewhere else?`,
+    {
+      reply_markup: { inline_keyboard: keyboard }
+    }
+  );
+}
+
+async function handleConversationResponse(chatId, conv, text) {
+  if (conv.status === 'asking_questions') {
+    // They're answering a question
+    return handleQuestionAnswer(chatId, conv, text);
+  }
+
+  if (conv.status === 'reviewing_prompt') {
+    // They're providing refinements
+    return handlePromptRefinement(chatId, conv, text);
+  }
+
+  // Creating new destination flow
+  if (conv.status === 'creating_dest_name') {
+    return handleNewDestName(chatId, conv, text);
+  }
+  if (conv.status === 'creating_dest_icon') {
+    return handleNewDestIcon(chatId, conv, text);
+  }
+  if (conv.status === 'creating_dest_description') {
+    return handleNewDestDescription(chatId, conv, text);
+  }
+
+  // For other statuses, start fresh
+  await updateConversation(conv.id, { status: 'cancelled' });
+  await sendMessage(chatId, "Let me start fresh with your new message...");
+  // Re-process as new message
+  const destinations = await getDestinations();
+  const newConv = await createConversation(chatId, conv.telegram_user_id, conv.telegram_username, text);
+  const classification = await classifyMessage(text, destinations);
+  // ... continue with flow (simplified for brevity)
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NEW DESTINATION CREATION FLOW
+// ═══════════════════════════════════════════════════════════════
+
+async function startNewDestinationFlow(chatId, convId) {
+  await updateConversation(convId, { status: 'creating_dest_name', answers: {} });
+  await sendMessage(chatId,
+    `➕ *Create New Destination*\n\n` +
+    `What should this destination be called?\n\n` +
+    `_(e.g., "VoiceForge", "Personal Journal", "Client Work")_`
+  );
+}
+
+async function handleNewDestName(chatId, conv, name) {
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const answers = { ...(conv.answers || {}), name, slug };
+  await updateConversation(conv.id, { answers, status: 'creating_dest_icon' });
+
+  await sendMessage(chatId,
+    `Great! *${name}*\n\n` +
+    `Now send me an emoji icon for this destination:\n\n` +
+    `_(e.g., 🎙️ 📓 💼 🎨 🔧)_`
+  );
+}
+
+async function handleNewDestIcon(chatId, conv, icon) {
+  // Take first emoji or default
+  const emojiMatch = icon.match(/\p{Emoji}/u);
+  const finalIcon = emojiMatch ? emojiMatch[0] : '📌';
+
+  const answers = { ...(conv.answers || {}), icon: finalIcon };
+  await updateConversation(conv.id, { answers, status: 'creating_dest_description' });
+
+  await sendMessage(chatId,
+    `${finalIcon} Nice!\n\n` +
+    `Now give a brief description of what goes in this destination:\n\n` +
+    `_(This helps the AI classify future messages correctly)_`
+  );
+}
+
+async function handleNewDestDescription(chatId, conv, description) {
+  const answers = conv.answers || {};
+  const { name, slug, icon } = answers;
+
+  // Create the new destination in Supabase
+  const newDest = await supabaseRequest('POST', 'intake_destinations', {
+    name,
+    slug,
+    icon,
+    description,
+    target_type: 'notebox',
+    notebox_status: slug, // Use slug as the status for NoteBox
+    keywords: name.toLowerCase().split(' '),
+    template_questions: [],
+    prompt_template: `New item for ${name}:\n\nTitle: {title}\nContent: {content}\n\nPlease process this ${name} item.`,
+    active: true,
+    sort_order: 99
+  });
+
+  if (!newDest || !newDest[0]) {
+    await sendMessage(chatId, "❌ Failed to create destination. Please try again.");
+    await updateConversation(conv.id, { status: 'cancelled' });
+    return;
+  }
+
+  const destination = newDest[0];
+
+  // Now continue with the original message using this new destination
+  await updateConversation(conv.id, {
+    detected_destination_id: destination.id,
+    status: 'asking_questions',
+    current_question_index: 0,
+    answers: {}
+  });
+
+  await sendMessage(chatId,
+    `✅ *Created: ${icon} ${name}*\n\n` +
+    `This destination is now available in your NoteBox!\n\n` +
+    `Continuing with your original message...`
+  );
+
+  // Since there are no template questions for new destinations, go straight to prompt
+  await showPromptForReview(chatId, conv.id, destination, {});
+}
+
+async function handleDestinationConfirm(chatId, convId, destSlug) {
+  const destinations = await getDestinations();
+  const destination = destinations.find(d => d.slug === destSlug);
+
+  if (!destination) {
+    await sendMessage(chatId, "Destination not found. Please try again.");
+    return;
+  }
+
+  await updateConversation(convId, {
+    detected_destination_id: destination.id,
+    status: 'asking_questions',
+    current_question_index: 0,
+    answers: {}
+  });
+
+  // Start asking questions
+  await askNextQuestion(chatId, convId, destination, 0, {});
+}
+
+async function askNextQuestion(chatId, convId, destination, questionIndex, currentAnswers) {
+  const questions = destination.template_questions || [];
+
+  if (questionIndex >= questions.length) {
+    // All questions answered - save directly to NoteBox
+    return saveToNoteBox(chatId, convId, destination, currentAnswers);
+  }
+
+  const question = questions[questionIndex];
+
+  if (question.options) {
+    // Multiple choice
+    const keyboard = question.options.map(opt => [{
+      text: opt,
+      callback_data: `ans_${convId}_${question.key}_${opt.slice(0, 20)}`
+    }]);
+
+    if (!question.required) {
+      keyboard.push([{ text: '⏭️ Skip', callback_data: `skip_${convId}_${question.key}` }]);
+    }
+
+    await sendMessage(chatId, `*Question ${questionIndex + 1}/${questions.length}*\n\n${question.question}`, {
+      reply_markup: { inline_keyboard: keyboard }
+    });
+  } else {
+    // Free text
+    await sendMessage(chatId, `*Question ${questionIndex + 1}/${questions.length}*\n\n${question.question}\n\n_(Just type your answer)_`);
+  }
+
+  await updateConversation(convId, {
+    current_question_index: questionIndex,
+    status: 'asking_questions'
+  });
+}
+
+async function handleQuestionAnswer(chatId, conv, answerText) {
+  const destinations = await getDestinations();
+  const destination = destinations.find(d => d.id === conv.detected_destination_id);
+
+  if (!destination) return;
+
+  const questions = destination.template_questions || [];
+  const currentQ = questions[conv.current_question_index];
+
+  if (!currentQ) return;
+
+  // Save answer
+  const answers = { ...(conv.answers || {}), [currentQ.key]: answerText };
+  await updateConversation(conv.id, { answers });
+
+  // Move to next question
+  await askNextQuestion(chatId, conv.id, destination, conv.current_question_index + 1, answers);
+}
+
+async function saveToNoteBox(chatId, convId, destination, answers) {
+  // Get conversation for title/content
+  const convs = await supabaseRequest('GET', `intake_conversations?id=eq.${convId}`);
+  const conv = convs[0];
+
+  if (!conv) return;
+
+  // Build enriched content from answers
+  let enrichedContent = conv.extracted_content || '';
+  if (Object.keys(answers).length > 0) {
+    const answersText = Object.entries(answers)
+      .map(([key, value]) => `${key}: ${value}`)
+      .join('\n');
+    enrichedContent = enrichedContent
+      ? `${enrichedContent}\n\n---\n${answersText}`
+      : answersText;
+  }
+
+  // Save to personal_ideas (NoteBox)
+  await supabaseRequest('POST', 'personal_ideas', {
+    raw_input: conv.raw_message,
+    category: destination.slug || 'brainstorm',
+    title: conv.extracted_title,
+    content: enrichedContent,
+    destination_slug: destination.slug,
+    status: 'inbox',
+    user_id: `tg_${conv.telegram_user_id}`
+  });
+
+  await updateConversation(convId, { status: 'done', answers });
+
+  await sendMessage(chatId,
+    `✅ *Saved to NoteBox!*\n\n` +
+    `📁 *${destination.name}*\n` +
+    `📝 "${conv.extracted_title}"\n\n` +
+    `_Check your Factory → NoteBox to see it._`
+  );
+}
+
+async function showPromptForReview(chatId, convId, destination, answers) {
+  // Get conversation for title/content
+  const convs = await supabaseRequest('GET', `intake_conversations?id=eq.${convId}`);
+  const conv = convs[0];
+
+  const prompt = generatePrompt(
+    destination,
+    conv.extracted_title,
+    conv.extracted_content,
+    answers
+  );
+
+  await updateConversation(convId, {
+    generated_prompt: prompt,
+    answers,
+    status: 'reviewing_prompt'
+  });
+
+  // Show preview (truncate if too long)
+  const displayPrompt = prompt.length > 1500 ? prompt.slice(0, 1500) + '...' : prompt;
+
+  await sendMessage(chatId,
+    `*Here's the prompt I'll send to Claude:*\n\n\`\`\`\n${displayPrompt}\n\`\`\`\n\n` +
+    `Ready to send?`,
+    {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '✅ Send it!', callback_data: `approve_${convId}` },
+            { text: '✏️ Refine', callback_data: `refine_${convId}` }
+          ],
+          [{ text: '❌ Cancel', callback_data: `cancel_${convId}` }]
+        ]
+      }
+    }
+  );
+}
+
+async function handlePromptRefinement(chatId, conv, refinement) {
+  // Get current prompt and append refinement
+  const newPrompt = conv.generated_prompt + `\n\nAdditional context from user: ${refinement}`;
+
+  await updateConversation(conv.id, {
+    generated_prompt: newPrompt,
+    status: 'reviewing_prompt'
+  });
+
+  const displayPrompt = newPrompt.length > 1500 ? newPrompt.slice(0, 1500) + '...' : newPrompt;
+
+  await sendMessage(chatId,
+    `*Updated prompt:*\n\n\`\`\`\n${displayPrompt}\n\`\`\`\n\n` +
+    `Ready now?`,
+    {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '✅ Send it!', callback_data: `approve_${conv.id}` },
+            { text: '✏️ More refinements', callback_data: `refine_${conv.id}` }
+          ],
+          [{ text: '❌ Cancel', callback_data: `cancel_${conv.id}` }]
+        ]
+      }
+    }
+  );
+}
+
+async function handleApprove(chatId, convId) {
+  const convs = await supabaseRequest('GET', `intake_conversations?id=eq.${convId}`);
+  const conv = convs[0];
+
+  if (!conv) return;
+
+  // Create claude_task
+  await supabaseRequest('POST', 'claude_tasks', {
+    idea_id: null,
+    prompt: conv.generated_prompt,
+    target: 'stuartfactory',
+    status: 'pending'
+  });
+
+  // Also add to personal_ideas for NoteBox tracking
+  const destinations = await getDestinations();
+  const destination = destinations.find(d => d.id === conv.detected_destination_id);
+
+  if (destination) {
+    // Use 'inbox' status for active items, but track destination via destination_slug
+    const status = ['inbox', 'pushed', 'artstu'].includes(destination.notebox_status)
+      ? destination.notebox_status
+      : 'inbox';
+
+    await supabaseRequest('POST', 'personal_ideas', {
+      raw_input: conv.raw_message,
+      category: 'brainstorm',
+      title: conv.extracted_title,
+      content: conv.extracted_content,
+      destination_slug: destination.slug, // Track which destination this belongs to
+      status: status,
+      user_id: `tg_${conv.telegram_user_id}` // For Factory NoteBox filtering
+    });
+  }
+
+  await updateConversation(convId, { status: 'done' });
+
+  await sendMessage(chatId,
+    `✅ *Sent to Claude!*\n\n` +
+    `Your prompt is in the queue. The daemon on your PC will pick it up and execute it.\n\n` +
+    `_Check your terminal or NoteBox to see the result._`
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CALLBACK QUERY HANDLER
+// ═══════════════════════════════════════════════════════════════
+
+async function handleCallback(query) {
+  const chatId = query.message.chat.id;
+  const messageId = query.message.message_id;
+  const data = query.data;
+
+  await answerCallback(query.id);
+
+  // Parse callback data
+  if (data.startsWith('dest_')) {
+    // dest_convId_slug
+    const [, convId, slug] = data.split('_');
+    await handleDestinationConfirm(chatId, convId, slug);
+    return;
+  }
+
+  if (data.startsWith('newdest_')) {
+    // newdest_convId - start new destination creation flow
+    const convId = data.replace('newdest_', '');
+    await startNewDestinationFlow(chatId, convId);
+    return;
+  }
+
+  if (data.startsWith('ans_')) {
+    // ans_convId_key_value
+    const parts = data.split('_');
+    const convId = parts[1];
+    const key = parts[2];
+    const value = parts.slice(3).join('_');
+
+    const convs = await supabaseRequest('GET', `intake_conversations?id=eq.${convId}`);
+    const conv = convs[0];
+    if (!conv) return;
+
+    const destinations = await getDestinations();
+    const destination = destinations.find(d => d.id === conv.detected_destination_id);
+    if (!destination) return;
+
+    const answers = { ...(conv.answers || {}), [key]: value };
+    await updateConversation(convId, { answers });
+
+    await askNextQuestion(chatId, convId, destination, conv.current_question_index + 1, answers);
+    return;
+  }
+
+  if (data.startsWith('skip_')) {
+    // skip_convId_key
+    const [, convId, key] = data.split('_');
+
+    const convs = await supabaseRequest('GET', `intake_conversations?id=eq.${convId}`);
+    const conv = convs[0];
+    if (!conv) return;
+
+    const destinations = await getDestinations();
+    const destination = destinations.find(d => d.id === conv.detected_destination_id);
+    if (!destination) return;
+
+    await askNextQuestion(chatId, convId, destination, conv.current_question_index + 1, conv.answers || {});
+    return;
+  }
+
+  if (data.startsWith('approve_')) {
+    const convId = data.replace('approve_', '');
+    await handleApprove(chatId, convId);
+    return;
+  }
+
+  if (data.startsWith('refine_')) {
+    const convId = data.replace('refine_', '');
+    await updateConversation(convId, { status: 'reviewing_prompt' });
+    await sendMessage(chatId, "What would you like to add or change? Just type it out.");
+    return;
+  }
+
+  if (data.startsWith('cancel_')) {
+    const convId = data.replace('cancel_', '');
+    await updateConversation(convId, { status: 'cancelled' });
+    await sendMessage(chatId, "❌ Cancelled. Send me something new whenever you're ready!");
+    return;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN WEBHOOK HANDLER
+// ═══════════════════════════════════════════════════════════════
+
+module.exports = async (req, res) => {
+  if (req.method !== 'POST') {
+    return res.status(200).send('StuartFactoryBot is running!');
+  }
+
+  try {
+    const update = req.body;
+
+    // Handle messages
+    if (update.message?.text) {
+      const chatId = update.message.chat.id;
+      const userId = update.message.from.id;
+      const username = update.message.from.username || 'user';
+      const text = update.message.text;
+
+      // Check authorization
+      if (ALLOWED_USER_IDS.length > 0 && !ALLOWED_USER_IDS.includes(String(userId))) {
+        await sendMessage(chatId, "Sorry, this bot is private. 🔒");
+        return res.status(200).send('OK');
+      }
+
+      // Handle /start
+      if (text === '/start') {
+        await sendMessage(chatId,
+          `🏭 *Welcome to StuartFactoryBot!*\n\n` +
+          `Just send me any idea, note, or task and I'll:\n` +
+          `1. Figure out where it should go\n` +
+          `2. Ask a few clarifying questions\n` +
+          `3. Generate a prompt for Claude\n` +
+          `4. Send it to your PC for execution\n\n` +
+          `Try it! Send me something like:\n` +
+          `_"New article idea: exploring the nature of time"_`
+        );
+        return res.status(200).send('OK');
+      }
+
+      // Handle /cancel
+      if (text === '/cancel') {
+        const conv = await getConversation(chatId);
+        if (conv) {
+          await updateConversation(conv.id, { status: 'cancelled' });
+        }
+        await sendMessage(chatId, "✅ Cancelled. Ready for your next idea!");
+        return res.status(200).send('OK');
+      }
+
+      // Handle /destinations - list all destinations
+      if (text === '/destinations') {
+        const destinations = await getDestinations();
+        const list = destinations.map(d => `${d.icon} *${d.name}* (${d.slug})\n   ${d.description}`).join('\n\n');
+        await sendMessage(chatId, `*Available Destinations:*\n\n${list}`);
+        return res.status(200).send('OK');
+      }
+
+      // Process new message
+      await handleNewMessage(chatId, userId, username, text);
+      return res.status(200).send('OK');
+    }
+
+    // Handle callback queries (button presses)
+    if (update.callback_query) {
+      await handleCallback(update.callback_query);
+      return res.status(200).send('OK');
+    }
+
+    res.status(200).send('OK');
+  } catch (error) {
+    console.error('Webhook error:', error);
+    res.status(200).send('OK'); // Always return 200 to Telegram
+  }
+};
