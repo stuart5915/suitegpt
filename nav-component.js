@@ -395,34 +395,28 @@ async function connectWalletFromNav() {
     }
 }
 
-// Telegram login widget - opens Telegram OAuth popup
+// Telegram login using official widget script
 function loginWithTelegramWidget() {
     const botUsername = 'suitehubbot';
-    const origin = window.location.origin;
 
-    // Calculate popup position (center of screen)
-    const width = 550;
-    const height = 470;
-    const left = Math.max(0, (screen.width - width) / 2);
-    const top = Math.max(0, (screen.height - height) / 2);
+    // Load Telegram widget script if not already loaded
+    if (!window.Telegram || !window.Telegram.Login) {
+        const script = document.createElement('script');
+        script.src = 'https://telegram.org/js/telegram-widget.js?22';
+        script.async = true;
+        script.onload = () => doTelegramAuth(botUsername);
+        document.head.appendChild(script);
+    } else {
+        doTelegramAuth(botUsername);
+    }
+}
 
-    // Open Telegram OAuth popup
-    const authUrl = `https://oauth.telegram.org/auth?bot_id=8341049569&origin=${encodeURIComponent(origin)}&request_access=write`;
-
-    const popup = window.open(
-        authUrl,
-        'telegram_auth',
-        `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
-    );
-
-    // Listen for the auth response
-    window.addEventListener('message', function handleTelegramAuth(event) {
-        if (event.origin !== 'https://oauth.telegram.org') return;
-
-        try {
-            const data = JSON.parse(event.data);
-            if (data.event === 'auth_result' && data.result) {
-                const user = data.result;
+function doTelegramAuth(botUsername) {
+    // Use Telegram's official auth method
+    window.Telegram.Login.auth(
+        { bot_id: botUsername, request_access: true },
+        (user) => {
+            if (user) {
                 const tgUser = {
                     id: user.id,
                     username: user.username || user.first_name,
@@ -441,17 +435,13 @@ function loginWithTelegramWidget() {
                     window.refreshNavCredits();
                 }
 
-                window.removeEventListener('message', handleTelegramAuth);
+                // Reload page to reflect login state
+                window.location.reload();
+            } else {
+                console.log('Telegram auth cancelled or failed');
             }
-        } catch (e) {
-            console.error('Telegram auth error:', e);
         }
-    });
-
-    // Fallback: check if popup was blocked
-    if (!popup || popup.closed) {
-        alert('Popup was blocked. Please allow popups for this site.');
-    }
+    );
 }
 
 // Profile menu (disconnect)
