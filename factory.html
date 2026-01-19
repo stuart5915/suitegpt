@@ -434,6 +434,52 @@
             background: rgba(34, 197, 94, 0.3);
         }
 
+        .notebox-card-btn.push {
+            background: rgba(0, 212, 170, 0.2);
+            color: var(--accent);
+            flex: 2;
+        }
+
+        .notebox-card-btn.push:hover {
+            background: rgba(0, 212, 170, 0.3);
+        }
+
+        .destination-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+        }
+
+        .destination-btn:hover {
+            border-color: var(--accent);
+            background: var(--accent-dim);
+        }
+
+        .destination-btn .dest-icon {
+            font-size: 1.5rem;
+        }
+
+        .destination-btn .dest-info {
+            flex: 1;
+        }
+
+        .destination-btn .dest-name {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .destination-btn .dest-desc {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+
         .notebox-card-reason {
             font-size: 0.8rem;
             color: var(--accent);
@@ -1368,18 +1414,12 @@
                     </div>
 
                     <div class="sidebar-section">
-                        <div class="sidebar-title">Filter by Category</div>
-                        <button class="filter-btn active" data-category="all" onclick="filterNoteboxCategory('all')">
-                            All Ideas <span class="filter-count" id="noteboxCountAll">0</span>
-                        </button>
-                        <button class="filter-btn" data-category="inbox" onclick="filterNoteboxCategory('inbox')">
-                            📥 Inbox <span class="filter-count" id="noteboxCountInbox">0</span>
-                        </button>
-                        <button class="filter-btn" data-category="suite_feature" onclick="filterNoteboxCategory('suite_feature')">
-                            ⚡ SUITE <span class="filter-count" id="noteboxCountSuite">0</span>
-                        </button>
-                        <button class="filter-btn" data-category="app_idea" onclick="filterNoteboxCategory('app_idea')">
-                            💡 App Ideas <span class="filter-count" id="noteboxCountApps">0</span>
+                        <div class="sidebar-title">Destinations</div>
+                        <div id="noteboxDestinations">
+                            <!-- Populated by JS -->
+                        </div>
+                        <button class="filter-btn add-destination-btn" onclick="showAddDestinationModal()" style="margin-top: 8px; border: 1px dashed var(--border); background: transparent;">
+                            + Add Destination
                         </button>
                     </div>
 
@@ -1413,6 +1453,45 @@
             <div style="display: flex; gap: 12px; margin-top: 16px;">
                 <button class="form-btn secondary" onclick="hideNoteboxArchiveModal()" style="flex: 1;">Cancel</button>
                 <button class="form-btn" id="noteboxArchiveConfirm" onclick="confirmNoteboxArchive()" style="flex: 1;">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Push To Modal -->
+    <div class="modal-overlay" id="pushToModal">
+        <div class="modal-content" style="max-width: 350px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Push To...</h3>
+                <button class="modal-close" onclick="hidePushToModal()">&times;</button>
+            </div>
+            <div id="pushToDestinations" style="display: flex; flex-direction: column; gap: 8px;">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Destination Modal -->
+    <div class="modal-overlay" id="addDestinationModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Add Destination</h3>
+                <button class="modal-close" onclick="hideAddDestinationModal()">&times;</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Name</label>
+                <input type="text" class="form-input" id="newDestinationName" placeholder="e.g., artstu.ca">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Icon (emoji)</label>
+                <input type="text" class="form-input" id="newDestinationIcon" placeholder="e.g., 🎨" maxlength="2">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <input type="text" class="form-input" id="newDestinationDesc" placeholder="What kind of ideas go here?">
+            </div>
+            <div style="display: flex; gap: 12px; margin-top: 16px;">
+                <button class="form-btn secondary" onclick="hideAddDestinationModal()" style="flex: 1;">Cancel</button>
+                <button class="form-btn" onclick="createDestination()" style="flex: 1;">Create</button>
             </div>
         </div>
     </div>
@@ -1514,9 +1593,11 @@
 
         // NoteBox State
         let noteboxIdeas = [];
-        let noteboxCategoryFilter = 'all';
+        let noteboxDestinations = [];
+        let currentDestination = 'all'; // 'all' or destination slug
         let noteboxArchiveIdeaId = null;
         let noteboxArchiveAction = null; // 'done' or 'dismiss'
+        let pushingIdeaId = null; // ID of idea being pushed
 
         // Governance Sections State
         let suiteAppsIdeas = [];  // From 'ideas' table (shared with /apps)
@@ -1823,11 +1904,10 @@
             const authorName = idea.author?.display_name || idea.author_name || 'SUITE';
             const isAdmin = currentUser?.is_founder || false;
 
+            const dragAttrs = isAdmin ? `draggable="true" ondragstart="handleDragStart(event, '${idea.id}', 'idea', 'suite_apps')" ondragend="handleDragEnd(event)"` : '';
+
             return `
-                <div class="idea-card ${idea.status}"
-                     ${isAdmin ? `draggable="true"
-                     ondragstart="handleDragStart(event, '${idea.id}', 'idea', 'suite_apps')"
-                     ondragend="handleDragEnd(event)"` : ''}>
+                <div class="idea-card ${idea.status}" ${dragAttrs}>
                     ${isAdmin ? `<button class="card-delete-btn" onclick="deleteIdea('${idea.id}')" title="Delete">&times;</button>` : ''}
                     <div class="idea-card-title">${escapeHtml(idea.name)}</div>
                     <div class="idea-card-tagline">${escapeHtml(idea.tagline || idea.description || 'No description')}</div>
@@ -2119,6 +2199,7 @@
                 // User is logged in - show NoteBox app
                 document.getElementById('noteboxAuthPrompt').style.display = 'none';
                 document.getElementById('noteboxApp').style.display = 'flex';
+                loadDestinations();
                 loadNoteboxIdeas();
             } else {
                 // Not logged in - show auth prompt
@@ -2509,99 +2590,77 @@
         }
 
         function updateNoteboxCounts() {
-            const active = noteboxIdeas.filter(i => i.status === 'inbox');
-            const suite = noteboxIdeas.filter(i => i.category === 'suite_feature' && i.status === 'inbox');
-            const apps = noteboxIdeas.filter(i => i.category === 'app_idea' && i.status === 'inbox');
-
-            document.getElementById('noteboxCountAll').textContent = noteboxIdeas.length;
-            document.getElementById('noteboxCountInbox').textContent = active.length;
-            document.getElementById('noteboxCountSuite').textContent = suite.length;
-            document.getElementById('noteboxCountApps').textContent = apps.length;
+            // Update sidebar counts
+            renderDestinationsSidebar();
         }
 
         function renderNoteboxKanban() {
             const container = document.getElementById('noteboxKanban');
 
-            // Separate active and archived ideas
-            const activeIdeas = noteboxIdeas.filter(i => i.status === 'inbox');
-            const archivedIdeas = noteboxIdeas.filter(i => i.status === 'implemented' || i.status === 'dismissed');
+            // Filter by destination
+            let activeIdeas = noteboxIdeas.filter(i => i.status === 'inbox');
+            let archivedIdeas = noteboxIdeas.filter(i => i.status === 'implemented' || i.status === 'dismissed');
 
-            // Apply category filter to active ideas only
-            let filtered = activeIdeas;
-            if (noteboxCategoryFilter !== 'all' && noteboxCategoryFilter !== 'inbox') {
-                filtered = filtered.filter(i => i.category === noteboxCategoryFilter);
+            // Apply destination filter
+            if (currentDestination !== 'all') {
+                activeIdeas = activeIdeas.filter(i => i.destination_slug === currentDestination);
+                archivedIdeas = archivedIdeas.filter(i => i.destination_slug === currentDestination);
             }
 
-            if (filtered.length === 0 && archivedIdeas.length === 0) {
+            if (activeIdeas.length === 0 && archivedIdeas.length === 0) {
+                const destName = currentDestination === 'all' ? 'NoteBox' :
+                    (noteboxDestinations.find(d => d.slug === currentDestination)?.name || currentDestination);
                 container.innerHTML = `
                     <div class="notebox-empty">
                         <div class="notebox-empty-icon">📦</div>
-                        <div>No ideas yet. Add one above!</div>
+                        <div>No ideas in ${destName} yet. Add one above!</div>
                     </div>
                 `;
                 return;
             }
 
-            // Group by category for "all" view, otherwise just show cards
-            if (noteboxCategoryFilter === 'all' || noteboxCategoryFilter === 'inbox') {
-                // Group active ideas by category
-                const grouped = {};
-                filtered.forEach(idea => {
-                    if (!grouped[idea.category]) {
-                        grouped[idea.category] = [];
-                    }
-                    grouped[idea.category].push(idea);
-                });
+            // Group active ideas by category for display
+            const grouped = {};
+            activeIdeas.forEach(idea => {
+                const cat = idea.category || 'brainstorm';
+                if (!grouped[cat]) {
+                    grouped[cat] = [];
+                }
+                grouped[cat].push(idea);
+            });
 
-                // Render grouped columns + Archive column
-                let columnsHtml = Object.entries(grouped).map(([category, ideas]) => {
-                    const cat = NOTEBOX_CATEGORIES[category] || { emoji: '📝', label: category };
-                    return `
-                        <div class="notebox-column" data-category="${category}">
-                            <div class="notebox-column-header">
-                                <span>${cat.emoji}</span>
-                                <span>${cat.label}</span>
-                                <span class="notebox-column-count">${ideas.length}</span>
-                            </div>
-                            <div class="notebox-column-cards" data-category="${category}">
-                                ${ideas.map(idea => renderNoteboxCard(idea)).join('')}
-                            </div>
+            // Render grouped columns + Archive column
+            let columnsHtml = Object.entries(grouped).map(([category, ideas]) => {
+                const cat = NOTEBOX_CATEGORIES[category] || { emoji: '📝', label: category };
+                return `
+                    <div class="notebox-column" data-category="${category}">
+                        <div class="notebox-column-header">
+                            <span>${cat.emoji}</span>
+                            <span>${cat.label}</span>
+                            <span class="notebox-column-count">${ideas.length}</span>
                         </div>
-                    `;
-                }).join('');
-
-                // Add Archive column at the end
-                columnsHtml += `
-                    <div class="notebox-column archive-column" data-category="archive">
-                        <div class="notebox-column-header" style="opacity: 0.7;">
-                            <span>📁</span>
-                            <span>Archive</span>
-                            <span class="notebox-column-count">${archivedIdeas.length}</span>
-                        </div>
-                        <div class="notebox-column-cards" data-category="archive">
-                            ${archivedIdeas.map(idea => renderNoteboxCard(idea)).join('')}
+                        <div class="notebox-column-cards" data-category="${category}">
+                            ${ideas.map(idea => renderNoteboxCard(idea)).join('')}
                         </div>
                     </div>
                 `;
+            }).join('');
 
-                container.innerHTML = columnsHtml;
-            } else {
-                // Single category - show cards + archive column
-                let html = filtered.map(idea => renderNoteboxCard(idea)).join('');
-                html += `
-                    <div class="notebox-column archive-column" data-category="archive">
-                        <div class="notebox-column-header" style="opacity: 0.7;">
-                            <span>📁</span>
-                            <span>Archive</span>
-                            <span class="notebox-column-count">${archivedIdeas.length}</span>
-                        </div>
-                        <div class="notebox-column-cards" data-category="archive">
-                            ${archivedIdeas.map(idea => renderNoteboxCard(idea)).join('')}
-                        </div>
+            // Add Archive column at the end
+            columnsHtml += `
+                <div class="notebox-column archive-column" data-category="archive">
+                    <div class="notebox-column-header" style="opacity: 0.7;">
+                        <span>📁</span>
+                        <span>Archive</span>
+                        <span class="notebox-column-count">${archivedIdeas.length}</span>
                     </div>
-                `;
-                container.innerHTML = html;
-            }
+                    <div class="notebox-column-cards" data-category="archive">
+                        ${archivedIdeas.map(idea => renderNoteboxCard(idea)).join('')}
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = columnsHtml;
 
             // Setup drag and drop
             setupDragAndDrop();
@@ -2621,7 +2680,8 @@
                     ${idea.content ? `<div class="notebox-card-content">${escapeHtml(idea.content)}</div>` : ''}
                     ${idea.status === 'inbox' ? `
                         <div class="notebox-card-actions">
-                            <button class="notebox-card-btn done" onclick="markNoteboxDone('${idea.id}')">✓ Done</button>
+                            <button class="notebox-card-btn push" onclick="event.stopPropagation(); showPushToModal('${idea.id}')">Push To →</button>
+                            <button class="notebox-card-btn done" onclick="markNoteboxDone('${idea.id}')">✓</button>
                         </div>
                     ` : `
                         ${idea.dismiss_reason ? `<div class="notebox-card-reason">${escapeHtml(idea.dismiss_reason)}</div>` : ''}
@@ -2800,6 +2860,175 @@
                 }
             } catch (err) {
                 console.error('Error deleting idea:', err);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // DESTINATIONS
+        // ═══════════════════════════════════════════════════════════════
+
+        async function loadDestinations() {
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/intake_destinations?active=eq.true&order=sort_order`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+
+                if (response.ok) {
+                    noteboxDestinations = await response.json();
+                    renderDestinationsSidebar();
+                }
+            } catch (err) {
+                console.error('Error loading destinations:', err);
+            }
+        }
+
+        function renderDestinationsSidebar() {
+            const container = document.getElementById('noteboxDestinations');
+
+            // Add "All" option first
+            let html = `
+                <button class="filter-btn ${currentDestination === 'all' ? 'active' : ''}" onclick="selectDestination('all')">
+                    📋 All Ideas <span class="filter-count">${noteboxIdeas.length}</span>
+                </button>
+            `;
+
+            // Add each destination
+            html += noteboxDestinations.map(dest => {
+                const count = noteboxIdeas.filter(i => i.destination_slug === dest.slug && i.status === 'inbox').length;
+                return `
+                    <button class="filter-btn ${currentDestination === dest.slug ? 'active' : ''}" onclick="selectDestination('${dest.slug}')">
+                        ${dest.icon || '📁'} ${dest.name} <span class="filter-count">${count}</span>
+                    </button>
+                `;
+            }).join('');
+
+            container.innerHTML = html;
+        }
+
+        function selectDestination(slug) {
+            currentDestination = slug;
+            renderDestinationsSidebar();
+            renderNoteboxKanban();
+        }
+
+        function showPushToModal(ideaId) {
+            pushingIdeaId = ideaId;
+            const container = document.getElementById('pushToDestinations');
+
+            // Get current idea's destination
+            const idea = noteboxIdeas.find(i => i.id === ideaId);
+            const currentSlug = idea?.destination_slug;
+
+            container.innerHTML = noteboxDestinations
+                .filter(dest => dest.slug !== currentSlug) // Don't show current destination
+                .map(dest => `
+                    <button class="destination-btn" onclick="pushToDestination('${dest.slug}')">
+                        <span class="dest-icon">${dest.icon || '📁'}</span>
+                        <div class="dest-info">
+                            <div class="dest-name">${dest.name}</div>
+                            <div class="dest-desc">${dest.description || ''}</div>
+                        </div>
+                    </button>
+                `).join('');
+
+            document.getElementById('pushToModal').classList.add('active');
+        }
+
+        function hidePushToModal() {
+            document.getElementById('pushToModal').classList.remove('active');
+            pushingIdeaId = null;
+        }
+
+        async function pushToDestination(destSlug) {
+            if (!pushingIdeaId) return;
+
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/personal_ideas?id=eq.${pushingIdeaId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ destination_slug: destSlug })
+                    }
+                );
+
+                if (response.ok) {
+                    const idea = noteboxIdeas.find(i => i.id === pushingIdeaId);
+                    if (idea) {
+                        idea.destination_slug = destSlug;
+                    }
+                    hidePushToModal();
+                    renderDestinationsSidebar();
+                    renderNoteboxKanban();
+                }
+            } catch (err) {
+                console.error('Error pushing idea:', err);
+            }
+        }
+
+        function showAddDestinationModal() {
+            document.getElementById('newDestinationName').value = '';
+            document.getElementById('newDestinationIcon').value = '';
+            document.getElementById('newDestinationDesc').value = '';
+            document.getElementById('addDestinationModal').classList.add('active');
+        }
+
+        function hideAddDestinationModal() {
+            document.getElementById('addDestinationModal').classList.remove('active');
+        }
+
+        async function createDestination() {
+            const name = document.getElementById('newDestinationName').value.trim();
+            const icon = document.getElementById('newDestinationIcon').value.trim() || '📁';
+            const description = document.getElementById('newDestinationDesc').value.trim();
+
+            if (!name) {
+                alert('Please enter a name');
+                return;
+            }
+
+            const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/intake_destinations`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=representation'
+                        },
+                        body: JSON.stringify({
+                            name,
+                            slug,
+                            icon,
+                            description,
+                            active: true,
+                            sort_order: noteboxDestinations.length
+                        })
+                    }
+                );
+
+                if (response.ok) {
+                    const [newDest] = await response.json();
+                    noteboxDestinations.push(newDest);
+                    hideAddDestinationModal();
+                    renderDestinationsSidebar();
+                }
+            } catch (err) {
+                console.error('Error creating destination:', err);
             }
         }
 
