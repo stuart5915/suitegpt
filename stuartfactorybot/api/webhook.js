@@ -298,6 +298,11 @@ async function handleNewMessage(chatId, userId, username, text) {
 }
 
 async function handleConversationResponse(chatId, conv, text) {
+  // Content refinement flow
+  if (conv.status === 'confirming_content') {
+    return handleContentRefinement(chatId, conv, text);
+  }
+
   if (conv.status === 'asking_questions') {
     // They're answering a question
     return handleQuestionAnswer(chatId, conv, text);
@@ -399,19 +404,16 @@ async function handleNewDestDescription(chatId, conv, description) {
   // Now continue with the original message using this new destination
   await updateConversation(conv.id, {
     detected_destination_id: destination.id,
-    status: 'asking_questions',
-    current_question_index: 0,
-    answers: {}
+    status: 'confirming_content'
   });
 
   await sendMessage(chatId,
     `✅ *Created: ${icon} ${name}*\n\n` +
-    `This destination is now available in your NoteBox!\n\n` +
-    `Continuing with your original message...`
+    `This destination is now available in your NoteBox!`
   );
 
-  // Since there are no template questions for new destinations, go straight to prompt
-  await showPromptForReview(chatId, conv.id, destination, {});
+  // Show content for confirmation
+  await showContentForReview(chatId, conv.id, destination, conv);
 }
 
 async function handleDestinationConfirm(chatId, convId, destSlug) {
@@ -423,15 +425,108 @@ async function handleDestinationConfirm(chatId, convId, destSlug) {
     return;
   }
 
+  // Get the conversation to show the content for review
+  const convs = await supabaseRequest('GET', `intake_conversations?id=eq.${convId}`);
+  const conv = convs[0];
+  if (!conv) return;
+
   await updateConversation(convId, {
     detected_destination_id: destination.id,
-    status: 'asking_questions',
-    current_question_index: 0,
-    answers: {}
+    status: 'confirming_content'
   });
 
-  // Start asking questions
-  await askNextQuestion(chatId, convId, destination, 0, {});
+  // Show content for confirmation
+  await showContentForReview(chatId, convId, destination, conv);
+}
+
+async function showContentForReview(chatId, convId, destination, conv) {
+  const title = conv.extracted_title || 'Untitled';
+  const content = conv.extracted_content || conv.raw_message || '';
+
+  const preview = content.length > 500 ? content.slice(0, 500) + '...' : content;
+
+  await sendMessage(chatId,
+    `📝 *Here's what I'll save to ${destination.icon} ${destination.name}:*\n\n` +
+    `*${title}*\n\n` +
+    `${preview}\n\n` +
+    `_Reply with changes, or confirm to save._`,
+    {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '✅ Save it!', callback_data: `confirm_save_${convId}` },
+            { text: '❌ Cancel', callback_data: `cancel_${convId}` }
+          ]
+        ]
+      }
+    }
+  );
+}
+
+async function handleContentRefinement(chatId, conv, refinement) {
+  // Use AI to refine the content based on user feedback
+  const fetch = (await import('node-fetch')).default;
+
+  const prompt = `You are helping refine a note before saving it.
+
+Current title: "${conv.extracted_title}"
+Current content: "${conv.extracted_content || conv.raw_message}"
+
+User's refinement request: "${refinement}"
+
+Update the title and content based on the user's feedback. Keep it concise.
+
+Respond with JSON only (no markdown):
+{
+  "title": "updated title",
+  "content": "updated content"
+}`;
+
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.3, maxOutputTokens: 500 }
+        })
+      }
+    );
+
+    const result = await response.json();
+    const text = result.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+
+    let jsonStr = text;
+    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) || text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      jsonStr = jsonMatch[1] || jsonMatch[0];
+    }
+
+    const refined = JSON.parse(jsonStr);
+
+    // Update conversation with refined content
+    await updateConversation(conv.id, {
+      extracted_title: refined.title || conv.extracted_title,
+      extracted_content: refined.content || conv.extracted_content
+    });
+
+    // Get destination and show updated content
+    const destinations = await getDestinations();
+    const destination = destinations.find(d => d.id === conv.detected_destination_id);
+
+    const updatedConv = {
+      ...conv,
+      extracted_title: refined.title || conv.extracted_title,
+      extracted_content: refined.content || conv.extracted_content
+    };
+
+    await showContentForReview(chatId, conv.id, destination, updatedConv);
+  } catch (err) {
+    console.error('Refinement error:', err);
+    await sendMessage(chatId, "Sorry, I couldn't process that refinement. Try again or just confirm to save as-is.");
+  }
 }
 
 async function askNextQuestion(chatId, convId, destination, questionIndex, currentAnswers) {
@@ -660,6 +755,21 @@ async function handleCallback(query) {
     // newdest_convId - start new destination creation flow
     const convId = data.replace('newdest_', '');
     await startNewDestinationFlow(chatId, convId);
+    return;
+  }
+
+  if (data.startsWith('confirm_save_')) {
+    // confirm_save_convId - save to NoteBox
+    const convId = data.replace('confirm_save_', '');
+    const convs = await supabaseRequest('GET', `intake_conversations?id=eq.${convId}`);
+    const conv = convs[0];
+    if (!conv) return;
+
+    const destinations = await getDestinations();
+    const destination = destinations.find(d => d.id === conv.detected_destination_id);
+    if (!destination) return;
+
+    await saveToNoteBox(chatId, convId, destination, {});
     return;
   }
 
