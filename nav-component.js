@@ -447,6 +447,7 @@ async function connectWalletFromNav() {
 
 // Global callback for Telegram widget
 window.onTelegramAuth = function(user) {
+    console.log('[Telegram Auth] Success! User data:', user);
     const tgUser = {
         id: user.id,
         username: user.username || user.first_name,
@@ -470,11 +471,16 @@ window.onTelegramAuth = function(user) {
 
 // Telegram login - shows embedded widget
 function loginWithTelegramWidget() {
+    console.log('[Telegram Auth] Starting login flow...');
+    console.log('[Telegram Auth] Current origin:', window.location.origin);
+    console.log('[Telegram Auth] Bot username: SUITEHubBot');
+
     closeNavConnectModal();
 
     // Create overlay with Telegram widget
     let overlay = document.getElementById('telegramAuthOverlay');
     if (!overlay) {
+        console.log('[Telegram Auth] Creating widget overlay...');
         overlay = document.createElement('div');
         overlay.id = 'telegramAuthOverlay';
         overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:10001;flex-direction:column;gap:20px;';
@@ -483,10 +489,15 @@ function loginWithTelegramWidget() {
                 <h3 style="color:#fff;margin:0 0 20px 0;">Login with Telegram</h3>
                 <div id="telegramWidgetContainer"></div>
                 <p style="color:#9ca3af;font-size:0.85rem;margin-top:16px;">Click the button above to authenticate</p>
+                <p id="telegramDebugInfo" style="color:#666;font-size:0.7rem;margin-top:8px;"></p>
             </div>
             <button onclick="document.getElementById('telegramAuthOverlay').remove()" style="background:none;border:1px solid rgba(255,255,255,0.3);color:#fff;padding:10px 24px;border-radius:8px;cursor:pointer;">Cancel</button>
         `;
         document.body.appendChild(overlay);
+
+        // Show debug info
+        const debugEl = document.getElementById('telegramDebugInfo');
+        debugEl.textContent = 'Origin: ' + window.location.origin;
 
         // Inject Telegram widget script
         const container = document.getElementById('telegramWidgetContainer');
@@ -496,8 +507,18 @@ function loginWithTelegramWidget() {
         script.setAttribute('data-telegram-login', 'SUITEHubBot');
         script.setAttribute('data-size', 'large');
         script.setAttribute('data-onauth', 'onTelegramAuth(user)');
+
+        script.onload = function() {
+            console.log('[Telegram Auth] Widget script loaded successfully');
+        };
+        script.onerror = function(e) {
+            console.error('[Telegram Auth] Widget script failed to load:', e);
+        };
+
         container.appendChild(script);
+        console.log('[Telegram Auth] Widget script injected');
     } else {
+        console.log('[Telegram Auth] Showing existing overlay');
         overlay.style.display = 'flex';
     }
 }
