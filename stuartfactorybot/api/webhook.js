@@ -408,19 +408,8 @@ async function handleNewDestDescription(chatId, conv, description) {
 
   const destination = newDest[0];
 
-  // Now continue with the original message using this new destination
-  await updateConversation(conv.id, {
-    detected_destination_id: destination.id,
-    status: 'confirming_content'
-  });
-
-  await sendMessage(chatId,
-    `✅ *Created: ${icon} ${name}*\n\n` +
-    `This destination is now available in your NoteBox!`
-  );
-
-  // Show content for confirmation
-  await showContentForReview(chatId, conv.id, destination, conv);
+  // Save directly to the new destination
+  await saveToNoteBox(chatId, conv.id, destination, {});
 }
 
 async function handleDestinationConfirm(chatId, convId, destSlug) {
@@ -432,18 +421,8 @@ async function handleDestinationConfirm(chatId, convId, destSlug) {
     return;
   }
 
-  // Get the conversation to show the content for review
-  const convs = await supabaseRequest('GET', `intake_conversations?id=eq.${convId}`);
-  const conv = convs[0];
-  if (!conv) return;
-
-  await updateConversation(convId, {
-    detected_destination_id: destination.id,
-    status: 'confirming_content'
-  });
-
-  // Show content for confirmation
-  await showContentForReview(chatId, convId, destination, conv);
+  // Save directly - no confirmation needed
+  await saveToNoteBox(chatId, convId, destination, {});
 }
 
 async function showContentForReview(chatId, convId, destination, conv) {
