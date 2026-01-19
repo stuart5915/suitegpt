@@ -292,7 +292,9 @@
 
     // Get telegram user
     function getTelegramUser() {
-        return JSON.parse(localStorage.getItem('telegram_user') || 'null');
+        const raw = localStorage.getItem('telegram_user');
+        console.log('[Nav Auth] Raw telegram_user from localStorage:', raw);
+        return JSON.parse(raw || 'null');
     }
 
     // Truncate wallet address
@@ -346,13 +348,15 @@
             // Telegram only
             connectBtn.style.display = 'none';
             authDisplay.style.display = 'flex';
-            identityEl.textContent = '@' + tgUser.username;
+            identityEl.textContent = '@' + (tgUser.username || tgUser.first_name || 'User');
             creditsEl.textContent = '0';
         } else {
             // Not logged in
             connectBtn.style.display = 'flex';
             authDisplay.style.display = 'none';
         }
+
+        console.log('[Nav Auth] State:', { wallet: !!wallet, tgUser: !!tgUser });
     }
 
     // Initialize
