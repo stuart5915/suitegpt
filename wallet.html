@@ -8916,24 +8916,35 @@ Once payment is confirmed, we'll start building right away! Let me know if you h
         }
 
         async function uploadEditImage(file, hiddenInputId) {
-            // Upload to server
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('discord_id', ADMIN_DISCORD_ID);
+            // Upload directly to Supabase Storage
+            const bucket = 'app-images';
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+            const filePath = `uploads/${fileName}`;
 
             try {
-                const response = await fetch(`${ADMIN_API_URL}/upload-image`, {
+                // Upload file to Supabase Storage
+                const response = await fetch(`${ADMIN_SUPABASE_URL}/storage/v1/object/${bucket}/${filePath}`, {
                     method: 'POST',
-                    body: formData
+                    headers: {
+                        'apikey': ADMIN_SUPABASE_KEY,
+                        'Authorization': `Bearer ${ADMIN_SUPABASE_KEY}`,
+                        'Content-Type': file.type,
+                        'x-upsert': 'true'
+                    },
+                    body: file
                 });
-                const result = await response.json();
-                if (result.success) {
-                    document.getElementById(hiddenInputId).value = result.url;
-                    console.log('Uploaded:', result.url);
-                    return result.url;
-                } else {
-                    throw new Error(result.error);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Upload failed: ${errorText}`);
                 }
+
+                // Get public URL
+                const publicUrl = `${ADMIN_SUPABASE_URL}/storage/v1/object/public/${bucket}/${filePath}`;
+                document.getElementById(hiddenInputId).value = publicUrl;
+                console.log('Uploaded:', publicUrl);
+                return publicUrl;
             } catch (err) {
                 console.error('Upload failed:', err);
                 showNotification('⚠️', 'Upload Failed', err.message);
