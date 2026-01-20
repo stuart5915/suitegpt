@@ -7477,6 +7477,21 @@
             'function batchApproveClaims(address[], uint256[]) external'
         ];
 
+        // SuiteYieldVault contract for instant deposits/withdrawals
+        const SUITE_YIELD_VAULT_ADDRESS = '0x72d28EEA52ab54448f0A8CCEd2E3d224De759D42';
+        const SUITE_YIELD_VAULT_ABI = [
+            'function deposit(uint256 amount) external',
+            'function withdraw(uint256 amount) external',
+            'function getLiquidBalance() view returns (uint256)',
+            'function getWithdrawableAmount(address user) view returns (uint256)',
+            'function getSpendableCredits(address user) view returns (uint256)',
+            'function getUserPosition(address user) view returns (uint256 deposited, uint256 credits, uint256 used, uint256 withdrawable, uint256 pending, uint8 yieldPref)',
+            'function userDeposits(address) view returns (uint256)',
+            'function userCredits(address) view returns (uint256)',
+            'function creditsUsed(address) view returns (uint256)',
+            'function setYieldPreference(uint8 keepPercent) external'
+        ];
+
         async function executeVaultDeposit() {
             const amount = document.getElementById('vaultDepositAmount')?.value;
 
@@ -7511,12 +7526,12 @@
                     return;
                 }
 
-                // Step 1: Check allowance
+                // Step 1: Check allowance for SuiteYieldVault contract
                 showNotification('🏦', 'Checking', 'Checking USDC approval...');
 
                 const allowanceData = '0xdd62ed3e' +
                     fromAddress.slice(2).padStart(64, '0') +
-                    VAULT_TREASURY_ADDRESS.slice(2).padStart(64, '0');
+                    SUITE_YIELD_VAULT_ADDRESS.slice(2).padStart(64, '0');
 
                 const allowanceHex = await window.ethereum.request({
                     method: 'eth_call',
@@ -7529,7 +7544,7 @@
                     showNotification('🏦', 'Approving', 'Please approve USDC spending in your wallet...');
 
                     const approveData = '0x095ea7b3' +
-                        VAULT_TREASURY_ADDRESS.slice(2).padStart(64, '0') +
+                        SUITE_YIELD_VAULT_ADDRESS.slice(2).padStart(64, '0') +
                         'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'; // Max approval
 
                     const approveTx = await window.ethereum.request({
@@ -7547,29 +7562,28 @@
                     await waitForVaultTransaction(approveTx);
                 }
 
-                // Step 3: Transfer USDC to treasury
+                // Step 3: Call deposit on SuiteYieldVault contract
                 showNotification('🏦', 'Depositing', 'Please confirm the deposit in your wallet...');
 
-                // transfer(address to, uint256 amount)
-                const transferData = '0xa9059cbb' +
-                    VAULT_TREASURY_ADDRESS.slice(2).padStart(64, '0') +
+                // deposit(uint256 amount) - function selector: 0xb6b55f25
+                const depositData = '0xb6b55f25' +
                     amountUSDC.toString(16).padStart(64, '0');
 
-                const transferTx = await window.ethereum.request({
+                const depositTx = await window.ethereum.request({
                     method: 'eth_sendTransaction',
                     params: [{
                         from: fromAddress,
-                        to: VAULT_USDC_ADDRESS,
-                        data: transferData,
+                        to: SUITE_YIELD_VAULT_ADDRESS,
+                        data: depositData,
                     }]
                 });
 
                 showNotification('🏦', 'Confirming', 'Waiting for transaction confirmation...');
 
-                // Wait for transfer to be mined
-                await waitForVaultTransaction(transferTx);
+                // Wait for deposit to be mined
+                await waitForVaultTransaction(depositTx);
 
-                // Step 4: Record deposit in Supabase
+                // Step 4: Record deposit in Supabase (for off-chain tracking)
                 try {
                     await fetch(`${VAULT_SUPABASE_URL}/rest/v1/treasury_deposits`, {
                         method: 'POST',
@@ -7584,7 +7598,7 @@
                             token_type: 'USDC',
                             usd_value_at_deposit: parseFloat(amount), // USDC = 1:1 USD
                             lp_tokens_issued: parseFloat(amount) * 1000, // 1 USDC = 1000 credits
-                            notes: `Tx: ${transferTx}`
+                            notes: `Contract deposit Tx: ${depositTx}`
                         })
                     });
                 } catch (dbError) {
@@ -7593,7 +7607,8 @@
                 }
 
                 // Step 5: Update UI
-                showNotification('✅', 'Success!', `Deposited $${amount} USDC to the AI Fleet Vault!`);
+                const creditsEarned = (parseFloat(amount) * 1000).toLocaleString();
+                showNotification('✅', 'Success!', `Deposited $${amount} USDC and received ${creditsEarned} credits!`);
                 document.getElementById('vaultDepositAmount').value = '';
 
                 // Refresh balances
@@ -7620,48 +7635,106 @@
                 return;
             }
 
+            if (!window.ethereum) {
+                showNotification('⚠️', 'Error', 'Please install MetaMask or another wallet');
+                return;
+            }
+
             try {
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 const walletAddress = accounts[0];
+                const amountUSDC = Math.floor(parseFloat(amount) * 1e6);
 
-                // Get user's max withdrawable amount
-                const withdrawable = await calculateUserWithdrawable(walletAddress);
+                // Check withdrawable amount from contract
+                showNotification('🏦', 'Checking', 'Checking withdrawable balance...');
 
-                if (parseFloat(amount) > withdrawable.available) {
-                    showNotification('⚠️', 'Error',
-                        `Maximum withdrawable: $${withdrawable.available.toFixed(2)}\n` +
-                        `(Vault share: $${withdrawable.vaultShare.toFixed(2)} - Credits used: $${withdrawable.creditsUsed.toFixed(2)} - Pending: $${withdrawable.pendingWithdrawals.toFixed(2)})`
-                    );
+                // getWithdrawableAmount(address) - function selector: 0x2e1a7d4d is withdraw, we need getWithdrawableAmount
+                // getWithdrawableAmount(address user) returns (uint256) - selector: 0xd4c3eea0
+                const withdrawableData = '0xd4c3eea0' + walletAddress.slice(2).padStart(64, '0');
+                const withdrawableHex = await window.ethereum.request({
+                    method: 'eth_call',
+                    params: [{ to: SUITE_YIELD_VAULT_ADDRESS, data: withdrawableData }, 'latest']
+                });
+                const contractWithdrawable = parseInt(withdrawableHex, 16) / 1e6;
+
+                if (parseFloat(amount) > contractWithdrawable) {
+                    showNotification('⚠️', 'Error', `Maximum withdrawable: $${contractWithdrawable.toFixed(2)}`);
                     return;
                 }
 
-                // Record withdrawal request in Supabase
-                await fetch(`${VAULT_SUPABASE_URL}/rest/v1/treasury_withdrawals`, {
-                    method: 'POST',
-                    headers: {
-                        'apikey': VAULT_SUPABASE_KEY,
-                        'Authorization': `Bearer ${VAULT_SUPABASE_KEY}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        wallet_address: walletAddress.toLowerCase(),
-                        withdrawal_type: 'principal',
-                        amount_usd: parseFloat(amount),
-                        status: 'pending'
-                    })
+                // Check liquid balance in contract
+                // getLiquidBalance() - selector: 0xf2f4eb26
+                const liquidData = '0xf2f4eb26';
+                const liquidHex = await window.ethereum.request({
+                    method: 'eth_call',
+                    params: [{ to: SUITE_YIELD_VAULT_ADDRESS, data: liquidData }, 'latest']
                 });
+                const liquidBalance = parseInt(liquidHex, 16) / 1e6;
 
-                showNotification('📤', 'Withdraw Request',
-                    `Withdrawal of $${amount} requested. Admin will process within 24-48 hours.`);
+                if (liquidBalance >= parseFloat(amount)) {
+                    // Instant withdrawal - enough liquid in contract
+                    showNotification('🏦', 'Withdrawing', 'Please confirm the withdrawal in your wallet...');
 
-                document.getElementById('vaultWithdrawAmount').value = '';
+                    // withdraw(uint256 amount) - function selector: 0x2e1a7d4d
+                    const withdrawData = '0x2e1a7d4d' + amountUSDC.toString(16).padStart(64, '0');
 
-                // Reload user's withdrawals and position
+                    const withdrawTx = await window.ethereum.request({
+                        method: 'eth_sendTransaction',
+                        params: [{
+                            from: walletAddress,
+                            to: SUITE_YIELD_VAULT_ADDRESS,
+                            data: withdrawData,
+                        }]
+                    });
+
+                    showNotification('🏦', 'Confirming', 'Waiting for transaction confirmation...');
+                    await waitForVaultTransaction(withdrawTx);
+
+                    showNotification('✅', 'Success!', `Withdrew $${amount} USDC instantly!`);
+                    document.getElementById('vaultWithdrawAmount').value = '';
+
+                    // Refresh balances
+                    if (typeof fetchWalletBalances === 'function') {
+                        await fetchWalletBalances(walletAddress);
+                    }
+                    loadVaultPublicStats();
+
+                } else {
+                    // Not enough liquid - create withdrawal request (fallback)
+                    // This will trigger the contract's request system
+                    showNotification('🏦', 'Requesting', 'Not enough liquid funds. Creating withdrawal request...');
+
+                    // withdraw(uint256 amount) - will create a request if not enough liquid
+                    const withdrawData = '0x2e1a7d4d' + amountUSDC.toString(16).padStart(64, '0');
+
+                    const withdrawTx = await window.ethereum.request({
+                        method: 'eth_sendTransaction',
+                        params: [{
+                            from: walletAddress,
+                            to: SUITE_YIELD_VAULT_ADDRESS,
+                            data: withdrawData,
+                        }]
+                    });
+
+                    showNotification('🏦', 'Confirming', 'Waiting for transaction confirmation...');
+                    await waitForVaultTransaction(withdrawTx);
+
+                    showNotification('📤', 'Request Created',
+                        `Withdrawal request for $${amount} created. Will be processed when funds return from yield strategies.`);
+                    document.getElementById('vaultWithdrawAmount').value = '';
+                }
+
+                // Reload user's position
                 loadUserWithdrawals(walletAddress);
                 loadUserVaultPosition(walletAddress);
+
             } catch (error) {
-                console.error('Failed to record withdrawal request:', error);
-                showNotification('❌', 'Error', 'Failed to submit withdrawal request');
+                console.error('Withdrawal error:', error);
+                if (error.code === 4001) {
+                    showNotification('⚠️', 'Cancelled', 'Transaction was rejected');
+                } else {
+                    showNotification('❌', 'Error', error.message || 'Withdrawal failed');
+                }
             }
         }
 
@@ -9498,22 +9571,22 @@ Once payment is confirmed, we'll start building right away! Let me know if you h
                 </div>
             </div>
 
-            <!-- Warning Notice -->
-            <div style="background: rgba(249, 115, 22, 0.1); border: 1px solid rgba(249, 115, 22, 0.3); border-radius: 12px; padding: 14px; margin-bottom: 20px;">
+            <!-- Info Notice -->
+            <div style="background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 12px; padding: 14px; margin-bottom: 20px;">
                 <div style="display: flex; gap: 10px; align-items: flex-start;">
-                    <span style="font-size: 1.2rem;">⚠️</span>
-                    <div style="font-size: 0.8rem; color: #f97316; line-height: 1.5;">
-                        Withdrawal requests are reviewed within 24-48 hours. Once approved, you can claim your USDC directly.
+                    <span style="font-size: 1.2rem;">⚡</span>
+                    <div style="font-size: 0.8rem; color: #22c55e; line-height: 1.5;">
+                        Instant withdrawals when funds are available. If funds are deployed to yield strategies, a withdrawal request will be created.
                     </div>
                 </div>
             </div>
 
             <!-- Confirm Button -->
             <button id="confirmWithdrawBtn" onclick="confirmWithdraw()"
-                style="width: 100%; padding: 18px; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; border-radius: 14px; font-weight: 800; font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);"
-                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 30px rgba(239, 68, 68, 0.4)';"
-                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 20px rgba(239, 68, 68, 0.3)';">
-                Request Withdrawal
+                style="width: 100%; padding: 18px; background: linear-gradient(135deg, #22c55e, #16a34a); color: white; border: none; border-radius: 14px; font-weight: 800; font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 20px rgba(34, 197, 94, 0.3);"
+                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 30px rgba(34, 197, 94, 0.4)';"
+                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 20px rgba(34, 197, 94, 0.3)';">
+                Withdraw Instantly
             </button>
         </div>
     </div>
