@@ -6629,7 +6629,34 @@
 
         // Listen for nav component auth changes (wallet connect/disconnect)
         window.addEventListener('navAuthChanged', function(e) {
-            const wallet = e.detail?.wallet || localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWallet');
+            console.log('[wallet.html] navAuthChanged event received', e.detail);
+            handleWalletChange();
+        });
+
+        // Also listen for storage changes (catches cross-tab updates)
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'connectedWallet' || e.key === 'suiteWallet') {
+                console.log('[wallet.html] Storage change detected', e.key, e.newValue);
+                handleWalletChange();
+            }
+        });
+
+        // Poll for wallet connection on page load (catches race conditions)
+        let walletCheckCount = 0;
+        const walletCheckInterval = setInterval(function() {
+            walletCheckCount++;
+            const wallet = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWallet');
+            if (wallet && !window.walletAddress) {
+                console.log('[wallet.html] Wallet found via polling:', wallet);
+                handleWalletChange();
+            }
+            if (walletCheckCount >= 10 || window.walletAddress) {
+                clearInterval(walletCheckInterval);
+            }
+        }, 500);
+
+        function handleWalletChange() {
+            const wallet = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWallet');
             if (wallet) {
                 window.walletAddress = wallet;
                 fetchUSDCBalance();
@@ -6647,7 +6674,7 @@
                 const balanceEl = document.getElementById('walletUSDCBalance');
                 if (balanceEl) balanceEl.textContent = 'Connect Wallet';
             }
-        });
+        }
 
         // Yield Allocation Slider Logic
         function updateYieldSplit(keepPercent) {
