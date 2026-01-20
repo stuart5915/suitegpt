@@ -1618,6 +1618,21 @@
             padding-left: 4px;
         }
 
+        /* Work button for Working On column */
+        .work-btn {
+            width: 100%;
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-weight: 600;
+            cursor: not-allowed;
+            opacity: 0.7;
+            font-size: 0.85rem;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .factory-sidebar {
@@ -2183,7 +2198,8 @@
         const STATUSES = {
             submitted: { icon: '📥', label: 'Submitted' },
             open_voting: { icon: '🗳️', label: 'Voting' },
-            passed: { icon: '✅', label: 'Passed' },
+            working_on: { icon: '⚙️', label: 'Working On' },
+            passed: { icon: '✅', label: 'Implemented' },
             rejected: { icon: '❌', label: 'Rejected' },
             implemented: { icon: '🚀', label: 'Implemented' },
             duplicate: { icon: '🔄', label: 'Duplicate' }
@@ -2475,7 +2491,8 @@
             const sectionProposals = governanceProposals.filter(p => p.section === 'suite_apps');
             const submitted = sectionProposals.filter(p => p.status === 'submitted');
             const voting = sectionProposals.filter(p => p.status === 'open_voting');
-            const passed = sectionProposals.filter(p => p.status === 'passed' || p.status === 'implemented');
+            const workingOn = sectionProposals.filter(p => p.status === 'working_on');
+            const implemented = sectionProposals.filter(p => p.status === 'passed' || p.status === 'implemented');
             const rejected = sectionProposals.filter(p => p.status === 'rejected');
 
             document.getElementById('suiteAppsCount').textContent = sectionProposals.length;
@@ -2494,10 +2511,15 @@
                     <div class="section-column-header">🗳️ Voting <span>(${voting.length})</span></div>
                     ${renderGroupedColumn(voting, 'suite_apps', 'open_voting')}
                 </div>
+                <div class="section-column" data-status="working_on" data-section="suite_apps"
+                     ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'working_on', 'suite_apps')">
+                    <div class="section-column-header">⚙️ Working On <span>(${workingOn.length})</span></div>
+                    ${renderGroupedColumn(workingOn, 'suite_apps', 'working_on')}
+                </div>
                 <div class="section-column" data-status="passed" data-section="suite_apps"
                      ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'passed', 'suite_apps')">
-                    <div class="section-column-header">✅ Passed <span>(${passed.length})</span></div>
-                    ${renderGroupedColumn(passed, 'suite_apps', 'passed')}
+                    <div class="section-column-header">✅ Implemented <span>(${implemented.length})</span></div>
+                    ${renderGroupedColumn(implemented, 'suite_apps', 'passed')}
                 </div>
                 <div class="section-column" data-status="rejected" data-section="suite_apps"
                      ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'rejected', 'suite_apps')">
@@ -2512,7 +2534,8 @@
             const sectionProposals = governanceProposals.filter(p => p.section === sectionType);
             const submitted = sectionProposals.filter(p => p.status === 'submitted');
             const voting = sectionProposals.filter(p => p.status === 'open_voting');
-            const passed = sectionProposals.filter(p => p.status === 'passed' || p.status === 'implemented');
+            const workingOn = sectionProposals.filter(p => p.status === 'working_on');
+            const implemented = sectionProposals.filter(p => p.status === 'passed' || p.status === 'implemented');
             const rejected = sectionProposals.filter(p => p.status === 'rejected');
 
             document.getElementById(countId).textContent = sectionProposals.length;
@@ -2529,10 +2552,15 @@
                     <div class="section-column-header">🗳️ Voting <span>(${voting.length})</span></div>
                     ${renderGroupedColumn(voting, sectionType, 'open_voting')}
                 </div>
+                <div class="section-column" data-status="working_on" data-section="${sectionType}"
+                     ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'working_on', '${sectionType}')">
+                    <div class="section-column-header">⚙️ Working On <span>(${workingOn.length})</span></div>
+                    ${renderGroupedColumn(workingOn, sectionType, 'working_on')}
+                </div>
                 <div class="section-column" data-status="passed" data-section="${sectionType}"
                      ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'passed', '${sectionType}')">
-                    <div class="section-column-header">✅ Passed <span>(${passed.length})</span></div>
-                    ${renderGroupedColumn(passed, sectionType, 'passed')}
+                    <div class="section-column-header">✅ Implemented <span>(${implemented.length})</span></div>
+                    ${renderGroupedColumn(implemented, sectionType, 'passed')}
                 </div>
                 <div class="section-column" data-status="rejected" data-section="${sectionType}"
                      ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'rejected', '${sectionType}')">
@@ -2572,6 +2600,7 @@
                         <span>📅 ${formattedDate}</span>
                     </div>
                     ${proposal.status === 'rejected' && rejectionReason ? `<div class="rejection-reason">${escapeHtml(rejectionReason)}</div>` : ''}
+                    ${proposal.status === 'working_on' ? `<button class="work-btn" disabled>🔨 Get to work</button>` : ''}
                     <div class="vote-buttons">
                         <button class="vote-btn for" onclick="addVote('${proposal.id}')" ${!canVote ? 'disabled' : ''} title="Add vote (${nextVoteCost === 0 ? 'FREE' : nextVoteCost + ' REP'})">
                             👍 <span class="vote-count">${votesFor}</span>
