@@ -7516,8 +7516,11 @@
                 );
 
                 // Call userCredits(address) on the contract
-                const credits = await vaultContract.userCredits(userAddress);
-                const creditsNumber = Number(credits);
+                // Contract stores credits in raw units (amount * 1000), need to divide by 1e6 for display
+                // Because USDC has 6 decimals: 0.1 USDC = 100000 raw, * 1000 = 100000000
+                // To display: 100000000 / 1000000 = 100 credits
+                const creditsRaw = await vaultContract.userCredits(userAddress);
+                const creditsNumber = Number(creditsRaw) / 1e6;
 
                 // Update the credits display
                 updateCreditsDisplay(creditsNumber);
