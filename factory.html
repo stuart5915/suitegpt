@@ -2642,7 +2642,26 @@
             hideDeleteModal();
 
             try {
-                // All items now use factory_proposals table
+                // First get the proposal to find the author
+                const getResponse = await fetch(
+                    `${SUPABASE_URL}/rest/v1/factory_proposals?id=eq.${id}&select=author_id`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+
+                let authorId = null;
+                if (getResponse.ok) {
+                    const proposals = await getResponse.json();
+                    if (proposals.length > 0) {
+                        authorId = proposals[0].author_id;
+                    }
+                }
+
+                // Delete the proposal
                 const response = await fetch(
                     `${SUPABASE_URL}/rest/v1/factory_proposals?id=eq.${id}`,
                     {
@@ -2655,6 +2674,47 @@
                 );
 
                 if (response.ok) {
+                    // Decrement author's active_submissions count
+                    if (authorId) {
+                        // Get current count
+                        const userResponse = await fetch(
+                            `${SUPABASE_URL}/rest/v1/factory_users?id=eq.${authorId}&select=active_submissions`,
+                            {
+                                headers: {
+                                    'apikey': SUPABASE_ANON_KEY,
+                                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                                }
+                            }
+                        );
+                        if (userResponse.ok) {
+                            const users = await userResponse.json();
+                            if (users.length > 0) {
+                                const currentCount = users[0].active_submissions || 0;
+                                await fetch(
+                                    `${SUPABASE_URL}/rest/v1/factory_users?id=eq.${authorId}`,
+                                    {
+                                        method: 'PATCH',
+                                        headers: {
+                                            'apikey': SUPABASE_ANON_KEY,
+                                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                                            'Content-Type': 'application/json',
+                                            'Prefer': 'return=minimal'
+                                        },
+                                        body: JSON.stringify({
+                                            active_submissions: Math.max(0, currentCount - 1)
+                                        })
+                                    }
+                                );
+                                // Update local user if it's the current user
+                                if (currentUser && currentUser.id === authorId) {
+                                    currentUser.active_submissions = Math.max(0, currentCount - 1);
+                                    localStorage.setItem('factory_user', JSON.stringify(currentUser));
+                                    updateUserPanel();
+                                }
+                            }
+                        }
+                    }
+
                     await loadGovernanceProposals();
                     renderGovernanceSections();
                 } else {
