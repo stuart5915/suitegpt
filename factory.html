@@ -2494,7 +2494,13 @@
             event.preventDefault();
             event.stopPropagation();
             event.currentTarget.classList.remove('drag-over');
-            console.log('[handleDrop called]', { newStatus, section, draggedItem });
+            console.log('[handleDrop called]', { newStatus, section, draggedItem, currentUser, isFounder: currentUser?.is_founder });
+
+            // Block non-admins from dropping
+            if (!currentUser || !currentUser.is_founder) {
+                console.log('[Drop] Blocked - not admin');
+                return;
+            }
 
             if (!draggedItem) {
                 console.log('[Drop] No draggedItem!');
@@ -2550,6 +2556,14 @@
 
         async function updateItemStatus(id, type, section, newStatus, rejectionReason) {
             console.log('[updateItemStatus]', { id, type, section, newStatus, rejectionReason });
+
+            // Only founders can update status
+            if (!currentUser || !currentUser.is_founder) {
+                console.log('[updateItemStatus] Blocked - not admin');
+                alert('Only admins can move proposals');
+                return;
+            }
+
             try {
                 let table, updateData;
 
