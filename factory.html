@@ -1506,6 +1506,26 @@
             cursor: pointer;
         }
 
+        .idea-card-drag-handle {
+            cursor: grab;
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            padding: 2px 4px;
+            border-radius: 4px;
+            user-select: none;
+            opacity: 0.5;
+            transition: opacity 0.2s, background 0.2s;
+        }
+
+        .idea-card-drag-handle:hover {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .idea-card-drag-handle:active {
+            cursor: grabbing;
+        }
+
         .idea-card-toggle {
             font-size: 0.65rem;
             color: var(--text-dim);
@@ -2664,10 +2684,11 @@
             const appTag = linkedApp ? `<span class="proposal-app-tag">📱 ${escapeHtml(linkedApp.name)}</span>` : '';
 
             return `
-                <div class="idea-card ${proposal.status} collapsed" draggable="${isAdmin ? 'true' : 'false'}" ondragstart="handleDragStart(event, '${proposal.id}', 'proposal', '${sectionType}')" ondragend="handleDragEnd(event)">
+                <div class="idea-card ${proposal.status} collapsed">
                     ${isAdmin ? `<button class="card-delete-btn" onclick="event.stopPropagation(); showDeleteModal('${proposal.id}', 'proposal')" title="Delete">&times;</button>` : ''}
                     ${appTag}
                     <div class="idea-card-header" onclick="toggleProposalCard(this)">
+                        ${isAdmin ? `<span class="idea-card-drag-handle" draggable="true" ondragstart="handleDragStart(event, '${proposal.id}', 'proposal', '${sectionType}')" ondragend="handleDragEnd(event)" title="Drag to move">⋮⋮</span>` : ''}
                         <span class="idea-card-toggle">▼</span>
                         <div class="idea-card-title">${escapeHtml(proposal.title)}</div>
                     </div>
