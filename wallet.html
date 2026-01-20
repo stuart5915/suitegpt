@@ -6593,7 +6593,7 @@
 
         // Restore wallet connection on page load
         document.addEventListener('DOMContentLoaded', function () {
-            const savedWallet = localStorage.getItem('suiteWallet');
+            const savedWallet = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWallet');
             if (savedWallet) {
                 const walletBtn = document.getElementById('connectWalletBtn');
                 if (walletBtn) {
@@ -6624,6 +6624,28 @@
                 if (typeof fetchUSDCBalance === 'function') {
                     setTimeout(fetchUSDCBalance, 500); // Delay to ensure ethers is loaded
                 }
+            }
+        });
+
+        // Listen for nav component auth changes (wallet connect/disconnect)
+        window.addEventListener('navAuthChanged', function(e) {
+            const wallet = e.detail?.wallet || localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWallet');
+            if (wallet) {
+                window.walletAddress = wallet;
+                fetchUSDCBalance();
+                if (typeof updateAdminDashboardVisibility === 'function') {
+                    updateAdminDashboardVisibility();
+                }
+                if (typeof loadYieldAllocation === 'function') {
+                    loadYieldAllocation(wallet);
+                }
+                if (typeof loadUserVaultData === 'function') {
+                    loadUserVaultData();
+                }
+            } else {
+                window.walletAddress = null;
+                const balanceEl = document.getElementById('walletUSDCBalance');
+                if (balanceEl) balanceEl.textContent = 'Connect Wallet';
             }
         });
 
