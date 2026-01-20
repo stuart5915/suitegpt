@@ -437,6 +437,9 @@ async function connectWalletFromNav() {
             console.log('Wallet connected:', address);
             closeNavConnectModal();
 
+            // Dispatch event so other scripts can react to wallet connection
+            window.dispatchEvent(new CustomEvent('navAuthChanged', { detail: { wallet: address } }));
+
             if (window.refreshNavCredits) {
                 window.refreshNavCredits();
             }
@@ -576,6 +579,10 @@ function disconnectWallet() {
     localStorage.removeItem('suiteWallet');
     window.walletAddress = null;
     closeNavConnectModal();
+
+    // Dispatch event so other scripts can react to wallet disconnection
+    window.dispatchEvent(new CustomEvent('navAuthChanged', { detail: { wallet: null } }));
+
     if (window.refreshNavCredits) {
         window.refreshNavCredits();
     }
