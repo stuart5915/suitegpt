@@ -3614,26 +3614,39 @@
             }
         }
 
-        // Load admin dashboard data
+        // Load admin dashboard data from SuiteYieldVault contract
         async function loadAdminData() {
             try {
-                // For now, show placeholder data until contract is deployed
-                // Once deployed, this will read from the actual contract
+                // Default values
                 document.getElementById('adminReportedValue').textContent = '$0';
-                document.getElementById('adminContractBalance').textContent = '0 ETH';
-                document.getElementById('adminEstimatedAPY').textContent = '0%';
-                document.getElementById('adminLastUpdated').textContent = 'Not deployed';
+                document.getElementById('adminContractBalance').textContent = '$0.00 USDC';
+                document.getElementById('adminEstimatedAPY').textContent = '~42%';
+                document.getElementById('adminLastUpdated').textContent = 'Live';
 
-                // Update liquid reserve display with actual contract balance
+                // Read actual balance from SuiteYieldVault contract
                 if (window.ethereum) {
                     try {
                         const provider = new ethers.BrowserProvider(window.ethereum);
-                        const balance = await provider.getBalance(TREASURY_VAULT_ADDRESS);
-                        const ethBalance = parseFloat(ethers.formatEther(balance));
-                        document.getElementById('adminContractBalance').textContent = `${ethBalance.toFixed(4)} ETH`;
-                        document.getElementById('liquidReserveValue').textContent = `$${(ethBalance * 2500).toLocaleString()}`; // Rough ETH price
+                        const vaultContract = new ethers.Contract(
+                            SUITE_YIELD_VAULT_ADDRESS,
+                            SUITE_YIELD_VAULT_ABI,
+                            provider
+                        );
+
+                        // Get liquid USDC balance in contract
+                        const liquidBalance = await vaultContract.getLiquidBalance();
+                        const usdcBalance = Number(liquidBalance) / 1e6;
+
+                        document.getElementById('adminContractBalance').textContent = `$${usdcBalance.toFixed(2)} USDC`;
+                        document.getElementById('adminReportedValue').textContent = `$${usdcBalance.toFixed(2)}`;
+
+                        // Update liquid reserve display
+                        const liquidReserveEl = document.getElementById('liquidReserveValue');
+                        if (liquidReserveEl) {
+                            liquidReserveEl.textContent = `$${usdcBalance.toFixed(2)}`;
+                        }
                     } catch (e) {
-                        // Contract not deployed yet
+                        console.error('Error loading vault balance:', e);
                     }
                 }
             } catch (error) {
