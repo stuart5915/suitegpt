@@ -2370,7 +2370,7 @@
             const rejectionReason = idea.rejection_reason || idea.reject_reason;
 
             return `
-                <div class="idea-card ${idea.status}" draggable="true" ondragstart="handleDragStart(event, '${idea.id}', 'idea', 'suite_apps')" ondragend="handleDragEnd(event)">
+                <div class="idea-card ${idea.status}" draggable="${isAdmin ? 'true' : 'false'}" ondragstart="handleDragStart(event, '${idea.id}', 'idea', 'suite_apps')" ondragend="handleDragEnd(event)">
                     ${isAdmin ? `<button class="card-delete-btn" onclick="showDeleteModal('${idea.id}', 'idea')" title="Delete">&times;</button>` : ''}
                     <div class="idea-card-title">${escapeHtml(idea.name)}</div>
                     <div class="idea-card-tagline">${escapeHtml(idea.tagline || idea.description || 'No description')}</div>
@@ -2434,7 +2434,7 @@
             const rejectionReason = proposal.reject_reason || proposal.rejection_reason;
 
             return `
-                <div class="idea-card ${proposal.status}" draggable="true" ondragstart="handleDragStart(event, '${proposal.id}', 'proposal', '${sectionType}')" ondragend="handleDragEnd(event)">
+                <div class="idea-card ${proposal.status}" draggable="${isAdmin ? 'true' : 'false'}" ondragstart="handleDragStart(event, '${proposal.id}', 'proposal', '${sectionType}')" ondragend="handleDragEnd(event)">
                     ${isAdmin ? `<button class="card-delete-btn" onclick="showDeleteModal('${proposal.id}', 'proposal')" title="Delete">&times;</button>` : ''}
                     <div class="idea-card-title">${escapeHtml(proposal.title)}</div>
                     <div class="idea-card-tagline">${escapeHtml(proposal.content || 'No description')}</div>
@@ -2459,9 +2459,9 @@
 
         // Drag and Drop Handlers
         function handleDragStart(event, id, type, section) {
-            // Only logged-in users can drag
-            if (!currentUser) {
-                console.log('[DragStart] Blocked - not logged in');
+            // Only founders/admins can drag
+            if (!currentUser || !currentUser.is_founder) {
+                console.log('[DragStart] Blocked - not admin');
                 event.preventDefault();
                 return;
             }
