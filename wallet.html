@@ -7506,25 +7506,29 @@
                 if (accounts.length === 0) return;
 
                 const userAddress = accounts[0];
+                const provider = new ethers.BrowserProvider(window.ethereum);
 
-                // Call userCredits(address) on the contract - selector: 0x27e235e3
-                const creditsData = '0x27e235e3' + userAddress.slice(2).padStart(64, '0');
-                const creditsHex = await window.ethereum.request({
-                    method: 'eth_call',
-                    params: [{ to: SUITE_YIELD_VAULT_ADDRESS, data: creditsData }, 'latest']
-                });
-                const credits = parseInt(creditsHex, 16);
+                // Create contract instance with ethers.js
+                const vaultContract = new ethers.Contract(
+                    SUITE_YIELD_VAULT_ADDRESS,
+                    SUITE_YIELD_VAULT_ABI,
+                    provider
+                );
+
+                // Call userCredits(address) on the contract
+                const credits = await vaultContract.userCredits(userAddress);
+                const creditsNumber = Number(credits);
 
                 // Update the credits display
-                updateCreditsDisplay(credits);
+                updateCreditsDisplay(creditsNumber);
 
                 // Also update nav credits if available
                 if (window.refreshNavCredits) {
                     window.refreshNavCredits();
                 }
 
-                console.log('Contract credits loaded:', credits);
-                return credits;
+                console.log('Contract credits loaded:', creditsNumber);
+                return creditsNumber;
             } catch (err) {
                 console.error('Error loading contract credits:', err);
                 return 0;
@@ -7712,17 +7716,18 @@
                 const walletAddress = accounts[0];
                 const amountUSDC = Math.floor(parseFloat(amount) * 1e6);
 
-                // Check withdrawable amount from contract
+                // Check withdrawable amount from contract using ethers.js
                 showNotification('🏦', 'Checking', 'Checking withdrawable balance...');
 
-                // getWithdrawableAmount(address) - function selector: 0x2e1a7d4d is withdraw, we need getWithdrawableAmount
-                // getWithdrawableAmount(address user) returns (uint256) - selector: 0xd4c3eea0
-                const withdrawableData = '0xd4c3eea0' + walletAddress.slice(2).padStart(64, '0');
-                const withdrawableHex = await window.ethereum.request({
-                    method: 'eth_call',
-                    params: [{ to: SUITE_YIELD_VAULT_ADDRESS, data: withdrawableData }, 'latest']
-                });
-                const contractWithdrawable = parseInt(withdrawableHex, 16) / 1e6;
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const vaultContract = new ethers.Contract(
+                    SUITE_YIELD_VAULT_ADDRESS,
+                    SUITE_YIELD_VAULT_ABI,
+                    provider
+                );
+
+                const withdrawableRaw = await vaultContract.getWithdrawableAmount(walletAddress);
+                const contractWithdrawable = Number(withdrawableRaw) / 1e6;
 
                 if (parseFloat(amount) > contractWithdrawable) {
                     showNotification('⚠️', 'Error', `Maximum withdrawable: $${contractWithdrawable.toFixed(2)}`);
@@ -7730,70 +7735,54 @@
                 }
 
                 // Check liquid balance in contract
-                // getLiquidBalance() - selector: 0xf2f4eb26
-                const liquidData = '0xf2f4eb26';
-                const liquidHex = await window.ethereum.request({
-                    method: 'eth_call',
-                    params: [{ to: SUITE_YIELD_VAULT_ADDRESS, data: liquidData }, 'latest']
-                });
-                const liquidBalance = parseInt(liquidHex, 16) / 1e6;
+                const liquidRaw = await vaultContract.getLiquidBalance();
+                const liquidBalance = Number(liquidRaw) / 1e6;
+
+                // Get signer for transaction
+                const signer = await provider.getSigner();
+                const vaultWithSigner = vaultContract.connect(signer);
 
                 if (liquidBalance >= parseFloat(amount)) {
                     // Instant withdrawal - enough liquid in contract
                     showNotification('🏦', 'Withdrawing', 'Please confirm the withdrawal in your wallet...');
 
-                    // withdraw(uint256 amount) - function selector: 0x2e1a7d4d
-                    const withdrawData = '0x2e1a7d4d' + amountUSDC.toString(16).padStart(64, '0');
-
-                    const withdrawTx = await window.ethereum.request({
-                        method: 'eth_sendTransaction',
-                        params: [{
-                            from: walletAddress,
-                            to: SUITE_YIELD_VAULT_ADDRESS,
-                            data: withdrawData,
-                        }]
-                    });
+                    const tx = await vaultWithSigner.withdraw(amountUSDC);
 
                     showNotification('🏦', 'Confirming', 'Waiting for transaction confirmation...');
-                    await waitForVaultTransaction(withdrawTx);
+                    await tx.wait();
 
                     showNotification('✅', 'Success!', `Withdrew $${amount} USDC instantly!`);
                     document.getElementById('vaultWithdrawAmount').value = '';
 
-                    // Refresh balances
+                    // Refresh balances and credits
                     if (typeof fetchWalletBalances === 'function') {
                         await fetchWalletBalances(walletAddress);
                     }
                     loadVaultPublicStats();
+                    await loadContractCredits();
 
                 } else {
                     // Not enough liquid - create withdrawal request (fallback)
-                    // This will trigger the contract's request system
                     showNotification('🏦', 'Requesting', 'Not enough liquid funds. Creating withdrawal request...');
 
-                    // withdraw(uint256 amount) - will create a request if not enough liquid
-                    const withdrawData = '0x2e1a7d4d' + amountUSDC.toString(16).padStart(64, '0');
-
-                    const withdrawTx = await window.ethereum.request({
-                        method: 'eth_sendTransaction',
-                        params: [{
-                            from: walletAddress,
-                            to: SUITE_YIELD_VAULT_ADDRESS,
-                            data: withdrawData,
-                        }]
-                    });
+                    const tx = await vaultWithSigner.withdraw(amountUSDC);
 
                     showNotification('🏦', 'Confirming', 'Waiting for transaction confirmation...');
-                    await waitForVaultTransaction(withdrawTx);
+                    await tx.wait();
 
                     showNotification('📤', 'Request Created',
                         `Withdrawal request for $${amount} created. Will be processed when funds return from yield strategies.`);
                     document.getElementById('vaultWithdrawAmount').value = '';
                 }
 
-                // Reload user's position
-                loadUserWithdrawals(walletAddress);
-                loadUserVaultPosition(walletAddress);
+                // Reload user's position and credits
+                await loadContractCredits();
+                if (typeof loadUserWithdrawals === 'function') {
+                    loadUserWithdrawals(walletAddress);
+                }
+                if (typeof loadUserVaultPosition === 'function') {
+                    loadUserVaultPosition(walletAddress);
+                }
 
             } catch (error) {
                 console.error('Withdrawal error:', error);
@@ -10040,31 +10029,26 @@ Once payment is confirmed, we'll start building right away! Let me know if you h
                     const accounts = await window.ethereum.request({ method: 'eth_accounts' });
                     if (accounts.length > 0) {
                         const userAddress = accounts[0];
+                        const provider = new ethers.BrowserProvider(window.ethereum);
 
-                        // Get user deposits from contract - userDeposits(address) selector: 0x63d2566c
-                        const depositsData = '0x63d2566c' + userAddress.slice(2).padStart(64, '0');
-                        const depositsHex = await window.ethereum.request({
-                            method: 'eth_call',
-                            params: [{ to: SUITE_YIELD_VAULT_ADDRESS, data: depositsData }, 'latest']
-                        });
-                        userVaultShare = parseInt(depositsHex, 16) / 1e6;
+                        // Create contract instance with ethers.js
+                        const vaultContract = new ethers.Contract(
+                            SUITE_YIELD_VAULT_ADDRESS,
+                            SUITE_YIELD_VAULT_ABI,
+                            provider
+                        );
 
-                        // Get credits used from contract - creditsUsed(address) selector: 0x6c626aa3
-                        const usedData = '0x6c626aa3' + userAddress.slice(2).padStart(64, '0');
-                        const usedHex = await window.ethereum.request({
-                            method: 'eth_call',
-                            params: [{ to: SUITE_YIELD_VAULT_ADDRESS, data: usedData }, 'latest']
-                        });
-                        const creditsUsed = parseInt(usedHex, 16);
-                        userCreditsUsedAmount = creditsUsed / 1000; // Convert credits to USD
+                        // Get user deposits from contract (USDC has 6 decimals)
+                        const deposits = await vaultContract.userDeposits(userAddress);
+                        userVaultShare = Number(deposits) / 1e6;
 
-                        // Get withdrawable amount from contract - getWithdrawableAmount(address) selector: 0xd4c3eea0
-                        const withdrawableData = '0xd4c3eea0' + userAddress.slice(2).padStart(64, '0');
-                        const withdrawableHex = await window.ethereum.request({
-                            method: 'eth_call',
-                            params: [{ to: SUITE_YIELD_VAULT_ADDRESS, data: withdrawableData }, 'latest']
-                        });
-                        userAvailableWithdraw = parseInt(withdrawableHex, 16) / 1e6;
+                        // Get credits used from contract
+                        const creditsUsed = await vaultContract.creditsUsed(userAddress);
+                        userCreditsUsedAmount = Number(creditsUsed) / 1000; // Convert credits to USD
+
+                        // Get withdrawable amount from contract
+                        const withdrawable = await vaultContract.getWithdrawableAmount(userAddress);
+                        userAvailableWithdraw = Number(withdrawable) / 1e6;
 
                         document.getElementById('modalVaultShare').textContent = '$' + userVaultShare.toFixed(2);
                         document.getElementById('modalCreditsUsed').textContent = '-$' + userCreditsUsedAmount.toFixed(2);
