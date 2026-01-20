@@ -1499,10 +1499,41 @@
             border: 1px solid rgba(168, 85, 247, 0.3);
         }
 
+        .idea-card-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .idea-card-toggle {
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            transition: transform 0.2s;
+            flex-shrink: 0;
+        }
+
+        .idea-card.collapsed .idea-card-toggle {
+            transform: rotate(-90deg);
+        }
+
         .idea-card-title {
             font-weight: 600;
             font-size: 0.9rem;
+            margin-bottom: 0;
+            flex: 1;
+        }
+
+        .idea-card:not(.collapsed) .idea-card-title {
             margin-bottom: 6px;
+        }
+
+        .idea-card-details {
+            display: block;
+        }
+
+        .idea-card.collapsed .idea-card-details {
+            display: none;
         }
 
         .idea-card-tagline {
@@ -2513,6 +2544,14 @@
             }
         }
 
+        // Toggle proposal card collapse/expand
+        function toggleProposalCard(headerEl) {
+            const card = headerEl.closest('.idea-card');
+            if (card) {
+                card.classList.toggle('collapsed');
+            }
+        }
+
         // Render all governance sections
         function renderGovernanceSections() {
             console.log('[renderGovernanceSections] currentUser:', currentUser, 'is_founder:', currentUser?.is_founder);
@@ -2625,26 +2664,31 @@
             const appTag = linkedApp ? `<span class="proposal-app-tag">📱 ${escapeHtml(linkedApp.name)}</span>` : '';
 
             return `
-                <div class="idea-card ${proposal.status}" draggable="${isAdmin ? 'true' : 'false'}" ondragstart="handleDragStart(event, '${proposal.id}', 'proposal', '${sectionType}')" ondragend="handleDragEnd(event)">
-                    ${isAdmin ? `<button class="card-delete-btn" onclick="showDeleteModal('${proposal.id}', 'proposal')" title="Delete">&times;</button>` : ''}
+                <div class="idea-card ${proposal.status} collapsed" draggable="${isAdmin ? 'true' : 'false'}" ondragstart="handleDragStart(event, '${proposal.id}', 'proposal', '${sectionType}')" ondragend="handleDragEnd(event)">
+                    ${isAdmin ? `<button class="card-delete-btn" onclick="event.stopPropagation(); showDeleteModal('${proposal.id}', 'proposal')" title="Delete">&times;</button>` : ''}
                     ${appTag}
-                    <div class="idea-card-title">${escapeHtml(proposal.title)}</div>
-                    <div class="idea-card-tagline">${escapeHtml(proposal.content || 'No description')}</div>
-                    <div class="idea-card-meta">
-                        <span>👤 ${escapeHtml(authorName)}</span>
-                        <span>${category.emoji} ${category.label}</span>
-                        <span>📅 ${formattedDate}</span>
+                    <div class="idea-card-header" onclick="toggleProposalCard(this)">
+                        <span class="idea-card-toggle">▼</span>
+                        <div class="idea-card-title">${escapeHtml(proposal.title)}</div>
                     </div>
-                    ${proposal.status === 'rejected' && rejectionReason ? `<div class="rejection-reason">${escapeHtml(rejectionReason)}</div>` : ''}
-                    ${proposal.status === 'working_on' ? `<button class="work-btn" disabled>🔨 Get to work</button>` : ''}
-                    <div class="vote-buttons">
-                        <button class="vote-btn for" onclick="addVote('${proposal.id}')" ${!canVote ? 'disabled' : ''} title="Add vote (${nextVoteCost === 0 ? 'FREE' : nextVoteCost + ' REP'})">
-                            👍 <span class="vote-count">${votesFor}</span>
-                        </button>
-                        <button class="vote-btn against" onclick="removeVote('${proposal.id}')" ${!canVote || userVoteCount === 0 ? 'disabled' : ''} title="Remove vote (+${userVoteCount > 0 ? getRefundAmount(userVoteCount) : 0} REP)">
-                            👎 <span class="vote-count">${userVoteCount}</span>
-                        </button>
-                        ${userVoteCount > 0 ? `<span class="your-votes">${userVoteCount} vote${userVoteCount > 1 ? 's' : ''} · ${nextVoteCost} REP next</span>` : `<span class="your-votes">${nextVoteCost === 0 ? 'First vote FREE' : nextVoteCost + ' REP'}</span>`}
+                    <div class="idea-card-details">
+                        <div class="idea-card-tagline">${escapeHtml(proposal.content || 'No description')}</div>
+                        <div class="idea-card-meta">
+                            <span>👤 ${escapeHtml(authorName)}</span>
+                            <span>${category.emoji} ${category.label}</span>
+                            <span>📅 ${formattedDate}</span>
+                        </div>
+                        ${proposal.status === 'rejected' && rejectionReason ? `<div class="rejection-reason">${escapeHtml(rejectionReason)}</div>` : ''}
+                        ${proposal.status === 'working_on' ? `<button class="work-btn" disabled>🔨 Get to work</button>` : ''}
+                        <div class="vote-buttons">
+                            <button class="vote-btn for" onclick="event.stopPropagation(); addVote('${proposal.id}')" ${!canVote ? 'disabled' : ''} title="Add vote (${nextVoteCost === 0 ? 'FREE' : nextVoteCost + ' REP'})">
+                                👍 <span class="vote-count">${votesFor}</span>
+                            </button>
+                            <button class="vote-btn against" onclick="event.stopPropagation(); removeVote('${proposal.id}')" ${!canVote || userVoteCount === 0 ? 'disabled' : ''} title="Remove vote (+${userVoteCount > 0 ? getRefundAmount(userVoteCount) : 0} REP)">
+                                👎 <span class="vote-count">${userVoteCount}</span>
+                            </button>
+                            ${userVoteCount > 0 ? `<span class="your-votes">${userVoteCount} vote${userVoteCount > 1 ? 's' : ''} · ${nextVoteCost} REP next</span>` : `<span class="your-votes">${nextVoteCost === 0 ? 'First vote FREE' : nextVoteCost + ' REP'}</span>`}
+                        </div>
                     </div>
                 </div>
             `;
