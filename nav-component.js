@@ -9,6 +9,12 @@
     const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
 
+    // SuiteYieldVault contract config
+    const SUITE_YIELD_VAULT_ADDRESS = '0x72d28EEA52ab54448f0A8CCEd2E3d224De759D42';
+    const SUITE_YIELD_VAULT_ABI = [
+        'function userCredits(address) view returns (uint256)'
+    ];
+
     nav.className = 'nav';
     nav.innerHTML = `
         <div class="nav-inner">
@@ -320,27 +326,27 @@
             authDisplay.style.display = 'flex';
             identityEl.textContent = truncateWallet(wallet);
 
-            // Load credits
+            // Load credits from SuiteYieldVault contract
             try {
-                const response = await fetch(
-                    `${SUPABASE_URL}/rest/v1/suite_credits?wallet_address=eq.${wallet.toLowerCase()}&select=balance,locked_balance`,
-                    {
-                        headers: {
-                            'apikey': SUPABASE_ANON_KEY,
-                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-                        }
-                    }
-                );
-                const data = await response.json();
-                if (data && data.length > 0) {
-                    const balance = Math.floor(parseFloat(data[0].balance || 0) + parseFloat(data[0].locked_balance || 0));
-                    creditsEl.textContent = balance.toLocaleString();
-                    localStorage.setItem('suite_credits', balance.toString());
+                if (window.ethereum && typeof ethers !== 'undefined') {
+                    const provider = new ethers.BrowserProvider(window.ethereum);
+                    const vaultContract = new ethers.Contract(
+                        SUITE_YIELD_VAULT_ADDRESS,
+                        SUITE_YIELD_VAULT_ABI,
+                        provider
+                    );
+                    const creditsRaw = await vaultContract.userCredits(wallet);
+                    // Contract stores credits as (rawUSDC * 1000), divide by 1e6 for display
+                    const credits = Math.floor(Number(creditsRaw) / 1e6);
+                    creditsEl.textContent = credits.toLocaleString();
+                    localStorage.setItem('suite_credits', credits.toString());
                 } else {
-                    creditsEl.textContent = '0';
+                    // Fallback to cached or 0
+                    const cached = localStorage.getItem('suite_credits');
+                    creditsEl.textContent = cached || '0';
                 }
             } catch (error) {
-                console.error('Failed to load credits:', error);
+                console.error('Failed to load credits from contract:', error);
                 const cached = localStorage.getItem('suite_credits');
                 creditsEl.textContent = cached || '0';
             }
