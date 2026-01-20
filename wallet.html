@@ -8675,6 +8675,12 @@ Once payment is confirmed, we'll start building right away! Let me know if you h
 
         // Edit Modal Functions
         async function openEditModal(slug) {
+            // Verify admin wallet is connected
+            if (!walletAddress || !isAdminWallet(walletAddress)) {
+                showNotification('⚠️', 'Unauthorized', 'Admin wallet required');
+                return;
+            }
+
             const app = adminApps.find(a => a.slug === slug);
             if (!app) {
                 showNotification('⚠️', 'Error', 'App not found');
@@ -8916,6 +8922,12 @@ Once payment is confirmed, we'll start building right away! Let me know if you h
         }
 
         async function uploadEditImage(file, hiddenInputId) {
+            // Verify admin wallet is connected
+            if (!walletAddress || !isAdminWallet(walletAddress)) {
+                showNotification('⚠️', 'Unauthorized', 'Admin wallet required');
+                return null;
+            }
+
             // Upload directly to Supabase Storage
             const bucket = 'app-assets';
             const fileExt = file.name.split('.').pop();
@@ -8955,6 +8967,12 @@ Once payment is confirmed, we'll start building right away! Let me know if you h
         // Form submission
         document.getElementById('editAppForm').addEventListener('submit', async function(e) {
             e.preventDefault();
+
+            // Verify admin wallet is connected
+            if (!walletAddress || !isAdminWallet(walletAddress)) {
+                showNotification('⚠️', 'Unauthorized', 'Admin wallet required');
+                return;
+            }
 
             const slug = document.getElementById('editAppSlug').value;
             const updates = {
