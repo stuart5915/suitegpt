@@ -9,6 +9,9 @@ const corsHeaders = {
 }
 
 // Simple AI title/category generation using OpenAI or fallback
+// Valid categories: feature, bug, app_idea, improvement, docs, integration, tokenomics
+const VALID_CATEGORIES = ['feature', 'bug', 'app_idea', 'improvement', 'docs', 'integration', 'tokenomics'];
+
 async function generateTitleAndCategory(content: string): Promise<{ title: string; category: string }> {
   // Try OpenAI if available
   const openaiKey = Deno.env.get('OPENAI_API_KEY');
@@ -25,7 +28,7 @@ async function generateTitleAndCategory(content: string): Promise<{ title: strin
           model: 'gpt-3.5-turbo',
           messages: [{
             role: 'system',
-            content: 'You generate concise titles and categories for governance proposals. Categories must be one of: feature, bug, improvement, content, business, social, other. Respond ONLY with JSON: {"title": "...", "category": "..."}'
+            content: 'You generate concise titles and categories for governance proposals. Categories must be one of: feature, bug, app_idea, improvement, docs, integration, tokenomics. Respond ONLY with JSON: {"title": "...", "category": "..."}'
           }, {
             role: 'user',
             content: `Generate a title (max 60 chars) and category for this proposal:\n\n${content.slice(0, 500)}`
@@ -39,9 +42,10 @@ async function generateTitleAndCategory(content: string): Promise<{ title: strin
         const data = await response.json();
         const text = data.choices?.[0]?.message?.content || '';
         const parsed = JSON.parse(text);
+        const category = VALID_CATEGORIES.includes(parsed.category) ? parsed.category : 'feature';
         return {
           title: parsed.title?.slice(0, 60) || content.slice(0, 50) + '...',
-          category: parsed.category || 'other'
+          category
         };
       }
     } catch (e) {
@@ -55,19 +59,19 @@ async function generateTitleAndCategory(content: string): Promise<{ title: strin
 
   // Simple keyword-based category detection
   const lowerContent = content.toLowerCase();
-  let category = 'other';
-  if (lowerContent.includes('bug') || lowerContent.includes('fix') || lowerContent.includes('broken')) {
+  let category = 'feature'; // default
+  if (lowerContent.includes('bug') || lowerContent.includes('fix') || lowerContent.includes('broken') || lowerContent.includes('error')) {
     category = 'bug';
-  } else if (lowerContent.includes('feature') || lowerContent.includes('add') || lowerContent.includes('new')) {
-    category = 'feature';
   } else if (lowerContent.includes('improve') || lowerContent.includes('better') || lowerContent.includes('enhance')) {
     category = 'improvement';
-  } else if (lowerContent.includes('content') || lowerContent.includes('article') || lowerContent.includes('blog')) {
-    category = 'content';
-  } else if (lowerContent.includes('business') || lowerContent.includes('revenue') || lowerContent.includes('money')) {
-    category = 'business';
-  } else if (lowerContent.includes('social') || lowerContent.includes('community') || lowerContent.includes('twitter')) {
-    category = 'social';
+  } else if (lowerContent.includes('app idea') || lowerContent.includes('new app') || lowerContent.includes('build app')) {
+    category = 'app_idea';
+  } else if (lowerContent.includes('doc') || lowerContent.includes('guide') || lowerContent.includes('tutorial')) {
+    category = 'docs';
+  } else if (lowerContent.includes('integrat') || lowerContent.includes('connect') || lowerContent.includes('api')) {
+    category = 'integration';
+  } else if (lowerContent.includes('token') || lowerContent.includes('reward') || lowerContent.includes('incentive')) {
+    category = 'tokenomics';
   }
 
   return { title, category };
