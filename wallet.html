@@ -2252,10 +2252,10 @@
 
                                     <!-- Action Button -->
                                     <button onclick="openWithdrawModal()"
-                                        style="padding: 12px 24px; background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 2px solid rgba(239, 68, 68, 0.4); border-radius: 12px; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: all 0.3s ease; white-space: nowrap;"
-                                        onmouseover="this.style.background='rgba(239, 68, 68, 0.25)'; this.style.borderColor='#ef4444';"
-                                        onmouseout="this.style.background='rgba(239, 68, 68, 0.15)'; this.style.borderColor='rgba(239, 68, 68, 0.4)';">
-                                        Request Withdraw
+                                        style="padding: 12px 24px; background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 2px solid rgba(34, 197, 94, 0.4); border-radius: 12px; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: all 0.3s ease; white-space: nowrap;"
+                                        onmouseover="this.style.background='rgba(34, 197, 94, 0.25)'; this.style.borderColor='#22c55e';"
+                                        onmouseout="this.style.background='rgba(34, 197, 94, 0.15)'; this.style.borderColor='rgba(34, 197, 94, 0.4)';">
+                                        Withdraw
                                     </button>
                                 </div>
                             </div>
@@ -7497,6 +7497,46 @@
             'function setYieldPreference(uint8 keepPercent) external'
         ];
 
+        // Load user credits from the SuiteYieldVault contract
+        async function loadContractCredits() {
+            if (!window.ethereum) return;
+
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                if (accounts.length === 0) return;
+
+                const userAddress = accounts[0];
+
+                // Call userCredits(address) on the contract - selector: 0x27e235e3
+                const creditsData = '0x27e235e3' + userAddress.slice(2).padStart(64, '0');
+                const creditsHex = await window.ethereum.request({
+                    method: 'eth_call',
+                    params: [{ to: SUITE_YIELD_VAULT_ADDRESS, data: creditsData }, 'latest']
+                });
+                const credits = parseInt(creditsHex, 16);
+
+                // Update the credits display
+                updateCreditsDisplay(credits);
+
+                // Also update nav credits if available
+                if (window.refreshNavCredits) {
+                    window.refreshNavCredits();
+                }
+
+                console.log('Contract credits loaded:', credits);
+                return credits;
+            } catch (err) {
+                console.error('Error loading contract credits:', err);
+                return 0;
+            }
+        }
+
+        // Call on page load and wallet connection
+        window.addEventListener('load', () => {
+            setTimeout(loadContractCredits, 1000);
+        });
+        window.addEventListener('navAuthChanged', loadContractCredits);
+
         async function executeVaultDeposit() {
             // Check both inline input and hidden modal field
             const inlineAmount = document.getElementById('depositAmountInput')?.value;
@@ -7640,6 +7680,9 @@
                     loadUserVaultData();
                 }
                 loadVaultPublicStats();
+
+                // Load credits from contract and update display
+                await loadContractCredits();
 
             } catch (error) {
                 console.error('Deposit error:', error);
@@ -9529,7 +9572,7 @@ Once payment is confirmed, we'll start building right away! Let me know if you h
     <!-- WITHDRAW MODAL -->
     <!-- ═══════════════════════════════════════════════ -->
     <div id="withdrawModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(8px);">
-        <div style="background: linear-gradient(135deg, #1a1a2e, #16213e); border-radius: 24px; padding: 32px; max-width: 480px; width: 90%; max-height: 90vh; overflow-y: auto; border: 2px solid rgba(239, 68, 68, 0.3); box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
+        <div style="background: linear-gradient(135deg, #1a1a2e, #16213e); border-radius: 24px; padding: 32px; max-width: 480px; width: 90%; max-height: 90vh; overflow-y: auto; border: 2px solid rgba(34, 197, 94, 0.3); box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
             <!-- Header -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
                 <div style="display: flex; align-items: center; gap: 12px;">
@@ -9567,7 +9610,7 @@ Once payment is confirmed, we'll start building right away! Let me know if you h
                 <!-- Amount Display -->
                 <div style="position: relative; margin-bottom: 16px;">
                     <input type="text" id="modalWithdrawAmount" value="0.00"
-                        style="width: 100%; padding: 16px 80px 16px 24px; font-size: 1.8rem; font-weight: 800; text-align: center; background: rgba(0,0,0,0.4); border: 2px solid rgba(239, 68, 68, 0.3); border-radius: 16px; color: #ef4444; outline: none;"
+                        style="width: 100%; padding: 16px 80px 16px 24px; font-size: 1.8rem; font-weight: 800; text-align: center; background: rgba(0,0,0,0.4); border: 2px solid rgba(34, 197, 94, 0.3); border-radius: 16px; color: #22c55e; outline: none;"
                         oninput="updateWithdrawFromInput(this.value)">
                     <span style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 1rem; font-weight: 700; color: #9ca3af;">USDC</span>
                 </div>
@@ -9575,7 +9618,7 @@ Once payment is confirmed, we'll start building right away! Let me know if you h
                 <!-- Percent Slider -->
                 <div style="padding: 0 8px; margin-bottom: 12px;">
                     <input type="range" id="withdrawAmountSlider" min="0" max="100" value="0"
-                        style="width: 100%; accent-color: #ef4444; cursor: pointer;"
+                        style="width: 100%; accent-color: #22c55e; cursor: pointer;"
                         oninput="updateWithdrawFromSlider(this.value)">
                     <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: #6b7280; margin-top: 4px;">
                         <span>0%</span>
@@ -9588,10 +9631,10 @@ Once payment is confirmed, we'll start building right away! Let me know if you h
 
                 <!-- Preset Buttons -->
                 <div style="display: flex; gap: 8px;">
-                    <button onclick="setWithdrawPercent(25)" style="flex: 1; padding: 10px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; color: #ef4444; font-weight: 700; font-size: 0.85rem; cursor: pointer;">25%</button>
-                    <button onclick="setWithdrawPercent(50)" style="flex: 1; padding: 10px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; color: #ef4444; font-weight: 700; font-size: 0.85rem; cursor: pointer;">50%</button>
-                    <button onclick="setWithdrawPercent(75)" style="flex: 1; padding: 10px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; color: #ef4444; font-weight: 700; font-size: 0.85rem; cursor: pointer;">75%</button>
-                    <button onclick="setWithdrawPercent(100)" style="flex: 1; padding: 10px; background: linear-gradient(135deg, #ef4444, #dc2626); border: none; border-radius: 10px; color: white; font-weight: 700; font-size: 0.85rem; cursor: pointer;">MAX</button>
+                    <button onclick="setWithdrawPercent(25)" style="flex: 1; padding: 10px; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 10px; color: #22c55e; font-weight: 700; font-size: 0.85rem; cursor: pointer;">25%</button>
+                    <button onclick="setWithdrawPercent(50)" style="flex: 1; padding: 10px; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 10px; color: #22c55e; font-weight: 700; font-size: 0.85rem; cursor: pointer;">50%</button>
+                    <button onclick="setWithdrawPercent(75)" style="flex: 1; padding: 10px; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 10px; color: #22c55e; font-weight: 700; font-size: 0.85rem; cursor: pointer;">75%</button>
+                    <button onclick="setWithdrawPercent(100)" style="flex: 1; padding: 10px; background: linear-gradient(135deg, #22c55e, #16a34a); border: none; border-radius: 10px; color: white; font-weight: 700; font-size: 0.85rem; cursor: pointer;">MAX</button>
                 </div>
             </div>
 
@@ -9610,7 +9653,7 @@ Once payment is confirmed, we'll start building right away! Let me know if you h
                 style="width: 100%; padding: 18px; background: linear-gradient(135deg, #22c55e, #16a34a); color: white; border: none; border-radius: 14px; font-weight: 800; font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 20px rgba(34, 197, 94, 0.3);"
                 onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 30px rgba(34, 197, 94, 0.4)';"
                 onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 20px rgba(34, 197, 94, 0.3)';">
-                Withdraw Instantly
+                Withdraw
             </button>
         </div>
     </div>
@@ -9991,22 +10034,44 @@ Once payment is confirmed, we'll start building right away! Let me know if you h
 
             modal.style.display = 'flex';
 
-            // Fetch withdrawable amount
+            // Fetch withdrawable amount from contract
             if (window.ethereum) {
                 try {
                     const accounts = await window.ethereum.request({ method: 'eth_accounts' });
                     if (accounts.length > 0) {
-                        const withdrawable = await calculateUserWithdrawable(accounts[0]);
-                        userVaultShare = withdrawable.vaultShare;
-                        userCreditsUsedAmount = withdrawable.creditsUsed;
-                        userAvailableWithdraw = withdrawable.available;
+                        const userAddress = accounts[0];
+
+                        // Get user deposits from contract - userDeposits(address) selector: 0x63d2566c
+                        const depositsData = '0x63d2566c' + userAddress.slice(2).padStart(64, '0');
+                        const depositsHex = await window.ethereum.request({
+                            method: 'eth_call',
+                            params: [{ to: SUITE_YIELD_VAULT_ADDRESS, data: depositsData }, 'latest']
+                        });
+                        userVaultShare = parseInt(depositsHex, 16) / 1e6;
+
+                        // Get credits used from contract - creditsUsed(address) selector: 0x6c626aa3
+                        const usedData = '0x6c626aa3' + userAddress.slice(2).padStart(64, '0');
+                        const usedHex = await window.ethereum.request({
+                            method: 'eth_call',
+                            params: [{ to: SUITE_YIELD_VAULT_ADDRESS, data: usedData }, 'latest']
+                        });
+                        const creditsUsed = parseInt(usedHex, 16);
+                        userCreditsUsedAmount = creditsUsed / 1000; // Convert credits to USD
+
+                        // Get withdrawable amount from contract - getWithdrawableAmount(address) selector: 0xd4c3eea0
+                        const withdrawableData = '0xd4c3eea0' + userAddress.slice(2).padStart(64, '0');
+                        const withdrawableHex = await window.ethereum.request({
+                            method: 'eth_call',
+                            params: [{ to: SUITE_YIELD_VAULT_ADDRESS, data: withdrawableData }, 'latest']
+                        });
+                        userAvailableWithdraw = parseInt(withdrawableHex, 16) / 1e6;
 
                         document.getElementById('modalVaultShare').textContent = '$' + userVaultShare.toFixed(2);
                         document.getElementById('modalCreditsUsed').textContent = '-$' + userCreditsUsedAmount.toFixed(2);
                         document.getElementById('modalAvailableWithdraw').textContent = '$' + userAvailableWithdraw.toFixed(2);
                     }
                 } catch (e) {
-                    console.error('Failed to fetch withdrawable:', e);
+                    console.error('Failed to fetch withdrawable from contract:', e);
                 }
             }
 
