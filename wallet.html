@@ -7093,11 +7093,27 @@
                             const headerRepEl = document.getElementById('profileFactoryRep');
 
                             if (repEl) repEl.textContent = user.reputation || 0;
-                            if (proposalsEl) proposalsEl.textContent = user.active_submissions || 0;
                             if (founderEl && user.is_founder) founderEl.style.display = 'block';
                             if (headerRepEl && user.reputation > 0) {
                                 headerRepEl.textContent = '◈ ' + user.reputation + ' REP';
                                 headerRepEl.style.display = 'inline-block';
+                            }
+
+                            // Count actual proposals from database
+                            if (proposalsEl && user.id) {
+                                const proposalResponse = await fetch(
+                                    `${SUPABASE_URL}/rest/v1/factory_proposals?author_id=eq.${user.id}&select=id`,
+                                    {
+                                        headers: {
+                                            'apikey': SUPABASE_ANON_KEY,
+                                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                                        }
+                                    }
+                                );
+                                if (proposalResponse.ok) {
+                                    const proposals = await proposalResponse.json();
+                                    proposalsEl.textContent = proposals.length;
+                                }
                             }
                         }
                     }

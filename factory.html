@@ -1661,10 +1661,6 @@
                         <div class="stat-label">Reputation</div>
                         <div class="stat-value accent" id="userRep">0</div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Active Submissions</div>
-                        <div class="stat-value" id="userSubmissions">0 / 5</div>
-                    </div>
                 </div>
 
                 <div class="sidebar-section">
@@ -2211,7 +2207,6 @@
                             ...currentUser,
                             id: dbUser.id,
                             reputation: dbUser.reputation,
-                            active_submissions: dbUser.active_submissions,
                             is_founder: dbUser.is_founder,
                             display_name: dbUser.display_name,
                             // Also grab linked telegram_id if it exists (for NoteBox sync)
@@ -2237,8 +2232,6 @@
                 // User is connected - panel is empty since wallet shown in nav
                 panel.innerHTML = '';
                 document.getElementById('userRep').textContent = currentUser.reputation || 0;
-                const limit = 5 + Math.min(Math.floor((currentUser.reputation || 0) / 100), 10);
-                document.getElementById('userSubmissions').textContent = `${currentUser.active_submissions || 0} / ${limit}`;
             } else {
                 panel.innerHTML = '<button class="auth-btn" onclick="showAuthModal()">Connect</button>';
             }
@@ -2275,7 +2268,7 @@
         async function loadLeaderboard() {
             try {
                 const response = await fetch(
-                    `${SUPABASE_URL}/rest/v1/factory_users?select=id,display_name,telegram_id,wallet_address,reputation,is_founder,active_submissions&order=reputation.desc&limit=10`,
+                    `${SUPABASE_URL}/rest/v1/factory_users?select=id,display_name,telegram_id,wallet_address,reputation,is_founder&order=reputation.desc&limit=10`,
                     {
                         headers: {
                             'apikey': SUPABASE_ANON_KEY,
@@ -2315,9 +2308,6 @@
                         <span class="leaderboard-rank">${medal}</span>
                         <div class="leaderboard-info">
                             <div class="leaderboard-name">${escapeHtml(userIdentity)}</div>
-                            <div class="leaderboard-stats">
-                                <span>${user.active_submissions || 0} proposals</span>
-                            </div>
                         </div>
                         <div class="leaderboard-rep">
                             <span>${user.reputation} REP</span>
@@ -2642,26 +2632,6 @@
             hideDeleteModal();
 
             try {
-                // First get the proposal to find the author
-                const getResponse = await fetch(
-                    `${SUPABASE_URL}/rest/v1/factory_proposals?id=eq.${id}&select=author_id`,
-                    {
-                        headers: {
-                            'apikey': SUPABASE_ANON_KEY,
-                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-                        }
-                    }
-                );
-
-                let authorId = null;
-                if (getResponse.ok) {
-                    const proposals = await getResponse.json();
-                    if (proposals.length > 0) {
-                        authorId = proposals[0].author_id;
-                    }
-                }
-
-                // Delete the proposal
                 const response = await fetch(
                     `${SUPABASE_URL}/rest/v1/factory_proposals?id=eq.${id}`,
                     {
@@ -2674,47 +2644,6 @@
                 );
 
                 if (response.ok) {
-                    // Decrement author's active_submissions count
-                    if (authorId) {
-                        // Get current count
-                        const userResponse = await fetch(
-                            `${SUPABASE_URL}/rest/v1/factory_users?id=eq.${authorId}&select=active_submissions`,
-                            {
-                                headers: {
-                                    'apikey': SUPABASE_ANON_KEY,
-                                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-                                }
-                            }
-                        );
-                        if (userResponse.ok) {
-                            const users = await userResponse.json();
-                            if (users.length > 0) {
-                                const currentCount = users[0].active_submissions || 0;
-                                await fetch(
-                                    `${SUPABASE_URL}/rest/v1/factory_users?id=eq.${authorId}`,
-                                    {
-                                        method: 'PATCH',
-                                        headers: {
-                                            'apikey': SUPABASE_ANON_KEY,
-                                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                                            'Content-Type': 'application/json',
-                                            'Prefer': 'return=minimal'
-                                        },
-                                        body: JSON.stringify({
-                                            active_submissions: Math.max(0, currentCount - 1)
-                                        })
-                                    }
-                                );
-                                // Update local user if it's the current user
-                                if (currentUser && currentUser.id === authorId) {
-                                    currentUser.active_submissions = Math.max(0, currentCount - 1);
-                                    localStorage.setItem('factory_user', JSON.stringify(currentUser));
-                                    updateUserPanel();
-                                }
-                            }
-                        }
-                    }
-
                     await loadGovernanceProposals();
                     renderGovernanceSections();
                 } else {
@@ -3377,8 +3306,7 @@
                             id: user.id.toString(),
                             telegram_id: user.id.toString(),
                             display_name: user.username || user.first_name,
-                            reputation: 0,
-                            active_submissions: 0
+                            reputation: 0
                         };
 
                         currentUser = factoryUser;
@@ -3421,8 +3349,7 @@
                         id: address,
                         wallet_address: address,
                         display_name: displayName,
-                        reputation: 0,
-                        active_submissions: 0
+                        reputation: 0
                     };
 
                     currentUser = walletUser;
@@ -3452,8 +3379,7 @@
             const demoUser = {
                 id: 'demo_' + Date.now(),
                 display_name: 'Demo User',
-                reputation: 0,
-                active_submissions: 0
+                reputation: 0
             };
             currentUser = demoUser;
             localStorage.setItem('factory_user', JSON.stringify(demoUser));

@@ -206,16 +206,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ===== UPDATE USER STATS =====
-    await supabase
-      .from('factory_users')
-      .update({
-        active_submissions: (user.active_submissions || 0) + 1
-      })
-      .eq('id', user.id);
-
     // ===== AWARD REP FOR FIRST PROPOSAL =====
-    if ((user.active_submissions || 0) === 0) {
+    // Check if this is the user's first proposal by counting existing ones
+    const { count: proposalCount } = await supabase
+      .from('factory_proposals')
+      .select('*', { count: 'exact', head: true })
+      .eq('author_id', user.id);
+
+    if (proposalCount === 1) { // This is their first (the one we just created)
       const repBonus = 5;
       await supabase
         .from('factory_users')
