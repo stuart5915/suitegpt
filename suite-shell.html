@@ -6086,47 +6086,55 @@
             const featuredSection = document.getElementById('featuredAppsSection');
             const featuredGrid = document.getElementById('featuredAppsGrid');
 
-            if (apps.length === 0) {
-                loading.innerHTML = '<div>No apps available</div>';
+            console.log('[renderAppsGrid] Starting, apps:', apps.length);
+
+            if (!apps || apps.length === 0) {
+                if (loading) loading.innerHTML = '<div>No apps available</div>';
                 return;
             }
 
-            // Show filter bar
-            if (filterBar) filterBar.style.display = 'flex';
+            try {
+                // Show filter bar
+                if (filterBar) filterBar.style.display = 'flex';
 
-            // Get Scale tier apps (featured)
-            const scaleApps = apps.filter(app => (parseFloat(app.total_funded) || 0) >= 5000);
+                // Get Scale tier apps (featured)
+                const scaleApps = apps.filter(app => (parseFloat(app.total_funded) || 0) >= 5000);
+                console.log('[renderAppsGrid] Scale apps:', scaleApps.length);
 
-            // Render featured apps section
-            if (scaleApps.length > 0 && featuredSection && featuredGrid) {
-                featuredSection.style.display = 'block';
-                featuredGrid.innerHTML = scaleApps.map(app => {
-                    const funded = parseFloat(app.total_funded) || 0;
-                    return `
-                        <div class="app-card" onclick="openApp('${app.slug}')" style="background: rgba(168, 85, 247, 0.1);">
-                            <div class="app-tier-badge" style="background: #a855f720; color: #a855f7; border: 1px solid #a855f740;">
-                                🚀 Scale
+                // Render featured apps section
+                if (scaleApps.length > 0 && featuredSection && featuredGrid) {
+                    featuredSection.style.display = 'block';
+                    featuredGrid.innerHTML = scaleApps.map(app => {
+                        const funded = parseFloat(app.total_funded) || 0;
+                        return `
+                            <div class="app-card" onclick="openApp('${app.slug}')" style="background: rgba(168, 85, 247, 0.1);">
+                                <div class="app-tier-badge" style="background: #a855f720; color: #a855f7; border: 1px solid #a855f740;">
+                                    🚀 Scale
+                                </div>
+                                <div class="app-icon">${getAppIcon(app)}</div>
+                                <div class="app-name">${app.name}</div>
+                                <div class="app-funding">
+                                    <div class="funding-text" style="color: #a855f7; font-weight: 700;">$${Math.floor(funded).toLocaleString()}</div>
+                                </div>
                             </div>
-                            <div class="app-icon">${getAppIcon(app)}</div>
-                            <div class="app-name">${app.name}</div>
-                            <div class="app-funding">
-                                <div class="funding-text" style="color: #a855f7; font-weight: 700;">$${Math.floor(funded).toLocaleString()}</div>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            } else if (featuredSection) {
-                featuredSection.style.display = 'none';
-            }
-
-            // Get filtered and sorted apps (excluding Scale tier from main grid if showing featured)
-            const displayApps = getFilteredAndSortedApps().filter(app => {
-                // If we're showing featured section, exclude Scale apps from main grid
-                if (scaleApps.length > 0) {
-                    return (parseFloat(app.total_funded) || 0) < 5000;
+                        `;
+                    }).join('');
+                } else if (featuredSection) {
+                    featuredSection.style.display = 'none';
                 }
-                return true;
-            });
+
+                // Get filtered and sorted apps
+                const allFilteredApps = getFilteredAndSortedApps();
+                console.log('[renderAppsGrid] Filtered apps:', allFilteredApps.length);
+
+                // Exclude Scale tier from main grid if showing featured
+                const displayApps = allFilteredApps.filter(app => {
+                    if (scaleApps.length > 0) {
+                        return (parseFloat(app.total_funded) || 0) < 5000;
+                    }
+                    return true;
+                });
+                console.log('[renderAppsGrid] Display apps:', displayApps.length);
 
             grid.innerHTML = displayApps.map(app => {
                 // Calculate funding progress (use total_funded from DB, or 0)
@@ -6180,6 +6188,11 @@
 
             loading.style.display = 'none';
             grid.style.display = 'grid';
+
+            } catch (error) {
+                console.error('[renderAppsGrid] Error:', error);
+                if (loading) loading.innerHTML = '<div>Error loading apps</div>';
+            }
         }
 
         function openVotingSection() {
