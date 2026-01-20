@@ -15,7 +15,26 @@
         SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM',
         STRIPE_PUBLISH_KEY: '', // Add when ready
         AD_REWARD_CREDITS: 10, // Credits earned per ad watch
+        // SuiteYieldVault contract (Base mainnet)
+        VAULT_ADDRESS: '0x72d28EEA52ab54448f0A8CCEd2E3d224De759D42',
+        VAULT_ABI: ['function userCredits(address) view returns (uint256)', 'function getSpendableCredits(address) view returns (uint256)'],
     };
+
+    // Dynamically load ethers.js if needed
+    let ethersLoaded = typeof ethers !== 'undefined';
+    async function ensureEthers() {
+        if (ethersLoaded || typeof ethers !== 'undefined') {
+            ethersLoaded = true;
+            return true;
+        }
+        return new Promise((resolve) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js';
+            script.onload = () => { ethersLoaded = true; resolve(true); };
+            script.onerror = () => resolve(false);
+            document.head.appendChild(script);
+        });
+    }
 
     // ==========================================
     // STATE
@@ -284,50 +303,96 @@
         if (!wallet) return 0;
 
         try {
-            const response = await fetch(
-                `${SUITE_CONFIG.SUPABASE_URL}/rest/v1/suite_credits?wallet_address=eq.${wallet.toLowerCase()}&select=balance`,
-                {
-                    headers: {
-                        'apikey': SUITE_CONFIG.SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${SUITE_CONFIG.SUPABASE_ANON_KEY}`
-                    }
-                }
-            );
-            const data = await response.json();
-            userCredits = data[0]?.balance || 0;
-            return userCredits;
+            // Load ethers if needed
+            await ensureEthers();
+
+            if (window.ethereum && typeof ethers !== 'undefined') {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const vaultContract = new ethers.Contract(
+                    SUITE_CONFIG.VAULT_ADDRESS,
+                    SUITE_CONFIG.VAULT_ABI,
+                    provider
+                );
+
+                // Get spendable credits (total - used)
+                const creditsRaw = await vaultContract.getSpendableCredits(wallet);
+                // Contract stores credits as (rawUSDC * 1000), divide by 1e6 for display
+                userCredits = Math.floor(Number(creditsRaw) / 1e6);
+                console.log('SUITE SDK: Credits loaded from contract:', userCredits);
+                return userCredits;
+            }
         } catch (error) {
-            console.error('SUITE SDK: Failed to load credits', error);
-            return 0;
+            console.error('SUITE SDK: Failed to load credits from contract', error);
         }
+
+        // Fallback to cached
+        return userCredits || 0;
     }
 
     async function deductCredits(amount, featureName, appId) {
         const wallet = getWallet();
         if (!wallet) return false;
 
+        // Check if user has enough credits first
+        if (userCredits < amount) {
+            console.error('SUITE SDK: Not enough credits');
+            return false;
+        }
+
         try {
+            // Call Supabase Edge Function to deduct credits via admin contract call
+            // The edge function will call useCredits() on the contract as admin
             const response = await fetch(
-                `${SUITE_CONFIG.SUPABASE_URL}/rest/v1/rpc/deduct_suite_credits`,
+                `${SUITE_CONFIG.SUPABASE_URL}/functions/v1/deduct-credits`,
                 {
                     method: 'POST',
                     headers: {
-                        'apikey': SUITE_CONFIG.SUPABASE_ANON_KEY,
                         'Authorization': `Bearer ${SUITE_CONFIG.SUPABASE_ANON_KEY}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        p_wallet: wallet.toLowerCase(),
-                        p_amount: amount,
-                        p_feature: featureName,
-                        p_app_id: appId
+                        wallet: wallet.toLowerCase(),
+                        amount: amount, // Display amount (will be converted to raw in function)
+                        featureName: featureName,
+                        appId: appId
                     })
                 }
             );
+
             if (response.ok) {
-                userCredits -= amount;
-                return true;
+                const result = await response.json();
+                if (result.success) {
+                    userCredits -= amount;
+                    console.log('SUITE SDK: Credits deducted:', amount, 'for', featureName);
+                    return true;
+                }
             }
+
+            // If edge function not deployed yet, log for manual tracking
+            console.warn('SUITE SDK: Edge function not available. Credits usage logged for manual processing.');
+
+            // Record usage in Supabase for manual processing
+            await fetch(`${SUITE_CONFIG.SUPABASE_URL}/rest/v1/credit_usage_log`, {
+                method: 'POST',
+                headers: {
+                    'apikey': SUITE_CONFIG.SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${SUITE_CONFIG.SUPABASE_ANON_KEY}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=minimal'
+                },
+                body: JSON.stringify({
+                    wallet_address: wallet.toLowerCase(),
+                    amount: amount,
+                    feature_name: featureName,
+                    app_id: appId,
+                    status: 'pending_contract_call'
+                })
+            });
+
+            // For now, allow the feature (optimistic) - admin will sync later
+            userCredits -= amount;
+            return true;
+
         } catch (error) {
             console.error('SUITE SDK: Failed to deduct credits', error);
         }
