@@ -2032,13 +2032,11 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <!-- Deposit Button -->
-                                    <button id="depositExpandBtn" onclick="event.stopPropagation(); openDepositOptionsModal()"
-                                        style="padding: 12px 24px; background: linear-gradient(135deg, #22c55e, #10b981); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: all 0.3s ease; white-space: nowrap; display: flex; align-items: center; gap: 8px;"
-                                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(34, 197, 94, 0.4)';"
-                                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
-                                        <span>⚡ Deposit</span>
-                                    </button>
+                                    <!-- Expand/Collapse Arrow -->
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span style="color: #22c55e; font-weight: 600; font-size: 0.85rem;">Deposit</span>
+                                        <span id="depositExpandArrow" style="color: #22c55e; font-size: 1.2rem; transition: transform 0.3s;">▼</span>
+                                    </div>
                                 </div>
 
                                 <!-- Expanded Content (hidden by default) -->
@@ -2047,10 +2045,13 @@
                                     <!-- Tab Buttons -->
                                     <div style="display: flex; gap: 8px; margin-bottom: 20px; background: rgba(0,0,0,0.3); padding: 6px; border-radius: 12px;" onclick="event.stopPropagation()">
                                         <button id="depositTabYieldBtn" onclick="switchDepositInlineTab('yield')" style="flex: 1; padding: 12px 16px; background: linear-gradient(135deg, #22c55e, #10b981); color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">
-                                            📈⚡ Yield Deposit
+                                            📈 Yield Deposit
                                         </button>
                                         <button id="depositTabDirectBtn" onclick="switchDepositInlineTab('direct')" style="flex: 1; padding: 12px 16px; background: rgba(255,255,255,0.05); color: #9ca3af; border: none; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">
                                             ⚡ Direct Swap
+                                        </button>
+                                        <button id="depositTabFiatBtn" onclick="switchDepositInlineTab('fiat')" style="flex: 1; padding: 12px 16px; background: rgba(255,255,255,0.05); color: #9ca3af; border: none; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">
+                                            💳 Card/Fiat
                                         </button>
                                     </div>
 
@@ -2217,6 +2218,64 @@
                                             ⚡ Swap for Credits
                                         </button>
                                     </div><!-- End depositDirectTab -->
+
+                                    <!-- ═══ FIAT/CARD TAB CONTENT ═══ -->
+                                    <div id="depositFiatTab" style="display: none;">
+                                        <!-- Info Banner -->
+                                        <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+                                            <div style="display: flex; align-items: flex-start; gap: 10px;">
+                                                <span style="font-size: 1.2rem;">💳</span>
+                                                <div>
+                                                    <div style="font-weight: 700; color: #3b82f6; font-size: 0.9rem; margin-bottom: 4px;">Card & Bank Deposits</div>
+                                                    <div style="font-size: 0.75rem; color: #9ca3af; line-height: 1.4;">Deposit directly with your credit/debit card or bank transfer. Funds are converted to USDC and deposited to your vault.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Amount Selection -->
+                                        <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                                            <div style="font-size: 0.85rem; font-weight: 600; color: #ffffff; margin-bottom: 12px;">Select Amount (USD)</div>
+                                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px;">
+                                                <button onclick="event.stopPropagation(); setFiatDepositAmount(10)" style="padding: 12px; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 10px; color: #3b82f6; font-weight: 700; cursor: pointer;">$10</button>
+                                                <button onclick="event.stopPropagation(); setFiatDepositAmount(25)" style="padding: 12px; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 10px; color: #3b82f6; font-weight: 700; cursor: pointer;">$25</button>
+                                                <button onclick="event.stopPropagation(); setFiatDepositAmount(50)" style="padding: 12px; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 10px; color: #3b82f6; font-weight: 700; cursor: pointer;">$50</button>
+                                                <button onclick="event.stopPropagation(); setFiatDepositAmount(100)" style="padding: 12px; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 10px; color: #3b82f6; font-weight: 700; cursor: pointer;">$100</button>
+                                            </div>
+                                            <div style="position: relative;">
+                                                <input type="text" inputmode="decimal" id="fiatDepositAmountInput" placeholder="Enter amount"
+                                                    style="width: 100%; padding: 14px 50px 14px 30px; background: rgba(255,255,255,0.1); border: 2px solid rgba(59, 130, 246, 0.3); border-radius: 10px; color: #3b82f6; font-size: 1.3rem; font-weight: 700; outline: none;"
+                                                    oninput="this.value = this.value.replace(/[^0-9.]/g, ''); updateFiatDepositPreview()"
+                                                    onclick="event.stopPropagation()"
+                                                    onfocus="this.style.borderColor='#3b82f6';"
+                                                    onblur="this.style.borderColor='rgba(59, 130, 246, 0.3)';">
+                                                <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #9ca3af; font-weight: 600;">$</span>
+                                                <span style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: #9ca3af; font-weight: 600;">USD</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Credits Preview -->
+                                        <div style="background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                                <span style="color: #9ca3af; font-size: 0.9rem;">You'll receive:</span>
+                                                <span id="fiatCreditsPreview" style="font-weight: 800; color: #22c55e; font-size: 1.3rem;">0 Credits</span>
+                                            </div>
+                                            <div style="font-size: 0.7rem; color: #6b7280; margin-top: 4px;">$1 USD = 1,000 credits (deposited to yield vault)</div>
+                                        </div>
+
+                                        <!-- Coming Soon Notice -->
+                                        <div style="background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+                                            <div style="display: flex; align-items: center; gap: 10px;">
+                                                <span style="font-size: 1.2rem;">🚧</span>
+                                                <div style="font-size: 0.85rem; color: #fbbf24;">Card payments launching soon via Stripe. Join the waitlist to be notified!</div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Deposit Button (disabled for now) -->
+                                        <button onclick="event.stopPropagation(); processFiatDeposit()"
+                                            style="width: 100%; padding: 16px 28px; background: linear-gradient(135deg, #6b7280, #4b5563); color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 1rem; cursor: not-allowed; opacity: 0.7;">
+                                            💳 Card Payments Coming Soon
+                                        </button>
+                                    </div><!-- End depositFiatTab -->
                                 </div>
                             </div>
 
@@ -6835,16 +6894,16 @@
 
             depositPanelExpanded = !depositPanelExpanded;
             const content = document.getElementById('depositExpandedContent');
-            const chevron = document.getElementById('depositChevron');
+            const arrow = document.getElementById('depositExpandArrow');
             const bar = document.getElementById('depositBar');
 
             if (depositPanelExpanded) {
                 content.style.display = 'block';
-                chevron.style.transform = 'rotate(180deg)';
+                if (arrow) arrow.style.transform = 'rotate(180deg)';
                 bar.style.cursor = 'default';
             } else {
                 content.style.display = 'none';
-                chevron.style.transform = 'rotate(0deg)';
+                if (arrow) arrow.style.transform = 'rotate(0deg)';
                 bar.style.cursor = 'pointer';
             }
         }
@@ -10175,24 +10234,59 @@ Once payment is confirmed, we'll start building right away! Let me know if you h
         function switchDepositInlineTab(tab) {
             const yieldTab = document.getElementById('depositYieldTab');
             const directTab = document.getElementById('depositDirectTab');
+            const fiatTab = document.getElementById('depositFiatTab');
             const yieldBtn = document.getElementById('depositTabYieldBtn');
             const directBtn = document.getElementById('depositTabDirectBtn');
+            const fiatBtn = document.getElementById('depositTabFiatBtn');
 
+            // Hide all tabs and reset all buttons
+            yieldTab.style.display = 'none';
+            directTab.style.display = 'none';
+            if (fiatTab) fiatTab.style.display = 'none';
+
+            yieldBtn.style.background = 'rgba(255,255,255,0.05)';
+            yieldBtn.style.color = '#9ca3af';
+            directBtn.style.background = 'rgba(255,255,255,0.05)';
+            directBtn.style.color = '#9ca3af';
+            if (fiatBtn) {
+                fiatBtn.style.background = 'rgba(255,255,255,0.05)';
+                fiatBtn.style.color = '#9ca3af';
+            }
+
+            // Show selected tab
             if (tab === 'yield') {
                 yieldTab.style.display = 'block';
-                directTab.style.display = 'none';
                 yieldBtn.style.background = 'linear-gradient(135deg, #22c55e, #10b981)';
                 yieldBtn.style.color = 'white';
-                directBtn.style.background = 'rgba(255,255,255,0.05)';
-                directBtn.style.color = '#9ca3af';
-            } else {
-                yieldTab.style.display = 'none';
+            } else if (tab === 'direct') {
                 directTab.style.display = 'block';
-                yieldBtn.style.background = 'rgba(255,255,255,0.05)';
-                yieldBtn.style.color = '#9ca3af';
                 directBtn.style.background = 'linear-gradient(135deg, #ff9500, #f97316)';
                 directBtn.style.color = 'white';
+            } else if (tab === 'fiat') {
+                if (fiatTab) fiatTab.style.display = 'block';
+                if (fiatBtn) {
+                    fiatBtn.style.background = 'linear-gradient(135deg, #3b82f6, #2563eb)';
+                    fiatBtn.style.color = 'white';
+                }
             }
+        }
+
+        // Fiat deposit functions
+        function setFiatDepositAmount(amount) {
+            const input = document.getElementById('fiatDepositAmountInput');
+            if (input) input.value = amount;
+            updateFiatDepositPreview();
+        }
+
+        function updateFiatDepositPreview() {
+            const amount = parseFloat(document.getElementById('fiatDepositAmountInput')?.value) || 0;
+            const credits = amount * 1000;
+            const previewEl = document.getElementById('fiatCreditsPreview');
+            if (previewEl) previewEl.textContent = credits.toLocaleString() + ' Credits';
+        }
+
+        function processFiatDeposit() {
+            showNotification('ℹ️', 'Coming Soon', 'Card payments will be available soon via Stripe');
         }
 
         // Direct Swap functions
