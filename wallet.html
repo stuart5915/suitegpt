@@ -6879,8 +6879,9 @@
             }
         }
 
-        // Execute vault deposit
-        async function executeVaultDeposit() {
+        // Execute vault deposit (OLD - replaced by new contract version below)
+        // This function is kept for reference but the new one at line ~7500 takes precedence
+        async function executeVaultDepositOLD() {
             const amount = parseFloat(document.getElementById('depositAmountInput')?.value) || 0;
 
             if (!window.walletAddress) {
@@ -7497,7 +7498,10 @@
         ];
 
         async function executeVaultDeposit() {
-            const amount = document.getElementById('vaultDepositAmount')?.value;
+            // Check both inline input and hidden modal field
+            const inlineAmount = document.getElementById('depositAmountInput')?.value;
+            const modalAmount = document.getElementById('vaultDepositAmount')?.value;
+            const amount = parseFloat(inlineAmount) > 0 ? inlineAmount : modalAmount;
 
             if (!amount || parseFloat(amount) <= 0) {
                 showNotification('⚠️', 'Error', 'Please enter an amount');
@@ -7613,11 +7617,27 @@
                 // Step 5: Update UI
                 const creditsEarned = (parseFloat(amount) * 1000).toLocaleString();
                 showNotification('✅', 'Success!', `Deposited $${amount} USDC and received ${creditsEarned} credits!`);
-                document.getElementById('vaultDepositAmount').value = '';
+
+                // Clear both input fields
+                if (document.getElementById('depositAmountInput')) {
+                    document.getElementById('depositAmountInput').value = '';
+                }
+                if (document.getElementById('vaultDepositAmount')) {
+                    document.getElementById('vaultDepositAmount').value = '';
+                }
 
                 // Refresh balances
                 if (typeof fetchWalletBalances === 'function') {
                     await fetchWalletBalances(fromAddress);
+                }
+                if (typeof fetchUSDCBalance === 'function') {
+                    fetchUSDCBalance();
+                }
+                if (typeof updateDepositEstimates === 'function') {
+                    updateDepositEstimates();
+                }
+                if (typeof loadUserVaultData === 'function') {
+                    loadUserVaultData();
                 }
                 loadVaultPublicStats();
 
