@@ -1309,12 +1309,32 @@
             align-items: center;
             gap: 12px;
             margin-bottom: 16px;
+            cursor: pointer;
+            padding: 8px 12px;
+            margin: -8px -12px 16px -12px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .governance-section-header:hover {
+            background: rgba(255, 255, 255, 0.05);
         }
 
         .governance-section-header h3 {
             font-size: 1.1rem;
             font-weight: 700;
             margin: 0;
+        }
+
+        .governance-section-toggle {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            transition: transform 0.2s;
+            margin-left: auto;
+        }
+
+        .governance-section.collapsed .governance-section-toggle {
+            transform: rotate(-90deg);
         }
 
         .governance-section-count {
@@ -1324,6 +1344,10 @@
             border-radius: 100px;
             font-size: 0.8rem;
             font-weight: 600;
+        }
+
+        .governance-section.collapsed .section-kanban {
+            display: none;
         }
 
         .section-kanban {
@@ -1755,10 +1779,11 @@
                 <!-- Governance View -->
                 <div id="governanceView">
                     <!-- SUITE Apps Section -->
-                    <div class="governance-section" id="suiteAppsSection">
-                        <div class="governance-section-header">
+                    <div class="governance-section collapsed" id="suiteAppsSection">
+                        <div class="governance-section-header" onclick="toggleGovernanceSection('suiteAppsSection')">
                             <h3>📱 SUITE Apps</h3>
                             <span class="governance-section-count" id="suiteAppsCount">0</span>
+                            <span class="governance-section-toggle">▼</span>
                         </div>
                         <div class="section-kanban" id="suiteAppsKanban">
                             <!-- Populated by JS -->
@@ -1766,10 +1791,11 @@
                     </div>
 
                     <!-- Business/Ecosystem Section -->
-                    <div class="governance-section" id="businessSection">
-                        <div class="governance-section-header">
+                    <div class="governance-section collapsed" id="businessSection">
+                        <div class="governance-section-header" onclick="toggleGovernanceSection('businessSection')">
                             <h3>💰 Business/Ecosystem</h3>
                             <span class="governance-section-count" id="businessCount">0</span>
+                            <span class="governance-section-toggle">▼</span>
                         </div>
                         <div class="section-kanban" id="businessKanban">
                             <!-- Populated by JS -->
@@ -1777,10 +1803,11 @@
                     </div>
 
                     <!-- Articles/Content Section -->
-                    <div class="governance-section" id="contentSection">
-                        <div class="governance-section-header">
+                    <div class="governance-section collapsed" id="contentSection">
+                        <div class="governance-section-header" onclick="toggleGovernanceSection('contentSection')">
                             <h3>📝 Articles/Content</h3>
                             <span class="governance-section-count" id="contentSectionCount">0</span>
+                            <span class="governance-section-toggle">▼</span>
                         </div>
                         <div class="section-kanban" id="contentKanban">
                             <!-- Populated by JS -->
@@ -1788,10 +1815,11 @@
                     </div>
 
                     <!-- Social/Cadence Loops Section -->
-                    <div class="governance-section" id="socialSection">
-                        <div class="governance-section-header">
+                    <div class="governance-section collapsed" id="socialSection">
+                        <div class="governance-section-header" onclick="toggleGovernanceSection('socialSection')">
                             <h3>🔄 Social/Cadence Loops</h3>
                             <span class="governance-section-count" id="socialCount">0</span>
+                            <span class="governance-section-toggle">▼</span>
                         </div>
                         <div class="section-kanban" id="socialKanban">
                             <!-- Populated by JS -->
@@ -2474,6 +2502,14 @@
                 }
             } catch (err) {
                 console.error('Error loading governance proposals:', err);
+            }
+        }
+
+        // Toggle governance section collapse/expand
+        function toggleGovernanceSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.classList.toggle('collapsed');
             }
         }
 
