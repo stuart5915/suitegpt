@@ -1843,6 +1843,7 @@
                 <div class="form-group">
                     <label class="form-label">Section</label>
                     <select id="proposalSection" class="form-select" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: #1a1a2e; color: #ffffff; font-size: 0.95rem;">
+                        <option value="suite_apps" style="background: #1a1a2e; color: #ffffff;">📱 SUITE Apps</option>
                         <option value="business" style="background: #1a1a2e; color: #ffffff;">💼 Business</option>
                         <option value="content" style="background: #1a1a2e; color: #ffffff;">📝 Content</option>
                         <option value="social" style="background: #1a1a2e; color: #ffffff;">🌐 Social</option>
@@ -2043,8 +2044,7 @@
         let pushingIdeaId = null; // ID of idea being pushed
 
         // Governance Sections State
-        let suiteAppsIdeas = [];  // From 'ideas' table (shared with /apps)
-        let governanceProposals = [];  // From 'telos_proposals' table
+        let governanceProposals = [];  // From 'factory_proposals' table
 
         // Drag-Drop State
         let draggedItem = null;  // { id, type: 'idea' | 'proposal', section }
@@ -2104,7 +2104,6 @@
             await checkAuth();  // Wait for user data including is_founder
             loadProposals();
             loadLeaderboard();
-            await loadSuiteAppsIdeas();
             await loadGovernanceProposals();
             await loadAppsForDropdown();
             renderGovernanceSections();
@@ -2328,33 +2327,11 @@
             }).join('');
         }
 
-        // Load SUITE Apps from ideas table (same as /apps page)
-        async function loadSuiteAppsIdeas() {
-            try {
-                const response = await fetch(
-                    `${SUPABASE_URL}/rest/v1/ideas?select=*&order=created_at.desc`,
-                    {
-                        headers: {
-                            'apikey': SUPABASE_ANON_KEY,
-                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-                        }
-                    }
-                );
-
-                if (response.ok) {
-                    suiteAppsIdeas = await response.json();
-                    console.log('Loaded', suiteAppsIdeas.length, 'SUITE app ideas');
-                }
-            } catch (err) {
-                console.error('Error loading SUITE apps ideas:', err);
-            }
-        }
-
-        // Load governance proposals (Business, Content, Social sections)
+        // Load governance proposals (all sections including SUITE Apps)
         async function loadGovernanceProposals() {
             try {
                 const response = await fetch(
-                    `${SUPABASE_URL}/rest/v1/factory_proposals?select=*,author:factory_users(id,display_name,reputation)&section=in.(business,content,social)&order=created_at.desc`,
+                    `${SUPABASE_URL}/rest/v1/factory_proposals?select=*,author:factory_users(id,display_name,reputation)&section=in.(suite_apps,business,content,social)&order=created_at.desc`,
                     {
                         headers: {
                             'apikey': SUPABASE_ANON_KEY,
@@ -2381,68 +2358,39 @@
             renderGovernanceSection('social', 'socialKanban', 'socialCount');
         }
 
-        // Render SUITE Apps section (from ideas table)
+        // Render SUITE Apps section (now uses proposals like other sections)
         function renderSuiteAppsSection() {
-            const building = suiteAppsIdeas.filter(i => i.status === 'building');
-            const considering = suiteAppsIdeas.filter(i => i.status === 'considering');
-            const live = suiteAppsIdeas.filter(i => i.status === 'live');
-            const rejected = suiteAppsIdeas.filter(i => i.status === 'rejected');
+            const sectionProposals = governanceProposals.filter(p => p.section === 'suite_apps');
+            const submitted = sectionProposals.filter(p => p.status === 'submitted');
+            const voting = sectionProposals.filter(p => p.status === 'open_voting');
+            const passed = sectionProposals.filter(p => p.status === 'passed' || p.status === 'implemented');
+            const rejected = sectionProposals.filter(p => p.status === 'rejected');
 
-            document.getElementById('suiteAppsCount').textContent = suiteAppsIdeas.length;
+            document.getElementById('suiteAppsCount').textContent = sectionProposals.length;
+
+            const isAdmin = currentUser?.is_founder;
 
             document.getElementById('suiteAppsKanban').innerHTML = `
-                <div class="section-column" data-status="considering" data-section="suite_apps"
-                     ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'considering', 'suite_apps')">
-                    <div class="section-column-header">🤔 Considering <span>(${considering.length})</span></div>
-                    ${considering.map(renderIdeaCard).join('') || '<div class="empty-column">No ideas under consideration</div>'}
+                <div class="section-column" data-status="submitted" data-section="suite_apps"
+                     ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'submitted', 'suite_apps')">
+                    <div class="section-column-header">📥 Submitted <span>(${submitted.length})</span></div>
+                    <button class="section-add-btn" onclick="showSubmitModal('suite_apps')">+ New Proposal</button>
+                    ${submitted.map(p => renderGovernanceProposalCard(p, 'suite_apps')).join('') || '<div class="empty-column">No proposals</div>'}
                 </div>
-                <div class="section-column" data-status="building" data-section="suite_apps"
-                     ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'building', 'suite_apps')">
-                    <div class="section-column-header">🔨 Building <span>(${building.length})</span></div>
-                    ${building.map(renderIdeaCard).join('') || '<div class="empty-column">No ideas being built</div>'}
+                <div class="section-column" data-status="open_voting" data-section="suite_apps"
+                     ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'open_voting', 'suite_apps')">
+                    <div class="section-column-header">🗳️ Voting <span>(${voting.length})</span></div>
+                    ${voting.map(p => renderGovernanceProposalCard(p, 'suite_apps')).join('') || '<div class="empty-column">No proposals</div>'}
                 </div>
-                <div class="section-column" data-status="live" data-section="suite_apps"
-                     ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'live', 'suite_apps')">
-                    <div class="section-column-header">🚀 Live <span>(${live.length})</span></div>
-                    ${live.map(renderIdeaCard).join('') || '<div class="empty-column">No launched apps</div>'}
+                <div class="section-column" data-status="passed" data-section="suite_apps"
+                     ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'passed', 'suite_apps')">
+                    <div class="section-column-header">✅ Passed <span>(${passed.length})</span></div>
+                    ${passed.map(p => renderGovernanceProposalCard(p, 'suite_apps')).join('') || '<div class="empty-column">No proposals</div>'}
                 </div>
                 <div class="section-column" data-status="rejected" data-section="suite_apps"
                      ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'rejected', 'suite_apps')">
                     <div class="section-column-header">❌ Rejected <span>(${rejected.length})</span></div>
-                    ${rejected.map(renderIdeaCard).join('') || '<div class="empty-column">No rejected ideas</div>'}
-                </div>
-            `;
-        }
-
-        // Render a single idea card (from ideas table)
-        function renderIdeaCard(idea) {
-            const categoryEmojis = {
-                productivity: '📋',
-                health: '💪',
-                finance: '💰',
-                entertainment: '🎮',
-                education: '📚',
-                utilities: '🔧',
-                social: '👥'
-            };
-
-            const categoryEmoji = categoryEmojis[idea.category] || '📱';
-            const formattedDate = new Date(idea.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            const authorName = idea.author?.display_name || idea.author_name || 'SUITE';
-            const isAdmin = currentUser?.is_founder || false;
-            const rejectionReason = idea.rejection_reason || idea.reject_reason;
-
-            return `
-                <div class="idea-card ${idea.status}" draggable="${isAdmin ? 'true' : 'false'}" ondragstart="handleDragStart(event, '${idea.id}', 'idea', 'suite_apps')" ondragend="handleDragEnd(event)">
-                    ${isAdmin ? `<button class="card-delete-btn" onclick="showDeleteModal('${idea.id}', 'idea')" title="Delete">&times;</button>` : ''}
-                    <div class="idea-card-title">${escapeHtml(idea.name)}</div>
-                    <div class="idea-card-tagline">${escapeHtml(idea.tagline || idea.description || 'No description')}</div>
-                    <div class="idea-card-meta">
-                        <span>👤 ${escapeHtml(authorName)}</span>
-                        <span>${categoryEmoji} ${idea.category || 'App'}</span>
-                        <span>📅 ${formattedDate}</span>
-                    </div>
-                    ${idea.status === 'rejected' && rejectionReason ? `<div class="rejection-reason">${escapeHtml(rejectionReason)}</div>` : ''}
+                    ${rejected.map(p => renderGovernanceProposalCard(p, 'suite_apps')).join('') || '<div class="empty-column">No proposals</div>'}
                 </div>
             `;
         }
@@ -2633,20 +2581,11 @@
             }
 
             try {
-                let table, updateData;
-
-                if (section === 'suite_apps') {
-                    table = 'ideas';
-                    updateData = { status: newStatus };
-                    if (rejectionReason) {
-                        updateData.rejection_reason = rejectionReason;
-                    }
-                } else {
-                    table = 'factory_proposals';
-                    updateData = { status: newStatus };
-                    if (rejectionReason) {
-                        updateData.reject_reason = rejectionReason;
-                    }
+                // All sections now use factory_proposals table
+                const table = 'factory_proposals';
+                const updateData = { status: newStatus };
+                if (rejectionReason) {
+                    updateData.reject_reason = rejectionReason;
                 }
 
                 console.log('[updateItemStatus] Updating table:', table, 'with data:', updateData);
@@ -2667,12 +2606,7 @@
                 console.log('[updateItemStatus] Response status:', response.status);
                 if (response.ok) {
                     console.log('[updateItemStatus] Success! Reloading data...');
-                    // Reload and re-render
-                    if (section === 'suite_apps') {
-                        await loadSuiteAppsIdeas();
-                    } else {
-                        await loadGovernanceProposals();
-                    }
+                    await loadGovernanceProposals();
                     console.log('[updateItemStatus] Re-rendering...');
                     renderGovernanceSections();
                     console.log('[updateItemStatus] Done!');
@@ -2704,13 +2638,13 @@
         async function confirmDelete() {
             if (!pendingDelete) return;
 
-            const { id, type } = pendingDelete;
+            const { id } = pendingDelete;
             hideDeleteModal();
 
             try {
-                const table = type === 'proposal' ? 'factory_proposals' : 'ideas';
+                // All items now use factory_proposals table
                 const response = await fetch(
-                    `${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`,
+                    `${SUPABASE_URL}/rest/v1/factory_proposals?id=eq.${id}`,
                     {
                         method: 'DELETE',
                         headers: {
@@ -2721,11 +2655,7 @@
                 );
 
                 if (response.ok) {
-                    if (type === 'proposal') {
-                        await loadGovernanceProposals();
-                    } else {
-                        await loadSuiteAppsIdeas();
-                    }
+                    await loadGovernanceProposals();
                     renderGovernanceSections();
                 } else {
                     console.error('Failed to delete:', await response.text());
