@@ -4605,42 +4605,46 @@
         // Check if MetaMask is installed
         const isMetaMaskInstalled = () => typeof window.ethereum !== 'undefined';
 
-        // Connect wallet
-        connectBtn.addEventListener('click', async () => {
-            if (!isMetaMaskInstalled()) {
-                alert('Please install MetaMask to connect your wallet!');
-                window.open('https://metamask.io/download/', '_blank');
-                return;
-            }
-
-            try {
-                const accounts = await window.ethereum.request({
-                    method: 'eth_requestAccounts'
-                });
-
-                if (accounts.length > 0) {
-                    const address = accounts[0];
-                    showConnectedState(address);
+        // Connect wallet (only if element exists)
+        if (connectBtn) {
+            connectBtn.addEventListener('click', async () => {
+                if (!isMetaMaskInstalled()) {
+                    alert('Please install MetaMask to connect your wallet!');
+                    window.open('https://metamask.io/download/', '_blank');
+                    return;
                 }
-            } catch (error) {
-                console.error('Error connecting wallet:', error);
-                alert('Failed to connect wallet. Please try again.');
-            }
-        });
 
-        // Disconnect wallet
-        disconnectBtn.addEventListener('click', () => {
-            showDisconnectedState();
-        });
+                try {
+                    const accounts = await window.ethereum.request({
+                        method: 'eth_requestAccounts'
+                    });
+
+                    if (accounts.length > 0) {
+                        const address = accounts[0];
+                        showConnectedState(address);
+                    }
+                } catch (error) {
+                    console.error('Error connecting wallet:', error);
+                    alert('Failed to connect wallet. Please try again.');
+                }
+            });
+        }
+
+        // Disconnect wallet (only if element exists)
+        if (disconnectBtn) {
+            disconnectBtn.addEventListener('click', () => {
+                showDisconnectedState();
+            });
+        }
 
         function showConnectedState(address) {
             const shortAddress = `${address.slice(0, 6)}...${address.slice(-4)}`;
-            addressDisplay.textContent = shortAddress;
+            if (addressDisplay) addressDisplay.textContent = shortAddress;
 
-            // Show connected UI, hide connect button
-            connectBtn.style.display = 'none';
-            connectedInfo.style.display = 'flex';
-            disconnectBtn.style.display = 'block';
+            // Show connected UI, hide connect button (only if elements exist)
+            if (connectBtn) connectBtn.style.display = 'none';
+            if (connectedInfo) connectedInfo.style.display = 'flex';
+            if (disconnectBtn) disconnectBtn.style.display = 'block';
 
             // Set initial balances to 0 (real values come from fetchTreasuryStats)
             document.getElementById('availableBalance').textContent = '0';
@@ -4739,13 +4743,14 @@
         }
 
         function showDisconnectedState() {
-            // Show connect button, hide connected UI
-            connectBtn.style.display = 'block';
-            connectedInfo.style.display = 'none';
-            disconnectBtn.style.display = 'none';
+            // Show connect button, hide connected UI (only if elements exist)
+            if (connectBtn) connectBtn.style.display = 'block';
+            if (connectedInfo) connectedInfo.style.display = 'none';
+            if (disconnectBtn) disconnectBtn.style.display = 'none';
 
             // Hide admin panel
-            document.getElementById('adminPanel').style.display = 'none';
+            const adminPanel = document.getElementById('adminPanel');
+            if (adminPanel) adminPanel.style.display = 'none';
 
             // Reset balances to 0 but keep dashboard visible
             document.getElementById('availableBalance').textContent = '0';
@@ -6476,8 +6481,11 @@
         }
 
         function disconnectWallet() {
+            // Clear all wallet keys (matching nav-component.js)
+            localStorage.removeItem('connectedWallet');
+            localStorage.removeItem('walletAddress');
+            localStorage.removeItem('suiteWalletAddress');
             localStorage.removeItem('suiteWallet');
-            localStorage.removeItem('suiteWalletAddress'); // Also clear nav-component key
             window.walletAddress = null;
 
             // Hide admin dashboard
@@ -6486,11 +6494,20 @@
                 adminDashboard.style.display = 'none';
             }
 
+            // Update page-specific wallet UI
             const walletBtn = document.getElementById('connectWalletBtn');
             if (walletBtn) {
                 walletBtn.innerHTML = '🔗 Connect Wallet';
                 walletBtn.onclick = connectWallet;
             }
+
+            // Refresh nav display
+            if (window.refreshNavCredits) {
+                window.refreshNavCredits();
+            }
+
+            // Reload to reset wallet page state
+            window.location.reload();
         }
 
         // Toggle tooltip visibility and position near the clicked button
