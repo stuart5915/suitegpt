@@ -4641,6 +4641,9 @@
             const shortAddress = `${address.slice(0, 6)}...${address.slice(-4)}`;
             if (addressDisplay) addressDisplay.textContent = shortAddress;
 
+            // Set global wallet address
+            window.walletAddress = address;
+
             // Show connected UI, hide connect button (only if elements exist)
             if (connectBtn) connectBtn.style.display = 'none';
             if (connectedInfo) connectedInfo.style.display = 'flex';
@@ -4659,6 +4662,11 @@
 
             // Check if connected wallet is the contract owner
             checkIfOwner(address);
+
+            // Show admin dashboard if admin wallet
+            if (typeof updateAdminDashboardVisibility === 'function') {
+                updateAdminDashboardVisibility();
+            }
         }
 
         async function fetchWalletEthBalance(address) {
@@ -4781,6 +4789,19 @@
 
         // Check connection on load
         checkConnection();
+
+        // Watch for nav modal closing (wallet might have connected via nav)
+        const navModalObserver = new MutationObserver(() => {
+            const savedWallet = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWallet');
+            if (savedWallet && savedWallet !== window.walletAddress) {
+                window.walletAddress = savedWallet;
+                showConnectedState(savedWallet);
+            }
+        });
+        const navModal = document.getElementById('navConnectModalOverlay');
+        if (navModal) {
+            navModalObserver.observe(navModal, { attributes: true, attributeFilter: ['class'] });
+        }
 
         // Modal Functions
         let selectedAmount = 50;
