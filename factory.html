@@ -1571,6 +1571,53 @@
             align-items: center;
         }
 
+        /* Collapsible App Groups in Governance */
+        .proposal-group {
+            margin-bottom: 12px;
+        }
+
+        .proposal-group-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 8px;
+            transition: background 0.2s;
+        }
+
+        .proposal-group-header:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .group-toggle {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            width: 12px;
+        }
+
+        .group-emoji {
+            font-size: 0.9rem;
+        }
+
+        .group-name {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--text);
+        }
+
+        .group-count {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-left: auto;
+        }
+
+        .proposal-group-content {
+            padding-left: 4px;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .factory-sidebar {
@@ -2046,6 +2093,81 @@
         let draggedItem = null;  // { id, type: 'idea' | 'proposal', section }
         let pendingRejection = null;  // { id, type, section, newStatus }
 
+        // Collapsed App Groups State (persisted to localStorage)
+        let collapsedGroups = JSON.parse(localStorage.getItem('factory_collapsed_groups') || '{}');
+
+        function toggleAppGroup(sectionType, status, appSlug) {
+            const key = `${sectionType}-${status}-${appSlug}`;
+            collapsedGroups[key] = !collapsedGroups[key];
+            localStorage.setItem('factory_collapsed_groups', JSON.stringify(collapsedGroups));
+            renderGovernanceSections();
+        }
+
+        function isGroupCollapsed(sectionType, status, appSlug) {
+            const key = `${sectionType}-${status}-${appSlug}`;
+            return collapsedGroups[key] || false;
+        }
+
+        // Group proposals by their linked app
+        function groupProposalsByApp(proposals) {
+            const groups = {};
+
+            // Group by app_slug (null = "General")
+            proposals.forEach(p => {
+                const slug = p.app_slug || '_general';
+                if (!groups[slug]) {
+                    const app = p.app_slug ? factoryApps.find(a => a.slug === p.app_slug) : null;
+                    groups[slug] = {
+                        slug: slug,
+                        name: app ? app.name : 'General',
+                        emoji: app ? '📱' : '📋',
+                        proposals: []
+                    };
+                }
+                groups[slug].proposals.push(p);
+            });
+
+            // Sort: apps first (alphabetically), then General last
+            return Object.values(groups).sort((a, b) => {
+                if (a.slug === '_general') return 1;
+                if (b.slug === '_general') return -1;
+                return a.name.localeCompare(b.name);
+            });
+        }
+
+        // Render grouped proposals in a column
+        function renderGroupedColumn(proposals, sectionType, status) {
+            const groups = groupProposalsByApp(proposals);
+
+            if (groups.length === 0) {
+                return '<div class="empty-column">No proposals</div>';
+            }
+
+            // If only one group AND it's General, render flat (no grouping needed)
+            if (groups.length === 1 && groups[0].slug === '_general') {
+                return proposals.map(p => renderGovernanceProposalCard(p, sectionType)).join('');
+            }
+
+            return groups.map(group => {
+                const isCollapsed = isGroupCollapsed(sectionType, status, group.slug);
+                const count = group.proposals.length;
+
+                return `
+                    <div class="proposal-group ${isCollapsed ? 'collapsed' : ''}">
+                        <div class="proposal-group-header" onclick="toggleAppGroup('${sectionType}', '${status}', '${group.slug}')">
+                            <span class="group-toggle">${isCollapsed ? '▶' : '▼'}</span>
+                            <span class="group-emoji">${group.emoji}</span>
+                            <span class="group-name">${escapeHtml(group.name)}</span>
+                            <span class="group-count">(${count})</span>
+                        </div>
+                        <div class="proposal-group-content" style="${isCollapsed ? 'display: none;' : ''}">
+                            ${group.proposals.map(p => renderGovernanceProposalCard(p, sectionType)).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
         // Category config
         const CATEGORIES = {
             feature: { emoji: '⚡', label: 'Feature', color: '#3b82f6' },
@@ -2365,22 +2487,22 @@
                      ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'submitted', 'suite_apps')">
                     <div class="section-column-header">📥 Submitted <span>(${submitted.length})</span></div>
                     <button class="section-add-btn" onclick="showSubmitModal('suite_apps')">+ New Proposal</button>
-                    ${submitted.map(p => renderGovernanceProposalCard(p, 'suite_apps')).join('') || '<div class="empty-column">No proposals</div>'}
+                    ${renderGroupedColumn(submitted, 'suite_apps', 'submitted')}
                 </div>
                 <div class="section-column" data-status="open_voting" data-section="suite_apps"
                      ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'open_voting', 'suite_apps')">
                     <div class="section-column-header">🗳️ Voting <span>(${voting.length})</span></div>
-                    ${voting.map(p => renderGovernanceProposalCard(p, 'suite_apps')).join('') || '<div class="empty-column">No proposals</div>'}
+                    ${renderGroupedColumn(voting, 'suite_apps', 'open_voting')}
                 </div>
                 <div class="section-column" data-status="passed" data-section="suite_apps"
                      ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'passed', 'suite_apps')">
                     <div class="section-column-header">✅ Passed <span>(${passed.length})</span></div>
-                    ${passed.map(p => renderGovernanceProposalCard(p, 'suite_apps')).join('') || '<div class="empty-column">No proposals</div>'}
+                    ${renderGroupedColumn(passed, 'suite_apps', 'passed')}
                 </div>
                 <div class="section-column" data-status="rejected" data-section="suite_apps"
                      ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'rejected', 'suite_apps')">
                     <div class="section-column-header">❌ Rejected <span>(${rejected.length})</span></div>
-                    ${rejected.map(p => renderGovernanceProposalCard(p, 'suite_apps')).join('') || '<div class="empty-column">No proposals</div>'}
+                    ${renderGroupedColumn(rejected, 'suite_apps', 'rejected')}
                 </div>
             `;
         }
@@ -2400,22 +2522,22 @@
                      ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'submitted', '${sectionType}')">
                     <div class="section-column-header">📥 Submitted <span>(${submitted.length})</span></div>
                     <button class="section-add-btn" onclick="showSubmitModal('${sectionType}')">+ New Proposal</button>
-                    ${submitted.map(p => renderGovernanceProposalCard(p, sectionType)).join('') || '<div class="empty-column">No proposals</div>'}
+                    ${renderGroupedColumn(submitted, sectionType, 'submitted')}
                 </div>
                 <div class="section-column" data-status="open_voting" data-section="${sectionType}"
                      ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'open_voting', '${sectionType}')">
                     <div class="section-column-header">🗳️ Voting <span>(${voting.length})</span></div>
-                    ${voting.map(p => renderGovernanceProposalCard(p, sectionType)).join('') || '<div class="empty-column">No proposals</div>'}
+                    ${renderGroupedColumn(voting, sectionType, 'open_voting')}
                 </div>
                 <div class="section-column" data-status="passed" data-section="${sectionType}"
                      ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'passed', '${sectionType}')">
                     <div class="section-column-header">✅ Passed <span>(${passed.length})</span></div>
-                    ${passed.map(p => renderGovernanceProposalCard(p, sectionType)).join('') || '<div class="empty-column">No proposals</div>'}
+                    ${renderGroupedColumn(passed, sectionType, 'passed')}
                 </div>
                 <div class="section-column" data-status="rejected" data-section="${sectionType}"
                      ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'rejected', '${sectionType}')">
                     <div class="section-column-header">❌ Rejected <span>(${rejected.length})</span></div>
-                    ${rejected.map(p => renderGovernanceProposalCard(p, sectionType)).join('') || '<div class="empty-column">No proposals</div>'}
+                    ${renderGroupedColumn(rejected, sectionType, 'rejected')}
                 </div>
             `;
         }
