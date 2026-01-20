@@ -2099,9 +2099,14 @@
         const STUART_TELEGRAM_ID = '1202786230';
 
         function isStuart() {
-            if (!currentUser) return false;
+            if (!currentUser) {
+                console.log('[isStuart] No currentUser');
+                return false;
+            }
             const wallet = currentUser.wallet_address?.toLowerCase();
             const tgId = currentUser.telegram_id?.toString();
+            console.log('[isStuart] Checking:', { wallet, tgId, STUART_WALLET, STUART_TELEGRAM_ID });
+            console.log('[isStuart] Match:', wallet === STUART_WALLET, tgId === STUART_TELEGRAM_ID);
             return wallet === STUART_WALLET || tgId === STUART_TELEGRAM_ID;
         }
 
@@ -2110,10 +2115,10 @@
             const noteboxBadge = document.getElementById('noteboxBadge');
             const showNotebox = isStuart();
 
+            console.log('[NoteBox] Updating visibility:', showNotebox, 'currentUser:', currentUser);
+
             if (noteboxTab) noteboxTab.style.display = showNotebox ? 'inline-flex' : 'none';
             if (noteboxBadge) noteboxBadge.style.display = showNotebox ? 'block' : 'none';
-
-            console.log('[NoteBox] Visibility:', showNotebox, 'isStuart:', isStuart());
         }
 
         // Refresh user data from database
@@ -3333,6 +3338,7 @@
                         updateUserPanel();
                         loadLeaderboard(); // Refresh to show user
                         renderGovernanceSections(); // Re-render to enable drag and drop
+                        updateNoteboxVisibility(); // Show NoteBox tab if Stuart
 
                         window.removeEventListener('message', handleTelegramAuth);
                     }
@@ -3378,6 +3384,7 @@
                     updateUserPanel();
                     loadLeaderboard();
                     renderGovernanceSections(); // Re-render to enable drag and drop
+                    updateNoteboxVisibility(); // Show NoteBox tab if Stuart
                 }
             } catch (error) {
                 console.error('Wallet connection failed:', error);
@@ -3402,6 +3409,7 @@
             hideAuthModal();
             updateUserPanel();
             renderGovernanceSections(); // Re-render to enable drag and drop
+            updateNoteboxVisibility(); // Update NoteBox visibility
         }
 
         // User menu (logout)
