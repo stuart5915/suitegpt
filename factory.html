@@ -1463,6 +1463,18 @@
             opacity: 0.7;
         }
 
+        .proposal-app-tag {
+            display: inline-block;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.2));
+            color: #a855f7;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 100px;
+            margin-bottom: 8px;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+        }
+
         .idea-card-title {
             font-weight: 600;
             font-size: 0.9rem;
@@ -1837,6 +1849,13 @@
                         rows="6" required></textarea>
                 </div>
 
+                <div class="form-group">
+                    <label class="form-label">Related App (optional)</label>
+                    <select id="proposalApp" class="form-select" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text); font-size: 0.95rem;">
+                        <option value="">-- None (General Proposal) --</option>
+                    </select>
+                </div>
+
                 <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 16px;">
                     AI will auto-generate title and category from your description.
                 </p>
@@ -2045,6 +2064,32 @@
             duplicate: { icon: '🔄', label: 'Duplicate' }
         };
 
+        // Apps list for proposal dropdown
+        let factoryApps = [];
+
+        async function loadAppsForDropdown() {
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/apps?select=slug,name&status=in.(live,approved,published)&order=name`,
+                    { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
+                );
+                if (response.ok) {
+                    factoryApps = await response.json();
+                    const select = document.getElementById('proposalApp');
+                    if (select) {
+                        factoryApps.forEach(app => {
+                            const option = document.createElement('option');
+                            option.value = app.slug;
+                            option.textContent = app.name;
+                            select.appendChild(option);
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error('Error loading apps for dropdown:', err);
+            }
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
             await checkAuth();  // Wait for user data including is_founder
@@ -2052,6 +2097,7 @@
             loadLeaderboard();
             await loadSuiteAppsIdeas();
             await loadGovernanceProposals();
+            await loadAppsForDropdown();
             renderGovernanceSections();
             console.log('Initialized. currentUser:', currentUser);
         });
@@ -2442,9 +2488,14 @@
 
             const rejectionReason = proposal.reject_reason || proposal.rejection_reason;
 
+            // Get app name if proposal is linked to an app
+            const linkedApp = proposal.app_slug ? factoryApps.find(a => a.slug === proposal.app_slug) : null;
+            const appTag = linkedApp ? `<span class="proposal-app-tag">📱 ${escapeHtml(linkedApp.name)}</span>` : '';
+
             return `
                 <div class="idea-card ${proposal.status}" draggable="${isAdmin ? 'true' : 'false'}" ondragstart="handleDragStart(event, '${proposal.id}', 'proposal', '${sectionType}')" ondragend="handleDragEnd(event)">
                     ${isAdmin ? `<button class="card-delete-btn" onclick="showDeleteModal('${proposal.id}', 'proposal')" title="Delete">&times;</button>` : ''}
+                    ${appTag}
                     <div class="idea-card-title">${escapeHtml(proposal.title)}</div>
                     <div class="idea-card-tagline">${escapeHtml(proposal.content || 'No description')}</div>
                     <div class="idea-card-meta">
@@ -3126,6 +3177,7 @@
 
             const section = document.getElementById('proposalSection').value;
             const content = document.getElementById('proposalContent').value.trim();
+            const appSlug = document.getElementById('proposalApp').value;
 
             if (!content) {
                 alert('Please describe your idea');
@@ -3139,7 +3191,8 @@
             try {
                 const payload = {
                     content,
-                    section
+                    section,
+                    app_slug: appSlug || null
                 };
 
                 // Add auth based on user type
