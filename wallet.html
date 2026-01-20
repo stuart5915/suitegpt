@@ -2220,23 +2220,23 @@
                                 </div>
                             </div>
 
-                            <!-- ═══ FULL-WIDTH WITHDRAW BAR ═══ -->
-                            <div style="margin-top: 12px; background: rgba(239, 68, 68, 0.08); border: 2px solid rgba(239, 68, 68, 0.25); border-radius: 16px; padding: 16px 20px;">
+                            <!-- ═══ FULL-WIDTH WITHDRAW BAR (Expandable) ═══ -->
+                            <div id="withdrawSection" style="margin-top: 12px; background: rgba(34, 197, 94, 0.08); border: 2px solid rgba(34, 197, 94, 0.25); border-radius: 16px; padding: 16px 20px; cursor: pointer;" onclick="toggleWithdrawSection()">
                                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
                                     <!-- Left: Position Info -->
                                     <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
                                         <div style="display: flex; align-items: center; gap: 10px;">
-                                            <div style="width: 40px; height: 40px; background: rgba(239, 68, 68, 0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">📤</div>
+                                            <div style="width: 40px; height: 40px; background: rgba(34, 197, 94, 0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">📤</div>
                                             <div>
-                                                <div style="font-weight: 700; color: #ffffff; font-size: 0.9rem;">Withdraw</div>
-                                                <div style="font-size: 0.7rem; color: #9ca3af;">From vault position</div>
+                                                <div style="font-weight: 700; color: #ffffff; font-size: 0.9rem;">Withdraw USDC</div>
+                                                <div style="font-size: 0.7rem; color: #9ca3af;">Instant withdrawal to wallet</div>
                                             </div>
                                         </div>
 
                                         <!-- Inline Stats -->
                                         <div style="display: flex; gap: 16px; padding-left: 16px; border-left: 1px solid rgba(255,255,255,0.1);">
                                             <div>
-                                                <div style="font-size: 0.65rem; color: #9ca3af; text-transform: uppercase;">Vault Share</div>
+                                                <div style="font-size: 0.65rem; color: #9ca3af; text-transform: uppercase;">Deposited</div>
                                                 <div id="userVaultDeposited" style="font-weight: 700; color: #ffffff; font-size: 0.95rem;">$0.00</div>
                                             </div>
                                             <div>
@@ -2250,12 +2250,78 @@
                                         </div>
                                     </div>
 
-                                    <!-- Action Button -->
-                                    <button onclick="openWithdrawModal()"
-                                        style="padding: 12px 24px; background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 2px solid rgba(34, 197, 94, 0.4); border-radius: 12px; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: all 0.3s ease; white-space: nowrap;"
-                                        onmouseover="this.style.background='rgba(34, 197, 94, 0.25)'; this.style.borderColor='#22c55e';"
-                                        onmouseout="this.style.background='rgba(34, 197, 94, 0.15)'; this.style.borderColor='rgba(34, 197, 94, 0.4)';">
-                                        Withdraw
+                                    <!-- Expand/Collapse Arrow -->
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span style="color: #22c55e; font-weight: 600; font-size: 0.85rem;">Withdraw</span>
+                                        <span id="withdrawExpandArrow" style="color: #22c55e; font-size: 1.2rem; transition: transform 0.3s;">▼</span>
+                                    </div>
+                                </div>
+
+                                <!-- Expanded Withdraw Content -->
+                                <div id="withdrawExpandedContent" style="display: none; margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(34, 197, 94, 0.2);" onclick="event.stopPropagation()">
+
+                                    <!-- Info Banner -->
+                                    <div style="background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+                                        <div style="display: flex; gap: 10px; align-items: flex-start;">
+                                            <span style="font-size: 1.1rem;">⚡</span>
+                                            <div>
+                                                <div style="font-weight: 700; color: #22c55e; font-size: 0.9rem; margin-bottom: 4px;">Instant Withdrawals</div>
+                                                <div style="font-size: 0.75rem; color: #9ca3af; line-height: 1.4;">
+                                                    Withdraw your USDC instantly when funds are liquid in the vault. If funds are deployed to yield strategies, a withdrawal request will be created and processed when funds return.
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Amount Input Row -->
+                                    <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                                        <div style="font-size: 0.85rem; font-weight: 600; color: #ffffff; margin-bottom: 12px;">Withdraw Amount</div>
+                                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                                            <div style="flex: 1; position: relative;">
+                                                <input type="text" inputmode="decimal" id="inlineWithdrawAmount" placeholder="0.00"
+                                                    style="width: 100%; padding: 14px 60px 14px 16px; background: rgba(255,255,255,0.1); border: 2px solid rgba(34, 197, 94, 0.3); border-radius: 10px; color: #22c55e; font-size: 1.3rem; font-weight: 700; outline: none;"
+                                                    oninput="this.value = this.value.replace(/[^0-9.]/g, ''); updateInlineWithdrawFromInput()"
+                                                    onclick="event.stopPropagation()"
+                                                    onfocus="this.style.borderColor='#22c55e';"
+                                                    onblur="this.style.borderColor='rgba(34, 197, 94, 0.3)';">
+                                                <span style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: #9ca3af; font-weight: 600;">USDC</span>
+                                            </div>
+                                            <button onclick="event.stopPropagation(); setMaxWithdraw()" style="padding: 14px 20px; background: rgba(34, 197, 94, 0.2); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.4); border-radius: 10px; font-weight: 700; cursor: pointer;">MAX</button>
+                                        </div>
+                                        <!-- Percentage Slider -->
+                                        <div style="display: flex; align-items: center; gap: 12px;" onclick="event.stopPropagation()">
+                                            <input type="range" id="withdrawPercentSlider" min="0" max="100" value="0" step="1"
+                                                style="flex: 1; accent-color: #22c55e; cursor: pointer;"
+                                                oninput="updateInlineWithdrawFromSlider(this.value)">
+                                            <span id="withdrawPercentDisplay" style="min-width: 50px; text-align: right; font-weight: 800; color: #22c55e; font-size: 1rem;">0%</span>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: #6b7280; margin-top: 4px;">
+                                            <span>0%</span>
+                                            <span>25%</span>
+                                            <span>50%</span>
+                                            <span>75%</span>
+                                            <span>100%</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Withdraw Summary -->
+                                    <div style="background: rgba(0,0,0,0.15); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                            <span style="font-size: 0.85rem; color: #9ca3af;">You will receive:</span>
+                                            <span id="withdrawReceiveAmount" style="font-weight: 800; color: #22c55e; font-size: 1.1rem;">0.00 USDC</span>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <span style="font-size: 0.85rem; color: #9ca3af;">Credits removed:</span>
+                                            <span id="withdrawCreditsRemoved" style="font-weight: 700; color: #f97316; font-size: 0.95rem;">-0 credits</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Withdraw Button -->
+                                    <button id="inlineWithdrawBtn" onclick="event.stopPropagation(); executeInlineWithdraw()"
+                                        style="width: 100%; padding: 16px; background: linear-gradient(135deg, #22c55e, #16a34a); color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 1rem; cursor: pointer; transition: all 0.3s ease;"
+                                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px rgba(34, 197, 94, 0.4)';"
+                                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                                        Withdraw USDC
                                     </button>
                                 </div>
                             </div>
@@ -3492,12 +3558,12 @@
         }
     </style>
 
-    <!-- Cash Out Modal -->
-    <div class="modal-overlay" id="withdrawModal">
+    <!-- Cash Out Modal (for SUITE tokens - not USDC vault) -->
+    <div class="modal-overlay" id="cashOutModal">
         <div class="modal">
             <div class="modal-header">
-                <h2>?? Cash Out</h2>
-                <button class="modal-close" onclick="closeModal('withdrawModal')">?</button>
+                <h2>💵 Cash Out</h2>
+                <button class="modal-close" onclick="closeModal('cashOutModal')">×</button>
             </div>
 
             <div class="balance-display">
@@ -5463,15 +5529,15 @@
 
             switch (method) {
                 case 'paypal':
-                    closeModal('withdrawModal');
+                    closeModal('cashOutModal');
                     showNotification('???', 'PayPal Cash Out', `Would send $${usdcValue} to your PayPal email.`, 'Coming soon!');
                     break;
                 case 'card':
-                    closeModal('withdrawModal');
+                    closeModal('cashOutModal');
                     showNotification('??', 'Card Refund', `Would refund $${usdcValue} to your original card.`, 'Coming soon!');
                     break;
                 case 'giftcard':
-                    closeModal('withdrawModal');
+                    closeModal('cashOutModal');
                     showNotification('??', 'Gift Card', `Choose a gift card worth $${usdcValue}`, 'Coming soon!');
                     break;
                 case 'crypto':
@@ -5479,7 +5545,7 @@
                     await executeCryptoWithdraw(amount);
                     break;
                 case 'bank':
-                    closeModal('withdrawModal');
+                    closeModal('cashOutModal');
                     showNotification('??', 'Bank Transfer', `Would initiate $${usdcValue} transfer.`, 'Coming soon!');
                     break;
             }
@@ -5500,7 +5566,7 @@
 
                 const fromAddress = accounts[0];
 
-                closeModal('withdrawModal');
+                closeModal('cashOutModal');
                 showNotification('?', 'Processing Withdrawal', 'Please confirm the transaction in MetaMask...', '');
 
                 // Convert SUITE amount to wei (18 decimals)
@@ -5583,17 +5649,17 @@
 
             // Update Cash Out modal with actual balance
             document.getElementById('cashOutBalance').textContent = `${availableBalance.toLocaleString()} SUITE`;
-            document.querySelector('#withdrawModal .balance-display-label').textContent = `Available to cash out ? ? $${usdValue}`;
+            document.querySelector('#cashOutModal .balance-display-label').textContent = `Available to cash out ? ? $${usdValue}`;
             document.getElementById('withdrawAmount').value = availableBalance;
             document.getElementById('withdrawAmount').max = availableBalance;
 
             // Update MAX button
-            const maxBtn = document.querySelector('#withdrawModal .amount-option');
+            const maxBtn = document.querySelector('#cashOutModal .amount-option');
             if (maxBtn) {
                 maxBtn.onclick = () => { document.getElementById('withdrawAmount').value = availableBalance; };
             }
 
-            openModal('withdrawModal');
+            openModal('cashOutModal');
         });
 
         document.getElementById('stakeBtn').addEventListener('click', () => {
@@ -6687,6 +6753,10 @@
                 if (typeof loadUserVaultData === 'function') {
                     loadUserVaultData();
                 }
+                // Load inline withdraw stats from contract
+                if (typeof loadInlineWithdrawStats === 'function') {
+                    loadInlineWithdrawStats();
+                }
             } else {
                 window.walletAddress = null;
                 const balanceEl = document.getElementById('walletUSDCBalance');
@@ -7554,8 +7624,10 @@
         // Call on page load and wallet connection
         window.addEventListener('load', () => {
             setTimeout(loadContractCredits, 1000);
+            setTimeout(loadInlineWithdrawStats, 1500); // Load withdraw stats after credits
         });
         window.addEventListener('navAuthChanged', loadContractCredits);
+        window.addEventListener('navAuthChanged', loadInlineWithdrawStats);
 
         async function executeVaultDeposit() {
             // Check both inline input and hidden modal field
@@ -7810,6 +7882,218 @@
             }
         }
 
+        // ========== INLINE WITHDRAW SECTION ==========
+        let inlineWithdrawAvailable = 0; // Stores the user's available withdraw amount
+
+        function toggleWithdrawSection() {
+            const content = document.getElementById('withdrawExpandedContent');
+            const arrow = document.getElementById('withdrawExpandArrow');
+
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                arrow.style.transform = 'rotate(180deg)';
+                // Load user's position when expanding
+                loadInlineWithdrawStats();
+            } else {
+                content.style.display = 'none';
+                arrow.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        async function loadInlineWithdrawStats() {
+            if (!window.ethereum) return;
+
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                if (accounts.length === 0) {
+                    console.log('loadInlineWithdrawStats: No wallet connected');
+                    return;
+                }
+
+                const userAddress = accounts[0];
+                console.log('loadInlineWithdrawStats: Loading for', userAddress);
+
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const vaultContract = new ethers.Contract(
+                    SUITE_YIELD_VAULT_ADDRESS,
+                    SUITE_YIELD_VAULT_ABI,
+                    provider
+                );
+
+                // Use individual calls instead of getUserPosition for reliability
+                const [depositsRaw, usedRaw, withdrawableRaw] = await Promise.all([
+                    vaultContract.userDeposits(userAddress),
+                    vaultContract.creditsUsed(userAddress),
+                    vaultContract.getWithdrawableAmount(userAddress)
+                ]);
+
+                console.log('Contract data:', {
+                    depositsRaw: depositsRaw.toString(),
+                    usedRaw: usedRaw.toString(),
+                    withdrawableRaw: withdrawableRaw.toString()
+                });
+
+                // Convert to display values (USDC has 6 decimals)
+                const depositedUSD = Number(depositsRaw) / 1e6;
+                const creditsUsedUSD = Number(usedRaw) / 1e6; // credits used / 1000 to get USD
+                const availableUSD = Number(withdrawableRaw) / 1e6;
+
+                console.log('Converted values:', { depositedUSD, creditsUsedUSD, availableUSD });
+
+                // Store for slider calculations
+                inlineWithdrawAvailable = availableUSD;
+
+                // Update UI
+                document.getElementById('userVaultDeposited').textContent = '$' + depositedUSD.toFixed(2);
+                document.getElementById('userCreditsUsed').textContent = '-$' + creditsUsedUSD.toFixed(2);
+                document.getElementById('userAvailableWithdraw').textContent = '$' + availableUSD.toFixed(2);
+
+                // Reset input and slider
+                const inlineInput = document.getElementById('inlineWithdrawAmount');
+                const slider = document.getElementById('withdrawPercentSlider');
+                const percentDisplay = document.getElementById('withdrawPercentDisplay');
+                const receiveAmount = document.getElementById('withdrawReceiveAmount');
+                const creditsRemoved = document.getElementById('withdrawCreditsRemoved');
+
+                if (inlineInput) inlineInput.value = '';
+                if (slider) slider.value = 0;
+                if (percentDisplay) percentDisplay.textContent = '0%';
+                if (receiveAmount) receiveAmount.textContent = '0.00 USDC';
+                if (creditsRemoved) creditsRemoved.textContent = '-0 credits';
+
+            } catch (error) {
+                console.error('Error loading inline withdraw stats:', error);
+            }
+        }
+
+        function updateInlineWithdrawFromInput() {
+            const input = document.getElementById('inlineWithdrawAmount');
+            const amount = parseFloat(input.value) || 0;
+
+            // Calculate percentage
+            const percent = inlineWithdrawAvailable > 0
+                ? Math.min(100, (amount / inlineWithdrawAvailable) * 100)
+                : 0;
+
+            document.getElementById('withdrawPercentSlider').value = percent;
+            document.getElementById('withdrawPercentDisplay').textContent = Math.round(percent) + '%';
+
+            // Update summary
+            updateInlineWithdrawSummary(amount);
+        }
+
+        function updateInlineWithdrawFromSlider(percent) {
+            const amount = (inlineWithdrawAvailable * percent / 100);
+            document.getElementById('inlineWithdrawAmount').value = amount.toFixed(2);
+            document.getElementById('withdrawPercentDisplay').textContent = Math.round(percent) + '%';
+
+            // Update summary
+            updateInlineWithdrawSummary(amount);
+        }
+
+        function updateInlineWithdrawSummary(amount) {
+            const creditsRemoved = amount * 1000; // 1 USD = 1000 credits
+            document.getElementById('withdrawReceiveAmount').textContent = amount.toFixed(2) + ' USDC';
+            document.getElementById('withdrawCreditsRemoved').textContent = '-' + creditsRemoved.toLocaleString() + ' credits';
+        }
+
+        function setMaxWithdraw() {
+            // Check if inline withdraw section is expanded
+            const inlineInput = document.getElementById('inlineWithdrawAmount');
+            if (inlineInput && document.getElementById('withdrawExpandedContent').style.display !== 'none') {
+                document.getElementById('withdrawPercentSlider').value = 100;
+                updateInlineWithdrawFromSlider(100);
+            } else {
+                // Fallback to old modal behavior
+                setDetailsWithdrawPercent(100);
+            }
+        }
+
+        async function executeInlineWithdraw() {
+            const amount = parseFloat(document.getElementById('inlineWithdrawAmount').value);
+
+            if (!amount || amount <= 0) {
+                showNotification('⚠️', 'Error', 'Please enter an amount');
+                return;
+            }
+
+            if (amount > inlineWithdrawAvailable) {
+                showNotification('⚠️', 'Error', `Maximum withdrawable: $${inlineWithdrawAvailable.toFixed(2)}`);
+                return;
+            }
+
+            if (!window.ethereum) {
+                showNotification('⚠️', 'Error', 'Please install MetaMask or another wallet');
+                return;
+            }
+
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                const walletAddress = accounts[0];
+                const amountUSDC = Math.floor(amount * 1e6);
+
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const vaultContract = new ethers.Contract(
+                    SUITE_YIELD_VAULT_ADDRESS,
+                    SUITE_YIELD_VAULT_ABI,
+                    provider
+                );
+
+                // Check liquid balance
+                const liquidRaw = await vaultContract.getLiquidBalance();
+                const liquidBalance = Number(liquidRaw) / 1e6;
+
+                // Get signer for transaction
+                const signer = await provider.getSigner();
+                const vaultWithSigner = vaultContract.connect(signer);
+
+                if (liquidBalance >= amount) {
+                    // Instant withdrawal
+                    showNotification('🏦', 'Withdrawing', 'Please confirm the withdrawal in your wallet...');
+
+                    const tx = await vaultWithSigner.withdraw(amountUSDC);
+
+                    showNotification('🏦', 'Confirming', 'Waiting for transaction confirmation...');
+                    await tx.wait();
+
+                    showNotification('✅', 'Success!', `Withdrew $${amount.toFixed(2)} USDC instantly!`);
+
+                } else {
+                    // Not enough liquid funds
+                    showNotification('🏦', 'Requesting', 'Not enough liquid funds. Creating withdrawal request...');
+
+                    const tx = await vaultWithSigner.withdraw(amountUSDC);
+
+                    showNotification('🏦', 'Confirming', 'Waiting for transaction confirmation...');
+                    await tx.wait();
+
+                    showNotification('📤', 'Request Created',
+                        `Withdrawal request for $${amount.toFixed(2)} created. Will be processed when funds return.`);
+                }
+
+                // Clear input and refresh stats
+                document.getElementById('inlineWithdrawAmount').value = '';
+                document.getElementById('withdrawPercentSlider').value = 0;
+                document.getElementById('withdrawPercentDisplay').textContent = '0%';
+
+                // Refresh balances
+                await loadInlineWithdrawStats();
+                await loadContractCredits();
+
+                if (typeof fetchWalletBalances === 'function') {
+                    await fetchWalletBalances(walletAddress);
+                }
+
+            } catch (error) {
+                console.error('Withdrawal error:', error);
+                if (error.code === 4001) {
+                    showNotification('⚠️', 'Cancelled', 'Transaction was rejected');
+                } else {
+                    showNotification('❌', 'Error', error.message || 'Withdrawal failed');
+                }
+            }
+        }
+
         // Calculate user's max withdrawable amount
         async function calculateUserWithdrawable(walletAddress) {
             const wallet = walletAddress.toLowerCase();
@@ -7983,6 +8267,8 @@
                 if (availableEl) {
                     availableEl.textContent = `$${data.available.toFixed(2)}`;
                 }
+                // Update global for inline withdraw slider
+                inlineWithdrawAvailable = data.available;
 
                 // Update credits used display if it exists
                 const creditsUsedEl = document.getElementById('userCreditsUsed');
@@ -9573,95 +9859,7 @@ Once payment is confirmed, we'll start building right away! Let me know if you h
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════ -->
-    <!-- WITHDRAW MODAL -->
-    <!-- ═══════════════════════════════════════════════ -->
-    <div id="withdrawModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(8px);">
-        <div style="background: linear-gradient(135deg, #1a1a2e, #16213e); border-radius: 24px; padding: 32px; max-width: 480px; width: 90%; max-height: 90vh; overflow-y: auto; border: 2px solid rgba(34, 197, 94, 0.3); box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
-            <!-- Header -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <img src="/assets/usdc-logo.png" alt="USDC" style="width: 40px; height: 40px;">
-                    <div>
-                        <div style="font-size: 1.3rem; font-weight: 800; color: #ffffff;">Withdraw USDC</div>
-                        <div style="font-size: 0.85rem; color: #9ca3af;">from AI Fleet Vault</div>
-                    </div>
-                </div>
-                <button onclick="closeWithdrawModal()" style="background: none; border: none; color: #9ca3af; font-size: 1.5rem; cursor: pointer; padding: 4px;">&times;</button>
-            </div>
-
-            <!-- Position Summary -->
-            <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                    <div>
-                        <div style="font-size: 0.7rem; color: #9ca3af; text-transform: uppercase;">Vault Share</div>
-                        <div id="modalVaultShare" style="font-size: 1.2rem; font-weight: 800; color: #ffffff;">$0.00</div>
-                    </div>
-                    <div>
-                        <div style="font-size: 0.7rem; color: #9ca3af; text-transform: uppercase;">Credits Used</div>
-                        <div id="modalCreditsUsed" style="font-size: 1.2rem; font-weight: 800; color: #f97316;">-$0.00</div>
-                    </div>
-                </div>
-                <div style="border-top: 1px solid rgba(255,255,255,0.1); margin-top: 12px; padding-top: 12px;">
-                    <div style="font-size: 0.7rem; color: #22c55e; text-transform: uppercase;">Available to Withdraw</div>
-                    <div id="modalAvailableWithdraw" style="font-size: 1.6rem; font-weight: 800; color: #22c55e;">$0.00</div>
-                </div>
-            </div>
-
-            <!-- Amount Selection -->
-            <div style="margin-bottom: 24px;">
-                <div style="font-size: 0.85rem; font-weight: 600; color: #ffffff; margin-bottom: 12px;">Withdraw Amount</div>
-
-                <!-- Amount Display -->
-                <div style="position: relative; margin-bottom: 16px;">
-                    <input type="text" id="modalWithdrawAmount" value="0.00"
-                        style="width: 100%; padding: 16px 80px 16px 24px; font-size: 1.8rem; font-weight: 800; text-align: center; background: rgba(0,0,0,0.4); border: 2px solid rgba(34, 197, 94, 0.3); border-radius: 16px; color: #22c55e; outline: none;"
-                        oninput="updateWithdrawFromInput(this.value)">
-                    <span style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 1rem; font-weight: 700; color: #9ca3af;">USDC</span>
-                </div>
-
-                <!-- Percent Slider -->
-                <div style="padding: 0 8px; margin-bottom: 12px;">
-                    <input type="range" id="withdrawAmountSlider" min="0" max="100" value="0"
-                        style="width: 100%; accent-color: #22c55e; cursor: pointer;"
-                        oninput="updateWithdrawFromSlider(this.value)">
-                    <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: #6b7280; margin-top: 4px;">
-                        <span>0%</span>
-                        <span>25%</span>
-                        <span>50%</span>
-                        <span>75%</span>
-                        <span>100%</span>
-                    </div>
-                </div>
-
-                <!-- Preset Buttons -->
-                <div style="display: flex; gap: 8px;">
-                    <button onclick="setWithdrawPercent(25)" style="flex: 1; padding: 10px; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 10px; color: #22c55e; font-weight: 700; font-size: 0.85rem; cursor: pointer;">25%</button>
-                    <button onclick="setWithdrawPercent(50)" style="flex: 1; padding: 10px; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 10px; color: #22c55e; font-weight: 700; font-size: 0.85rem; cursor: pointer;">50%</button>
-                    <button onclick="setWithdrawPercent(75)" style="flex: 1; padding: 10px; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 10px; color: #22c55e; font-weight: 700; font-size: 0.85rem; cursor: pointer;">75%</button>
-                    <button onclick="setWithdrawPercent(100)" style="flex: 1; padding: 10px; background: linear-gradient(135deg, #22c55e, #16a34a); border: none; border-radius: 10px; color: white; font-weight: 700; font-size: 0.85rem; cursor: pointer;">MAX</button>
-                </div>
-            </div>
-
-            <!-- Info Notice -->
-            <div style="background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 12px; padding: 14px; margin-bottom: 20px;">
-                <div style="display: flex; gap: 10px; align-items: flex-start;">
-                    <span style="font-size: 1.2rem;">⚡</span>
-                    <div style="font-size: 0.8rem; color: #22c55e; line-height: 1.5;">
-                        Instant withdrawals when funds are available. If funds are deployed to yield strategies, a withdrawal request will be created.
-                    </div>
-                </div>
-            </div>
-
-            <!-- Confirm Button -->
-            <button id="confirmWithdrawBtn" onclick="confirmWithdraw()"
-                style="width: 100%; padding: 18px; background: linear-gradient(135deg, #22c55e, #16a34a); color: white; border: none; border-radius: 14px; font-weight: 800; font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 20px rgba(34, 197, 94, 0.3);"
-                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 30px rgba(34, 197, 94, 0.4)';"
-                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 20px rgba(34, 197, 94, 0.3)';">
-                Withdraw
-            </button>
-        </div>
-    </div>
+    <!-- Withdraw modal removed - now using inline withdraw section -->
 
     <script>
         // ========== DEPOSIT/WITHDRAW MODAL FUNCTIONS ==========
@@ -10033,56 +10231,7 @@ Once payment is confirmed, we'll start building right away! Let me know if you h
             await executeCryptoDirectDeposit(amount);
         }
 
-        async function openWithdrawModal() {
-            const modal = document.getElementById('withdrawModal');
-            if (!modal) return;
-
-            modal.style.display = 'flex';
-
-            // Fetch withdrawable amount from contract
-            if (window.ethereum) {
-                try {
-                    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-                    if (accounts.length > 0) {
-                        const userAddress = accounts[0];
-                        const provider = new ethers.BrowserProvider(window.ethereum);
-
-                        // Create contract instance with ethers.js
-                        const vaultContract = new ethers.Contract(
-                            SUITE_YIELD_VAULT_ADDRESS,
-                            SUITE_YIELD_VAULT_ABI,
-                            provider
-                        );
-
-                        // Get user deposits from contract (USDC has 6 decimals)
-                        const deposits = await vaultContract.userDeposits(userAddress);
-                        userVaultShare = Number(deposits) / 1e6;
-
-                        // Get credits used from contract
-                        const creditsUsed = await vaultContract.creditsUsed(userAddress);
-                        userCreditsUsedAmount = Number(creditsUsed) / 1000; // Convert credits to USD
-
-                        // Get withdrawable amount from contract
-                        const withdrawable = await vaultContract.getWithdrawableAmount(userAddress);
-                        userAvailableWithdraw = Number(withdrawable) / 1e6;
-
-                        document.getElementById('modalVaultShare').textContent = '$' + userVaultShare.toFixed(2);
-                        document.getElementById('modalCreditsUsed').textContent = '-$' + userCreditsUsedAmount.toFixed(2);
-                        document.getElementById('modalAvailableWithdraw').textContent = '$' + userAvailableWithdraw.toFixed(2);
-                    }
-                } catch (e) {
-                    console.error('Failed to fetch withdrawable from contract:', e);
-                }
-            }
-
-            // Reset amount
-            document.getElementById('modalWithdrawAmount').value = '0.00';
-            document.getElementById('withdrawAmountSlider').value = 0;
-        }
-
-        function closeWithdrawModal() {
-            document.getElementById('withdrawModal').style.display = 'none';
-        }
+        // Withdraw modal functions removed - now using inline withdraw section
 
         function updateModalDepositFromSlider(percent) {
             const amount = (userUsdcBalance * percent / 100).toFixed(2);
@@ -10095,21 +10244,7 @@ Once payment is confirmed, we'll start building right away! Let me know if you h
             updateModalDepositFromSlider(percent);
         }
 
-        function updateWithdrawFromSlider(percent) {
-            const amount = (userAvailableWithdraw * percent / 100).toFixed(2);
-            document.getElementById('modalWithdrawAmount').value = amount;
-        }
-
-        function updateWithdrawFromInput(value) {
-            const amount = parseFloat(value) || 0;
-            const percent = userAvailableWithdraw > 0 ? Math.min(100, (amount / userAvailableWithdraw) * 100) : 0;
-            document.getElementById('withdrawAmountSlider').value = percent;
-        }
-
-        function setWithdrawPercent(percent) {
-            document.getElementById('withdrawAmountSlider').value = percent;
-            updateWithdrawFromSlider(percent);
-        }
+        // Modal withdraw functions removed - now using inline withdraw section
 
         function updateModalYieldSplit(keepPercent) {
             const fundPercent = 100 - keepPercent;
@@ -10177,33 +10312,11 @@ Once payment is confirmed, we'll start building right away! Let me know if you h
             await executeVaultDeposit();
         }
 
-        async function confirmWithdraw() {
-            const amount = parseFloat(document.getElementById('modalWithdrawAmount')?.value);
-
-            if (!amount || amount <= 0) {
-                showNotification('⚠️', 'Error', 'Please enter an amount');
-                return;
-            }
-
-            if (amount > userAvailableWithdraw) {
-                showNotification('⚠️', 'Error', `Maximum withdrawable: $${userAvailableWithdraw.toFixed(2)}`);
-                return;
-            }
-
-            // Close modal
-            closeWithdrawModal();
-
-            // Set the amount and execute withdrawal
-            document.getElementById('vaultWithdrawAmount').value = amount;
-            await executeVaultWithdraw();
-        }
+        // confirmWithdraw removed - now using inline withdraw section
 
         // Close modals when clicking outside
         document.getElementById('depositModal')?.addEventListener('click', function(e) {
             if (e.target === this) closeDepositModal();
-        });
-        document.getElementById('withdrawModal')?.addEventListener('click', function(e) {
-            if (e.target === this) closeWithdrawModal();
         });
     </script>
 </body>
