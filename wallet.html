@@ -4790,18 +4790,20 @@
         // Check connection on load
         checkConnection();
 
-        // Watch for nav modal closing (wallet might have connected via nav)
-        const navModalObserver = new MutationObserver(() => {
-            const savedWallet = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWallet');
-            if (savedWallet && savedWallet !== window.walletAddress) {
-                window.walletAddress = savedWallet;
-                showConnectedState(savedWallet);
+        // Poll for wallet changes (catches connections via nav modal)
+        let lastKnownWallet = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWallet') || null;
+        setInterval(() => {
+            const currentWallet = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWallet');
+            if (currentWallet !== lastKnownWallet) {
+                lastKnownWallet = currentWallet;
+                if (currentWallet) {
+                    window.walletAddress = currentWallet;
+                    showConnectedState(currentWallet);
+                } else {
+                    showDisconnectedState();
+                }
             }
-        });
-        const navModal = document.getElementById('navConnectModalOverlay');
-        if (navModal) {
-            navModalObserver.observe(navModal, { attributes: true, attributeFilter: ['class'] });
-        }
+        }, 500);
 
         // Modal Functions
         let selectedAmount = 50;
