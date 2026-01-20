@@ -3621,8 +3621,9 @@
                 document.getElementById('adminLastUpdated').textContent = 'Not deployed';
 
                 // Update liquid reserve display with actual contract balance
-                if (provider) {
+                if (window.ethereum) {
                     try {
+                        const provider = new ethers.BrowserProvider(window.ethereum);
                         const balance = await provider.getBalance(TREASURY_VAULT_ADDRESS);
                         const ethBalance = parseFloat(ethers.formatEther(balance));
                         document.getElementById('adminContractBalance').textContent = `${ethBalance.toFixed(4)} ETH`;
@@ -8269,10 +8270,10 @@
                             <option value="completed" ${req.status === 'completed' ? 'selected' : ''}>Completed</option>
                             <option value="declined" ${req.status === 'declined' ? 'selected' : ''}>Declined</option>
                         </select>
-                        <a href="https://t.me/${req.telegram.replace('@', '')}" target="_blank"
+                        ${req.telegram ? `<a href="https://t.me/${req.telegram.replace('@', '')}" target="_blank"
                            style="padding: 6px 12px; border-radius: 8px; background: #0088cc; color: white; text-decoration: none; font-size: 0.8rem; font-weight: 600;">
                             💬 Message on Telegram
-                        </a>
+                        </a>` : ''}
                     </div>
                 </div>
             `).join('');
