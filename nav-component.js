@@ -15,6 +15,26 @@
         'function userCredits(address) view returns (uint256)'
     ];
 
+    // Dynamically load ethers.js if not already loaded
+    let ethersLoaded = typeof ethers !== 'undefined';
+    async function ensureEthers() {
+        if (ethersLoaded) return true;
+        if (typeof ethers !== 'undefined') {
+            ethersLoaded = true;
+            return true;
+        }
+        return new Promise((resolve) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js';
+            script.onload = () => {
+                ethersLoaded = true;
+                resolve(true);
+            };
+            script.onerror = () => resolve(false);
+            document.head.appendChild(script);
+        });
+    }
+
     nav.className = 'nav';
     nav.innerHTML = `
         <div class="nav-inner">
@@ -328,7 +348,14 @@
 
             // Load credits from SuiteYieldVault contract
             try {
-                if (window.ethereum && typeof ethers !== 'undefined') {
+                // First show cached value while loading
+                const cached = localStorage.getItem('suite_credits');
+                if (cached) creditsEl.textContent = cached;
+
+                // Ensure ethers is loaded
+                const hasEthers = await ensureEthers();
+
+                if (window.ethereum && hasEthers && typeof ethers !== 'undefined') {
                     const provider = new ethers.BrowserProvider(window.ethereum);
                     const vaultContract = new ethers.Contract(
                         SUITE_YIELD_VAULT_ADDRESS,
@@ -340,10 +367,9 @@
                     const credits = Math.floor(Number(creditsRaw) / 1e6);
                     creditsEl.textContent = credits.toLocaleString();
                     localStorage.setItem('suite_credits', credits.toString());
+                    console.log('[Nav] Credits loaded from contract:', credits);
                 } else {
-                    // Fallback to cached or 0
-                    const cached = localStorage.getItem('suite_credits');
-                    creditsEl.textContent = cached || '0';
+                    console.log('[Nav] Ethers not available, using cached credits');
                 }
             } catch (error) {
                 console.error('Failed to load credits from contract:', error);
