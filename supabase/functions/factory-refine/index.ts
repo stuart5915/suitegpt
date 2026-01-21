@@ -6,12 +6,20 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')!
 
 // SECURITY: Restrict CORS to only allow requests from getsuite.app
-const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://getsuite.app',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+const ALLOWED_ORIGINS = ['https://getsuite.app', 'https://www.getsuite.app']
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('origin') || ''
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  }
 }
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req)
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -86,7 +94,7 @@ Return ONLY plain text, no formatting.`
   } catch (error) {
     console.error('Error:', error)
     return new Response(JSON.stringify({ error: 'Something went wrong' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
       status: 500
     })
   }
