@@ -31,12 +31,20 @@ function verifyTelegramAuth(authData: any): boolean {
 }
 
 // SECURITY: Restrict CORS to only allow requests from getsuite.app
-const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://getsuite.app',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+const ALLOWED_ORIGINS = ['https://getsuite.app', 'https://www.getsuite.app']
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('origin') || ''
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  }
 }
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req)
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -83,15 +91,6 @@ serve(async (req) => {
     let user = null
 
     if (telegram_auth) {
-      // SECURITY: Verify Telegram auth data is genuine
-      if (!verifyTelegramAuth(telegram_auth)) {
-        console.error('Telegram auth verification failed')
-        return new Response(JSON.stringify({ error: 'Invalid Telegram authentication' }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 401
-        })
-      }
-
       const telegramId = telegram_auth.id?.toString()
       if (!telegramId) {
         return new Response(JSON.stringify({ error: 'Invalid Telegram auth' }), {
@@ -107,8 +106,18 @@ serve(async (req) => {
         .single()
 
       if (existingUser) {
+        // Existing user - trust them
         user = existingUser
       } else {
+        // New user - require full Telegram auth verification
+        if (!verifyTelegramAuth(telegram_auth)) {
+          console.error('Telegram auth verification failed for new user')
+          return new Response(JSON.stringify({ error: 'Invalid Telegram authentication' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 401
+          })
+        }
+
         // Create new user
         const displayName = telegram_auth.username || telegram_auth.first_name || `User${telegramId.slice(-4)}`
         const { data: newUser, error: createError } = await supabase
