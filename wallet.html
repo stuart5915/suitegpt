@@ -3752,18 +3752,36 @@
                             provider
                         );
 
-                        // Get liquid USDC balance in contract
-                        const liquidBalance = await vaultContract.getLiquidBalance();
-                        const usdcBalance = Number(liquidBalance) / 1e6;
+                        // Get all vault stats in parallel
+                        const [liquidBalance, totalDeposits, totalDeployed] = await Promise.all([
+                            vaultContract.getLiquidBalance(),
+                            vaultContract.totalDeposits(),
+                            vaultContract.totalDeployed()
+                        ]);
 
-                        document.getElementById('adminContractBalance').textContent = `$${usdcBalance.toFixed(2)} USDC`;
-                        document.getElementById('adminReportedValue').textContent = `$${usdcBalance.toFixed(2)}`;
+                        const liquidUSD = Number(liquidBalance) / 1e6;
+                        const depositsUSD = Number(totalDeposits) / 1e6;
+                        const deployedUSD = Number(totalDeployed) / 1e6;
+
+                        // Liquid balance = what's in contract available for withdrawals
+                        document.getElementById('adminContractBalance').textContent = `$${liquidUSD.toFixed(2)} USDC`;
+
+                        // Total value = total user deposits (some may be deployed to yield)
+                        document.getElementById('adminReportedValue').textContent = `$${depositsUSD.toFixed(2)}`;
 
                         // Update liquid reserve display
                         const liquidReserveEl = document.getElementById('liquidReserveValue');
                         if (liquidReserveEl) {
-                            liquidReserveEl.textContent = `$${usdcBalance.toFixed(2)}`;
+                            liquidReserveEl.textContent = `$${liquidUSD.toFixed(2)}`;
                         }
+
+                        // Update deployed amount display if it exists
+                        const deployedEl = document.getElementById('adminDeployedValue');
+                        if (deployedEl) {
+                            deployedEl.textContent = `$${deployedUSD.toFixed(2)}`;
+                        }
+
+                        console.log('Admin vault stats:', { liquidUSD, depositsUSD, deployedUSD });
                     } catch (e) {
                         console.error('Error loading vault balance:', e);
                     }
@@ -4056,7 +4074,7 @@
             showNotification('✅', 'Strategy Updated', `Active strategy changed to ${strategy.name}`);
         }
 
-        // Withdraw USDC to admin wallet
+        // Withdraw USDC from vault to admin wallet (for deploying to yield strategies)
         async function adminWithdraw() {
             const amount = document.getElementById('adminWithdrawAmount')?.value;
 
@@ -4065,24 +4083,65 @@
                 return;
             }
 
-            if (!signer) {
+            if (!window.ethereum) {
                 showNotification('⚠️', 'Error', 'Please connect your wallet');
                 return;
             }
 
             try {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                if (accounts.length === 0) {
+                    showNotification('⚠️', 'Error', 'Please connect your wallet');
+                    return;
+                }
+
+                const adminAddress = accounts[0];
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+
+                // Create vault contract with signer
+                const vaultContract = new ethers.Contract(
+                    SUITE_YIELD_VAULT_ADDRESS,
+                    SUITE_YIELD_VAULT_ABI,
+                    signer
+                );
+
+                // Check if user is admin
+                const isAdmin = await vaultContract.isAdmin(adminAddress);
+                if (!isAdmin) {
+                    showNotification('❌', 'Error', 'You are not an admin');
+                    return;
+                }
+
+                // Check liquid balance
+                const liquidBalance = await vaultContract.getLiquidBalance();
+                const amountWei = ethers.parseUnits(amount, 6); // USDC has 6 decimals
+
+                if (amountWei > liquidBalance) {
+                    showNotification('⚠️', 'Error', `Not enough liquid. Available: $${(Number(liquidBalance) / 1e6).toFixed(2)}`);
+                    return;
+                }
+
                 showNotification('⏳', 'Withdrawing', 'Please confirm the transaction...');
 
-                // Contract call will be added after deployment
-                showNotification('⚠️', 'Pending', 'Contract not deployed yet. Deploy TreasuryVault first.');
+                // Call deployToYield with admin's own address to receive the USDC
+                const tx = await vaultContract.deployToYield(adminAddress, amountWei);
+                showNotification('⏳', 'Processing', 'Waiting for confirmation...');
+
+                await tx.wait();
+
+                showNotification('✅', 'Success', `Withdrew $${amount} USDC to your wallet`);
                 document.getElementById('adminWithdrawAmount').value = '';
+
+                // Refresh admin data
+                loadAdminData();
             } catch (error) {
-                console.error('Withdraw error:', error);
-                showNotification('❌', 'Error', error.message || 'Withdrawal failed');
+                console.error('Admin withdraw error:', error);
+                showNotification('❌', 'Error', error.reason || error.message || 'Withdrawal failed');
             }
         }
 
-        // Deposit ETH from admin wallet
+        // Deposit USDC from admin wallet back to vault
         async function adminDeposit() {
             const amount = document.getElementById('adminDepositAmount')?.value;
 
@@ -4091,20 +4150,77 @@
                 return;
             }
 
-            if (!signer) {
+            if (!window.ethereum) {
                 showNotification('⚠️', 'Error', 'Please connect your wallet');
                 return;
             }
 
             try {
-                showNotification('⏳', 'Depositing', 'Please confirm the transaction...');
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                if (accounts.length === 0) {
+                    showNotification('⚠️', 'Error', 'Please connect your wallet');
+                    return;
+                }
 
-                // Contract call will be added after deployment
-                showNotification('⚠️', 'Pending', 'Contract not deployed yet. Deploy TreasuryVault first.');
+                const adminAddress = accounts[0];
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+
+                // Create vault contract with signer
+                const vaultContract = new ethers.Contract(
+                    SUITE_YIELD_VAULT_ADDRESS,
+                    SUITE_YIELD_VAULT_ABI,
+                    signer
+                );
+
+                // Check if user is admin
+                const isAdmin = await vaultContract.isAdmin(adminAddress);
+                if (!isAdmin) {
+                    showNotification('❌', 'Error', 'You are not an admin');
+                    return;
+                }
+
+                const amountWei = ethers.parseUnits(amount, 6); // USDC has 6 decimals
+
+                // Create USDC contract
+                const usdcContract = new ethers.Contract(
+                    VAULT_USDC_ADDRESS,
+                    [
+                        'function approve(address spender, uint256 amount) returns (bool)',
+                        'function allowance(address owner, address spender) view returns (uint256)',
+                        'function balanceOf(address) view returns (uint256)',
+                        'function transfer(address to, uint256 amount) returns (bool)'
+                    ],
+                    signer
+                );
+
+                // Check admin's USDC balance
+                const adminBalance = await usdcContract.balanceOf(adminAddress);
+                if (amountWei > adminBalance) {
+                    showNotification('⚠️', 'Error', `Not enough USDC. Your balance: $${(Number(adminBalance) / 1e6).toFixed(2)}`);
+                    return;
+                }
+
+                showNotification('⏳', 'Depositing', 'Transferring USDC to vault...');
+
+                // Transfer USDC directly to the vault contract
+                const transferTx = await usdcContract.transfer(SUITE_YIELD_VAULT_ADDRESS, amountWei);
+                await transferTx.wait();
+
+                showNotification('⏳', 'Updating', 'Recording return from yield...');
+
+                // Call returnFromYield to update accounting
+                const returnTx = await vaultContract.returnFromYield(amountWei);
+                await returnTx.wait();
+
+                showNotification('✅', 'Success', `Deposited $${amount} USDC back to vault`);
                 document.getElementById('adminDepositAmount').value = '';
+
+                // Refresh admin data
+                loadAdminData();
             } catch (error) {
-                console.error('Deposit error:', error);
-                showNotification('❌', 'Error', error.message || 'Deposit failed');
+                console.error('Admin deposit error:', error);
+                showNotification('❌', 'Error', error.reason || error.message || 'Deposit failed');
             }
         }
 
@@ -7649,7 +7765,13 @@
             'function userCredits(address) view returns (uint256)',
             'function creditsUsed(address) view returns (uint256)',
             'function yieldKeepPercent(address) view returns (uint8)',
-            'function setYieldPreference(uint8 keepPercent) external'
+            'function setYieldPreference(uint8 keepPercent) external',
+            // Admin functions
+            'function isAdmin(address) view returns (bool)',
+            'function deployToYield(address strategy, uint256 amount) external',
+            'function returnFromYield(uint256 amount) external',
+            'function totalDeposits() view returns (uint256)',
+            'function totalDeployed() view returns (uint256)'
         ];
 
         // Load user credits from the SuiteYieldVault contract
