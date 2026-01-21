@@ -2571,12 +2571,19 @@
             <form id="submitForm" onsubmit="submitProposal(event)">
                 <div class="form-group">
                     <label class="form-label">Section</label>
-                    <select id="proposalSection" class="form-select" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: #1a1a2e; color: #ffffff; font-size: 0.95rem;">
+                    <select id="proposalSection" class="form-select" onchange="onSectionChange()" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: #1a1a2e; color: #ffffff; font-size: 0.95rem;">
                         <option value="suite_apps" style="background: #1a1a2e; color: #ffffff;">📱 SUITE Apps</option>
                         <option value="business" style="background: #1a1a2e; color: #ffffff;">💼 Business</option>
                         <option value="content" style="background: #1a1a2e; color: #ffffff;">📝 Content</option>
                         <option value="social" style="background: #1a1a2e; color: #ffffff;">🌐 Social</option>
                     </select>
+                </div>
+
+                <div class="form-group" id="newAppToggleGroup" style="display: none;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 12px; background: rgba(255, 149, 0, 0.1); border: 1px solid rgba(255, 149, 0, 0.3); border-radius: 8px;">
+                        <input type="checkbox" id="isNewApp" onchange="onNewAppToggle()" style="width: 18px; height: 18px; accent-color: var(--accent);">
+                        <span style="color: #fff; font-weight: 600;">🆕 This is a NEW app idea</span>
+                    </label>
                 </div>
 
                 <div class="form-group">
@@ -3878,7 +3885,36 @@
                     sectionSelect.value = section;
                 }
             }
+            // Show/hide new app toggle based on section
+            onSectionChange();
             document.getElementById('submitModal').classList.add('active');
+        }
+
+        function onSectionChange() {
+            const section = document.getElementById('proposalSection').value;
+            const newAppToggle = document.getElementById('newAppToggleGroup');
+            const appSelect = document.getElementById('proposalApp')?.parentElement;
+
+            if (section === 'suite_apps') {
+                newAppToggle.style.display = 'block';
+            } else {
+                newAppToggle.style.display = 'none';
+                document.getElementById('isNewApp').checked = false;
+            }
+            // Reset app dropdown visibility
+            if (appSelect) {
+                appSelect.style.display = 'block';
+            }
+        }
+
+        function onNewAppToggle() {
+            const isNewApp = document.getElementById('isNewApp').checked;
+            const appSelect = document.getElementById('proposalApp')?.parentElement;
+
+            if (appSelect) {
+                // Hide app selector when "New App" is checked
+                appSelect.style.display = isNewApp ? 'none' : 'block';
+            }
         }
 
         function hideSubmitModal() {
@@ -3973,6 +4009,7 @@
             const section = document.getElementById('proposalSection').value;
             const content = document.getElementById('proposalContent').value.trim();
             const appSlug = document.getElementById('proposalApp').value;
+            const isNewApp = document.getElementById('isNewApp')?.checked || false;
 
             if (!content) {
                 alert('Please describe your idea');
@@ -3987,7 +4024,8 @@
                 const payload = {
                     content,
                     section,
-                    app_slug: appSlug || null
+                    app_slug: isNewApp ? 'new_app' : (appSlug || null),
+                    is_new_app: isNewApp
                 };
 
                 // Add auth based on user type

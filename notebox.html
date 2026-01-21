@@ -1102,6 +1102,24 @@
             font-size: 1.2rem;
         }
 
+        .section-option-btn.app-option {
+            padding: 10px 14px;
+            font-size: 0.9rem;
+        }
+
+        .section-option-btn.app-option span {
+            font-size: 1rem;
+        }
+
+        .section-option-btn.new-app-btn {
+            background: rgba(255, 149, 0, 0.15);
+            border-color: rgba(255, 149, 0, 0.4);
+        }
+
+        .section-option-btn.new-app-btn:hover {
+            background: rgba(255, 149, 0, 0.25);
+        }
+
         /* Inline Add */
         .inline-add {
             margin-top: 8px;
@@ -1428,10 +1446,12 @@
         <!-- Governance Section Selector Modal -->
         <div class="dismiss-modal" id="sectionSelectorModal" style="display: none;">
             <div class="dismiss-modal-content" style="max-width: 360px;">
-                <h3>Submit to Governance</h3>
-                <p style="color: #888; font-size: 0.9rem; margin-bottom: 16px;">Which section should this proposal go to?</p>
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <button class="section-option-btn" onclick="submitToGovernance('suite_apps')">
+                <h3 id="sectionModalTitle">Submit to Governance</h3>
+                <p id="sectionModalSubtitle" style="color: #888; font-size: 0.9rem; margin-bottom: 16px;">Which section should this proposal go to?</p>
+
+                <!-- Step 1: Section Selection -->
+                <div id="sectionStep1" style="display: flex; flex-direction: column; gap: 10px;">
+                    <button class="section-option-btn" onclick="showAppSelector()">
                         <span>📱</span> SUITE Apps
                     </button>
                     <button class="section-option-btn" onclick="submitToGovernance('business')">
@@ -1444,6 +1464,21 @@
                         <span>📣</span> Social
                     </button>
                 </div>
+
+                <!-- Step 2: App Selection (for SUITE Apps) -->
+                <div id="sectionStep2" style="display: none; flex-direction: column; gap: 10px;">
+                    <button class="section-option-btn new-app-btn" onclick="submitToGovernance('suite_apps', 'new_app')">
+                        <span>🆕</span> New App Idea
+                    </button>
+                    <div style="color: #666; font-size: 0.8rem; margin: 8px 0;">Or select an existing app:</div>
+                    <div id="appSelectorList" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto;">
+                        <!-- Apps loaded dynamically -->
+                    </div>
+                    <button class="back-btn" onclick="backToSectionSelect()" style="margin-top: 8px; padding: 10px; background: transparent; border: 1px solid #444; border-radius: 8px; color: #888; cursor: pointer;">
+                        ← Back
+                    </button>
+                </div>
+
                 <div class="dismiss-modal-actions" style="margin-top: 16px;">
                     <button class="cancel-btn" onclick="closeSectionSelector()">Cancel</button>
                 </div>
@@ -2729,6 +2764,7 @@ Format as a numbered list from most to least promising.`;
 
         // Push to destination
         let pendingPushIdeaId = null;
+        let suiteApps = []; // Cache for apps list
 
         function pushTo(ideaId, target) {
             document.getElementById(`pushMenu-${ideaId}`).classList.remove('active');
@@ -2736,6 +2772,11 @@ Format as a numbered list from most to least promising.`;
             if (target === 'suite') {
                 // Show section selector for governance
                 pendingPushIdeaId = ideaId;
+                // Reset to step 1
+                document.getElementById('sectionStep1').style.display = 'flex';
+                document.getElementById('sectionStep2').style.display = 'none';
+                document.getElementById('sectionModalTitle').textContent = 'Submit to Governance';
+                document.getElementById('sectionModalSubtitle').textContent = 'Which section should this proposal go to?';
                 document.getElementById('sectionSelectorModal').style.display = 'flex';
             } else if (target === 'artstu') {
                 // For artstu, use the existing push modal
@@ -2743,16 +2784,65 @@ Format as a numbered list from most to least promising.`;
             }
         }
 
+        async function showAppSelector() {
+            // Show step 2
+            document.getElementById('sectionStep1').style.display = 'none';
+            document.getElementById('sectionStep2').style.display = 'flex';
+            document.getElementById('sectionModalTitle').textContent = 'SUITE Apps';
+            document.getElementById('sectionModalSubtitle').textContent = 'Is this a new app or for an existing one?';
+
+            // Load apps if not cached
+            if (suiteApps.length === 0) {
+                try {
+                    const response = await fetch(
+                        `${SUPABASE_URL}/rest/v1/apps?select=slug,name,emoji&order=name`,
+                        {
+                            headers: {
+                                'apikey': SUPABASE_ANON_KEY,
+                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                            }
+                        }
+                    );
+                    if (response.ok) {
+                        suiteApps = await response.json();
+                    }
+                } catch (err) {
+                    console.error('Error loading apps:', err);
+                }
+            }
+
+            // Render apps list
+            const listEl = document.getElementById('appSelectorList');
+            if (suiteApps.length === 0) {
+                listEl.innerHTML = '<div style="color: #666; text-align: center; padding: 12px;">No apps found</div>';
+            } else {
+                listEl.innerHTML = suiteApps.map(app => `
+                    <button class="section-option-btn app-option" onclick="submitToGovernance('suite_apps', '${app.slug}')">
+                        <span>${app.emoji || '📱'}</span> ${app.name}
+                    </button>
+                `).join('');
+            }
+        }
+
+        function backToSectionSelect() {
+            document.getElementById('sectionStep1').style.display = 'flex';
+            document.getElementById('sectionStep2').style.display = 'none';
+            document.getElementById('sectionModalTitle').textContent = 'Submit to Governance';
+            document.getElementById('sectionModalSubtitle').textContent = 'Which section should this proposal go to?';
+        }
+
         function closeSectionSelector() {
             document.getElementById('sectionSelectorModal').style.display = 'none';
             pendingPushIdeaId = null;
         }
 
-        async function submitToGovernance(section) {
+        async function submitToGovernance(section, appSlug = null) {
             if (!pendingPushIdeaId) return;
 
             const idea = ideas.find(i => i.id === pendingPushIdeaId);
             if (!idea) return;
+
+            const isNewApp = appSlug === 'new_app';
 
             try {
                 // Submit to governance_proposals table
@@ -2773,7 +2863,9 @@ Format as a numbered list from most to least promising.`;
                             status: 'submitted',
                             submitter_id: currentUser?.id || 'anonymous',
                             source: 'notebox',
-                            source_idea_id: idea.id
+                            source_idea_id: idea.id,
+                            app_slug: isNewApp ? null : appSlug,
+                            is_new_app: isNewApp
                         })
                     }
                 );
