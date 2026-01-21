@@ -4804,9 +4804,12 @@
             if (disconnectBtn) disconnectBtn.style.display = 'block';
 
             // Set initial balances to 0 (real values come from fetchTreasuryStats)
-            document.getElementById('availableBalance').textContent = '0';
-            document.getElementById('stakedBalance').textContent = '0';
-            document.getElementById('totalValue').textContent = '$0.00';
+            const availableBalEl = document.getElementById('availableBalance');
+            const stakedBalEl = document.getElementById('stakedBalance');
+            const totalValEl = document.getElementById('totalValue');
+            if (availableBalEl) availableBalEl.textContent = '0';
+            if (stakedBalEl) stakedBalEl.textContent = '0';
+            if (totalValEl) totalValEl.textContent = '$0.00';
 
             // Fetch real balance from chain
             fetchUserSuiteBalance(address);
@@ -7653,11 +7656,28 @@
                 );
 
                 // Fetch credits, deposits, and yield preference in parallel
-                const [creditsRaw, depositsRaw, yieldPrefRaw] = await Promise.all([
-                    vaultContract.userCredits(userAddress),
-                    vaultContract.userDeposits(userAddress),
-                    vaultContract.yieldKeepPercent(userAddress)
-                ]);
+                console.log('loadContractCredits: Fetching data for', userAddress);
+
+                let creditsRaw, depositsRaw, yieldPrefRaw;
+                try {
+                    [creditsRaw, depositsRaw, yieldPrefRaw] = await Promise.all([
+                        vaultContract.userCredits(userAddress),
+                        vaultContract.userDeposits(userAddress),
+                        vaultContract.yieldKeepPercent(userAddress)
+                    ]);
+                } catch (contractErr) {
+                    console.error('Contract call failed:', contractErr);
+                    // Fallback: try just credits
+                    creditsRaw = await vaultContract.userCredits(userAddress);
+                    depositsRaw = 0n;
+                    yieldPrefRaw = 90;
+                }
+
+                console.log('Raw contract data:', {
+                    creditsRaw: creditsRaw?.toString(),
+                    depositsRaw: depositsRaw?.toString(),
+                    yieldPrefRaw: yieldPrefRaw?.toString()
+                });
 
                 // Contract stores credits in raw units (amount * 1000), need to divide by 1e6 for display
                 // Because USDC has 6 decimals: 0.1 USDC = 100000 raw, * 1000 = 100000000
