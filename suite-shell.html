@@ -537,8 +537,14 @@
         /* ===== APPS GRID (Home State) ===== */
         .apps-grid-container {
             flex: 1;
-            overflow-y: auto;
-            padding: 24px 16px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Shell main content area padding */
+        .shell-main {
+            padding: 24px;
         }
 
         .apps-grid-header {
@@ -563,10 +569,16 @@
 
         .apps-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 16px;
-            max-width: 700px;
-            margin: 0 auto 40px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            max-width: 100%;
+            margin: 0 0 40px;
+        }
+
+        @media (max-width: 768px) {
+            .apps-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         /* Filter & Sort Bar */
@@ -1337,81 +1349,168 @@
             color: #ef4444;
         }
 
+        /* ===== SIDEBAR NAVIGATION (App Store Style) ===== */
+        .shell-layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .shell-sidebar {
+            width: 200px;
+            min-width: 200px;
+            background: var(--bg-card);
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 20px 0;
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+
+        .sidebar-section-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            padding: 0 16px;
+            margin-bottom: 8px;
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+        }
+
+        .sidebar-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+
+        .sidebar-item.active {
+            background: rgba(255, 149, 0, 0.15);
+            color: var(--accent-orange);
+            font-weight: 600;
+        }
+
+        .sidebar-item-icon {
+            width: 20px;
+            text-align: center;
+            font-size: 1rem;
+        }
+
+        .shell-main {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        /* Hide sidebar on mobile, show mobile tabs */
+        @media (max-width: 768px) {
+            .shell-sidebar {
+                display: none;
+            }
+            .mobile-tabs-wrapper {
+                display: block !important;
+            }
+        }
+
+        /* App Card - Horizontal App Store Style */
         .app-card {
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             align-items: center;
-            gap: 8px;
-            padding: 20px 12px 0;
+            gap: 14px;
+            padding: 12px 16px;
             background: var(--bg-card);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 16px;
+            border-radius: 12px;
             cursor: pointer;
             transition: all 0.2s ease;
             position: relative;
         }
 
         .app-card:hover {
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.06);
             border-color: rgba(255, 149, 0, 0.3);
-            transform: translateY(-4px);
         }
 
         .app-card:active {
-            transform: scale(0.96);
+            transform: scale(0.99);
         }
 
-        /* Tier Badge on App Card */
-        .app-tier-badge {
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            font-size: 0.65rem;
-            font-weight: 700;
-            padding: 3px 10px;
-            border-radius: 100px;
+        .app-card .app-icon {
+            width: 56px;
+            height: 56px;
+            min-width: 56px;
+            font-size: 2rem;
             display: flex;
             align-items: center;
-            gap: 4px;
-            z-index: 10;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
         }
 
-        /* Funding Progress Bar */
-        .app-funding {
-            width: 100%;
-            margin-top: 4px;
+        .app-card .app-info {
+            flex: 1;
+            min-width: 0;
         }
 
-        .funding-bar {
-            width: 100%;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 2px;
+        .app-card .app-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+            white-space: nowrap;
             overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        .funding-fill {
-            height: 100%;
-            border-radius: 2px;
-            transition: width 0.3s ease;
-        }
-
-        .funding-text {
-            font-size: 0.7rem;
+        .app-card .app-tagline {
+            font-size: 0.8rem;
             color: var(--text-secondary);
-            text-align: center;
-            margin-top: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        .funding-next {
-            font-size: 0.65rem;
-            color: var(--text-secondary);
-            text-align: center;
-            opacity: 0.7;
+        .app-card .view-btn {
+            padding: 8px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 20px;
+            color: #3b82f6;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .app-card .view-btn:hover {
+            background: #3b82f6;
+            color: white;
+        }
+
+        /* Hide old funding elements */
+        .app-funding, .funding-bar, .funding-fill, .funding-text, .funding-next, .app-buttons {
+            display: none !important;
         }
 
         .funding-meta {
-            display: flex;
+            display: none;
             justify-content: space-between;
             align-items: center;
             width: 100%;
@@ -2799,25 +2898,7 @@
             }
         }
 
-        .app-icon {
-            font-size: 4rem;
-            line-height: 1;
-        }
-
-        .app-icon-img {
-            width: 92px;
-            height: 92px;
-            border-radius: 20px;
-            object-fit: cover;
-        }
-
-        .app-name {
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-align: center;
-            color: var(--text-primary);
-            line-height: 1.2;
-        }
+        /* Old app-icon styles removed - using scoped .app-card .app-icon instead */
 
         .apps-loading {
             text-align: center;
@@ -4193,68 +4274,35 @@
                 display: none;
             }
 
+            /* Mobile: Single column horizontal cards */
             .apps-grid {
-                grid-template-columns: repeat(3, 1fr);
-                gap: 12px;
+                grid-template-columns: 1fr;
+                gap: 8px;
             }
 
             .app-card {
-                padding: 16px 8px 0;
+                padding: 10px 12px;
+                gap: 12px;
             }
 
-            .app-icon {
-                font-size: 3.3rem;
+            .app-card .app-icon {
+                width: 48px;
+                height: 48px;
+                min-width: 48px;
+                font-size: 1.6rem;
             }
 
-            .app-icon-img {
-                width: 76px;
-                height: 76px;
+            .app-card .app-name {
+                font-size: 0.9rem;
             }
 
-            .app-name {
+            .app-card .app-tagline {
                 font-size: 0.75rem;
             }
 
-            /* Mobile app buttons */
-            .app-buttons {
-                width: calc(100% + 16px);
-                margin: 8px -8px 0;
-                gap: 1px;
-            }
-
-            .open-app-btn {
-                padding: 10px 6px;
-                font-size: 0.7rem;
-            }
-
-            .fund-btn {
-                padding: 10px 6px;
-                font-size: 0.65rem;
-            }
-
-            /* Mobile mystery card */
-            .app-card.mystery-card {
-                padding: 16px 8px 8px;
-            }
-
-            .mystery-icon {
-                font-size: 3rem;
-            }
-
-            .mystery-title {
-                font-size: 0.85rem;
-            }
-
-            .mystery-desc {
-                font-size: 0.7rem;
-            }
-
-            .mystery-buttons {
-                width: calc(100% + 16px);
-                margin-top: auto;
-                margin-left: -8px;
-                margin-right: -8px;
-                margin-bottom: -8px;
+            .app-card .view-btn {
+                padding: 6px 14px;
+                font-size: 0.8rem;
             }
 
             .mystery-btn {
@@ -4386,54 +4434,30 @@
 
         /* Very small screens - 2 columns */
         @media (max-width: 380px) {
-            .apps-grid {
-                grid-template-columns: repeat(2, 1fr);
+            /* Very small screens: compact horizontal cards */
+            .app-card {
+                padding: 8px 10px;
                 gap: 10px;
             }
 
-            .app-card {
-                padding: 12px 6px 0;
+            .app-card .app-icon {
+                width: 40px;
+                height: 40px;
+                min-width: 40px;
+                font-size: 1.4rem;
             }
 
-            .app-icon {
-                font-size: 2.8rem;
+            .app-card .app-name {
+                font-size: 0.85rem;
             }
 
-            .app-icon-img {
-                width: 60px;
-                height: 60px;
+            .app-card .app-tagline {
+                font-size: 0.7rem;
             }
 
-            .app-buttons {
-                width: calc(100% + 12px);
-                margin: 6px -6px 0;
-            }
-
-            .open-app-btn,
-            .fund-btn {
-                padding: 8px 4px;
-                font-size: 0.6rem;
-            }
-
-            .mystery-buttons {
-                width: calc(100% + 12px);
-                margin-top: auto;
-                margin-left: -6px;
-                margin-right: -6px;
-                margin-bottom: -6px;
-            }
-
-            .mystery-btn {
-                padding: 8px 4px;
-                font-size: 0.6rem;
-            }
-
-            .mystery-icon {
-                font-size: 2.5rem;
-            }
-
-            .app-card.mystery-card {
-                padding: 12px 6px 6px;
+            .app-card .view-btn {
+                padding: 5px 12px;
+                font-size: 0.75rem;
             }
         }
     </style>
@@ -4789,24 +4813,75 @@
             }
         </style>
 
-        <!-- Tabs Navigation -->
-        <div style="display: flex; justify-content: center;">
-            <div class="apps-tabs">
-                <button class="apps-tab active" onclick="switchAppsTab('apps')" id="tabApps">
-                    <span class="apps-tab-icon">🏠</span>
-                    All Apps
-                </button>
-                <button class="apps-tab" onclick="switchAppsTab('leaderboard')" id="tabLeaderboard">
-                    <span class="apps-tab-icon">💰</span>
-                    Funding
-                </button>
-            </div>
-        </div>
+        <!-- Shell Layout with Sidebar -->
+        <div class="shell-layout">
+            <!-- Sidebar Navigation -->
+            <aside class="shell-sidebar" id="shellSidebar">
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Browse</div>
+                    <button class="sidebar-item active" onclick="filterApps('all'); updateSidebarActive(this)" data-filter="all">
+                        <span class="sidebar-item-icon">🏠</span>
+                        All Apps
+                    </button>
+                    <button class="sidebar-item" onclick="filterApps('app'); updateSidebarActive(this)" data-filter="app">
+                        <span class="sidebar-item-icon">📱</span>
+                        Apps
+                    </button>
+                    <button class="sidebar-item" onclick="filterApps('game'); updateSidebarActive(this)" data-filter="game">
+                        <span class="sidebar-item-icon">🎮</span>
+                        Games
+                    </button>
+                </div>
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Explore</div>
+                    <button class="sidebar-item" onclick="switchAppsTab('leaderboard')">
+                        <span class="sidebar-item-icon">💰</span>
+                        Funding
+                    </button>
+                    <button class="sidebar-item" onclick="openVotingSection()">
+                        <span class="sidebar-item-icon">🗳️</span>
+                        Vote
+                    </button>
+                </div>
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Sort By</div>
+                    <button class="sidebar-item" onclick="sortApps('funded'); updateSortActive(this)" data-sort="funded">
+                        <span class="sidebar-item-icon">📈</span>
+                        Most Funded
+                    </button>
+                    <button class="sidebar-item" onclick="sortApps('newest'); updateSortActive(this)" data-sort="newest">
+                        <span class="sidebar-item-icon">✨</span>
+                        Newest
+                    </button>
+                    <button class="sidebar-item" onclick="sortApps('name'); updateSortActive(this)" data-sort="name">
+                        <span class="sidebar-item-icon">🔤</span>
+                        A-Z
+                    </button>
+                </div>
+            </aside>
 
-        <!-- All Apps Tab Content -->
-        <div class="tab-content active" id="contentApps">
-            <!-- Filter & Sort Bar -->
-            <div class="apps-filter-bar" id="appsFilterBar" style="display: none;">
+            <!-- Main Content Area -->
+            <div class="shell-main">
+                <!-- Tabs Navigation (hidden on desktop with sidebar) -->
+                <div class="mobile-tabs-wrapper" style="display: none;">
+                    <div style="display: flex; justify-content: center; padding: 16px 0;">
+                        <div class="apps-tabs">
+                            <button class="apps-tab active" onclick="switchAppsTab('apps')" id="tabApps">
+                                <span class="apps-tab-icon">🏠</span>
+                                All Apps
+                            </button>
+                            <button class="apps-tab" onclick="switchAppsTab('leaderboard')" id="tabLeaderboard">
+                                <span class="apps-tab-icon">💰</span>
+                                Funding
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- All Apps Tab Content -->
+                <div class="tab-content active" id="contentApps">
+                    <!-- Filter Bar (hidden - using sidebar now) -->
+                    <div class="apps-filter-bar" id="appsFilterBar" style="display: none !important;">
                 <div class="filter-types">
                     <button class="filter-btn active" onclick="filterApps('all')" data-filter="all">All</button>
                     <button class="filter-btn" onclick="filterApps('app')" data-filter="app">Apps</button>
@@ -4976,6 +5051,9 @@
                 We'll email you when apps reach Launch tier so you can be a partner.
             </div>
         </div>
+
+            </div><!-- End shell-main -->
+        </div><!-- End shell-layout -->
     </div>
 
     <!-- App Container with iframe -->
@@ -5522,8 +5600,12 @@
         // ===== FILTER & SORT FUNCTIONS =====
         function filterApps(filter) {
             currentFilter = filter;
-            // Update active button
+            // Update active button in filter bar (legacy)
             document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.filter === filter);
+            });
+            // Update sidebar filter items
+            document.querySelectorAll('.sidebar-item[data-filter]').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.filter === filter);
             });
             renderAppsGrid();
@@ -5531,7 +5613,27 @@
 
         function sortApps(sort) {
             currentSort = sort;
+            // Update sidebar sort items
+            document.querySelectorAll('.sidebar-item[data-sort]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.sort === sort);
+            });
             renderAppsGrid();
+        }
+
+        // Helper function to update sidebar filter active state
+        function updateSidebarActive(element) {
+            document.querySelectorAll('.sidebar-item[data-filter]').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            element.classList.add('active');
+        }
+
+        // Helper function to update sidebar sort active state
+        function updateSortActive(element) {
+            document.querySelectorAll('.sidebar-item[data-sort]').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            element.classList.add('active');
         }
 
         function getFilteredAndSortedApps() {
@@ -6282,22 +6384,8 @@
                 const scaleApps = apps.filter(app => (parseFloat(app.total_funded) || 0) >= 5000);
                 console.log('[renderAppsGrid] Scale apps:', scaleApps.length);
 
-                // Render featured apps section
-                if (scaleApps.length > 0 && featuredSection && featuredGrid) {
-                    featuredSection.style.display = 'block';
-                    featuredGrid.innerHTML = scaleApps.map(app => {
-                        const funded = parseFloat(app.total_funded) || 0;
-                        return `
-                            <div class="app-card" onclick="openApp('${app.slug}')" style="background: rgba(168, 85, 247, 0.1);">
-                                <div class="app-icon">${getAppIcon(app)}</div>
-                                <div class="app-name">${app.name}</div>
-                                <div class="app-funding">
-                                    <div class="funding-text" style="color: #a855f7; font-weight: 700;">$${Math.floor(funded).toLocaleString()}</div>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-                } else if (featuredSection) {
+                // Hide featured section - using unified grid now
+                if (featuredSection) {
                     featuredSection.style.display = 'none';
                 }
 
@@ -6305,55 +6393,32 @@
                 const allFilteredApps = getFilteredAndSortedApps();
                 console.log('[renderAppsGrid] Filtered apps:', allFilteredApps.length);
 
-                // Exclude Scale tier from main grid if showing featured
-                const displayApps = allFilteredApps.filter(app => {
-                    if (scaleApps.length > 0) {
-                        return (parseFloat(app.total_funded) || 0) < 5000;
-                    }
-                    return true;
-                });
-                console.log('[renderAppsGrid] Display apps:', displayApps.length);
-
-            grid.innerHTML = displayApps.map(app => {
-                // Calculate funding progress (use total_funded from DB, or 0)
-                const funded = parseFloat(app.total_funded) || 0;
-                const funderCount = parseInt(app.funder_count) || 0;
-                const totalRevenue = parseFloat(app.total_revenue) || 0;
-                const tier = getAppTier(funded);
-                const nextTarget = tier.nextAmount || funded;
-                const progressPercent = tier.nextAmount ? Math.min((funded / tier.nextAmount) * 100, 100) : 100;
+            // Render all apps in new horizontal card layout
+            grid.innerHTML = allFilteredApps.map(app => {
+                const tagline = app.tagline || app.description || 'AI-powered app';
+                const shortTagline = tagline.length > 50 ? tagline.substring(0, 50) + '...' : tagline;
 
                 return `
                     <div class="app-card" onclick="openApp('${app.slug}')">
                         <div class="app-icon">${getAppIcon(app)}</div>
-                        <div class="app-name">${app.name}</div>
-                        <div class="app-funding">
-                            <div class="funding-bar">
-                                <div class="funding-fill" style="width: ${progressPercent}%; background: ${tier.color};"></div>
-                            </div>
-                            <div class="funding-text">$${Math.floor(funded).toLocaleString()}${tier.nextAmount ? ` / $${tier.nextAmount.toLocaleString()}` : ''}</div>
-                            ${tier.next ? `<div class="funding-next">Next: ${tier.next}</div>` : `<div class="funding-next" style="color: ${tier.color};">Max Tier</div>`}
-                            <div class="app-buttons">
-                                <button class="open-app-btn" onclick="openApp('${app.slug}')">Open App</button>
-                                <button class="fund-btn" onclick="event.stopPropagation(); openFundModal('${app.id}', '${app.name}', ${funded}, ${funderCount})">Fund</button>
-                            </div>
+                        <div class="app-info">
+                            <div class="app-name">${app.name}</div>
+                            <div class="app-tagline">${shortTagline}</div>
                         </div>
-                        ${totalRevenue > 0 ? `<div class="app-revenue">&#x1F4B0; $${Math.floor(totalRevenue).toLocaleString()} earned</div>` : ''}
+                        <button class="view-btn" onclick="event.stopPropagation(); openApp('${app.slug}')">View</button>
                     </div>
                 `;
             }).join('');
 
-            // Add mystery/teaser card at the end
+            // Add "What's Next?" card at the end
             grid.innerHTML += `
                 <div class="app-card mystery-card" onclick="openVotingSection()">
-                    <div class="mystery-icon">❓</div>
-                    <div class="mystery-title">What's Next?</div>
-                    <div class="mystery-desc">Vote for the next app to be built</div>
-                    <div class="mystery-buttons">
-                        <button class="mystery-btn" onclick="event.stopPropagation(); openVotingSection()">
-                            🗳️ Cast Your Vote
-                        </button>
+                    <div class="app-icon" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); font-size: 24px;">❓</div>
+                    <div class="app-info">
+                        <div class="app-name">What's Next?</div>
+                        <div class="app-tagline">Vote for the next app to be built</div>
                     </div>
+                    <button class="view-btn" onclick="event.stopPropagation(); openVotingSection()" style="background: #6366f1;">Vote</button>
                 </div>
             `;
 
