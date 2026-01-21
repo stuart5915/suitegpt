@@ -32,18 +32,19 @@ serve(async (req) => {
 Take this rough idea and rewrite it to be clear, concise, and well-structured. Keep the original intent but make it easier to understand.
 
 Rules:
-- Keep it under 200 words
+- Keep it under 150 words
 - Use simple, direct language
-- If it's a feature request, structure as: What + Why + Benefit
-- If it's a bug report, structure as: Issue + Steps/Context + Expected behavior
-- If it's an app idea, structure as: App concept + Target users + Key features
+- NO markdown, NO bold, NO headers - just plain text paragraphs
+- If it's a feature request, structure as: What it is, why it's needed, and the benefit
+- If it's a bug report, structure as: The issue, context, and expected behavior
+- If it's an app idea, structure as: App concept, target users, and key features
 - Don't add features or ideas the user didn't mention
 - Keep the tone professional but friendly
 
 Section: ${section || 'general'}
 Original text: ${text}
 
-Return ONLY the refined text, no explanations or markdown formatting.`
+Return ONLY plain text, no formatting.`
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
