@@ -1402,7 +1402,28 @@ vercel --prod
         let currentUser = null;
 
         function checkAuth() {
-            // First check for notebox_user (existing NoteBox auth)
+            // Prioritize telegram auth (for telegram bot integration)
+            const telegramUser = localStorage.getItem('telegram_user');
+            if (telegramUser) {
+                try {
+                    const tgUser = JSON.parse(telegramUser);
+                    if (tgUser.id) {
+                        currentUser = {
+                            id: 'tg_' + tgUser.id,
+                            telegram_id: tgUser.id.toString(),
+                            display_name: tgUser.username || tgUser.first_name,
+                            auth_type: 'telegram'
+                        };
+                        localStorage.setItem('notebox_user', JSON.stringify(currentUser));
+                        showApp();
+                        return true;
+                    }
+                } catch (e) {
+                    console.error('Error parsing telegram_user:', e);
+                }
+            }
+
+            // Check for notebox_user (existing NoteBox auth)
             const savedUser = localStorage.getItem('notebox_user');
             if (savedUser) {
                 currentUser = JSON.parse(savedUser);
@@ -1422,25 +1443,6 @@ vercel --prod
                 localStorage.setItem('notebox_user', JSON.stringify(currentUser));
                 showApp();
                 return true;
-            }
-
-            // Check for telegram auth from nav component
-            const telegramUser = localStorage.getItem('telegram_user');
-            if (telegramUser) {
-                try {
-                    const tgUser = JSON.parse(telegramUser);
-                    currentUser = {
-                        id: 'tg_' + tgUser.id,
-                        telegram_id: tgUser.id.toString(),
-                        display_name: tgUser.username || tgUser.first_name,
-                        auth_type: 'telegram'
-                    };
-                    localStorage.setItem('notebox_user', JSON.stringify(currentUser));
-                    showApp();
-                    return true;
-                } catch (e) {
-                    console.error('Error parsing telegram_user:', e);
-                }
             }
 
             return false;
