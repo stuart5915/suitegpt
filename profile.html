@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile | SUITE</title>
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <meta name="description" content="Your SUITE Profile - Buy credits, withdraw to USDC, and manage connected accounts.">
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.umd.min.js"></script>
+    <link rel="stylesheet" href="/suite-styles.css">
+    <link rel="stylesheet" href="/nav.css">
+    <style>
+        :root {
+            --gradient-warm: linear-gradient(135deg, #fff5eb 0%, #ffe4d4 20%, #ffd4e3 50%, #e8d5f9 80%, #d4e5ff 100%);
+            --accent-orange: #ff9500;
+            --accent-pink: #ff6b9d;
+            --accent-purple: #a855f7;
+            --accent-green: #22c55e;
+            --text-dark: #2d1b4e;
+            --text-medium: #5a4a6f;
+            --text-light: #8b7a9e;
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.08);
+            --shadow-hover: 0 16px 48px rgba(0, 0, 0, 0.12);
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: var(--gradient-warm);
+            min-height: 100vh;
+            color: var(--text-dark);
+            overflow-x: hidden;
+        }
+
+        /* Animated background blobs */
+        .bg-blob {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+            z-index: -1;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .blob-1 { width: 500px; height: 500px; background: #ffb3d9; top: -100px; left: -100px; }
+        .blob-2 { width: 400px; height: 400px; background: #b3d4ff; top: 50%; right: -100px; animation-delay: -5s; }
+        .blob-3 { width: 350px; height: 350px; background: #ffe0b3; bottom: -50px; left: 30%; animation-delay: -10s; }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -30px) scale(1.05); }
+            66% { transform: translate(-20px, 20px) scale(0.95); }
+        }
+
+        .profile-page {
+            padding-top: 100px;
+            min-height: 100vh;
+        }
+
+        .profile-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0 16px 40px 16px;
+        }
+
+        /* Glass Card */
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: var(--shadow-soft);
+            margin-bottom: 20px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .card-header-icon {
+            font-size: 1.5rem;
+        }
+
+        .card-header h2 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        /* Profile Card */
+        .profile-info {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .profile-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 12px;
+        }
+
+        .profile-row-label {
+            font-size: 0.9rem;
+            color: var(--text-medium);
+        }
+
+        .profile-row-value {
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: var(--text-dark);
+            font-weight: 600;
+        }
+
+        .profile-row-value a {
+            color: var(--accent-purple);
+            text-decoration: none;
+        }
+
+        .profile-row-value a:hover {
+            text-decoration: underline;
+        }
+
+        /* Credits Card */
+        .credits-balance {
+            text-align: center;
+            padding: 24px;
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(255, 149, 0, 0.1));
+            border-radius: 16px;
+            margin-bottom: 20px;
+        }
+
+        .credits-balance-value {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-orange));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+        }
+
+        .credits-balance-label {
+            font-size: 1rem;
+            color: var(--text-medium);
+            margin-top: 4px;
+        }
+
+        .credits-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .btn-credits {
+            padding: 16px 24px;
+            border: none;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-buy {
+            background: linear-gradient(135deg, var(--accent-orange), #ff7b00);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 149, 0, 0.3);
+        }
+
+        .btn-buy:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 149, 0, 0.4);
+        }
+
+        .btn-withdraw {
+            background: linear-gradient(135deg, var(--accent-green), #10b981);
+            color: white;
+            box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+        }
+
+        .btn-withdraw:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+        }
+
+        .btn-credits:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .credits-info {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-light);
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+        }
+
+        .defi-link {
+            display: block;
+            text-align: center;
+            margin-top: 16px;
+            font-size: 0.85rem;
+            color: var(--text-light);
+            text-decoration: none;
+        }
+
+        .defi-link:hover {
+            color: var(--accent-purple);
+        }
+
+        /* Connected Accounts */
+        .account-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 12px;
+            margin-bottom: 10px;
+        }
+
+        .account-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .account-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .account-icon.wallet {
+            background: rgba(168, 85, 247, 0.15);
+        }
+
+        .account-icon.telegram {
+            background: rgba(0, 136, 204, 0.15);
+            color: #0088cc;
+        }
+
+        .account-info {
+            flex: 1;
+        }
+
+        .account-type {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+
+        .account-value {
+            font-weight: 600;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+
+        .btn-account {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-disconnect {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
+        .btn-disconnect:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .btn-connect {
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+            color: white;
+        }
+
+        .btn-connect:hover {
+            transform: translateY(-1px);
+        }
+
+        /* Admin Section */
+        .admin-card {
+            border: 2px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .admin-badge {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-left: auto;
+        }
+
+        .admin-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn-admin {
+            padding: 14px 20px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.5);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-admin:hover {
+            background: rgba(255, 255, 255, 0.8);
+            transform: translateX(4px);
+        }
+
+        .btn-admin-icon {
+            font-size: 1.2rem;
+        }
+
+        /* Not Connected State */
+        .not-connected {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .not-connected-icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+        }
+
+        .not-connected h2 {
+            margin: 0 0 10px 0;
+            font-size: 1.5rem;
+        }
+
+        .not-connected p {
+            color: var(--text-medium);
+            margin-bottom: 24px;
+        }
+
+        .btn-connect-large {
+            padding: 16px 40px;
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-pink));
+            color: white;
+            border: none;
+            border-radius: 16px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 20px rgba(255, 149, 0, 0.3);
+        }
+
+        .btn-connect-large:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(255, 149, 0, 0.4);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 24px;
+            padding: 28px;
+            width: 90%;
+            max-width: 400px;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--text-light);
+            cursor: pointer;
+        }
+
+        .modal h3 {
+            margin: 0 0 20px 0;
+            font-size: 1.3rem;
+        }
+
+        .modal-input-group {
+            margin-bottom: 16px;
+        }
+
+        .modal-input-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-medium);
+            margin-bottom: 8px;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .modal-input:focus {
+            outline: none;
+            border-color: var(--accent-purple);
+        }
+
+        .modal-preview {
+            text-align: center;
+            padding: 16px;
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(255, 149, 0, 0.1));
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .modal-preview-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .modal-preview-label {
+            font-size: 0.85rem;
+            color: var(--text-medium);
+        }
+
+        .btn-modal-action {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-modal-action.buy {
+            background: linear-gradient(135deg, var(--accent-orange), #ff7b00);
+            color: white;
+        }
+
+        .btn-modal-action.withdraw {
+            background: linear-gradient(135deg, var(--accent-green), #10b981);
+            color: white;
+        }
+
+        .btn-modal-action:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .modal-note {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-light);
+            margin-top: 12px;
+        }
+
+        /* Toast notifications */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--text-dark);
+            color: white;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            z-index: 10001;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            background: var(--accent-green);
+        }
+
+        .toast.error {
+            background: #ef4444;
+        }
+
+        @media (max-width: 500px) {
+            .credits-actions {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Background blobs -->
+    <div class="bg-blob blob-1"></div>
+    <div class="bg-blob blob-2"></div>
+    <div class="bg-blob blob-3"></div>
+
+    <nav id="main-nav"></nav>
+    <script src="/nav-component.js"></script>
+
+    <div class="profile-page">
+        <div class="profile-container">
+            <!-- Not Connected State -->
+            <div id="notConnectedState" class="glass-card not-connected">
+                <div class="not-connected-icon">&#128274;</div>
+                <h2>Connect to Continue</h2>
+                <p>Connect your wallet to view your profile, buy credits, and use SUITE apps.</p>
+                <button class="btn-connect-large" onclick="openNavConnectModal()">Connect Wallet</button>
+            </div>
+
+            <!-- Connected State (hidden by default) -->
+            <div id="connectedState" style="display: none;">
+                <!-- Profile Card -->
+                <div class="glass-card">
+                    <div class="card-header">
+                        <span class="card-header-icon">&#128100;</span>
+                        <h2>Your Profile</h2>
+                    </div>
+                    <div class="profile-info">
+                        <div class="profile-row">
+                            <span class="profile-row-label">Connected</span>
+                            <span class="profile-row-value" id="profileWalletAddress">-</span>
+                        </div>
+                        <div class="profile-row" id="telegramRow" style="display: none;">
+                            <span class="profile-row-label">Telegram</span>
+                            <span class="profile-row-value" id="profileTelegram">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Credits Card -->
+                <div class="glass-card">
+                    <div class="card-header">
+                        <span class="card-header-icon">&#9889;</span>
+                        <h2>Credits</h2>
+                    </div>
+                    <div class="credits-balance">
+                        <div class="credits-balance-value" id="creditsBalance">0</div>
+                        <div class="credits-balance-label">Available Credits</div>
+                    </div>
+                    <div class="credits-actions">
+                        <button class="btn-credits btn-buy" onclick="openBuyModal()">
+                            <span>&#43;</span> Buy Credits
+                        </button>
+                        <button class="btn-credits btn-withdraw" onclick="openWithdrawModal()" id="btnWithdraw">
+                            <span>&#8594;</span> Withdraw USDC
+                        </button>
+                    </div>
+                    <div class="credits-info">
+                        <strong>$1 = 1,000 Credits</strong><br>
+                        Credits are used to access SUITE apps and services.
+                    </div>
+                    <a href="/docs/suite-token.html" class="defi-link">See DeFi details &rarr;</a>
+                </div>
+
+                <!-- Connected Accounts Card -->
+                <div class="glass-card">
+                    <div class="card-header">
+                        <span class="card-header-icon">&#128279;</span>
+                        <h2>Connected Accounts</h2>
+                    </div>
+                    <div id="accountsList">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Admin Card (hidden by default) -->
+                <div class="glass-card admin-card" id="adminSection" style="display: none;">
+                    <div class="card-header">
+                        <span class="card-header-icon">&#9881;&#65039;</span>
+                        <h2>Admin</h2>
+                        <span class="admin-badge">ADMIN ONLY</span>
+                    </div>
+                    <div class="admin-actions">
+                        <button class="btn-admin" onclick="window.location.href='/factory.html'">
+                            <span class="btn-admin-icon">&#128736;</span>
+                            <span>App Factory Dashboard</span>
+                        </button>
+                        <button class="btn-admin" onclick="window.location.href='/admin/treasury.html'">
+                            <span class="btn-admin-icon">&#128176;</span>
+                            <span>Treasury Management</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Buy Credits Modal -->
+    <div class="modal-overlay" id="buyModal" onclick="if(event.target === this) closeBuyModal()">
+        <div class="modal">
+            <button class="modal-close" onclick="closeBuyModal()">&times;</button>
+            <h3>Buy Credits</h3>
+            <div class="modal-input-group">
+                <label>Amount (USDC)</label>
+                <input type="number" class="modal-input" id="buyAmount" placeholder="10" min="1" step="1" oninput="updateBuyPreview()">
+            </div>
+            <div class="modal-preview">
+                <div class="modal-preview-value" id="buyPreviewCredits">10,000</div>
+                <div class="modal-preview-label">Credits you'll receive</div>
+            </div>
+            <button class="btn-modal-action buy" id="btnBuyConfirm" onclick="executeBuy()">
+                Buy Credits
+            </button>
+            <p class="modal-note">Requires USDC approval</p>
+        </div>
+    </div>
+
+    <!-- Withdraw Modal -->
+    <div class="modal-overlay" id="withdrawModal" onclick="if(event.target === this) closeWithdrawModal()">
+        <div class="modal">
+            <button class="modal-close" onclick="closeWithdrawModal()">&times;</button>
+            <h3>Withdraw to USDC</h3>
+            <div class="modal-input-group">
+                <label>Credits to withdraw</label>
+                <input type="number" class="modal-input" id="withdrawAmount" placeholder="5000" min="1000" step="1000" oninput="updateWithdrawPreview()">
+            </div>
+            <div class="modal-preview">
+                <div class="modal-preview-value" id="withdrawPreviewUsdc">$5.00</div>
+                <div class="modal-preview-label">USDC you'll receive</div>
+            </div>
+            <button class="btn-modal-action withdraw" id="btnWithdrawConfirm" onclick="executeWithdraw()">
+                Withdraw to USDC
+            </button>
+            <p class="modal-note">Credits are converted back to USDC</p>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Contract config
+        const SUITE_STAKING_ADDRESS = '0xe8fE3C3f071AbaE0aB2f42E0B9bF6C00347dCcE3';
+        const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'; // Base USDC
+        const BASE_CHAIN_ID = 8453;
+        const BASE_RPC = 'https://mainnet.base.org';
+        const CREDITS_PER_USDC = 1000;
+
+        // Admin addresses (lowercase)
+        const ADMIN_ADDRESSES = [
+            '0x92d6c0a3a788d4aece3c82d6e03c95ad69ad5989',
+            '0x3e7a8cc4a3e6b5e61b247c4d98edd1a1e1a29b9b'
+        ];
+
+        const STAKING_ABI = [
+            'function availableCredits(address) view returns (uint256)',
+            'function stakedBalance(address) view returns (uint256)',
+            'function buyAndStake(uint256 usdcAmount) external',
+            'function withdraw(uint256 creditAmount) external',
+            'function suitePerUsdc() view returns (uint256)'
+        ];
+
+        const ERC20_ABI = [
+            'function approve(address spender, uint256 amount) returns (bool)',
+            'function allowance(address owner, address spender) view returns (uint256)',
+            'function balanceOf(address) view returns (uint256)'
+        ];
+
+        let provider, signer, stakingContract, usdcContract;
+        let currentCredits = 0;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            checkConnection();
+        });
+
+        // Listen for wallet changes from nav
+        window.addEventListener('navAuthChanged', () => {
+            checkConnection();
+        });
+
+        async function checkConnection() {
+            const wallet = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWalletAddress');
+            const tgUser = JSON.parse(localStorage.getItem('telegram_user') || 'null');
+
+            if (wallet) {
+                document.getElementById('notConnectedState').style.display = 'none';
+                document.getElementById('connectedState').style.display = 'block';
+                await loadProfile(wallet, tgUser);
+            } else if (tgUser) {
+                // Telegram only - show limited profile
+                document.getElementById('notConnectedState').style.display = 'none';
+                document.getElementById('connectedState').style.display = 'block';
+                loadTelegramOnlyProfile(tgUser);
+            } else {
+                document.getElementById('notConnectedState').style.display = 'block';
+                document.getElementById('connectedState').style.display = 'none';
+            }
+        }
+
+        async function loadProfile(wallet, tgUser) {
+            // Display wallet address
+            document.getElementById('profileWalletAddress').textContent =
+                wallet.slice(0, 6) + '...' + wallet.slice(-4);
+
+            // Display telegram if linked
+            if (tgUser) {
+                document.getElementById('telegramRow').style.display = 'flex';
+                document.getElementById('profileTelegram').textContent = '@' + (tgUser.username || tgUser.first_name);
+            } else {
+                document.getElementById('telegramRow').style.display = 'none';
+            }
+
+            // Load credits from contract
+            await loadCredits(wallet);
+
+            // Update connected accounts
+            updateAccountsList(wallet, tgUser);
+
+            // Check if admin
+            if (ADMIN_ADDRESSES.includes(wallet.toLowerCase())) {
+                document.getElementById('adminSection').style.display = 'block';
+            } else {
+                document.getElementById('adminSection').style.display = 'none';
+            }
+        }
+
+        function loadTelegramOnlyProfile(tgUser) {
+            document.getElementById('profileWalletAddress').textContent = 'Not connected';
+            document.getElementById('telegramRow').style.display = 'flex';
+            document.getElementById('profileTelegram').textContent = '@' + (tgUser.username || tgUser.first_name);
+            document.getElementById('creditsBalance').textContent = '0';
+            document.getElementById('btnWithdraw').disabled = true;
+            updateAccountsList(null, tgUser);
+            document.getElementById('adminSection').style.display = 'none';
+        }
+
+        async function loadCredits(wallet) {
+            try {
+                const readProvider = new ethers.JsonRpcProvider(BASE_RPC);
+                const readStaking = new ethers.Contract(SUITE_STAKING_ADDRESS, STAKING_ABI, readProvider);
+                const creditsRaw = await readStaking.availableCredits(wallet);
+                currentCredits = Number(creditsRaw) / 1e18;
+                document.getElementById('creditsBalance').textContent = Math.floor(currentCredits).toLocaleString();
+                document.getElementById('btnWithdraw').disabled = currentCredits < 1000;
+            } catch (err) {
+                console.error('Failed to load credits:', err);
+                document.getElementById('creditsBalance').textContent = '0';
+            }
+        }
+
+        function updateAccountsList(wallet, tgUser) {
+            const list = document.getElementById('accountsList');
+            let html = '';
+
+            // Wallet account
+            if (wallet) {
+                html += `
+                    <div class="account-item">
+                        <div class="account-icon wallet">&#128279;</div>
+                        <div class="account-info">
+                            <div class="account-type">Wallet</div>
+                            <div class="account-value">${wallet.slice(0, 6)}...${wallet.slice(-4)}</div>
+                        </div>
+                        <button class="btn-account btn-disconnect" onclick="disconnectWallet()">Disconnect</button>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="account-item">
+                        <div class="account-icon wallet">&#128279;</div>
+                        <div class="account-info">
+                            <div class="account-type">Wallet</div>
+                            <div class="account-value" style="color: var(--text-light);">Not connected</div>
+                        </div>
+                        <button class="btn-account btn-connect" onclick="connectWalletFromNav()">Connect</button>
+                    </div>
+                `;
+            }
+
+            // Telegram account
+            if (tgUser) {
+                html += `
+                    <div class="account-item">
+                        <div class="account-icon telegram">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18 1.897-.962 6.502-1.359 8.627-.168.9-.5 1.201-.82 1.23-.697.064-1.226-.461-1.901-.903-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.015-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.139-5.062 3.345-.479.329-.913.489-1.302.481-.428-.009-1.252-.242-1.865-.442-.751-.244-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.831-2.529 6.998-3.015 3.333-1.386 4.025-1.627 4.477-1.635.099-.002.321.023.465.142.121.1.154.234.169.337.015.103.034.337.019.519z"/>
+                            </svg>
+                        </div>
+                        <div class="account-info">
+                            <div class="account-type">Telegram</div>
+                            <div class="account-value">@${tgUser.username || tgUser.first_name}</div>
+                        </div>
+                        <button class="btn-account btn-disconnect" onclick="disconnectTelegram(); checkConnection();">Unlink</button>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="account-item">
+                        <div class="account-icon telegram">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18 1.897-.962 6.502-1.359 8.627-.168.9-.5 1.201-.82 1.23-.697.064-1.226-.461-1.901-.903-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.015-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.139-5.062 3.345-.479.329-.913.489-1.302.481-.428-.009-1.252-.242-1.865-.442-.751-.244-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.831-2.529 6.998-3.015 3.333-1.386 4.025-1.627 4.477-1.635.099-.002.321.023.465.142.121.1.154.234.169.337.015.103.034.337.019.519z"/>
+                            </svg>
+                        </div>
+                        <div class="account-info">
+                            <div class="account-type">Telegram</div>
+                            <div class="account-value" style="color: var(--text-light);">Not linked</div>
+                        </div>
+                        <button class="btn-account btn-connect" onclick="loginWithTelegramWidget()">Link</button>
+                    </div>
+                `;
+            }
+
+            list.innerHTML = html;
+        }
+
+        // Modal functions
+        function openBuyModal() {
+            document.getElementById('buyAmount').value = '10';
+            updateBuyPreview();
+            document.getElementById('buyModal').classList.add('active');
+        }
+
+        function closeBuyModal() {
+            document.getElementById('buyModal').classList.remove('active');
+        }
+
+        function updateBuyPreview() {
+            const amount = parseFloat(document.getElementById('buyAmount').value) || 0;
+            const credits = amount * CREDITS_PER_USDC;
+            document.getElementById('buyPreviewCredits').textContent = credits.toLocaleString();
+        }
+
+        function openWithdrawModal() {
+            const maxCredits = Math.floor(currentCredits);
+            document.getElementById('withdrawAmount').value = Math.min(5000, maxCredits);
+            document.getElementById('withdrawAmount').max = maxCredits;
+            updateWithdrawPreview();
+            document.getElementById('withdrawModal').classList.add('active');
+        }
+
+        function closeWithdrawModal() {
+            document.getElementById('withdrawModal').classList.remove('active');
+        }
+
+        function updateWithdrawPreview() {
+            const credits = parseFloat(document.getElementById('withdrawAmount').value) || 0;
+            const usdc = credits / CREDITS_PER_USDC;
+            document.getElementById('withdrawPreviewUsdc').textContent = '$' + usdc.toFixed(2);
+        }
+
+        // Execute transactions
+        async function executeBuy() {
+            const btn = document.getElementById('btnBuyConfirm');
+            const originalText = btn.textContent;
+
+            try {
+                btn.disabled = true;
+                btn.textContent = 'Connecting...';
+
+                // Check network and switch if needed
+                await ensureBaseNetwork();
+
+                // Get signer
+                provider = new ethers.BrowserProvider(window.ethereum);
+                signer = await provider.getSigner();
+
+                const usdcAmount = parseFloat(document.getElementById('buyAmount').value);
+                if (!usdcAmount || usdcAmount <= 0) {
+                    throw new Error('Please enter a valid amount');
+                }
+
+                // USDC has 6 decimals
+                const usdcAmountWei = ethers.parseUnits(usdcAmount.toString(), 6);
+
+                // Check USDC balance
+                usdcContract = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, signer);
+                const balance = await usdcContract.balanceOf(await signer.getAddress());
+                if (balance < usdcAmountWei) {
+                    throw new Error('Insufficient USDC balance');
+                }
+
+                // Check and approve USDC
+                btn.textContent = 'Checking approval...';
+                const allowance = await usdcContract.allowance(await signer.getAddress(), SUITE_STAKING_ADDRESS);
+                if (allowance < usdcAmountWei) {
+                    btn.textContent = 'Approving USDC...';
+                    const approveTx = await usdcContract.approve(SUITE_STAKING_ADDRESS, ethers.MaxUint256);
+                    await approveTx.wait();
+                }
+
+                // Buy and stake
+                btn.textContent = 'Buying credits...';
+                stakingContract = new ethers.Contract(SUITE_STAKING_ADDRESS, STAKING_ABI, signer);
+                const tx = await stakingContract.buyAndStake(usdcAmountWei);
+                await tx.wait();
+
+                // Success
+                closeBuyModal();
+                showToast('Credits purchased successfully!', 'success');
+
+                // Reload credits
+                const wallet = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWalletAddress');
+                await loadCredits(wallet);
+                if (window.refreshNavCredits) window.refreshNavCredits();
+
+            } catch (err) {
+                console.error('Buy failed:', err);
+                showToast(err.message || 'Transaction failed', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        async function executeWithdraw() {
+            const btn = document.getElementById('btnWithdrawConfirm');
+            const originalText = btn.textContent;
+
+            try {
+                btn.disabled = true;
+                btn.textContent = 'Connecting...';
+
+                // Check network
+                await ensureBaseNetwork();
+
+                // Get signer
+                provider = new ethers.BrowserProvider(window.ethereum);
+                signer = await provider.getSigner();
+
+                const creditAmount = parseFloat(document.getElementById('withdrawAmount').value);
+                if (!creditAmount || creditAmount <= 0) {
+                    throw new Error('Please enter a valid amount');
+                }
+
+                if (creditAmount > currentCredits) {
+                    throw new Error('Insufficient credits');
+                }
+
+                // Credits are in 18 decimals (same as SUITE tokens)
+                const creditAmountWei = ethers.parseUnits(creditAmount.toString(), 18);
+
+                // Execute withdraw
+                btn.textContent = 'Withdrawing...';
+                stakingContract = new ethers.Contract(SUITE_STAKING_ADDRESS, STAKING_ABI, signer);
+                const tx = await stakingContract.withdraw(creditAmountWei);
+                await tx.wait();
+
+                // Success
+                closeWithdrawModal();
+                showToast('Withdrawal successful!', 'success');
+
+                // Reload credits
+                const wallet = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWalletAddress');
+                await loadCredits(wallet);
+                if (window.refreshNavCredits) window.refreshNavCredits();
+
+            } catch (err) {
+                console.error('Withdraw failed:', err);
+                showToast(err.message || 'Transaction failed', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        async function ensureBaseNetwork() {
+            if (!window.ethereum) {
+                throw new Error('Please install MetaMask');
+            }
+
+            const chainIdHex = await window.ethereum.request({ method: 'eth_chainId' });
+            const chainId = parseInt(chainIdHex, 16);
+
+            if (chainId !== BASE_CHAIN_ID) {
+                try {
+                    await window.ethereum.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: '0x' + BASE_CHAIN_ID.toString(16) }]
+                    });
+                } catch (switchError) {
+                    if (switchError.code === 4902) {
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [{
+                                chainId: '0x' + BASE_CHAIN_ID.toString(16),
+                                chainName: 'Base',
+                                nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+                                rpcUrls: ['https://mainnet.base.org'],
+                                blockExplorerUrls: ['https://basescan.org']
+                            }]
+                        });
+                    } else {
+                        throw new Error('Please switch to Base network');
+                    }
+                }
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast ' + type + ' show';
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

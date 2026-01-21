@@ -59,6 +59,7 @@ contract SuiteStaking is Ownable, ReentrancyGuard, Pausable {
     event Staked(address indexed user, uint256 amount);
     event Unstaked(address indexed user, uint256 returned, uint256 burned);
     event BoughtAndStaked(address indexed user, uint256 usdcAmount, uint256 suiteAmount);
+    event Withdrawn(address indexed user, uint256 creditAmount, uint256 usdcAmount);
     event CreditsUsed(address indexed user, address indexed app, uint256 amount);
     event AppAuthorized(address indexed app);
     event AppRevoked(address indexed app);
@@ -199,6 +200,37 @@ contract SuiteStaking is Ownable, ReentrancyGuard, Pausable {
         stakedBalance[msg.sender] += suiteAmount;
 
         emit BoughtAndStaked(msg.sender, usdcAmount, suiteAmount);
+    }
+
+    /**
+     * @notice Withdraw credits and receive USDC (normie-friendly exit)
+     * @dev Burns SUITE from staked balance and returns USDC from treasury
+     * @param creditAmount Amount of credits (SUITE in 18 decimals) to withdraw
+     *
+     * NOTE: Treasury must approve this contract to spend USDC for withdrawals
+     */
+    function withdraw(uint256 creditAmount) external nonReentrant whenNotPaused {
+        if (creditAmount == 0) revert ZeroAmount();
+        if (creditAmount > availableCredits(msg.sender)) revert InsufficientCredits();
+
+        // Calculate USDC to return
+        // Reverse of buy: creditAmount / suitePerUsdc / 1e12
+        // creditAmount is in 18 decimals, USDC is 6 decimals
+        uint256 usdcAmount = creditAmount / suitePerUsdc / 1e12;
+
+        // Update state: deduct from staked balance
+        stakedBalance[msg.sender] -= creditAmount;
+
+        // Burn the SUITE tokens (they're in this contract)
+        if (creditAmount > 0) {
+            suiteToken.burn(creditAmount);
+        }
+
+        // Return USDC from treasury to user
+        // NOTE: Requires treasury to approve staking contract to spend USDC
+        usdc.safeTransferFrom(treasury, msg.sender, usdcAmount);
+
+        emit Withdrawn(msg.sender, creditAmount, usdcAmount);
     }
 
     // ============ App Functions ============

@@ -50,7 +50,7 @@
                 <a href="/docs/">Docs</a>
                 <a href="/learn.html">Learn</a>
                 <a href="/factory.html">Governance</a>
-                <a href="/wallet.html">Wallet</a>
+                <a href="/profile.html">Profile</a>
             </div>
             <div class="nav-actions" id="navAuthArea">
                 <!-- Not logged in: Connect button -->
@@ -63,7 +63,7 @@
 
                 <!-- Logged in: Credits + Identity (hidden by default) -->
                 <div class="auth-display" id="navAuthDisplay" style="display: none;">
-                    <a href="/wallet.html" class="auth-credits" title="Your Credits">
+                    <a href="/profile.html" class="auth-credits" title="Your Credits">
                         <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
                             <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
                         </svg>

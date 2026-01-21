@@ -63,6 +63,7 @@ contract SuiteStakingTest is Test {
     // Events (must be declared to use in expectEmit)
     event Staked(address indexed user, uint256 amount);
     event Unstaked(address indexed user, uint256 returned, uint256 burned);
+    event Withdrawn(address indexed user, uint256 creditAmount, uint256 usdcAmount);
     event CreditsUsed(address indexed user, address indexed app, uint256 amount);
 
     function setUp() public {
@@ -485,5 +486,142 @@ contract SuiteStakingTest is Test {
 
         vm.prank(app1);
         staking.useCredits(user1, 50e18);
+    }
+
+    // ============ Withdraw Tests ============
+
+    function test_WithdrawReturnsUsdc() public {
+        // Setup: buyAndStake 10 USDC = 10,000 credits
+        vm.prank(user1);
+        usdc.approve(address(staking), 10e6);
+        vm.prank(user1);
+        staking.buyAndStake(10e6);
+
+        // Treasury needs USDC and must approve staking contract
+        usdc.mint(treasury, 100e6);
+        vm.prank(treasury);
+        usdc.approve(address(staking), type(uint256).max);
+
+        uint256 usdcBalanceBefore = usdc.balanceOf(user1);
+        uint256 creditsBefore = staking.availableCredits(user1);
+
+        // Withdraw 5,000 credits = 5 USDC
+        uint256 creditsToWithdraw = 5000e18;
+        vm.prank(user1);
+        staking.withdraw(creditsToWithdraw);
+
+        // User should receive 5 USDC
+        assertEq(usdc.balanceOf(user1), usdcBalanceBefore + 5e6);
+        // Credits should decrease
+        assertEq(staking.availableCredits(user1), creditsBefore - creditsToWithdraw);
+        assertEq(staking.stakedBalance(user1), creditsBefore - creditsToWithdraw);
+    }
+
+    function test_WithdrawBurnsSuiteTokens() public {
+        // Setup: buyAndStake 10 USDC
+        vm.prank(user1);
+        usdc.approve(address(staking), 10e6);
+        vm.prank(user1);
+        staking.buyAndStake(10e6);
+
+        // Treasury setup
+        usdc.mint(treasury, 100e6);
+        vm.prank(treasury);
+        usdc.approve(address(staking), type(uint256).max);
+
+        uint256 contractBalanceBefore = suiteToken.balanceOf(address(staking));
+
+        // Withdraw 5,000 credits
+        uint256 creditsToWithdraw = 5000e18;
+        vm.prank(user1);
+        staking.withdraw(creditsToWithdraw);
+
+        // SUITE tokens should be burned (contract balance decreases)
+        assertEq(suiteToken.balanceOf(address(staking)), contractBalanceBefore - creditsToWithdraw);
+    }
+
+    function test_WithdrawZeroReverts() public {
+        vm.prank(user1);
+        vm.expectRevert(SuiteStaking.ZeroAmount.selector);
+        staking.withdraw(0);
+    }
+
+    function test_WithdrawMoreThanAvailableReverts() public {
+        // Setup: stake some tokens
+        vm.prank(user1);
+        suiteToken.approve(address(staking), 100e18);
+        vm.prank(user1);
+        staking.stake(100e18);
+
+        // Try to withdraw more than available
+        vm.prank(user1);
+        vm.expectRevert(SuiteStaking.InsufficientCredits.selector);
+        staking.withdraw(200e18);
+    }
+
+    function test_WithdrawWithUsedCreditsReverts() public {
+        // Setup: stake 100, use 80 credits
+        vm.prank(user1);
+        suiteToken.approve(address(staking), 100e18);
+        vm.prank(user1);
+        staking.stake(100e18);
+        vm.prank(owner);
+        staking.authorizeApp(app1);
+        vm.prank(app1);
+        staking.useCredits(user1, 80e18);
+
+        // Available credits = 20
+        assertEq(staking.availableCredits(user1), 20e18);
+
+        // Try to withdraw 50 (more than available 20)
+        vm.prank(user1);
+        vm.expectRevert(SuiteStaking.InsufficientCredits.selector);
+        staking.withdraw(50e18);
+    }
+
+    function test_WithdrawEmitsEvent() public {
+        // Setup: buyAndStake 10 USDC
+        vm.prank(user1);
+        usdc.approve(address(staking), 10e6);
+        vm.prank(user1);
+        staking.buyAndStake(10e6);
+
+        // Treasury setup
+        usdc.mint(treasury, 100e6);
+        vm.prank(treasury);
+        usdc.approve(address(staking), type(uint256).max);
+
+        // Withdraw 5,000 credits = 5 USDC
+        uint256 creditsToWithdraw = 5000e18;
+        uint256 expectedUsdc = 5e6;
+
+        vm.expectEmit(true, false, false, true);
+        emit Withdrawn(user1, creditsToWithdraw, expectedUsdc);
+
+        vm.prank(user1);
+        staking.withdraw(creditsToWithdraw);
+    }
+
+    function test_WithdrawFullAmount() public {
+        // Setup: buyAndStake 10 USDC = 10,000 credits
+        vm.prank(user1);
+        usdc.approve(address(staking), 10e6);
+        vm.prank(user1);
+        staking.buyAndStake(10e6);
+
+        // Treasury setup
+        usdc.mint(treasury, 100e6);
+        vm.prank(treasury);
+        usdc.approve(address(staking), type(uint256).max);
+
+        uint256 fullCredits = staking.availableCredits(user1);
+
+        // Withdraw all credits
+        vm.prank(user1);
+        staking.withdraw(fullCredits);
+
+        // User should have 0 credits left
+        assertEq(staking.availableCredits(user1), 0);
+        assertEq(staking.stakedBalance(user1), 0);
     }
 }
