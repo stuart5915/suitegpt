@@ -600,6 +600,53 @@
             }
         }
 
+        /* Category Tabs */
+        .category-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .category-tab {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 100px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .category-tab:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .category-tab.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .category-tab .tab-icon {
+            margin-right: 6px;
+        }
+
+        @media (max-width: 768px) {
+            .category-tabs {
+                gap: 6px;
+                justify-content: center;
+            }
+            .category-tab {
+                padding: 8px 14px;
+                font-size: 0.8rem;
+            }
+        }
+
         /* Filter & Sort Bar */
         .apps-filter-bar {
             display: flex;
@@ -4832,6 +4879,28 @@
             <!-- All Apps Tab Content -->
                 <div class="tab-content active" id="contentApps">
 
+            <!-- Category Tabs -->
+            <div class="category-tabs" id="categoryTabs">
+                <button class="category-tab active" onclick="filterByCategory('all')" data-category="all">
+                    <span class="tab-icon">✨</span>All
+                </button>
+                <button class="category-tab" onclick="filterByCategory('health')" data-category="health">
+                    <span class="tab-icon">🏥</span>Health
+                </button>
+                <button class="category-tab" onclick="filterByCategory('productivity')" data-category="productivity">
+                    <span class="tab-icon">📊</span>Productivity
+                </button>
+                <button class="category-tab" onclick="filterByCategory('finance')" data-category="finance">
+                    <span class="tab-icon">💰</span>Finance
+                </button>
+                <button class="category-tab" onclick="filterByCategory('creative')" data-category="creative">
+                    <span class="tab-icon">🎨</span>Creative
+                </button>
+                <button class="category-tab" onclick="filterByCategory('games')" data-category="games">
+                    <span class="tab-icon">🎮</span>Games
+                </button>
+            </div>
+
             <!-- Featured Apps (Scale Tier) -->
             <div class="featured-apps-section" id="featuredAppsSection" style="display: none;">
                 <div class="featured-header">
@@ -5398,71 +5467,32 @@
         let selectedAsset = 'ETH';
         let apps = [];
         let currentApp = null;
-        let currentFilter = 'all';
-        let currentSort = 'funded';
+        let currentCategory = 'all';
+        let currentSort = 'name';
 
-        // ===== FILTER & SORT FUNCTIONS =====
-        function filterApps(filter) {
-            currentFilter = filter;
-            // Update active button in filter bar (legacy)
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.filter === filter);
-            });
-            // Update sidebar filter items
-            document.querySelectorAll('.sidebar-item[data-filter]').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.filter === filter);
+        // ===== CATEGORY FILTER FUNCTION =====
+        function filterByCategory(category) {
+            currentCategory = category;
+            // Update active tab
+            document.querySelectorAll('.category-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.category === category);
             });
             renderAppsGrid();
-        }
-
-        function sortApps(sort) {
-            currentSort = sort;
-            // Update sidebar sort items
-            document.querySelectorAll('.sidebar-item[data-sort]').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.sort === sort);
-            });
-            renderAppsGrid();
-        }
-
-        // Helper function to update sidebar filter active state
-        function updateSidebarActive(element) {
-            document.querySelectorAll('.sidebar-item[data-filter]').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            element.classList.add('active');
-        }
-
-        // Helper function to update sidebar sort active state
-        function updateSortActive(element) {
-            document.querySelectorAll('.sidebar-item[data-sort]').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            element.classList.add('active');
         }
 
         function getFilteredAndSortedApps() {
             let filtered = [...apps];
 
-            // Apply type filter
-            if (currentFilter !== 'all') {
+            // Apply category filter
+            if (currentCategory !== 'all') {
                 filtered = filtered.filter(app => {
-                    const type = (app.type || app.category || 'app').toLowerCase();
-                    return type === currentFilter || type.includes(currentFilter);
+                    const appCategory = (app.category || app.type || '').toLowerCase();
+                    return appCategory === currentCategory || appCategory.includes(currentCategory);
                 });
             }
 
-            // Apply sort
-            switch (currentSort) {
-                case 'funded':
-                    filtered.sort((a, b) => (parseFloat(b.total_funded) || 0) - (parseFloat(a.total_funded) || 0));
-                    break;
-                case 'newest':
-                    filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-                    break;
-                case 'name':
-                    filtered.sort((a, b) => a.name.localeCompare(b.name));
-                    break;
-            }
+            // Sort alphabetically by default
+            filtered.sort((a, b) => a.name.localeCompare(b.name));
 
             return filtered;
         }
