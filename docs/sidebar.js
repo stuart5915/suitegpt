@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <a href="earning.html" class="sidebar-link ${isActive('earning.html')}">💰 Earn SUITE Credits</a>
             <a href="white-label-apps.html" class="sidebar-link ${isActive('white-label-apps.html')}">🏪 White-Label Apps</a>
             <a href="revenue.html" class="sidebar-link ${isActive('revenue.html')}">💵 Revenue & Fees</a>
-            <a href="user-flows.html" class="sidebar-link ${isActive('user-flows.html')}">🔄 User Flows</a>
+            <a href="user-flows.html" class="sidebar-link ${isActive('user-flows.html')}">🔄 Flows & Actions</a>
         </div>
 
         <div class="sidebar-section">
