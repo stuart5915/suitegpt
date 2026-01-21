@@ -42,17 +42,18 @@ Take this rough idea and rewrite it to be clear, concise, and well-structured. K
 Rules:
 - Keep it under 150 words
 - Use simple, direct language
-- NO markdown, NO bold, NO headers - just plain text paragraphs
-- If it's a feature request, structure as: What it is, why it's needed, and the benefit
-- If it's a bug report, structure as: The issue, context, and expected behavior
-- If it's an app idea, structure as: App concept, target users, and key features
+- NO markdown, NO bold, NO headers - just plain text
+- Separate each section with a blank line for readability
+- If it's a feature request, use 3 short paragraphs: What it is, why it's needed, and the benefit
+- If it's a bug report, use 3 short paragraphs: The issue, context, and expected behavior
+- If it's an app idea, use 3 short paragraphs: App concept, target users, and key features
 - Don't add features or ideas the user didn't mention
 - Keep the tone professional but friendly
 
 Section: ${section || 'general'}
 Original text: ${text}
 
-Return ONLY plain text, no formatting.`
+Return plain text with paragraph breaks between sections.`
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
