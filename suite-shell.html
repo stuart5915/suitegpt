@@ -6189,8 +6189,9 @@
                 return;
             }
 
-            // Save to localStorage
-            const tgUser = { username: username };
+            // Save to localStorage (preserve existing ID if present)
+            const existing = JSON.parse(localStorage.getItem('telegram_user') || '{}');
+            const tgUser = { ...existing, username: username, authType: 'telegram' };
             localStorage.setItem('telegram_user', JSON.stringify(tgUser));
 
             // Show the form
@@ -6883,10 +6884,20 @@
 
                 if (data && data.length > 0) {
                     currentCredits = parseFloat(data[0].balance || 0) + parseFloat(data[0].locked_balance || 0);
-                    // If wallet has linked telegram, store it
+                    // If wallet has linked telegram, store it (but don't overwrite if already has ID)
                     if (data[0].linked_telegram_username) {
-                        const tgUser = { username: data[0].linked_telegram_username.replace('@', ''), authType: 'telegram' };
-                        localStorage.setItem('telegram_user', JSON.stringify(tgUser));
+                        const existing = JSON.parse(localStorage.getItem('telegram_user') || '{}');
+                        if (!existing.id) {
+                            // Only update if we don't already have a complete telegram user with ID
+                            const tgUser = {
+                                ...existing,
+                                username: data[0].linked_telegram_username.replace('@', ''),
+                                authType: 'telegram',
+                                // Include telegram_id from DB if available
+                                ...(data[0].linked_telegram_id ? { id: data[0].linked_telegram_id } : {})
+                            };
+                            localStorage.setItem('telegram_user', JSON.stringify(tgUser));
+                        }
                     }
                 } else {
                     // Create new wallet record with 0 balance
