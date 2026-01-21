@@ -289,7 +289,10 @@
                                     <div id="userAvailableCredits" style="font-size: 1rem; font-weight: 700; color: #f59e0b;">-</div>
                                 </div>
                             </div>
-                            <button onclick="refreshBalances()" style="margin-top: 12px; padding: 8px 16px; background: rgba(0,0,0,0.05); color: #6b7280; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; font-size: 0.8rem; cursor: pointer; width: 100%;">🔄 Refresh Balances</button>
+                            <div style="display: flex; gap: 8px; margin-top: 12px;">
+                                <button onclick="refreshBalances()" style="flex: 1; padding: 8px 16px; background: rgba(0,0,0,0.05); color: #6b7280; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; font-size: 0.8rem; cursor: pointer;">🔄 Refresh</button>
+                                <button onclick="addSuiteToWallet()" style="flex: 1; padding: 8px 16px; background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; font-size: 0.8rem; cursor: pointer;">🦊 Add SUITE to Wallet</button>
+                            </div>
                         </div>
 
                         <!-- Connect Wallet Button -->
@@ -443,6 +446,36 @@
                 document.getElementById('userAvailableCredits').textContent = (Number(credits) / 1e18).toLocaleString();
             } catch (err) {
                 console.error('Refresh error:', err);
+            }
+        }
+
+        // Add SUITE token to MetaMask
+        async function addSuiteToWallet() {
+            if (!window.ethereum) {
+                alert('Please install MetaMask!');
+                return;
+            }
+
+            try {
+                const wasAdded = await window.ethereum.request({
+                    method: 'wallet_watchAsset',
+                    params: {
+                        type: 'ERC20',
+                        options: {
+                            address: SUITE_TOKEN,
+                            symbol: 'SUITE',
+                            decimals: 18,
+                            image: 'https://getsuite.app/assets/suite-logo-new.png'
+                        }
+                    }
+                });
+
+                if (wasAdded) {
+                    showTxStatus('SUITE token added to wallet!', 'success');
+                }
+            } catch (err) {
+                console.error('Add token error:', err);
+                showTxStatus('Failed to add token: ' + err.message, 'error');
             }
         }
 
