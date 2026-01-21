@@ -1907,6 +1907,12 @@
             border: 1px solid rgba(168, 85, 247, 0.3);
         }
 
+        .proposal-app-tag.new-app-tag {
+            background: linear-gradient(135deg, rgba(255, 149, 0, 0.2), rgba(255, 107, 0, 0.2));
+            color: #ff9500;
+            border-color: rgba(255, 149, 0, 0.4);
+        }
+
         .idea-card-header {
             display: flex;
             align-items: center;
@@ -2805,23 +2811,40 @@
         function groupProposalsByApp(proposals) {
             const groups = {};
 
-            // Group by app_slug (null = "General")
+            // Group by app_slug (null = "General", is_new_app = "New App Ideas")
             proposals.forEach(p => {
-                const slug = p.app_slug || '_general';
+                let slug;
+                if (p.is_new_app) {
+                    slug = '_new_app';
+                } else {
+                    slug = p.app_slug || '_general';
+                }
+
                 if (!groups[slug]) {
-                    const app = p.app_slug ? factoryApps.find(a => a.slug === p.app_slug) : null;
-                    groups[slug] = {
-                        slug: slug,
-                        name: app ? app.name : 'General',
-                        emoji: app ? '📱' : '📋',
-                        proposals: []
-                    };
+                    if (slug === '_new_app') {
+                        groups[slug] = {
+                            slug: slug,
+                            name: 'New App Ideas',
+                            emoji: '🆕',
+                            proposals: []
+                        };
+                    } else {
+                        const app = p.app_slug ? factoryApps.find(a => a.slug === p.app_slug) : null;
+                        groups[slug] = {
+                            slug: slug,
+                            name: app ? app.name : 'General',
+                            emoji: app ? '📱' : '📋',
+                            proposals: []
+                        };
+                    }
                 }
                 groups[slug].proposals.push(p);
             });
 
-            // Sort: apps first (alphabetically), then General last
+            // Sort: New App first, then apps (alphabetically), then General last
             return Object.values(groups).sort((a, b) => {
+                if (a.slug === '_new_app') return -1;
+                if (b.slug === '_new_app') return 1;
                 if (a.slug === '_general') return 1;
                 if (b.slug === '_general') return -1;
                 return a.name.localeCompare(b.name);
@@ -3302,9 +3325,16 @@
 
             const rejectionReason = proposal.reject_reason || proposal.rejection_reason;
 
-            // Get app name if proposal is linked to an app
-            const linkedApp = proposal.app_slug ? factoryApps.find(a => a.slug === proposal.app_slug) : null;
-            const appTag = linkedApp ? `<span class="proposal-app-tag">📱 ${escapeHtml(linkedApp.name)}</span>` : '';
+            // Get app name if proposal is linked to an app, or show New App tag
+            let appTag = '';
+            if (proposal.is_new_app) {
+                appTag = '<span class="proposal-app-tag new-app-tag">🆕 New App</span>';
+            } else if (proposal.app_slug) {
+                const linkedApp = factoryApps.find(a => a.slug === proposal.app_slug);
+                if (linkedApp) {
+                    appTag = `<span class="proposal-app-tag">📱 ${escapeHtml(linkedApp.name)}</span>`;
+                }
+            }
 
             return `
                 <div class="idea-card ${proposal.status} collapsed">
