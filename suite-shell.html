@@ -6676,9 +6676,6 @@
 
             // Update side panel
             updateSidePanel(app);
-
-            // Load requests for this app
-            loadAppRequests(app.slug);
         }
 
         function goHome() {
@@ -6731,6 +6728,24 @@
         }
 
         function loadUser() {
+            // Prioritize telegram_user (has proper auth with ID)
+            const tgUser = localStorage.getItem('telegram_user');
+            if (tgUser) {
+                try {
+                    const parsed = JSON.parse(tgUser);
+                    if (parsed.id) {
+                        return {
+                            id: parsed.id,
+                            username: parsed.username || parsed.first_name,
+                            firstName: parsed.first_name || parsed.username,
+                            photoUrl: parsed.photo_url || null,
+                            source: 'telegram'
+                        };
+                    }
+                } catch (e) {}
+            }
+
+            // Fallback to suiteUser
             const stored = localStorage.getItem('suiteUser') || localStorage.getItem('suiteTelegramUser');
             if (stored) {
                 try {
