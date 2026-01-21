@@ -1111,6 +1111,46 @@
             resize: vertical;
         }
 
+        .refine-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 10px;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.2));
+            border: 1px solid rgba(168, 85, 247, 0.4);
+            border-radius: 20px;
+            color: #a855f7;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .refine-btn:hover {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(168, 85, 247, 0.3));
+            border-color: rgba(168, 85, 247, 0.6);
+            transform: translateY(-1px);
+        }
+
+        .refine-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .refine-btn .refine-icon {
+            font-size: 1rem;
+        }
+
+        .refine-btn.refining .refine-text {
+            display: none;
+        }
+
+        .refine-btn.refining::after {
+            content: 'Refining...';
+        }
+
         .form-select {
             cursor: pointer;
         }
@@ -2775,6 +2815,10 @@
                     <textarea class="form-textarea" id="proposalContent"
                         placeholder="Describe your idea, feature request, bug, or suggestion..."
                         rows="6" required></textarea>
+                    <button type="button" class="refine-btn" id="refineBtn" onclick="refineProposal()">
+                        <span class="refine-icon">✨</span>
+                        <span class="refine-text">Refine with AI</span>
+                    </button>
                 </div>
 
                 <div class="form-group">
@@ -4275,6 +4319,51 @@
                     Go to the NoteBox tab and use "Push To →" to send ideas to getSuite Governance.
                 </p>
             `;
+        }
+
+        // Refine proposal with AI
+        async function refineProposal() {
+            const textarea = document.getElementById('proposalContent');
+            const btn = document.getElementById('refineBtn');
+            const text = textarea.value.trim();
+
+            if (text.length < 10) {
+                alert('Please write a bit more before refining');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.classList.add('refining');
+
+            try {
+                const section = document.getElementById('proposalSection').value;
+                const response = await fetch(
+                    `${SUPABASE_URL}/functions/v1/factory-refine`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text, section })
+                    }
+                );
+
+                const data = await response.json();
+
+                if (data.refined) {
+                    textarea.value = data.refined;
+                    textarea.style.borderColor = '#a855f7';
+                    setTimeout(() => {
+                        textarea.style.borderColor = '';
+                    }, 2000);
+                } else if (data.error) {
+                    alert(data.error);
+                }
+            } catch (error) {
+                console.error('Refine error:', error);
+                alert('Failed to refine. Please try again.');
+            } finally {
+                btn.disabled = false;
+                btn.classList.remove('refining');
+            }
         }
 
         // Submit proposal via edge function
