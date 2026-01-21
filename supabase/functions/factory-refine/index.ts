@@ -42,7 +42,8 @@ Take this rough idea and rewrite it to be clear, concise, and well-structured. K
 Rules:
 - Keep it under 150 words
 - Use simple, direct language
-- NO markdown, NO bold, NO headers - just plain text
+- NO markdown, NO bold, NO headers, NO title line - just the proposal content
+- Start directly with the proposal, no preamble
 - Separate each section with a blank line for readability
 - If it's a feature request, use 3 short paragraphs: What it is, why it's needed, and the benefit
 - If it's a bug report, use 3 short paragraphs: The issue, context, and expected behavior
@@ -50,10 +51,9 @@ Rules:
 - Don't add features or ideas the user didn't mention
 - Keep the tone professional but friendly
 
-Section: ${section || 'general'}
 Original text: ${text}
 
-Return plain text with paragraph breaks between sections.`
+Return plain text with paragraph breaks. Start directly with the content, no title.`
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
