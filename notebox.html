@@ -1076,6 +1076,32 @@
             background: #2d2d2d;
         }
 
+        /* Section selector buttons */
+        .section-option-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 14px 16px;
+            background: #1a1a1a;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .section-option-btn:hover {
+            background: #2d2d2d;
+            border-color: var(--accent);
+        }
+
+        .section-option-btn span {
+            font-size: 1.2rem;
+        }
+
         .idea-action-btn.push-to {
             color: var(--accent);
         }
@@ -1370,6 +1396,31 @@
                         <span id="pushBtnText">Send to Claude & Approve</span>
                         <span id="pushBtnLoading" style="display: none;">Waiting for Claude...</span>
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Governance Section Selector Modal -->
+        <div class="dismiss-modal" id="sectionSelectorModal" style="display: none;">
+            <div class="dismiss-modal-content" style="max-width: 360px;">
+                <h3>Submit to Governance</h3>
+                <p style="color: #888; font-size: 0.9rem; margin-bottom: 16px;">Which section should this proposal go to?</p>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <button class="section-option-btn" onclick="submitToGovernance('suite_apps')">
+                        <span>📱</span> SUITE Apps
+                    </button>
+                    <button class="section-option-btn" onclick="submitToGovernance('business')">
+                        <span>💼</span> Business
+                    </button>
+                    <button class="section-option-btn" onclick="submitToGovernance('content')">
+                        <span>📝</span> Articles
+                    </button>
+                    <button class="section-option-btn" onclick="submitToGovernance('social')">
+                        <span>📣</span> Social
+                    </button>
+                </div>
+                <div class="dismiss-modal-actions" style="margin-top: 16px;">
+                    <button class="cancel-btn" onclick="closeSectionSelector()">Cancel</button>
                 </div>
             </div>
         </div>
@@ -2587,9 +2638,87 @@ Format as a numbered list from most to least promising.`;
         }
 
         // Push to destination
+        let pendingPushIdeaId = null;
+
         function pushTo(ideaId, target) {
             document.getElementById(`pushMenu-${ideaId}`).classList.remove('active');
-            openPushModal(ideaId, target);
+
+            if (target === 'suite') {
+                // Show section selector for governance
+                pendingPushIdeaId = ideaId;
+                document.getElementById('sectionSelectorModal').style.display = 'flex';
+            } else if (target === 'artstu') {
+                // For artstu, use the existing push modal
+                openPushModal(ideaId, target);
+            }
+        }
+
+        function closeSectionSelector() {
+            document.getElementById('sectionSelectorModal').style.display = 'none';
+            pendingPushIdeaId = null;
+        }
+
+        async function submitToGovernance(section) {
+            if (!pendingPushIdeaId) return;
+
+            const idea = ideas.find(i => i.id === pendingPushIdeaId);
+            if (!idea) return;
+
+            try {
+                // Submit to governance_proposals table
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/governance_proposals`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({
+                            title: idea.title,
+                            description: idea.content || idea.title,
+                            section: section,
+                            status: 'submitted',
+                            submitter_id: currentUser?.id || 'anonymous',
+                            source: 'notebox',
+                            source_idea_id: idea.id
+                        })
+                    }
+                );
+
+                if (response.ok) {
+                    // Mark the idea as pushed
+                    await fetch(
+                        `${SUPABASE_URL}/rest/v1/personal_ideas?id=eq.${pendingPushIdeaId}`,
+                        {
+                            method: 'PATCH',
+                            headers: {
+                                'apikey': SUPABASE_ANON_KEY,
+                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                                'Content-Type': 'application/json',
+                                'Prefer': 'return=minimal'
+                            },
+                            body: JSON.stringify({ status: 'pushed', destination_slug: 'governance' })
+                        }
+                    );
+
+                    idea.status = 'pushed';
+                    idea.destination_slug = 'governance';
+
+                    closeSectionSelector();
+                    renderKanban();
+                    alert('Submitted to getSUITE Governance!');
+                } else {
+                    const err = await response.text();
+                    console.error('Failed to submit:', err);
+                    alert('Failed to submit to governance. Please try again.');
+                }
+            } catch (err) {
+                console.error('Error submitting to governance:', err);
+                alert('Error submitting. Please try again.');
+            }
         }
 
         // Drag and Drop
