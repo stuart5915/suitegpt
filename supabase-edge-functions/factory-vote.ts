@@ -187,8 +187,8 @@ Deno.serve(async (req) => {
       }
 
       // Decrement proposal vote count
-      const voteType = voteToRemove.vote_type || 'for';
-      const updateField = voteType === 'for' ? 'votes_for' : 'votes_against';
+      const voteDir = voteToRemove.vote_direction || 1;
+      const updateField = voteDir === 1 ? 'votes_for' : 'votes_against';
 
       await supabase
         .from('factory_proposals')
@@ -262,15 +262,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Insert the vote
+    // Insert or update the vote
+    // Convert direction to integer: 'for' = 1, 'against' = -1
+    const voteDirection = direction === 'for' ? 1 : -1;
+
     const { error: insertErr } = await supabase
       .from('factory_votes')
-      .insert({
+      .upsert({
         proposal_id: proposal_id,
         user_id: user.id,
-        vote_type: direction, // 'for' or 'against'
-        vote_power: vote_power,
+        vote_direction: voteDirection,
+        vote_power: newVoteNumber, // Total votes from this user
         rep_spent: repCost
+      }, {
+        onConflict: 'proposal_id,user_id'
       });
 
     if (insertErr) {
