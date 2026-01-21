@@ -117,7 +117,10 @@ serve(async (req) => {
 
   try {
     const body = await req.json()
-    let { title, content, category, app_target, section, telegram_auth, wallet_address } = body
+    let { title, content, category, app_target, app_slug, is_new_app, section, telegram_auth, wallet_address } = body
+
+    // Support both app_target and app_slug (frontend sends app_slug)
+    app_target = app_target || app_slug || null
 
     // Validate: need content at minimum
     if (!content) {
@@ -276,6 +279,7 @@ serve(async (req) => {
         category,
         section: section || 'business',
         app_target: app_target || null,
+        is_new_app: is_new_app || false,
         status: 'submitted'
       })
       .select()
