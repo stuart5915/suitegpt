@@ -9,11 +9,14 @@
     const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
 
-    // SuiteYieldVault contract config
-    const SUITE_YIELD_VAULT_ADDRESS = '0x72d28EEA52ab54448f0A8CCEd2E3d224De759D42';
-    const SUITE_YIELD_VAULT_ABI = [
-        'function userCredits(address) view returns (uint256)'
+    // SuiteStaking contract config (Base mainnet)
+    const SUITE_STAKING_ADDRESS = '0xA56735aAfc14fc0c3953D6d98AE7c1feea919E0b';
+    const SUITE_STAKING_ABI = [
+        'function availableCredits(address) view returns (uint256)',
+        'function stakedBalance(address) view returns (uint256)'
     ];
+    const BASE_CHAIN_ID = 8453;
+    const BASE_RPC = 'https://mainnet.base.org';
 
     // Dynamically load ethers.js if not already loaded
     let ethersLoaded = typeof ethers !== 'undefined';
@@ -346,7 +349,7 @@
             authDisplay.style.display = 'flex';
             identityEl.textContent = truncateWallet(wallet);
 
-            // Load credits from SuiteYieldVault contract
+            // Load credits from SuiteStaking contract on Base
             try {
                 // First show cached value while loading
                 const cached = localStorage.getItem('suite_credits');
@@ -355,19 +358,20 @@
                 // Ensure ethers is loaded
                 const hasEthers = await ensureEthers();
 
-                if (window.ethereum && hasEthers && typeof ethers !== 'undefined') {
-                    const provider = new ethers.BrowserProvider(window.ethereum);
-                    const vaultContract = new ethers.Contract(
-                        SUITE_YIELD_VAULT_ADDRESS,
-                        SUITE_YIELD_VAULT_ABI,
+                if (hasEthers && typeof ethers !== 'undefined') {
+                    // Use Base RPC directly so it works regardless of user's current network
+                    const provider = new ethers.JsonRpcProvider(BASE_RPC);
+                    const stakingContract = new ethers.Contract(
+                        SUITE_STAKING_ADDRESS,
+                        SUITE_STAKING_ABI,
                         provider
                     );
-                    const creditsRaw = await vaultContract.userCredits(wallet);
-                    // Contract stores credits as (rawUSDC * 1000), divide by 1e6 for display
-                    const credits = Math.floor(Number(creditsRaw) / 1e6);
+                    const creditsRaw = await stakingContract.availableCredits(wallet);
+                    // SUITE has 18 decimals, display as whole number
+                    const credits = Math.floor(Number(creditsRaw) / 1e18);
                     creditsEl.textContent = credits.toLocaleString();
                     localStorage.setItem('suite_credits', credits.toString());
-                    console.log('[Nav] Credits loaded from contract:', credits);
+                    console.log('[Nav] Credits loaded from Base staking contract:', credits);
                 } else {
                     console.log('[Nav] Ethers not available, using cached credits');
                 }
