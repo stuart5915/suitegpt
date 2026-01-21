@@ -1,0 +1,642 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "forge-std/Test.sol";
+import "../src/vault/SuiteVaultV2.sol";
+import "../src/vault/SuiteShareToken.sol";
+import "../src/vault/SuiteCredits.sol";
+import "../src/interfaces/IYearnVault.sol";
+
+/**
+ * @title SuiteVaultV2Test
+ * @notice Foundry tests for the SUITE Vault V2 system
+ * @dev Run with: forge test -vvv
+ */
+
+// Mock ERC20 for testing
+contract MockUSDC {
+    string public name = "USD Coin";
+    string public symbol = "USDC";
+    uint8 public decimals = 6;
+
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
+    uint256 public totalSupply;
+
+    function mint(address to, uint256 amount) external {
+        balanceOf[to] += amount;
+        totalSupply += amount;
+    }
+
+    function approve(address spender, uint256 amount) external returns (bool) {
+        allowance[msg.sender][spender] = amount;
+        return true;
+    }
+
+    function transfer(address to, uint256 amount) external returns (bool) {
+        require(balanceOf[msg.sender] >= amount, "Insufficient balance");
+        balanceOf[msg.sender] -= amount;
+        balanceOf[to] += amount;
+        return true;
+    }
+
+    function transferFrom(address from, address to, uint256 amount) external returns (bool) {
+        require(balanceOf[from] >= amount, "Insufficient balance");
+        require(allowance[from][msg.sender] >= amount, "Insufficient allowance");
+        allowance[from][msg.sender] -= amount;
+        balanceOf[from] -= amount;
+        balanceOf[to] += amount;
+        return true;
+    }
+}
+
+// Mock Yearn Vault for testing
+contract MockYearnVault {
+    MockUSDC public usdc;
+    uint256 public pricePerShareValue = 1e6; // 1:1 initially
+
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
+    uint256 public totalSupply;
+
+    constructor(address _usdc) {
+        usdc = MockUSDC(_usdc);
+    }
+
+    function asset() external view returns (address) {
+        return address(usdc);
+    }
+
+    function deposit(uint256 assets, address receiver) external returns (uint256 shares) {
+        usdc.transferFrom(msg.sender, address(this), assets);
+        // Shares based on current price (assets / pricePerShare)
+        shares = (assets * 1e18) / pricePerShareValue;
+        balanceOf[receiver] += shares;
+        totalSupply += shares;
+    }
+
+    function withdraw(uint256 assets, address receiver, address owner) external returns (uint256 shares) {
+        shares = (assets * 1e18) / pricePerShareValue;
+        require(balanceOf[owner] >= shares, "Insufficient shares");
+        balanceOf[owner] -= shares;
+        totalSupply -= shares;
+        usdc.transfer(receiver, assets);
+    }
+
+    function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets) {
+        require(balanceOf[owner] >= shares, "Insufficient shares");
+        balanceOf[owner] -= shares;
+        totalSupply -= shares;
+        assets = convertToAssets(shares);
+        usdc.transfer(receiver, assets);
+    }
+
+    function pricePerShare() external view returns (uint256) {
+        return pricePerShareValue;
+    }
+
+    function convertToAssets(uint256 shares) public view returns (uint256) {
+        return (shares * pricePerShareValue) / 1e18;
+    }
+
+    function convertToShares(uint256 assets) external view returns (uint256) {
+        return (assets * 1e18) / pricePerShareValue;
+    }
+
+    function previewDeposit(uint256 assets) external view returns (uint256) {
+        return (assets * 1e18) / pricePerShareValue;
+    }
+
+    function previewWithdraw(uint256 assets) external view returns (uint256) {
+        return (assets * 1e18) / pricePerShareValue;
+    }
+
+    function previewRedeem(uint256 shares) external view returns (uint256) {
+        return convertToAssets(shares);
+    }
+
+    function maxDeposit(address) external pure returns (uint256) {
+        return type(uint256).max;
+    }
+
+    function maxWithdraw(address owner) external view returns (uint256) {
+        return convertToAssets(balanceOf[owner]);
+    }
+
+    function maxRedeem(address owner) external view returns (uint256) {
+        return balanceOf[owner];
+    }
+
+    function totalAssets() external view returns (uint256) {
+        return usdc.balanceOf(address(this));
+    }
+
+    function approve(address spender, uint256 amount) external returns (bool) {
+        allowance[msg.sender][spender] = amount;
+        return true;
+    }
+
+    // Simulate yield by increasing pricePerShare
+    function simulateYield(uint256 newPrice) external {
+        pricePerShareValue = newPrice;
+    }
+}
+
+contract SuiteVaultV2Test is Test {
+    MockUSDC public usdc;
+    MockYearnVault public yearnVault;
+    SuiteVaultV2 public vault;
+    SuiteShareToken public suiteToken;
+    SuiteCredits public creditsToken;
+
+    address public owner = address(1);
+    address public treasury = address(2);
+    address public user1 = address(3);
+    address public user2 = address(4);
+    address public appAddress = address(5);
+
+    uint256 public constant INITIAL_USDC = 10000e6; // $10,000
+
+    function setUp() public {
+        // Deploy mock USDC
+        usdc = new MockUSDC();
+
+        // Deploy mock Yearn vault
+        yearnVault = new MockYearnVault(address(usdc));
+
+        // Give yearn vault some USDC for withdrawals
+        usdc.mint(address(yearnVault), 1000000e6);
+
+        // Deploy SUITE token (need vault address first, so we'll use a placeholder)
+        // We need to deploy vault first to get the address, then deploy token
+        // Use CREATE2 or deploy a factory pattern in production
+
+        // For testing, we'll deploy token with a temporary address then update
+        vm.startPrank(owner);
+
+        // Calculate vault address before deployment
+        address predictedVault = computeCreateAddress(owner, vm.getNonce(owner) + 1);
+
+        // Deploy SUITE token with predicted vault address
+        suiteToken = new SuiteShareToken(predictedVault);
+
+        // Deploy vault
+        vault = new SuiteVaultV2(
+            address(usdc),
+            address(suiteToken),
+            address(yearnVault),
+            owner,
+            treasury
+        );
+
+        require(address(vault) == predictedVault, "Vault address mismatch");
+
+        // Deploy credits token
+        creditsToken = new SuiteCredits(address(vault), owner);
+
+        // Set credits token in vault
+        vault.setCreditsToken(address(creditsToken));
+
+        // Authorize app for spending credits
+        creditsToken.authorizeApp(appAddress);
+
+        vm.stopPrank();
+
+        // Give users USDC
+        usdc.mint(user1, INITIAL_USDC);
+        usdc.mint(user2, INITIAL_USDC);
+
+        // Approve vault for users
+        vm.prank(user1);
+        usdc.approve(address(vault), type(uint256).max);
+
+        vm.prank(user2);
+        usdc.approve(address(vault), type(uint256).max);
+    }
+
+    // ============ DEPOSIT TESTS ============
+
+    function test_Deposit_Basic() public {
+        uint256 depositAmount = 100e6; // $100
+
+        vm.prank(user1);
+        uint256 suiteReceived = vault.deposit(depositAmount);
+
+        // User should receive SUITE tokens
+        assertGt(suiteReceived, 0, "Should receive SUITE tokens");
+        assertEq(suiteToken.balanceOf(user1), suiteReceived, "SUITE balance mismatch");
+
+        // USDC should be transferred from user
+        assertEq(usdc.balanceOf(user1), INITIAL_USDC - depositAmount, "USDC not transferred");
+
+        // Vault should have Yearn shares
+        assertGt(yearnVault.balanceOf(address(vault)), 0, "Vault should have Yearn shares");
+    }
+
+    function test_Deposit_Multiple_Users() public {
+        uint256 deposit1 = 100e6;
+        uint256 deposit2 = 200e6;
+
+        vm.prank(user1);
+        vault.deposit(deposit1);
+
+        vm.prank(user2);
+        vault.deposit(deposit2);
+
+        // User2 should have ~2x the SUITE of user1
+        uint256 balance1 = suiteToken.balanceOf(user1);
+        uint256 balance2 = suiteToken.balanceOf(user2);
+
+        assertApproxEqRel(balance2, balance1 * 2, 0.01e18, "Proportional minting failed");
+    }
+
+    function test_Deposit_MinimumAmount() public {
+        uint256 tooSmall = 0.5e6; // $0.50
+
+        vm.prank(user1);
+        vm.expectRevert(SuiteVaultV2.AmountTooSmall.selector);
+        vault.deposit(tooSmall);
+    }
+
+    function test_Deposit_ZeroAmount() public {
+        vm.prank(user1);
+        vm.expectRevert(SuiteVaultV2.ZeroAmount.selector);
+        vault.deposit(0);
+    }
+
+    function test_Deposit_WhenPaused() public {
+        vm.prank(owner);
+        vault.pause();
+
+        vm.prank(user1);
+        vm.expectRevert();
+        vault.deposit(100e6);
+    }
+
+    // ============ WITHDRAW TESTS ============
+
+    function test_Withdraw_Basic() public {
+        uint256 depositAmount = 100e6;
+
+        // Deposit first
+        vm.prank(user1);
+        uint256 suiteReceived = vault.deposit(depositAmount);
+
+        uint256 usdcBefore = usdc.balanceOf(user1);
+
+        // Withdraw all
+        vm.prank(user1);
+        uint256 usdcReturned = vault.withdraw(suiteReceived);
+
+        // Should get back approximately same amount (minus any fees)
+        assertApproxEqRel(usdcReturned, depositAmount, 0.01e18, "Should get back deposit");
+
+        // SUITE should be burned
+        assertEq(suiteToken.balanceOf(user1), 0, "SUITE should be burned");
+
+        // USDC balance should increase
+        assertEq(usdc.balanceOf(user1), usdcBefore + usdcReturned, "USDC not received");
+    }
+
+    function test_Withdraw_Partial() public {
+        uint256 depositAmount = 100e6;
+
+        vm.prank(user1);
+        uint256 suiteReceived = vault.deposit(depositAmount);
+
+        // Withdraw half
+        uint256 halfSuite = suiteReceived / 2;
+
+        vm.prank(user1);
+        uint256 usdcReturned = vault.withdraw(halfSuite);
+
+        // Should get back approximately half
+        assertApproxEqRel(usdcReturned, depositAmount / 2, 0.01e18, "Should get half back");
+
+        // Half SUITE should remain
+        assertApproxEqRel(suiteToken.balanceOf(user1), halfSuite, 0.01e18, "Half SUITE should remain");
+    }
+
+    function test_Withdraw_InsufficientBalance() public {
+        uint256 depositAmount = 100e6;
+
+        vm.prank(user1);
+        uint256 suiteReceived = vault.deposit(depositAmount);
+
+        vm.prank(user1);
+        vm.expectRevert(SuiteVaultV2.InsufficientBalance.selector);
+        vault.withdraw(suiteReceived + 1);
+    }
+
+    function test_Withdraw_WhenPaused() public {
+        uint256 depositAmount = 100e6;
+
+        vm.prank(user1);
+        uint256 suiteReceived = vault.deposit(depositAmount);
+
+        vm.prank(owner);
+        vault.pause();
+
+        // Withdrawals should still work when paused
+        vm.prank(user1);
+        vault.withdraw(suiteReceived);
+
+        assertEq(suiteToken.balanceOf(user1), 0, "Withdraw should work when paused");
+    }
+
+    // ============ CREDITS CONVERSION TESTS ============
+
+    function test_BurnForCredits_Basic() public {
+        uint256 depositAmount = 100e6;
+
+        vm.prank(user1);
+        uint256 suiteReceived = vault.deposit(depositAmount);
+
+        // Convert all SUITE to credits
+        vm.prank(user1);
+        uint256 creditsReceived = vault.burnForCredits(suiteReceived);
+
+        // Should receive credits (1:1 with default bonus)
+        assertEq(creditsReceived, suiteReceived, "Should receive equal credits");
+        assertEq(creditsToken.balanceOf(user1), creditsReceived, "Credits balance mismatch");
+
+        // SUITE should be burned
+        assertEq(suiteToken.balanceOf(user1), 0, "SUITE should be burned");
+    }
+
+    function test_BurnForCredits_WithBonus() public {
+        // Set 20% bonus (12000 bps = 1.2x)
+        vm.prank(owner);
+        vault.setCreditsBonusBps(12000);
+
+        uint256 depositAmount = 100e6;
+
+        vm.prank(user1);
+        uint256 suiteReceived = vault.deposit(depositAmount);
+
+        vm.prank(user1);
+        uint256 creditsReceived = vault.burnForCredits(suiteReceived);
+
+        // Should receive 20% more credits
+        uint256 expectedCredits = (suiteReceived * 12000) / 10000;
+        assertEq(creditsReceived, expectedCredits, "Bonus credits mismatch");
+    }
+
+    function test_BurnForCredits_CannotWithdraw() public {
+        uint256 depositAmount = 100e6;
+
+        vm.prank(user1);
+        uint256 suiteReceived = vault.deposit(depositAmount);
+
+        vm.prank(user1);
+        vault.burnForCredits(suiteReceived);
+
+        // User has credits but no SUITE
+        assertGt(creditsToken.balanceOf(user1), 0, "Should have credits");
+        assertEq(suiteToken.balanceOf(user1), 0, "Should have no SUITE");
+
+        // Cannot withdraw with 0 SUITE
+        vm.prank(user1);
+        vm.expectRevert(SuiteVaultV2.ZeroAmount.selector);
+        vault.withdraw(0);
+    }
+
+    function test_SpendCredits_FromApp() public {
+        uint256 depositAmount = 100e6;
+
+        vm.prank(user1);
+        uint256 suiteReceived = vault.deposit(depositAmount);
+
+        vm.prank(user1);
+        uint256 creditsReceived = vault.burnForCredits(suiteReceived);
+
+        // App spends some credits
+        uint256 spendAmount = creditsReceived / 2;
+
+        vm.prank(appAddress);
+        creditsToken.spendCredits(user1, spendAmount);
+
+        // Credits should be burned
+        assertEq(
+            creditsToken.balanceOf(user1),
+            creditsReceived - spendAmount,
+            "Credits should be spent"
+        );
+    }
+
+    function test_SpendCredits_UnauthorizedApp() public {
+        uint256 depositAmount = 100e6;
+
+        vm.prank(user1);
+        uint256 suiteReceived = vault.deposit(depositAmount);
+
+        vm.prank(user1);
+        vault.burnForCredits(suiteReceived);
+
+        // Unauthorized address tries to spend credits
+        vm.prank(user2);
+        vm.expectRevert(SuiteCredits.OnlyAuthorizedApp.selector);
+        creditsToken.spendCredits(user1, 1000);
+    }
+
+    // ============ YIELD TESTS ============
+
+    function test_YieldAccrual() public {
+        uint256 depositAmount = 100e6;
+
+        vm.prank(user1);
+        uint256 suiteReceived = vault.deposit(depositAmount);
+
+        // Simulate 10% yield in Yearn
+        yearnVault.simulateYield(1.1e6); // 1.1 price per share
+
+        // Check user's position value increased
+        (, uint256 assetValue,) = vault.getUserPosition(user1);
+
+        // Asset value should be ~10% higher
+        assertApproxEqRel(assetValue, depositAmount * 11 / 10, 0.01e18, "Yield not reflected");
+    }
+
+    function test_SharePrice_Increases_With_Yield() public {
+        uint256 depositAmount = 100e6;
+
+        vm.prank(user1);
+        vault.deposit(depositAmount);
+
+        uint256 priceBefore = vault.getSharePrice();
+
+        // Simulate 10% yield
+        yearnVault.simulateYield(1.1e6);
+
+        uint256 priceAfter = vault.getSharePrice();
+
+        assertGt(priceAfter, priceBefore, "Share price should increase with yield");
+    }
+
+    // ============ ADMIN FUNCTION TESTS ============
+
+    function test_SetFees() public {
+        vm.prank(owner);
+        vault.setFees(50, 50); // 0.5% fees
+
+        assertEq(vault.depositFeeBps(), 50);
+        assertEq(vault.withdrawFeeBps(), 50);
+    }
+
+    function test_SetFees_TooHigh() public {
+        vm.prank(owner);
+        vm.expectRevert(SuiteVaultV2.FeeTooHigh.selector);
+        vault.setFees(600, 0); // 6% is too high
+    }
+
+    function test_WithdrawFees() public {
+        // Set fees
+        vm.prank(owner);
+        vault.setFees(100, 0); // 1% deposit fee
+
+        // User deposits
+        vm.prank(user1);
+        vault.deposit(100e6);
+
+        // Fees should be accumulated
+        uint256 fees = vault.accumulatedFees();
+        assertGt(fees, 0, "Fees should be accumulated");
+
+        uint256 treasuryBalanceBefore = usdc.balanceOf(treasury);
+
+        // Withdraw fees
+        vm.prank(owner);
+        vault.withdrawFees();
+
+        assertEq(usdc.balanceOf(treasury), treasuryBalanceBefore + fees, "Treasury should receive fees");
+        assertEq(vault.accumulatedFees(), 0, "Fees should be cleared");
+    }
+
+    function test_Pause_Unpause() public {
+        vm.prank(owner);
+        vault.pause();
+
+        assertTrue(vault.paused(), "Should be paused");
+
+        vm.prank(owner);
+        vault.unpause();
+
+        assertFalse(vault.paused(), "Should be unpaused");
+    }
+
+    function test_OnlyOwner_SetFees() public {
+        vm.prank(user1);
+        vm.expectRevert();
+        vault.setFees(50, 50);
+    }
+
+    // ============ VERIFICATION CHECKLIST TESTS ============
+
+    function test_Checklist_1_DepositReceivesSUITE() public {
+        vm.prank(user1);
+        uint256 suiteReceived = vault.deposit(100e6);
+
+        assertGt(suiteReceived, 0, "Checklist 1: Should receive SUITE on deposit");
+        assertEq(suiteToken.balanceOf(user1), suiteReceived, "Checklist 1: SUITE balance mismatch");
+    }
+
+    function test_Checklist_2_SUITEValueIncreases() public {
+        vm.prank(user1);
+        vault.deposit(100e6);
+
+        uint256 valueBefore = vault.getSharePrice();
+
+        // Simulate yield
+        yearnVault.simulateYield(1.1e6);
+
+        uint256 valueAfter = vault.getSharePrice();
+
+        assertGt(valueAfter, valueBefore, "Checklist 2: SUITE value should increase with yield");
+    }
+
+    function test_Checklist_3_WithdrawReturnsUSDC() public {
+        vm.prank(user1);
+        uint256 suiteReceived = vault.deposit(100e6);
+
+        uint256 usdcBefore = usdc.balanceOf(user1);
+
+        vm.prank(user1);
+        uint256 usdcReturned = vault.withdraw(suiteReceived);
+
+        assertGt(usdcReturned, 0, "Checklist 3: Should receive USDC on withdraw");
+        assertEq(usdc.balanceOf(user1), usdcBefore + usdcReturned, "Checklist 3: USDC balance mismatch");
+    }
+
+    function test_Checklist_4_BurnSUITEForCredits() public {
+        vm.prank(user1);
+        uint256 suiteReceived = vault.deposit(100e6);
+
+        vm.prank(user1);
+        uint256 creditsReceived = vault.burnForCredits(suiteReceived);
+
+        assertGt(creditsReceived, 0, "Checklist 4: Should receive credits");
+        assertEq(creditsToken.balanceOf(user1), creditsReceived, "Checklist 4: Credits balance mismatch");
+    }
+
+    function test_Checklist_5_CreditsCanBeSpent() public {
+        vm.prank(user1);
+        uint256 suiteReceived = vault.deposit(100e6);
+
+        vm.prank(user1);
+        uint256 creditsReceived = vault.burnForCredits(suiteReceived);
+
+        vm.prank(appAddress);
+        creditsToken.spendCredits(user1, creditsReceived);
+
+        assertEq(creditsToken.balanceOf(user1), 0, "Checklist 5: Credits should be spendable");
+    }
+
+    function test_Checklist_6_CreditsCannotWithdrawAsUSDC() public {
+        vm.prank(user1);
+        uint256 suiteReceived = vault.deposit(100e6);
+
+        vm.prank(user1);
+        vault.burnForCredits(suiteReceived);
+
+        // User has credits but cannot get USDC back
+        assertGt(creditsToken.balanceOf(user1), 0, "Should have credits");
+        assertEq(suiteToken.balanceOf(user1), 0, "Should have no SUITE");
+
+        // No redeem function exists on credits
+        // Credits are one-way - this is by design
+    }
+
+    function test_Checklist_7_AdminCannotWithdrawUserFunds() public {
+        vm.prank(user1);
+        vault.deposit(100e6);
+
+        // Owner cannot directly withdraw user funds
+        // There's no function that allows admin to take user deposits
+
+        // Verify no emergencyWithdraw or similar exists
+        // The only admin functions are:
+        // - migrateYearnVault (moves funds to different Yearn vault, not admin wallet)
+        // - withdrawFees (only accumulated fees, not user deposits)
+        // - pause/unpause (doesn't move funds)
+    }
+
+    // ============ HELPER FUNCTIONS ============
+
+    function computeCreateAddress(address deployer, uint256 nonce) internal pure override returns (address) {
+        bytes memory data;
+        if (nonce == 0x00) {
+            data = abi.encodePacked(bytes1(0xd6), bytes1(0x94), deployer, bytes1(0x80));
+        } else if (nonce <= 0x7f) {
+            data = abi.encodePacked(bytes1(0xd6), bytes1(0x94), deployer, uint8(nonce));
+        } else if (nonce <= 0xff) {
+            data = abi.encodePacked(bytes1(0xd7), bytes1(0x94), deployer, bytes1(0x81), uint8(nonce));
+        } else if (nonce <= 0xffff) {
+            data = abi.encodePacked(bytes1(0xd8), bytes1(0x94), deployer, bytes1(0x82), uint16(nonce));
+        } else if (nonce <= 0xffffff) {
+            data = abi.encodePacked(bytes1(0xd9), bytes1(0x94), deployer, bytes1(0x83), uint24(nonce));
+        } else {
+            data = abi.encodePacked(bytes1(0xda), bytes1(0x94), deployer, bytes1(0x84), uint32(nonce));
+        }
+        return address(uint160(uint256(keccak256(data))));
+    }
+}

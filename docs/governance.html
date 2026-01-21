@@ -196,8 +196,394 @@
                 </ol>
 
                 <p style="color: #9ca3af; font-size: 0.85rem; margin-top: 32px;"><em>Last updated: January 2026</em></p>
+
+                <!-- ═══════════════════════════════════════════════ -->
+                <!-- ADMIN DASHBOARD (Only visible to admin wallets) -->
+                <!-- ═══════════════════════════════════════════════ -->
+                <div id="adminDashboard" style="display: none; margin-top: 48px;">
+                    <h2>Admin Dashboard</h2>
+
+                    <div class="concept-card" style="border: 2px solid rgba(239, 68, 68, 0.3); background: linear-gradient(135deg, rgba(239, 68, 68, 0.05), rgba(220, 38, 38, 0.02));">
+                        <!-- Admin Header -->
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #ef4444, #dc2626); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">🔐</div>
+                            <div>
+                                <h4 style="margin: 0; font-size: 1rem; font-weight: 800; color: #dc2626;">SUITE Staking Admin</h4>
+                                <p style="margin: 0; font-size: 0.8rem; color: #6b7280;">Contract interactions on Base</p>
+                            </div>
+                            <div id="adminStatus" style="margin-left: auto; background: rgba(107, 114, 128, 0.1); color: #6b7280; padding: 4px 12px; border-radius: 100px; font-size: 0.75rem; font-weight: 700;">
+                                ○ Not Connected
+                            </div>
+                        </div>
+
+                        <!-- Contract Addresses -->
+                        <div style="background: rgba(0,0,0,0.03); border-radius: 8px; padding: 12px; margin-bottom: 20px; font-family: monospace; font-size: 0.75rem;">
+                            <div style="margin-bottom: 6px;"><strong>SuiteToken:</strong> <a href="https://basescan.org/address/0x3CA9C32e99f71cE856647ED489360a1c1297f849" target="_blank" style="color: #3b82f6;">0x3CA9...f849</a></div>
+                            <div style="margin-bottom: 6px;"><strong>SuiteStaking:</strong> <a href="https://basescan.org/address/0xA56735aAfc14fc0c3953D6d98AE7c1feea919E0b" target="_blank" style="color: #3b82f6;">0xA567...9E0b</a></div>
+                            <div><strong>Network:</strong> Base (Chain ID: 8453)</div>
+                        </div>
+
+                        <!-- Staking Functions Grid -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+
+                            <!-- Buy SUITE -->
+                            <div style="background: rgba(34, 197, 94, 0.05); border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 12px; padding: 16px;">
+                                <div style="font-weight: 700; color: #22c55e; font-size: 0.9rem; margin-bottom: 8px;">💵 Buy SUITE</div>
+                                <div style="font-size: 0.75rem; color: #6b7280; margin-bottom: 12px;">USDC → SUITE to your wallet</div>
+                                <div style="display: flex; gap: 8px;">
+                                    <input type="number" id="buyAmount" placeholder="USDC amount" style="flex: 1; padding: 10px 14px; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; font-size: 0.9rem;">
+                                    <button onclick="callBuy()" style="padding: 10px 16px; background: #22c55e; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Buy</button>
+                                </div>
+                                <div style="font-size: 0.7rem; color: #9ca3af; margin-top: 6px;">Rate: 1 USDC = 1000 SUITE</div>
+                            </div>
+
+                            <!-- Stake SUITE -->
+                            <div style="background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 12px; padding: 16px;">
+                                <div style="font-weight: 700; color: #3b82f6; font-size: 0.9rem; margin-bottom: 8px;">🔒 Stake SUITE</div>
+                                <div style="font-size: 0.75rem; color: #6b7280; margin-bottom: 12px;">Lock SUITE for credits</div>
+                                <div style="display: flex; gap: 8px;">
+                                    <input type="number" id="stakeAmount" placeholder="SUITE amount" style="flex: 1; padding: 10px 14px; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; font-size: 0.9rem;">
+                                    <button onclick="callStake()" style="padding: 10px 16px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Stake</button>
+                                </div>
+                            </div>
+
+                            <!-- Buy & Stake -->
+                            <div style="background: rgba(168, 85, 247, 0.05); border: 1px solid rgba(168, 85, 247, 0.2); border-radius: 12px; padding: 16px;">
+                                <div style="font-weight: 700; color: #a855f7; font-size: 0.9rem; margin-bottom: 8px;">⚡ Buy & Stake</div>
+                                <div style="font-size: 0.75rem; color: #6b7280; margin-bottom: 12px;">USDC → SUITE → Staked (one tx)</div>
+                                <div style="display: flex; gap: 8px;">
+                                    <input type="number" id="buyAndStakeAmount" placeholder="USDC amount" style="flex: 1; padding: 10px 14px; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; font-size: 0.9rem;">
+                                    <button onclick="callBuyAndStake()" style="padding: 10px 16px; background: #a855f7; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Buy & Stake</button>
+                                </div>
+                            </div>
+
+                            <!-- Unstake -->
+                            <div style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; padding: 16px;">
+                                <div style="font-weight: 700; color: #ef4444; font-size: 0.9rem; margin-bottom: 8px;">🔓 Unstake SUITE</div>
+                                <div style="font-size: 0.75rem; color: #6b7280; margin-bottom: 12px;">Get SUITE back (minus used credits)</div>
+                                <div style="display: flex; gap: 8px;">
+                                    <input type="number" id="unstakeAmount" placeholder="SUITE amount" style="flex: 1; padding: 10px 14px; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; font-size: 0.9rem;">
+                                    <button onclick="callUnstake()" style="padding: 10px 16px; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Unstake</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- User Stats -->
+                        <div style="background: rgba(255,255,255,0.8); border-radius: 12px; padding: 16px;">
+                            <div style="font-weight: 700; color: #2d1b4e; font-size: 0.9rem; margin-bottom: 12px;">📊 Your Balances</div>
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; text-align: center;">
+                                <div>
+                                    <div style="font-size: 0.7rem; color: #6b7280;">USDC Balance</div>
+                                    <div id="userUsdcBalance" style="font-size: 1rem; font-weight: 700; color: #22c55e;">-</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 0.7rem; color: #6b7280;">SUITE in Wallet</div>
+                                    <div id="userSuiteBalance" style="font-size: 1rem; font-weight: 700; color: #3b82f6;">-</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 0.7rem; color: #6b7280;">SUITE Staked</div>
+                                    <div id="userStakedBalance" style="font-size: 1rem; font-weight: 700; color: #a855f7;">-</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 0.7rem; color: #6b7280;">Available Credits</div>
+                                    <div id="userAvailableCredits" style="font-size: 1rem; font-weight: 700; color: #f59e0b;">-</div>
+                                </div>
+                            </div>
+                            <button onclick="refreshBalances()" style="margin-top: 12px; padding: 8px 16px; background: rgba(0,0,0,0.05); color: #6b7280; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; font-size: 0.8rem; cursor: pointer; width: 100%;">🔄 Refresh Balances</button>
+                        </div>
+
+                        <!-- Connect Wallet Button -->
+                        <button id="connectWalletBtn" onclick="connectWallet()" style="margin-top: 16px; padding: 12px 24px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; width: 100%; font-size: 0.95rem;">
+                            🔗 Connect Wallet
+                        </button>
+
+                        <!-- Transaction Status -->
+                        <div id="txStatus" style="display: none; margin-top: 12px; padding: 12px; border-radius: 8px; font-size: 0.85rem; text-align: center;"></div>
+                    </div>
+                </div>
             </main>
         </div>
     </div>
+
+    <!-- Admin Dashboard Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
+    <script>
+        // ============================================
+        // ADMIN CONFIGURATION
+        // ============================================
+        const ADMIN_WALLETS = [
+            '0x92D67D8ad8B986e78b369bE0272E121AE5ACAd59'.toLowerCase(),
+            '0xDEfc3AE5a990206101463d208E7e1446c58a72bD'.toLowerCase(),
+            '0x53cf707eF11cD213D8f1710996C22049a45B8215'.toLowerCase()
+        ];
+
+        // Contract addresses on Base
+        const SUITE_TOKEN = '0x3CA9C32e99f71cE856647ED489360a1c1297f849';
+        const SUITE_STAKING = '0xA56735aAfc14fc0c3953D6d98AE7c1feea919E0b';
+        const USDC_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+        const BASE_CHAIN_ID = 8453;
+
+        // ABIs
+        const STAKING_ABI = [
+            'function buy(uint256 usdcAmount) external',
+            'function stake(uint256 amount) external',
+            'function buyAndStake(uint256 usdcAmount) external',
+            'function unstake(uint256 amount) external',
+            'function stakedBalance(address) view returns (uint256)',
+            'function availableCredits(address) view returns (uint256)',
+            'function suitePerUsdc() view returns (uint256)'
+        ];
+
+        const ERC20_ABI = [
+            'function balanceOf(address) view returns (uint256)',
+            'function approve(address spender, uint256 amount) returns (bool)',
+            'function allowance(address owner, address spender) view returns (uint256)',
+            'function decimals() view returns (uint8)'
+        ];
+
+        let provider = null;
+        let signer = null;
+        let walletAddress = null;
+
+        // Check if wallet is admin
+        function isAdminWallet(address) {
+            if (!address) return false;
+            return ADMIN_WALLETS.includes(address.toLowerCase());
+        }
+
+        // Show/hide admin dashboard
+        function updateAdminVisibility() {
+            const dashboard = document.getElementById('adminDashboard');
+            const status = document.getElementById('adminStatus');
+            const connectBtn = document.getElementById('connectWalletBtn');
+
+            if (walletAddress && isAdminWallet(walletAddress)) {
+                dashboard.style.display = 'block';
+                status.innerHTML = '● Admin Active';
+                status.style.background = 'rgba(34, 197, 94, 0.1)';
+                status.style.color = '#22c55e';
+                connectBtn.innerHTML = `✓ ${walletAddress.slice(0,6)}...${walletAddress.slice(-4)}`;
+                connectBtn.style.background = 'rgba(34, 197, 94, 0.1)';
+                connectBtn.style.color = '#22c55e';
+                refreshBalances();
+            } else if (walletAddress) {
+                dashboard.style.display = 'none';
+            } else {
+                // Show dashboard but disconnected for admins to see connect button
+                // Actually hide it until connected
+                dashboard.style.display = 'none';
+            }
+        }
+
+        // Connect wallet
+        async function connectWallet() {
+            try {
+                if (!window.ethereum) {
+                    alert('Please install MetaMask!');
+                    return;
+                }
+
+                provider = new ethers.BrowserProvider(window.ethereum);
+
+                // Request accounts
+                const accounts = await provider.send('eth_requestAccounts', []);
+                walletAddress = accounts[0];
+
+                // Check network
+                const network = await provider.getNetwork();
+                if (Number(network.chainId) !== BASE_CHAIN_ID) {
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: '0x2105' }]
+                        });
+                    } catch (e) {
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [{
+                                chainId: '0x2105',
+                                chainName: 'Base',
+                                nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+                                rpcUrls: ['https://mainnet.base.org'],
+                                blockExplorerUrls: ['https://basescan.org']
+                            }]
+                        });
+                    }
+                    provider = new ethers.BrowserProvider(window.ethereum);
+                }
+
+                signer = await provider.getSigner();
+                updateAdminVisibility();
+
+            } catch (err) {
+                console.error('Connect error:', err);
+                showTxStatus('Failed to connect: ' + err.message, 'error');
+            }
+        }
+
+        // Refresh balances
+        async function refreshBalances() {
+            if (!walletAddress || !provider) return;
+
+            try {
+                const usdc = new ethers.Contract(USDC_BASE, ERC20_ABI, provider);
+                const suite = new ethers.Contract(SUITE_TOKEN, ERC20_ABI, provider);
+                const staking = new ethers.Contract(SUITE_STAKING, STAKING_ABI, provider);
+
+                const [usdcBal, suiteBal, stakedBal, credits] = await Promise.all([
+                    usdc.balanceOf(walletAddress),
+                    suite.balanceOf(walletAddress),
+                    staking.stakedBalance(walletAddress),
+                    staking.availableCredits(walletAddress)
+                ]);
+
+                document.getElementById('userUsdcBalance').textContent = (Number(usdcBal) / 1e6).toFixed(2);
+                document.getElementById('userSuiteBalance').textContent = (Number(suiteBal) / 1e18).toLocaleString();
+                document.getElementById('userStakedBalance').textContent = (Number(stakedBal) / 1e18).toLocaleString();
+                document.getElementById('userAvailableCredits').textContent = (Number(credits) / 1e18).toLocaleString();
+            } catch (err) {
+                console.error('Refresh error:', err);
+            }
+        }
+
+        // Show transaction status
+        function showTxStatus(msg, type) {
+            const el = document.getElementById('txStatus');
+            el.style.display = 'block';
+            el.textContent = msg;
+            el.style.background = type === 'error' ? 'rgba(239,68,68,0.1)' :
+                                  type === 'success' ? 'rgba(34,197,94,0.1)' : 'rgba(59,130,246,0.1)';
+            el.style.color = type === 'error' ? '#ef4444' :
+                             type === 'success' ? '#22c55e' : '#3b82f6';
+        }
+
+        // Buy SUITE
+        async function callBuy() {
+            const amount = document.getElementById('buyAmount').value;
+            if (!amount || !signer) return;
+
+            try {
+                showTxStatus('Approving USDC...', 'pending');
+                const usdc = new ethers.Contract(USDC_BASE, ERC20_ABI, signer);
+                const usdcAmount = BigInt(Math.floor(parseFloat(amount) * 1e6));
+
+                const allowance = await usdc.allowance(walletAddress, SUITE_STAKING);
+                if (allowance < usdcAmount) {
+                    const approveTx = await usdc.approve(SUITE_STAKING, usdcAmount);
+                    await approveTx.wait();
+                }
+
+                showTxStatus('Buying SUITE...', 'pending');
+                const staking = new ethers.Contract(SUITE_STAKING, STAKING_ABI, signer);
+                const tx = await staking.buy(usdcAmount);
+                await tx.wait();
+
+                showTxStatus('Success! SUITE sent to wallet.', 'success');
+                refreshBalances();
+            } catch (err) {
+                showTxStatus('Error: ' + err.message, 'error');
+            }
+        }
+
+        // Stake SUITE
+        async function callStake() {
+            const amount = document.getElementById('stakeAmount').value;
+            if (!amount || !signer) return;
+
+            try {
+                showTxStatus('Approving SUITE...', 'pending');
+                const suite = new ethers.Contract(SUITE_TOKEN, ERC20_ABI, signer);
+                const suiteAmount = ethers.parseEther(amount);
+
+                const allowance = await suite.allowance(walletAddress, SUITE_STAKING);
+                if (allowance < suiteAmount) {
+                    const approveTx = await suite.approve(SUITE_STAKING, suiteAmount);
+                    await approveTx.wait();
+                }
+
+                showTxStatus('Staking SUITE...', 'pending');
+                const staking = new ethers.Contract(SUITE_STAKING, STAKING_ABI, signer);
+                const tx = await staking.stake(suiteAmount);
+                await tx.wait();
+
+                showTxStatus('Success! SUITE staked for credits.', 'success');
+                refreshBalances();
+            } catch (err) {
+                showTxStatus('Error: ' + err.message, 'error');
+            }
+        }
+
+        // Buy and Stake
+        async function callBuyAndStake() {
+            const amount = document.getElementById('buyAndStakeAmount').value;
+            if (!amount || !signer) return;
+
+            try {
+                showTxStatus('Approving USDC...', 'pending');
+                const usdc = new ethers.Contract(USDC_BASE, ERC20_ABI, signer);
+                const usdcAmount = BigInt(Math.floor(parseFloat(amount) * 1e6));
+
+                const allowance = await usdc.allowance(walletAddress, SUITE_STAKING);
+                if (allowance < usdcAmount) {
+                    const approveTx = await usdc.approve(SUITE_STAKING, usdcAmount);
+                    await approveTx.wait();
+                }
+
+                showTxStatus('Buying & Staking...', 'pending');
+                const staking = new ethers.Contract(SUITE_STAKING, STAKING_ABI, signer);
+                const tx = await staking.buyAndStake(usdcAmount);
+                await tx.wait();
+
+                showTxStatus('Success! SUITE bought and staked.', 'success');
+                refreshBalances();
+            } catch (err) {
+                showTxStatus('Error: ' + err.message, 'error');
+            }
+        }
+
+        // Unstake SUITE
+        async function callUnstake() {
+            const amount = document.getElementById('unstakeAmount').value;
+            if (!amount || !signer) return;
+
+            try {
+                showTxStatus('Unstaking SUITE...', 'pending');
+                const staking = new ethers.Contract(SUITE_STAKING, STAKING_ABI, signer);
+                const suiteAmount = ethers.parseEther(amount);
+                const tx = await staking.unstake(suiteAmount);
+                await tx.wait();
+
+                showTxStatus('Success! SUITE returned to wallet.', 'success');
+                refreshBalances();
+            } catch (err) {
+                showTxStatus('Error: ' + err.message, 'error');
+            }
+        }
+
+        // Listen for account changes
+        if (window.ethereum) {
+            window.ethereum.on('accountsChanged', (accounts) => {
+                walletAddress = accounts[0] || null;
+                updateAdminVisibility();
+            });
+        }
+
+        // Check on page load if already connected
+        window.addEventListener('load', async () => {
+            if (window.ethereum) {
+                try {
+                    provider = new ethers.BrowserProvider(window.ethereum);
+                    const accounts = await provider.listAccounts();
+                    if (accounts.length > 0) {
+                        walletAddress = accounts[0].address;
+                        signer = await provider.getSigner();
+                        updateAdminVisibility();
+                    }
+                } catch (e) {
+                    console.log('Not connected yet');
+                }
+            }
+        });
+    </script>
 </body>
 </html>
