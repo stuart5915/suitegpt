@@ -2115,6 +2115,133 @@
             align-items: center;
         }
 
+        /* Comments Section */
+        .comment-btn {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: transparent;
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .comment-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .comment-btn.has-comments {
+            color: var(--accent);
+        }
+
+        .comments-section {
+            display: none;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .comments-section.open {
+            display: block;
+        }
+
+        .comments-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+
+        .comment-item {
+            padding: 8px 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            margin-bottom: 6px;
+        }
+
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .comment-author {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .comment-time {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+        }
+
+        .comment-content {
+            font-size: 0.85rem;
+            color: var(--text);
+            line-height: 1.4;
+        }
+
+        .comment-form {
+            display: flex;
+            gap: 8px;
+        }
+
+        .comment-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 0.85rem;
+            font-family: inherit;
+        }
+
+        .comment-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .comment-submit {
+            padding: 8px 16px;
+            background: var(--accent);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .comment-submit:hover {
+            opacity: 0.9;
+        }
+
+        .comment-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .no-comments {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            text-align: center;
+            padding: 10px;
+        }
+
+        .comment-login-prompt {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            text-align: center;
+            padding: 10px;
+        }
+
         /* Collapsible App Groups in Governance */
         .proposal-group {
             margin-bottom: 12px;
@@ -3211,6 +3338,7 @@
         // Load governance proposals (all sections including SUITE Apps)
         async function loadGovernanceProposals() {
             try {
+                // Load proposals
                 const response = await fetch(
                     `${SUPABASE_URL}/rest/v1/factory_proposals?select=*,author:factory_users(id,display_name,reputation)&section=in.(suite_apps,business,content,social)&order=created_at.desc`,
                     {
@@ -3224,9 +3352,42 @@
                 if (response.ok) {
                     governanceProposals = await response.json();
                     console.log('Loaded', governanceProposals.length, 'governance proposals');
+
+                    // Load comment counts for all proposals
+                    await loadCommentCounts();
                 }
             } catch (err) {
                 console.error('Error loading governance proposals:', err);
+            }
+        }
+
+        // Load comment counts for all proposals
+        async function loadCommentCounts() {
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/factory_comments?select=proposal_id`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+
+                if (response.ok) {
+                    const comments = await response.json();
+                    // Count comments per proposal
+                    const counts = {};
+                    comments.forEach(c => {
+                        counts[c.proposal_id] = (counts[c.proposal_id] || 0) + 1;
+                    });
+                    // Merge into proposals
+                    governanceProposals.forEach(p => {
+                        p.comment_count = counts[p.id] || 0;
+                    });
+                }
+            } catch (err) {
+                console.error('Error loading comment counts:', err);
             }
         }
 
@@ -3435,7 +3596,21 @@
                             <button class="vote-btn against" onclick="event.stopPropagation(); removeVote('${proposal.id}')" ${!canVote || userVoteCount === 0 ? 'disabled' : ''} title="Remove vote (+${userVoteCount > 0 ? getRefundAmount(userVoteCount) : 0} REP)">
                                 👎 <span class="vote-count">${userVoteCount}</span>
                             </button>
+                            <button class="comment-btn ${(proposal.comment_count || 0) > 0 ? 'has-comments' : ''}" onclick="event.stopPropagation(); toggleComments('${proposal.id}')" title="Comments">
+                                💬 <span class="comment-count">${proposal.comment_count || 0}</span>
+                            </button>
                             ${userVoteCount > 0 ? `<span class="your-votes">${userVoteCount} vote${userVoteCount > 1 ? 's' : ''} · ${nextVoteCost} REP next</span>` : `<span class="your-votes">${nextVoteCost === 0 ? 'First vote FREE' : nextVoteCost + ' REP'}</span>`}
+                        </div>
+                        <div class="comments-section" id="comments-${proposal.id}">
+                            <div class="comments-list" id="comments-list-${proposal.id}">
+                                <div class="no-comments">Loading comments...</div>
+                            </div>
+                            ${currentUser ? `
+                            <div class="comment-form">
+                                <input type="text" class="comment-input" id="comment-input-${proposal.id}" placeholder="Add a comment..." maxlength="1000" onkeypress="if(event.key==='Enter') postComment('${proposal.id}')">
+                                <button class="comment-submit" onclick="postComment('${proposal.id}')">Post</button>
+                            </div>
+                            ` : `<div class="comment-login-prompt">Connect to add comments</div>`}
                         </div>
                     </div>
                 </div>
@@ -4699,6 +4874,172 @@
                 alert('Error removing vote');
             } finally {
                 btns.forEach(btn => btn.disabled = false);
+            }
+        }
+
+        // =============================================
+        // COMMENTS FUNCTIONALITY
+        // =============================================
+
+        // Cache for loaded comments
+        const commentsCache = {};
+
+        // Toggle comments section visibility
+        async function toggleComments(proposalId) {
+            const section = document.getElementById(`comments-${proposalId}`);
+            if (!section) return;
+
+            const isOpen = section.classList.contains('open');
+
+            // Close all other comment sections
+            document.querySelectorAll('.comments-section.open').forEach(s => {
+                s.classList.remove('open');
+            });
+
+            if (!isOpen) {
+                section.classList.add('open');
+                await loadComments(proposalId);
+            }
+        }
+
+        // Load comments for a proposal
+        async function loadComments(proposalId) {
+            const listEl = document.getElementById(`comments-list-${proposalId}`);
+            if (!listEl) return;
+
+            // Show loading state
+            listEl.innerHTML = '<div class="no-comments">Loading comments...</div>';
+
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/factory_comments?proposal_id=eq.${proposalId}&select=id,content,created_at,user_id,factory_users(display_name)&order=created_at.asc`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+
+                if (response.ok) {
+                    const comments = await response.json();
+                    commentsCache[proposalId] = comments;
+                    renderComments(proposalId, comments);
+                } else {
+                    listEl.innerHTML = '<div class="no-comments">Failed to load comments</div>';
+                }
+            } catch (error) {
+                console.error('Failed to load comments:', error);
+                listEl.innerHTML = '<div class="no-comments">Error loading comments</div>';
+            }
+        }
+
+        // Render comments list
+        function renderComments(proposalId, comments) {
+            const listEl = document.getElementById(`comments-list-${proposalId}`);
+            if (!listEl) return;
+
+            if (!comments || comments.length === 0) {
+                listEl.innerHTML = '<div class="no-comments">No comments yet. Be the first!</div>';
+                return;
+            }
+
+            listEl.innerHTML = comments.map(comment => {
+                const authorName = comment.factory_users?.display_name || 'Anonymous';
+                const timeAgo = formatTimeAgo(new Date(comment.created_at));
+                return `
+                    <div class="comment-item">
+                        <div class="comment-header">
+                            <span class="comment-author">@${escapeHtml(authorName)}</span>
+                            <span class="comment-time">${timeAgo}</span>
+                        </div>
+                        <div class="comment-content">${escapeHtml(comment.content)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Format time ago
+        function formatTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            if (seconds < 60) return 'just now';
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `${minutes}m ago`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours}h ago`;
+            const days = Math.floor(hours / 24);
+            if (days < 7) return `${days}d ago`;
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        // Post a new comment
+        async function postComment(proposalId) {
+            if (!currentUser) {
+                showAuthModal();
+                return;
+            }
+
+            const inputEl = document.getElementById(`comment-input-${proposalId}`);
+            if (!inputEl) return;
+
+            const content = inputEl.value.trim();
+            if (!content) return;
+
+            // Disable submit button
+            const section = document.getElementById(`comments-${proposalId}`);
+            const submitBtn = section?.querySelector('.comment-submit');
+            if (submitBtn) submitBtn.disabled = true;
+
+            try {
+                const payload = {
+                    proposal_id: proposalId,
+                    content: content
+                };
+
+                if (currentUser.telegram_id) {
+                    payload.telegram_auth = { id: currentUser.telegram_id, username: currentUser.display_name };
+                } else if (currentUser.wallet_address) {
+                    payload.wallet_address = currentUser.wallet_address;
+                }
+
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/factory-comment`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    // Clear input
+                    inputEl.value = '';
+
+                    // Update comment count in the button
+                    const proposal = governanceProposals.find(p => p.id === proposalId);
+                    if (proposal) {
+                        proposal.comment_count = (proposal.comment_count || 0) + 1;
+                    }
+
+                    // Reload comments
+                    await loadComments(proposalId);
+
+                    // Update the comment count badge
+                    const countEl = document.querySelector(`[onclick*="toggleComments('${proposalId}')"] .comment-count`);
+                    if (countEl && proposal) {
+                        countEl.textContent = proposal.comment_count;
+                    }
+                } else {
+                    alert(result.error || 'Failed to post comment');
+                }
+            } catch (err) {
+                console.error('Comment error:', err);
+                alert('Error posting comment');
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
             }
         }
 
