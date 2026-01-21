@@ -1102,6 +1102,49 @@
             font-size: 1.2rem;
         }
 
+        /* Inline Add */
+        .inline-add {
+            margin-top: 8px;
+        }
+
+        .inline-add-btn {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: 2px dashed rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 1.5rem;
+            font-weight: 300;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .inline-add-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(255, 149, 0, 0.05);
+        }
+
+        .inline-add-input {
+            width: 100%;
+        }
+
+        .inline-add-input input {
+            width: 100%;
+            padding: 12px 14px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid var(--accent);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .inline-add-input input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
         .idea-action-btn.push-to {
             color: var(--accent);
         }
@@ -1351,24 +1394,6 @@
             <div class="ideas-panel">
                 <div class="ideas-header">
                     <h2>📦 My Notes</h2>
-                </div>
-
-                <!-- Quick Add Input (Collapsible) -->
-                <div class="quick-add-section">
-                    <div class="quick-add-header" onclick="toggleQuickAdd()">
-                        <span class="quick-add-toggle" id="quickAddToggle">▼</span>
-                        <span>✏️</span>
-                        <span class="quick-add-title">Add New</span>
-                    </div>
-                    <div class="quick-add-container" id="quickAddContainer">
-                        <div class="quick-add-input-wrap">
-                            <textarea id="quickAddInput" placeholder="Type an idea, note, or task... AI will categorize it automatically" rows="2"></textarea>
-                            <button class="quick-add-btn" onclick="quickAddIdea()" id="quickAddBtn">
-                                <span class="btn-text">Add</span>
-                                <span class="btn-loading" style="display: none;">...</span>
-                            </button>
-                        </div>
-                    </div>
                 </div>
 
                 <div class="kanban-container" id="kanbanContainer">
@@ -2520,10 +2545,13 @@ Format as a numbered list from most to least promising.`;
                                     <span class="kanban-column-count">${catIdeas.length}</span>
                                 </div>
                                 <div class="kanban-cards">
-                                    ${catIdeas.length === 0
-                                        ? '<div class="empty-column">—</div>'
-                                        : catIdeas.map(idea => renderIdeaCard(idea)).join('')
-                                    }
+                                    ${catIdeas.map(idea => renderIdeaCard(idea)).join('')}
+                                    <div class="inline-add" id="inlineAdd-${cat}">
+                                        <button class="inline-add-btn" onclick="showInlineInput('${cat}')">+</button>
+                                        <div class="inline-add-input" style="display: none;">
+                                            <input type="text" placeholder="Type and press Enter..." onkeydown="handleInlineAdd(event, '${cat}')" />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         `;
@@ -2565,10 +2593,72 @@ Format as a numbered list from most to least promising.`;
             }
         }
 
-        // Toggle quick add section
-        function toggleQuickAdd() {
-            const section = document.querySelector('.quick-add-section');
-            section.classList.toggle('collapsed');
+        // Inline add functions
+        function showInlineInput(category) {
+            const container = document.getElementById(`inlineAdd-${category}`);
+            const btn = container.querySelector('.inline-add-btn');
+            const inputWrap = container.querySelector('.inline-add-input');
+            const input = inputWrap.querySelector('input');
+
+            btn.style.display = 'none';
+            inputWrap.style.display = 'block';
+            input.focus();
+
+            // Hide on blur (click outside)
+            input.onblur = () => {
+                setTimeout(() => {
+                    if (!input.value.trim()) {
+                        btn.style.display = 'block';
+                        inputWrap.style.display = 'none';
+                    }
+                }, 150);
+            };
+        }
+
+        async function handleInlineAdd(event, category) {
+            if (event.key !== 'Enter') return;
+
+            const input = event.target;
+            const title = input.value.trim();
+            if (!title) return;
+
+            input.disabled = true;
+
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/personal_ideas`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=representation'
+                        },
+                        body: JSON.stringify({
+                            user_id: currentUser?.id || 'anonymous',
+                            title: title,
+                            category: category,
+                            status: 'inbox'
+                        })
+                    }
+                );
+
+                if (response.ok) {
+                    const [newIdea] = await response.json();
+                    ideas.unshift(newIdea);
+                    input.value = '';
+                    renderKanban();
+                } else {
+                    console.error('Failed to add idea');
+                    alert('Failed to add. Please try again.');
+                }
+            } catch (err) {
+                console.error('Error adding idea:', err);
+                alert('Error adding. Please try again.');
+            }
+
+            input.disabled = false;
         }
 
         // Render a single idea card
