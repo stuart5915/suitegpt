@@ -48,5 +48,11 @@ document.addEventListener('DOMContentLoaded', function () {
             <a href="/docs/governance/" class="sidebar-link ${isActive('governance.html')}">🗳️ Governance</a>
             <a href="/docs/content-policy/" class="sidebar-link ${isActive('content-policy.html')}">📜 Content Policy</a>
         </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-title">Partner</div>
+            <a href="/docs/for-businesses/" class="sidebar-link ${isActive('for-businesses.html')}">🏢 For Businesses</a>
+            <a href="/docs/for-influencers/" class="sidebar-link ${isActive('for-influencers.html')}">📢 For Influencers</a>
+        </div>
     `;
 });
