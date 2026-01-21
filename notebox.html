@@ -787,6 +787,70 @@
             margin-left: auto;
         }
 
+        .kanban-columns-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .archive-section {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+        }
+
+        .archive-section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            cursor: pointer;
+            margin-bottom: 16px;
+            transition: background 0.2s;
+        }
+
+        .archive-section-header:hover {
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .archive-toggle {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+
+        .archive-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .archive-count {
+            background: var(--accent-dim);
+            color: var(--accent);
+            padding: 2px 10px;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: auto;
+        }
+
+        .archive-columns-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .archive-column {
+            opacity: 0.7;
+        }
+
+        .archive-column:hover {
+            opacity: 1;
+        }
+
+        /* Legacy section styles - can be removed later */
         .kanban-section-columns {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -1110,12 +1174,6 @@
             <div class="ideas-panel">
                 <div class="ideas-header">
                     <h2>📦 My Notes</h2>
-                    <div class="ideas-toggle" id="destinationTabs">
-                        <!-- Dynamic destination tabs loaded by JS -->
-                        <button class="toggle-btn active" data-dest="inbox">📥 Inbox</button>
-                        <button class="toggle-btn" data-dest="archive">📁 Archive</button>
-                        <button class="toggle-btn add-dest-btn" onclick="openAddDestinationModal()">➕</button>
-                    </div>
                 </div>
 
                 <!-- Quick Add Input -->
@@ -2222,80 +2280,78 @@ Format as a numbered list from most to least promising.`;
         function renderKanban() {
             const container = document.getElementById('kanbanContainer');
 
-            // Filter ideas based on selected destination
-            const filteredIdeas = ideas.filter(idea => {
-                if (currentDestination === 'inbox') {
-                    // Inbox shows items with status='inbox' and no destination_slug (or null)
-                    return idea.status === 'inbox' && (!idea.destination_slug || idea.destination_slug === 'stuart');
-                } else if (currentDestination === 'archive') {
-                    return idea.status === 'dismissed' || idea.status === 'implemented';
-                } else {
-                    // Custom destination - filter by destination_slug
-                    return idea.destination_slug === currentDestination && idea.status !== 'dismissed' && idea.status !== 'implemented';
-                }
-            });
+            // Filter active ideas (inbox status)
+            const activeIdeas = ideas.filter(idea =>
+                idea.status === 'inbox' && (!idea.destination_slug || idea.destination_slug === 'stuart')
+            );
 
-            // Group by category
+            // Filter archived ideas
+            const archivedIdeas = ideas.filter(idea =>
+                idea.status === 'dismissed' || idea.status === 'implemented'
+            );
+
+            // Group active ideas by category
             const grouped = {};
             Object.keys(CATEGORIES).forEach(cat => {
-                grouped[cat] = filteredIdeas.filter(i => i.category === cat);
+                grouped[cat] = activeIdeas.filter(i => i.category === cat);
             });
 
-            if (filteredIdeas.length === 0) {
-                let emptyMsg = 'No ideas yet.';
-                if (currentDestination === 'inbox') {
-                    emptyMsg = 'No ideas in Inbox. Text @stuartfactorybot to capture ideas!';
-                } else if (currentDestination === 'archive') {
-                    emptyMsg = 'No archived ideas yet.';
-                } else {
-                    const dest = destinations.find(d => d.slug === currentDestination);
-                    emptyMsg = `No ideas in ${dest?.name || currentDestination} yet.`;
-                }
-                container.innerHTML = `<div class="empty-column" style="grid-column: 1 / -1;">${emptyMsg}</div>`;
-                return;
-            }
+            // Group archived ideas by category
+            const archivedGrouped = {};
+            Object.keys(CATEGORIES).forEach(cat => {
+                archivedGrouped[cat] = archivedIdeas.filter(i => i.category === cat);
+            });
 
-            // Render by sections
-            container.innerHTML = Object.entries(SECTIONS).map(([sectionKey, section]) => {
-                // Get all ideas for this section
-                const sectionIdeas = section.categories.flatMap(cat => grouped[cat] || []);
-                const sectionCount = sectionIdeas.length;
+            // Render flat columns for active ideas
+            let html = `
+                <div class="kanban-columns-grid">
+                    ${Object.entries(CATEGORIES).map(([cat, catInfo]) => {
+                        const catIdeas = grouped[cat] || [];
+                        return `
+                            <div class="kanban-column">
+                                <div class="kanban-column-header">
+                                    <span class="kanban-column-emoji">${catInfo.emoji}</span>
+                                    <span class="kanban-column-title">${catInfo.title}</span>
+                                    <span class="kanban-column-count">${catIdeas.length}</span>
+                                </div>
+                                <div class="kanban-cards">
+                                    ${catIdeas.length === 0
+                                        ? '<div class="empty-column">—</div>'
+                                        : catIdeas.map(idea => renderIdeaCard(idea)).join('')
+                                    }
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
 
-                // For archive view, only show sections with items
-                if (currentDestination === 'archive' && sectionCount === 0) {
-                    return '';
-                }
+            // Add Archive section at bottom if there are archived items
+            if (archivedIdeas.length > 0) {
+                const archivedWithItems = Object.entries(CATEGORIES).filter(([cat]) =>
+                    (archivedGrouped[cat] || []).length > 0
+                );
 
-                return `
-                    <div class="kanban-section" id="section-${sectionKey}">
-                        <div class="kanban-section-header" onclick="toggleSection('${sectionKey}')">
-                            <span class="kanban-section-toggle">▼</span>
-                            <span class="kanban-section-emoji">${section.emoji}</span>
-                            <span class="kanban-section-title">${section.title}</span>
-                            <span class="kanban-section-count">${sectionCount}</span>
+                html += `
+                    <div class="archive-section">
+                        <div class="archive-section-header" onclick="toggleArchiveSection()">
+                            <span class="archive-toggle" id="archiveToggle">▼</span>
+                            <span>📁</span>
+                            <span class="archive-title">Archive</span>
+                            <span class="archive-count">${archivedIdeas.length}</span>
                         </div>
-                        <div class="kanban-section-columns">
-                            ${section.categories.map(cat => {
-                                const catInfo = CATEGORIES[cat];
-                                const catIdeas = grouped[cat] || [];
-
-                                // For archive, skip empty columns
-                                if (currentDestination === 'archive' && catIdeas.length === 0) {
-                                    return '';
-                                }
-
+                        <div class="archive-columns-grid" id="archiveColumnsGrid">
+                            ${archivedWithItems.map(([cat, catInfo]) => {
+                                const catIdeas = archivedGrouped[cat] || [];
                                 return `
-                                    <div class="kanban-column">
+                                    <div class="kanban-column archive-column">
                                         <div class="kanban-column-header">
                                             <span class="kanban-column-emoji">${catInfo.emoji}</span>
                                             <span class="kanban-column-title">${catInfo.title}</span>
                                             <span class="kanban-column-count">${catIdeas.length}</span>
                                         </div>
                                         <div class="kanban-cards">
-                                            ${catIdeas.length === 0
-                                                ? '<div class="empty-column">—</div>'
-                                                : catIdeas.map(idea => renderIdeaCard(idea)).join('')
-                                            }
+                                            ${catIdeas.map(idea => renderIdeaCard(idea)).join('')}
                                         </div>
                                     </div>
                                 `;
@@ -2303,7 +2359,22 @@ Format as a numbered list from most to least promising.`;
                         </div>
                     </div>
                 `;
-            }).join('');
+            }
+
+            container.innerHTML = html;
+        }
+
+        // Toggle archive section
+        function toggleArchiveSection() {
+            const grid = document.getElementById('archiveColumnsGrid');
+            const toggle = document.getElementById('archiveToggle');
+            if (grid.style.display === 'none') {
+                grid.style.display = 'grid';
+                toggle.textContent = '▼';
+            } else {
+                grid.style.display = 'none';
+                toggle.textContent = '▶';
+            }
         }
 
         // Render a single idea card
