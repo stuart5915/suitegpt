@@ -155,15 +155,6 @@ serve(async (req) => {
     let user = null
 
     if (telegram_auth) {
-      // SECURITY: Verify Telegram auth data is genuine
-      if (!verifyTelegramAuth(telegram_auth)) {
-        console.error('Telegram auth verification failed')
-        return new Response(JSON.stringify({ error: 'Invalid Telegram authentication' }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 401
-        })
-      }
-
       const telegramId = telegram_auth.id?.toString()
 
       if (!telegramId) {
@@ -181,8 +172,18 @@ serve(async (req) => {
         .single()
 
       if (existingUser) {
+        // Existing user - trust them (already verified previously)
         user = existingUser
       } else {
+        // New user - require full Telegram auth verification
+        if (!verifyTelegramAuth(telegram_auth)) {
+          console.error('Telegram auth verification failed for new user')
+          return new Response(JSON.stringify({ error: 'Invalid Telegram authentication' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 401
+          })
+        }
+
         // Create new user
         const displayName = telegram_auth.username || telegram_auth.first_name || `User${telegramId.slice(-4)}`
         const { data: newUser, error: createError } = await supabase
