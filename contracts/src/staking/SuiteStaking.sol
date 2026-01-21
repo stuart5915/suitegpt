@@ -95,13 +95,16 @@ contract SuiteStaking is Ownable, ReentrancyGuard, Pausable {
 
     /**
      * @notice Buy SUITE tokens with USDC (sent to wallet, not staked)
-     * @param usdcAmount Amount of USDC to spend
+     * @param usdcAmount Amount of USDC to spend (6 decimals)
      */
     function buy(uint256 usdcAmount) external nonReentrant whenNotPaused {
         if (usdcAmount == 0) revert ZeroAmount();
 
         // Calculate SUITE amount
-        uint256 suiteAmount = usdcAmount * suitePerUsdc;
+        // USDC has 6 decimals, SUITE has 18 decimals
+        // Scale up by 1e12 to convert properly
+        // e.g., 1 USDC (1e6) * 1000 * 1e12 = 1000e18 SUITE
+        uint256 suiteAmount = usdcAmount * suitePerUsdc * 1e12;
 
         // Transfer USDC to treasury
         usdc.safeTransferFrom(msg.sender, treasury, usdcAmount);
@@ -182,7 +185,9 @@ contract SuiteStaking is Ownable, ReentrancyGuard, Pausable {
         if (usdcAmount == 0) revert ZeroAmount();
 
         // Calculate SUITE amount
-        uint256 suiteAmount = usdcAmount * suitePerUsdc;
+        // USDC has 6 decimals, SUITE has 18 decimals
+        // Scale up by 1e12 to convert properly
+        uint256 suiteAmount = usdcAmount * suitePerUsdc * 1e12;
 
         // Transfer USDC to treasury
         usdc.safeTransferFrom(msg.sender, treasury, usdcAmount);

@@ -325,8 +325,9 @@ contract SuiteStakingTest is Test {
         vm.prank(user1);
         staking.buy(10e6);
 
-        // 10 USDC * 1000 = 10_000e6 SUITE (based on current implementation)
-        uint256 expectedSuite = 10e6 * 1000;
+        // 10 USDC (10e6) * 1000 * 1e12 = 10_000e18 SUITE
+        // USDC has 6 decimals, SUITE has 18 decimals
+        uint256 expectedSuite = 10e6 * 1000 * 1e12; // 10,000 SUITE in 18 decimals
         assertEq(suiteToken.balanceOf(user1), balanceBefore + expectedSuite);
     }
 
@@ -366,15 +367,9 @@ contract SuiteStakingTest is Test {
         vm.prank(user1);
         staking.buyAndStake(10e6);
 
-        // 10 USDC * 1000 = 10,000 SUITE
-        // Note: USDC has 6 decimals, SUITE has 18
-        // 10e6 * 1000 = 10_000e6 (but we need to scale for 18 decimals)
-        // Actually the contract does: usdcAmount * suitePerUsdc
-        // = 10e6 * 1000 = 10_000e6 = 10_000 * 1e6
-        // This is a bug - should account for decimals difference
-
-        // Given the current implementation, let's test what it actually does
-        uint256 expectedSuite = 10e6 * 1000; // 10_000_000_000 = 10e9
+        // 10 USDC (10e6) * 1000 * 1e12 = 10_000e18 SUITE
+        // USDC has 6 decimals, SUITE has 18 decimals
+        uint256 expectedSuite = 10e6 * 1000 * 1e12; // 10,000 SUITE in 18 decimals
         assertEq(staking.stakedBalance(user1), expectedSuite);
         assertEq(staking.availableCredits(user1), expectedSuite);
     }
