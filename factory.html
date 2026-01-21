@@ -2814,7 +2814,8 @@
             // Group by app_slug (null = "General", is_new_app = "New App Ideas")
             proposals.forEach(p => {
                 let slug;
-                if (p.is_new_app) {
+                // Check for new app (either is_new_app flag or app_slug='new_app')
+                if (p.is_new_app || p.app_slug === 'new_app') {
                     slug = '_new_app';
                 } else {
                     slug = p.app_slug || '_general';
@@ -3327,7 +3328,7 @@
 
             // Get app name if proposal is linked to an app, or show New App tag
             let appTag = '';
-            if (proposal.is_new_app) {
+            if (proposal.is_new_app || proposal.app_slug === 'new_app') {
                 appTag = '<span class="proposal-app-tag new-app-tag">🆕 New App</span>';
             } else if (proposal.app_slug) {
                 const linkedApp = factoryApps.find(a => a.slug === proposal.app_slug);
