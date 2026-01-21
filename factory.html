@@ -1292,10 +1292,10 @@
             background: #0099dd;
         }
 
-        /* Current Loops Section */
+        /* Technical Loops Section */
         .loops-section {
-            background: linear-gradient(135deg, rgba(255, 149, 0, 0.1), rgba(168, 85, 247, 0.1));
-            border: 1px solid rgba(255, 149, 0, 0.3);
+            background: linear-gradient(135deg, rgba(255, 149, 0, 0.05), rgba(168, 85, 247, 0.05));
+            border: 1px solid rgba(255, 149, 0, 0.2);
             border-radius: 16px;
             padding: 24px;
             margin-bottom: 32px;
@@ -1315,78 +1315,324 @@
 
         .loops-header p {
             color: var(--text-dim);
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             margin: 0;
         }
 
-        .loops-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 16px;
+        /* Loop Category (AI Loops, Cadence Loops) */
+        .loop-category {
+            margin-bottom: 16px;
+            background: var(--bg-elevated);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden;
         }
 
-        .loop-card {
+        .loop-category-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .loop-category-header:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .category-toggle {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            transition: transform 0.2s;
+        }
+
+        .loop-category.collapsed .category-toggle {
+            transform: rotate(-90deg);
+        }
+
+        .category-icon {
+            font-size: 1.2rem;
+        }
+
+        .category-name {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .category-count {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-left: auto;
+        }
+
+        .loop-category-content {
+            border-top: 1px solid var(--border);
+        }
+
+        .loop-category.collapsed .loop-category-content {
+            display: none;
+        }
+
+        /* Individual Loop Item */
+        .loop-item {
+            border-bottom: 1px solid var(--border);
+        }
+
+        .loop-item:last-child {
+            border-bottom: none;
+        }
+
+        .loop-item-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px 12px 32px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .loop-item-header:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .loop-toggle {
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            transition: transform 0.2s;
+        }
+
+        .loop-item.expanded .loop-toggle {
+            transform: rotate(90deg);
+        }
+
+        .loop-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .loop-status-badge {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 100px;
+            margin-left: auto;
+        }
+
+        .loop-status-badge.partial {
+            background: rgba(234, 179, 8, 0.2);
+            color: #eab308;
+        }
+
+        .loop-status-badge.full {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .loop-item-content {
+            display: none;
+            padding: 0 16px 16px 48px;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+            font-size: 0.8rem;
+        }
+
+        .loop-item.expanded .loop-item-content {
+            display: block;
+        }
+
+        /* Loop Details */
+        .loop-trigger, .loop-output {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+
+        .trigger-label, .output-label {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .loop-steps {
+            border-left: 2px solid var(--border);
+            margin-left: 8px;
+            padding-left: 16px;
+        }
+
+        .loop-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 6px 0;
+            position: relative;
+        }
+
+        .loop-step::before {
+            content: '';
+            position: absolute;
+            left: -18px;
+            top: 12px;
+            width: 8px;
+            height: 2px;
+            background: var(--border);
+        }
+
+        .step-tag {
+            font-size: 0.6rem;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .step-tag.auto {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .step-tag.admin {
+            background: rgba(234, 179, 8, 0.2);
+            color: #eab308;
+        }
+
+        .step-text {
+            color: var(--text-dim);
+            line-height: 1.4;
+        }
+
+        /* Tree View for branching logic */
+        .loop-steps.tree-view {
+            border-left: none;
+            margin-left: 0;
+            padding-left: 0;
+        }
+
+        .loop-steps.tree-view .loop-step {
+            padding-left: 0;
+        }
+
+        .loop-steps.tree-view .loop-step::before {
+            display: none;
+        }
+
+        .loop-step.check {
+            background: rgba(168, 85, 247, 0.1);
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin: 8px 0;
+        }
+
+        .loop-step.check .step-text {
+            color: #a855f7;
+            font-weight: 600;
+        }
+
+        .loop-step.rest .step-text {
+            color: var(--text-dim);
+        }
+
+        .future-note {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            opacity: 0.7;
+        }
+
+        .loop-branch {
+            margin-left: 20px;
+            padding: 8px 0 8px 16px;
+            border-left: 2px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .branch-label {
+            color: #22c55e;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        .branch-steps {
+            margin-top: 8px;
+        }
+
+        .branch-steps .loop-step {
+            padding: 4px 0;
+        }
+
+        .branch-steps .loop-step::before {
+            display: none;
+        }
+
+        /* Cadence List */
+        .cadence-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .cadence-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 6px;
+        }
+
+        .cadence-item.placeholder {
+            color: var(--text-dim);
+            font-style: italic;
+        }
+
+        .cadence-time {
+            font-weight: 700;
+            color: var(--accent);
+            font-size: 0.75rem;
+            min-width: 90px;
+        }
+
+        .cadence-action {
+            color: var(--text-dim);
+        }
+
+        /* Docs Links */
+        .loops-docs-links {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .docs-link {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
             background: var(--bg-elevated);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px;
-            text-align: center;
+            border-radius: 8px;
+            text-decoration: none;
+            color: var(--text);
             transition: all 0.2s;
         }
 
-        .loop-card:hover {
+        .docs-link:hover {
             border-color: var(--accent);
-            transform: translateY(-2px);
+            background: rgba(255, 149, 0, 0.1);
         }
 
-        .loop-icon {
-            font-size: 2rem;
-            margin-bottom: 8px;
+        .docs-icon {
+            font-size: 1.2rem;
         }
 
-        .loop-name {
-            font-size: 1rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-
-        .loop-cycle {
-            font-size: 0.75rem;
-            color: var(--accent);
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 4px;
-            flex-wrap: wrap;
-        }
-
-        .loop-cycle span {
-            background: rgba(255, 149, 0, 0.2);
-            padding: 2px 8px;
-            border-radius: 4px;
-        }
-
-        .loop-desc {
-            font-size: 0.85rem;
-            color: var(--text-dim);
-            line-height: 1.4;
-            margin-bottom: 12px;
-        }
-
-        .loop-status {
-            font-size: 0.7rem;
+        .docs-text {
             font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 4px 10px;
-            border-radius: 100px;
-            display: inline-block;
+            font-size: 0.9rem;
         }
 
-        .loop-status.active {
-            background: rgba(34, 197, 94, 0.2);
-            color: #22c55e;
+        .docs-arrow {
+            margin-left: auto;
+            font-size: 0.8rem;
+            color: var(--accent);
         }
 
         .loops-footer {
@@ -1394,6 +1640,12 @@
             margin-top: 20px;
             font-size: 0.85rem;
             color: var(--text-dim);
+        }
+
+        @media (max-width: 600px) {
+            .loops-docs-links {
+                flex-direction: column;
+            }
         }
 
         /* Governance Sections */
@@ -1935,50 +2187,205 @@
                     </div>
                 </div>
 
-                <!-- Current Loops Section -->
+                <!-- Technical Loops Section -->
                 <div class="loops-section" id="loops">
                     <div class="loops-header">
-                        <h3>🔄 Current Loops</h3>
-                        <p>SUITE is a living organism. These loops run continuously, and you can steer them.</p>
+                        <h3>🔄 SUITE LOOPS</h3>
+                        <p>The autonomous processes that make SUITE alive. Click to expand technical details.</p>
                     </div>
-                    <div class="loops-grid">
-                        <div class="loop-card">
-                            <div class="loop-icon">🤖</div>
-                            <div class="loop-name">AI Fleet</div>
-                            <div class="loop-cycle">
-                                <span>Vote</span> → <span>Build</span> → <span>Launch</span> → <span>Feedback</span>
-                            </div>
-                            <div class="loop-desc">Every day, AI builds a new app. Community votes on what to build next.</div>
-                            <div class="loop-status active">Running daily at 10 AM EST</div>
+
+                    <!-- AI Loops Category -->
+                    <div class="loop-category" id="aiLoopsCategory">
+                        <div class="loop-category-header" onclick="toggleLoopCategory('aiLoopsCategory')">
+                            <span class="category-toggle">▼</span>
+                            <span class="category-icon">🤖</span>
+                            <span class="category-name">AI Loops</span>
+                            <span class="category-count">2 loops</span>
                         </div>
-                        <div class="loop-card">
-                            <div class="loop-icon">💰</div>
-                            <div class="loop-name">Yield Loop</div>
-                            <div class="loop-cycle">
-                                <span>Deposit</span> → <span>Earn</span> → <span>Use</span> → <span>Repeat</span>
+                        <div class="loop-category-content">
+                            <!-- AI Fleet Loop -->
+                            <div class="loop-item" id="aiFleetLoop">
+                                <div class="loop-item-header" onclick="toggleLoopItem('aiFleetLoop')">
+                                    <span class="loop-toggle">▶</span>
+                                    <span class="loop-title">AI Fleet Loop</span>
+                                    <span class="loop-status-badge partial">🟡 Partial</span>
+                                </div>
+                                <div class="loop-item-content">
+                                    <div class="loop-trigger">
+                                        <span class="trigger-label">Trigger:</span> Daily at 10 AM EST
+                                    </div>
+                                    <div class="loop-steps">
+                                        <div class="loop-step auto">
+                                            <span class="step-tag auto">AUTO</span>
+                                            <span class="step-text">Fetch X poll winner from previous day</span>
+                                        </div>
+                                        <div class="loop-step auto">
+                                            <span class="step-tag auto">AUTO</span>
+                                            <span class="step-text">Generate app specification from poll description</span>
+                                        </div>
+                                        <div class="loop-step admin">
+                                            <span class="step-tag admin">ADMIN</span>
+                                            <span class="step-text">Review spec, adjust if needed</span>
+                                        </div>
+                                        <div class="loop-step auto">
+                                            <span class="step-tag auto">AUTO</span>
+                                            <span class="step-text">Build app with Claude Code</span>
+                                        </div>
+                                        <div class="loop-step auto">
+                                            <span class="step-tag auto">AUTO</span>
+                                            <span class="step-text">Deploy to staging environment</span>
+                                        </div>
+                                        <div class="loop-step admin">
+                                            <span class="step-tag admin">ADMIN</span>
+                                            <span class="step-text">QA review and approve</span>
+                                        </div>
+                                        <div class="loop-step auto">
+                                            <span class="step-tag auto">AUTO</span>
+                                            <span class="step-text">Publish to SUITE store</span>
+                                        </div>
+                                        <div class="loop-step auto">
+                                            <span class="step-tag auto">AUTO</span>
+                                            <span class="step-text">Post announcement to X</span>
+                                        </div>
+                                    </div>
+                                    <div class="loop-output">
+                                        <span class="output-label">Output:</span> New app live in store
+                                    </div>
+                                </div>
                             </div>
-                            <div class="loop-desc">Your USDC earns ~40% APY. Yield becomes credits. Credits power apps.</div>
-                            <div class="loop-status active">Compounding continuously</div>
-                        </div>
-                        <div class="loop-card">
-                            <div class="loop-icon">💡</div>
-                            <div class="loop-name">Feature Loop</div>
-                            <div class="loop-cycle">
-                                <span>Request</span> → <span>Vote</span> → <span>Build</span> → <span>Ship</span>
+
+                            <!-- Get to Work Loop -->
+                            <div class="loop-item" id="getToWorkLoop">
+                                <div class="loop-item-header" onclick="toggleLoopItem('getToWorkLoop')">
+                                    <span class="loop-toggle">▶</span>
+                                    <span class="loop-title">Get to Work Loop</span>
+                                    <span class="loop-status-badge partial">🟡 Partial</span>
+                                </div>
+                                <div class="loop-item-content">
+                                    <div class="loop-trigger">
+                                        <span class="trigger-label">Trigger:</span> Continuous / On-demand
+                                    </div>
+                                    <div class="loop-steps tree-view">
+                                        <div class="loop-step check">
+                                            <span class="step-text">Check: Items in VOTE column?</span>
+                                        </div>
+                                        <div class="loop-branch yes">
+                                            <span class="branch-label">YES →</span>
+                                            <div class="branch-steps">
+                                                <div class="loop-step auto">
+                                                    <span class="step-tag auto">AUTO</span>
+                                                    <span class="step-text">Analyze requirements</span>
+                                                </div>
+                                                <div class="loop-step auto">
+                                                    <span class="step-tag auto">AUTO</span>
+                                                    <span class="step-text">Generate implementation plan</span>
+                                                </div>
+                                                <div class="loop-step admin">
+                                                    <span class="step-tag admin">ADMIN</span>
+                                                    <span class="step-text">Review and approve</span>
+                                                </div>
+                                                <div class="loop-step auto">
+                                                    <span class="step-tag auto">AUTO</span>
+                                                    <span class="step-text">Execute implementation</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="loop-step check">
+                                            <span class="step-text">Check: Items in SUBMITTED column?</span>
+                                        </div>
+                                        <div class="loop-branch yes">
+                                            <span class="branch-label">YES →</span>
+                                            <div class="branch-steps">
+                                                <div class="loop-step auto">
+                                                    <span class="step-tag auto">AUTO</span>
+                                                    <span class="step-text">Move top item to VOTE</span>
+                                                </div>
+                                                <div class="loop-step">
+                                                    <span class="step-text">↩ Return to first check</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="loop-step check">
+                                            <span class="step-text">Check: Nothing pending?</span>
+                                        </div>
+                                        <div class="loop-branch yes">
+                                            <span class="branch-label">YES →</span>
+                                            <div class="branch-steps">
+                                                <div class="loop-step rest">
+                                                    <span class="step-text">💤 REST <span class="future-note">(future: auto-generate proposals)</span></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="loop-output">
+                                        <span class="output-label">Output:</span> Governance items processed
+                                    </div>
+                                </div>
                             </div>
-                            <div class="loop-desc">Request features for any app. Community votes. AI builds the winners.</div>
-                            <div class="loop-status active">Processing requests weekly</div>
-                        </div>
-                        <div class="loop-card">
-                            <div class="loop-icon">📈</div>
-                            <div class="loop-name">Growth Loop</div>
-                            <div class="loop-cycle">
-                                <span>Apps</span> → <span>Revenue</span> → <span>Vault</span> → <span>More Apps</span>
-                            </div>
-                            <div class="loop-desc">Apps generate revenue. Revenue grows the vault. Vault funds more apps.</div>
-                            <div class="loop-status active">Reinvesting automatically</div>
                         </div>
                     </div>
+
+                    <!-- Cadence Loops Category -->
+                    <div class="loop-category" id="cadenceLoopsCategory">
+                        <div class="loop-category-header" onclick="toggleLoopCategory('cadenceLoopsCategory')">
+                            <span class="category-toggle">▼</span>
+                            <span class="category-icon">⏰</span>
+                            <span class="category-name">Cadence Loops</span>
+                            <span class="category-count">2 active</span>
+                            <span class="loop-status-badge full">🟢 Auto</span>
+                        </div>
+                        <div class="loop-category-content">
+                            <!-- Daily Cadence -->
+                            <div class="loop-item" id="dailyCadence">
+                                <div class="loop-item-header" onclick="toggleLoopItem('dailyCadence')">
+                                    <span class="loop-toggle">▶</span>
+                                    <span class="loop-title">Daily Schedule</span>
+                                </div>
+                                <div class="loop-item-content">
+                                    <div class="cadence-list">
+                                        <div class="cadence-item">
+                                            <span class="cadence-time">10:00 AM EST</span>
+                                            <span class="cadence-action">AI Fleet app build trigger</span>
+                                        </div>
+                                        <div class="cadence-item">
+                                            <span class="cadence-time">11:00 AM EST</span>
+                                            <span class="cadence-action">X poll for next day's app</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Weekly Cadence -->
+                            <div class="loop-item" id="weeklyCadence">
+                                <div class="loop-item-header" onclick="toggleLoopItem('weeklyCadence')">
+                                    <span class="loop-toggle">▶</span>
+                                    <span class="loop-title">Weekly Schedule</span>
+                                </div>
+                                <div class="loop-item-content">
+                                    <div class="cadence-list">
+                                        <div class="cadence-item placeholder">
+                                            <span class="cadence-action">No weekly automations configured yet</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Links to Docs -->
+                    <div class="loops-docs-links">
+                        <a href="docs/systems.html" class="docs-link">
+                            <span class="docs-icon">📖</span>
+                            <span class="docs-text">Admin Workflows</span>
+                            <span class="docs-arrow">→ See Docs</span>
+                        </a>
+                        <a href="docs/user-flows.html" class="docs-link">
+                            <span class="docs-icon">📖</span>
+                            <span class="docs-text">User Flows</span>
+                            <span class="docs-arrow">→ See Docs</span>
+                        </a>
+                    </div>
+
                     <p class="loops-footer">These loops define what SUITE does. Propose changes below to adjust how they run.</p>
                 </div>
 
@@ -2695,6 +3102,22 @@
             const card = headerEl.closest('.idea-card');
             if (card) {
                 card.classList.toggle('collapsed');
+            }
+        }
+
+        // Toggle loop category collapse/expand (AI Loops, Cadence Loops)
+        function toggleLoopCategory(categoryId) {
+            const category = document.getElementById(categoryId);
+            if (category) {
+                category.classList.toggle('collapsed');
+            }
+        }
+
+        // Toggle individual loop item expand/collapse
+        function toggleLoopItem(loopId) {
+            const loopItem = document.getElementById(loopId);
+            if (loopItem) {
+                loopItem.classList.toggle('expanded');
             }
         }
 
