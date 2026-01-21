@@ -8,8 +8,8 @@ export async function POST(request: NextRequest) {
   // Clear session cookie
   response.cookies.set(SESSION_COOKIE_NAME, '', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    secure: true,
+    sameSite: 'none', // Match login cookie settings for cross-site iframe
     maxAge: 0, // Expire immediately
     path: '/',
   })

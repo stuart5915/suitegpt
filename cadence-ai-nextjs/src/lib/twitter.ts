@@ -130,7 +130,8 @@ export async function searchTweets(
 
         // Transform tweets
         const tweets: SearchedTweet[] = []
-        for (const tweet of result.data || []) {
+        const tweetData = Array.isArray(result.data) ? result.data : []
+        for (const tweet of tweetData) {
             // Skip if we've already seen this tweet
             if (excludeTweetIds.includes(tweet.id)) {
                 continue

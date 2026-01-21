@@ -12,6 +12,8 @@ export async function middleware(request: NextRequest) {
     // Internal API routes that can be called server-to-server
     const internalApiRoutes = [
         '/api/generate-dev-update-image',
+        '/api/generate-fleet-image',
+        '/api/generate-post',
         '/api/work-log/cron',
         '/api/auth/telegram', // Auth endpoints should be public
         '/api/twitter/latest-poll', // Public poll embed API
@@ -26,6 +28,14 @@ export async function middleware(request: NextRequest) {
 
     // Also check for Mini App URL params (tg_id)
     const hasTelegramParams = request.nextUrl.searchParams.has('tg_id')
+
+    // If user has tg_id params and is on root or login, redirect to dashboard with params
+    if (hasTelegramParams && (pathname === '/' || pathname === '/login')) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/dashboard'
+        // Preserve all search params (tg_id, tg_username, etc.)
+        return NextResponse.redirect(url)
+    }
 
     // If user is not logged in and trying to access protected route
     if (!isAuthenticated && !hasTelegramParams && !isPublicRoute && !isInternalApi) {

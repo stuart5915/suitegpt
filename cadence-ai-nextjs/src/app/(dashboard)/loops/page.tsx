@@ -37,6 +37,7 @@ import {
 } from 'lucide-react'
 import { Project, Audience, ContentVariant } from '@/lib/supabase/types'
 import AudienceManager from '@/components/loops/AudienceManager'
+import AIFleetSection from '@/components/loops/AIFleetSection'
 import VariantEditor from '@/components/loops/VariantEditor'
 import AudienceSelector from '@/components/loops/AudienceSelector'
 import { SUITE_AUDIENCES } from '@/lib/audiences/templates'
@@ -201,6 +202,7 @@ function LoopsPageContent() {
         generateImage: true
     })
     const [showWorkLogModal, setShowWorkLogModal] = useState(false)
+    const [aiFleetExpanded, setAiFleetExpanded] = useState(false)
     const [savingWorkLog, setSavingWorkLog] = useState(false)
 
     // Generate Week state
@@ -977,22 +979,25 @@ function LoopsPageContent() {
                 </div>
             </div>
 
-            {/* Automated Loops Section */}
-            <div className="card p-5 mb-8">
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
-                            <Zap className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                            <h2 className="font-semibold text-[var(--foreground)]">Automated Loops</h2>
-                            <p className="text-sm text-[var(--foreground-muted)]">System-powered content that runs automatically</p>
-                        </div>
-                    </div>
+            {/* Content Loops Header */}
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h2 className="text-lg font-semibold text-[var(--foreground)]">Content Loops</h2>
+                    <p className="text-sm text-[var(--foreground-muted)]">Automated and evergreen content that rotates on a schedule</p>
                 </div>
+                <button
+                    onClick={() => setShowNewLoopModal(true)}
+                    className="btn btn-secondary"
+                >
+                    <Plus className="w-4 h-4" />
+                    New Loop
+                </button>
+            </div>
 
-                {/* Work Log Loop Card */}
-                <div className="bg-[var(--background)] rounded-xl p-4 border border-[var(--surface-border)]">
+            {/* System Loops */}
+            <div className="space-y-4 mb-6">
+                {/* Daily Work Log Card */}
+                <div className="card p-5">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center">
@@ -1018,7 +1023,6 @@ function LoopsPageContent() {
                         </div>
 
                         <div className="flex items-center gap-4">
-                            {/* Status info */}
                             {workLogConfig.enabled && (
                                 <div className="text-right mr-4">
                                     <div className="text-xs text-[var(--foreground-muted)]">Posts daily at</div>
@@ -1027,8 +1031,6 @@ function LoopsPageContent() {
                                     </div>
                                 </div>
                             )}
-
-                            {/* Quick actions */}
                             <div className="flex items-center gap-2">
                                 {workLogConfig.enabled && (
                                     <button
@@ -1057,10 +1059,8 @@ function LoopsPageContent() {
                             </div>
                         </div>
                     </div>
-
-                    {/* Config summary when enabled */}
                     {workLogConfig.enabled && (
-                        <div className="mt-4 pt-4 border-t border-[var(--surface-border)] flex items-center gap-6 text-sm">
+                        <div className="mt-4 pt-4 border-t border-[var(--surface-border)] flex items-center gap-6 text-sm flex-wrap">
                             <div className="flex items-center gap-2 text-[var(--foreground-muted)]">
                                 <Clock className="w-4 h-4" />
                                 <span>Daily at {workLogConfig.postTime}</span>
@@ -1085,29 +1085,75 @@ function LoopsPageContent() {
                                     <span>Needs approval</span>
                                 </div>
                             )}
-                            {workLogConfig.lastRun && (
-                                <div className="flex items-center gap-2 text-[var(--foreground-muted)] ml-auto">
-                                    <span>Last run: {new Date(workLogConfig.lastRun).toLocaleDateString()}</span>
-                                </div>
-                            )}
                         </div>
                     )}
                 </div>
-            </div>
 
-            {/* Content Loops Header */}
-            <div className="flex items-center justify-between mb-6">
-                <div>
-                    <h2 className="text-lg font-semibold text-[var(--foreground)]">Content Loops</h2>
-                    <p className="text-sm text-[var(--foreground-muted)]">Evergreen content that rotates on a schedule</p>
+                {/* AI Fleet Daily App Loop Card */}
+                <div className="card p-5">
+                    <div
+                        className="flex items-center justify-between cursor-pointer"
+                        onClick={() => setAiFleetExpanded(!aiFleetExpanded)}
+                    >
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
+                                <Rocket className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h3 className="font-semibold text-[var(--foreground)]">AI Fleet Daily App</h3>
+                                    <span className="px-2 py-0.5 text-xs rounded-full bg-green-500/20 text-green-500">
+                                        Active
+                                    </span>
+                                </div>
+                                <p className="text-sm text-[var(--foreground-muted)]">
+                                    Daily spotlight posts featuring apps from the SUITE ecosystem
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <ChevronRight className={`w-5 h-5 text-[var(--foreground-muted)] transition-transform ${aiFleetExpanded ? 'rotate-90' : ''}`} />
+                        </div>
+                    </div>
+                    {aiFleetExpanded && <AIFleetSection />}
                 </div>
-                <button
-                    onClick={() => setShowNewLoopModal(true)}
-                    className="btn btn-secondary"
-                >
-                    <Plus className="w-4 h-4" />
-                    New Loop
-                </button>
+
+                {/* SUITE User Audiences Loop Card */}
+                <div className="card p-5">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center">
+                                <Users className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h3 className="font-semibold text-[var(--foreground)]">SUITE User Audiences</h3>
+                                    <span className="px-2 py-0.5 text-xs rounded-full bg-[var(--surface)] text-[var(--foreground-muted)]">
+                                        Template
+                                    </span>
+                                </div>
+                                <p className="text-sm text-[var(--foreground-muted)]">
+                                    Pre-configured with 4 audience segments: Entrepreneurs, Contributors, Passive Users, Influencers
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => {
+                                    // Find and use the SUITE User Audiences template
+                                    const template = LOOP_TEMPLATES.find(t => t.name === 'SUITE User Audiences')
+                                    if (template) {
+                                        createLoop(template as typeof LOOP_TEMPLATES[0] & { withAudiences?: boolean; featured?: boolean })
+                                    }
+                                }}
+                                className="btn btn-primary text-sm"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Create Loop
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Loops Grid */}

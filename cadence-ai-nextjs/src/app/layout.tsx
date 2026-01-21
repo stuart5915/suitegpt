@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import MobileOptimizedBanner from "@/components/ui/MobileOptimizedBanner";
 import { TelegramAuthProvider } from "@/contexts/TelegramAuthContext";
 
 const geistSans = Geist({
@@ -32,7 +31,6 @@ export default function RootLayout({
         <TelegramAuthProvider>
           {children}
         </TelegramAuthProvider>
-        <MobileOptimizedBanner />
       </body>
     </html>
   );

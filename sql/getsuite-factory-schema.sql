@@ -118,19 +118,18 @@ ALTER TABLE factory_votes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE factory_rep_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE factory_comments ENABLE ROW LEVEL SECURITY;
 
--- Public read access for all tables
+-- Public read access for all tables (governance data is transparent)
 CREATE POLICY "Public read factory_users" ON factory_users FOR SELECT USING (true);
 CREATE POLICY "Public read factory_proposals" ON factory_proposals FOR SELECT USING (true);
 CREATE POLICY "Public read factory_votes" ON factory_votes FOR SELECT USING (true);
 CREATE POLICY "Public read factory_rep_history" ON factory_rep_history FOR SELECT USING (true);
 CREATE POLICY "Public read factory_comments" ON factory_comments FOR SELECT USING (true);
 
--- Write access (handled by edge functions with service role)
-CREATE POLICY "Service write factory_users" ON factory_users FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service write factory_proposals" ON factory_proposals FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service write factory_votes" ON factory_votes FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service write factory_rep_history" ON factory_rep_history FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service write factory_comments" ON factory_comments FOR ALL USING (true) WITH CHECK (true);
+-- SECURITY NOTE: No write policies for anon key users.
+-- All writes go through edge functions that:
+-- 1. Validate Telegram auth data or wallet signatures
+-- 2. Use service_role key which bypasses RLS
+-- This ensures only authenticated requests can modify data.
 
 -- =============================================
 -- HELPER FUNCTIONS

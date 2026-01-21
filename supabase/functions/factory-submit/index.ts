@@ -10,8 +10,9 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN')!
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')!
 
+// SECURITY: Restrict CORS to only allow requests from getsuite.app
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://getsuite.app',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
@@ -146,7 +147,15 @@ serve(async (req) => {
     let user = null
 
     if (telegram_auth) {
-      // Verify Telegram auth (skip in dev for now - proper verification needs bot token hash)
+      // SECURITY: Verify Telegram auth data is genuine
+      if (!verifyTelegramAuth(telegram_auth)) {
+        console.error('Telegram auth verification failed')
+        return new Response(JSON.stringify({ error: 'Invalid Telegram authentication' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401
+        })
+      }
+
       const telegramId = telegram_auth.id?.toString()
 
       if (!telegramId) {

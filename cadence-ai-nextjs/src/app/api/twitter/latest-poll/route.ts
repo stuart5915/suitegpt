@@ -12,9 +12,9 @@ const TWITTER_HANDLE = 'getsuiteapp'
 let cachedPoll: { tweetId: string; text: string; timestamp: number } | null = null
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 
-// CORS headers for cross-origin requests
+// SECURITY: CORS headers restricted to getsuite.app
 const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': 'https://getsuite.app',
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Accept',
 }

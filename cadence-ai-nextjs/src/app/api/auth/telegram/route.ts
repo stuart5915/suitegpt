@@ -89,10 +89,11 @@ export async function POST(request: NextRequest) {
     })
 
     // Set session cookie
+    // Use sameSite: 'none' for cross-site iframe access (suite-shell)
     response.cookies.set(SESSION_COOKIE_NAME, sessionToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true, // Required when sameSite is 'none'
+      sameSite: 'none', // Allow cross-site cookies for iframe embedding
       maxAge: SESSION_MAX_AGE,
       path: '/',
     })

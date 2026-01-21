@@ -2,9 +2,34 @@
 // Deploy to Supabase: supabase functions deploy factory-submit
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createHmac } from 'https://deno.land/std@0.168.0/node/crypto.ts'
 
+const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN') ?? '';
+
+// SECURITY: Verify Telegram auth data is genuine
+function verifyTelegramAuth(authData: any): boolean {
+  if (!authData || !authData.hash || !TELEGRAM_BOT_TOKEN) return false;
+
+  const { hash, ...data } = authData;
+  const checkString = Object.keys(data)
+    .sort()
+    .map(k => `${k}=${data[k]}`)
+    .join('\n');
+
+  const secretKey = createHmac('sha256', 'WebAppData')
+    .update(TELEGRAM_BOT_TOKEN)
+    .digest();
+
+  const hmac = createHmac('sha256', secretKey)
+    .update(checkString)
+    .digest('hex');
+
+  return hmac === hash;
+}
+
+// SECURITY: Restrict CORS to only allow requests from getsuite.app
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://getsuite.app',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
@@ -133,6 +158,14 @@ Deno.serve(async (req) => {
         user = newUser;
       }
     } else if (telegram_auth?.id) {
+      // SECURITY: Verify Telegram auth data is genuine
+      if (!verifyTelegramAuth(telegram_auth)) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid Telegram authentication' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       // Find or create user by Telegram ID
       const tgId = telegram_auth.id.toString();
       const { data: existing } = await supabase

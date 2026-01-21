@@ -1,13 +1,10 @@
 /**
- * Stu Helper Widget - AI-Powered FAQ Chatbot
- * Features: Pre-built FAQ, Gemini AI fallback, Click-to-Explain mode
+ * Stu Helper Widget - FAQ Chatbot
+ * Features: Pre-built FAQ, Click-to-Explain mode
+ * Note: AI features removed for security - uses FAQ + Discord fallback
  */
 
 (function () {
-    // Configuration - Gemini API
-    // SECURITY: This key is exposed client-side. Restrict by HTTP referrer in Google Cloud Console!
-    const GEMINI_API_KEY = 'AIzaSyDwVL1g96Zyx1pq1r8J2ehrDbXuxiR0LTA';
-    const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
     // FAQ Knowledge Base - Used first before AI
     const FAQ = {
@@ -57,49 +54,15 @@
         return null; // No FAQ match - will use AI
     }
 
-    // Ask Gemini AI
-    async function askGemini(question, context = '') {
-        const systemPrompt = `You are Stu, a friendly hamster mascot for SUITE - an ecosystem where anyone can build AI apps without coding and earn SUITE tokens. 
-
-Key facts about SUITE:
-- Users can discover and use apps at getsuite.app/apps
-- Developers build apps via Discord's #the-forge channel - just describe your idea
-- SUITE tokens are earned by: trying apps with campaigns, writing reviews, watching ads
-- Developers earn 90% revenue from their apps
-- Power-Ups are in-app purchases (devs get 70%)
-- Dashboard at getsuite.app/dashboard for managing apps
-- All apps are free to use - users spend SUITE tokens
-
-Keep responses short, friendly, and helpful. Use emojis sparingly. If you don't know something, suggest joining the Discord.`;
-
-        const userPrompt = context
-            ? `The user clicked on this element and wants to understand it:\n\n"${context}"\n\nExplain what this is in the context of SUITE.`
-            : question;
-
-        try {
-            const response = await fetch(`${GEMINI_ENDPOINT}?key=${GEMINI_API_KEY}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [
-                            { text: systemPrompt },
-                            { text: userPrompt }
-                        ]
-                    }],
-                    generationConfig: {
-                        temperature: 0.7,
-                        maxOutputTokens: 300
-                    }
-                })
-            });
-
-            const data = await response.json();
-            return data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm having trouble thinking right now. Try again or ask in Discord! 💬";
-        } catch (error) {
-            console.error('Gemini error:', error);
-            return "Oops! I couldn't connect to my brain. 🧠 Try asking in our Discord instead!";
+    // Fallback for questions not in FAQ
+    async function getHelpResponse(question, context = '') {
+        // For click-to-explain, provide a generic helpful response
+        if (context) {
+            return "That's part of the SUITE interface! 🎯 For detailed explanations about specific features, check out our docs at getsuite.app/docs or ask in our Discord community.";
         }
+
+        // For text questions not in FAQ
+        return "Great question! 🤔 I don't have that in my knowledge base yet. For more detailed help:\n\n📚 Check the docs at **getsuite.app/docs**\n💬 Ask our community in **Discord**\n\nThe humans there know everything!";
     }
 
     // Create widget HTML
@@ -202,11 +165,11 @@ Keep responses short, friendly, and helpful. Use emojis sparingly. If you don't 
             return;
         }
 
-        // Use AI for complex questions
+        // Use fallback for questions not in FAQ
         showTyping();
-        const aiAnswer = await askGemini(question, isElementContext ? question : '');
+        const helpAnswer = await getHelpResponse(question, isElementContext ? question : '');
         hideTyping();
-        addMessage(aiAnswer);
+        addMessage(helpAnswer);
     }
 
     // Click-to-Explain mode
