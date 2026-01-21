@@ -3,9 +3,15 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SUITE Shell</title>
     <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <!-- PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0a0a1a">
+    <link rel="apple-touch-icon" href="/assets/suite-logo-new.png">
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/nav.css">
     <!-- Ethers.js for wallet interactions -->
@@ -1547,6 +1553,114 @@
         }
 
         /* Fund Modal Styles */
+        /* App View Mode Choice Modal */
+        .view-choice-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .view-choice-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .view-choice-modal {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 28px;
+            max-width: 380px;
+            width: 90%;
+            text-align: center;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .view-choice-overlay.active .view-choice-modal {
+            transform: translateY(0);
+        }
+
+        .view-choice-title {
+            font-size: 1.3rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .view-choice-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+
+        .view-choice-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .view-choice-btn {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px 20px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.03);
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+        }
+
+        .view-choice-btn:hover {
+            border-color: var(--accent-orange);
+            background: rgba(255, 149, 0, 0.1);
+        }
+
+        .view-choice-btn-icon {
+            font-size: 2rem;
+        }
+
+        .view-choice-btn-text {
+            flex: 1;
+        }
+
+        .view-choice-btn-title {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
+        .view-choice-btn-desc {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .view-choice-cancel {
+            margin-top: 16px;
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .view-choice-cancel:hover {
+            color: var(--text-primary);
+        }
+
         .fund-modal-overlay {
             position: fixed;
             top: 0;
@@ -2747,6 +2861,54 @@
             display: none; /* Chrome/Safari/Opera */
         }
 
+        /* Fullscreen exit button */
+        .fullscreen-exit-btn {
+            display: none;
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            width: 44px;
+            height: 44px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            z-index: 1001;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s;
+        }
+
+        .fullscreen-exit-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        /* Mobile: always fullscreen when app is open */
+        @media (max-width: 899px) {
+            .app-container.active {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 1000;
+                background: #000;
+            }
+
+            .app-container.active .fullscreen-exit-btn {
+                display: flex;
+            }
+
+            .app-container.active .app-iframe {
+                width: 100%;
+                height: 100%;
+            }
+        }
+
         .loading-overlay {
             position: absolute;
             top: 0;
@@ -2848,6 +3010,37 @@
             .app-container.focus-mode .phone-frame {
                 width: 420px;
                 max-height: 820px;
+            }
+
+            /* True Fullscreen Mode */
+            .app-container.fullscreen-mode {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                padding: 0;
+                z-index: 1000;
+                background: #000;
+            }
+
+            .app-container.fullscreen-mode .phone-frame {
+                display: none;
+            }
+
+            .app-container.fullscreen-mode .side-panel {
+                display: none;
+            }
+
+            .app-container.fullscreen-mode > .app-iframe {
+                display: block !important;
+                width: 100%;
+                height: 100%;
+                border-radius: 0;
+            }
+
+            .app-container.fullscreen-mode .fullscreen-exit-btn {
+                display: flex;
             }
 
             /* Hide direct iframe, show phone frame instead */
@@ -4787,6 +4980,9 @@
 
     <!-- App Container with iframe -->
     <main class="app-container" id="appContainer">
+        <!-- Fullscreen Exit Button -->
+        <button class="fullscreen-exit-btn" onclick="exitFullscreenMode()" title="Exit Fullscreen">✕</button>
+
         <!-- Mobile: Direct iframe -->
         <div class="loading-overlay" id="loadingOverlay">
             <div class="loading-spinner"></div>
@@ -5304,6 +5500,31 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- App View Mode Choice Modal -->
+    <div class="view-choice-overlay" id="viewChoiceModal" onclick="if(event.target === this) closeViewChoiceModal()">
+        <div class="view-choice-modal">
+            <div class="view-choice-title" id="viewChoiceAppName">Open App</div>
+            <div class="view-choice-subtitle">Choose how to view this app</div>
+            <div class="view-choice-options">
+                <button class="view-choice-btn" onclick="openAppInMode('mobile')">
+                    <span class="view-choice-btn-icon">📱</span>
+                    <div class="view-choice-btn-text">
+                        <div class="view-choice-btn-title">Mobile Preview</div>
+                        <div class="view-choice-btn-desc">Test the mobile experience in a phone frame</div>
+                    </div>
+                </button>
+                <button class="view-choice-btn" onclick="openAppInMode('fullscreen')">
+                    <span class="view-choice-btn-icon">🖥️</span>
+                    <div class="view-choice-btn-text">
+                        <div class="view-choice-btn-title">Fullscreen</div>
+                        <div class="view-choice-btn-desc">Use the app in full browser window</div>
+                    </div>
+                </button>
+            </div>
+            <button class="view-choice-cancel" onclick="closeViewChoiceModal()">Cancel</button>
         </div>
     </div>
 
@@ -6259,30 +6480,110 @@
         }
 
         // ===== APP NAVIGATION =====
-        function openApp(slug) {
+        let pendingAppSlug = null;
+
+        function openApp(slug, forceMode = null) {
             const app = apps.find(a => a.slug === slug);
             if (!app) return;
 
+            // Check if on mobile (< 900px) - always fullscreen
+            const isMobile = window.innerWidth < 900;
+
+            // Check URL for fullscreen param
+            const params = new URLSearchParams(window.location.search);
+            const urlFullscreen = params.get('fullscreen') === 'true';
+
+            if (forceMode) {
+                // Mode specified directly
+                executeOpenApp(app, forceMode);
+            } else if (isMobile || urlFullscreen) {
+                // Mobile or URL specified fullscreen
+                executeOpenApp(app, 'fullscreen');
+            } else {
+                // Desktop: show choice modal
+                pendingAppSlug = slug;
+                document.getElementById('viewChoiceAppName').textContent = app.name;
+                document.getElementById('viewChoiceModal').classList.add('active');
+            }
+        }
+
+        function openAppInMode(mode) {
+            closeViewChoiceModal();
+            if (pendingAppSlug) {
+                const app = apps.find(a => a.slug === pendingAppSlug);
+                if (app) {
+                    executeOpenApp(app, mode);
+                }
+                pendingAppSlug = null;
+            }
+        }
+
+        function executeOpenApp(app, mode) {
             currentApp = app;
 
             // Update URL without reload
             const newUrl = new URL(window.location);
-            newUrl.searchParams.set('app', slug);
-            history.pushState({ app: slug }, '', newUrl);
+            newUrl.searchParams.set('app', app.slug);
+            if (mode === 'fullscreen') {
+                newUrl.searchParams.set('fullscreen', 'true');
+            } else {
+                newUrl.searchParams.delete('fullscreen');
+            }
+            history.pushState({ app: app.slug, mode }, '', newUrl);
 
             // Show top nav, hide grid
             document.getElementById('appsGridContainer').style.display = 'none';
             document.getElementById('topNav').classList.add('active');
-            document.getElementById('appContainer').classList.add('active');
+
+            const container = document.getElementById('appContainer');
+            container.classList.add('active');
+
+            // Apply mode
+            if (mode === 'fullscreen') {
+                container.classList.add('fullscreen-mode');
+                container.classList.remove('focus-mode');
+            } else {
+                container.classList.remove('fullscreen-mode');
+            }
 
             // Render top nav
             renderTopNav();
 
-            // Load app features
-            loadAppFeatures(app);
+            // Load app features (for side panel if in mobile preview mode)
+            if (mode !== 'fullscreen') {
+                loadAppFeatures(app);
+            }
 
             // Load app in iframe
             loadAppInIframe(app);
+        }
+
+        function closeViewChoiceModal() {
+            document.getElementById('viewChoiceModal').classList.remove('active');
+            pendingAppSlug = null;
+        }
+
+        function exitFullscreenMode() {
+            const container = document.getElementById('appContainer');
+
+            // Check if on mobile - if so, go back to app grid
+            if (window.innerWidth < 900) {
+                goHome();
+                return;
+            }
+
+            // On desktop, switch to mobile preview mode
+            container.classList.remove('fullscreen-mode');
+
+            // Update URL
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.delete('fullscreen');
+            history.replaceState({ app: currentApp?.slug, mode: 'mobile' }, '', newUrl);
+
+            // Load features for side panel
+            if (currentApp) {
+                loadAppFeatures(currentApp);
+            }
         }
 
         // Load and render app features in side panel
@@ -6427,12 +6728,14 @@
             // Update URL
             const newUrl = new URL(window.location);
             newUrl.searchParams.delete('app');
+            newUrl.searchParams.delete('fullscreen');
             history.pushState({}, '', newUrl);
 
             // Hide app, show grid
             document.getElementById('topNav').classList.remove('active');
             document.getElementById('appContainer').classList.remove('active');
             document.getElementById('appContainer').classList.remove('focus-mode');
+            document.getElementById('appContainer').classList.remove('fullscreen-mode');
             document.getElementById('appsGridContainer').style.display = 'block';
 
             // Clear iframes
