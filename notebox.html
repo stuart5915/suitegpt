@@ -893,6 +893,29 @@
             opacity: 1;
         }
 
+        /* Drag and Drop */
+        .idea-card[draggable="true"] {
+            cursor: grab;
+        }
+
+        .idea-card.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        .archive-section.drop-target {
+            border: 2px dashed var(--accent);
+            border-radius: 16px;
+        }
+
+        .archive-section.drag-over {
+            background: rgba(255, 149, 0, 0.1);
+        }
+
+        .archive-section.drag-over .archive-section-header {
+            background: rgba(255, 149, 0, 0.2);
+        }
+
         /* Legacy section styles - can be removed later */
         .kanban-section-columns {
             display: grid;
@@ -2457,9 +2480,9 @@ Format as a numbered list from most to least promising.`;
                 </div>
             `;
 
-            // Always show Archive section at bottom
+            // Always show Archive section at bottom (drop zone for archiving)
             html += `
-                <div class="archive-section">
+                <div class="archive-section" ondragover="onArchiveDragOver(event)" ondragleave="onArchiveDragLeave(event)" ondrop="onArchiveDrop(event)">
                     <div class="archive-section-header" onclick="toggleArchiveSection()">
                         <span class="archive-toggle" id="archiveToggle">▶</span>
                         <span>📁</span>
@@ -2521,13 +2544,16 @@ Format as a numbered list from most to least promising.`;
                                 <button onclick="event.stopPropagation(); pushTo('${idea.id}', 'artstu')">🎨 artstu.ca</button>
                             </div>
                         </div>
-                        <button class="idea-action-btn archive" onclick="event.stopPropagation(); archiveIdea('${idea.id}')" title="Archive">📁</button>
                     </div>
                 `;
             }
 
+            const draggable = !inArchive && !isArchived;
             return `
-                <div class="idea-card ${idea.status} collapsed" onclick="toggleCardExpand(this)">
+                <div class="idea-card ${idea.status} collapsed"
+                     data-id="${idea.id}"
+                     ${draggable ? 'draggable="true" ondragstart="onDragStart(event)" ondragend="onDragEnd(event)"' : ''}
+                     onclick="toggleCardExpand(this)">
                     <div class="idea-card-header">
                         <span class="card-expand-icon">▶</span>
                         <div class="idea-card-title">${escapeHtml(idea.title)}</div>
@@ -2566,7 +2592,41 @@ Format as a numbered list from most to least promising.`;
             openPushModal(ideaId, target);
         }
 
-        // Archive idea (quick archive without reason)
+        // Drag and Drop
+        let draggedIdeaId = null;
+
+        function onDragStart(e) {
+            draggedIdeaId = e.target.dataset.id;
+            e.target.classList.add('dragging');
+            // Highlight archive drop zone
+            document.querySelector('.archive-section')?.classList.add('drop-target');
+        }
+
+        function onDragEnd(e) {
+            e.target.classList.remove('dragging');
+            draggedIdeaId = null;
+            document.querySelector('.archive-section')?.classList.remove('drop-target', 'drag-over');
+        }
+
+        function onArchiveDragOver(e) {
+            e.preventDefault();
+            document.querySelector('.archive-section')?.classList.add('drag-over');
+        }
+
+        function onArchiveDragLeave(e) {
+            document.querySelector('.archive-section')?.classList.remove('drag-over');
+        }
+
+        async function onArchiveDrop(e) {
+            e.preventDefault();
+            document.querySelector('.archive-section')?.classList.remove('drop-target', 'drag-over');
+
+            if (!draggedIdeaId) return;
+            await archiveIdea(draggedIdeaId);
+            draggedIdeaId = null;
+        }
+
+        // Archive idea
         async function archiveIdea(ideaId) {
             try {
                 const response = await fetch(
