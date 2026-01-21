@@ -878,8 +878,11 @@
 
         .archive-columns-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 4px;
         }
 
         .archive-column {
@@ -971,20 +974,100 @@
             padding: 14px;
             transition: all 0.2s;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
         }
 
         .idea-card:hover {
             border-color: var(--accent);
             background: rgba(255, 149, 0, 0.08);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(255, 149, 0, 0.15);
         }
 
         .idea-card-header {
             display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 8px;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-expand-icon {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            transition: transform 0.2s;
+        }
+
+        .idea-card:not(.collapsed) .card-expand-icon {
+            transform: rotate(90deg);
+        }
+
+        .idea-card-body {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .idea-card.collapsed .idea-card-body {
+            display: none;
+        }
+
+        .idea-card.collapsed .idea-card-header {
+            margin-bottom: 0;
+        }
+
+        /* Push To Dropdown */
+        .push-to-dropdown-wrap {
+            position: relative;
+        }
+
+        .push-to-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 4px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            z-index: 100;
+            min-width: 180px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .push-to-menu.active {
+            display: block;
+        }
+
+        .push-to-menu button {
+            display: block;
+            width: 100%;
+            padding: 10px 14px;
+            border: none;
+            background: transparent;
+            color: var(--text);
+            font-size: 0.85rem;
+            text-align: left;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .push-to-menu button:hover {
+            background: rgba(255, 149, 0, 0.15);
+        }
+
+        .idea-action-btn.push-to {
+            color: var(--accent);
+        }
+
+        .idea-action-btn.push-to:hover {
+            background: rgba(255, 149, 0, 0.2);
+            border-color: var(--accent);
+        }
+
+        .idea-action-btn.archive {
+            color: var(--text-dim);
+        }
+
+        .idea-action-btn.archive:hover {
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .idea-card-title {
@@ -2374,40 +2457,23 @@ Format as a numbered list from most to least promising.`;
                 </div>
             `;
 
-            // Add Archive section at bottom if there are archived items
-            if (archivedIdeas.length > 0) {
-                const archivedWithItems = Object.entries(CATEGORIES).filter(([cat]) =>
-                    (archivedGrouped[cat] || []).length > 0
-                );
-
-                html += `
-                    <div class="archive-section">
-                        <div class="archive-section-header" onclick="toggleArchiveSection()">
-                            <span class="archive-toggle" id="archiveToggle">▼</span>
-                            <span>📁</span>
-                            <span class="archive-title">Archive</span>
-                            <span class="archive-count">${archivedIdeas.length}</span>
-                        </div>
-                        <div class="archive-columns-grid" id="archiveColumnsGrid">
-                            ${archivedWithItems.map(([cat, catInfo]) => {
-                                const catIdeas = archivedGrouped[cat] || [];
-                                return `
-                                    <div class="kanban-column archive-column">
-                                        <div class="kanban-column-header">
-                                            <span class="kanban-column-emoji">${catInfo.emoji}</span>
-                                            <span class="kanban-column-title">${catInfo.title}</span>
-                                            <span class="kanban-column-count">${catIdeas.length}</span>
-                                        </div>
-                                        <div class="kanban-cards">
-                                            ${catIdeas.map(idea => renderIdeaCard(idea)).join('')}
-                                        </div>
-                                    </div>
-                                `;
-                            }).join('')}
-                        </div>
+            // Always show Archive section at bottom
+            html += `
+                <div class="archive-section">
+                    <div class="archive-section-header" onclick="toggleArchiveSection()">
+                        <span class="archive-toggle" id="archiveToggle">▶</span>
+                        <span>📁</span>
+                        <span class="archive-title">Archive</span>
+                        <span class="archive-count">${archivedIdeas.length}</span>
                     </div>
-                `;
-            }
+                    <div class="archive-columns-grid" id="archiveColumnsGrid" style="display: none;">
+                        ${archivedIdeas.length === 0
+                            ? '<div class="empty-column" style="grid-column: 1 / -1;">No archived items yet</div>'
+                            : archivedIdeas.map(idea => renderIdeaCard(idea, true)).join('')
+                        }
+                    </div>
+                </div>
+            `;
 
             container.innerHTML = html;
         }
@@ -2432,53 +2498,101 @@ Format as a numbered list from most to least promising.`;
         }
 
         // Render a single idea card
-        function renderIdeaCard(idea) {
+        function renderIdeaCard(idea, inArchive = false) {
             const isArchived = idea.status === 'dismissed' || idea.status === 'implemented';
-            const isStuart = idea.status === 'inbox';
-            const isSuite = idea.status === 'pushed';
-            const isArtstu = idea.status === 'artstu';
             const timeAgo = getTimeAgo(new Date(idea.created_at));
 
             let actionsHtml = '';
-            if (isStuart) {
-                // Stuart Factory: dismiss, push to SUITE, push to ArtStu, implement
+            if (inArchive || isArchived) {
+                // Archive: revert button only
                 actionsHtml = `
                     <div class="idea-card-actions">
-                        <button class="idea-action-btn dismiss" onclick="openDismissModal('${idea.id}')" title="Dismiss">✕</button>
-                        <button class="idea-action-btn push" onclick="openPushModal('${idea.id}', 'suite')" title="Push to SUITE">S</button>
-                        <button class="idea-action-btn push-artstu" onclick="openPushModal('${idea.id}', 'artstu')" title="Push to ArtStu">A</button>
-                        <button class="idea-action-btn implement" onclick="openImplementModal('${idea.id}')" title="Mark as done">✓</button>
+                        <button class="idea-action-btn revert" onclick="event.stopPropagation(); revertIdea('${idea.id}')" title="Restore">↩</button>
                     </div>
                 `;
-            } else if (isSuite || isArtstu) {
-                // SUITE/ArtStu Factory: dismiss, implement
+            } else {
+                // Active cards: Push To dropdown + archive
                 actionsHtml = `
                     <div class="idea-card-actions">
-                        <button class="idea-action-btn dismiss" onclick="openDismissModal('${idea.id}')" title="Dismiss">✕</button>
-                        <button class="idea-action-btn implement" onclick="openImplementModal('${idea.id}')" title="Mark as done">✓</button>
-                    </div>
-                `;
-            } else if (isArchived) {
-                // Archive: revert button
-                actionsHtml = `
-                    <div class="idea-card-actions">
-                        <button class="idea-action-btn revert" onclick="revertIdea('${idea.id}')" title="Revert to inbox">↩</button>
+                        <div class="push-to-dropdown-wrap">
+                            <button class="idea-action-btn push-to" onclick="event.stopPropagation(); togglePushDropdown('${idea.id}')" title="Push to...">📤</button>
+                            <div class="push-to-menu" id="pushMenu-${idea.id}">
+                                <button onclick="event.stopPropagation(); pushTo('${idea.id}', 'suite')">◈ getSUITE Governance</button>
+                                <button onclick="event.stopPropagation(); pushTo('${idea.id}', 'artstu')">🎨 artstu.ca</button>
+                            </div>
+                        </div>
+                        <button class="idea-action-btn archive" onclick="event.stopPropagation(); archiveIdea('${idea.id}')" title="Archive">📁</button>
                     </div>
                 `;
             }
 
             return `
-                <div class="idea-card ${idea.status}">
+                <div class="idea-card ${idea.status} collapsed" onclick="toggleCardExpand(this)">
                     <div class="idea-card-header">
+                        <span class="card-expand-icon">▶</span>
                         <div class="idea-card-title">${escapeHtml(idea.title)}</div>
                         ${actionsHtml}
                     </div>
-                    ${idea.content ? `<div class="idea-card-content">${escapeHtml(idea.content)}</div>` : ''}
-                    <div class="idea-card-meta">${timeAgo}</div>
-                    ${idea.status === 'dismissed' && idea.dismiss_reason ? `<div class="dismiss-reason">❌ ${escapeHtml(idea.dismiss_reason)}</div>` : ''}
-                    ${idea.status === 'implemented' ? `<div class="dismiss-reason" style="color: var(--success); border-color: rgba(34, 197, 94, 0.3);">✓ ${idea.dismiss_reason ? escapeHtml(idea.dismiss_reason) : 'Implemented'}</div>` : ''}
+                    <div class="idea-card-body">
+                        ${idea.content ? `<div class="idea-card-content">${escapeHtml(idea.content)}</div>` : ''}
+                        <div class="idea-card-meta">${timeAgo}</div>
+                        ${idea.status === 'dismissed' && idea.dismiss_reason ? `<div class="dismiss-reason">❌ ${escapeHtml(idea.dismiss_reason)}</div>` : ''}
+                        ${idea.status === 'implemented' ? `<div class="dismiss-reason" style="color: var(--success); border-color: rgba(34, 197, 94, 0.3);">✓ ${idea.dismiss_reason ? escapeHtml(idea.dismiss_reason) : 'Done'}</div>` : ''}
+                    </div>
                 </div>
             `;
+        }
+
+        // Toggle card expand/collapse
+        function toggleCardExpand(card) {
+            card.classList.toggle('collapsed');
+        }
+
+        // Toggle push dropdown
+        function togglePushDropdown(ideaId) {
+            // Close all other dropdowns
+            document.querySelectorAll('.push-to-menu.active').forEach(menu => {
+                if (menu.id !== `pushMenu-${ideaId}`) {
+                    menu.classList.remove('active');
+                }
+            });
+            const menu = document.getElementById(`pushMenu-${ideaId}`);
+            menu.classList.toggle('active');
+        }
+
+        // Push to destination
+        function pushTo(ideaId, target) {
+            document.getElementById(`pushMenu-${ideaId}`).classList.remove('active');
+            openPushModal(ideaId, target);
+        }
+
+        // Archive idea (quick archive without reason)
+        async function archiveIdea(ideaId) {
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/personal_ideas?id=eq.${ideaId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({ status: 'dismissed', dismiss_reason: 'Archived' })
+                    }
+                );
+                if (response.ok) {
+                    const idea = ideas.find(i => i.id === ideaId);
+                    if (idea) {
+                        idea.status = 'dismissed';
+                        idea.dismiss_reason = 'Archived';
+                    }
+                    renderKanban();
+                }
+            } catch (err) {
+                console.error('Error archiving idea:', err);
+            }
         }
 
         // Open dismiss modal
