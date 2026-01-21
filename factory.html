@@ -3277,9 +3277,9 @@
         function renderGovernanceSections() {
             console.log('[renderGovernanceSections] currentUser:', currentUser, 'is_founder:', currentUser?.is_founder);
             renderSuiteAppsSection();
-            renderGovernanceSection('business', 'businessKanban', 'businessCount');
-            renderGovernanceSection('content', 'contentKanban', 'contentSectionCount');
-            renderGovernanceSection('social', 'socialKanban', 'socialCount');
+            renderGovernanceSection('business', 'businessKanban');
+            renderGovernanceSection('content', 'contentKanban');
+            renderGovernanceSection('social', 'socialKanban');
 
             // Update tab counts
             const appCount = governanceProposals.filter(p => p.section === 'suite_apps').length;
@@ -3301,8 +3301,6 @@
             const workingOn = sectionProposals.filter(p => p.status === 'working_on');
             const implemented = sectionProposals.filter(p => p.status === 'passed' || p.status === 'implemented');
             const rejected = sectionProposals.filter(p => p.status === 'rejected');
-
-            document.getElementById('suiteAppsCount').textContent = sectionProposals.length;
 
             const isAdmin = currentUser?.is_founder;
 
@@ -3337,15 +3335,13 @@
         }
 
         // Render governance section (for Business, Content, Social)
-        function renderGovernanceSection(sectionType, containerId, countId) {
+        function renderGovernanceSection(sectionType, containerId) {
             const sectionProposals = governanceProposals.filter(p => p.section === sectionType);
             const submitted = sectionProposals.filter(p => p.status === 'submitted');
             const voting = sectionProposals.filter(p => p.status === 'open_voting');
             const workingOn = sectionProposals.filter(p => p.status === 'working_on');
             const implemented = sectionProposals.filter(p => p.status === 'passed' || p.status === 'implemented');
             const rejected = sectionProposals.filter(p => p.status === 'rejected');
-
-            document.getElementById(countId).textContent = sectionProposals.length;
 
             document.getElementById(containerId).innerHTML = `
                 <div class="section-column" data-status="submitted" data-section="${sectionType}"
