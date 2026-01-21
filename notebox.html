@@ -2845,9 +2845,9 @@ Format as a numbered list from most to least promising.`;
             const isNewApp = appSlug === 'new_app';
 
             try {
-                // Submit to governance_proposals table
+                // Submit to factory_proposals table (same as governance)
                 const response = await fetch(
-                    `${SUPABASE_URL}/rest/v1/governance_proposals`,
+                    `${SUPABASE_URL}/rest/v1/factory_proposals`,
                     {
                         method: 'POST',
                         headers: {
@@ -2858,12 +2858,11 @@ Format as a numbered list from most to least promising.`;
                         },
                         body: JSON.stringify({
                             title: idea.title,
-                            description: idea.content || idea.title,
+                            content: idea.content || idea.title,
                             section: section,
                             status: 'submitted',
-                            submitter_id: currentUser?.id || 'anonymous',
+                            author_id: currentUser?.id || null,
                             source: 'notebox',
-                            source_idea_id: idea.id,
                             app_slug: isNewApp ? null : appSlug,
                             is_new_app: isNewApp
                         })
