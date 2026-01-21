@@ -1357,6 +1357,15 @@
             margin-bottom: 0;
         }
 
+        .loops-section.collapsed {
+            max-width: 500px;
+            padding: 16px 20px;
+        }
+
+        .loops-section {
+            transition: max-width 0.3s ease, padding 0.3s ease;
+        }
+
         /* Grid layout for categories side by side */
         .loops-categories-grid {
             display: grid;
@@ -1700,62 +1709,95 @@
             }
         }
 
-        /* Governance Sections */
-        .governance-section {
-            margin-bottom: 32px;
-            padding-bottom: 24px;
-            border-bottom: 1px solid var(--border);
+        /* Governance Tabs */
+        .governance-tabs-container {
+            background: var(--bg-elevated);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid var(--border);
         }
 
-        .governance-section:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-        }
-
-        .governance-section-header {
+        .governance-tabs-header {
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 16px;
-            cursor: pointer;
-            padding: 8px 12px;
-            margin: -8px -12px 16px -12px;
-            border-radius: 8px;
-            transition: background 0.2s;
+            gap: 16px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
         }
 
-        .governance-section-header:hover {
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .governance-section-header h3 {
-            font-size: 1.1rem;
-            font-weight: 700;
+        .governance-main-title {
+            font-size: 1.2rem;
+            font-weight: 800;
             margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .governance-section-toggle {
+        .governance-main-title .governance-section-count {
             font-size: 0.75rem;
-            color: var(--text-dim);
-            transition: transform 0.2s;
+        }
+
+        .governance-tabs {
+            display: flex;
+            gap: 8px;
             margin-left: auto;
         }
 
-        .governance-section.collapsed .governance-section-toggle {
-            transform: rotate(-90deg);
-        }
-
-        .governance-section-count {
-            background: var(--accent-dim);
-            color: var(--accent);
-            padding: 2px 10px;
-            border-radius: 100px;
-            font-size: 0.8rem;
+        .governance-tab {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px 14px;
+            font-size: 0.85rem;
             font-weight: 600;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
-        .governance-section.collapsed .section-kanban {
+        .governance-tab:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text);
+        }
+
+        .governance-tab.active {
+            background: var(--accent-dim);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .governance-tab .tab-count {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+        }
+
+        .governance-tab.active .tab-count {
+            background: rgba(34, 197, 94, 0.2);
+        }
+
+        .governance-tab-content {
             display: none;
+        }
+
+        .governance-tab-content.active {
+            display: block;
+        }
+
+        @media (max-width: 700px) {
+            .governance-tabs-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .governance-tabs {
+                margin-left: 0;
+                flex-wrap: wrap;
+            }
         }
 
         .section-kanban {
@@ -2458,51 +2500,51 @@
 
                 <!-- Governance View -->
                 <div id="governanceView">
-                    <!-- SUITE Apps Section -->
-                    <div class="governance-section collapsed" id="suiteAppsSection">
-                        <div class="governance-section-header" onclick="toggleGovernanceSection('suiteAppsSection')">
-                            <h3>📱 SUITE Apps</h3>
-                            <span class="governance-section-count" id="suiteAppsCount">0</span>
-                            <span class="governance-section-toggle">▼</span>
+                    <div class="governance-tabs-container">
+                        <div class="governance-tabs-header">
+                            <h3 class="governance-main-title">
+                                📱 SUITE Apps
+                                <span class="governance-section-count" id="suiteAppsCount">0</span>
+                            </h3>
+                            <div class="governance-tabs">
+                                <button class="governance-tab active" data-tab="apps" onclick="switchGovernanceTab('apps')">
+                                    Apps <span class="tab-count" id="appsTabCount">0</span>
+                                </button>
+                                <button class="governance-tab" data-tab="business" onclick="switchGovernanceTab('business')">
+                                    💰 Business <span class="tab-count" id="businessTabCount">0</span>
+                                </button>
+                                <button class="governance-tab" data-tab="articles" onclick="switchGovernanceTab('articles')">
+                                    📝 Articles <span class="tab-count" id="articlesTabCount">0</span>
+                                </button>
+                                <button class="governance-tab" data-tab="social" onclick="switchGovernanceTab('social')">
+                                    🔄 Social <span class="tab-count" id="socialTabCount">0</span>
+                                </button>
+                            </div>
                         </div>
-                        <div class="section-kanban" id="suiteAppsKanban">
-                            <!-- Populated by JS -->
-                        </div>
-                    </div>
 
-                    <!-- Business/Ecosystem Section -->
-                    <div class="governance-section collapsed" id="businessSection">
-                        <div class="governance-section-header" onclick="toggleGovernanceSection('businessSection')">
-                            <h3>💰 Business/Ecosystem</h3>
-                            <span class="governance-section-count" id="businessCount">0</span>
-                            <span class="governance-section-toggle">▼</span>
+                        <!-- Tab Contents -->
+                        <div class="governance-tab-content active" id="appsTabContent">
+                            <div class="section-kanban" id="suiteAppsKanban">
+                                <!-- Populated by JS -->
+                            </div>
                         </div>
-                        <div class="section-kanban" id="businessKanban">
-                            <!-- Populated by JS -->
-                        </div>
-                    </div>
 
-                    <!-- Articles/Content Section -->
-                    <div class="governance-section collapsed" id="contentSection">
-                        <div class="governance-section-header" onclick="toggleGovernanceSection('contentSection')">
-                            <h3>📝 Articles/Content</h3>
-                            <span class="governance-section-count" id="contentSectionCount">0</span>
-                            <span class="governance-section-toggle">▼</span>
+                        <div class="governance-tab-content" id="businessTabContent">
+                            <div class="section-kanban" id="businessKanban">
+                                <!-- Populated by JS -->
+                            </div>
                         </div>
-                        <div class="section-kanban" id="contentKanban">
-                            <!-- Populated by JS -->
-                        </div>
-                    </div>
 
-                    <!-- Social/Cadence Loops Section -->
-                    <div class="governance-section collapsed" id="socialSection">
-                        <div class="governance-section-header" onclick="toggleGovernanceSection('socialSection')">
-                            <h3>🔄 Social/Cadence Loops</h3>
-                            <span class="governance-section-count" id="socialCount">0</span>
-                            <span class="governance-section-toggle">▼</span>
+                        <div class="governance-tab-content" id="articlesTabContent">
+                            <div class="section-kanban" id="contentKanban">
+                                <!-- Populated by JS -->
+                            </div>
                         </div>
-                        <div class="section-kanban" id="socialKanban">
-                            <!-- Populated by JS -->
+
+                        <div class="governance-tab-content" id="socialTabContent">
+                            <div class="section-kanban" id="socialKanban">
+                                <!-- Populated by JS -->
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -3189,6 +3231,38 @@
             }
         }
 
+        // Switch governance tabs
+        function switchGovernanceTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.governance-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`.governance-tab[data-tab="${tabName}"]`).classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.governance-tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabName}TabContent`).classList.add('active');
+
+            // Update main title based on tab
+            const titles = {
+                apps: '📱 SUITE Apps',
+                business: '💰 Business',
+                articles: '📝 Articles',
+                social: '🔄 Social'
+            };
+            const countIds = {
+                apps: 'suiteAppsCount',
+                business: 'businessCount',
+                articles: 'contentSectionCount',
+                social: 'socialCount'
+            };
+            const mainTitle = document.querySelector('.governance-main-title');
+            const count = document.getElementById(countIds[tabName])?.textContent || '0';
+            mainTitle.innerHTML = `${titles[tabName]} <span class="governance-section-count">${count}</span>`;
+        }
+
         // Toggle proposal card collapse/expand
         function toggleProposalCard(headerEl) {
             const card = headerEl.closest('.idea-card');
@@ -3228,6 +3302,17 @@
             renderGovernanceSection('business', 'businessKanban', 'businessCount');
             renderGovernanceSection('content', 'contentKanban', 'contentSectionCount');
             renderGovernanceSection('social', 'socialKanban', 'socialCount');
+
+            // Update tab counts
+            const appCount = governanceProposals.filter(p => p.section === 'suite_apps').length;
+            const bizCount = governanceProposals.filter(p => p.section === 'business').length;
+            const artCount = governanceProposals.filter(p => p.section === 'content').length;
+            const socCount = governanceProposals.filter(p => p.section === 'social').length;
+
+            document.getElementById('appsTabCount').textContent = appCount;
+            document.getElementById('businessTabCount').textContent = bizCount;
+            document.getElementById('articlesTabCount').textContent = artCount;
+            document.getElementById('socialTabCount').textContent = socCount;
         }
 
         // Render SUITE Apps section (now uses proposals like other sections)
