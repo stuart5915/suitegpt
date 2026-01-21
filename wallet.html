@@ -7437,7 +7437,10 @@
         }
 
         // ========== UPDATE CREDITS DISPLAY ==========
-        function updateCreditsDisplay(credits) {
+        // Current APY for yield vault (update as needed based on Morpho rates)
+        const VAULT_APY = 0.10; // 10% APY
+
+        function updateCreditsDisplay(credits, depositedUSD = 0, yieldKeepPct = 90) {
             const balanceEl = document.getElementById('userCreditsBalance');
             const usdValueEl = document.getElementById('creditsUsdValue');
             const earningRateEl = document.getElementById('creditEarningRate');
@@ -7451,12 +7454,12 @@
                 usdValueEl.textContent = '$' + usdValue.toFixed(2);
             }
             if (earningRateEl) {
-                // Estimate monthly earning rate based on 10% APY
-                // User deposit in USD = credits / 1000
-                // Monthly yield = (deposit * 0.10) / 12
-                // In credits = monthly yield * 1000
-                const deposit = credits / 1000;
-                const monthlyYield = (deposit * 0.10) / 12;
+                // Calculate monthly earning rate based on actual deposited amount
+                // User earns yieldKeepPct% of the yield (rest goes to apps)
+                // Monthly yield in USD = (depositedUSD * APY * yieldKeepPct / 100) / 12
+                // In credits = monthlyYieldUSD * 1000
+                const yearlyYield = depositedUSD * VAULT_APY * (yieldKeepPct / 100);
+                const monthlyYield = yearlyYield / 12;
                 const monthlyCredits = Math.round(monthlyYield * 1000);
                 earningRateEl.textContent = monthlyCredits.toLocaleString();
             }
@@ -7627,6 +7630,7 @@
             'function userDeposits(address) view returns (uint256)',
             'function userCredits(address) view returns (uint256)',
             'function creditsUsed(address) view returns (uint256)',
+            'function yieldKeepPercent(address) view returns (uint8)',
             'function setYieldPreference(uint8 keepPercent) external'
         ];
 
@@ -7648,22 +7652,29 @@
                     provider
                 );
 
-                // Call userCredits(address) on the contract
+                // Fetch credits, deposits, and yield preference in parallel
+                const [creditsRaw, depositsRaw, yieldPrefRaw] = await Promise.all([
+                    vaultContract.userCredits(userAddress),
+                    vaultContract.userDeposits(userAddress),
+                    vaultContract.yieldKeepPercent(userAddress)
+                ]);
+
                 // Contract stores credits in raw units (amount * 1000), need to divide by 1e6 for display
                 // Because USDC has 6 decimals: 0.1 USDC = 100000 raw, * 1000 = 100000000
                 // To display: 100000000 / 1000000 = 100 credits
-                const creditsRaw = await vaultContract.userCredits(userAddress);
                 const creditsNumber = Number(creditsRaw) / 1e6;
+                const depositedUSD = Number(depositsRaw) / 1e6;
+                const yieldKeepPct = Number(yieldPrefRaw) || 90; // Default 90% if not set
 
-                // Update the credits display
-                updateCreditsDisplay(creditsNumber);
+                // Update the credits display with real deposit and yield data
+                updateCreditsDisplay(creditsNumber, depositedUSD, yieldKeepPct);
 
                 // Also update nav credits if available
                 if (window.refreshNavCredits) {
                     window.refreshNavCredits();
                 }
 
-                console.log('Contract credits loaded:', creditsNumber);
+                console.log('Contract credits loaded:', creditsNumber, 'Deposited:', depositedUSD, 'YieldKeep:', yieldKeepPct);
                 return creditsNumber;
             } catch (err) {
                 console.error('Error loading contract credits:', err);
