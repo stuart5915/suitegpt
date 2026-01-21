@@ -35,6 +35,14 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
 
         <div class="sidebar-section">
+            <div class="sidebar-title">Wallet</div>
+            <a href="/docs/vault/" class="sidebar-link ${isActive('vault.html')}">🏦 SUITE Vault</a>
+            <a href="/docs/suite-token/" class="sidebar-link ${isActive('suite-token.html')}">🪙 SUITE Token</a>
+            <a href="/docs/wallet-credits/" class="sidebar-link ${isActive('wallet-credits.html')}">💳 Credits</a>
+            <a href="/docs/roadmap/" class="sidebar-link ${isActive('roadmap.html')}">🗺️ Roadmap</a>
+        </div>
+
+        <div class="sidebar-section">
             <div class="sidebar-title">Admin</div>
             <a href="/docs/systems/" class="sidebar-link ${isActive('systems.html')}">🔧 Systems View</a>
             <a href="/docs/governance/" class="sidebar-link ${isActive('governance.html')}">🗳️ Governance</a>
