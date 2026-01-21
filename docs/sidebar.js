@@ -8,17 +8,20 @@ document.addEventListener('DOMContentLoaded', function () {
     const sidebar = document.querySelector('.docs-sidebar');
     if (!sidebar) return;
 
-    // Get current page filename
-    const currentPath = window.location.pathname;
-    const currentPage = currentPath.split('/').pop() || 'index.html';
+    // Get current page from path (handles both /docs/earning/ and /docs/earning.html)
+    const currentPath = window.location.pathname.replace(/\/$/, ''); // remove trailing slash
+    const currentPage = currentPath.split('/').pop() || 'index';
 
-    // Helper to add active class
-    const isActive = (page) => currentPage === page ? 'active' : '';
+    // Helper to add active class (compare without .html extension)
+    const isActive = (page) => {
+        const pageName = page.replace('.html', '');
+        return currentPage === pageName || currentPage === page ? 'active' : '';
+    };
 
     sidebar.innerHTML = `
         <div class="sidebar-section">
             <div class="sidebar-title">Learn</div>
-            <a href="/docs/" class="sidebar-link ${isActive('index.html') || isActive('') ? 'active' : ''}">📚 Getting Started</a>
+            <a href="/docs/" class="sidebar-link ${isActive('index.html') || currentPage === 'docs' ? 'active' : ''}">📚 Getting Started</a>
             <a href="/docs/ai-fleet/" class="sidebar-link ${isActive('ai-fleet.html')}">🤖 AI Fleet</a>
             <a href="/docs/safety/" class="sidebar-link ${isActive('safety.html')}">🛡️ AI Safety</a>
         </div>
