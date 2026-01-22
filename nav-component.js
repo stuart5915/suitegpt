@@ -49,28 +49,6 @@
                 <a href="/suite-shell.html">Apps</a>
                 <a href="/profile.html">Profile</a>
             </div>
-            <div class="nav-actions" id="navAuthArea">
-                <!-- Not logged in: Connect button -->
-                <button class="connect-btn" onclick="openNavConnectModal()" id="navConnectBtn">
-                    <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                    </svg>
-                    Connect
-                </button>
-
-                <!-- Logged in: Credits + Identity (hidden by default) -->
-                <div class="auth-display" id="navAuthDisplay" style="display: none;">
-                    <a href="/profile.html" class="auth-credits" title="Your Credits">
-                        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-                            <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                        </svg>
-                        <span id="navCreditsDisplay">0</span>
-                    </a>
-                    <div class="auth-identity" id="navAuthIdentity" onclick="openNavProfileMenu()">
-                        <span id="navAuthIdentityText">@user</span>
-                    </div>
-                </div>
-            </div>
             <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
                 <span></span><span></span><span></span>
             </button>
