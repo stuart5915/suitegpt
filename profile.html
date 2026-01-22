@@ -789,6 +789,22 @@
                         <h2>Admin</h2>
                         <span class="admin-badge">ADMIN ONLY</span>
                     </div>
+
+                    <!-- Apps Admin Dashboard -->
+                    <div id="appsAdminPanel" style="margin-bottom: 24px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                            <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: var(--text-dark);">Apps Dashboard</h3>
+                            <button onclick="openAddAppModal()" style="padding: 8px 14px; background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange)); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">+ Add App</button>
+                        </div>
+
+                        <!-- Apps List -->
+                        <div id="appsAdminList" style="display: flex; flex-direction: column; gap: 10px; max-height: 400px; overflow-y: auto;">
+                            <div style="text-align: center; padding: 20px; color: var(--text-light);">Loading apps...</div>
+                        </div>
+                    </div>
+
+                    <hr style="border: none; border-top: 1px solid rgba(0,0,0,0.08); margin: 20px 0;">
+
                     <!-- Redemption Dashboard (always visible for admins) -->
                     <div id="redemptionPanel" style="margin-top: 8px;">
                         <div style="padding-top: 8px;">
@@ -1043,6 +1059,84 @@
 
     <!-- Toast -->
     <div class="toast" id="toast"></div>
+
+    <!-- App Edit Modal -->
+    <div class="modal-overlay" id="appEditModal" onclick="if(event.target === this) closeAppEditModal()">
+        <div class="modal" style="max-width: 500px;">
+            <button class="modal-close" onclick="closeAppEditModal()">&times;</button>
+            <h3 id="appEditModalTitle">Edit App</h3>
+
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+                <input type="hidden" id="appEditId">
+
+                <div class="modal-input-group" style="margin-bottom: 0;">
+                    <label>App Name</label>
+                    <input type="text" class="modal-input" id="appEditName" placeholder="e.g. TrueForm">
+                </div>
+
+                <div class="modal-input-group" style="margin-bottom: 0;">
+                    <label>Slug (URL-friendly)</label>
+                    <input type="text" class="modal-input" id="appEditSlug" placeholder="e.g. trueform" style="font-family: monospace;">
+                </div>
+
+                <div class="modal-input-group" style="margin-bottom: 0;">
+                    <label>Short Tagline</label>
+                    <input type="text" class="modal-input" id="appEditTagline" placeholder="e.g. Recovery tracking">
+                </div>
+
+                <div class="modal-input-group" style="margin-bottom: 0;">
+                    <label>Description</label>
+                    <textarea class="modal-input" id="appEditDescription" placeholder="Full description of the app..." rows="3" style="resize: vertical;"></textarea>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="modal-input-group" style="margin-bottom: 0;">
+                        <label>Category</label>
+                        <select class="modal-input" id="appEditCategory">
+                            <option value="health">Health</option>
+                            <option value="productivity">Productivity</option>
+                            <option value="finance">Finance</option>
+                            <option value="creative">Creative</option>
+                            <option value="games">Games</option>
+                        </select>
+                    </div>
+
+                    <div class="modal-input-group" style="margin-bottom: 0;">
+                        <label>Status</label>
+                        <select class="modal-input" id="appEditStatus">
+                            <option value="live">Live</option>
+                            <option value="coming_soon">Coming Soon</option>
+                            <option value="beta">Beta</option>
+                            <option value="hidden">Hidden</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-input-group" style="margin-bottom: 0;">
+                    <label>Icon URL</label>
+                    <input type="text" class="modal-input" id="appEditIcon" placeholder="/assets/icons/app-icon.jpg">
+                    <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px;">
+                        <img id="appEditIconPreview" src="" style="width: 48px; height: 48px; border-radius: 12px; object-fit: cover; display: none;">
+                        <span style="font-size: 0.8rem; color: var(--text-light);">Preview</span>
+                    </div>
+                </div>
+
+                <div class="modal-input-group" style="margin-bottom: 0;">
+                    <label>App URL (if external)</label>
+                    <input type="text" class="modal-input" id="appEditUrl" placeholder="Leave blank for suite-shell apps">
+                </div>
+
+                <div style="display: flex; gap: 12px; margin-top: 8px;">
+                    <button onclick="saveAppEdit()" class="btn-modal-action buy" style="flex: 1;">
+                        Save App
+                    </button>
+                    <button onclick="deleteApp()" id="btnDeleteApp" class="btn-modal-action" style="flex: 0 0 auto; background: rgba(239, 68, 68, 0.1); color: #ef4444; display: none;">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         // Contract config
@@ -1688,6 +1782,224 @@
         function autoFillAdminPending() {
             document.getElementById('adminFundInput').value = adminData.totalPending.toFixed(2);
         }
+
+        // ============ Apps Admin Functions ============
+
+        const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY0NzU4OTAsImV4cCI6MjA1MjA1MTg5MH0.9Zk_EJADcRY7ZBXU5cj8wm-HJZgvJPWBH8SxPK9AWpQ';
+
+        let appsData = [];
+
+        async function loadAppsAdmin() {
+            const list = document.getElementById('appsAdminList');
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/suite_apps?order=name.asc`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load apps');
+
+                appsData = await response.json();
+
+                if (appsData.length === 0) {
+                    list.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-light);">No apps yet. Click "Add App" to create one.</div>';
+                    return;
+                }
+
+                list.innerHTML = appsData.map(app => `
+                    <div onclick="openEditAppModal('${app.id}')" style="display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(255,255,255,0.5); border-radius: 12px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(255,255,255,0.8)'" onmouseout="this.style.background='rgba(255,255,255,0.5)'">
+                        <img src="${app.icon_url || '/assets/suite-logo-new.png'}" style="width: 40px; height: 40px; border-radius: 10px; object-fit: cover;" onerror="this.src='/assets/suite-logo-new.png'">
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-dark);">${app.name}</div>
+                            <div style="font-size: 0.8rem; color: var(--text-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${app.tagline || 'No tagline'}</div>
+                        </div>
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                            <span style="padding: 2px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; background: ${getStatusColor(app.status)}; color: white;">${app.status || 'live'}</span>
+                            <span style="font-size: 0.7rem; color: var(--text-light);">${app.category || 'other'}</span>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                console.error('Failed to load apps:', err);
+                list.innerHTML = '<div style="text-align: center; padding: 20px; color: #ef4444;">Failed to load apps</div>';
+            }
+        }
+
+        function getStatusColor(status) {
+            switch (status) {
+                case 'live': return 'var(--accent-green)';
+                case 'coming_soon': return 'var(--accent-orange)';
+                case 'beta': return '#3b82f6';
+                case 'hidden': return '#6b7280';
+                default: return 'var(--accent-green)';
+            }
+        }
+
+        function openAddAppModal() {
+            document.getElementById('appEditModalTitle').textContent = 'Add New App';
+            document.getElementById('appEditId').value = '';
+            document.getElementById('appEditName').value = '';
+            document.getElementById('appEditSlug').value = '';
+            document.getElementById('appEditTagline').value = '';
+            document.getElementById('appEditDescription').value = '';
+            document.getElementById('appEditCategory').value = 'productivity';
+            document.getElementById('appEditStatus').value = 'coming_soon';
+            document.getElementById('appEditIcon').value = '';
+            document.getElementById('appEditUrl').value = '';
+            document.getElementById('appEditIconPreview').style.display = 'none';
+            document.getElementById('btnDeleteApp').style.display = 'none';
+            document.getElementById('appEditModal').classList.add('active');
+        }
+
+        function openEditAppModal(appId) {
+            const app = appsData.find(a => a.id === appId);
+            if (!app) return;
+
+            document.getElementById('appEditModalTitle').textContent = 'Edit App';
+            document.getElementById('appEditId').value = app.id;
+            document.getElementById('appEditName').value = app.name || '';
+            document.getElementById('appEditSlug').value = app.slug || '';
+            document.getElementById('appEditTagline').value = app.tagline || '';
+            document.getElementById('appEditDescription').value = app.description || '';
+            document.getElementById('appEditCategory').value = app.category || 'productivity';
+            document.getElementById('appEditStatus').value = app.status || 'live';
+            document.getElementById('appEditIcon').value = app.icon_url || '';
+            document.getElementById('appEditUrl').value = app.app_url || '';
+
+            // Show icon preview
+            if (app.icon_url) {
+                document.getElementById('appEditIconPreview').src = app.icon_url;
+                document.getElementById('appEditIconPreview').style.display = 'block';
+            } else {
+                document.getElementById('appEditIconPreview').style.display = 'none';
+            }
+
+            document.getElementById('btnDeleteApp').style.display = 'inline-block';
+            document.getElementById('appEditModal').classList.add('active');
+        }
+
+        function closeAppEditModal() {
+            document.getElementById('appEditModal').classList.remove('active');
+        }
+
+        // Update icon preview on input
+        document.addEventListener('DOMContentLoaded', () => {
+            const iconInput = document.getElementById('appEditIcon');
+            if (iconInput) {
+                iconInput.addEventListener('input', () => {
+                    const preview = document.getElementById('appEditIconPreview');
+                    if (iconInput.value) {
+                        preview.src = iconInput.value;
+                        preview.style.display = 'block';
+                    } else {
+                        preview.style.display = 'none';
+                    }
+                });
+            }
+        });
+
+        async function saveAppEdit() {
+            const id = document.getElementById('appEditId').value;
+            const appData = {
+                name: document.getElementById('appEditName').value.trim(),
+                slug: document.getElementById('appEditSlug').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, ''),
+                tagline: document.getElementById('appEditTagline').value.trim(),
+                description: document.getElementById('appEditDescription').value.trim(),
+                category: document.getElementById('appEditCategory').value,
+                status: document.getElementById('appEditStatus').value,
+                icon_url: document.getElementById('appEditIcon').value.trim(),
+                app_url: document.getElementById('appEditUrl').value.trim() || null
+            };
+
+            if (!appData.name || !appData.slug) {
+                showToast('Name and slug are required', 'error');
+                return;
+            }
+
+            try {
+                let response;
+                if (id) {
+                    // Update existing app
+                    response = await fetch(`${SUPABASE_URL}/rest/v1/suite_apps?id=eq.${id}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify(appData)
+                    });
+                } else {
+                    // Create new app
+                    response = await fetch(`${SUPABASE_URL}/rest/v1/suite_apps`, {
+                        method: 'POST',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify(appData)
+                    });
+                }
+
+                if (!response.ok) {
+                    const err = await response.text();
+                    throw new Error(err);
+                }
+
+                showToast(id ? 'App updated!' : 'App created!', 'success');
+                closeAppEditModal();
+                await loadAppsAdmin();
+
+            } catch (err) {
+                console.error('Failed to save app:', err);
+                showToast('Failed to save: ' + err.message, 'error');
+            }
+        }
+
+        async function deleteApp() {
+            const id = document.getElementById('appEditId').value;
+            if (!id) return;
+
+            const app = appsData.find(a => a.id === id);
+            if (!confirm(`Delete "${app?.name}"? This cannot be undone.`)) return;
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/suite_apps?id=eq.${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Delete failed');
+
+                showToast('App deleted', 'success');
+                closeAppEditModal();
+                await loadAppsAdmin();
+
+            } catch (err) {
+                console.error('Failed to delete app:', err);
+                showToast('Failed to delete', 'error');
+            }
+        }
+
+        // Load apps when admin section becomes visible
+        const originalLoadProfile = loadProfile;
+        loadProfile = async function(wallet, tgUser) {
+            await originalLoadProfile(wallet, tgUser);
+            if (ADMIN_ADDRESSES.includes(wallet.toLowerCase())) {
+                loadAppsAdmin();
+            }
+        };
     </script>
 </body>
 </html>
