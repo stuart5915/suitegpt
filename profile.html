@@ -141,7 +141,77 @@
             text-decoration: underline;
         }
 
-        /* Credits Card */
+        /* Credits Row (Integrated in Profile) */
+        .credits-row {
+            background: linear-gradient(135deg, rgba(196, 114, 95, 0.08), rgba(232, 147, 90, 0.08)) !important;
+            border: 1px solid rgba(196, 114, 95, 0.15);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .credits-inline-value {
+            font-size: 1.4rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .redemption-badge {
+            background: linear-gradient(135deg, var(--accent-sage), #5a8a6f);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .credits-inline-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-credits-sm {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-buy-sm {
+            background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange));
+            color: white;
+        }
+
+        .btn-buy-sm:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(196, 114, 95, 0.3);
+        }
+
+        .btn-withdraw-sm {
+            background: linear-gradient(135deg, var(--accent-green), #10b981);
+            color: white;
+        }
+
+        .btn-withdraw-sm:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+        }
+
+        .btn-credits-sm:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Legacy Credits Card styles (kept for modals) */
         .credits-balance {
             text-align: center;
             padding: 24px;
@@ -235,6 +305,27 @@
 
         .defi-link:hover {
             color: var(--accent-terracotta);
+        }
+
+        @media (max-width: 480px) {
+            .credits-row {
+                flex-direction: column;
+                align-items: stretch !important;
+                gap: 12px;
+            }
+
+            .credits-row > div:first-child {
+                justify-content: space-between;
+            }
+
+            .credits-inline-actions {
+                justify-content: stretch;
+            }
+
+            .btn-credits-sm {
+                flex: 1;
+                justify-content: center;
+            }
         }
 
         /* Connected Accounts */
@@ -590,13 +681,14 @@
 
             <!-- Connected State (hidden by default) -->
             <div id="connectedState" style="display: none;">
-                <!-- Profile Card -->
+                <!-- Profile Card (with integrated Credits) -->
                 <div class="glass-card">
                     <div class="card-header">
                         <span class="card-header-icon">&#128100;</span>
                         <h2>Your Profile</h2>
                     </div>
                     <div class="profile-info">
+                        <!-- Wallet Row -->
                         <div class="profile-row">
                             <span class="profile-row-label">Wallet</span>
                             <div style="display: flex; align-items: center; gap: 10px;">
@@ -605,6 +697,7 @@
                                 <button class="btn-account btn-disconnect" onclick="disconnectWallet(); checkConnection();" id="btnDisconnectWallet">Disconnect</button>
                             </div>
                         </div>
+                        <!-- Telegram Row -->
                         <div class="profile-row" id="telegramRow">
                             <span class="profile-row-label">Telegram</span>
                             <div style="display: flex; align-items: center; gap: 10px;">
@@ -613,35 +706,26 @@
                                 <button class="btn-account btn-disconnect" onclick="disconnectTelegram(); checkConnection();" id="btnUnlinkTelegram" style="display: none;">Unlink</button>
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Credits Card -->
-                <div class="glass-card">
-                    <div class="card-header">
-                        <span class="card-header-icon">&#9889;</span>
-                        <h2>Credits</h2>
-                    </div>
-                    <div class="credits-balance">
-                        <div class="credits-balance-value" id="creditsBalance">0</div>
-                        <div class="credits-balance-label">Available Credits</div>
-                        <div id="redemptionRateDisplay" style="display: none; margin-top: 8px;">
-                            <span style="background: linear-gradient(135deg, var(--accent-sage), #5a8a6f); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700;">
-                                <span id="creditsRedemptionRate">0</span>% Redemption Rate
-                            </span>
+                        <!-- Credits Row (integrated) -->
+                        <div class="profile-row credits-row">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <span class="profile-row-label">Credits</span>
+                                <span class="credits-inline-value" id="creditsBalance">0</span>
+                                <span id="redemptionRateDisplay" style="display: none;">
+                                    <span class="redemption-badge">
+                                        <span id="creditsRedemptionRate">0</span>%
+                                    </span>
+                                </span>
+                            </div>
+                            <div class="credits-inline-actions">
+                                <button class="btn-credits-sm btn-buy-sm" onclick="openBuyModal()" id="btnBuy" title="Buy Credits">
+                                    <span>+</span> Buy
+                                </button>
+                                <button class="btn-credits-sm btn-withdraw-sm" onclick="openWithdrawModal()" id="btnWithdraw" title="Withdraw to USDC">
+                                    Withdraw
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                    <div class="credits-actions">
-                        <button class="btn-credits btn-buy" onclick="openBuyModal()" id="btnBuy">
-                            <span>&#43;</span> Buy Credits
-                        </button>
-                        <button class="btn-credits btn-withdraw" onclick="openWithdrawModal()" id="btnWithdraw">
-                            <span>&#8592;</span> Withdraw Credits
-                        </button>
-                    </div>
-                    <div class="credits-info">
-                        <strong>$1 = 1,000 Credits</strong><br>
-                        Credits are used to access SUITE apps and services.
                     </div>
                 </div>
 
@@ -661,7 +745,7 @@
                                 <span style="font-size: 1.1rem;">&#120143;</span>
                                 Vote on X
                             </a>
-                            <a href="/suite-shell.html#request"
+                            <a href="/factory.html?tab=governance"
                                style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange)); color: white; text-decoration: none; border-radius: 12px; font-weight: 600; transition: all 0.2s ease;">
                                 <span style="font-size: 1.1rem;">&#128161;</span>
                                 Request an App
