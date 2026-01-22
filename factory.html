@@ -4037,7 +4037,7 @@
                     ${isAdmin ? `<button class="card-delete-btn" onclick="event.stopPropagation(); showDeleteModal('${proposal.id}', 'proposal')" title="Delete">&times;</button>` : ''}
                     ${appTag}
                     <div class="idea-card-header" onclick="toggleProposalCard(this)">
-                        ${isAdmin ? `<span class="idea-card-drag-handle" draggable="true" ondragstart="handleDragStart(event, '${proposal.id}', 'proposal', '${sectionType}')" ondragend="handleDragEnd(event)" title="Drag to move">⋮⋮</span>` : ''}
+                        ${isAdmin ? `<span class="idea-card-drag-handle" draggable="true" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()" ondragstart="handleDragStart(event, '${proposal.id}', 'proposal', '${sectionType}')" ondragend="handleDragEnd(event)" title="Drag to move">⋮⋮</span>` : ''}
                         <span class="idea-card-toggle">▼</span>
                         <div class="idea-card-title">${escapeHtml(proposal.title)}</div>
                     </div>
@@ -4080,6 +4080,9 @@
 
         // Drag and Drop Handlers
         function handleDragStart(event, id, type, section) {
+            // Stop propagation to prevent card toggle
+            event.stopPropagation();
+
             // Only founders/admins can drag
             if (!currentUser || !currentUser.is_founder) {
                 console.log('[DragStart] Blocked - not admin');
