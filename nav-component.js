@@ -49,9 +49,6 @@
                 <a href="/suite-shell.html">Apps</a>
                 <a href="/profile.html">Profile</a>
             </div>
-            <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
-                <span></span><span></span><span></span>
-            </button>
         </div>
     `;
 
