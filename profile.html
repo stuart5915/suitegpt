@@ -542,11 +542,12 @@
         .modal {
             background: white;
             border-radius: 24px;
-            padding: 28px;
-            width: 90%;
-            max-width: 400px;
+            padding: clamp(20px, 5vw, 28px);
+            width: 95%;
+            max-width: min(400px, 95vw);
             position: relative;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            margin: 0 auto;
         }
 
         .modal-close {
@@ -699,6 +700,136 @@
         @media (max-width: 500px) {
             .credits-actions {
                 grid-template-columns: 1fr;
+            }
+        }
+
+        /* Small phone responsive (375-480px) */
+        @media (max-width: 480px) {
+            .profile-page {
+                padding-top: 80px;
+            }
+
+            .profile-container {
+                padding: 0 12px 30px;
+            }
+
+            .glass-card {
+                padding: 20px 16px;
+                border-radius: 20px;
+            }
+
+            .card-header h2 {
+                font-size: 1.1rem;
+            }
+
+            .credits-balance-value {
+                font-size: 2.5rem;
+            }
+
+            .btn-credits {
+                padding: 14px 20px;
+                font-size: 0.95rem;
+            }
+
+            .modal h3 {
+                font-size: 1.15rem;
+            }
+
+            .modal-input {
+                padding: 12px 14px;
+                font-size: 0.95rem;
+            }
+
+            .fiat-amount-btn {
+                padding: 10px 6px;
+                font-size: 0.85rem;
+            }
+
+            .not-connected {
+                padding: 30px 16px;
+            }
+
+            .not-connected-icon {
+                font-size: 3rem;
+            }
+
+            .not-connected h2 {
+                font-size: 1.3rem;
+            }
+
+            .btn-connect-large {
+                padding: 14px 32px;
+                font-size: 1rem;
+            }
+        }
+
+        /* Extra small screens (320-375px) */
+        @media (max-width: 375px) {
+            .profile-page {
+                padding-top: 70px;
+            }
+
+            .profile-container {
+                padding: 0 8px 24px;
+            }
+
+            .glass-card {
+                padding: 16px 12px;
+                border-radius: 16px;
+            }
+
+            .card-header h2 {
+                font-size: 1rem;
+            }
+
+            .profile-row {
+                padding: 10px 12px;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .profile-row-label,
+            .profile-row-value {
+                font-size: 0.85rem;
+            }
+
+            .credits-inline-value {
+                font-size: 1.2rem;
+            }
+
+            .btn-credits-sm {
+                padding: 6px 10px;
+                font-size: 0.75rem;
+            }
+
+            .credits-balance-value {
+                font-size: 2rem;
+            }
+
+            .account-item {
+                padding: 12px;
+                gap: 10px;
+            }
+
+            .account-icon {
+                width: 36px;
+                height: 36px;
+                font-size: 1rem;
+            }
+
+            .account-value {
+                font-size: 0.8rem;
+            }
+
+            .btn-account {
+                padding: 6px 12px;
+                font-size: 0.75rem;
+            }
+
+            .toast {
+                padding: 12px 20px;
+                font-size: 0.9rem;
+                max-width: 90vw;
             }
         }
     </style>
@@ -1306,28 +1437,51 @@
         }
 
         async function loadCredits(wallet) {
+            let onChainCredits = 0;
+            let onChainBonus = 0;
+            let dbCredits = 0;
+            let dbBonus = 0;
+
+            // Fetch from blockchain (crypto purchases)
             try {
                 const readProvider = new ethers.JsonRpcProvider(BASE_RPC);
                 const readStaking = new ethers.Contract(SUITE_STAKING_ADDRESS, STAKING_ABI, readProvider);
 
-                // Fetch credits and bonus credits
                 const [creditsRaw, bonusRaw] = await Promise.all([
                     readStaking.availableCredits(wallet),
                     readStaking.bonusCredits(wallet)
                 ]);
 
-                currentCredits = Number(creditsRaw) / 1e18;
-                const bonusCredits = Number(bonusRaw) / 1e18;
-
-                document.getElementById('creditsBalance').textContent = Math.floor(currentCredits).toLocaleString();
-                document.getElementById('bonusCreditsBalance').textContent = Math.floor(bonusCredits).toLocaleString();
-                document.getElementById('btnWithdraw').disabled = bonusCredits < 1000;
-
+                onChainCredits = Number(creditsRaw) / 1e18;
+                onChainBonus = Number(bonusRaw) / 1e18;
             } catch (err) {
-                console.error('Failed to load credits:', err);
-                document.getElementById('creditsBalance').textContent = '0';
-                document.getElementById('bonusCreditsBalance').textContent = '0';
+                console.error('Failed to load on-chain credits:', err);
             }
+
+            // Fetch from Supabase (fiat purchases)
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/users?wallet_address=eq.${wallet.toLowerCase()}&select=credits,bonus_credits`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                const users = await response.json();
+                if (users && users.length > 0) {
+                    dbCredits = users[0].credits || 0;
+                    dbBonus = users[0].bonus_credits || 0;
+                }
+            } catch (err) {
+                console.error('Failed to load database credits:', err);
+            }
+
+            // Combine both sources
+            currentCredits = onChainCredits + dbCredits;
+            const totalBonus = onChainBonus + dbBonus;
+
+            document.getElementById('creditsBalance').textContent = Math.floor(currentCredits).toLocaleString();
+            document.getElementById('bonusCreditsBalance').textContent = Math.floor(totalBonus).toLocaleString();
+            document.getElementById('btnWithdraw').disabled = totalBonus < 1000;
         }
 
         // Modal functions
@@ -1443,15 +1597,23 @@
             }
         }
 
+        // Refresh credits display
+        async function refreshCreditsDisplay() {
+            const wallet = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWalletAddress');
+            if (wallet) {
+                await loadCredits(wallet);
+            }
+        }
+
         // Check for payment success on page load
         function checkPaymentStatus() {
             const params = new URLSearchParams(window.location.search);
             if (params.get('payment') === 'success') {
-                showToast('Payment successful! Credits will be added shortly.', 'success');
+                showToast('Payment successful! Credits added to your account.', 'success');
                 // Clean up URL
                 window.history.replaceState({}, '', '/profile.html');
                 // Refresh balance after a short delay
-                setTimeout(() => refreshCreditsDisplay(), 2000);
+                setTimeout(() => refreshCreditsDisplay(), 1000);
             } else if (params.get('payment') === 'cancelled') {
                 showToast('Payment was cancelled', 'info');
                 window.history.replaceState({}, '', '/profile.html');
