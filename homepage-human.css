@@ -50,6 +50,52 @@ body {
     color: var(--text-charcoal);
     line-height: 1.6;
     overflow-x: hidden;
+    position: relative;
+}
+
+/* Faint grid overlay (light mode) */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image:
+        linear-gradient(rgba(45, 55, 72, 0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(45, 55, 72, 0.015) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Animated warm glow pulses */
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+        radial-gradient(ellipse 600px 400px at 15% 20%, rgba(196, 114, 95, 0.04) 0%, transparent 70%),
+        radial-gradient(ellipse 500px 350px at 85% 60%, rgba(125, 155, 138, 0.04) 0%, transparent 70%),
+        radial-gradient(ellipse 400px 300px at 50% 80%, rgba(232, 147, 90, 0.03) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+    animation: glowPulseLight 10s ease-in-out infinite alternate;
+}
+
+@keyframes glowPulseLight {
+    0% { opacity: 0.5; }
+    50% { opacity: 0.8; }
+    100% { opacity: 0.6; }
+}
+
+/* Ensure all content is above the overlays */
+nav, section, footer, .container, .hero-human, .use-cases, .apps-daily, .roadmap-human, .footer-human {
+    position: relative;
+    z-index: 1;
 }
 
 /* === TYPOGRAPHY === */
