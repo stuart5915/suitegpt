@@ -625,6 +625,11 @@
                     <div class="credits-balance">
                         <div class="credits-balance-value" id="creditsBalance">0</div>
                         <div class="credits-balance-label">Available Credits</div>
+                        <div id="redemptionRateDisplay" style="display: none; margin-top: 8px;">
+                            <span style="background: linear-gradient(135deg, var(--accent-sage), #5a8a6f); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700;">
+                                <span id="creditsRedemptionRate">0</span>% Redemption Rate
+                            </span>
+                        </div>
                     </div>
                     <div class="credits-actions">
                         <button class="btn-credits btn-buy" onclick="openBuyModal()" id="btnBuy">
@@ -1071,6 +1076,20 @@
                 currentCredits = Number(creditsRaw) / 1e18;
                 document.getElementById('creditsBalance').textContent = Math.floor(currentCredits).toLocaleString();
                 document.getElementById('btnWithdraw').disabled = currentCredits < 1000;
+
+                // Fetch and display redemption rate
+                try {
+                    const readWithdrawals = new ethers.Contract(USDC_WITHDRAWALS_ADDRESS, WITHDRAWALS_ABI, readProvider);
+                    const rateRaw = await readWithdrawals.getRedemptionPercentage();
+                    const rate = Number(rateRaw);
+                    if (rate > 0) {
+                        document.getElementById('creditsRedemptionRate').textContent = rate;
+                        document.getElementById('redemptionRateDisplay').style.display = 'block';
+                    }
+                } catch (e) {
+                    // Withdrawals contract may not be deployed, hide rate display
+                    document.getElementById('redemptionRateDisplay').style.display = 'none';
+                }
             } catch (err) {
                 console.error('Failed to load credits:', err);
                 document.getElementById('creditsBalance').textContent = '0';
