@@ -762,21 +762,9 @@
                         <h2>Admin</h2>
                         <span class="admin-badge">ADMIN ONLY</span>
                     </div>
-                    <div class="admin-actions">
-                        <button class="btn-admin" onclick="window.location.href='/factory.html'">
-                            <span class="btn-admin-icon">&#128736;</span>
-                            <span>App Factory Dashboard</span>
-                        </button>
-                        <button class="btn-admin" onclick="toggleRedemptionPanel()">
-                            <span class="btn-admin-icon">&#128176;</span>
-                            <span>Redemption Dashboard</span>
-                            <span style="margin-left: auto;" id="redemptionArrow">&#9660;</span>
-                        </button>
-                    </div>
-
-                    <!-- Redemption Panel (collapsible) -->
-                    <div id="redemptionPanel" style="display: none; margin-top: 16px;">
-                        <div style="border-top: 1px solid rgba(0,0,0,0.1); padding-top: 20px;">
+                    <!-- Redemption Dashboard (always visible for admins) -->
+                    <div id="redemptionPanel" style="margin-top: 8px;">
+                        <div style="padding-top: 8px;">
 
                             <!-- Rate Display -->
                             <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, rgba(196, 114, 95, 0.1), rgba(232, 147, 90, 0.1)); border-radius: 16px; margin-bottom: 20px;">
@@ -1132,6 +1120,7 @@
             // Check if admin
             if (ADMIN_ADDRESSES.includes(wallet.toLowerCase())) {
                 document.getElementById('adminSection').style.display = 'block';
+                loadRedemptionData(); // Load redemption data when admin section is shown
             } else {
                 document.getElementById('adminSection').style.display = 'none';
             }
@@ -1525,24 +1514,7 @@
 
         // ============ Redemption Admin Functions ============
 
-        let redemptionPanelOpen = false;
         let adminData = {};
-
-        function toggleRedemptionPanel() {
-            const panel = document.getElementById('redemptionPanel');
-            const arrow = document.getElementById('redemptionArrow');
-
-            redemptionPanelOpen = !redemptionPanelOpen;
-
-            if (redemptionPanelOpen) {
-                panel.style.display = 'block';
-                arrow.innerHTML = '&#9650;';
-                loadRedemptionData();
-            } else {
-                panel.style.display = 'none';
-                arrow.innerHTML = '&#9660;';
-            }
-        }
 
         async function loadRedemptionData() {
             // Check if contract is deployed
