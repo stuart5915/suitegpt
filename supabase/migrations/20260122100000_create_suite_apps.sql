@@ -16,9 +16,9 @@ CREATE TABLE IF NOT EXISTS suite_apps (
 );
 
 -- Index for faster lookup by slug
-CREATE INDEX idx_suite_apps_slug ON suite_apps(slug);
+CREATE INDEX IF NOT EXISTS idx_suite_apps_slug ON suite_apps(slug);
 -- Index for filtering by category and status
-CREATE INDEX idx_suite_apps_category_status ON suite_apps(category, status);
+CREATE INDEX IF NOT EXISTS idx_suite_apps_category_status ON suite_apps(category, status);
 
 -- =============================================
 -- ROW LEVEL SECURITY POLICIES
@@ -27,6 +27,7 @@ CREATE INDEX idx_suite_apps_category_status ON suite_apps(category, status);
 ALTER TABLE suite_apps ENABLE ROW LEVEL SECURITY;
 
 -- Everyone can read visible apps (not hidden)
+DROP POLICY IF EXISTS "apps_select_public" ON suite_apps;
 CREATE POLICY "apps_select_public" ON suite_apps
     FOR SELECT USING (status != 'hidden');
 
