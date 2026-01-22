@@ -43,6 +43,13 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
 
         <div class="sidebar-section">
+            <div class="sidebar-title">Profile</div>
+            <a href="/docs/profile-credits/" class="sidebar-link ${isActive('profile-credits.html')}">⚡ Credits</a>
+            <a href="/docs/your-profile/" class="sidebar-link ${isActive('your-profile.html')}">👤 Your Profile</a>
+            <a href="/docs/vote-for-apps/" class="sidebar-link ${isActive('vote-for-apps.html')}">🗳️ Vote for Apps</a>
+        </div>
+
+        <div class="sidebar-section">
             <div class="sidebar-title">Admin</div>
             <a href="/docs/systems/" class="sidebar-link ${isActive('systems.html')}">🔧 Systems View</a>
             <a href="/docs/governance/" class="sidebar-link ${isActive('governance.html')}">🗳️ Governance</a>
