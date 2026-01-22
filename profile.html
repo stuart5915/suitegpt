@@ -1287,8 +1287,8 @@
                     <div class="modal-input-group" style="margin-bottom: 0;">
                         <label>Status</label>
                         <select class="modal-input" id="appEditStatus">
-                            <option value="live">Live</option>
-                            <option value="coming_soon">Coming Soon</option>
+                            <option value="approved">Approved (Live)</option>
+                            <option value="pending">Pending</option>
                             <option value="beta">Beta</option>
                             <option value="hidden">Hidden</option>
                         </select>
@@ -1296,12 +1296,55 @@
                 </div>
 
                 <div class="modal-input-group" style="margin-bottom: 0;">
-                    <label>Icon URL</label>
-                    <input type="text" class="modal-input" id="appEditIcon" placeholder="/assets/icons/app-icon.jpg">
-                    <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px;">
-                        <img id="appEditIconPreview" src="" style="width: 48px; height: 48px; border-radius: 12px; object-fit: cover; display: none;">
-                        <span style="font-size: 0.8rem; color: var(--text-light);">Preview</span>
+                    <label>App Icon</label>
+                    <div id="iconDropZone" style="border: 2px dashed rgba(0,0,0,0.2); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s; background: rgba(255,255,255,0.5);">
+                        <img id="appEditIconPreview" src="" style="width: 64px; height: 64px; border-radius: 12px; object-fit: cover; display: none; margin: 0 auto 8px;">
+                        <div id="iconDropText" style="color: var(--text-light); font-size: 0.85rem;">
+                            📁 Drop image here or click to upload
+                        </div>
+                        <input type="file" id="iconFileInput" accept="image/*" style="display: none;">
+                        <div id="iconUploadProgress" style="display: none; margin-top: 8px;">
+                            <div style="background: rgba(0,0,0,0.1); border-radius: 4px; height: 4px; overflow: hidden;">
+                                <div id="iconProgressBar" style="background: var(--accent-green); height: 100%; width: 0%; transition: width 0.3s;"></div>
+                            </div>
+                            <span style="font-size: 0.75rem; color: var(--text-light);">Uploading...</span>
+                        </div>
                     </div>
+                    <input type="hidden" id="appEditIcon">
+                    <div style="margin-top: 8px; font-size: 0.75rem; color: var(--text-light);">
+                        Or enter URL directly: <input type="text" id="appEditIconUrl" class="modal-input" style="margin-top: 4px; font-size: 0.85rem;" placeholder="https://... or /assets/icons/...">
+                    </div>
+                </div>
+
+                <div class="modal-input-group" style="margin-bottom: 12px;">
+                    <label>Screenshots (up to 5)</label>
+                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 8px;">
+                        <div class="screenshot-drop-zone" style="aspect-ratio: 9/16; border: 2px dashed rgba(0,0,0,0.2); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.3); font-size: 1.5rem; color: var(--text-light);">
+                            +
+                            <input type="file" accept="image/*" style="display: none;">
+                        </div>
+                        <div class="screenshot-drop-zone" style="aspect-ratio: 9/16; border: 2px dashed rgba(0,0,0,0.2); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.3); font-size: 1.5rem; color: var(--text-light);">
+                            +
+                            <input type="file" accept="image/*" style="display: none;">
+                        </div>
+                        <div class="screenshot-drop-zone" style="aspect-ratio: 9/16; border: 2px dashed rgba(0,0,0,0.2); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.3); font-size: 1.5rem; color: var(--text-light);">
+                            +
+                            <input type="file" accept="image/*" style="display: none;">
+                        </div>
+                        <div class="screenshot-drop-zone" style="aspect-ratio: 9/16; border: 2px dashed rgba(0,0,0,0.2); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.3); font-size: 1.5rem; color: var(--text-light);">
+                            +
+                            <input type="file" accept="image/*" style="display: none;">
+                        </div>
+                        <div class="screenshot-drop-zone" style="aspect-ratio: 9/16; border: 2px dashed rgba(0,0,0,0.2); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.3); font-size: 1.5rem; color: var(--text-light);">
+                            +
+                            <input type="file" accept="image/*" style="display: none;">
+                        </div>
+                    </div>
+                    <input type="hidden" id="appEditScreenshot1">
+                    <input type="hidden" id="appEditScreenshot2">
+                    <input type="hidden" id="appEditScreenshot3">
+                    <input type="hidden" id="appEditScreenshot4">
+                    <input type="hidden" id="appEditScreenshot5">
                 </div>
 
                 <div class="modal-input-group" style="margin-bottom: 0;">
@@ -2108,7 +2151,7 @@
             const list = document.getElementById('appsAdminList');
 
             try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/suite_apps?order=name.asc`, {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/apps?order=name.asc`, {
                     headers: {
                         'apikey': SUPABASE_ANON_KEY,
                         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
@@ -2146,7 +2189,9 @@
 
         function getStatusColor(status) {
             switch (status) {
+                case 'approved': return 'var(--accent-green)';
                 case 'live': return 'var(--accent-green)';
+                case 'pending': return 'var(--accent-orange)';
                 case 'coming_soon': return 'var(--accent-orange)';
                 case 'beta': return '#3b82f6';
                 case 'hidden': return '#6b7280';
@@ -2162,12 +2207,28 @@
             document.getElementById('appEditTagline').value = '';
             document.getElementById('appEditDescription').value = '';
             document.getElementById('appEditCategory').value = 'productivity';
-            document.getElementById('appEditStatus').value = 'coming_soon';
+            document.getElementById('appEditStatus').value = 'pending';
             document.getElementById('appEditIcon').value = '';
+            document.getElementById('appEditIconUrl').value = '';
             document.getElementById('appEditUrl').value = '';
             document.getElementById('appEditIconPreview').style.display = 'none';
+            document.getElementById('iconDropText').style.display = 'block';
             document.getElementById('btnDeleteApp').style.display = 'none';
+
+            // Clear screenshots
+            for (let i = 1; i <= 5; i++) {
+                document.getElementById(`appEditScreenshot${i}`).value = '';
+            }
+            resetScreenshotZones();
+
             document.getElementById('appEditModal').classList.add('active');
+        }
+
+        function resetScreenshotZones() {
+            const zones = document.querySelectorAll('.screenshot-drop-zone');
+            zones.forEach(zone => {
+                zone.innerHTML = `+<input type="file" accept="image/*" style="display: none;">`;
+            });
         }
 
         function openEditAppModal(appId) {
@@ -2181,16 +2242,30 @@
             document.getElementById('appEditTagline').value = app.tagline || '';
             document.getElementById('appEditDescription').value = app.description || '';
             document.getElementById('appEditCategory').value = app.category || 'productivity';
-            document.getElementById('appEditStatus').value = app.status || 'live';
+            document.getElementById('appEditStatus').value = app.status || 'approved';
             document.getElementById('appEditIcon').value = app.icon_url || '';
+            document.getElementById('appEditIconUrl').value = app.icon_url || '';
             document.getElementById('appEditUrl').value = app.app_url || '';
 
             // Show icon preview
             if (app.icon_url) {
                 document.getElementById('appEditIconPreview').src = app.icon_url;
                 document.getElementById('appEditIconPreview').style.display = 'block';
+                document.getElementById('iconDropText').style.display = 'none';
             } else {
                 document.getElementById('appEditIconPreview').style.display = 'none';
+                document.getElementById('iconDropText').style.display = 'block';
+            }
+
+            // Load screenshots
+            resetScreenshotZones();
+            const zones = document.querySelectorAll('.screenshot-drop-zone');
+            for (let i = 1; i <= 5; i++) {
+                const screenshotUrl = app[`screenshot_${i}`];
+                document.getElementById(`appEditScreenshot${i}`).value = screenshotUrl || '';
+                if (screenshotUrl && zones[i-1]) {
+                    zones[i-1].innerHTML = `<img src="${screenshotUrl}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;"><input type="file" accept="image/*" style="display: none;">`;
+                }
             }
 
             document.getElementById('btnDeleteApp').style.display = 'inline-block';
@@ -2201,19 +2276,174 @@
             document.getElementById('appEditModal').classList.remove('active');
         }
 
-        // Update icon preview on input
+        // ============ Icon/Screenshot Upload Functions ============
+
+        async function uploadToSupabase(file, type = 'icon') {
+            const bucket = 'app-assets';
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+            const filePath = `uploads/${fileName}`;
+
+            const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${filePath}`, {
+                method: 'POST',
+                headers: {
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'Content-Type': file.type,
+                    'x-upsert': 'true'
+                },
+                body: file
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Upload failed: ${errorText}`);
+            }
+
+            return `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${filePath}`;
+        }
+
+        // Icon upload handlers
         document.addEventListener('DOMContentLoaded', () => {
-            const iconInput = document.getElementById('appEditIcon');
-            if (iconInput) {
-                iconInput.addEventListener('input', () => {
-                    const preview = document.getElementById('appEditIconPreview');
-                    if (iconInput.value) {
-                        preview.src = iconInput.value;
+            const dropZone = document.getElementById('iconDropZone');
+            const fileInput = document.getElementById('iconFileInput');
+            const urlInput = document.getElementById('appEditIconUrl');
+            const hiddenInput = document.getElementById('appEditIcon');
+            const preview = document.getElementById('appEditIconPreview');
+            const dropText = document.getElementById('iconDropText');
+            const progressDiv = document.getElementById('iconUploadProgress');
+            const progressBar = document.getElementById('iconProgressBar');
+
+            if (!dropZone) return;
+
+            // Click to upload
+            dropZone.addEventListener('click', () => fileInput.click());
+
+            // Drag events
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = 'var(--accent-green)';
+                dropZone.style.background = 'rgba(34, 197, 94, 0.1)';
+            });
+
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.style.borderColor = 'rgba(0,0,0,0.2)';
+                dropZone.style.background = 'rgba(255,255,255,0.5)';
+            });
+
+            dropZone.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = 'rgba(0,0,0,0.2)';
+                dropZone.style.background = 'rgba(255,255,255,0.5)';
+
+                const file = e.dataTransfer.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    await handleIconUpload(file);
+                }
+            });
+
+            // File input change
+            fileInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (file) await handleIconUpload(file);
+            });
+
+            // URL input
+            if (urlInput) {
+                urlInput.addEventListener('input', () => {
+                    const url = urlInput.value.trim();
+                    if (url) {
+                        hiddenInput.value = url;
+                        preview.src = url;
                         preview.style.display = 'block';
-                    } else {
-                        preview.style.display = 'none';
+                        dropText.style.display = 'none';
                     }
                 });
+            }
+
+            async function handleIconUpload(file) {
+                try {
+                    dropText.style.display = 'none';
+                    progressDiv.style.display = 'block';
+                    progressBar.style.width = '30%';
+
+                    const url = await uploadToSupabase(file, 'icon');
+
+                    progressBar.style.width = '100%';
+
+                    hiddenInput.value = url;
+                    if (urlInput) urlInput.value = url;
+                    preview.src = url;
+                    preview.style.display = 'block';
+
+                    setTimeout(() => {
+                        progressDiv.style.display = 'none';
+                        progressBar.style.width = '0%';
+                    }, 500);
+
+                    showToast('Icon uploaded!', 'success');
+                } catch (err) {
+                    console.error('Icon upload failed:', err);
+                    progressDiv.style.display = 'none';
+                    dropText.style.display = 'block';
+                    showToast('Upload failed: ' + err.message, 'error');
+                }
+            }
+
+            // Screenshot uploads
+            document.querySelectorAll('.screenshot-drop-zone').forEach((zone, index) => {
+                const input = zone.querySelector('input[type="file"]');
+                const preview = zone.querySelector('.screenshot-preview');
+                const hiddenInput = document.getElementById(`appEditScreenshot${index + 1}`);
+
+                zone.addEventListener('click', () => input.click());
+
+                zone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    zone.style.borderColor = 'var(--accent-green)';
+                });
+
+                zone.addEventListener('dragleave', () => {
+                    zone.style.borderColor = 'rgba(0,0,0,0.2)';
+                });
+
+                zone.addEventListener('drop', async (e) => {
+                    e.preventDefault();
+                    zone.style.borderColor = 'rgba(0,0,0,0.2)';
+                    const file = e.dataTransfer.files[0];
+                    if (file && file.type.startsWith('image/')) {
+                        await handleScreenshotUpload(file, index + 1, zone, preview, hiddenInput);
+                    }
+                });
+
+                input.addEventListener('change', async (e) => {
+                    const file = e.target.files[0];
+                    if (file) await handleScreenshotUpload(file, index + 1, zone, preview, hiddenInput);
+                });
+            });
+
+            async function handleScreenshotUpload(file, num, zone, preview, hiddenInput) {
+                try {
+                    zone.innerHTML = '<span style="color: var(--text-light);">Uploading...</span>';
+                    const url = await uploadToSupabase(file, 'screenshot');
+
+                    hiddenInput.value = url;
+                    zone.innerHTML = `<img src="${url}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;"><input type="file" accept="image/*" style="display: none;">`;
+
+                    // Re-attach event listeners
+                    const newInput = zone.querySelector('input[type="file"]');
+                    zone.addEventListener('click', () => newInput.click());
+                    newInput.addEventListener('change', async (e) => {
+                        const file = e.target.files[0];
+                        if (file) await handleScreenshotUpload(file, num, zone, preview, hiddenInput);
+                    });
+
+                    showToast(`Screenshot ${num} uploaded!`, 'success');
+                } catch (err) {
+                    console.error('Screenshot upload failed:', err);
+                    zone.innerHTML = `<span style="color: #ef4444;">Failed</span><input type="file" accept="image/*" style="display: none;">`;
+                    showToast('Upload failed', 'error');
+                }
             }
         });
 
@@ -2227,7 +2457,12 @@
                 category: document.getElementById('appEditCategory').value,
                 status: document.getElementById('appEditStatus').value,
                 icon_url: document.getElementById('appEditIcon').value.trim(),
-                app_url: document.getElementById('appEditUrl').value.trim() || null
+                app_url: document.getElementById('appEditUrl').value.trim() || null,
+                screenshot_1: document.getElementById('appEditScreenshot1').value.trim() || null,
+                screenshot_2: document.getElementById('appEditScreenshot2').value.trim() || null,
+                screenshot_3: document.getElementById('appEditScreenshot3').value.trim() || null,
+                screenshot_4: document.getElementById('appEditScreenshot4').value.trim() || null,
+                screenshot_5: document.getElementById('appEditScreenshot5').value.trim() || null
             };
 
             if (!appData.name || !appData.slug) {
@@ -2239,7 +2474,7 @@
                 let response;
                 if (id) {
                     // Update existing app
-                    response = await fetch(`${SUPABASE_URL}/rest/v1/suite_apps?id=eq.${id}`, {
+                    response = await fetch(`${SUPABASE_URL}/rest/v1/apps?id=eq.${id}`, {
                         method: 'PATCH',
                         headers: {
                             'apikey': SUPABASE_ANON_KEY,
@@ -2250,8 +2485,10 @@
                         body: JSON.stringify(appData)
                     });
                 } else {
-                    // Create new app
-                    response = await fetch(`${SUPABASE_URL}/rest/v1/suite_apps`, {
+                    // Create new app - add required creator_name
+                    appData.creator_name = 'SUITE';
+                    appData.creator_username = 'Stu';
+                    response = await fetch(`${SUPABASE_URL}/rest/v1/apps`, {
                         method: 'POST',
                         headers: {
                             'apikey': SUPABASE_ANON_KEY,
@@ -2286,7 +2523,7 @@
             if (!confirm(`Delete "${app?.name}"? This cannot be undone.`)) return;
 
             try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/suite_apps?id=eq.${id}`, {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/apps?id=eq.${id}`, {
                     method: 'DELETE',
                     headers: {
                         'apikey': SUPABASE_ANON_KEY,

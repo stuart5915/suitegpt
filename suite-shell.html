@@ -1977,6 +1977,105 @@
             font-size: 0.85rem;
         }
 
+        /* Screenshots gallery in details panel */
+        .app-details-screenshots {
+            margin-bottom: 16px;
+        }
+
+        .screenshots-scroll {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding: 4px 0 12px;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .screenshots-scroll::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .screenshots-scroll::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 4px;
+        }
+
+        .screenshots-scroll::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 4px;
+        }
+
+        .screenshot-item {
+            flex: 0 0 auto;
+            width: 120px;
+            aspect-ratio: 9/16;
+            border-radius: 12px;
+            overflow: hidden;
+            scroll-snap-align: start;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .screenshot-item:hover {
+            transform: scale(1.02);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .screenshot-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Screenshot modal for fullscreen view */
+        .screenshot-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .screenshot-modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .screenshot-modal img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .screenshot-modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 44px;
+            height: 44px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .screenshot-modal-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
         /* Feedback link in details panel */
         .app-details-feedback {
             margin-top: 8px;
@@ -5370,6 +5469,11 @@
                     <button class="app-details-panel-close" onclick="closeDetailsPanel()">×</button>
                 </div>
                 <div class="app-details-panel-content">
+                    <!-- Screenshots Gallery -->
+                    <div class="app-details-screenshots" id="detailsPanelScreenshots" style="display: none;">
+                        <div class="screenshots-scroll" id="screenshotsScroll"></div>
+                    </div>
+
                     <div class="app-details-section">
                         <div class="app-details-section-title">About</div>
                         <div class="app-details-desc" id="detailsPanelDesc"></div>
@@ -6829,6 +6933,28 @@
             // Update name and tagline
             document.getElementById('detailsPanelName').textContent = app.name;
             document.getElementById('detailsPanelTagline').textContent = tagline;
+
+            // Update screenshots
+            const screenshotsSection = document.getElementById('detailsPanelScreenshots');
+            const screenshotsScroll = document.getElementById('screenshotsScroll');
+            const screenshots = [
+                app.screenshot_1,
+                app.screenshot_2,
+                app.screenshot_3,
+                app.screenshot_4,
+                app.screenshot_5
+            ].filter(s => s);
+
+            if (screenshots.length > 0) {
+                screenshotsScroll.innerHTML = screenshots.map(url => `
+                    <div class="screenshot-item" onclick="openScreenshotModal('${url}')">
+                        <img src="${url}" alt="App screenshot" loading="lazy">
+                    </div>
+                `).join('');
+                screenshotsSection.style.display = 'block';
+            } else {
+                screenshotsSection.style.display = 'none';
+            }
 
             // Update description
             document.getElementById('detailsPanelDesc').textContent = fullDesc;
@@ -8850,6 +8976,35 @@
             </div>
         </div>
     </div>
+
+    <!-- Screenshot Modal -->
+    <div class="screenshot-modal" id="screenshotModal" onclick="closeScreenshotModal()">
+        <button class="screenshot-modal-close" onclick="closeScreenshotModal()">×</button>
+        <img id="screenshotModalImg" src="" alt="Screenshot">
+    </div>
+
+    <script>
+        function openScreenshotModal(url) {
+            const modal = document.getElementById('screenshotModal');
+            const img = document.getElementById('screenshotModalImg');
+            img.src = url;
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeScreenshotModal() {
+            const modal = document.getElementById('screenshotModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        // Close on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeScreenshotModal();
+            }
+        });
+    </script>
 </body>
 
 </html>

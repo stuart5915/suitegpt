@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUITE | Apps That Work For You</title>
+    <meta name="description" content="Discover AI-powered apps for health, productivity, finance and more. Free to use, built by the community.">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="assets/suite-logo-new.png">
+    <link rel="stylesheet" href="homepage-new.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
+</head>
+
+<body>
+    <!-- Navigation - Super Clean -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="/" class="nav-logo">
+                <img src="assets/suite-logo-new.png" alt="SUITE" class="nav-logo-img">
+                SUITE
+            </a>
+            <div class="nav-right">
+                <a href="suite-shell.html" class="nav-link">Apps</a>
+                <div class="nav-profile" id="navProfile">
+                    <button class="profile-btn" onclick="openProfileMenu()">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+                        </svg>
+                        <span id="profileText">Profile</span>
+                    </button>
+                </div>
+            </div>
+            <button class="mobile-menu-btn" onclick="toggleMobileNav()">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Apps that<br><span class="gradient-text">work for you</span></h1>
+            <p class="hero-subtitle">AI-powered tools for health, productivity, finance and more. Free to start, no subscriptions.</p>
+            <div class="hero-cta">
+                <a href="suite-shell.html" class="btn btn-primary">Browse Apps</a>
+                <a href="#featured" class="btn btn-secondary">See Featured</a>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <img src="assets/hero-characters.png" alt="SUITE Apps">
+        </div>
+    </section>
+
+    <!-- Featured App Spotlight -->
+    <section class="featured-section" id="featured">
+        <div class="section-header">
+            <h2>Featured App</h2>
+        </div>
+        <div class="featured-card" id="featuredApp">
+            <div class="featured-loading">Loading featured app...</div>
+        </div>
+    </section>
+
+    <!-- Category Tabs + Apps Grid -->
+    <section class="apps-section">
+        <div class="section-header">
+            <h2>Discover Apps</h2>
+        </div>
+        <div class="category-tabs">
+            <button class="tab active" data-category="all">All</button>
+            <button class="tab" data-category="health">Health</button>
+            <button class="tab" data-category="productivity">Productivity</button>
+            <button class="tab" data-category="finance">Finance</button>
+            <button class="tab" data-category="creative">Creative</button>
+            <button class="tab" data-category="games">Games</button>
+        </div>
+        <div class="apps-grid" id="appsGrid">
+            <div class="loading-placeholder">Loading apps...</div>
+        </div>
+        <div class="view-all-cta">
+            <a href="suite-shell.html" class="btn btn-secondary">View All Apps</a>
+        </div>
+    </section>
+
+    <!-- Shape What's Next (Governance reframed) -->
+    <section class="governance-section">
+        <div class="governance-content">
+            <div class="gov-text">
+                <span class="section-tag">Community Driven</span>
+                <h2>Shape What's Next</h2>
+                <p>Vote on new features, suggest improvements, and help decide what gets built. Your voice matters.</p>
+                <div class="gov-stats">
+                    <div class="gov-stat">
+                        <span class="stat-num" id="proposalCount">0</span>
+                        <span class="stat-label">Active Ideas</span>
+                    </div>
+                    <div class="gov-stat">
+                        <span class="stat-num" id="voteCount">0</span>
+                        <span class="stat-label">Votes Cast</span>
+                    </div>
+                </div>
+                <a href="factory.html" class="btn btn-primary">Vote on Features</a>
+            </div>
+            <div class="gov-preview">
+                <!-- Proposal Slots Visual -->
+                <div class="proposal-slots-card">
+                    <div class="slots-header">
+                        <span class="slots-title">Your Active Proposals</span>
+                        <span class="slots-count"><span id="userProposalCount">0</span> / 5</span>
+                    </div>
+                    <div class="slots-visual" id="proposalSlots">
+                        <div class="slot empty" data-slot="1">
+                            <span class="slot-icon">+</span>
+                        </div>
+                        <div class="slot empty" data-slot="2">
+                            <span class="slot-icon">+</span>
+                        </div>
+                        <div class="slot empty" data-slot="3">
+                            <span class="slot-icon">+</span>
+                        </div>
+                        <div class="slot empty" data-slot="4">
+                            <span class="slot-icon">+</span>
+                        </div>
+                        <div class="slot empty" data-slot="5">
+                            <span class="slot-icon">+</span>
+                        </div>
+                    </div>
+                    <p class="slots-hint">Submit up to 5 ideas at a time. Earn reputation to unlock more slots!</p>
+                </div>
+
+                <!-- Top Proposal Preview -->
+                <div class="preview-card">
+                    <div class="preview-status">Top Voted</div>
+                    <div class="preview-title" id="topProposalTitle">Loading...</div>
+                    <div class="preview-votes">
+                        <span class="vote-up">+<span id="topProposalVotes">0</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Simple Stats -->
+    <section class="stats-section">
+        <div class="stat-item">
+            <span class="stat-number" id="statApps">50+</span>
+            <span class="stat-text">Apps Available</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number">Free</span>
+            <span class="stat-text">To Start</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number">$0</span>
+            <span class="stat-text">Subscriptions</span>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-main">
+            <div class="footer-brand">
+                <div class="footer-logo">
+                    <img src="assets/suite-logo-new.png" alt="SUITE">
+                    SUITE
+                </div>
+                <p>Apps that work for you.</p>
+            </div>
+            <div class="footer-links">
+                <div class="footer-col">
+                    <h4>Product</h4>
+                    <a href="suite-shell.html">Apps</a>
+                    <a href="factory.html">Vote</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Resources</h4>
+                    <a href="learn.html">Learn</a>
+                    <a href="docs/">Docs</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Community</h4>
+                    <a href="https://t.me/getSUITE" target="_blank">Telegram</a>
+                    <a href="https://twitter.com/getSUITE" target="_blank">Twitter</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 SUITE. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Profile Modal -->
+    <div class="modal-overlay" id="profileModal" onclick="if(event.target===this) closeProfileMenu()">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeProfileMenu()">&times;</button>
+            <div id="profileModalContent">
+                <!-- Dynamic content inserted by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script src="homepage-new.js"></script>
+</body>
+
+</html>
