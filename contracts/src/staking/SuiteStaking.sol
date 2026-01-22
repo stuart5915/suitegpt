@@ -50,8 +50,14 @@ contract SuiteStaking is Ownable, ReentrancyGuard, Pausable {
     /// @notice Credits consumed by each user (tracked separately, burned on unstake)
     mapping(address => uint256) public usedCredits;
 
+    /// @notice Bonus credits awarded to users (rewards, no SUITE backing)
+    mapping(address => uint256) public bonusCredits;
+
     /// @notice Apps authorized to spend user credits
     mapping(address => bool) public authorizedApps;
+
+    /// @notice Addresses authorized to distribute bonus credits
+    mapping(address => bool) public rewardDistributors;
 
     // ============ Events ============
 
@@ -60,8 +66,11 @@ contract SuiteStaking is Ownable, ReentrancyGuard, Pausable {
     event Unstaked(address indexed user, uint256 returned, uint256 burned);
     event BoughtAndStaked(address indexed user, uint256 usdcAmount, uint256 suiteAmount);
     event CreditsUsed(address indexed user, address indexed app, uint256 amount);
+    event BonusCreditsAdded(address indexed user, uint256 amount, address indexed distributor);
     event AppAuthorized(address indexed app);
     event AppRevoked(address indexed app);
+    event RewardDistributorAdded(address indexed distributor);
+    event RewardDistributorRemoved(address indexed distributor);
     event TreasuryUpdated(address indexed newTreasury);
     event SuitePerUsdcUpdated(uint256 newRate);
 
@@ -71,9 +80,12 @@ contract SuiteStaking is Ownable, ReentrancyGuard, Pausable {
     error InsufficientStake();
     error InsufficientCredits();
     error UnauthorizedApp();
+    error UnauthorizedDistributor();
     error ZeroAddress();
     error AppAlreadyAuthorized();
     error AppNotAuthorized();
+    error DistributorAlreadyAdded();
+    error DistributorNotFound();
 
     // ============ Constructor ============
 
@@ -223,10 +235,19 @@ contract SuiteStaking is Ownable, ReentrancyGuard, Pausable {
     /**
      * @notice Get available credits for a user
      * @param user Address to check
-     * @return Available credits (staked - used)
+     * @return Available credits (staked + bonus - used)
      */
     function availableCredits(address user) public view returns (uint256) {
-        return stakedBalance[user] - usedCredits[user];
+        return stakedBalance[user] + bonusCredits[user] - usedCredits[user];
+    }
+
+    /**
+     * @notice Get total credits ever received (for display)
+     * @param user Address to check
+     * @return Total credits (staked + bonus)
+     */
+    function totalCredits(address user) public view returns (uint256) {
+        return stakedBalance[user] + bonusCredits[user];
     }
 
     // ============ Admin Functions ============
@@ -286,5 +307,65 @@ contract SuiteStaking is Ownable, ReentrancyGuard, Pausable {
      */
     function unpause() external onlyOwner {
         _unpause();
+    }
+
+    // ============ Reward Distribution Functions ============
+
+    /**
+     * @notice Add bonus credits to a user (no SUITE backing, just paper credits)
+     * @param user Address to receive bonus credits
+     * @param amount Amount of bonus credits to add
+     */
+    function addBonusCredits(address user, uint256 amount) external {
+        if (!rewardDistributors[msg.sender] && msg.sender != owner()) {
+            revert UnauthorizedDistributor();
+        }
+        if (user == address(0)) revert ZeroAddress();
+        if (amount == 0) revert ZeroAmount();
+
+        bonusCredits[user] += amount;
+        emit BonusCreditsAdded(user, amount, msg.sender);
+    }
+
+    /**
+     * @notice Add bonus credits to multiple users at once
+     * @param users Array of addresses to receive bonus credits
+     * @param amounts Array of amounts for each user
+     */
+    function addBonusCreditsBatch(address[] calldata users, uint256[] calldata amounts) external {
+        if (!rewardDistributors[msg.sender] && msg.sender != owner()) {
+            revert UnauthorizedDistributor();
+        }
+        require(users.length == amounts.length, "Array length mismatch");
+
+        for (uint256 i = 0; i < users.length; i++) {
+            if (users[i] != address(0) && amounts[i] > 0) {
+                bonusCredits[users[i]] += amounts[i];
+                emit BonusCreditsAdded(users[i], amounts[i], msg.sender);
+            }
+        }
+    }
+
+    /**
+     * @notice Add a reward distributor (can add bonus credits)
+     * @param distributor Address to authorize
+     */
+    function addRewardDistributor(address distributor) external onlyOwner {
+        if (distributor == address(0)) revert ZeroAddress();
+        if (rewardDistributors[distributor]) revert DistributorAlreadyAdded();
+
+        rewardDistributors[distributor] = true;
+        emit RewardDistributorAdded(distributor);
+    }
+
+    /**
+     * @notice Remove a reward distributor
+     * @param distributor Address to revoke
+     */
+    function removeRewardDistributor(address distributor) external onlyOwner {
+        if (!rewardDistributors[distributor]) revert DistributorNotFound();
+
+        rewardDistributors[distributor] = false;
+        emit RewardDistributorRemoved(distributor);
     }
 }
