@@ -1621,41 +1621,102 @@
             border-color: rgba(34, 197, 94, 0.4);
         }
 
-        /* Expandable App Card */
-        .app-card.expanded {
-            flex-direction: column;
-            align-items: stretch;
-            padding: 16px;
-            background: rgba(26, 26, 46, 0.98);
-            border-color: rgba(255, 149, 0, 0.4);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        /* Selected App Card */
+        .app-card.selected {
+            background: rgba(255, 149, 0, 0.1);
+            border-color: rgba(255, 149, 0, 0.5);
+            box-shadow: 0 0 0 2px rgba(255, 149, 0, 0.2);
         }
 
-        .app-card .app-header {
+        /* App Details Panel (below grid) */
+        .app-details-panel {
+            background: linear-gradient(135deg, rgba(26, 26, 46, 0.98), rgba(30, 30, 55, 0.98));
+            border: 1px solid rgba(255, 149, 0, 0.3);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 16px;
+            animation: slideDown 0.25s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .app-details-panel-header {
             display: flex;
             align-items: center;
-            gap: 14px;
-            width: 100%;
-        }
-
-        .app-card.expanded .app-header {
+            gap: 16px;
             padding-bottom: 16px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             margin-bottom: 16px;
         }
 
-        .app-card .app-details {
-            display: none;
+        .app-details-panel-icon {
+            width: 64px;
+            height: 64px;
+            min-width: 64px;
+            font-size: 2.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 14px;
+        }
+
+        .app-details-panel-icon img {
+            width: 64px;
+            height: 64px;
+            border-radius: 14px;
+            object-fit: cover;
+        }
+
+        .app-details-panel-info {
+            flex: 1;
+        }
+
+        .app-details-panel-name {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .app-details-panel-tagline {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .app-details-panel-close {
+            width: 36px;
+            height: 36px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            color: var(--text-secondary);
+            font-size: 1.4rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .app-details-panel-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .app-details-panel-content {
+            display: flex;
             flex-direction: column;
             gap: 16px;
-        }
-
-        .app-card.expanded .app-details {
-            display: flex;
-        }
-
-        .app-card.expanded .app-view-buttons {
-            display: none;
         }
 
         .app-details-section {
@@ -1767,25 +1828,6 @@
             line-height: 1.4;
         }
 
-        .app-collapse-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            color: var(--text-secondary);
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-top: 8px;
-        }
-
-        .app-collapse-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
 
         /* Old expanded styles - can be removed later */
         .expanded-view-options {
@@ -5106,6 +5148,30 @@
                 <div>Loading apps...</div>
             </div>
             <div class="apps-grid" id="appsGrid" style="display: none;"></div>
+
+            <!-- App Details Panel (appears below grid when app is selected) -->
+            <div class="app-details-panel" id="appDetailsPanel" style="display: none;">
+                <div class="app-details-panel-header">
+                    <div class="app-details-panel-icon" id="detailsPanelIcon"></div>
+                    <div class="app-details-panel-info">
+                        <div class="app-details-panel-name" id="detailsPanelName"></div>
+                        <div class="app-details-panel-tagline" id="detailsPanelTagline"></div>
+                    </div>
+                    <button class="app-details-panel-close" onclick="closeDetailsPanel()">×</button>
+                </div>
+                <div class="app-details-panel-content">
+                    <div class="app-details-section">
+                        <div class="app-details-section-title">About</div>
+                        <div class="app-details-desc" id="detailsPanelDesc"></div>
+                        <div class="app-details-features" id="detailsPanelFeatures"></div>
+                    </div>
+                    <div class="app-details-section" id="detailsPanelSetupSection">
+                        <div class="app-details-section-title">Getting Started</div>
+                        <div class="app-setup-steps" id="detailsPanelSetup"></div>
+                    </div>
+                    <div class="app-details-actions" id="detailsPanelActions"></div>
+                </div>
+            </div>
         </div>
 
         <!-- Leaderboard Tab Content -->
@@ -6492,26 +6558,106 @@
             };
         }
 
-        function toggleAppCard(cardEl, slug) {
-            // Check if already expanded
-            if (cardEl.classList.contains('expanded')) {
-                collapseAppCard(cardEl);
-            } else {
-                // Collapse any other expanded cards first
-                document.querySelectorAll('.app-card.expanded').forEach(card => {
-                    card.classList.remove('expanded');
-                });
-                // Expand this card
-                cardEl.classList.add('expanded');
-                // Scroll into view smoothly
-                setTimeout(() => {
-                    cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }, 100);
+        let selectedAppSlug = null;
+
+        function selectApp(cardEl, slug) {
+            const panel = document.getElementById('appDetailsPanel');
+
+            // If clicking the same app, close the panel
+            if (selectedAppSlug === slug) {
+                closeDetailsPanel();
+                return;
             }
+
+            // Remove selection from all cards
+            document.querySelectorAll('.app-card.selected').forEach(card => {
+                card.classList.remove('selected');
+            });
+
+            // Select this card
+            cardEl.classList.add('selected');
+            selectedAppSlug = slug;
+
+            // Find the app data
+            const app = apps.find(a => a.slug === slug);
+            if (!app) return;
+
+            // Update panel content
+            updateDetailsPanel(app);
+
+            // Show panel
+            panel.style.display = 'block';
+
+            // Scroll panel into view
+            setTimeout(() => {
+                panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
         }
 
-        function collapseAppCard(cardEl) {
-            cardEl.classList.remove('expanded');
+        function updateDetailsPanel(app) {
+            const appDetails = getAppDetails(app.slug);
+            const tagline = app.tagline || app.description || 'AI-powered app';
+            const fullDesc = app.description || tagline;
+
+            // Update icon
+            const iconEl = document.getElementById('detailsPanelIcon');
+            iconEl.innerHTML = getAppIcon(app);
+
+            // Update name and tagline
+            document.getElementById('detailsPanelName').textContent = app.name;
+            document.getElementById('detailsPanelTagline').textContent = tagline;
+
+            // Update description
+            document.getElementById('detailsPanelDesc').textContent = fullDesc;
+
+            // Update features
+            const featuresEl = document.getElementById('detailsPanelFeatures');
+            if (appDetails.features && appDetails.features.length > 0) {
+                featuresEl.innerHTML = appDetails.features.map(f =>
+                    `<span class="app-feature-tag">${f}</span>`
+                ).join('');
+                featuresEl.style.display = 'flex';
+            } else {
+                featuresEl.style.display = 'none';
+            }
+
+            // Update setup steps
+            const setupSection = document.getElementById('detailsPanelSetupSection');
+            const setupEl = document.getElementById('detailsPanelSetup');
+            if (appDetails.setup && appDetails.setup.length > 0) {
+                setupEl.innerHTML = appDetails.setup.map((step, i) => `
+                    <div class="app-setup-step">
+                        <div class="app-setup-step-num">${i + 1}</div>
+                        <div class="app-setup-step-text">${step}</div>
+                    </div>
+                `).join('');
+                setupSection.style.display = 'block';
+            } else {
+                setupSection.style.display = 'none';
+            }
+
+            // Update actions
+            const actionsEl = document.getElementById('detailsPanelActions');
+            actionsEl.innerHTML = `
+                <button class="app-action-btn primary" onclick="openApp('${app.slug}')">
+                    Open App
+                </button>
+                ${appDetails.setupUrl ? `
+                <a href="${appDetails.setupUrl}" class="app-action-btn">
+                    Setup Guide
+                </a>` : ''}
+            `;
+        }
+
+        function closeDetailsPanel() {
+            const panel = document.getElementById('appDetailsPanel');
+            panel.style.display = 'none';
+            selectedAppSlug = null;
+
+            // Remove selection from all cards
+            document.querySelectorAll('.app-card.selected').forEach(card => {
+                card.classList.remove('selected');
+            });
         }
 
         function renderAppsGrid() {
@@ -6545,58 +6691,20 @@
                 const allFilteredApps = getFilteredAndSortedApps();
                 console.log('[renderAppsGrid] Filtered apps:', allFilteredApps.length);
 
-            // Render all apps with expandable cards
+            // Render all apps with simple clickable cards
             grid.innerHTML = allFilteredApps.map(app => {
                 const tagline = app.tagline || app.description || 'AI-powered app';
                 const shortTagline = tagline.length > 50 ? tagline.substring(0, 50) + '...' : tagline;
-                const fullDesc = app.description || tagline;
-                const appDetails = getAppDetails(app.slug);
 
                 return `
-                    <div class="app-card" data-slug="${app.slug}" onclick="toggleAppCard(this, '${app.slug}')">
-                        <div class="app-header">
-                            <div class="app-icon">${getAppIcon(app)}</div>
-                            <div class="app-info">
-                                <div class="app-name">${app.name}</div>
-                                <div class="app-tagline">${shortTagline}</div>
-                            </div>
-                            <div class="app-view-buttons">
-                                <button class="view-btn" onclick="event.stopPropagation(); openApp('${app.slug}')" title="Open app">View</button>
-                            </div>
+                    <div class="app-card" data-slug="${app.slug}" onclick="selectApp(this, '${app.slug}')">
+                        <div class="app-icon">${getAppIcon(app)}</div>
+                        <div class="app-info">
+                            <div class="app-name">${app.name}</div>
+                            <div class="app-tagline">${shortTagline}</div>
                         </div>
-                        <div class="app-details">
-                            <div class="app-details-section">
-                                <div class="app-details-section-title">About</div>
-                                <div class="app-details-desc">${fullDesc}</div>
-                                ${appDetails.features ? `
-                                <div class="app-details-features">
-                                    ${appDetails.features.map(f => `<span class="app-feature-tag">${f}</span>`).join('')}
-                                </div>` : ''}
-                            </div>
-                            ${appDetails.setup ? `
-                            <div class="app-details-section">
-                                <div class="app-details-section-title">Getting Started</div>
-                                <div class="app-setup-steps">
-                                    ${appDetails.setup.map((step, i) => `
-                                        <div class="app-setup-step">
-                                            <div class="app-setup-step-num">${i + 1}</div>
-                                            <div class="app-setup-step-text">${step}</div>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </div>` : ''}
-                            <div class="app-details-actions">
-                                <button class="app-action-btn primary" onclick="event.stopPropagation(); openApp('${app.slug}')">
-                                    Open App
-                                </button>
-                                ${appDetails.setupUrl ? `
-                                <a href="${appDetails.setupUrl}" class="app-action-btn" onclick="event.stopPropagation();">
-                                    Setup Guide
-                                </a>` : ''}
-                            </div>
-                            <button class="app-collapse-btn" onclick="event.stopPropagation(); collapseAppCard(this.closest('.app-card'));">
-                                Collapse
-                            </button>
+                        <div class="app-view-buttons">
+                            <button class="view-btn" onclick="event.stopPropagation(); openApp('${app.slug}')" title="Open app">View</button>
                         </div>
                     </div>
                 `;
