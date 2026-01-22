@@ -1828,6 +1828,90 @@
             line-height: 1.4;
         }
 
+        /* Extensions section in details panel */
+        .app-details-extensions {
+            margin-top: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .app-details-extensions .app-details-section-title {
+            margin-bottom: 14px;
+        }
+
+        .app-extensions-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .app-extension-card {
+            background: rgba(255, 149, 0, 0.05);
+            border: 1px solid rgba(255, 149, 0, 0.15);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .app-extension-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .app-extension-icon {
+            width: 48px;
+            height: 48px;
+            min-width: 48px;
+            font-size: 1.6rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        .app-extension-info {
+            flex: 1;
+        }
+
+        .app-extension-name {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
+        .app-extension-tagline {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .app-extension-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .app-extension-card .app-details-features {
+            margin-top: 0;
+            margin-bottom: 14px;
+        }
+
+        .app-extension-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .app-extension-actions .app-action-btn {
+            flex: 1;
+            padding: 10px 14px;
+            font-size: 0.85rem;
+        }
+
         /* Feedback link in details panel */
         .app-details-feedback {
             margin-top: 8px;
@@ -5213,6 +5297,10 @@
                         <div class="app-setup-steps" id="detailsPanelSetup"></div>
                     </div>
                     <div class="app-details-actions" id="detailsPanelActions"></div>
+                    <div class="app-details-extensions" id="detailsPanelExtensions" style="display: none;">
+                        <div class="app-details-section-title">Extensions</div>
+                        <div class="app-extensions-list" id="detailsPanelExtensionsList"></div>
+                    </div>
                     <div class="app-details-feedback" id="detailsPanelFeedback"></div>
                 </div>
             </div>
@@ -6515,16 +6603,6 @@
         // ===== EXPANDABLE APP CARDS =====
         // App-specific details for expanded view
         const APP_DETAILS = {
-            'lists': {
-                features: ['AI Categorization', 'Shared Lists', 'iOS Widget', 'Quick Add'],
-                setup: [
-                    'Log in with Telegram to sync your lists',
-                    'Add items using the quick-add bar - AI sorts tasks vs groceries',
-                    'Share lists with family using invite links',
-                    'Set up the iOS widget for home screen access'
-                ],
-                setupUrl: '/widget-setup'
-            },
             'foodvitals': {
                 features: ['Barcode Scanner', 'Nutrition AI', 'Health Tracking', 'Food Diary'],
                 setup: [
@@ -6587,6 +6665,18 @@
                     'Connect your wallet or enter addresses',
                     'View your portfolio across chains',
                     'Track yields and get insights'
+                ],
+                extensions: [
+                    {
+                        slug: 'lists',
+                        name: 'Lists',
+                        icon: '📝',
+                        tagline: 'Shared tasks & groceries with iOS widget',
+                        description: 'A productivity extension for SUITEhub that lets you manage tasks and grocery lists. Share lists with family, add items with AI categorization, and access everything from an iOS home screen widget.',
+                        features: ['AI Categorization', 'Shared Lists', 'iOS Widget', 'Quick Add'],
+                        url: '/lists',
+                        setupUrl: '/widget-setup'
+                    }
                 ]
             }
         };
@@ -6692,6 +6782,40 @@
                 </a>` : ''}
             `;
 
+            // Update extensions section (for apps like SUITEhub that have sub-modules)
+            const extensionsSection = document.getElementById('detailsPanelExtensions');
+            const extensionsList = document.getElementById('detailsPanelExtensionsList');
+            if (appDetails.extensions && appDetails.extensions.length > 0) {
+                extensionsList.innerHTML = appDetails.extensions.map(ext => `
+                    <div class="app-extension-card">
+                        <div class="app-extension-header">
+                            <div class="app-extension-icon">${ext.icon}</div>
+                            <div class="app-extension-info">
+                                <div class="app-extension-name">${ext.name}</div>
+                                <div class="app-extension-tagline">${ext.tagline}</div>
+                            </div>
+                        </div>
+                        <div class="app-extension-desc">${ext.description}</div>
+                        ${ext.features ? `
+                        <div class="app-details-features">
+                            ${ext.features.map(f => `<span class="app-feature-tag">${f}</span>`).join('')}
+                        </div>` : ''}
+                        <div class="app-extension-actions">
+                            <a href="${ext.url}" class="app-action-btn primary">
+                                Open ${ext.name}
+                            </a>
+                            ${ext.setupUrl ? `
+                            <a href="${ext.setupUrl}" class="app-action-btn">
+                                Setup Guide
+                            </a>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+                extensionsSection.style.display = 'block';
+            } else {
+                extensionsSection.style.display = 'none';
+            }
+
             // Update feedback section
             const feedbackEl = document.getElementById('detailsPanelFeedback');
             feedbackEl.innerHTML = `
@@ -6742,7 +6866,12 @@
                 }
 
                 // Get filtered and sorted apps
-                const allFilteredApps = getFilteredAndSortedApps();
+                let allFilteredApps = getFilteredAndSortedApps();
+
+                // Filter out apps that are sub-modules of other apps (e.g., 'lists' is part of 'suitehub')
+                const subModuleSlugs = ['lists'];
+                allFilteredApps = allFilteredApps.filter(app => !subModuleSlugs.includes(app.slug));
+
                 console.log('[renderAppsGrid] Filtered apps:', allFilteredApps.length);
 
             // Render all apps with simple clickable cards
