@@ -397,6 +397,35 @@
             if (carousel) {
                 carousel.classList.add('apps-carousel');
             }
+
+            // Nav scroll-hide behavior
+            let lastScrollY = window.scrollY;
+            let ticking = false;
+
+            function updateNav() {
+                const nav = document.querySelector('.nav');
+                if (!nav) return;
+
+                const currentScrollY = window.scrollY;
+
+                if (currentScrollY > lastScrollY && currentScrollY > 100) {
+                    // Scrolling down & past threshold - hide nav
+                    nav.classList.add('nav-hidden');
+                } else {
+                    // Scrolling up - show nav
+                    nav.classList.remove('nav-hidden');
+                }
+
+                lastScrollY = currentScrollY;
+                ticking = false;
+            }
+
+            window.addEventListener('scroll', function() {
+                if (!ticking) {
+                    requestAnimationFrame(updateNav);
+                    ticking = true;
+                }
+            });
         });
     </script>
 </body>
