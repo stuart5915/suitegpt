@@ -1377,44 +1377,22 @@
             document.getElementById('fiatPayText').textContent = `Pay $${amount} with Card`;
         }
 
-        // Ensure user exists in Supabase before checkout
+        // Ensure user exists in Supabase before checkout (calls secure server-side API)
         async function ensureUserExists(walletAddress) {
-            const lowerWallet = walletAddress.toLowerCase();
-
-            // Check if user exists
-            const checkResponse = await fetch(`${SUPABASE_URL}/rest/v1/users?wallet_address=eq.${lowerWallet}&select=id`, {
-                headers: {
-                    'apikey': SUPABASE_ANON_KEY,
-                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-                }
+            const response = await fetch('/api/ensure-user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ walletAddress })
             });
 
-            const users = await checkResponse.json();
+            const data = await response.json();
 
-            if (users.length === 0) {
-                // Create user
-                const createResponse = await fetch(`${SUPABASE_URL}/rest/v1/users`, {
-                    method: 'POST',
-                    headers: {
-                        'apikey': SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                        'Content-Type': 'application/json',
-                        'Prefer': 'return=representation'
-                    },
-                    body: JSON.stringify({
-                        wallet_address: lowerWallet,
-                        credits: 0,
-                        bonus_credits: 0
-                    })
-                });
-
-                if (!createResponse.ok) {
-                    console.error('Failed to create user:', await createResponse.text());
-                    throw new Error('Failed to create user account');
-                }
-
-                console.log('Created new user for wallet:', lowerWallet);
+            if (!response.ok || data.error) {
+                console.error('Failed to ensure user exists:', data.error);
+                throw new Error('Failed to set up user account');
             }
+
+            console.log('User ready:', data.created ? 'created new' : 'already exists');
         }
 
         async function initiateStripeCheckout() {
