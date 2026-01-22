@@ -1045,6 +1045,50 @@
 
                         </div>
                     </div>
+
+                    <hr style="border: none; border-top: 1px solid rgba(0,0,0,0.08); margin: 20px 0;">
+
+                    <!-- Operator Applications Panel -->
+                    <div id="operatorApplicationsPanel" style="margin-top: 8px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                            <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: var(--text-dark);">Operator Applications</h3>
+                            <div style="display: flex; gap: 8px;">
+                                <select id="appFilterSelect" onchange="filterApplications()" style="padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 0.8rem; background: white;">
+                                    <option value="pending">Pending</option>
+                                    <option value="under_review">Under Review</option>
+                                    <option value="accepted">Accepted</option>
+                                    <option value="rejected">Rejected</option>
+                                    <option value="all">All</option>
+                                </select>
+                                <button onclick="refreshApplications()" style="padding: 6px 12px; background: rgba(255,255,255,0.5); border: 1px solid #e5e7eb; border-radius: 8px; cursor: pointer; font-size: 0.8rem;">Refresh</button>
+                            </div>
+                        </div>
+
+                        <!-- Applications Stats -->
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px;">
+                            <div style="background: rgba(251, 191, 36, 0.1); border-radius: 10px; padding: 12px; text-align: center;">
+                                <div style="font-size: 1.3rem; font-weight: 800; color: #f59e0b;" id="pendingCount">0</div>
+                                <div style="font-size: 0.7rem; color: var(--text-medium);">Pending</div>
+                            </div>
+                            <div style="background: rgba(59, 130, 246, 0.1); border-radius: 10px; padding: 12px; text-align: center;">
+                                <div style="font-size: 1.3rem; font-weight: 800; color: #3b82f6;" id="reviewCount">0</div>
+                                <div style="font-size: 0.7rem; color: var(--text-medium);">Reviewing</div>
+                            </div>
+                            <div style="background: rgba(34, 197, 94, 0.1); border-radius: 10px; padding: 12px; text-align: center;">
+                                <div style="font-size: 1.3rem; font-weight: 800; color: #22c55e;" id="acceptedCount">0</div>
+                                <div style="font-size: 0.7rem; color: var(--text-medium);">Accepted</div>
+                            </div>
+                            <div style="background: rgba(239, 68, 68, 0.1); border-radius: 10px; padding: 12px; text-align: center;">
+                                <div style="font-size: 1.3rem; font-weight: 800; color: #ef4444;" id="rejectedCount">0</div>
+                                <div style="font-size: 0.7rem; color: var(--text-medium);">Rejected</div>
+                            </div>
+                        </div>
+
+                        <!-- Applications List -->
+                        <div id="operatorApplicationsList" style="display: flex; flex-direction: column; gap: 12px; max-height: 500px; overflow-y: auto;">
+                            <div style="text-align: center; padding: 24px; color: var(--text-light);">Loading applications...</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1476,6 +1520,7 @@
             if (ADMIN_ADDRESSES.includes(wallet.toLowerCase())) {
                 document.getElementById('adminSection').style.display = 'block';
                 loadRedemptionData(); // Load redemption data when admin section is shown
+                loadOperatorApplications(); // Load operator applications
             } else {
                 document.getElementById('adminSection').style.display = 'none';
             }
@@ -2551,6 +2596,257 @@
             } catch (err) {
                 console.error('Failed to delete app:', err);
                 showToast('Failed to delete', 'error');
+            }
+        }
+
+        // ============ Operator Applications Management ============
+        let operatorApplicationsData = [];
+        let currentApplicationFilter = 'pending';
+
+        async function loadOperatorApplications() {
+            const list = document.getElementById('operatorApplicationsList');
+            const filter = document.getElementById('appFilterSelect').value;
+            currentApplicationFilter = filter;
+
+            try {
+                let url = `${SUPABASE_URL}/rest/v1/app_operator_applications?order=created_at.desc`;
+                if (filter !== 'all') {
+                    url += `&status=eq.${filter}`;
+                }
+
+                const response = await fetch(url, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load applications');
+
+                operatorApplicationsData = await response.json();
+
+                // Update counts
+                updateApplicationCounts();
+
+                if (operatorApplicationsData.length === 0) {
+                    list.innerHTML = `<div style="text-align: center; padding: 24px; color: var(--text-light);">No ${filter === 'all' ? '' : filter} applications</div>`;
+                    return;
+                }
+
+                list.innerHTML = operatorApplicationsData.map(app => `
+                    <div onclick="openApplicationDetail('${app.id}')" style="background: rgba(255,255,255,0.5); border: 1px solid rgba(0,0,0,0.08); border-radius: 14px; padding: 16px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(255,255,255,0.8)'" onmouseout="this.style.background='rgba(255,255,255,0.5)'">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #f97316, #ea580c); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 0.9rem;">${(app.discord_username || app.email || '?').charAt(0).toUpperCase()}</div>
+                                <div>
+                                    <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-dark);">${app.discord_username || app.email || 'Unknown'}</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-light);">${app.email || 'No email'}</div>
+                                </div>
+                            </div>
+                            <span style="padding: 4px 10px; border-radius: 8px; font-size: 0.7rem; font-weight: 600; ${getApplicationStatusStyle(app.status)}">${app.status}</span>
+                        </div>
+                        <div style="display: flex; gap: 16px; font-size: 0.8rem; color: var(--text-medium);">
+                            <span><strong>App:</strong> ${app.preferred_app_slug || 'Any'}</span>
+                            <span><strong>Hours:</strong> ${app.hours_per_week || 10}/wk</span>
+                        </div>
+                        <div style="margin-top: 10px; font-size: 0.85rem; color: var(--text-medium); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${(app.motivation || '').substring(0, 150)}${(app.motivation || '').length > 150 ? '...' : ''}</div>
+                        <div style="margin-top: 10px; font-size: 0.75rem; color: var(--text-light);">${new Date(app.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                console.error('Failed to load applications:', err);
+                list.innerHTML = '<div style="text-align: center; padding: 24px; color: #ef4444;">Failed to load applications. Table may not exist yet - run the migration.</div>';
+            }
+        }
+
+        async function updateApplicationCounts() {
+            try {
+                const counts = { pending: 0, under_review: 0, accepted: 0, rejected: 0 };
+
+                for (const status of Object.keys(counts)) {
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/app_operator_applications?status=eq.${status}&select=count`, {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Prefer': 'count=exact'
+                        }
+                    });
+                    const count = response.headers.get('content-range');
+                    if (count) {
+                        const match = count.match(/\/(\d+)/);
+                        counts[status] = match ? parseInt(match[1]) : 0;
+                    }
+                }
+
+                document.getElementById('pendingCount').textContent = counts.pending;
+                document.getElementById('reviewCount').textContent = counts.under_review;
+                document.getElementById('acceptedCount').textContent = counts.accepted;
+                document.getElementById('rejectedCount').textContent = counts.rejected;
+
+            } catch (err) {
+                console.error('Failed to update counts:', err);
+            }
+        }
+
+        function getApplicationStatusStyle(status) {
+            switch (status) {
+                case 'pending': return 'background: rgba(251, 191, 36, 0.15); color: #f59e0b;';
+                case 'under_review': return 'background: rgba(59, 130, 246, 0.15); color: #3b82f6;';
+                case 'accepted': return 'background: rgba(34, 197, 94, 0.15); color: #22c55e;';
+                case 'rejected': return 'background: rgba(239, 68, 68, 0.15); color: #ef4444;';
+                default: return 'background: rgba(0, 0, 0, 0.1); color: var(--text-medium);';
+            }
+        }
+
+        function filterApplications() {
+            loadOperatorApplications();
+        }
+
+        function refreshApplications() {
+            loadOperatorApplications();
+        }
+
+        function openApplicationDetail(appId) {
+            const app = operatorApplicationsData.find(a => a.id === appId);
+            if (!app) return;
+
+            const modal = document.createElement('div');
+            modal.id = 'applicationDetailModal';
+            modal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px;';
+            modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+
+            modal.innerHTML = `
+                <div style="background: white; border-radius: 20px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 28px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3 style="margin: 0; font-size: 1.2rem;">Application Details</h3>
+                        <button onclick="document.getElementById('applicationDetailModal').remove()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-light);">&times;</button>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 14px; padding: 16px; background: rgba(0,0,0,0.03); border-radius: 14px; margin-bottom: 20px;">
+                        <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #f97316, #ea580c); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.2rem;">${(app.discord_username || app.email || '?').charAt(0).toUpperCase()}</div>
+                        <div>
+                            <div style="font-weight: 700; font-size: 1.1rem;">${app.discord_username || 'No Discord'}</div>
+                            <div style="font-size: 0.85rem; color: var(--text-medium);">${app.email || 'No email'}</div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+                        <div style="padding: 12px; background: rgba(0,0,0,0.03); border-radius: 10px;">
+                            <div style="font-size: 0.75rem; color: var(--text-light); margin-bottom: 4px;">Status</div>
+                            <span style="padding: 4px 10px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; ${getApplicationStatusStyle(app.status)}">${app.status}</span>
+                        </div>
+                        <div style="padding: 12px; background: rgba(0,0,0,0.03); border-radius: 10px;">
+                            <div style="font-size: 0.75rem; color: var(--text-light); margin-bottom: 4px;">Preferred App</div>
+                            <div style="font-weight: 600;">${app.preferred_app_slug || 'Any'}</div>
+                        </div>
+                        <div style="padding: 12px; background: rgba(0,0,0,0.03); border-radius: 10px;">
+                            <div style="font-size: 0.75rem; color: var(--text-light); margin-bottom: 4px;">Hours/Week</div>
+                            <div style="font-weight: 600;">${app.hours_per_week || 10} hours</div>
+                        </div>
+                        <div style="padding: 12px; background: rgba(0,0,0,0.03); border-radius: 10px;">
+                            <div style="font-size: 0.75rem; color: var(--text-light); margin-bottom: 4px;">Referral</div>
+                            <div style="font-weight: 600;">${app.referral_source || 'Unknown'}</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-dark); margin-bottom: 8px;">Motivation</div>
+                        <div style="padding: 14px; background: rgba(0,0,0,0.03); border-radius: 10px; font-size: 0.9rem; line-height: 1.6; color: var(--text-medium);">${app.motivation || 'No motivation provided'}</div>
+                    </div>
+
+                    ${app.experience ? `
+                    <div style="margin-bottom: 16px;">
+                        <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-dark); margin-bottom: 8px;">Experience</div>
+                        <div style="padding: 14px; background: rgba(0,0,0,0.03); border-radius: 10px; font-size: 0.9rem; line-height: 1.6; color: var(--text-medium);">${app.experience}</div>
+                    </div>
+                    ` : ''}
+
+                    <div style="font-size: 0.8rem; color: var(--text-light); margin-bottom: 20px;">
+                        Applied: ${new Date(app.created_at).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </div>
+
+                    ${app.status === 'pending' || app.status === 'under_review' ? `
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="updateApplicationStatus('${app.id}', 'accepted')" style="flex: 1; padding: 14px; background: linear-gradient(135deg, #22c55e, #16a34a); color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer;">Accept</button>
+                        <button onclick="updateApplicationStatus('${app.id}', 'under_review')" style="flex: 1; padding: 14px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer;">Review</button>
+                        <button onclick="updateApplicationStatus('${app.id}', 'rejected')" style="flex: 1; padding: 14px; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer;">Reject</button>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+        }
+
+        async function updateApplicationStatus(appId, newStatus) {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/app_operator_applications?id=eq.${appId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify({
+                        status: newStatus,
+                        reviewed_at: new Date().toISOString()
+                    })
+                });
+
+                if (!response.ok) throw new Error('Update failed');
+
+                // If accepted, create operator record
+                if (newStatus === 'accepted') {
+                    const app = operatorApplicationsData.find(a => a.id === appId);
+                    if (app && app.preferred_app_slug) {
+                        await createOperatorFromApplication(app);
+                    }
+                }
+
+                showToast(`Application ${newStatus}`, 'success');
+                document.getElementById('applicationDetailModal')?.remove();
+                loadOperatorApplications();
+
+            } catch (err) {
+                console.error('Failed to update status:', err);
+                showToast('Failed to update', 'error');
+            }
+        }
+
+        async function createOperatorFromApplication(app) {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/app_operators`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify({
+                        app_slug: app.preferred_app_slug,
+                        user_discord_id: app.discord_id,
+                        user_telegram_id: app.telegram_id,
+                        user_wallet_address: app.wallet_address,
+                        operator_name: app.discord_username || app.email,
+                        ownership_percent: 90,
+                        marketing_budget_monthly: 10000,
+                        status: 'active',
+                        application_id: app.id
+                    })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    console.error('Failed to create operator:', err);
+                    showToast('Application accepted but failed to create operator record', 'warning');
+                } else {
+                    showToast('Operator created successfully!', 'success');
+                }
+            } catch (err) {
+                console.error('Failed to create operator:', err);
             }
         }
 
