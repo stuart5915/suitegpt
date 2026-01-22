@@ -646,10 +646,82 @@
                             <span class="btn-admin-icon">&#128736;</span>
                             <span>App Factory Dashboard</span>
                         </button>
-                        <button class="btn-admin" onclick="window.location.href='/admin/redemptions.html'">
+                        <button class="btn-admin" onclick="toggleRedemptionPanel()">
                             <span class="btn-admin-icon">&#128176;</span>
                             <span>Redemption Dashboard</span>
+                            <span style="margin-left: auto;" id="redemptionArrow">&#9660;</span>
                         </button>
+                    </div>
+
+                    <!-- Redemption Panel (collapsible) -->
+                    <div id="redemptionPanel" style="display: none; margin-top: 16px;">
+                        <div style="border-top: 1px solid rgba(0,0,0,0.1); padding-top: 20px;">
+
+                            <!-- Rate Display -->
+                            <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(255, 149, 0, 0.1)); border-radius: 16px; margin-bottom: 20px;">
+                                <div style="font-size: 2.5rem; font-weight: 900; background: linear-gradient(135deg, var(--accent-purple), var(--accent-orange)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;" id="adminRedemptionRate">--%</div>
+                                <div style="font-size: 0.9rem; color: var(--text-medium);">Current Redemption Rate</div>
+                            </div>
+
+                            <!-- Stats Grid -->
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+                                <div style="background: rgba(255,255,255,0.5); border-radius: 12px; padding: 16px; text-align: center;">
+                                    <div style="font-size: 1.3rem; font-weight: 800; color: var(--accent-purple);" id="adminTotalCredits">--</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-medium);">Total Bonus Credits</div>
+                                </div>
+                                <div style="background: rgba(255,255,255,0.5); border-radius: 12px; padding: 16px; text-align: center;">
+                                    <div style="font-size: 1.3rem; font-weight: 800; color: var(--accent-green);" id="adminReportedValue">$--</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-medium);">Reported Value</div>
+                                </div>
+                                <div style="background: rgba(255,255,255,0.5); border-radius: 12px; padding: 16px; text-align: center;">
+                                    <div style="font-size: 1.3rem; font-weight: 800; color: var(--accent-orange);" id="adminPendingRequests">$--</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-medium);">Pending Requests</div>
+                                </div>
+                                <div style="background: rgba(255,255,255,0.5); border-radius: 12px; padding: 16px; text-align: center;">
+                                    <div style="font-size: 1.3rem; font-weight: 800; color: #3b82f6;" id="adminFundedPool">$--</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-medium);">Funded Pool</div>
+                                </div>
+                            </div>
+
+                            <!-- Report Liquid Value -->
+                            <div style="background: rgba(168, 85, 247, 0.05); border: 1px solid rgba(168, 85, 247, 0.2); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                                <div style="font-weight: 700; margin-bottom: 12px; color: var(--accent-purple);">Report Liquid Value</div>
+                                <div style="display: flex; gap: 10px;">
+                                    <input type="number" id="adminLiquidValueInput" placeholder="Enter USDC"
+                                           style="flex: 1; padding: 12px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 1rem;"
+                                           oninput="previewAdminRate()">
+                                    <button onclick="adminReportValue()" id="btnAdminReport"
+                                            style="padding: 12px 20px; background: linear-gradient(135deg, var(--accent-purple), #7c3aed); color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer;">
+                                        Update
+                                    </button>
+                                </div>
+                                <div style="font-size: 0.8rem; color: var(--text-light); margin-top: 8px;" id="adminRatePreview">Enter value to preview new rate</div>
+                            </div>
+
+                            <!-- Fund Pool -->
+                            <div style="background: rgba(34, 197, 94, 0.05); border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 12px; padding: 16px;">
+                                <div style="font-weight: 700; margin-bottom: 12px; color: var(--accent-green);">Fund Pool</div>
+                                <div style="display: flex; gap: 10px;">
+                                    <input type="number" id="adminFundInput" placeholder="USDC amount"
+                                           style="flex: 1; padding: 12px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 1rem;">
+                                    <button onclick="adminFundPool()" id="btnAdminFund"
+                                            style="padding: 12px 20px; background: linear-gradient(135deg, var(--accent-green), #10b981); color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer;">
+                                        Fund
+                                    </button>
+                                </div>
+                                <div style="font-size: 0.8rem; color: var(--text-light); margin-top: 8px;">
+                                    <a href="#" onclick="autoFillAdminPending(); return false;" style="color: var(--accent-green);">Fill pending amount</a>
+                                </div>
+                            </div>
+
+                            <!-- Contract Not Deployed Warning -->
+                            <div id="contractNotDeployed" style="display: none; text-align: center; padding: 20px; background: rgba(239, 68, 68, 0.1); border-radius: 12px; margin-top: 16px;">
+                                <div style="font-size: 1.5rem; margin-bottom: 8px;">&#128679;</div>
+                                <div style="font-weight: 700; color: #ef4444;">Contract Not Deployed</div>
+                                <div style="font-size: 0.85rem; color: var(--text-medium);">Deploy UsdcWithdrawals and update the address</div>
+                            </div>
+
+                        </div>
                     </div>
                 </div>
             </div>
@@ -702,6 +774,7 @@
     <script>
         // Contract config
         const SUITE_STAKING_ADDRESS = '0xe8fE3C3f071AbaE0aB2f42E0B9bF6C00347dCcE3';
+        const USDC_WITHDRAWALS_ADDRESS = '0x0000000000000000000000000000000000000000'; // TODO: Update after deploy
         const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'; // Base USDC
         const BASE_CHAIN_ID = 8453;
         const BASE_RPC = 'https://mainnet.base.org';
@@ -715,9 +788,19 @@
         const STAKING_ABI = [
             'function availableCredits(address) view returns (uint256)',
             'function stakedBalance(address) view returns (uint256)',
+            'function totalBonusCredits() view returns (uint256)',
             'function buyAndStake(uint256 usdcAmount) external',
             'function withdraw(uint256 creditAmount) external',
             'function suitePerUsdc() view returns (uint256)'
+        ];
+
+        const WITHDRAWALS_ABI = [
+            'function reportedLiquidValue() view returns (uint256)',
+            'function totalPendingRequests() view returns (uint256)',
+            'function fundedPool() view returns (uint256)',
+            'function getRedemptionPercentage() view returns (uint256)',
+            'function reportLiquidValue(uint256 newValue) external',
+            'function fundPool(uint256 amount) external'
         ];
 
         const ERC20_ABI = [
@@ -1064,6 +1147,173 @@
             setTimeout(() => {
                 toast.classList.remove('show');
             }, 3000);
+        }
+
+        // ============ Redemption Admin Functions ============
+
+        let redemptionPanelOpen = false;
+        let adminData = {};
+
+        function toggleRedemptionPanel() {
+            const panel = document.getElementById('redemptionPanel');
+            const arrow = document.getElementById('redemptionArrow');
+
+            redemptionPanelOpen = !redemptionPanelOpen;
+
+            if (redemptionPanelOpen) {
+                panel.style.display = 'block';
+                arrow.innerHTML = '&#9650;';
+                loadRedemptionData();
+            } else {
+                panel.style.display = 'none';
+                arrow.innerHTML = '&#9660;';
+            }
+        }
+
+        async function loadRedemptionData() {
+            // Check if contract is deployed
+            if (USDC_WITHDRAWALS_ADDRESS === '0x0000000000000000000000000000000000000000') {
+                document.getElementById('contractNotDeployed').style.display = 'block';
+                document.getElementById('adminRedemptionRate').textContent = '--%';
+                document.getElementById('adminTotalCredits').textContent = '--';
+                document.getElementById('adminReportedValue').textContent = '$--';
+                document.getElementById('adminPendingRequests').textContent = '$--';
+                document.getElementById('adminFundedPool').textContent = '$--';
+                return;
+            }
+
+            document.getElementById('contractNotDeployed').style.display = 'none';
+
+            try {
+                const readProvider = new ethers.JsonRpcProvider(BASE_RPC);
+                const withdrawals = new ethers.Contract(USDC_WITHDRAWALS_ADDRESS, WITHDRAWALS_ABI, readProvider);
+                const staking = new ethers.Contract(SUITE_STAKING_ADDRESS, STAKING_ABI, readProvider);
+
+                const [reportedValue, totalPending, fundedPool, redemptionPct, totalBonusCredits] = await Promise.all([
+                    withdrawals.reportedLiquidValue(),
+                    withdrawals.totalPendingRequests(),
+                    withdrawals.fundedPool(),
+                    withdrawals.getRedemptionPercentage().catch(() => 0n),
+                    staking.totalBonusCredits()
+                ]);
+
+                adminData = {
+                    reportedValue: Number(reportedValue) / 1e6,
+                    totalPending: Number(totalPending) / 1e6,
+                    fundedPool: Number(fundedPool) / 1e6,
+                    redemptionPct: Number(redemptionPct) / 1e16,
+                    totalBonusCredits: Number(totalBonusCredits) / 1e18
+                };
+
+                document.getElementById('adminRedemptionRate').textContent = adminData.redemptionPct.toFixed(0) + '%';
+                document.getElementById('adminTotalCredits').textContent = formatAdminNumber(adminData.totalBonusCredits);
+                document.getElementById('adminReportedValue').textContent = '$' + formatAdminNumber(adminData.reportedValue);
+                document.getElementById('adminPendingRequests').textContent = '$' + formatAdminNumber(adminData.totalPending);
+                document.getElementById('adminFundedPool').textContent = '$' + formatAdminNumber(adminData.fundedPool);
+
+            } catch (err) {
+                console.error('Failed to load redemption data:', err);
+            }
+        }
+
+        function formatAdminNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toLocaleString(undefined, { maximumFractionDigits: 2 });
+        }
+
+        function previewAdminRate() {
+            const newValue = parseFloat(document.getElementById('adminLiquidValueInput').value) || 0;
+            const faceValue = adminData.totalBonusCredits / 1000;
+
+            if (faceValue > 0) {
+                const newRate = (newValue / faceValue * 100).toFixed(1);
+                document.getElementById('adminRatePreview').textContent = `New rate: ${newRate}%`;
+            }
+        }
+
+        async function adminReportValue() {
+            const btn = document.getElementById('btnAdminReport');
+            const originalText = btn.textContent;
+
+            try {
+                btn.disabled = true;
+                btn.textContent = '...';
+
+                await ensureBaseNetwork();
+                provider = new ethers.BrowserProvider(window.ethereum);
+                signer = await provider.getSigner();
+
+                const newValue = parseFloat(document.getElementById('adminLiquidValueInput').value);
+                if (!newValue || newValue < 0) throw new Error('Enter a valid value');
+
+                const valueWei = ethers.parseUnits(newValue.toString(), 6);
+                const withdrawals = new ethers.Contract(USDC_WITHDRAWALS_ADDRESS, WITHDRAWALS_ABI, signer);
+
+                btn.textContent = 'Updating...';
+                const tx = await withdrawals.reportLiquidValue(valueWei);
+                await tx.wait();
+
+                showToast('Value updated!', 'success');
+                document.getElementById('adminLiquidValueInput').value = '';
+                await loadRedemptionData();
+
+            } catch (err) {
+                console.error('Failed:', err);
+                showToast(err.message || 'Failed', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        async function adminFundPool() {
+            const btn = document.getElementById('btnAdminFund');
+            const originalText = btn.textContent;
+
+            try {
+                btn.disabled = true;
+                btn.textContent = '...';
+
+                await ensureBaseNetwork();
+                provider = new ethers.BrowserProvider(window.ethereum);
+                signer = await provider.getSigner();
+
+                const amount = parseFloat(document.getElementById('adminFundInput').value);
+                if (!amount || amount <= 0) throw new Error('Enter a valid amount');
+
+                const amountWei = ethers.parseUnits(amount.toString(), 6);
+
+                // Check and approve USDC
+                const usdcContract = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, signer);
+                const allowance = await usdcContract.allowance(await signer.getAddress(), USDC_WITHDRAWALS_ADDRESS);
+
+                if (allowance < amountWei) {
+                    btn.textContent = 'Approving...';
+                    const approveTx = await usdcContract.approve(USDC_WITHDRAWALS_ADDRESS, ethers.MaxUint256);
+                    await approveTx.wait();
+                }
+
+                btn.textContent = 'Funding...';
+                const withdrawals = new ethers.Contract(USDC_WITHDRAWALS_ADDRESS, WITHDRAWALS_ABI, signer);
+                const tx = await withdrawals.fundPool(amountWei);
+                await tx.wait();
+
+                showToast('Pool funded!', 'success');
+                document.getElementById('adminFundInput').value = '';
+                await loadRedemptionData();
+
+            } catch (err) {
+                console.error('Failed:', err);
+                showToast(err.message || 'Failed', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        function autoFillAdminPending() {
+            document.getElementById('adminFundInput').value = adminData.totalPending.toFixed(2);
         }
     </script>
 </body>
