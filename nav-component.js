@@ -52,54 +52,7 @@
         </div>
     `;
 
-    // Inject bottom nav for mobile
-    const bottomNavHtml = `
-        <nav class="bottom-nav" id="bottom-nav">
-            <div class="bottom-nav-inner">
-                <a href="/" class="bottom-nav-item">
-                    <span class="nav-icon">&#127968;</span>
-                    <span class="nav-label">Home</span>
-                </a>
-                <a href="/docs/" class="bottom-nav-item">
-                    <span class="nav-icon">&#128218;</span>
-                    <span class="nav-label">Docs</span>
-                </a>
-                <a href="/learn.html" class="bottom-nav-item">
-                    <span class="nav-icon">&#128214;</span>
-                    <span class="nav-label">Learn</span>
-                </a>
-                <button class="bottom-nav-item" onclick="toggleBottomNavSubmenu(this, 'community')">
-                    <span class="nav-icon">&#128172;</span>
-                    <span class="nav-label">Community</span>
-                    <div class="bottom-nav-submenu">
-                        <a href="https://x.com/glosuiteapp" target="_blank" rel="noopener">
-                            <span class="submenu-icon">&#120143;</span>
-                            <span>Follow on X</span>
-                        </a>
-                        <a href="https://t.me/getsuite" target="_blank" rel="noopener">
-                            <span class="submenu-icon">&#9993;</span>
-                            <span>Telegram</span>
-                        </a>
-                    </div>
-                </button>
-                <button class="bottom-nav-item" onclick="toggleBottomNavSubmenu(this, 'legal')">
-                    <span class="nav-icon">&#9878;</span>
-                    <span class="nav-label">Legal</span>
-                    <div class="bottom-nav-submenu">
-                        <a href="/privacy.html">
-                            <span class="submenu-icon">&#128274;</span>
-                            <span>Privacy</span>
-                        </a>
-                        <a href="/terms.html">
-                            <span class="submenu-icon">&#128220;</span>
-                            <span>Terms</span>
-                        </a>
-                    </div>
-                </button>
-            </div>
-        </nav>
-    `;
-    document.body.insertAdjacentHTML('beforeend', bottomNavHtml);
+    // Bottom nav removed - keeping simple top nav only
 
     // Inject connect modal
     const modalHtml = `
