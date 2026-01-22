@@ -18,18 +18,6 @@ const apps = [
         creator_username: 'Stu'
     },
     {
-        name: 'TrueForm',
-        slug: 'trueform',
-        tagline: 'Recovery tracking',
-        description: 'Track your fitness recovery with AI-powered insights',
-        category: 'health',
-        status: 'approved',
-        icon_url: '/assets/icons/trueform-icon.jpg',
-        app_url: null,
-        creator_name: 'SUITE',
-        creator_username: 'Stu'
-    },
-    {
         name: 'OpticRep',
         slug: 'opticrep',
         tagline: 'AI rep counter',
