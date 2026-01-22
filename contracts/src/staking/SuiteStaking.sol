@@ -407,4 +407,19 @@ contract SuiteStaking is Ownable, ReentrancyGuard, Pausable {
 
         emit BonusCreditsRedeemed(user, amount);
     }
+
+    /**
+     * @notice Restore bonus credits (called by withdrawal contract on cancel)
+     * @param user Address to restore credits to
+     * @param amount Amount of bonus credits to restore
+     */
+    function restoreBonusCredits(address user, uint256 amount) external {
+        if (msg.sender != withdrawalContract) revert UnauthorizedWithdrawalContract();
+        if (amount == 0) revert ZeroAmount();
+
+        bonusCredits[user] += amount;
+        totalBonusCredits += amount;
+
+        emit BonusCreditsAdded(user, amount, msg.sender);
+    }
 }
