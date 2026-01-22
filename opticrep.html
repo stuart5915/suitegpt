@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpticRep | AI-Powered Rep Counter</title>
+    <meta name="description" content="Count your workout reps automatically with AI. OpticRep uses your camera to track exercises and count reps in real-time.">
+    <link rel="icon" type="image/png" href="assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="suite-styles.css">
+    <link rel="stylesheet" href="nav.css">
+    <style>
+        body {
+            background: linear-gradient(180deg, #0f172a 0%, #1e3a5f 50%, #0d4f6e 100%);
+            color: white;
+            min-height: 100vh;
+        }
+
+        .hero-section {
+            padding: 140px 24px 80px;
+            text-align: center;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(14, 165, 233, 0.2);
+            padding: 10px 20px;
+            border-radius: 100px;
+            font-size: 0.9rem;
+            color: #7dd3fc;
+            margin-bottom: 32px;
+            border: 1px solid rgba(14, 165, 233, 0.3);
+        }
+
+        .hero-title {
+            font-size: clamp(2rem, 8vw, 4rem);
+            font-weight: 900;
+            margin-bottom: 24px;
+            background: linear-gradient(135deg, #fff 0%, #7dd3fc 50%, #38bdf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.1;
+        }
+
+        .hero-subtitle {
+            font-size: 1.3rem;
+            color: rgba(255, 255, 255, 0.7);
+            max-width: 600px;
+            margin: 0 auto 48px;
+            line-height: 1.7;
+        }
+
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+            color: white;
+            padding: 18px 36px;
+            border-radius: 100px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 32px rgba(14, 165, 233, 0.4);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(14, 165, 233, 0.5);
+        }
+
+        /* Demo Preview */
+        .demo-preview {
+            max-width: 400px;
+            margin: 60px auto 0;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 24px;
+            position: relative;
+        }
+
+        .demo-screen {
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .demo-camera {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, #1e3a5f, #0d4f6e);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .demo-camera::before {
+            content: '';
+            position: absolute;
+            width: 80px;
+            height: 120px;
+            background: rgba(14, 165, 233, 0.3);
+            border: 2px solid #0ea5e9;
+            border-radius: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+        }
+
+        .demo-counter {
+            font-size: 4rem;
+            font-weight: 900;
+            color: #0ea5e9;
+            text-shadow: 0 0 40px rgba(14, 165, 233, 0.5);
+        }
+
+        .demo-exercise {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 8px;
+        }
+
+        /* Features */
+        .features-section {
+            padding: 100px 24px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 16px;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            max-width: 600px;
+            margin: 0 auto 60px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 32px;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-4px);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+        }
+
+        .feature-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .feature-desc {
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.6;
+        }
+
+        /* Exercises */
+        .exercises-section {
+            padding: 80px 24px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .exercises-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 16px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .exercise-tag {
+            background: rgba(14, 165, 233, 0.2);
+            border: 1px solid rgba(14, 165, 233, 0.3);
+            padding: 12px 24px;
+            border-radius: 100px;
+            font-weight: 600;
+            color: #7dd3fc;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 40px 24px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <nav id="main-nav"></nav>
+    <script src="nav-component.js"></script>
+
+    <section class="hero-section">
+        <div class="hero-badge">
+            <span>👁️</span>
+            <span>AI Vision Technology</span>
+        </div>
+        <h1 class="hero-title">Count Reps with Your Camera</h1>
+        <p class="hero-subtitle">
+            OpticRep uses AI computer vision to automatically count your workout reps.
+            Just point your camera and start exercising.
+        </p>
+        <a href="suite-shell.html?app=opticrep" class="cta-button">
+            <span>Start Counting</span>
+            <span>→</span>
+        </a>
+
+        <div class="demo-preview">
+            <div class="demo-screen">
+                <div class="demo-camera">
+                    <span style="font-size: 3rem;">🏋️</span>
+                </div>
+                <div class="demo-counter">12</div>
+                <div class="demo-exercise">Push-ups detected</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="features-section">
+        <h2 class="section-title">Smart Rep Tracking</h2>
+        <p class="section-subtitle">No wearables needed. Just your phone's camera and AI that understands movement.</p>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">📷</div>
+                <h3 class="feature-title">Camera-Based Detection</h3>
+                <p class="feature-desc">Uses your phone or webcam to track body movements and count reps automatically.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3 class="feature-title">Real-Time Counting</h3>
+                <p class="feature-desc">Instant rep counting as you exercise. See your count update with each completed rep.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <h3 class="feature-title">Form Feedback</h3>
+                <p class="feature-desc">Get visual cues when your form needs adjustment to maximize your workout.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3 class="feature-title">Workout History</h3>
+                <p class="feature-desc">Track your progress over time. See how many reps you've done across all workouts.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔇</div>
+                <h3 class="feature-title">Hands-Free</h3>
+                <p class="feature-desc">No buttons to press. Just start your exercise and OpticRep handles the counting.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3 class="feature-title">Privacy First</h3>
+                <p class="feature-desc">All processing happens on-device. Your video never leaves your phone.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="exercises-section">
+        <h2 class="section-title" style="margin-bottom: 40px;">Supported Exercises</h2>
+        <div class="exercises-grid">
+            <span class="exercise-tag">Push-ups</span>
+            <span class="exercise-tag">Squats</span>
+            <span class="exercise-tag">Lunges</span>
+            <span class="exercise-tag">Jumping Jacks</span>
+            <span class="exercise-tag">Burpees</span>
+            <span class="exercise-tag">Sit-ups</span>
+            <span class="exercise-tag">Pull-ups</span>
+            <span class="exercise-tag">Bicep Curls</span>
+            <span class="exercise-tag">Shoulder Press</span>
+            <span class="exercise-tag">And more...</span>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <p>Part of the <a href="/" style="color: #0ea5e9;">SUITE Ecosystem</a></p>
+    </footer>
+</body>
+</html>

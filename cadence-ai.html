@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadence AI | Social Media Content Creation</title>
+    <meta name="description" content="AI-powered social media content scheduling and creation. Generate engaging posts, schedule them, and grow your audience.">
+    <link rel="icon" type="image/png" href="assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="suite-styles.css">
+    <link rel="stylesheet" href="nav.css">
+    <style>
+        body {
+            background: linear-gradient(180deg, #0f172a 0%, #1e1b4b 50%, #3730a3 100%);
+            color: white;
+            min-height: 100vh;
+        }
+
+        .hero-section {
+            padding: 140px 24px 80px;
+            text-align: center;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(251, 146, 60, 0.2);
+            padding: 10px 20px;
+            border-radius: 100px;
+            font-size: 0.9rem;
+            color: #fdba74;
+            margin-bottom: 32px;
+            border: 1px solid rgba(251, 146, 60, 0.3);
+        }
+
+        .hero-title {
+            font-size: clamp(2rem, 8vw, 4rem);
+            font-weight: 900;
+            margin-bottom: 24px;
+            background: linear-gradient(135deg, #fff 0%, #fdba74 50%, #fb923c 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.1;
+        }
+
+        .hero-subtitle {
+            font-size: 1.3rem;
+            color: rgba(255, 255, 255, 0.7);
+            max-width: 600px;
+            margin: 0 auto 48px;
+            line-height: 1.7;
+        }
+
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            color: white;
+            padding: 18px 36px;
+            border-radius: 100px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 32px rgba(249, 115, 22, 0.4);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(249, 115, 22, 0.5);
+        }
+
+        /* Demo Preview */
+        .demo-preview {
+            max-width: 500px;
+            margin: 60px auto 0;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 24px;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .calendar-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .calendar-nav {
+            display: flex;
+            gap: 8px;
+        }
+
+        .calendar-nav button {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: transparent;
+            color: white;
+            cursor: pointer;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            position: relative;
+        }
+
+        .calendar-day.has-post::after {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: #f97316;
+            border-radius: 50%;
+            position: absolute;
+            bottom: 4px;
+        }
+
+        .calendar-day.today {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            font-weight: 700;
+        }
+
+        .post-preview {
+            margin-top: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 16px;
+        }
+
+        .post-preview-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .post-avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .post-platform {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .post-content {
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .post-tag {
+            display: inline-block;
+            background: rgba(249, 115, 22, 0.2);
+            color: #fdba74;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            margin-top: 10px;
+        }
+
+        /* Features */
+        .features-section {
+            padding: 100px 24px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 16px;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            max-width: 600px;
+            margin: 0 auto 60px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 32px;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-4px);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+        }
+
+        .feature-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .feature-desc {
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.6;
+        }
+
+        /* Platforms */
+        .platforms-section {
+            padding: 80px 24px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .platforms-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .platform-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px 32px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+        }
+
+        .platform-icon {
+            font-size: 1.5rem;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 40px 24px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <nav id="main-nav"></nav>
+    <script src="nav-component.js"></script>
+
+    <section class="hero-section">
+        <div class="hero-badge">
+            <span>🎯</span>
+            <span>AI Content Creator</span>
+        </div>
+        <h1 class="hero-title">Content That<br>Creates Itself</h1>
+        <p class="hero-subtitle">
+            Let AI write your social media posts, schedule them at optimal times,
+            and grow your audience on autopilot.
+        </p>
+        <a href="suite-shell.html?app=cadence-ai" class="cta-button">
+            <span>Start Creating</span>
+            <span>→</span>
+        </a>
+
+        <div class="demo-preview">
+            <div class="calendar-header">
+                <span class="calendar-title">📅 January 2026</span>
+                <div class="calendar-nav">
+                    <button>←</button>
+                    <button>→</button>
+                </div>
+            </div>
+            <div class="calendar-grid">
+                <div class="calendar-day">S</div>
+                <div class="calendar-day">M</div>
+                <div class="calendar-day">T</div>
+                <div class="calendar-day">W</div>
+                <div class="calendar-day">T</div>
+                <div class="calendar-day">F</div>
+                <div class="calendar-day">S</div>
+                <div class="calendar-day">19</div>
+                <div class="calendar-day has-post">20</div>
+                <div class="calendar-day">21</div>
+                <div class="calendar-day today has-post">22</div>
+                <div class="calendar-day has-post">23</div>
+                <div class="calendar-day">24</div>
+                <div class="calendar-day has-post">25</div>
+            </div>
+            <div class="post-preview">
+                <div class="post-preview-header">
+                    <div class="post-avatar">🐦</div>
+                    <div>
+                        <div style="font-weight: 600;">Scheduled for Today</div>
+                        <div class="post-platform">Twitter • 2:00 PM</div>
+                    </div>
+                </div>
+                <div class="post-content">
+                    🚀 Just shipped a new feature that our users have been asking for!
+
+                    Sometimes the best product decisions come from listening to your community.
+                </div>
+                <span class="post-tag">✨ AI Generated</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="features-section">
+        <h2 class="section-title">Your Social Media Copilot</h2>
+        <p class="section-subtitle">Create weeks of content in minutes. Schedule once, engage always.</p>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">✍️</div>
+                <h3 class="feature-title">AI Content Writing</h3>
+                <p class="feature-desc">Generate engaging posts tailored to each platform. Just describe your topic.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📅</div>
+                <h3 class="feature-title">Smart Scheduling</h3>
+                <p class="feature-desc">AI picks the best times to post based on when your audience is most active.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔄</div>
+                <h3 class="feature-title">Content Recycling</h3>
+                <p class="feature-desc">Repurpose your best content. Turn one idea into posts for every platform.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3 class="feature-title">Analytics</h3>
+                <p class="feature-desc">Track what works. See engagement metrics and optimize your strategy.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎨</div>
+                <h3 class="feature-title">Brand Voice</h3>
+                <p class="feature-desc">Train AI on your writing style. Every post sounds authentically you.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">💬</div>
+                <h3 class="feature-title">Thread Generator</h3>
+                <p class="feature-desc">Turn long-form content into engaging Twitter/X threads automatically.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="platforms-section">
+        <h2 class="section-title" style="margin-bottom: 40px;">Supported Platforms</h2>
+        <div class="platforms-grid">
+            <div class="platform-item">
+                <span class="platform-icon">🐦</span>
+                <span>Twitter / X</span>
+            </div>
+            <div class="platform-item">
+                <span class="platform-icon">📸</span>
+                <span>Instagram</span>
+            </div>
+            <div class="platform-item">
+                <span class="platform-icon">💼</span>
+                <span>LinkedIn</span>
+            </div>
+            <div class="platform-item">
+                <span class="platform-icon">📘</span>
+                <span>Facebook</span>
+            </div>
+            <div class="platform-item">
+                <span class="platform-icon">🧵</span>
+                <span>Threads</span>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <p>Part of the <a href="/" style="color: #f97316;">SUITE Ecosystem</a></p>
+    </footer>
+</body>
+</html>
