@@ -595,7 +595,7 @@ Script.complete();</pre>
 
         // Check for logged in user
         async function checkUser() {
-            const telegramAuth = localStorage.getItem('telegram_auth');
+            const telegramAuth = localStorage.getItem('telegram_user');
             if (telegramAuth) {
                 try {
                     const auth = JSON.parse(telegramAuth);
@@ -616,35 +616,93 @@ Script.complete();</pre>
 
         function copyTelegramId() {
             const id = document.getElementById('telegramIdValue').textContent;
-            navigator.clipboard.writeText(id).then(() => {
-                const hint = document.querySelector('.telegram-id-hint');
+            const hint = document.querySelector('.telegram-id-hint');
+
+            copyToClipboardSimple(id, () => {
                 hint.textContent = 'Copied!';
-                setTimeout(() => hint.textContent = 'Click to copy', 2000);
+                setTimeout(() => hint.textContent = 'Tap to copy', 2000);
             });
+        }
+
+        function copyToClipboardSimple(text, onSuccess) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(onSuccess).catch(() => {
+                    fallbackCopySimple(text, onSuccess);
+                });
+            } else {
+                fallbackCopySimple(text, onSuccess);
+            }
+        }
+
+        function fallbackCopySimple(text, onSuccess) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                if (onSuccess) onSuccess();
+            } catch (e) {
+                alert('Your ID: ' + text);
+            }
+            document.body.removeChild(textarea);
+        }
+
+        function copyToClipboard(text, btn, originalText) {
+            // Try modern clipboard API first
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showCopied(btn, originalText);
+                }).catch(() => {
+                    fallbackCopy(text, btn, originalText);
+                });
+            } else {
+                fallbackCopy(text, btn, originalText);
+            }
+        }
+
+        function fallbackCopy(text, btn, originalText) {
+            // Fallback for mobile - create textarea, select, copy
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            textarea.style.top = '0';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+
+            try {
+                document.execCommand('copy');
+                showCopied(btn, originalText);
+            } catch (e) {
+                // If all else fails, show the text in an alert for manual copy
+                alert('Copy this text:\n\n' + text.substring(0, 500) + '...');
+            }
+
+            document.body.removeChild(textarea);
+        }
+
+        function showCopied(btn, originalText) {
+            btn.textContent = 'Copied!';
+            btn.classList.add('copied');
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.classList.remove('copied');
+            }, 2000);
         }
 
         function copyScript(btn) {
             const script = document.getElementById('widgetScript').textContent;
-            navigator.clipboard.writeText(script).then(() => {
-                btn.textContent = 'Copied!';
-                btn.classList.add('copied');
-                setTimeout(() => {
-                    btn.textContent = 'Copy';
-                    btn.classList.remove('copied');
-                }, 2000);
-            });
+            copyToClipboard(script, btn, 'Copy');
         }
 
         function copyApiUrl(btn) {
             const url = 'https://rdsmdywbdiskxknluiym.supabase.co/functions/v1/widget-quick-add';
-            navigator.clipboard.writeText(url).then(() => {
-                btn.textContent = 'Copied!';
-                btn.classList.add('copied');
-                setTimeout(() => {
-                    btn.textContent = 'Copy URL';
-                    btn.classList.remove('copied');
-                }, 2000);
-            });
+            copyToClipboard(url, btn, 'Copy URL');
         }
 
         // Initialize
