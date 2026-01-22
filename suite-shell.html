@@ -1621,6 +1621,172 @@
             border-color: rgba(34, 197, 94, 0.4);
         }
 
+        /* Expandable App Card */
+        .app-card.expanded {
+            flex-direction: column;
+            align-items: stretch;
+            padding: 16px;
+            background: rgba(26, 26, 46, 0.98);
+            border-color: rgba(255, 149, 0, 0.4);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .app-card .app-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            width: 100%;
+        }
+
+        .app-card.expanded .app-header {
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 16px;
+        }
+
+        .app-card .app-details {
+            display: none;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .app-card.expanded .app-details {
+            display: flex;
+        }
+
+        .app-card.expanded .app-view-buttons {
+            display: none;
+        }
+
+        .app-details-section {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            padding: 14px;
+        }
+
+        .app-details-section-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--accent-orange);
+            margin-bottom: 10px;
+        }
+
+        .app-details-desc {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .app-details-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .app-feature-tag {
+            padding: 4px 10px;
+            background: rgba(255, 149, 0, 0.1);
+            border: 1px solid rgba(255, 149, 0, 0.2);
+            border-radius: 6px;
+            font-size: 0.75rem;
+            color: var(--accent-orange);
+        }
+
+        .app-details-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .app-action-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .app-action-btn:hover {
+            background: rgba(255, 149, 0, 0.15);
+            border-color: rgba(255, 149, 0, 0.3);
+        }
+
+        .app-action-btn.primary {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            border: none;
+            color: white;
+        }
+
+        .app-action-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(255, 149, 0, 0.4);
+        }
+
+        .app-setup-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .app-setup-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .app-setup-step-num {
+            width: 22px;
+            height: 22px;
+            min-width: 22px;
+            background: rgba(255, 149, 0, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--accent-orange);
+        }
+
+        .app-setup-step-text {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .app-collapse-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 8px;
+        }
+
+        .app-collapse-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
         /* Old expanded styles - can be removed later */
         .expanded-view-options {
             display: flex;
@@ -5471,6 +5637,7 @@
 
         // Emoji fallbacks for apps
         const APP_ICONS = {
+            'lists': '&#x1F4DD;',           // 📝
             'foodvitals': '&#x1F957;',      // 🥗
             'cheshbon': '&#x1F4B0;',        // 💰
             'trueform': '&#x1F3CB;',        // 🏋️
@@ -6180,6 +6347,20 @@
                     throw new Error(apps.message || 'Database error');
                 }
 
+                // Add Lists app (widget system) if not already present
+                if (!apps.find(a => a.slug === 'lists')) {
+                    apps.unshift({
+                        slug: 'lists',
+                        name: 'Lists',
+                        tagline: 'Tasks & shared groceries with iOS widget',
+                        description: 'Manage tasks and groceries with AI-powered sorting. Share lists with family and access everything from your iPhone home screen widget.',
+                        emoji_icon: '📝',
+                        category: 'productivity',
+                        url: '/lists',
+                        status: 'live'
+                    });
+                }
+
                 renderAppsGrid();
             } catch (error) {
                 console.error('Failed to load apps:', error);
@@ -6221,6 +6402,118 @@
             return { name: 'Seed', icon: '🌱', color: '#22c55e', next: 'Sprout', nextAmount: 1000 };
         }
 
+        // ===== EXPANDABLE APP CARDS =====
+        // App-specific details for expanded view
+        const APP_DETAILS = {
+            'lists': {
+                features: ['AI Categorization', 'Shared Lists', 'iOS Widget', 'Quick Add'],
+                setup: [
+                    'Log in with Telegram to sync your lists',
+                    'Add items using the quick-add bar - AI sorts tasks vs groceries',
+                    'Share lists with family using invite links',
+                    'Set up the iOS widget for home screen access'
+                ],
+                setupUrl: '/widget-setup'
+            },
+            'foodvitals': {
+                features: ['Barcode Scanner', 'Nutrition AI', 'Health Tracking', 'Food Diary'],
+                setup: [
+                    'Open the app and allow camera access',
+                    'Scan any food barcode or take a photo',
+                    'Get instant nutrition analysis and health insights'
+                ]
+            },
+            'cheshbon': {
+                features: ['Daily Reflection', 'Habit Tracking', 'AI Insights', 'Progress Charts'],
+                setup: [
+                    'Start with your first daily reflection',
+                    'Answer prompts about your day',
+                    'Track patterns and growth over time'
+                ]
+            },
+            'opticrep': {
+                features: ['Rep Counter', 'Form Analysis', 'Workout Plans', 'Progress Tracking'],
+                setup: [
+                    'Position your phone to see your full body',
+                    'Select an exercise to track',
+                    'AI counts reps and checks your form'
+                ]
+            },
+            'remcast': {
+                features: ['Dream Journal', 'AI Analysis', 'Pattern Detection', 'Sleep Insights'],
+                setup: [
+                    'Record your dreams right when you wake up',
+                    'AI analyzes themes and symbols',
+                    'Discover patterns in your dream life'
+                ]
+            },
+            'trueform': {
+                features: ['Posture Analysis', 'Exercise Guidance', 'Pain Relief', 'PT Exercises'],
+                setup: [
+                    'Take a posture photo or video',
+                    'Get AI analysis of alignment issues',
+                    'Follow personalized exercise recommendations'
+                ]
+            },
+            'notebox': {
+                features: ['Voice Notes', 'AI Transcription', 'Smart Organization', 'Search'],
+                setup: [
+                    'Tap to start recording a voice note',
+                    'AI transcribes and organizes automatically',
+                    'Search across all your notes instantly'
+                ]
+            },
+            'cadence-ai': {
+                features: ['Social Scheduling', 'Content AI', 'Analytics', 'Multi-Platform'],
+                setup: [
+                    'Connect your social media accounts',
+                    'Let AI suggest optimal posting times',
+                    'Schedule and track engagement'
+                ]
+            },
+            'suitehub': {
+                features: ['Portfolio Tracking', 'Yield Analytics', 'DeFi Insights', 'Alerts'],
+                setup: [
+                    'Connect your wallet or enter addresses',
+                    'View your portfolio across chains',
+                    'Track yields and get insights'
+                ]
+            }
+        };
+
+        function getAppDetails(slug) {
+            return APP_DETAILS[slug] || {
+                features: ['AI-Powered', 'Fast', 'Easy to Use'],
+                setup: [
+                    'Open the app',
+                    'Follow the on-screen instructions',
+                    'Start using the features'
+                ]
+            };
+        }
+
+        function toggleAppCard(cardEl, slug) {
+            // Check if already expanded
+            if (cardEl.classList.contains('expanded')) {
+                collapseAppCard(cardEl);
+            } else {
+                // Collapse any other expanded cards first
+                document.querySelectorAll('.app-card.expanded').forEach(card => {
+                    card.classList.remove('expanded');
+                });
+                // Expand this card
+                cardEl.classList.add('expanded');
+                // Scroll into view smoothly
+                setTimeout(() => {
+                    cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 100);
+            }
+        }
+
+        function collapseAppCard(cardEl) {
+            cardEl.classList.remove('expanded');
+        }
+
         function renderAppsGrid() {
             const grid = document.getElementById('appsGrid');
             const loading = document.getElementById('appsLoading');
@@ -6252,21 +6545,58 @@
                 const allFilteredApps = getFilteredAndSortedApps();
                 console.log('[renderAppsGrid] Filtered apps:', allFilteredApps.length);
 
-            // Render all apps with Mobile/Web buttons
+            // Render all apps with expandable cards
             grid.innerHTML = allFilteredApps.map(app => {
                 const tagline = app.tagline || app.description || 'AI-powered app';
                 const shortTagline = tagline.length > 50 ? tagline.substring(0, 50) + '...' : tagline;
+                const fullDesc = app.description || tagline;
+                const appDetails = getAppDetails(app.slug);
 
                 return `
-                    <div class="app-card" data-slug="${app.slug}">
-                        <div class="app-icon">${getAppIcon(app)}</div>
-                        <div class="app-info">
-                            <div class="app-name">${app.name}</div>
-                            <div class="app-tagline">${shortTagline}</div>
+                    <div class="app-card" data-slug="${app.slug}" onclick="toggleAppCard(this, '${app.slug}')">
+                        <div class="app-header">
+                            <div class="app-icon">${getAppIcon(app)}</div>
+                            <div class="app-info">
+                                <div class="app-name">${app.name}</div>
+                                <div class="app-tagline">${shortTagline}</div>
+                            </div>
+                            <div class="app-view-buttons">
+                                <button class="view-btn" onclick="event.stopPropagation(); openApp('${app.slug}')" title="Open app">View</button>
+                            </div>
                         </div>
-                        <div class="app-view-buttons">
-                            <button class="view-btn mobile" onclick="event.stopPropagation(); openAppMobile('${app.slug}')" title="Mobile view">Mobile</button>
-                            <button class="view-btn web" onclick="event.stopPropagation(); openAppFullscreen('${app.slug}')" title="Web view">Web</button>
+                        <div class="app-details">
+                            <div class="app-details-section">
+                                <div class="app-details-section-title">About</div>
+                                <div class="app-details-desc">${fullDesc}</div>
+                                ${appDetails.features ? `
+                                <div class="app-details-features">
+                                    ${appDetails.features.map(f => `<span class="app-feature-tag">${f}</span>`).join('')}
+                                </div>` : ''}
+                            </div>
+                            ${appDetails.setup ? `
+                            <div class="app-details-section">
+                                <div class="app-details-section-title">Getting Started</div>
+                                <div class="app-setup-steps">
+                                    ${appDetails.setup.map((step, i) => `
+                                        <div class="app-setup-step">
+                                            <div class="app-setup-step-num">${i + 1}</div>
+                                            <div class="app-setup-step-text">${step}</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>` : ''}
+                            <div class="app-details-actions">
+                                <button class="app-action-btn primary" onclick="event.stopPropagation(); openApp('${app.slug}')">
+                                    Open App
+                                </button>
+                                ${appDetails.setupUrl ? `
+                                <a href="${appDetails.setupUrl}" class="app-action-btn" onclick="event.stopPropagation();">
+                                    Setup Guide
+                                </a>` : ''}
+                            </div>
+                            <button class="app-collapse-btn" onclick="event.stopPropagation(); collapseAppCard(this.closest('.app-card'));">
+                                Collapse
+                            </button>
                         </div>
                     </div>
                 `;
@@ -6374,6 +6704,12 @@
         function openApp(slug, forceMode = null) {
             const app = apps.find(a => a.slug === slug);
             if (!app) return;
+
+            // Special handling for apps with direct URLs (like Lists)
+            if (app.slug === 'lists') {
+                window.location.href = '/lists';
+                return;
+            }
 
             // Check if on mobile (< 900px) - always fullscreen
             const isMobile = window.innerWidth < 900;
