@@ -10,7 +10,7 @@
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
 
     // SuiteStaking contract config (Base mainnet)
-    const SUITE_STAKING_ADDRESS = '0xe8fE3C3f071AbaE0aB2f42E0B9bF6C00347dCcE3';
+    const SUITE_STAKING_ADDRESS = '0x539d3fE65339c0dA7aaa6D0a528b520d8B010F54';
     const SUITE_STAKING_ABI = [
         'function availableCredits(address) view returns (uint256)',
         'function stakedBalance(address) view returns (uint256)'
