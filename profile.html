@@ -1377,6 +1377,46 @@
             document.getElementById('fiatPayText').textContent = `Pay $${amount} with Card`;
         }
 
+        // Ensure user exists in Supabase before checkout
+        async function ensureUserExists(walletAddress) {
+            const lowerWallet = walletAddress.toLowerCase();
+
+            // Check if user exists
+            const checkResponse = await fetch(`${SUPABASE_URL}/rest/v1/users?wallet_address=eq.${lowerWallet}&select=id`, {
+                headers: {
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                }
+            });
+
+            const users = await checkResponse.json();
+
+            if (users.length === 0) {
+                // Create user
+                const createResponse = await fetch(`${SUPABASE_URL}/rest/v1/users`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify({
+                        wallet_address: lowerWallet,
+                        credits: 0,
+                        bonus_credits: 0
+                    })
+                });
+
+                if (!createResponse.ok) {
+                    console.error('Failed to create user:', await createResponse.text());
+                    throw new Error('Failed to create user account');
+                }
+
+                console.log('Created new user for wallet:', lowerWallet);
+            }
+        }
+
         async function initiateStripeCheckout() {
             const amount = parseFloat(document.getElementById('fiatAmount').value) || 0;
             const wallet = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWalletAddress');
@@ -1394,9 +1434,14 @@
             const btn = document.getElementById('btnFiatPay');
             const originalText = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = '<span>Redirecting to Stripe...</span>';
+            btn.innerHTML = '<span>Setting up...</span>';
 
             try {
+                // Ensure user exists in database before checkout
+                await ensureUserExists(wallet);
+
+                btn.innerHTML = '<span>Redirecting to Stripe...</span>';
+
                 const response = await fetch('/api/create-checkout', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
