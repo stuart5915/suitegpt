@@ -1391,6 +1391,576 @@
         .modal {
             position: relative;
         }
+
+        /* ═══════════════════════════════════════════════════════════
+           AI CLUB FITTING FLOW
+           ═══════════════════════════════════════════════════════════ */
+
+        .fitting-overlay {
+            position: fixed;
+            inset: 0;
+            background: #0d1f0d;
+            z-index: 3000;
+            display: none;
+            flex-direction: column;
+        }
+
+        .fitting-overlay.active {
+            display: flex;
+        }
+
+        .fitting-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .fitting-header h2 {
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .fitting-close {
+            width: 36px;
+            height: 36px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .fitting-progress {
+            display: flex;
+            gap: 6px;
+            padding: 16px 20px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .progress-dot {
+            flex: 1;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            transition: all 0.3s;
+        }
+
+        .progress-dot.completed {
+            background: #4ade80;
+        }
+
+        .progress-dot.active {
+            background: rgba(74, 222, 128, 0.5);
+        }
+
+        .fitting-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .fitting-step {
+            display: none;
+            flex-direction: column;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .fitting-step.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .ai-message {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .ai-avatar {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .ai-bubble {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 20px 20px 20px 4px;
+            padding: 16px 20px;
+            font-size: 1.05rem;
+            line-height: 1.6;
+            max-width: 85%;
+        }
+
+        .ai-bubble strong {
+            color: #4ade80;
+        }
+
+        .fitting-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: auto;
+            padding-top: 20px;
+        }
+
+        .fitting-option {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 18px 20px;
+            text-align: left;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .fitting-option:hover {
+            background: rgba(74, 222, 128, 0.1);
+            border-color: rgba(74, 222, 128, 0.3);
+        }
+
+        .fitting-option.selected {
+            background: rgba(74, 222, 128, 0.15);
+            border-color: #4ade80;
+        }
+
+        .fitting-option .option-icon {
+            font-size: 1.4rem;
+        }
+
+        .fitting-option .option-text {
+            flex: 1;
+        }
+
+        .fitting-option .option-desc {
+            font-size: 0.85rem;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 4px;
+        }
+
+        /* Results Screen */
+        .results-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .results-header h2 {
+            font-size: 1.6rem;
+            margin-bottom: 8px;
+        }
+
+        .results-header p {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .recommendation-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .recommendation-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .recommendation-card.best-match {
+            border-color: #4ade80;
+            background: rgba(74, 222, 128, 0.08);
+        }
+
+        .recommendation-badge {
+            display: inline-block;
+            background: #4ade80;
+            color: #0d1f0d;
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .recommendation-top {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .recommendation-image {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #2d5a2d, #1a3d1a);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            flex-shrink: 0;
+        }
+
+        .recommendation-info h3 {
+            font-size: 1.2rem;
+            margin-bottom: 4px;
+        }
+
+        .recommendation-info .price {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #4ade80;
+        }
+
+        .recommendation-why {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 14px 16px;
+        }
+
+        .recommendation-why h4 {
+            font-size: 0.8rem;
+            color: #4ade80;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .recommendation-why p {
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.5;
+        }
+
+        .recommendation-cta {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .recommendation-cta .btn {
+            flex: 1;
+            justify-content: center;
+        }
+
+        /* Cart Drawer */
+        .cart-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 4000;
+            display: none;
+            justify-content: flex-end;
+        }
+
+        .cart-overlay.active {
+            display: flex;
+        }
+
+        .cart-drawer {
+            width: 100%;
+            max-width: 400px;
+            background: #1a3d1a;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        .cart-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .cart-header h2 {
+            font-size: 1.3rem;
+        }
+
+        .cart-items {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .cart-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .cart-item-image {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #2d5a2d, #1a3d1a);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+        }
+
+        .cart-item-info {
+            flex: 1;
+        }
+
+        .cart-item-name {
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .cart-item-price {
+            color: #4ade80;
+            font-weight: 600;
+        }
+
+        .cart-item-remove {
+            width: 32px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+        }
+
+        .cart-empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .cart-empty-icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+        }
+
+        .cart-footer {
+            padding: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .cart-total {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .cart-total .amount {
+            color: #4ade80;
+        }
+
+        /* Checkout Form */
+        .checkout-section {
+            padding: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .checkout-section h3 {
+            font-size: 1rem;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .form-field {
+            flex: 1;
+        }
+
+        .form-field label {
+            display: block;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 6px;
+        }
+
+        .form-field input, .form-field select {
+            width: 100%;
+            padding: 12px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        .form-field input:focus, .form-field select:focus {
+            outline: none;
+            border-color: #4ade80;
+        }
+
+        .form-field input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Order Confirmation */
+        .order-confirmation {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .confirmation-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            margin: 0 auto 24px;
+        }
+
+        .order-confirmation h2 {
+            font-size: 1.6rem;
+            margin-bottom: 8px;
+        }
+
+        .order-confirmation p {
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 24px;
+        }
+
+        .order-details {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: left;
+            margin-bottom: 24px;
+        }
+
+        .order-detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .order-detail-row:last-child {
+            border-bottom: none;
+            font-weight: 700;
+        }
+
+        .order-detail-row .label {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* Find Your Club CTA */
+        .find-club-cta {
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .find-club-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(74, 222, 128, 0.3);
+        }
+
+        .find-club-cta h2 {
+            color: #0d1f0d;
+            font-size: 1.4rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .find-club-cta p {
+            color: rgba(13, 31, 13, 0.7);
+            margin-bottom: 16px;
+        }
+
+        .find-club-cta .btn {
+            background: #0d1f0d;
+            color: #4ade80;
+        }
+
+        .find-club-cta .btn:hover {
+            background: #1a3d1a;
+        }
+
+        @media (max-width: 480px) {
+            .fitting-content {
+                padding: 20px 16px;
+            }
+
+            .ai-bubble {
+                font-size: 0.95rem;
+                padding: 14px 16px;
+            }
+
+            .fitting-option {
+                padding: 14px 16px;
+            }
+
+            .recommendation-card {
+                padding: 16px;
+            }
+
+            .recommendation-top {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .cart-drawer {
+                max-width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1453,11 +2023,18 @@
                 </div>
             </div>
 
+            <!-- AI Club Fitting CTA -->
+            <div class="find-club-cta" onclick="startFitting()">
+                <h2>🤖 Find Your Perfect Club</h2>
+                <p>Answer a few quick questions and get personalized recommendations</p>
+                <button class="btn">Start AI Fitting →</button>
+            </div>
+
             <div class="feature-grid">
-                <div class="feature-card" onclick="showSection('shop')">
-                    <div class="feature-icon">🏌️</div>
-                    <div class="feature-name">Shop Clubs</div>
-                    <div class="feature-desc">Find your perfect putter</div>
+                <div class="feature-card" onclick="startFitting()">
+                    <div class="feature-icon">🎯</div>
+                    <div class="feature-name">AI Fitting</div>
+                    <div class="feature-desc">Get matched to your club</div>
                 </div>
                 <div class="feature-card" onclick="showSection('courses')">
                     <div class="feature-icon">🗺️</div>
@@ -1965,29 +2542,328 @@
         </div>
     </div>
 
+    <!-- AI Club Fitting Flow -->
+    <div class="fitting-overlay" id="fittingOverlay">
+        <div class="fitting-header">
+            <h2>🤖 AI Club Fitting</h2>
+            <button class="fitting-close" onclick="closeFitting()">×</button>
+        </div>
+
+        <div class="fitting-progress">
+            <div class="progress-dot" id="prog1"></div>
+            <div class="progress-dot" id="prog2"></div>
+            <div class="progress-dot" id="prog3"></div>
+            <div class="progress-dot" id="prog4"></div>
+            <div class="progress-dot" id="prog5"></div>
+        </div>
+
+        <div class="fitting-content">
+            <!-- Step 1: Skill Level -->
+            <div class="fitting-step" id="step1">
+                <div class="ai-message">
+                    <div class="ai-avatar">🤖</div>
+                    <div class="ai-bubble">
+                        Hey there! I'm your <strong>AI Club Fitter</strong>. I'll help you find the perfect club based on your game. Let's start simple — what's your skill level?
+                    </div>
+                </div>
+                <div class="fitting-options">
+                    <button class="fitting-option" onclick="selectOption(1, 'beginner')">
+                        <span class="option-icon">🌱</span>
+                        <div class="option-text">
+                            Beginner
+                            <div class="option-desc">New to golf or still learning basics</div>
+                        </div>
+                    </button>
+                    <button class="fitting-option" onclick="selectOption(1, 'intermediate')">
+                        <span class="option-icon">📈</span>
+                        <div class="option-text">
+                            Intermediate
+                            <div class="option-desc">Comfortable on the course, working on consistency</div>
+                        </div>
+                    </button>
+                    <button class="fitting-option" onclick="selectOption(1, 'advanced')">
+                        <span class="option-icon">🏆</span>
+                        <div class="option-text">
+                            Advanced
+                            <div class="option-desc">Low handicap, focus on fine-tuning</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 2: What Club -->
+            <div class="fitting-step" id="step2">
+                <div class="ai-message">
+                    <div class="ai-avatar">🤖</div>
+                    <div class="ai-bubble">
+                        Great! Now, what type of club are you looking for today?
+                    </div>
+                </div>
+                <div class="fitting-options">
+                    <button class="fitting-option" onclick="selectOption(2, 'putter')">
+                        <span class="option-icon">🎯</span>
+                        <div class="option-text">
+                            Putter
+                            <div class="option-desc">For the greens — where it all counts</div>
+                        </div>
+                    </button>
+                    <button class="fitting-option" onclick="selectOption(2, 'driver')">
+                        <span class="option-icon">💨</span>
+                        <div class="option-text">
+                            Driver
+                            <div class="option-desc">Maximum distance off the tee</div>
+                        </div>
+                    </button>
+                    <button class="fitting-option" onclick="selectOption(2, 'irons')">
+                        <span class="option-icon">⛳</span>
+                        <div class="option-text">
+                            Irons
+                            <div class="option-desc">Approach shots and course management</div>
+                        </div>
+                    </button>
+                    <button class="fitting-option" onclick="selectOption(2, 'wedge')">
+                        <span class="option-icon">🏌️</span>
+                        <div class="option-text">
+                            Wedge
+                            <div class="option-desc">Short game and getting out of trouble</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 3: Biggest Challenge -->
+            <div class="fitting-step" id="step3">
+                <div class="ai-message">
+                    <div class="ai-avatar">🤖</div>
+                    <div class="ai-bubble">
+                        <span id="challengeQuestion">What's your biggest challenge with putting right now?</span>
+                    </div>
+                </div>
+                <div class="fitting-options" id="challengeOptions">
+                    <!-- Options populated by JS based on club type -->
+                </div>
+            </div>
+
+            <!-- Step 4: Budget -->
+            <div class="fitting-step" id="step4">
+                <div class="ai-message">
+                    <div class="ai-avatar">🤖</div>
+                    <div class="ai-bubble">
+                        Almost there! What's your budget range for this purchase?
+                    </div>
+                </div>
+                <div class="fitting-options">
+                    <button class="fitting-option" onclick="selectOption(4, 'budget')">
+                        <span class="option-icon">💵</span>
+                        <div class="option-text">
+                            Under $200
+                            <div class="option-desc">Great value options</div>
+                        </div>
+                    </button>
+                    <button class="fitting-option" onclick="selectOption(4, 'mid')">
+                        <span class="option-icon">💰</span>
+                        <div class="option-text">
+                            $200 - $350
+                            <div class="option-desc">Performance sweet spot</div>
+                        </div>
+                    </button>
+                    <button class="fitting-option" onclick="selectOption(4, 'premium')">
+                        <span class="option-icon">💎</span>
+                        <div class="option-text">
+                            $350+
+                            <div class="option-desc">Tour-level equipment</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 5: Results -->
+            <div class="fitting-step" id="step5">
+                <div class="results-header">
+                    <h2>🎯 Your Perfect Matches</h2>
+                    <p>Based on your answers, here's what I recommend:</p>
+                </div>
+                <div id="recommendationsList">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cart Drawer -->
+    <div class="cart-overlay" id="cartOverlay" onclick="if(event.target === this) closeCart()">
+        <div class="cart-drawer">
+            <div class="cart-header">
+                <h2>🛒 Your Cart</h2>
+                <button class="fitting-close" onclick="closeCart()">×</button>
+            </div>
+
+            <div class="cart-items" id="cartItems">
+                <!-- Cart items populated by JS -->
+            </div>
+
+            <div class="cart-footer" id="cartFooter" style="display: none;">
+                <div class="cart-total">
+                    <span>Total</span>
+                    <span class="amount" id="cartTotal">$0</span>
+                </div>
+
+                <div class="checkout-section">
+                    <h3>📦 Shipping Info</h3>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label>Full Name</label>
+                            <input type="text" id="shipName" placeholder="John Smith">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label>Email</label>
+                            <input type="email" id="shipEmail" placeholder="john@email.com">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label>Address</label>
+                            <input type="text" id="shipAddress" placeholder="123 Golf Lane">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label>City</label>
+                            <input type="text" id="shipCity" placeholder="Pebble Beach">
+                        </div>
+                        <div class="form-field">
+                            <label>State</label>
+                            <input type="text" id="shipState" placeholder="CA">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label>ZIP Code</label>
+                            <input type="text" id="shipZip" placeholder="93953">
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" style="width: 100%;" onclick="proceedToCheckout()">
+                    💳 Checkout with Stripe
+                </button>
+            </div>
+
+            <!-- Order Confirmation (shown after purchase) -->
+            <div class="order-confirmation" id="orderConfirmation" style="display: none;">
+                <div class="confirmation-icon">✓</div>
+                <h2>Order Confirmed!</h2>
+                <p>Thanks for your purchase. Your order is on its way!</p>
+                <div class="order-details" id="orderDetails">
+                    <!-- Populated by JS -->
+                </div>
+                <button class="btn btn-primary" onclick="closeCart(); location.reload();">Continue Shopping</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let cart = [];
         let currentProduct = null;
+        let fittingAnswers = {};
+        let currentStep = 1;
 
+        // Product catalog with more details for recommendations
         const products = {
-            blade: { name: 'Blade Putter', price: 249, desc: 'Classic blade design for players who prefer feel and feedback. Precision milled from 303 stainless steel.' },
-            mallet: { name: 'Mallet Putter', price: 279, desc: 'High MOI design with advanced alignment technology. Exceptional forgiveness on off-center strikes.' },
-            tour: { name: 'Tour Blade', price: 349, desc: 'Tour-proven design used by professionals. Carbon steel construction with tungsten weights.' },
-            classic: { name: 'Classic Anser', price: 199, desc: 'Timeless Anser-style head shape. Perfect balance of feel and forgiveness for all skill levels.' }
+            blade: {
+                id: 'blade',
+                name: 'Blade Putter',
+                price: 249,
+                desc: 'Classic blade design for players who prefer feel and feedback. Precision milled from 303 stainless steel.',
+                forSkill: ['intermediate', 'advanced'],
+                forChallenge: ['feel', 'distance'],
+                budget: 'mid'
+            },
+            mallet: {
+                id: 'mallet',
+                name: 'Mallet Putter',
+                price: 279,
+                desc: 'High MOI design with advanced alignment technology. Exceptional forgiveness on off-center strikes.',
+                forSkill: ['beginner', 'intermediate'],
+                forChallenge: ['alignment', 'consistency'],
+                budget: 'mid'
+            },
+            tour: {
+                id: 'tour',
+                name: 'Tour Blade',
+                price: 349,
+                desc: 'Tour-proven design used by professionals. Carbon steel construction with tungsten weights.',
+                forSkill: ['advanced'],
+                forChallenge: ['feel', 'distance'],
+                budget: 'premium'
+            },
+            classic: {
+                id: 'classic',
+                name: 'Classic Anser',
+                price: 199,
+                desc: 'Timeless Anser-style head shape. Perfect balance of feel and forgiveness for all skill levels.',
+                forSkill: ['beginner', 'intermediate'],
+                forChallenge: ['consistency', 'alignment'],
+                budget: 'budget'
+            },
+            proDriver: {
+                id: 'proDriver',
+                name: 'Proto Driver X1',
+                price: 449,
+                desc: 'Maximum forgiveness with adjustable loft and weights. Perfect for players seeking distance and accuracy.',
+                forSkill: ['intermediate', 'advanced'],
+                forChallenge: ['distance', 'accuracy'],
+                budget: 'premium',
+                clubType: 'driver'
+            },
+            speedDriver: {
+                id: 'speedDriver',
+                name: 'Speed Driver',
+                price: 299,
+                desc: 'Lightweight design optimized for swing speed. Great for players looking to add yards off the tee.',
+                forSkill: ['beginner', 'intermediate'],
+                forChallenge: ['distance', 'consistency'],
+                budget: 'mid',
+                clubType: 'driver'
+            }
+        };
+
+        // Challenge options per club type
+        const challengesByClub = {
+            putter: [
+                { value: 'alignment', icon: '🎯', text: 'Alignment', desc: 'Trouble aiming at the target' },
+                { value: 'distance', icon: '📏', text: 'Distance Control', desc: 'Inconsistent putt lengths' },
+                { value: 'consistency', icon: '🔄', text: 'Consistency', desc: 'Stroke feels different every time' },
+                { value: 'feel', icon: '✋', text: 'Feel & Feedback', desc: 'Can\'t feel the putt properly' }
+            ],
+            driver: [
+                { value: 'distance', icon: '💨', text: 'Distance', desc: 'Need more yards off the tee' },
+                { value: 'accuracy', icon: '🎯', text: 'Accuracy', desc: 'Shots going left or right' },
+                { value: 'consistency', icon: '🔄', text: 'Consistency', desc: 'Good shots mixed with bad' },
+                { value: 'slice', icon: '↩️', text: 'Slice/Hook', desc: 'Ball curves too much' }
+            ],
+            irons: [
+                { value: 'distance', icon: '📏', text: 'Distance Gaps', desc: 'Inconsistent yardages' },
+                { value: 'accuracy', icon: '🎯', text: 'Accuracy', desc: 'Missing greens' },
+                { value: 'trajectory', icon: '📈', text: 'Ball Flight', desc: 'Too high or too low' },
+                { value: 'forgiveness', icon: '🛡️', text: 'Forgiveness', desc: 'Mishits hurt too much' }
+            ],
+            wedge: [
+                { value: 'spin', icon: '🌀', text: 'Spin Control', desc: 'Ball doesn\'t check' },
+                { value: 'distance', icon: '📏', text: 'Distance Control', desc: 'Inconsistent yardages' },
+                { value: 'bunker', icon: '🏖️', text: 'Bunker Play', desc: 'Trouble in sand' },
+                { value: 'versatility', icon: '🔧', text: 'Versatility', desc: 'Need more shot options' }
+            ]
         };
 
         function showSection(sectionId) {
-            // Hide all sections
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-
-            // Show selected section
             document.getElementById('section-' + sectionId).classList.add('active');
-
-            // Update tab styles
             document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.bottom-nav-item').forEach(t => t.classList.remove('active'));
 
-            // Find and activate the correct tabs
             document.querySelectorAll('.nav-tab').forEach(t => {
                 if (t.textContent.toLowerCase() === sectionId ||
                     (sectionId === 'home' && t.textContent === 'Home') ||
@@ -1998,17 +2874,348 @@
 
             document.querySelectorAll('.bottom-nav-item').forEach(t => {
                 const label = t.querySelector('span:last-child').textContent.toLowerCase();
-                if (label === sectionId || (sectionId === 'bag' && label === 'home')) {
-                    t.classList.add('active');
-                }
+                if (label === sectionId) t.classList.add('active');
             });
 
-            // Scroll to top
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
+        // ═══════════════════════════════════════════════════════════
+        // AI CLUB FITTING FUNCTIONS
+        // ═══════════════════════════════════════════════════════════
+
+        function startFitting() {
+            fittingAnswers = {};
+            currentStep = 1;
+            document.getElementById('fittingOverlay').classList.add('active');
+            updateProgress();
+            showFittingStep(1);
+        }
+
+        function closeFitting() {
+            document.getElementById('fittingOverlay').classList.remove('active');
+        }
+
+        function updateProgress() {
+            for (let i = 1; i <= 5; i++) {
+                const dot = document.getElementById('prog' + i);
+                dot.classList.remove('completed', 'active');
+                if (i < currentStep) dot.classList.add('completed');
+                if (i === currentStep) dot.classList.add('active');
+            }
+        }
+
+        function showFittingStep(step) {
+            document.querySelectorAll('.fitting-step').forEach(s => s.classList.remove('active'));
+            document.getElementById('step' + step).classList.add('active');
+        }
+
+        function selectOption(step, value) {
+            // Mark selected
+            const options = document.querySelectorAll('#step' + step + ' .fitting-option');
+            options.forEach(o => o.classList.remove('selected'));
+            event.currentTarget.classList.add('selected');
+
+            // Store answer
+            if (step === 1) fittingAnswers.skill = value;
+            if (step === 2) {
+                fittingAnswers.club = value;
+                setupChallengeOptions(value);
+            }
+            if (step === 3) fittingAnswers.challenge = value;
+            if (step === 4) {
+                fittingAnswers.budget = value;
+                generateRecommendations();
+            }
+
+            // Move to next step after delay
+            setTimeout(() => {
+                currentStep = step + 1;
+                updateProgress();
+                showFittingStep(currentStep);
+            }, 300);
+        }
+
+        function setupChallengeOptions(clubType) {
+            const challenges = challengesByClub[clubType] || challengesByClub.putter;
+            const container = document.getElementById('challengeOptions');
+            const questionEl = document.getElementById('challengeQuestion');
+
+            const clubNames = { putter: 'putting', driver: 'driving', irons: 'your irons', wedge: 'your wedge game' };
+            questionEl.textContent = `What's your biggest challenge with ${clubNames[clubType]} right now?`;
+
+            container.innerHTML = challenges.map(c => `
+                <button class="fitting-option" onclick="selectOption(3, '${c.value}')">
+                    <span class="option-icon">${c.icon}</span>
+                    <div class="option-text">
+                        ${c.text}
+                        <div class="option-desc">${c.desc}</div>
+                    </div>
+                </button>
+            `).join('');
+        }
+
+        function generateRecommendations() {
+            const { skill, club, challenge, budget } = fittingAnswers;
+            let recommendations = [];
+
+            // Get relevant products (for now, focus on putters since that's what we have)
+            if (club === 'putter') {
+                const putters = [products.blade, products.mallet, products.tour, products.classic];
+
+                // Score each product
+                putters.forEach(p => {
+                    let score = 0;
+                    if (p.forSkill.includes(skill)) score += 3;
+                    if (p.forChallenge.includes(challenge)) score += 2;
+                    if (p.budget === budget) score += 2;
+                    if (budget === 'mid' && p.budget !== 'premium') score += 1;
+                    if (budget === 'premium') score += 1; // Premium buyers are flexible
+                    recommendations.push({ ...p, score });
+                });
+            } else {
+                // For other club types, show placeholder recommendations
+                recommendations = [
+                    { id: 'proDriver', name: 'Proto Driver X1', price: 449, desc: 'Maximum forgiveness with adjustable loft.', score: 5 },
+                    { id: 'speedDriver', name: 'Speed Driver', price: 299, desc: 'Optimized for swing speed.', score: 4 },
+                    { id: 'blade', name: 'Blade Putter', price: 249, desc: 'Classic design for feel.', score: 3 }
+                ];
+            }
+
+            // Sort by score and take top 3
+            recommendations.sort((a, b) => b.score - a.score);
+            recommendations = recommendations.slice(0, 3);
+
+            // Generate personalized "why" messages
+            const whyMessages = generateWhyMessages(recommendations, fittingAnswers);
+
+            // Render recommendations
+            const container = document.getElementById('recommendationsList');
+            container.innerHTML = recommendations.map((rec, i) => `
+                <div class="recommendation-card ${i === 0 ? 'best-match' : ''}" onclick="selectRecommendation('${rec.id}')">
+                    ${i === 0 ? '<div class="recommendation-badge">⭐ Best Match</div>' : ''}
+                    <div class="recommendation-top">
+                        <div class="recommendation-image">🏌️</div>
+                        <div class="recommendation-info">
+                            <h3>${rec.name}</h3>
+                            <div class="price">$${rec.price}</div>
+                        </div>
+                    </div>
+                    <div class="recommendation-why">
+                        <h4>🎯 Why it's right for you</h4>
+                        <p>${whyMessages[i]}</p>
+                    </div>
+                    <div class="recommendation-cta">
+                        <button class="btn btn-primary" onclick="event.stopPropagation(); addToCartAndClose('${rec.id}', '${rec.name}', ${rec.price})">Add to Cart</button>
+                        <button class="btn btn-secondary" onclick="event.stopPropagation(); openProductModal('${rec.id}')">Details</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function generateWhyMessages(recommendations, answers) {
+            const { skill, club, challenge, budget } = answers;
+            const skillText = { beginner: 'newer golfer', intermediate: 'developing player', advanced: 'experienced player' };
+            const challengeText = {
+                alignment: 'alignment issues',
+                distance: 'distance control',
+                consistency: 'consistency',
+                feel: 'feel and feedback',
+                accuracy: 'accuracy',
+                slice: 'slice correction'
+            };
+
+            return recommendations.map((rec, i) => {
+                if (i === 0) {
+                    return `As a ${skillText[skill]} focused on ${challengeText[challenge] || challenge}, this ${rec.name} is ideal. ${rec.desc} It matches your ${budget === 'budget' ? 'value-focused' : budget === 'premium' ? 'premium' : 'mid-range'} budget perfectly.`;
+                } else if (i === 1) {
+                    return `Great alternative if you want ${rec.budget === 'budget' ? 'more value' : 'different features'}. ${rec.desc}`;
+                } else {
+                    return `Worth considering for its ${rec.forChallenge ? rec.forChallenge[0] : 'versatility'}. ${rec.desc}`;
+                }
+            });
+        }
+
+        function addToCartAndClose(productId, name, price) {
+            addToCart(name, price, productId);
+            closeFitting();
+            setTimeout(() => openCart(), 300);
+        }
+
+        function selectRecommendation(productId) {
+            // Could open details or add directly
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // CART FUNCTIONS
+        // ═══════════════════════════════════════════════════════════
+
+        function openCart() {
+            document.getElementById('cartOverlay').classList.add('active');
+            renderCart();
+        }
+
+        function closeCart() {
+            document.getElementById('cartOverlay').classList.remove('active');
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cartItems');
+            const footer = document.getElementById('cartFooter');
+            const confirmation = document.getElementById('orderConfirmation');
+
+            confirmation.style.display = 'none';
+
+            if (cart.length === 0) {
+                container.innerHTML = `
+                    <div class="cart-empty">
+                        <div class="cart-empty-icon">🛒</div>
+                        <p>Your cart is empty</p>
+                        <button class="btn btn-primary" style="margin-top: 16px;" onclick="closeCart(); startFitting()">Find Your Club</button>
+                    </div>
+                `;
+                footer.style.display = 'none';
+                return;
+            }
+
+            container.innerHTML = cart.map((item, i) => `
+                <div class="cart-item">
+                    <div class="cart-item-image">🏌️</div>
+                    <div class="cart-item-info">
+                        <div class="cart-item-name">${item.name}</div>
+                        <div class="cart-item-price">$${item.price}</div>
+                    </div>
+                    <button class="cart-item-remove" onclick="removeFromCart(${i})">×</button>
+                </div>
+            `).join('');
+
+            const total = cart.reduce((sum, item) => sum + item.price, 0);
+            document.getElementById('cartTotal').textContent = '$' + total;
+            footer.style.display = 'block';
+        }
+
+        function addToCart(name, price, productId = null) {
+            cart.push({ name, price, productId });
+            updateCartBadge();
+            showToast(name + ' added to cart!');
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            updateCartBadge();
+            renderCart();
+        }
+
+        function updateCartBadge() {
+            const badge = document.getElementById('cartBadge');
+            badge.textContent = cart.length;
+            badge.style.display = cart.length > 0 ? 'flex' : 'none';
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // CHECKOUT WITH STRIPE
+        // ═══════════════════════════════════════════════════════════
+
+        async function proceedToCheckout() {
+            const name = document.getElementById('shipName').value.trim();
+            const email = document.getElementById('shipEmail').value.trim();
+            const address = document.getElementById('shipAddress').value.trim();
+            const city = document.getElementById('shipCity').value.trim();
+            const state = document.getElementById('shipState').value.trim();
+            const zip = document.getElementById('shipZip').value.trim();
+
+            // Validate
+            if (!name || !email || !address || !city || !state || !zip) {
+                showToast('Please fill in all shipping fields');
+                return;
+            }
+
+            if (!email.includes('@')) {
+                showToast('Please enter a valid email');
+                return;
+            }
+
+            const total = cart.reduce((sum, item) => sum + item.price, 0);
+            const items = cart.map(item => item.name).join(', ');
+
+            // Create Stripe Checkout session
+            try {
+                showToast('Connecting to Stripe...');
+
+                const response = await fetch('/api/create-proto-checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        items: cart,
+                        total: total,
+                        shipping: { name, email, address, city, state, zip }
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.url) {
+                    // Redirect to Stripe Checkout
+                    window.location.href = data.url;
+                } else if (data.demo) {
+                    // Demo mode - show success
+                    showOrderConfirmation({ name, email, items, total });
+                } else {
+                    showToast('Error creating checkout session');
+                }
+            } catch (error) {
+                console.error('Checkout error:', error);
+                // Fall back to demo mode
+                showOrderConfirmation({ name, email, items, total });
+            }
+        }
+
+        function showOrderConfirmation({ name, email, items, total }) {
+            const container = document.getElementById('cartItems');
+            const footer = document.getElementById('cartFooter');
+            const confirmation = document.getElementById('orderConfirmation');
+
+            container.innerHTML = '';
+            footer.style.display = 'none';
+            confirmation.style.display = 'block';
+
+            document.getElementById('orderDetails').innerHTML = `
+                <div class="order-detail-row">
+                    <span class="label">Order #</span>
+                    <span>PG-${Date.now().toString().slice(-6)}</span>
+                </div>
+                <div class="order-detail-row">
+                    <span class="label">Items</span>
+                    <span>${items}</span>
+                </div>
+                <div class="order-detail-row">
+                    <span class="label">Shipping to</span>
+                    <span>${name}</span>
+                </div>
+                <div class="order-detail-row">
+                    <span class="label">Email</span>
+                    <span>${email}</span>
+                </div>
+                <div class="order-detail-row">
+                    <span class="label">Total</span>
+                    <span style="color: #4ade80; font-weight: 700;">$${total}</span>
+                </div>
+            `;
+
+            // Clear cart
+            cart = [];
+            updateCartBadge();
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // PRODUCT MODAL FUNCTIONS
+        // ═══════════════════════════════════════════════════════════
+
         function openProductModal(productId) {
             currentProduct = products[productId];
+            if (!currentProduct) {
+                currentProduct = { name: productId, price: 249, desc: 'Premium golf equipment.' };
+            }
             document.getElementById('modalTitle').textContent = currentProduct.name;
             document.getElementById('modalDesc').textContent = currentProduct.desc;
             document.getElementById('modalPrice').textContent = '$' + currentProduct.price;
@@ -2019,36 +3226,18 @@
             document.getElementById('productModal').classList.remove('active');
         }
 
-        function addToCart(name, price) {
-            cart.push({ name, price });
-            updateCartBadge();
-            showToast(name + ' added to cart!');
-        }
-
         function addToCartFromModal() {
             if (currentProduct) {
-                addToCart(currentProduct.name, currentProduct.price);
+                addToCart(currentProduct.name, currentProduct.price, currentProduct.id);
                 closeProductModal();
             }
         }
 
-        function updateCartBadge() {
-            document.getElementById('cartBadge').textContent = cart.length;
-        }
-
-        function openCart() {
-            if (cart.length === 0) {
-                showToast('Your cart is empty');
-                return;
-            }
-            const total = cart.reduce((sum, item) => sum + item.price, 0);
-            alert('Cart (' + cart.length + ' items):\n\n' +
-                cart.map(item => item.name + ' - $' + item.price).join('\n') +
-                '\n\nTotal: $' + total);
-        }
+        // ═══════════════════════════════════════════════════════════
+        // UTILITY FUNCTIONS
+        // ═══════════════════════════════════════════════════════════
 
         function showToast(message) {
-            // Create toast if it doesn't exist
             let toast = document.getElementById('toast');
             if (!toast) {
                 toast = document.createElement('div');
@@ -2063,9 +3252,11 @@
                     padding: 12px 24px;
                     border-radius: 100px;
                     font-weight: 700;
-                    z-index: 3000;
+                    z-index: 5000;
                     opacity: 0;
                     transition: opacity 0.3s;
+                    max-width: 90%;
+                    text-align: center;
                 `;
                 document.body.appendChild(toast);
             }
@@ -2075,16 +3266,27 @@
 
             setTimeout(() => {
                 toast.style.opacity = '0';
-            }, 2000);
+            }, 2500);
         }
 
-        // Handle shop category clicks
+        // Shop category clicks
         document.querySelectorAll('.shop-category').forEach(cat => {
             cat.addEventListener('click', function() {
                 document.querySelectorAll('.shop-category').forEach(c => c.classList.remove('active'));
                 this.classList.add('active');
             });
         });
+
+        // Initialize cart badge
+        updateCartBadge();
+
+        // Check for successful payment return
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('success') === 'true') {
+            setTimeout(() => {
+                showToast('Payment successful! Thank you for your order.');
+            }, 500);
+        }
     </script>
 </body>
 </html>
