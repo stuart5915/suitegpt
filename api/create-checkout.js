@@ -6,9 +6,23 @@ import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+// Allowed origins for CORS
+const ALLOWED_ORIGINS = [
+    'https://getsuite.app',
+    'https://www.getsuite.app'
+];
+
+// Validate Ethereum wallet address (0x + 40 hex chars)
+function isValidWalletAddress(address) {
+    return typeof address === 'string' && /^0x[a-fA-F0-9]{40}$/.test(address);
+}
+
 export default async function handler(req, res) {
-    // CORS headers
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    // CORS headers - restrict to allowed origins
+    const origin = req.headers.origin;
+    if (ALLOWED_ORIGINS.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    }
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -24,11 +38,11 @@ export default async function handler(req, res) {
         const { amount, walletAddress } = req.body;
 
         // Validate inputs
-        if (!amount || amount < 1 || amount > 1000) {
+        if (!amount || typeof amount !== 'number' || amount < 1 || amount > 1000) {
             return res.status(400).json({ error: 'Amount must be between $1 and $1000' });
         }
 
-        if (!walletAddress || !walletAddress.startsWith('0x')) {
+        if (!isValidWalletAddress(walletAddress)) {
             return res.status(400).json({ error: 'Valid wallet address required' });
         }
 

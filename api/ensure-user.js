@@ -11,9 +11,23 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// Allowed origins for CORS
+const ALLOWED_ORIGINS = [
+    'https://getsuite.app',
+    'https://www.getsuite.app'
+];
+
+// Validate Ethereum wallet address (0x + 40 hex chars)
+function isValidWalletAddress(address) {
+    return typeof address === 'string' && /^0x[a-fA-F0-9]{40}$/.test(address);
+}
+
 export default async function handler(req, res) {
-    // CORS headers
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    // CORS headers - restrict to allowed origins
+    const origin = req.headers.origin;
+    if (ALLOWED_ORIGINS.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    }
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -28,7 +42,7 @@ export default async function handler(req, res) {
     try {
         const { walletAddress } = req.body;
 
-        if (!walletAddress || !walletAddress.startsWith('0x')) {
+        if (!isValidWalletAddress(walletAddress)) {
             return res.status(400).json({ error: 'Valid wallet address required' });
         }
 
