@@ -20,6 +20,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     sidebar.innerHTML = `
         <div class="sidebar-section">
+            <a href="/docs/roadmap/" class="sidebar-link ${isActive('roadmap.html')}">🗺️ Roadmap</a>
+        </div>
+
+        <div class="sidebar-section">
             <div class="sidebar-title">Learn</div>
             <a href="/docs/" class="sidebar-link ${isActive('index.html') || currentPage === 'docs' ? 'active' : ''}">📚 Getting Started</a>
             <a href="/docs/ai-fleet/" class="sidebar-link ${isActive('ai-fleet.html')}">🤖 AI Fleet</a>
@@ -35,11 +39,10 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
 
         <div class="sidebar-section">
-            <div class="sidebar-title">Wallet</div>
+            <div class="sidebar-title">Treasury</div>
             <a href="/docs/vault/" class="sidebar-link ${isActive('vault.html')}">🏦 SUITE Vault</a>
             <a href="/docs/suite-token/" class="sidebar-link ${isActive('suite-token.html')}">🪙 SUITE Token</a>
             <a href="/docs/wallet-credits/" class="sidebar-link ${isActive('wallet-credits.html')}">💳 Credits</a>
-            <a href="/docs/roadmap/" class="sidebar-link ${isActive('roadmap.html')}">🗺️ Roadmap</a>
         </div>
 
         <div class="sidebar-section">
