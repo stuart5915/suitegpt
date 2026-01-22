@@ -572,10 +572,20 @@
         <div class="profile-container">
             <!-- Not Connected State -->
             <div id="notConnectedState" class="glass-card not-connected">
-                <div class="not-connected-icon">&#128274;</div>
-                <h2>Connect to Continue</h2>
-                <p>Connect your wallet to view your profile, buy credits, and use SUITE apps.</p>
-                <button class="btn-connect-large" onclick="openNavConnectModal()">Connect Wallet</button>
+                <div class="not-connected-icon">&#128100;</div>
+                <h2>Welcome to SUITE</h2>
+                <p>Connect to view your profile, buy credits, and use SUITE apps.</p>
+                <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px;">
+                    <button class="btn-connect-large" onclick="connectWalletFromNav()">
+                        <span style="margin-right: 8px;">&#128279;</span> Connect Wallet
+                    </button>
+                    <button class="btn-connect-large" style="background: linear-gradient(135deg, #0088cc, #00a8e8);" onclick="loginWithTelegramWidget()">
+                        <span style="margin-right: 8px;">&#9993;</span> Continue with Telegram
+                    </button>
+                </div>
+                <p style="font-size: 0.8rem; color: var(--text-light); margin-top: 16px;">
+                    Wallet required to buy credits. Telegram lets you vote &amp; submit ideas.
+                </p>
             </div>
 
             <!-- Connected State (hidden by default) -->
@@ -591,6 +601,7 @@
                             <span class="profile-row-label">Wallet</span>
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <span class="profile-row-value" id="profileWalletAddress">-</span>
+                                <button class="btn-account btn-connect" onclick="connectWalletFromNav()" id="btnConnectWallet" style="display: none;">Connect</button>
                                 <button class="btn-account btn-disconnect" onclick="disconnectWallet(); checkConnection();" id="btnDisconnectWallet">Disconnect</button>
                             </div>
                         </div>
@@ -616,7 +627,7 @@
                         <div class="credits-balance-label">Available Credits</div>
                     </div>
                     <div class="credits-actions">
-                        <button class="btn-credits btn-buy" onclick="openBuyModal()">
+                        <button class="btn-credits btn-buy" onclick="openBuyModal()" id="btnBuy">
                             <span>&#43;</span> Buy Credits
                         </button>
                         <button class="btn-credits btn-withdraw" onclick="openWithdrawModal()" id="btnWithdraw">
@@ -947,12 +958,13 @@
         }
 
         async function loadProfile(wallet, tgUser) {
-            // Display wallet address
+            // Wallet row - show Disconnect button, hide Connect
             document.getElementById('profileWalletAddress').textContent =
                 wallet.slice(0, 6) + '...' + wallet.slice(-4);
+            document.getElementById('btnConnectWallet').style.display = 'none';
             document.getElementById('btnDisconnectWallet').style.display = 'inline-block';
 
-            // Display telegram status
+            // Telegram row - show appropriate button
             if (tgUser) {
                 document.getElementById('profileTelegram').textContent = '@' + (tgUser.username || tgUser.first_name);
                 document.getElementById('btnLinkTelegram').style.display = 'none';
@@ -966,6 +978,10 @@
             // Load credits from contract
             await loadCredits(wallet);
 
+            // Enable buy button (wallet is connected)
+            document.getElementById('btnBuy').disabled = false;
+            document.getElementById('btnBuy').title = '';
+
             // Check if admin
             if (ADMIN_ADDRESSES.includes(wallet.toLowerCase())) {
                 document.getElementById('adminSection').style.display = 'block';
@@ -975,12 +991,20 @@
         }
 
         function loadTelegramOnlyProfile(tgUser) {
+            // Wallet row - show Connect button
             document.getElementById('profileWalletAddress').textContent = 'Not connected';
+            document.getElementById('btnConnectWallet').style.display = 'inline-block';
             document.getElementById('btnDisconnectWallet').style.display = 'none';
+
+            // Telegram row - show Unlink button
             document.getElementById('profileTelegram').textContent = '@' + (tgUser.username || tgUser.first_name);
             document.getElementById('btnLinkTelegram').style.display = 'none';
             document.getElementById('btnUnlinkTelegram').style.display = 'inline-block';
+
+            // Credits - disabled without wallet
             document.getElementById('creditsBalance').textContent = '0';
+            document.getElementById('btnBuy').disabled = true;
+            document.getElementById('btnBuy').title = 'Connect wallet to buy credits';
             document.getElementById('btnWithdraw').disabled = true;
             document.getElementById('adminSection').style.display = 'none';
         }
