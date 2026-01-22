@@ -7050,25 +7050,12 @@
         async function loadCredits() {
             if (!currentUser?.id) return;
 
-            try {
-                const response = await fetch(
-                    `${SUPABASE_URL}/rest/v1/user_credits?telegram_id=eq.${currentUser.id}&select=suite_balance`,
-                    {
-                        headers: {
-                            'apikey': SUPABASE_ANON_KEY,
-                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-                        }
-                    }
-                );
-                const data = await response.json();
-                if (data && data.length > 0) {
-                    currentCredits = parseFloat(data[0].suite_balance) || 0;
-                }
-            } catch (error) {
-                console.error('Failed to load credits:', error);
+            // Credits are managed on the profile page via the staking contract
+            // This function just updates the UI if a credits display element exists
+            const creditsEl = document.getElementById('navCreditsDisplay');
+            if (creditsEl) {
+                creditsEl.textContent = Math.floor(currentCredits).toLocaleString();
             }
-
-            document.getElementById('navCreditsDisplay').textContent = Math.floor(currentCredits).toLocaleString();
         }
 
         // ===== IFRAME COMMUNICATION =====
@@ -7199,7 +7186,8 @@
                     });
                 }
 
-                document.getElementById('navCreditsDisplay').textContent = Math.floor(currentCredits).toLocaleString();
+                const creditsEl = document.getElementById('navCreditsDisplay');
+                if (creditsEl) creditsEl.textContent = Math.floor(currentCredits).toLocaleString();
             } catch (error) {
                 console.error('Failed to load wallet credits:', error);
             }
@@ -7332,7 +7320,8 @@
                     currentCredits = 0;
                 }
 
-                document.getElementById('navCreditsDisplay').textContent = Math.floor(currentCredits).toLocaleString();
+                const creditsEl = document.getElementById('navCreditsDisplay');
+                if (creditsEl) creditsEl.textContent = Math.floor(currentCredits).toLocaleString();
                 updateAuthDisplay();
             } catch (error) {
                 console.error('Failed to check telegram link:', error);
@@ -7403,7 +7392,8 @@
             localStorage.removeItem('telegram_user');
             localStorage.removeItem('suiteUser');
             updateAuthDisplay();
-            document.getElementById('navCreditsDisplay').textContent = '0';
+            const creditsEl = document.getElementById('navCreditsDisplay');
+            if (creditsEl) creditsEl.textContent = '0';
         }
 
         // ===== DEPOSIT FUNCTIONS =====
