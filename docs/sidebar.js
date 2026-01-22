@@ -31,18 +31,15 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
 
         <div class="sidebar-section">
-            <div class="sidebar-title">Earn</div>
-            <a href="/docs/earning/" class="sidebar-link ${isActive('earning.html')}">💰 Earn SUITE Credits</a>
+            <div class="sidebar-title">Using SUITE</div>
+            <a href="/docs/revenue/" class="sidebar-link ${isActive('revenue.html')}">💡 How It Works</a>
+            <a href="/docs/earning/" class="sidebar-link ${isActive('earning.html')}">🎁 Free Credits</a>
             <a href="/docs/white-label-apps/" class="sidebar-link ${isActive('white-label-apps.html')}">🏪 White-Label Apps</a>
-            <a href="/docs/revenue/" class="sidebar-link ${isActive('revenue.html')}">💵 Revenue & Fees</a>
-            <a href="/docs/user-flows/" class="sidebar-link ${isActive('user-flows.html')}">🔄 Flows & Actions</a>
         </div>
 
         <div class="sidebar-section">
             <div class="sidebar-title">Treasury</div>
-            <a href="/docs/vault/" class="sidebar-link ${isActive('vault.html')}">🏦 SUITE Vault</a>
-            <a href="/docs/suite-token/" class="sidebar-link ${isActive('suite-token.html')}">🪙 SUITE Token</a>
-            <a href="/docs/wallet-credits/" class="sidebar-link ${isActive('wallet-credits.html')}">💳 Credits</a>
+            <a href="/docs/vault/" class="sidebar-link ${isActive('vault.html')}">🏦 Reward Pool</a>
         </div>
 
         <div class="sidebar-section">
