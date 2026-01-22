@@ -2394,27 +2394,22 @@
             <!-- Sidebar -->
             <aside class="factory-sidebar">
                 <div class="sidebar-section rep-explainer">
-                    <div class="sidebar-title">How Rep Works</div>
+                    <div class="sidebar-title">How Voting Works</div>
                     <div class="rep-section earn">
                         <div class="rep-section-header">
-                            <span>📈</span> Earn Rep
+                            <span>💳</span> Get Credits
                         </div>
                         <div class="rep-item">
-                            <span class="rep-item-value positive">+1</span>
-                            <span class="rep-item-desc">per $1 deposited to treasury</span>
+                            <span class="rep-item-value positive">1,000</span>
+                            <span class="rep-item-desc">credits per $1 USDC</span>
                         </div>
                         <div class="rep-item">
-                            <span class="rep-item-value positive">+1</span>
-                            <span class="rep-item-desc">per $1 yield earned</span>
-                        </div>
-                        <div class="rep-item">
-                            <span class="rep-item-value positive">+50</span>
-                            <span class="rep-item-desc">when your proposal passes</span>
+                            <span class="rep-item-desc" style="font-size: 0.75rem; color: var(--text-dim);">Buy credits on your <a href="/profile.html" style="color: var(--accent);">Profile</a></span>
                         </div>
                     </div>
                     <div class="rep-section spend">
                         <div class="rep-section-header">
-                            <span>🗳️</span> Spend Rep
+                            <span>🗳️</span> Spend Credits
                         </div>
                         <div class="rep-item">
                             <span class="rep-item-value cost">FREE</span>
@@ -2423,6 +2418,9 @@
                         <div class="rep-item">
                             <span class="rep-item-value cost">1→3→6</span>
                             <span class="rep-item-desc">quadratic cost for more votes</span>
+                        </div>
+                        <div class="rep-item">
+                            <span class="rep-item-desc" style="font-size: 0.75rem; color: #22c55e;">Credits spent = removed from circulation</span>
                         </div>
                     </div>
                     <div class="rep-section" style="background: rgba(34, 197, 94, 0.1);">
@@ -2443,7 +2441,7 @@
                 <div class="sidebar-section">
                     <div class="sidebar-title">Your Stats</div>
                     <div class="stat-card">
-                        <div class="stat-label">Reputation</div>
+                        <div class="stat-label">Credits</div>
                         <div class="stat-value accent" id="userRep">0</div>
                     </div>
                 </div>
@@ -2848,7 +2846,7 @@
                 <button class="modal-close" onclick="hideAuthModal()">&times;</button>
             </div>
             <p style="color: var(--text-dim); margin-bottom: 24px;">
-                Connect your Telegram account to submit proposals, vote, and earn reputation.
+                Connect your Telegram account to submit proposals and vote.
             </p>
             <button class="telegram-btn" onclick="connectTelegram()">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
@@ -2929,7 +2927,7 @@
                     <span id="voteNextCost" style="color: var(--accent); font-weight: 600;">FREE</span>
                 </div>
                 <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-dim);">
-                    <span>Your REP balance:</span>
+                    <span>Your Credits:</span>
                     <span id="voteUserRep">0</span>
                 </div>
             </div>
@@ -2969,7 +2967,7 @@
                 <button class="modal-close" onclick="closeConnectNoteboxModal()">&times;</button>
             </div>
             <p style="color: var(--text-dim); margin-bottom: 24px; line-height: 1.6;">
-                Contribute ideas to getSuite Governance, vote on proposals, and earn reputation.
+                Contribute ideas to getSuite Governance and vote on proposals.
             </p>
             <div id="connectNoteboxContent">
                 <!-- Content changes based on auth state -->
@@ -3372,7 +3370,7 @@
                             <div class="leaderboard-name">${escapeHtml(userIdentity)}</div>
                         </div>
                         <div class="leaderboard-rep">
-                            <span>${user.reputation} REP</span>
+                            <span>${user.reputation} Credits</span>
                         </div>
                     </div>
                 `;
@@ -3634,16 +3632,16 @@
                         ${proposal.status === 'rejected' && rejectionReason ? `<div class="rejection-reason">${escapeHtml(rejectionReason)}</div>` : ''}
                         ${proposal.status === 'working_on' ? `<button class="work-btn" disabled>🔨 Get to work</button>` : ''}
                         <div class="vote-buttons">
-                            <button class="vote-btn for" onclick="event.stopPropagation(); addVote('${proposal.id}')" ${!canVote ? 'disabled' : ''} title="Add vote (${nextVoteCost === 0 ? 'FREE' : nextVoteCost + ' REP'})">
+                            <button class="vote-btn for" onclick="event.stopPropagation(); addVote('${proposal.id}')" ${!canVote ? 'disabled' : ''} title="Add vote (${nextVoteCost === 0 ? 'FREE' : nextVoteCost + ' credits'})">
                                 👍 <span class="vote-count">${votesFor}</span>
                             </button>
-                            <button class="vote-btn against" onclick="event.stopPropagation(); removeVote('${proposal.id}')" ${!canVote || userVoteCount === 0 ? 'disabled' : ''} title="Remove vote (+${userVoteCount > 0 ? getRefundAmount(userVoteCount) : 0} REP)">
+                            <button class="vote-btn against" onclick="event.stopPropagation(); removeVote('${proposal.id}')" ${!canVote || userVoteCount === 0 ? 'disabled' : ''} title="Remove vote (+${userVoteCount > 0 ? getRefundAmount(userVoteCount) : 0} credits)">
                                 👎 <span class="vote-count">${userVoteCount}</span>
                             </button>
                             <button class="comment-btn ${(proposal.comment_count || 0) > 0 ? 'has-comments' : ''}" onclick="event.stopPropagation(); toggleComments('${proposal.id}')" title="Comments">
                                 💬 <span class="comment-count">${proposal.comment_count || 0}</span>
                             </button>
-                            ${userVoteCount > 0 ? `<span class="your-votes">${userVoteCount} vote${userVoteCount > 1 ? 's' : ''} · ${nextVoteCost} REP next</span>` : `<span class="your-votes">${nextVoteCost === 0 ? 'First vote FREE' : nextVoteCost + ' REP'}</span>`}
+                            ${userVoteCount > 0 ? `<span class="your-votes">${userVoteCount} vote${userVoteCount > 1 ? 's' : ''} · ${nextVoteCost} credits next</span>` : `<span class="your-votes">${nextVoteCost === 0 ? 'First vote FREE' : nextVoteCost + ' credits'}</span>`}
                         </div>
                         <div class="comments-section" id="comments-${proposal.id}">
                             <div class="comments-list" id="comments-list-${proposal.id}">
@@ -4688,7 +4686,7 @@
         function showUserMenu() {
             // Build menu options
             let menuText = `👤 ${currentUser.display_name}\n`;
-            menuText += `⭐ ${currentUser.reputation || 0} REP\n\n`;
+            menuText += `⭐ ${currentUser.reputation || 0} Credits\n\n`;
 
             // Show linked accounts status
             menuText += `Linked Accounts:\n`;
@@ -4869,7 +4867,7 @@
             const userRep = currentUser.reputation || 0;
 
             if (cost > userRep) {
-                alert(`Not enough REP! You need ${cost} REP but have ${userRep}.`);
+                alert(`Not enough credits! You need ${cost} credits but have ${userRep}.`);
                 return;
             }
 
@@ -5193,19 +5191,19 @@
 
             document.getElementById('voteProposalId').textContent = proposalId.slice(0, 8) + '...';
             document.getElementById('voteCurrentCount').textContent = currentVotes;
-            document.getElementById('voteNextCost').textContent = nextCost === 0 ? 'FREE' : nextCost + ' REP';
+            document.getElementById('voteNextCost').textContent = nextCost === 0 ? 'FREE' : nextCost + ' credits';
             document.getElementById('voteUserRep').textContent = userRep;
             document.getElementById('voteTypeFor').checked = voteType === 'for';
             document.getElementById('voteTypeAgainst').checked = voteType === 'against';
 
-            // Enable/disable submit based on rep
+            // Enable/disable submit based on credits
             const submitBtn = document.getElementById('voteSubmitBtn');
             if (nextCost > userRep) {
                 submitBtn.disabled = true;
-                submitBtn.textContent = 'Not enough REP';
+                submitBtn.textContent = 'Not enough credits';
             } else {
                 submitBtn.disabled = false;
-                submitBtn.textContent = nextCost === 0 ? 'Cast Vote (FREE)' : `Cast Vote (${nextCost} REP)`;
+                submitBtn.textContent = nextCost === 0 ? 'Cast Vote (FREE)' : `Cast Vote (${nextCost} credits)`;
             }
 
             document.getElementById('voteModal').classList.add('active');
