@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import {
     Plus,
@@ -965,40 +966,63 @@ function LoopsPageContent() {
 
     return (
         <div className="min-h-screen p-6">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-8">
-                <div>
-                    <h1 className="text-2xl font-bold text-[var(--foreground)]">Content Loops</h1>
-                    <p className="text-[var(--foreground-muted)]">
-                        Automated and scheduled content generation
-                    </p>
+            {/* Project Switcher Bar */}
+            <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-sm font-medium text-[var(--foreground-muted)] uppercase tracking-wide">Select Project</h2>
+                    <Link href="/projects/new" className="text-sm text-[var(--primary)] hover:underline flex items-center gap-1">
+                        <Plus className="w-3 h-3" />
+                        New Project
+                    </Link>
                 </div>
-
-                {/* Project Selector */}
-                <div className="flex items-center gap-3">
-                    <select
-                        value={selectedProject || ''}
-                        onChange={(e) => setSelectedProject(e.target.value)}
-                        className="px-4 py-2 bg-[var(--surface)] border border-[var(--surface-border)] rounded-lg text-[var(--foreground)]"
-                    >
-                        {projects.map(project => (
-                            <option key={project.id} value={project.id}>
-                                {project.name}
-                            </option>
-                        ))}
-                    </select>
+                <div className="flex gap-3 overflow-x-auto pb-2">
+                    {projects.map(project => (
+                        <button
+                            key={project.id}
+                            onClick={() => setSelectedProject(project.id)}
+                            className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all min-w-[200px] ${
+                                selectedProject === project.id
+                                    ? 'border-[var(--primary)] bg-[var(--primary)]/10'
+                                    : 'border-[var(--surface-border)] bg-[var(--surface)] hover:border-[var(--foreground-muted)]'
+                            }`}
+                        >
+                            <div
+                                className="w-10 h-10 rounded-lg flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                                style={{
+                                    background: `linear-gradient(135deg, ${(project.posting_schedule as any)?.primary_color || '#6366f1'}, ${(project.posting_schedule as any)?.secondary_color || '#f97316'})`
+                                }}
+                            >
+                                {project.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="text-left">
+                                <p className={`font-semibold truncate ${selectedProject === project.id ? 'text-[var(--primary)]' : 'text-[var(--foreground)]'}`}>
+                                    {project.name}
+                                </p>
+                                <p className="text-xs text-[var(--foreground-muted)]">
+                                    {project.platforms?.join(', ') || 'No platforms'}
+                                </p>
+                            </div>
+                            {selectedProject === project.id && (
+                                <Check className="w-5 h-5 text-[var(--primary)] ml-auto flex-shrink-0" />
+                            )}
+                        </button>
+                    ))}
                 </div>
             </div>
 
-            {/* Content Loops Header */}
+            {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h2 className="text-lg font-semibold text-[var(--foreground)]">Content Loops</h2>
-                    <p className="text-sm text-[var(--foreground-muted)]">Automated and evergreen content that rotates on a schedule</p>
+                    <h1 className="text-2xl font-bold text-[var(--foreground)]">
+                        {selectedProjectData?.name || 'Content Loops'}
+                    </h1>
+                    <p className="text-[var(--foreground-muted)]">
+                        Automated and evergreen content that rotates on a schedule
+                    </p>
                 </div>
                 <button
                     onClick={() => setShowNewLoopModal(true)}
-                    className="btn btn-secondary"
+                    className="btn btn-primary"
                 >
                     <Plus className="w-4 h-4" />
                     New Loop
