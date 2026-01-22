@@ -1628,14 +1628,55 @@
             box-shadow: 0 0 0 2px rgba(255, 149, 0, 0.2);
         }
 
+        /* Minimized Grid State (when details panel is open) */
+        .apps-grid.minimized {
+            gap: 8px !important;
+        }
+
+        .apps-grid.minimized .app-card {
+            padding: 8px 12px;
+            gap: 10px;
+        }
+
+        .apps-grid.minimized .app-card .app-icon {
+            width: 36px;
+            height: 36px;
+            min-width: 36px;
+            font-size: 1.2rem;
+            border-radius: 8px;
+        }
+
+        .apps-grid.minimized .app-card .app-icon .app-icon-img {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+        }
+
+        .apps-grid.minimized .app-card .app-name {
+            font-size: 0.85rem;
+        }
+
+        .apps-grid.minimized .app-card .app-tagline {
+            font-size: 0.7rem;
+        }
+
+        .apps-grid.minimized .app-card .app-view-buttons {
+            display: none;
+        }
+
+        .apps-grid.minimized .app-card.mystery-card .view-btn {
+            display: none;
+        }
+
         /* App Details Panel (below grid) */
         .app-details-panel {
             background: linear-gradient(135deg, rgba(26, 26, 46, 0.98), rgba(30, 30, 55, 0.98));
             border: 1px solid rgba(255, 149, 0, 0.3);
-            border-radius: 16px;
-            padding: 20px;
-            margin-top: 16px;
+            border-radius: 20px;
+            padding: 24px;
+            margin-top: 20px;
             animation: slideDown 0.25s ease-out;
+            box-shadow: 0 8px 32px rgba(255, 149, 0, 0.15);
         }
 
         @keyframes slideDown {
@@ -6696,6 +6737,7 @@
 
         function selectApp(cardEl, slug) {
             const panel = document.getElementById('appDetailsPanel');
+            const grid = document.getElementById('appsGrid');
 
             // If clicking the same app, close the panel
             if (selectedAppSlug === slug) {
@@ -6711,6 +6753,9 @@
             // Select this card
             cardEl.classList.add('selected');
             selectedAppSlug = slug;
+
+            // Minimize the grid
+            grid.classList.add('minimized');
 
             // Find the app data
             const app = apps.find(a => a.slug === slug);
@@ -6829,8 +6874,13 @@
 
         function closeDetailsPanel() {
             const panel = document.getElementById('appDetailsPanel');
+            const grid = document.getElementById('appsGrid');
+
             panel.style.display = 'none';
             selectedAppSlug = null;
+
+            // Restore grid to normal size
+            grid.classList.remove('minimized');
 
             // Remove selection from all cards
             document.querySelectorAll('.app-card.selected').forEach(card => {
