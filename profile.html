@@ -588,12 +588,19 @@
                     </div>
                     <div class="profile-info">
                         <div class="profile-row">
-                            <span class="profile-row-label">Connected</span>
-                            <span class="profile-row-value" id="profileWalletAddress">-</span>
+                            <span class="profile-row-label">Wallet</span>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span class="profile-row-value" id="profileWalletAddress">-</span>
+                                <button class="btn-account btn-disconnect" onclick="disconnectWallet(); checkConnection();" id="btnDisconnectWallet">Disconnect</button>
+                            </div>
                         </div>
-                        <div class="profile-row" id="telegramRow" style="display: none;">
+                        <div class="profile-row" id="telegramRow">
                             <span class="profile-row-label">Telegram</span>
-                            <span class="profile-row-value" id="profileTelegram">-</span>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span class="profile-row-value" id="profileTelegram">Not linked</span>
+                                <button class="btn-account btn-connect" onclick="loginWithTelegramWidget()" id="btnLinkTelegram">Link</button>
+                                <button class="btn-account btn-disconnect" onclick="disconnectTelegram(); checkConnection();" id="btnUnlinkTelegram" style="display: none;">Unlink</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -645,17 +652,6 @@
                                 Request an App
                             </a>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Connected Accounts Card -->
-                <div class="glass-card">
-                    <div class="card-header">
-                        <span class="card-header-icon">&#128279;</span>
-                        <h2>Connected Accounts</h2>
-                    </div>
-                    <div id="accountsList">
-                        <!-- Populated by JS -->
                     </div>
                 </div>
 
@@ -954,20 +950,21 @@
             // Display wallet address
             document.getElementById('profileWalletAddress').textContent =
                 wallet.slice(0, 6) + '...' + wallet.slice(-4);
+            document.getElementById('btnDisconnectWallet').style.display = 'inline-block';
 
-            // Display telegram if linked
+            // Display telegram status
             if (tgUser) {
-                document.getElementById('telegramRow').style.display = 'flex';
                 document.getElementById('profileTelegram').textContent = '@' + (tgUser.username || tgUser.first_name);
+                document.getElementById('btnLinkTelegram').style.display = 'none';
+                document.getElementById('btnUnlinkTelegram').style.display = 'inline-block';
             } else {
-                document.getElementById('telegramRow').style.display = 'none';
+                document.getElementById('profileTelegram').textContent = 'Not linked';
+                document.getElementById('btnLinkTelegram').style.display = 'inline-block';
+                document.getElementById('btnUnlinkTelegram').style.display = 'none';
             }
 
             // Load credits from contract
             await loadCredits(wallet);
-
-            // Update connected accounts
-            updateAccountsList(wallet, tgUser);
 
             // Check if admin
             if (ADMIN_ADDRESSES.includes(wallet.toLowerCase())) {
@@ -979,11 +976,12 @@
 
         function loadTelegramOnlyProfile(tgUser) {
             document.getElementById('profileWalletAddress').textContent = 'Not connected';
-            document.getElementById('telegramRow').style.display = 'flex';
+            document.getElementById('btnDisconnectWallet').style.display = 'none';
             document.getElementById('profileTelegram').textContent = '@' + (tgUser.username || tgUser.first_name);
+            document.getElementById('btnLinkTelegram').style.display = 'none';
+            document.getElementById('btnUnlinkTelegram').style.display = 'inline-block';
             document.getElementById('creditsBalance').textContent = '0';
             document.getElementById('btnWithdraw').disabled = true;
-            updateAccountsList(null, tgUser);
             document.getElementById('adminSection').style.display = 'none';
         }
 
@@ -999,71 +997,6 @@
                 console.error('Failed to load credits:', err);
                 document.getElementById('creditsBalance').textContent = '0';
             }
-        }
-
-        function updateAccountsList(wallet, tgUser) {
-            const list = document.getElementById('accountsList');
-            let html = '';
-
-            // Wallet account
-            if (wallet) {
-                html += `
-                    <div class="account-item">
-                        <div class="account-icon wallet">&#128279;</div>
-                        <div class="account-info">
-                            <div class="account-type">Wallet</div>
-                            <div class="account-value">${wallet.slice(0, 6)}...${wallet.slice(-4)}</div>
-                        </div>
-                        <button class="btn-account btn-disconnect" onclick="disconnectWallet()">Disconnect</button>
-                    </div>
-                `;
-            } else {
-                html += `
-                    <div class="account-item">
-                        <div class="account-icon wallet">&#128279;</div>
-                        <div class="account-info">
-                            <div class="account-type">Wallet</div>
-                            <div class="account-value" style="color: var(--text-light);">Not connected</div>
-                        </div>
-                        <button class="btn-account btn-connect" onclick="connectWalletFromNav()">Connect</button>
-                    </div>
-                `;
-            }
-
-            // Telegram account
-            if (tgUser) {
-                html += `
-                    <div class="account-item">
-                        <div class="account-icon telegram">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18 1.897-.962 6.502-1.359 8.627-.168.9-.5 1.201-.82 1.23-.697.064-1.226-.461-1.901-.903-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.015-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.139-5.062 3.345-.479.329-.913.489-1.302.481-.428-.009-1.252-.242-1.865-.442-.751-.244-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.831-2.529 6.998-3.015 3.333-1.386 4.025-1.627 4.477-1.635.099-.002.321.023.465.142.121.1.154.234.169.337.015.103.034.337.019.519z"/>
-                            </svg>
-                        </div>
-                        <div class="account-info">
-                            <div class="account-type">Telegram</div>
-                            <div class="account-value">@${tgUser.username || tgUser.first_name}</div>
-                        </div>
-                        <button class="btn-account btn-disconnect" onclick="disconnectTelegram(); checkConnection();">Unlink</button>
-                    </div>
-                `;
-            } else {
-                html += `
-                    <div class="account-item">
-                        <div class="account-icon telegram">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18 1.897-.962 6.502-1.359 8.627-.168.9-.5 1.201-.82 1.23-.697.064-1.226-.461-1.901-.903-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.015-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.139-5.062 3.345-.479.329-.913.489-1.302.481-.428-.009-1.252-.242-1.865-.442-.751-.244-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.831-2.529 6.998-3.015 3.333-1.386 4.025-1.627 4.477-1.635.099-.002.321.023.465.142.121.1.154.234.169.337.015.103.034.337.019.519z"/>
-                            </svg>
-                        </div>
-                        <div class="account-info">
-                            <div class="account-type">Telegram</div>
-                            <div class="account-value" style="color: var(--text-light);">Not linked</div>
-                        </div>
-                        <button class="btn-account btn-connect" onclick="loginWithTelegramWidget()">Link</button>
-                    </div>
-                `;
-            }
-
-            list.innerHTML = html;
         }
 
         // Modal functions
