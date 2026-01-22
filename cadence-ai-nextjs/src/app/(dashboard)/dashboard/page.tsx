@@ -78,7 +78,7 @@ export default function DashboardPage() {
                     {greeting}, {user?.firstName || user?.username || 'there'}
                 </h1>
                 <p className="text-[var(--foreground-muted)] mt-1">
-                    Select a project to manage content, or create a new one
+                    Click a project to open its content loops
                 </p>
             </header>
 
@@ -114,7 +114,7 @@ export default function DashboardPage() {
                         {projects.map((project) => (
                             <Link
                                 key={project.id}
-                                href={`/projects/${project.id}`}
+                                href={`/loops?project=${project.id}`}
                                 className="card p-5 hover:border-[var(--primary)] transition-all group"
                             >
                                 <div className="flex items-start gap-4">
@@ -136,15 +136,22 @@ export default function DashboardPage() {
                                     </div>
                                 </div>
 
+                                {/* Platforms */}
+                                {project.platforms && project.platforms.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 mt-3">
+                                        {project.platforms.map((platform) => (
+                                            <span key={platform} className={`badge badge-${platform} text-xs`}>
+                                                {platform}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+
                                 {/* Quick Actions */}
                                 <div className="flex items-center gap-2 mt-4 pt-4 border-t border-[var(--surface-border)]">
-                                    <span className="flex items-center gap-1 text-xs text-[var(--foreground-muted)]">
+                                    <span className="flex items-center gap-1 text-xs text-[var(--primary)] font-medium">
                                         <RefreshCw className="w-3 h-3" />
-                                        Loops
-                                    </span>
-                                    <span className="flex items-center gap-1 text-xs text-[var(--foreground-muted)]">
-                                        <Settings className="w-3 h-3" />
-                                        Settings
+                                        Open Loops
                                     </span>
                                     <ArrowRight className="w-4 h-4 text-[var(--foreground-muted)] ml-auto group-hover:text-[var(--primary)] transition-colors" />
                                 </div>
