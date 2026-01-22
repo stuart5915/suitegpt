@@ -752,19 +752,98 @@
     <div class="modal-overlay" id="withdrawModal" onclick="if(event.target === this) closeWithdrawModal()">
         <div class="modal">
             <button class="modal-close" onclick="closeWithdrawModal()">&times;</button>
-            <h3>Withdraw to USDC</h3>
-            <div class="modal-input-group">
-                <label>Credits to withdraw</label>
-                <input type="number" class="modal-input" id="withdrawAmount" placeholder="5000" min="1000" step="1000" oninput="updateWithdrawPreview()">
+
+            <!-- Default State: Request Withdrawal -->
+            <div id="withdrawRequestState">
+                <h3>Withdraw to USDC</h3>
+
+                <!-- Rate Info -->
+                <div style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(16, 185, 129, 0.1)); border-radius: 12px; padding: 16px; margin-bottom: 20px; text-align: center;">
+                    <div style="font-size: 2rem; font-weight: 800; color: var(--accent-green);" id="withdrawRate">--%</div>
+                    <div style="font-size: 0.85rem; color: var(--text-medium);">Current Rate</div>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.5); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="color: var(--text-medium); font-size: 0.9rem;">Your Bonus Credits</span>
+                        <span style="font-weight: 700;" id="withdrawBonusCredits">0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--text-medium); font-size: 0.9rem;">Max Redeemable</span>
+                        <span style="font-weight: 700; color: var(--accent-green);" id="withdrawMaxUsdc">$0.00</span>
+                    </div>
+                </div>
+
+                <div class="modal-input-group">
+                    <label>Amount to withdraw (USDC)</label>
+                    <input type="number" class="modal-input" id="withdrawAmount" placeholder="0.00" step="0.01" oninput="updateWithdrawPreview()">
+                </div>
+
+                <div class="modal-preview">
+                    <div class="modal-preview-value" id="withdrawPreviewCredits">0</div>
+                    <div class="modal-preview-label">Credits will be used</div>
+                </div>
+
+                <button class="btn-modal-action withdraw" id="btnWithdrawRequest" onclick="requestWithdrawal()">
+                    Request Withdrawal
+                </button>
+                <p class="modal-note">You'll be able to claim once the pool is funded</p>
             </div>
-            <div class="modal-preview">
-                <div class="modal-preview-value" id="withdrawPreviewUsdc">$5.00</div>
-                <div class="modal-preview-label">USDC you'll receive</div>
+
+            <!-- Pending State: Waiting for funding -->
+            <div id="withdrawPendingState" style="display: none;">
+                <h3>Withdrawal Pending</h3>
+
+                <div style="text-align: center; padding: 30px 0;">
+                    <div style="font-size: 3rem; margin-bottom: 16px;">&#9203;</div>
+                    <div style="font-size: 1.8rem; font-weight: 800; color: var(--accent-orange);" id="pendingAmount">$0.00</div>
+                    <div style="color: var(--text-medium); margin-top: 8px;">Waiting for pool funding</div>
+                </div>
+
+                <div style="background: rgba(255, 149, 0, 0.1); border-radius: 12px; padding: 16px; margin-bottom: 20px; text-align: center;">
+                    <div style="font-size: 0.9rem; color: var(--text-medium);">
+                        Your request is in queue. You'll be able to claim once funded.
+                    </div>
+                </div>
+
+                <button class="btn-modal-action" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;" onclick="cancelWithdrawal()">
+                    Cancel Request
+                </button>
+                <p class="modal-note">Canceling will return your credits</p>
             </div>
-            <button class="btn-modal-action withdraw" id="btnWithdrawConfirm" onclick="executeWithdraw()">
-                Withdraw to USDC
-            </button>
-            <p class="modal-note">Credits are converted back to USDC</p>
+
+            <!-- Claimable State: Ready to claim -->
+            <div id="withdrawClaimState" style="display: none;">
+                <h3>Ready to Claim!</h3>
+
+                <div style="text-align: center; padding: 30px 0;">
+                    <div style="font-size: 3rem; margin-bottom: 16px;">&#127881;</div>
+                    <div style="font-size: 2.5rem; font-weight: 800; color: var(--accent-green);" id="claimAmount">$0.00</div>
+                    <div style="color: var(--text-medium); margin-top: 8px;">USDC ready to claim</div>
+                </div>
+
+                <button class="btn-modal-action withdraw" id="btnClaim" onclick="claimWithdrawal()">
+                    Claim USDC
+                </button>
+                <p class="modal-note">USDC will be sent to your wallet</p>
+            </div>
+
+            <!-- No Bonus Credits State -->
+            <div id="withdrawNoCreditsState" style="display: none;">
+                <h3>No Bonus Credits</h3>
+
+                <div style="text-align: center; padding: 30px 0;">
+                    <div style="font-size: 3rem; margin-bottom: 16px;">&#128566;</div>
+                    <div style="color: var(--text-medium);">
+                        You don't have any bonus credits to withdraw.<br><br>
+                        Bonus credits are earned through rewards and promotions.
+                    </div>
+                </div>
+
+                <button class="btn-modal-action" style="background: var(--text-light); color: var(--text-dark);" onclick="closeWithdrawModal()">
+                    Got it
+                </button>
+            </div>
         </div>
     </div>
 
@@ -788,9 +867,9 @@
         const STAKING_ABI = [
             'function availableCredits(address) view returns (uint256)',
             'function stakedBalance(address) view returns (uint256)',
+            'function bonusCredits(address) view returns (uint256)',
             'function totalBonusCredits() view returns (uint256)',
             'function buyAndStake(uint256 usdcAmount) external',
-            'function withdraw(uint256 creditAmount) external',
             'function suitePerUsdc() view returns (uint256)'
         ];
 
@@ -799,8 +878,13 @@
             'function totalPendingRequests() view returns (uint256)',
             'function fundedPool() view returns (uint256)',
             'function getRedemptionPercentage() view returns (uint256)',
+            'function getMaxRedeemable(address) view returns (uint256)',
+            'function pendingRequests(address) view returns (uint256)',
             'function reportLiquidValue(uint256 newValue) external',
-            'function fundPool(uint256 amount) external'
+            'function fundPool(uint256 amount) external',
+            'function requestRedemption(uint256 usdcAmount) external',
+            'function cancelRequest() external',
+            'function claim() external'
         ];
 
         const ERC20_ABI = [
@@ -974,12 +1058,94 @@
             document.getElementById('buyPreviewCredits').textContent = credits.toLocaleString();
         }
 
-        function openWithdrawModal() {
-            const maxCredits = Math.floor(currentCredits);
-            document.getElementById('withdrawAmount').value = Math.min(5000, maxCredits);
-            document.getElementById('withdrawAmount').max = maxCredits;
-            updateWithdrawPreview();
+        let userWithdrawData = {
+            bonusCredits: 0,
+            maxRedeemable: 0,
+            pendingRequest: 0,
+            redemptionRate: 0,
+            fundedPool: 0
+        };
+
+        async function openWithdrawModal() {
             document.getElementById('withdrawModal').classList.add('active');
+
+            // Hide all states first
+            document.getElementById('withdrawRequestState').style.display = 'none';
+            document.getElementById('withdrawPendingState').style.display = 'none';
+            document.getElementById('withdrawClaimState').style.display = 'none';
+            document.getElementById('withdrawNoCreditsState').style.display = 'none';
+
+            // Check if contract deployed
+            if (USDC_WITHDRAWALS_ADDRESS === '0x0000000000000000000000000000000000000000') {
+                document.getElementById('withdrawNoCreditsState').style.display = 'block';
+                document.getElementById('withdrawNoCreditsState').innerHTML = `
+                    <h3>Coming Soon</h3>
+                    <div style="text-align: center; padding: 30px 0;">
+                        <div style="font-size: 3rem; margin-bottom: 16px;">&#128679;</div>
+                        <div style="color: var(--text-medium);">
+                            USDC withdrawals are coming soon.<br><br>
+                            Check back later!
+                        </div>
+                    </div>
+                    <button class="btn-modal-action" style="background: var(--text-light); color: var(--text-dark);" onclick="closeWithdrawModal()">
+                        Got it
+                    </button>
+                `;
+                return;
+            }
+
+            try {
+                const wallet = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWalletAddress');
+                const readProvider = new ethers.JsonRpcProvider(BASE_RPC);
+                const staking = new ethers.Contract(SUITE_STAKING_ADDRESS, STAKING_ABI, readProvider);
+                const withdrawals = new ethers.Contract(USDC_WITHDRAWALS_ADDRESS, WITHDRAWALS_ABI, readProvider);
+
+                const [bonusCredits, maxRedeemable, pendingRequest, redemptionPct, fundedPool] = await Promise.all([
+                    staking.bonusCredits(wallet),
+                    withdrawals.getMaxRedeemable(wallet),
+                    withdrawals.pendingRequests(wallet),
+                    withdrawals.getRedemptionPercentage().catch(() => 0n),
+                    withdrawals.fundedPool()
+                ]);
+
+                userWithdrawData = {
+                    bonusCredits: Number(bonusCredits) / 1e18,
+                    maxRedeemable: Number(maxRedeemable) / 1e6,
+                    pendingRequest: Number(pendingRequest) / 1e6,
+                    redemptionRate: Number(redemptionPct) / 1e16,
+                    fundedPool: Number(fundedPool) / 1e6
+                };
+
+                // Determine which state to show
+                if (userWithdrawData.pendingRequest > 0) {
+                    // Has pending request
+                    if (userWithdrawData.fundedPool >= userWithdrawData.pendingRequest) {
+                        // Can claim!
+                        document.getElementById('claimAmount').textContent = '$' + userWithdrawData.pendingRequest.toFixed(2);
+                        document.getElementById('withdrawClaimState').style.display = 'block';
+                    } else {
+                        // Waiting for funding
+                        document.getElementById('pendingAmount').textContent = '$' + userWithdrawData.pendingRequest.toFixed(2);
+                        document.getElementById('withdrawPendingState').style.display = 'block';
+                    }
+                } else if (userWithdrawData.bonusCredits > 0 && userWithdrawData.maxRedeemable > 0) {
+                    // Can request
+                    document.getElementById('withdrawRate').textContent = userWithdrawData.redemptionRate.toFixed(0) + '%';
+                    document.getElementById('withdrawBonusCredits').textContent = Math.floor(userWithdrawData.bonusCredits).toLocaleString();
+                    document.getElementById('withdrawMaxUsdc').textContent = '$' + userWithdrawData.maxRedeemable.toFixed(2);
+                    document.getElementById('withdrawAmount').value = '';
+                    document.getElementById('withdrawAmount').max = userWithdrawData.maxRedeemable;
+                    document.getElementById('withdrawPreviewCredits').textContent = '0';
+                    document.getElementById('withdrawRequestState').style.display = 'block';
+                } else {
+                    // No bonus credits
+                    document.getElementById('withdrawNoCreditsState').style.display = 'block';
+                }
+
+            } catch (err) {
+                console.error('Failed to load withdrawal data:', err);
+                showToast('Failed to load data', 'error');
+            }
         }
 
         function closeWithdrawModal() {
@@ -987,9 +1153,107 @@
         }
 
         function updateWithdrawPreview() {
-            const credits = parseFloat(document.getElementById('withdrawAmount').value) || 0;
-            const usdc = credits / CREDITS_PER_USDC;
-            document.getElementById('withdrawPreviewUsdc').textContent = '$' + usdc.toFixed(2);
+            const usdc = parseFloat(document.getElementById('withdrawAmount').value) || 0;
+            // Calculate credits that will be used
+            if (userWithdrawData.maxRedeemable > 0) {
+                const creditsRatio = userWithdrawData.bonusCredits / userWithdrawData.maxRedeemable;
+                const credits = Math.floor(usdc * creditsRatio);
+                document.getElementById('withdrawPreviewCredits').textContent = credits.toLocaleString();
+            }
+        }
+
+        async function requestWithdrawal() {
+            const btn = document.getElementById('btnWithdrawRequest');
+            const originalText = btn.textContent;
+
+            try {
+                btn.disabled = true;
+                btn.textContent = 'Connecting...';
+
+                const usdcAmount = parseFloat(document.getElementById('withdrawAmount').value);
+                if (!usdcAmount || usdcAmount <= 0) throw new Error('Enter a valid amount');
+                if (usdcAmount > userWithdrawData.maxRedeemable) throw new Error('Amount exceeds max redeemable');
+
+                await ensureBaseNetwork();
+                provider = new ethers.BrowserProvider(window.ethereum);
+                signer = await provider.getSigner();
+
+                const amountWei = ethers.parseUnits(usdcAmount.toFixed(6), 6);
+                const withdrawals = new ethers.Contract(USDC_WITHDRAWALS_ADDRESS, WITHDRAWALS_ABI, signer);
+
+                btn.textContent = 'Requesting...';
+                const tx = await withdrawals.requestRedemption(amountWei);
+                await tx.wait();
+
+                showToast('Withdrawal requested!', 'success');
+                closeWithdrawModal();
+
+                // Reload credits
+                const wallet = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWalletAddress');
+                await loadCredits(wallet);
+
+            } catch (err) {
+                console.error('Request failed:', err);
+                showToast(err.reason || err.message || 'Request failed', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        async function cancelWithdrawal() {
+            try {
+                await ensureBaseNetwork();
+                provider = new ethers.BrowserProvider(window.ethereum);
+                signer = await provider.getSigner();
+
+                const withdrawals = new ethers.Contract(USDC_WITHDRAWALS_ADDRESS, WITHDRAWALS_ABI, signer);
+
+                showToast('Canceling...', 'info');
+                const tx = await withdrawals.cancelRequest();
+                await tx.wait();
+
+                showToast('Request canceled', 'success');
+                closeWithdrawModal();
+
+                const wallet = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWalletAddress');
+                await loadCredits(wallet);
+
+            } catch (err) {
+                console.error('Cancel failed:', err);
+                showToast(err.reason || err.message || 'Cancel failed', 'error');
+            }
+        }
+
+        async function claimWithdrawal() {
+            const btn = document.getElementById('btnClaim');
+            const originalText = btn.textContent;
+
+            try {
+                btn.disabled = true;
+                btn.textContent = 'Claiming...';
+
+                await ensureBaseNetwork();
+                provider = new ethers.BrowserProvider(window.ethereum);
+                signer = await provider.getSigner();
+
+                const withdrawals = new ethers.Contract(USDC_WITHDRAWALS_ADDRESS, WITHDRAWALS_ABI, signer);
+                const tx = await withdrawals.claim();
+                await tx.wait();
+
+                showToast('USDC claimed!', 'success');
+                closeWithdrawModal();
+
+                const wallet = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWalletAddress');
+                await loadCredits(wallet);
+
+            } catch (err) {
+                console.error('Claim failed:', err);
+                showToast(err.reason || err.message || 'Claim failed', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
         }
 
         // Execute transactions
@@ -1049,57 +1313,6 @@
 
             } catch (err) {
                 console.error('Buy failed:', err);
-                showToast(err.message || 'Transaction failed', 'error');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = originalText;
-            }
-        }
-
-        async function executeWithdraw() {
-            const btn = document.getElementById('btnWithdrawConfirm');
-            const originalText = btn.textContent;
-
-            try {
-                btn.disabled = true;
-                btn.textContent = 'Connecting...';
-
-                // Check network
-                await ensureBaseNetwork();
-
-                // Get signer
-                provider = new ethers.BrowserProvider(window.ethereum);
-                signer = await provider.getSigner();
-
-                const creditAmount = parseFloat(document.getElementById('withdrawAmount').value);
-                if (!creditAmount || creditAmount <= 0) {
-                    throw new Error('Please enter a valid amount');
-                }
-
-                if (creditAmount > currentCredits) {
-                    throw new Error('Insufficient credits');
-                }
-
-                // Credits are in 18 decimals (same as SUITE tokens)
-                const creditAmountWei = ethers.parseUnits(creditAmount.toString(), 18);
-
-                // Execute withdraw
-                btn.textContent = 'Withdrawing...';
-                stakingContract = new ethers.Contract(SUITE_STAKING_ADDRESS, STAKING_ABI, signer);
-                const tx = await stakingContract.withdraw(creditAmountWei);
-                await tx.wait();
-
-                // Success
-                closeWithdrawModal();
-                showToast('Withdrawal successful!', 'success');
-
-                // Reload credits
-                const wallet = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWalletAddress');
-                await loadCredits(wallet);
-                if (window.refreshNavCredits) window.refreshNavCredits();
-
-            } catch (err) {
-                console.error('Withdraw failed:', err);
                 showToast(err.message || 'Transaction failed', 'error');
             } finally {
                 btn.disabled = false;
