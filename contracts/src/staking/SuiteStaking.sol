@@ -53,6 +53,12 @@ contract SuiteStaking is Ownable, ReentrancyGuard, Pausable {
     /// @notice Bonus credits awarded to users (rewards, no SUITE backing)
     mapping(address => uint256) public bonusCredits;
 
+    /// @notice Total bonus credits in the system (for redemption calculations)
+    uint256 public totalBonusCredits;
+
+    /// @notice Contract authorized to redeem bonus credits
+    address public withdrawalContract;
+
     /// @notice Apps authorized to spend user credits
     mapping(address => bool) public authorizedApps;
 
@@ -73,6 +79,8 @@ contract SuiteStaking is Ownable, ReentrancyGuard, Pausable {
     event RewardDistributorRemoved(address indexed distributor);
     event TreasuryUpdated(address indexed newTreasury);
     event SuitePerUsdcUpdated(uint256 newRate);
+    event BonusCreditsRedeemed(address indexed user, uint256 amount);
+    event WithdrawalContractUpdated(address indexed withdrawalContract);
 
     // ============ Errors ============
 
@@ -86,6 +94,7 @@ contract SuiteStaking is Ownable, ReentrancyGuard, Pausable {
     error AppNotAuthorized();
     error DistributorAlreadyAdded();
     error DistributorNotFound();
+    error UnauthorizedWithdrawalContract();
 
     // ============ Constructor ============
 
@@ -324,6 +333,7 @@ contract SuiteStaking is Ownable, ReentrancyGuard, Pausable {
         if (amount == 0) revert ZeroAmount();
 
         bonusCredits[user] += amount;
+        totalBonusCredits += amount;
         emit BonusCreditsAdded(user, amount, msg.sender);
     }
 
@@ -341,6 +351,7 @@ contract SuiteStaking is Ownable, ReentrancyGuard, Pausable {
         for (uint256 i = 0; i < users.length; i++) {
             if (users[i] != address(0) && amounts[i] > 0) {
                 bonusCredits[users[i]] += amounts[i];
+                totalBonusCredits += amounts[i];
                 emit BonusCreditsAdded(users[i], amounts[i], msg.sender);
             }
         }
@@ -367,5 +378,33 @@ contract SuiteStaking is Ownable, ReentrancyGuard, Pausable {
 
         rewardDistributors[distributor] = false;
         emit RewardDistributorRemoved(distributor);
+    }
+
+    // ============ Withdrawal Contract Functions ============
+
+    /**
+     * @notice Set the withdrawal contract that can redeem bonus credits
+     * @param _withdrawalContract Address of the UsdcWithdrawals contract
+     */
+    function setWithdrawalContract(address _withdrawalContract) external onlyOwner {
+        if (_withdrawalContract == address(0)) revert ZeroAddress();
+        withdrawalContract = _withdrawalContract;
+        emit WithdrawalContractUpdated(_withdrawalContract);
+    }
+
+    /**
+     * @notice Redeem bonus credits (called by withdrawal contract)
+     * @param user Address whose bonus credits to redeem
+     * @param amount Amount of bonus credits to redeem
+     */
+    function redeemBonusCredits(address user, uint256 amount) external {
+        if (msg.sender != withdrawalContract) revert UnauthorizedWithdrawalContract();
+        if (amount == 0) revert ZeroAmount();
+        if (amount > bonusCredits[user]) revert InsufficientCredits();
+
+        bonusCredits[user] -= amount;
+        totalBonusCredits -= amount;
+
+        emit BonusCreditsRedeemed(user, amount);
     }
 }

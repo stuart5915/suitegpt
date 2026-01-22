@@ -7,8 +7,8 @@ import "../src/staking/UsdcWithdrawals.sol";
 import "../src/SuiteToken.sol";
 
 /**
- * @title BonusCreditsAndWithdrawalsTest
- * @notice Tests for bonus credits and USDC withdrawal system
+ * @title RedemptionPoolTest
+ * @notice Tests for bonus credits and USDC redemption pool system
  */
 
 contract MockUSDC {
@@ -42,7 +42,7 @@ contract MockUSDC {
     }
 }
 
-contract BonusCreditsAndWithdrawalsTest is Test {
+contract RedemptionPoolTest is Test {
     SuiteStaking public staking;
     UsdcWithdrawals public withdrawals;
     SuiteToken public suiteToken;
@@ -55,9 +55,9 @@ contract BonusCreditsAndWithdrawalsTest is Test {
     address public distributor = address(5);
 
     event BonusCreditsAdded(address indexed user, uint256 amount, address indexed distributor);
-    event WithdrawalRequested(address indexed user, uint256 credits, uint256 usdcEquivalent);
-    event WithdrawalFunded(address indexed user, uint256 usdcAmount, address indexed funder);
-    event WithdrawalClaimed(address indexed user, uint256 usdcAmount);
+    event BonusCreditsRedeemed(address indexed user, uint256 amount);
+    event PoolDeposit(uint256 amount, address indexed depositor);
+    event Redeemed(address indexed user, uint256 creditsRedeemed, uint256 usdcReceived);
 
     function setUp() public {
         // Deploy SuiteToken
@@ -78,15 +78,17 @@ contract BonusCreditsAndWithdrawalsTest is Test {
 
         // Deploy UsdcWithdrawals
         vm.prank(owner);
-        withdrawals = new UsdcWithdrawals(address(usdc), owner);
+        withdrawals = new UsdcWithdrawals(address(usdc), address(staking), owner);
 
-        // Setup
+        // Setup: Link staking to withdrawals
+        vm.prank(owner);
+        staking.setWithdrawalContract(address(withdrawals));
+
         vm.prank(owner);
         suiteToken.addMinter(address(staking));
 
-        // Give users USDC
-        usdc.mint(user1, 100e6);
-        usdc.mint(owner, 1000e6); // For funding withdrawals
+        // Give owner USDC for pool deposits
+        usdc.mint(owner, 10000e6); // $10,000
     }
 
     // ============ Bonus Credits Tests ============
@@ -96,41 +98,25 @@ contract BonusCreditsAndWithdrawalsTest is Test {
         staking.addBonusCredits(user1, 1000e18);
 
         assertEq(staking.bonusCredits(user1), 1000e18);
+        assertEq(staking.totalBonusCredits(), 1000e18);
         assertEq(staking.availableCredits(user1), 1000e18);
     }
 
     function test_DistributorCanAddBonusCredits() public {
-        // Add distributor
         vm.prank(owner);
         staking.addRewardDistributor(distributor);
 
-        // Distributor adds bonus credits
         vm.prank(distributor);
         staking.addBonusCredits(user1, 500e18);
 
         assertEq(staking.bonusCredits(user1), 500e18);
+        assertEq(staking.totalBonusCredits(), 500e18);
     }
 
     function test_UnauthorizedCannotAddBonusCredits() public {
         vm.prank(user1);
         vm.expectRevert(SuiteStaking.UnauthorizedDistributor.selector);
         staking.addBonusCredits(user2, 100e18);
-    }
-
-    function test_BonusCreditsAddToAvailableCredits() public {
-        // User stakes via buyAndStake
-        vm.prank(user1);
-        usdc.approve(address(staking), 10e6);
-        vm.prank(user1);
-        staking.buyAndStake(10e6); // 10,000 credits from staking
-
-        // Owner adds bonus credits
-        vm.prank(owner);
-        staking.addBonusCredits(user1, 5000e18); // 5,000 bonus credits
-
-        // Total should be 15,000
-        assertEq(staking.availableCredits(user1), 15000e18);
-        assertEq(staking.totalCredits(user1), 15000e18);
     }
 
     function test_BonusCreditsBatch() public {
@@ -147,180 +133,277 @@ contract BonusCreditsAndWithdrawalsTest is Test {
 
         assertEq(staking.bonusCredits(user1), 1000e18);
         assertEq(staking.bonusCredits(user2), 2000e18);
+        assertEq(staking.totalBonusCredits(), 3000e18);
     }
 
-    function test_BonusCreditsCanBeUsedByApps() public {
-        // Add bonus credits
+    function test_TotalBonusCreditsTracking() public {
         vm.prank(owner);
         staking.addBonusCredits(user1, 1000e18);
 
-        // Authorize an app
-        address app = address(100);
         vm.prank(owner);
-        staking.authorizeApp(app);
+        staking.addBonusCredits(user2, 2000e18);
 
-        // App uses credits
-        vm.prank(app);
-        staking.useCredits(user1, 300e18);
-
-        assertEq(staking.availableCredits(user1), 700e18);
-        assertEq(staking.usedCredits(user1), 300e18);
+        assertEq(staking.totalBonusCredits(), 3000e18);
     }
 
-    // ============ USDC Withdrawal Tests ============
+    // ============ Redemption Pool Tests ============
 
-    function test_UserCanRequestWithdrawal() public {
-        uint256 credits = 10000e18; // 10,000 credits = $10
+    function test_OwnerCanDepositToPool() public {
+        vm.prank(owner);
+        usdc.approve(address(withdrawals), 100e6);
 
-        vm.prank(user1);
-        withdrawals.requestWithdrawal(credits);
+        vm.prank(owner);
+        withdrawals.depositToPool(100e6);
 
-        (uint256 pending, uint256 usdcEq) = withdrawals.getPendingWithdrawal(user1);
-        assertEq(pending, credits);
-        assertEq(usdcEq, 10e6); // $10 USDC
+        assertEq(withdrawals.totalRedeemableUsdc(), 100e6);
+        assertEq(usdc.balanceOf(address(withdrawals)), 100e6);
     }
 
-    function test_OwnerCanFundWithdrawal() public {
-        // User requests withdrawal
-        uint256 credits = 10000e18; // $10 worth
-        vm.prank(user1);
-        withdrawals.requestWithdrawal(credits);
-
-        // Owner funds it
+    function test_RedemptionRateCalculation() public {
+        // Give users bonus credits
         vm.prank(owner);
-        usdc.approve(address(withdrawals), 10e6);
-        vm.prank(owner);
-        withdrawals.fundWithdrawal(user1, 10e6);
+        staking.addBonusCredits(user1, 100000e18); // 100,000 credits
 
-        // Check state
-        assertEq(withdrawals.pendingWithdrawals(user1), 0);
-        assertEq(withdrawals.fundedWithdrawals(user1), 10e6);
+        vm.prank(owner);
+        staking.addBonusCredits(user2, 100000e18); // 100,000 credits
+
+        // Total: 200,000 credits = $200 face value
+
+        // Deposit $160 (80% rate)
+        vm.prank(owner);
+        usdc.approve(address(withdrawals), 160e6);
+        vm.prank(owner);
+        withdrawals.depositToPool(160e6);
+
+        // Check redemption percentage (should be ~80% = 0.8e18)
+        uint256 percentage = withdrawals.getRedemptionPercentage();
+        assertEq(percentage, 0.8e18);
     }
 
-    function test_UserCanClaimFundedUsdc() public {
-        // Request
-        vm.prank(user1);
-        withdrawals.requestWithdrawal(10000e18);
-
-        // Fund
+    function test_UserCanRedeemCredits() public {
+        // Setup: Give user1 100,000 bonus credits ($100 face value)
         vm.prank(owner);
-        usdc.approve(address(withdrawals), 10e6);
+        staking.addBonusCredits(user1, 100000e18);
+
+        // Deposit $80 to pool (80% rate)
         vm.prank(owner);
-        withdrawals.fundWithdrawal(user1, 10e6);
+        usdc.approve(address(withdrawals), 80e6);
+        vm.prank(owner);
+        withdrawals.depositToPool(80e6);
 
-        // Claim
-        uint256 balanceBefore = usdc.balanceOf(user1);
+        // User redeems all their credits
+        uint256 expectedUsdc = withdrawals.getRedeemableAmount(user1);
+        assertEq(expectedUsdc, 80e6); // Should get $80
+
         vm.prank(user1);
-        withdrawals.claimUsdc();
+        withdrawals.redeemAll();
 
-        assertEq(usdc.balanceOf(user1), balanceBefore + 10e6);
-        assertEq(withdrawals.fundedWithdrawals(user1), 0);
+        // Check results
+        assertEq(usdc.balanceOf(user1), 80e6);
+        assertEq(staking.bonusCredits(user1), 0);
+        assertEq(staking.totalBonusCredits(), 0);
+        assertEq(withdrawals.totalRedeemableUsdc(), 0);
+        assertEq(withdrawals.totalRedeemedUsdc(), 80e6);
     }
 
-    function test_UserCanCancelWithdrawal() public {
-        vm.prank(user1);
-        withdrawals.requestWithdrawal(10000e18);
+    function test_PartialRedemption() public {
+        // Give user 100,000 credits
+        vm.prank(owner);
+        staking.addBonusCredits(user1, 100000e18);
 
-        vm.prank(user1);
-        withdrawals.cancelWithdrawal();
+        // Deposit $100 (100% rate)
+        vm.prank(owner);
+        usdc.approve(address(withdrawals), 100e6);
+        vm.prank(owner);
+        withdrawals.depositToPool(100e6);
 
-        assertEq(withdrawals.pendingWithdrawals(user1), 0);
+        // Redeem only half (50,000 credits = $50)
+        vm.prank(user1);
+        withdrawals.redeem(50000e18);
+
+        assertEq(usdc.balanceOf(user1), 50e6);
+        assertEq(staking.bonusCredits(user1), 50000e18);
+        assertEq(staking.totalBonusCredits(), 50000e18);
+        assertEq(withdrawals.totalRedeemableUsdc(), 50e6);
     }
 
-    function test_PartialFunding() public {
-        // Request $10 worth
-        vm.prank(user1);
-        withdrawals.requestWithdrawal(10000e18);
-
-        // Fund only $5
+    function test_MultipleUsersRedeem() public {
+        // Give users credits
         vm.prank(owner);
-        usdc.approve(address(withdrawals), 5e6);
+        staking.addBonusCredits(user1, 100000e18); // $100 face
+
         vm.prank(owner);
-        withdrawals.fundWithdrawal(user1, 5e6);
+        staking.addBonusCredits(user2, 200000e18); // $200 face
 
-        // $5 funded, $5 still pending
-        assertEq(withdrawals.fundedWithdrawals(user1), 5e6);
-        assertEq(withdrawals.pendingWithdrawals(user1), 5000e18);
-    }
+        // Total: $300 face value
 
-    function test_BatchFunding() public {
-        // Two users request
+        // Deposit $240 (80% rate)
+        vm.prank(owner);
+        usdc.approve(address(withdrawals), 240e6);
+        vm.prank(owner);
+        withdrawals.depositToPool(240e6);
+
+        // User1 should get $80 (100k credits at 80%)
+        assertEq(withdrawals.getRedeemableAmount(user1), 80e6);
+
+        // User2 should get $160 (200k credits at 80%)
+        assertEq(withdrawals.getRedeemableAmount(user2), 160e6);
+
+        // Both redeem
         vm.prank(user1);
-        withdrawals.requestWithdrawal(10000e18); // $10
+        withdrawals.redeemAll();
+
         vm.prank(user2);
-        withdrawals.requestWithdrawal(20000e18); // $20
+        withdrawals.redeemAll();
 
-        // Batch fund
-        address[] memory users = new address[](2);
-        users[0] = user1;
-        users[1] = user2;
-
-        uint256[] memory amounts = new uint256[](2);
-        amounts[0] = 10e6;
-        amounts[1] = 20e6;
-
-        vm.prank(owner);
-        usdc.approve(address(withdrawals), 30e6);
-        vm.prank(owner);
-        withdrawals.fundWithdrawalsBatch(users, amounts);
-
-        assertEq(withdrawals.fundedWithdrawals(user1), 10e6);
-        assertEq(withdrawals.fundedWithdrawals(user2), 20e6);
+        assertEq(usdc.balanceOf(user1), 80e6);
+        assertEq(usdc.balanceOf(user2), 160e6);
+        assertEq(withdrawals.totalRedeemableUsdc(), 0);
     }
 
-    function test_CannotClaimWithoutFunding() public {
+    function test_RedemptionRateIncreases() public {
+        // User has 100,000 credits
+        vm.prank(owner);
+        staking.addBonusCredits(user1, 100000e18);
+
+        // Initially deposit $80 (80% rate)
+        vm.prank(owner);
+        usdc.approve(address(withdrawals), 200e6);
+        vm.prank(owner);
+        withdrawals.depositToPool(80e6);
+
+        assertEq(withdrawals.getRedemptionPercentage(), 0.8e18);
+        assertEq(withdrawals.getRedeemableAmount(user1), 80e6);
+
+        // Admin earns more yield, deposits another $40
+        vm.prank(owner);
+        withdrawals.depositToPool(40e6);
+
+        // Now rate is 120%!
+        assertEq(withdrawals.getRedemptionPercentage(), 1.2e18);
+        assertEq(withdrawals.getRedeemableAmount(user1), 120e6);
+
+        // User redeems and gets MORE than face value
         vm.prank(user1);
-        vm.expectRevert(UsdcWithdrawals.NoFundedWithdrawal.selector);
-        withdrawals.claimUsdc();
+        withdrawals.redeemAll();
+
+        assertEq(usdc.balanceOf(user1), 120e6);
     }
 
-    function test_CreditsToUsdcConversion() public view {
-        // 1000 credits (18 decimals) = $0.001 = 1000 USDC units (but USDC is 6 decimals)
-        // Actually: 1000e18 credits / 1000 / 1e12 = 1e6 = $1 USDC
-        // So 1000 credits = $1
+    function test_CannotRedeemMoreThanBonusCredits() public {
+        vm.prank(owner);
+        staking.addBonusCredits(user1, 1000e18);
 
-        assertEq(withdrawals.creditsToUsdc(1000e18), 1e6);   // 1000 credits = $1
-        assertEq(withdrawals.creditsToUsdc(10000e18), 10e6); // 10,000 credits = $10
-        assertEq(withdrawals.creditsToUsdc(1e18), 1e3);      // 1 credit = $0.001
+        vm.prank(owner);
+        usdc.approve(address(withdrawals), 100e6);
+        vm.prank(owner);
+        withdrawals.depositToPool(100e6);
+
+        vm.prank(user1);
+        vm.expectRevert(UsdcWithdrawals.InsufficientBonusCredits.selector);
+        withdrawals.redeem(2000e18);
     }
 
-    function test_UsdcToCreditsConversion() public view {
-        assertEq(withdrawals.usdcToCredits(1e6), 1000e18);   // $1 = 1000 credits
-        assertEq(withdrawals.usdcToCredits(10e6), 10000e18); // $10 = 10,000 credits
+    function test_CannotRedeemWithEmptyPool() public {
+        vm.prank(owner);
+        staking.addBonusCredits(user1, 1000e18);
+
+        // No pool deposit
+
+        vm.prank(user1);
+        vm.expectRevert(UsdcWithdrawals.NothingToRedeem.selector);
+        withdrawals.redeemAll();
+    }
+
+    function test_OwnerCanWithdrawFromPool() public {
+        // Deposit to pool
+        vm.prank(owner);
+        usdc.approve(address(withdrawals), 100e6);
+        vm.prank(owner);
+        withdrawals.depositToPool(100e6);
+
+        uint256 ownerBalanceBefore = usdc.balanceOf(owner);
+
+        // Withdraw half
+        vm.prank(owner);
+        withdrawals.withdrawFromPool(50e6);
+
+        assertEq(withdrawals.totalRedeemableUsdc(), 50e6);
+        assertEq(usdc.balanceOf(owner), ownerBalanceBefore + 50e6);
     }
 
     // ============ Integration Test ============
 
     function test_FullRewardsFlow() public {
-        // 1. User buys and stakes
-        vm.prank(user1);
-        usdc.approve(address(staking), 10e6);
-        vm.prank(user1);
-        staking.buyAndStake(10e6); // 10,000 credits
+        // 1. Users buy credits via buyAndStake
+        usdc.mint(user1, 100e6);
+        usdc.mint(user2, 100e6);
 
-        // 2. Owner adds bonus credits as rewards
+        vm.prank(user1);
+        usdc.approve(address(staking), 100e6);
+        vm.prank(user1);
+        staking.buyAndStake(100e6); // 100,000 staked credits
+
+        vm.prank(user2);
+        usdc.approve(address(staking), 100e6);
+        vm.prank(user2);
+        staking.buyAndStake(100e6); // 100,000 staked credits
+
+        // 2. Treasury earns yield, distributes as bonus credits
         vm.prank(owner);
-        staking.addBonusCredits(user1, 500e18); // +500 bonus credits
+        staking.addBonusCredits(user1, 10000e18); // +10,000 bonus
 
-        // User now has 10,500 credits
-        assertEq(staking.availableCredits(user1), 10500e18);
-
-        // 3. User wants to withdraw bonus as USDC
-        // (In real app, frontend would reduce bonusCredits first)
-        vm.prank(user1);
-        withdrawals.requestWithdrawal(500e18); // Request $0.50
-
-        // 4. Owner sees request and funds it
         vm.prank(owner);
-        usdc.approve(address(withdrawals), 1e6);
+        staking.addBonusCredits(user2, 10000e18); // +10,000 bonus
+
+        // Each user now has 110,000 total credits (100k staked + 10k bonus)
+        assertEq(staking.availableCredits(user1), 110000e18);
+        assertEq(staking.availableCredits(user2), 110000e18);
+
+        // 3. Treasury deposits USDC to redemption pool
+        // Total bonus = 20,000 credits = $20 face value
+        // Deposit $16 = 80% rate
         vm.prank(owner);
-        withdrawals.fundWithdrawal(user1, 500e3); // Fund $0.50 (500000 = 0.5 USDC)
+        usdc.approve(address(withdrawals), 16e6);
+        vm.prank(owner);
+        withdrawals.depositToPool(16e6);
 
-        // 5. User claims USDC
-        uint256 balanceBefore = usdc.balanceOf(user1);
+        // 4. User1 wants to cash out bonus credits
+        uint256 redeemable = withdrawals.getRedeemableAmount(user1);
+        assertEq(redeemable, 8e6); // $8 (10k credits at 80%)
+
         vm.prank(user1);
-        withdrawals.claimUsdc();
+        withdrawals.redeemAll();
 
-        assertEq(usdc.balanceOf(user1), balanceBefore + 500e3);
+        // 5. Verify final state
+        assertEq(usdc.balanceOf(user1), 8e6); // Got $8
+        assertEq(staking.bonusCredits(user1), 0); // Bonus credits burned
+        assertEq(staking.stakedBalance(user1), 100000e18); // Staked credits unchanged
+        assertEq(staking.availableCredits(user1), 100000e18); // Only staked remains
+
+        // User2 still has their bonus credits
+        assertEq(staking.bonusCredits(user2), 10000e18);
+    }
+
+    // ============ Authorization Tests ============
+
+    function test_OnlyWithdrawalContractCanRedeem() public {
+        vm.prank(owner);
+        staking.addBonusCredits(user1, 1000e18);
+
+        // Random address tries to call redeemBonusCredits
+        vm.prank(user1);
+        vm.expectRevert(SuiteStaking.UnauthorizedWithdrawalContract.selector);
+        staking.redeemBonusCredits(user1, 500e18);
+    }
+
+    function test_OnlyOwnerCanDepositToPool() public {
+        usdc.mint(user1, 100e6);
+        vm.prank(user1);
+        usdc.approve(address(withdrawals), 100e6);
+
+        vm.prank(user1);
+        vm.expectRevert();
+        withdrawals.depositToPool(100e6);
     }
 }
