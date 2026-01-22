@@ -2469,6 +2469,55 @@
             font-size: 0.9rem;
         }
 
+        .view-choice-recommendation {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(16, 185, 129, 0.1));
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .view-choice-recommendation.mobile {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(99, 102, 241, 0.1));
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+
+        .view-choice-recommendation.web {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(139, 92, 246, 0.1));
+            border-color: rgba(168, 85, 247, 0.3);
+        }
+
+        .view-choice-recommendation-icon {
+            font-size: 1.2rem;
+        }
+
+        .view-choice-btn.recommended {
+            border-color: rgba(34, 197, 94, 0.5);
+            box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+        }
+
+        .view-choice-btn.recommended::after {
+            content: '✓ Recommended';
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            background: #22c55e;
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .view-choice-btn {
+            position: relative;
+        }
+
         .view-choice-cancel:hover {
             color: var(--text-primary);
         }
@@ -5993,15 +6042,16 @@
         <div class="view-choice-modal">
             <div class="view-choice-title" id="viewChoiceAppName">Open App</div>
             <div class="view-choice-subtitle">Choose how to view this app</div>
+            <div class="view-choice-recommendation" id="viewChoiceRecommendation" style="display: none;"></div>
             <div class="view-choice-options">
-                <button class="view-choice-btn" onclick="openAppInMode('mobile')">
+                <button class="view-choice-btn" id="viewChoiceMobileBtn" onclick="openAppInMode('mobile')">
                     <span class="view-choice-btn-icon">📱</span>
                     <div class="view-choice-btn-text">
                         <div class="view-choice-btn-title">Mobile Preview</div>
                         <div class="view-choice-btn-desc">Test the mobile experience in a phone frame</div>
                     </div>
                 </button>
-                <button class="view-choice-btn" onclick="openAppInMode('fullscreen')">
+                <button class="view-choice-btn" id="viewChoiceWebBtn" onclick="openAppInMode('fullscreen')">
                     <span class="view-choice-btn-icon">🖥️</span>
                     <div class="view-choice-btn-text">
                         <div class="view-choice-btn-title">Fullscreen</div>
@@ -7238,6 +7288,33 @@
                 // Desktop: show choice modal
                 pendingAppSlug = slug;
                 document.getElementById('viewChoiceAppName').textContent = app.name;
+
+                // Show platform recommendation
+                const recommendation = document.getElementById('viewChoiceRecommendation');
+                const mobileBtn = document.getElementById('viewChoiceMobileBtn');
+                const webBtn = document.getElementById('viewChoiceWebBtn');
+
+                // Reset states
+                mobileBtn.classList.remove('recommended');
+                webBtn.classList.remove('recommended');
+                recommendation.classList.remove('mobile', 'web');
+
+                const platform = app.type || 'both';
+
+                if (platform === 'mobile') {
+                    recommendation.innerHTML = '<span class="view-choice-recommendation-icon">📱</span> This app is optimized for mobile devices';
+                    recommendation.classList.add('mobile');
+                    recommendation.style.display = 'flex';
+                    mobileBtn.classList.add('recommended');
+                } else if (platform === 'web') {
+                    recommendation.innerHTML = '<span class="view-choice-recommendation-icon">💻</span> This app is optimized for web browsers';
+                    recommendation.classList.add('web');
+                    recommendation.style.display = 'flex';
+                    webBtn.classList.add('recommended');
+                } else {
+                    recommendation.style.display = 'none';
+                }
+
                 document.getElementById('viewChoiceModal').classList.add('active');
             }
         }
