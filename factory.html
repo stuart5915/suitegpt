@@ -2357,6 +2357,11 @@
             }
         }
 
+        /* Mobile Voting Info - only show on mobile */
+        .mobile-voting-info {
+            display: none;
+        }
+
         @media (max-width: 768px) {
             .factory-sidebar {
                 display: none;
@@ -2376,6 +2381,75 @@
 
             .section-kanban {
                 grid-template-columns: 1fr;
+            }
+
+            /* Mobile voting info section */
+            .mobile-voting-info {
+                display: block;
+                background: var(--bg-card);
+                border: 1px solid var(--border);
+                border-radius: 12px;
+                margin-bottom: 16px;
+                overflow: hidden;
+            }
+
+            .mobile-voting-header {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 14px 16px;
+                cursor: pointer;
+                background: rgba(255, 255, 255, 0.02);
+            }
+
+            .mobile-voting-header h3 {
+                font-size: 0.95rem;
+                font-weight: 700;
+                margin: 0;
+                color: var(--text-primary);
+            }
+
+            .mobile-voting-toggle {
+                font-size: 0.75rem;
+                color: var(--text-dim);
+                transition: transform 0.2s ease;
+            }
+
+            .mobile-voting-info:not(.collapsed) .mobile-voting-toggle {
+                transform: rotate(90deg);
+            }
+
+            .mobile-voting-content {
+                padding: 0 16px 16px;
+                display: none;
+            }
+
+            .mobile-voting-info:not(.collapsed) .mobile-voting-content {
+                display: block;
+            }
+
+            .mobile-voting-section {
+                padding: 12px 0;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .mobile-voting-section:last-child {
+                border-bottom: none;
+                padding-bottom: 0;
+            }
+
+            .mobile-voting-section strong {
+                display: block;
+                font-size: 0.85rem;
+                margin-bottom: 6px;
+                color: var(--text-primary);
+            }
+
+            .mobile-voting-section p {
+                font-size: 0.8rem;
+                color: var(--text-dim);
+                margin: 4px 0;
+                line-height: 1.4;
             }
         }
     </style>
@@ -2462,6 +2536,30 @@
                     <div class="governance-title-row">
                         <h2 style="font-size: 1.3rem; font-weight: 800; margin: 0;">🏛️ Governance</h2>
                         <button class="notebox-connect-btn" onclick="openConnectNoteboxModal()" title="Submit an idea">+</button>
+                    </div>
+                </div>
+
+                <!-- Mobile How Voting Works (collapsed) -->
+                <div class="mobile-voting-info collapsed" id="mobileVotingInfo">
+                    <div class="mobile-voting-header" onclick="toggleMobileVotingInfo()">
+                        <span class="mobile-voting-toggle">▶</span>
+                        <h3>📋 How Voting Works</h3>
+                    </div>
+                    <div class="mobile-voting-content">
+                        <div class="mobile-voting-section">
+                            <strong>💳 Get Credits</strong>
+                            <p>1,000 credits per $1 USDC. <a href="/profile.html" style="color: var(--accent);">Buy on Profile →</a></p>
+                        </div>
+                        <div class="mobile-voting-section">
+                            <strong>🗳️ Spend Credits</strong>
+                            <p><span style="color: #22c55e;">FREE</span> first vote on any proposal</p>
+                            <p>Quadratic cost for more: 1 → 3 → 6 credits</p>
+                            <p style="color: #22c55e; font-size: 0.8rem;">Credits spent = removed from circulation</p>
+                        </div>
+                        <div class="mobile-voting-section">
+                            <strong>📝 Submit Proposals</strong>
+                            <p><span style="color: #22c55e;">FREE</span> to submit • 7 days to get voted on</p>
+                        </div>
                     </div>
                 </div>
 
@@ -3469,6 +3567,14 @@
             const loopsSection = document.getElementById('loops');
             if (loopsSection) {
                 loopsSection.classList.toggle('collapsed');
+            }
+        }
+
+        // Toggle mobile voting info section
+        function toggleMobileVotingInfo() {
+            const votingInfo = document.getElementById('mobileVotingInfo');
+            if (votingInfo) {
+                votingInfo.classList.toggle('collapsed');
             }
         }
 
