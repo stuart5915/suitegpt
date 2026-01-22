@@ -642,6 +642,31 @@
             margin-top: 12px;
         }
 
+        /* Fiat amount buttons */
+        .fiat-amount-btn {
+            flex: 1;
+            padding: 10px 8px;
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--text-dark);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .fiat-amount-btn:hover {
+            border-color: var(--accent-terracotta);
+            background: rgba(196, 114, 95, 0.1);
+        }
+
+        .fiat-amount-btn.active {
+            border-color: var(--accent-terracotta);
+            background: var(--accent-terracotta);
+            color: white;
+        }
+
         /* Toast notifications */
         .toast {
             position: fixed;
@@ -941,17 +966,30 @@
                 <div onclick="showBuyMethodState()" style="color: var(--text-medium); font-size: 0.85rem; cursor: pointer; margin-bottom: 16px;">&#8592; Back</div>
                 <h3>Pay with Card</h3>
 
-                <div style="text-align: center; padding: 30px 0;">
-                    <div style="font-size: 3rem; margin-bottom: 16px;">&#128679;</div>
-                    <div style="font-weight: 700; color: var(--text-dark); margin-bottom: 8px;">Coming Soon</div>
-                    <div style="color: var(--text-medium); font-size: 0.9rem;">
-                        Card payments will be available soon.<br>For now, use USDC on Base.
+                <div class="modal-input-group">
+                    <label>Amount (USD)</label>
+                    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                        <button onclick="setFiatAmount(5)" class="fiat-amount-btn" data-amount="5">$5</button>
+                        <button onclick="setFiatAmount(10)" class="fiat-amount-btn active" data-amount="10">$10</button>
+                        <button onclick="setFiatAmount(25)" class="fiat-amount-btn" data-amount="25">$25</button>
+                        <button onclick="setFiatAmount(50)" class="fiat-amount-btn" data-amount="50">$50</button>
                     </div>
+                    <input type="number" class="modal-input" id="fiatAmount" placeholder="10" min="1" max="1000" step="1" value="10" oninput="updateFiatPreview()">
                 </div>
-
-                <button onclick="showBuyCryptoState()" class="btn-modal-action buy">
-                    Pay with Crypto Instead
+                <div class="modal-preview">
+                    <div class="modal-preview-value" id="fiatPreviewCredits">10,000</div>
+                    <div class="modal-preview-label">Credits you'll receive</div>
+                </div>
+                <button class="btn-modal-action buy" id="btnFiatPay" onclick="initiateStripeCheckout()">
+                    <span id="fiatPayText">Pay $10 with Card</span>
                 </button>
+                <p class="modal-note" style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    Secure payment via Stripe
+                </p>
+                <div style="margin-top: 16px; padding: 12px; background: rgba(0,0,0,0.03); border-radius: 10px; font-size: 0.75rem; color: var(--text-light); line-height: 1.5;">
+                    <strong style="color: var(--text-medium);">Please note:</strong> Your credits are used for AI features in apps. As the reward pool grows, you'll earn bonus credits that can be withdrawn. Pool performance can go up or down. <a href="/docs/vault/" style="color: var(--accent-terracotta);">Learn more →</a>
+                </div>
             </div>
         </div>
     </div>
@@ -1321,7 +1359,84 @@
             document.getElementById('buyMethodState').style.display = 'none';
             document.getElementById('buyCryptoState').style.display = 'none';
             document.getElementById('buyFiatState').style.display = 'block';
+            updateFiatPreview();
         }
+
+        // Fiat payment functions
+        function setFiatAmount(amount) {
+            document.getElementById('fiatAmount').value = amount;
+            document.querySelectorAll('.fiat-amount-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.fiat-amount-btn[data-amount="${amount}"]`)?.classList.add('active');
+            updateFiatPreview();
+        }
+
+        function updateFiatPreview() {
+            const amount = parseFloat(document.getElementById('fiatAmount').value) || 0;
+            const credits = amount * CREDITS_PER_USDC;
+            document.getElementById('fiatPreviewCredits').textContent = credits.toLocaleString();
+            document.getElementById('fiatPayText').textContent = `Pay $${amount} with Card`;
+        }
+
+        async function initiateStripeCheckout() {
+            const amount = parseFloat(document.getElementById('fiatAmount').value) || 0;
+            const wallet = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWalletAddress');
+
+            if (!wallet) {
+                showToast('Please connect your wallet first', 'error');
+                return;
+            }
+
+            if (amount < 1 || amount > 1000) {
+                showToast('Amount must be between $1 and $1000', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('btnFiatPay');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span>Redirecting to Stripe...</span>';
+
+            try {
+                const response = await fetch('/api/create-checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount, walletAddress: wallet })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Redirect to Stripe Checkout
+                window.location.href = data.url;
+
+            } catch (error) {
+                console.error('Stripe checkout error:', error);
+                showToast('Failed to start checkout: ' + error.message, 'error');
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        // Check for payment success on page load
+        function checkPaymentStatus() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('payment') === 'success') {
+                showToast('Payment successful! Credits will be added shortly.', 'success');
+                // Clean up URL
+                window.history.replaceState({}, '', '/profile.html');
+                // Refresh balance after a short delay
+                setTimeout(() => refreshCreditsDisplay(), 2000);
+            } else if (params.get('payment') === 'cancelled') {
+                showToast('Payment was cancelled', 'info');
+                window.history.replaceState({}, '', '/profile.html');
+            }
+        }
+
+        // Call on page load
+        document.addEventListener('DOMContentLoaded', checkPaymentStatus);
 
         function updateBuyPreview() {
             const amount = parseFloat(document.getElementById('buyAmount').value) || 0;
