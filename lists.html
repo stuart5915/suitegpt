@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Lists | SUITE</title>
+    <link rel="icon" type="image/png" href="assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="suite-styles.css">
+    <link rel="stylesheet" href="nav.css">
+    <style>
+        html {
+            overflow-y: scroll;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fff5eb 0%, #ffe4d4 20%, #ffd4e3 50%, #e8d5f9 80%, #d4e5ff 100%);
+            min-height: 100vh;
+            color: #2d1b4e;
+        }
+
+        .lists-container {
+            max-width: 900px;
+            margin: 100px auto 40px;
+            padding: 0 20px;
+        }
+
+        .lists-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .lists-title {
+            font-size: 2rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        /* Buttons */
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 149, 0, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.8);
+            color: #5a4a6f;
+            border: 2px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-secondary:hover {
+            background: white;
+        }
+
+        .btn-icon {
+            padding: 12px;
+        }
+
+        /* Quick Add Bar */
+        .quick-add-bar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08);
+            display: flex;
+            gap: 12px;
+        }
+
+        .quick-add-input {
+            flex: 1;
+            border: 2px solid rgba(255, 149, 0, 0.2);
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-size: 1rem;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .quick-add-input:focus {
+            border-color: #ff9500;
+        }
+
+        .quick-add-input::placeholder {
+            color: #aaa;
+        }
+
+        .quick-add-hint {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 8px;
+            padding: 0 4px;
+        }
+
+        /* Lists Grid */
+        .lists-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .list-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08);
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .list-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 60px rgba(0, 0, 0, 0.12);
+        }
+
+        .list-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .list-card-icon {
+            font-size: 2rem;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 149, 0, 0.1);
+            border-radius: 14px;
+        }
+
+        .list-card-info {
+            flex: 1;
+        }
+
+        .list-card-name {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin-bottom: 4px;
+        }
+
+        .list-card-meta {
+            font-size: 0.85rem;
+            color: #5a4a6f;
+            display: flex;
+            gap: 12px;
+        }
+
+        .shared-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(0, 136, 204, 0.1);
+            color: #0088cc;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        /* List items preview */
+        .list-card-items {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .list-item-preview {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            color: #5a4a6f;
+            font-size: 0.9rem;
+        }
+
+        .item-checkbox {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .item-checkbox.completed {
+            background: #4caf50;
+            border-color: #4caf50;
+            position: relative;
+        }
+
+        .item-checkbox.completed::after {
+            content: "✓";
+            color: white;
+            font-size: 12px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .item-text {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .item-text.completed {
+            text-decoration: line-through;
+            opacity: 0.5;
+        }
+
+        .more-items {
+            color: #888;
+            font-size: 0.85rem;
+            font-style: italic;
+            padding-top: 8px;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 24px;
+            margin-top: 20px;
+        }
+
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+
+        .empty-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin-bottom: 8px;
+        }
+
+        .empty-desc {
+            color: #5a4a6f;
+            margin-bottom: 24px;
+        }
+
+        /* Login prompt */
+        .login-prompt {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 40px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .login-prompt h2 {
+            font-size: 1.5rem;
+            color: #2d1b4e;
+            margin-bottom: 12px;
+        }
+
+        .login-prompt p {
+            color: #5a4a6f;
+            margin-bottom: 24px;
+        }
+
+        .btn-telegram {
+            background: #0088cc;
+            color: white;
+        }
+
+        .btn-telegram:hover {
+            background: #006699;
+        }
+
+        /* Create List Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 24px;
+            padding: 32px;
+            max-width: 400px;
+            width: 90%;
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 700;
+            color: #2d1b4e;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-size: 1rem;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+        }
+
+        .form-input:focus {
+            border-color: #ff9500;
+        }
+
+        .type-selector {
+            display: flex;
+            gap: 12px;
+        }
+
+        .type-option {
+            flex: 1;
+            padding: 16px;
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .type-option:hover {
+            border-color: rgba(255, 149, 0, 0.3);
+        }
+
+        .type-option.selected {
+            border-color: #ff9500;
+            background: rgba(255, 149, 0, 0.08);
+        }
+
+        .type-option-icon {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+
+        .type-option-label {
+            font-weight: 700;
+            color: #2d1b4e;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .modal-actions button {
+            flex: 1;
+        }
+
+        /* Footer */
+        .footer {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+            margin-top: 60px;
+        }
+
+        .footer p {
+            opacity: 0.7;
+        }
+
+        @media (max-width: 600px) {
+            .lists-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .quick-add-bar {
+                flex-direction: column;
+            }
+
+            .lists-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav id="main-nav"></nav>
+    <script src="nav-component.js"></script>
+
+    <div class="lists-container">
+        <div class="lists-header">
+            <h1 class="lists-title">My Lists</h1>
+            <div class="header-actions" id="headerActions" style="display: none;">
+                <button class="action-btn btn-secondary" onclick="openCreateModal()">
+                    + New List
+                </button>
+                <a href="widget-setup.html" class="action-btn btn-secondary btn-icon" title="Widget Setup">
+                    📱
+                </a>
+            </div>
+        </div>
+
+        <!-- Login prompt (shown when not logged in) -->
+        <div class="login-prompt" id="loginPrompt">
+            <h2>Welcome to SUITE Lists</h2>
+            <p>Log in with Telegram to view and manage your tasks and groceries.</p>
+            <button class="action-btn btn-telegram" onclick="redirectToLogin()">
+                Log in with Telegram
+            </button>
+        </div>
+
+        <!-- Main content (shown when logged in) -->
+        <div id="mainContent" style="display: none;">
+            <!-- Quick Add -->
+            <div class="quick-add-bar">
+                <input type="text" class="quick-add-input" id="quickAddInput"
+                    placeholder="Add items... (e.g., 'milk, eggs, call mom')">
+                <button class="action-btn btn-primary" onclick="quickAdd()">Add</button>
+            </div>
+            <div class="quick-add-hint">
+                AI will automatically sort items into Tasks or Groceries
+            </div>
+
+            <!-- Lists Grid -->
+            <div class="lists-grid" id="listsGrid">
+                <!-- Lists will be populated here -->
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state" id="emptyState" style="display: none;">
+                <div class="empty-icon">📝</div>
+                <h2 class="empty-title">No lists yet</h2>
+                <p class="empty-desc">Create your first list to start tracking tasks and groceries.</p>
+                <button class="action-btn btn-primary" onclick="openCreateModal()">
+                    Create a List
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create List Modal -->
+    <div class="modal-overlay" id="createModal" onclick="closeCreateModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <h2 class="modal-title">Create New List</h2>
+
+            <div class="form-group">
+                <label class="form-label">List Name</label>
+                <input type="text" class="form-input" id="listNameInput" placeholder="e.g., Weekend Projects">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Type</label>
+                <div class="type-selector">
+                    <div class="type-option selected" data-type="tasks" onclick="selectType(this)">
+                        <div class="type-option-icon">✅</div>
+                        <div class="type-option-label">Tasks</div>
+                    </div>
+                    <div class="type-option" data-type="groceries" onclick="selectType(this)">
+                        <div class="type-option-icon">🛒</div>
+                        <div class="type-option-label">Groceries</div>
+                    </div>
+                    <div class="type-option" data-type="custom" onclick="selectType(this)">
+                        <div class="type-option-icon">📋</div>
+                        <div class="type-option-label">Custom</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="action-btn btn-secondary" onclick="closeCreateModal()">Cancel</button>
+                <button class="action-btn btn-primary" onclick="createList()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>© 2026 SUITE. Anyone Can Build. Everyone Gets Paid.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY0MTM3MjEsImV4cCI6MjA1MTk4OTcyMX0.02TknSSBBbp9VaG5cR_0jXy8lP3BhyXFZSRvMXMYsAM';
+        const GET_LISTS_ENDPOINT = SUPABASE_URL + '/functions/v1/widget-get-lists';
+        const QUICK_ADD_ENDPOINT = SUPABASE_URL + '/functions/v1/widget-quick-add';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let currentUser = null;
+        let lists = [];
+        let selectedType = 'tasks';
+
+        // Check login status
+        function checkLogin() {
+            const telegramAuth = localStorage.getItem('telegram_auth');
+            if (telegramAuth) {
+                try {
+                    const auth = JSON.parse(telegramAuth);
+                    if (auth.id) {
+                        currentUser = auth;
+                        document.getElementById('loginPrompt').style.display = 'none';
+                        document.getElementById('mainContent').style.display = 'block';
+                        document.getElementById('headerActions').style.display = 'flex';
+                        return true;
+                    }
+                } catch (e) {
+                    console.error('Error parsing auth:', e);
+                }
+            }
+            return false;
+        }
+
+        function redirectToLogin() {
+            localStorage.setItem('return_after_login', window.location.href);
+            window.location.href = 'profile.html';
+        }
+
+        // Fetch lists
+        async function fetchLists() {
+            if (!currentUser) return;
+
+            try {
+                const response = await fetch(GET_LISTS_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ telegram_id: currentUser.id.toString() })
+                });
+
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
+
+                lists = data.lists || [];
+                renderLists();
+            } catch (e) {
+                console.error('Error fetching lists:', e);
+            }
+        }
+
+        // Render lists
+        function renderLists() {
+            const grid = document.getElementById('listsGrid');
+            const emptyState = document.getElementById('emptyState');
+
+            if (lists.length === 0) {
+                grid.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+
+            grid.innerHTML = lists.map(list => {
+                const incompleteItems = list.items.filter(i => !i.is_completed);
+                const completedItems = list.items.filter(i => i.is_completed);
+                const previewItems = incompleteItems.slice(0, 3);
+                const remaining = incompleteItems.length - 3;
+
+                return `
+                    <a href="list-detail.html?id=${list.id}" class="list-card">
+                        <div class="list-card-header">
+                            <div class="list-card-icon">${list.icon}</div>
+                            <div class="list-card-info">
+                                <div class="list-card-name">${escapeHtml(list.name)}</div>
+                                <div class="list-card-meta">
+                                    <span>${incompleteItems.length} items</span>
+                                    ${list.is_shared ? `<span class="shared-badge">👥 Shared</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        ${previewItems.length > 0 ? `
+                            <div class="list-card-items">
+                                ${previewItems.map(item => `
+                                    <div class="list-item-preview">
+                                        <div class="item-checkbox"></div>
+                                        <span class="item-text">${escapeHtml(item.content)}</span>
+                                    </div>
+                                `).join('')}
+                                ${remaining > 0 ? `<div class="more-items">+${remaining} more</div>` : ''}
+                            </div>
+                        ` : `
+                            <div class="list-card-items">
+                                <div class="more-items">All done!</div>
+                            </div>
+                        `}
+                    </a>
+                `;
+            }).join('');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Quick Add
+        async function quickAdd() {
+            const input = document.getElementById('quickAddInput');
+            const text = input.value.trim();
+
+            if (!text) return;
+
+            input.disabled = true;
+
+            try {
+                const response = await fetch(QUICK_ADD_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text,
+                        telegram_id: currentUser.id.toString()
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                } else {
+                    input.value = '';
+                    // Show feedback
+                    const message = data.message || `Added ${data.added?.length || 0} items`;
+                    showToast(message);
+                    // Refresh lists
+                    await fetchLists();
+                }
+            } catch (e) {
+                console.error('Quick add error:', e);
+                alert('Failed to add items');
+            }
+
+            input.disabled = false;
+            input.focus();
+        }
+
+        // Enter key handler for quick add
+        document.getElementById('quickAddInput')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') quickAdd();
+        });
+
+        // Toast notification
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #2d1b4e;
+                color: white;
+                padding: 14px 24px;
+                border-radius: 12px;
+                font-weight: 600;
+                z-index: 1000;
+                animation: fadeIn 0.3s;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s';
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+
+        // Create List Modal
+        function openCreateModal() {
+            document.getElementById('createModal').classList.add('active');
+            document.getElementById('listNameInput').focus();
+        }
+
+        function closeCreateModal(event) {
+            if (!event || event.target === event.currentTarget) {
+                document.getElementById('createModal').classList.remove('active');
+                document.getElementById('listNameInput').value = '';
+            }
+        }
+
+        function selectType(element) {
+            document.querySelectorAll('.type-option').forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+            selectedType = element.dataset.type;
+        }
+
+        async function createList() {
+            const name = document.getElementById('listNameInput').value.trim();
+            if (!name) {
+                alert('Please enter a list name');
+                return;
+            }
+
+            const icons = { tasks: '✅', groceries: '🛒', custom: '📋' };
+
+            try {
+                // Insert list
+                const { data: newList, error: listErr } = await supabase
+                    .from('suite_lists')
+                    .insert({
+                        name,
+                        type: selectedType,
+                        icon: icons[selectedType],
+                        owner_id: currentUser.factory_user_id // Need to get this
+                    })
+                    .select()
+                    .single();
+
+                if (listErr) throw listErr;
+
+                // Also need to add as member - this should be done server-side
+                // For now, we'll rely on the widget-quick-add creating default lists
+
+                closeCreateModal();
+                await fetchLists();
+                showToast('List created!');
+
+            } catch (e) {
+                console.error('Create list error:', e);
+                alert('Failed to create list. Try adding an item instead - default lists will be created automatically.');
+                closeCreateModal();
+            }
+        }
+
+        // Initialize
+        if (checkLogin()) {
+            fetchLists();
+        }
+
+        // Handle return from login
+        const returnUrl = localStorage.getItem('return_after_login');
+        if (returnUrl && window.location.href === returnUrl) {
+            localStorage.removeItem('return_after_login');
+        }
+    </script>
+</body>
+
+</html>

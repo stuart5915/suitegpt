@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join List | SUITE</title>
+    <link rel="icon" type="image/png" href="assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="suite-styles.css">
+    <link rel="stylesheet" href="nav.css">
+    <style>
+        html {
+            overflow-y: scroll;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fff5eb 0%, #ffe4d4 20%, #ffd4e3 50%, #e8d5f9 80%, #d4e5ff 100%);
+            min-height: 100vh;
+            color: #2d1b4e;
+        }
+
+        .join-container {
+            max-width: 480px;
+            margin: 120px auto 40px;
+            padding: 0 20px;
+        }
+
+        .join-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 32px;
+            padding: 40px;
+            box-shadow: 0 16px 80px rgba(0, 0, 0, 0.08);
+            text-align: center;
+        }
+
+        .join-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+
+        .join-title {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: #2d1b4e;
+            margin-bottom: 8px;
+        }
+
+        .join-subtitle {
+            color: #5a4a6f;
+            font-size: 1rem;
+            margin-bottom: 32px;
+        }
+
+        /* List preview */
+        .list-preview {
+            background: rgba(255, 149, 0, 0.08);
+            border: 2px solid rgba(255, 149, 0, 0.2);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .list-preview-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .list-preview-icon {
+            font-size: 2rem;
+        }
+
+        .list-preview-name {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #2d1b4e;
+        }
+
+        .list-preview-meta {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            color: #5a4a6f;
+            font-size: 0.9rem;
+        }
+
+        .list-preview-meta span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Buttons */
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            padding: 16px 32px;
+            border-radius: 16px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: none;
+            margin-bottom: 12px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 149, 0, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-telegram {
+            background: #0088cc;
+            color: white;
+        }
+
+        .btn-telegram:hover {
+            background: #006699;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #5a4a6f;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        /* States */
+        .loading-state, .error-state, .success-state, .already-member-state {
+            padding: 40px 20px;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid rgba(255, 149, 0, 0.2);
+            border-top-color: #ff9500;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .success-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+
+        .success-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin-bottom: 8px;
+        }
+
+        .success-message {
+            color: #5a4a6f;
+            margin-bottom: 24px;
+        }
+
+        /* Hide states */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Footer */
+        .footer {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+            margin-top: 60px;
+        }
+
+        .footer p {
+            opacity: 0.7;
+        }
+    </style>
+</head>
+
+<body>
+    <nav id="main-nav"></nav>
+    <script src="nav-component.js"></script>
+
+    <div class="join-container">
+        <div class="join-card">
+            <!-- Loading State -->
+            <div id="loadingState" class="loading-state">
+                <div class="spinner"></div>
+                <p>Loading list info...</p>
+            </div>
+
+            <!-- Error State -->
+            <div id="errorState" class="error-state hidden">
+                <div class="error-icon">😕</div>
+                <h2 class="join-title">Link Not Found</h2>
+                <p class="join-subtitle" id="errorMessage">This share link is invalid or has expired.</p>
+                <a href="lists.html" class="action-btn btn-secondary">Go to My Lists</a>
+            </div>
+
+            <!-- List Preview (ready to join) -->
+            <div id="previewState" class="hidden">
+                <div class="join-icon">👥</div>
+                <h1 class="join-title">You're Invited!</h1>
+                <p class="join-subtitle">Join this shared list</p>
+
+                <div class="list-preview">
+                    <div class="list-preview-header">
+                        <span class="list-preview-icon" id="listIcon">📝</span>
+                        <span class="list-preview-name" id="listName">Loading...</span>
+                    </div>
+                    <div class="list-preview-meta">
+                        <span>👤 <span id="ownerName">Owner</span></span>
+                        <span>👥 <span id="memberCount">1</span> members</span>
+                    </div>
+                </div>
+
+                <!-- Login required -->
+                <div id="loginRequired">
+                    <p style="color: #5a4a6f; margin-bottom: 16px;">Log in with Telegram to join this list</p>
+                    <button class="action-btn btn-telegram" id="telegramLoginBtn">
+                        Log in with Telegram
+                    </button>
+                </div>
+
+                <!-- Ready to join (logged in) -->
+                <div id="readyToJoin" class="hidden">
+                    <p style="color: #5a4a6f; margin-bottom: 16px;">
+                        Logged in as <strong id="userName">User</strong>
+                    </p>
+                    <button class="action-btn btn-primary" id="joinBtn" onclick="joinList()">
+                        Join List
+                    </button>
+                </div>
+            </div>
+
+            <!-- Already Member State -->
+            <div id="alreadyMemberState" class="already-member-state hidden">
+                <div class="success-icon">✅</div>
+                <h2 class="success-title">Already a Member!</h2>
+                <p class="success-message">You're already a member of this list.</p>
+                <a href="lists.html" class="action-btn btn-primary">Go to My Lists</a>
+            </div>
+
+            <!-- Success State -->
+            <div id="successState" class="success-state hidden">
+                <div class="success-icon">🎉</div>
+                <h2 class="success-title">You're In!</h2>
+                <p class="success-message">You've joined <strong id="joinedListName">the list</strong>. Start adding items!</p>
+                <a href="lists.html" class="action-btn btn-primary">View My Lists</a>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>© 2026 SUITE. Anyone Can Build. Everyone Gets Paid.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY0MTM3MjEsImV4cCI6MjA1MTk4OTcyMX0.02TknSSBBbp9VaG5cR_0jXy8lP3BhyXFZSRvMXMYsAM';
+        const LIST_SHARE_ENDPOINT = SUPABASE_URL + '/functions/v1/list-share';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Get share code from URL
+        function getShareCode() {
+            const path = window.location.pathname;
+            // Handle /join/abc123 format
+            const match = path.match(/\/join\/([a-z0-9]+)/i);
+            if (match) return match[1];
+
+            // Handle ?code=abc123 format
+            const params = new URLSearchParams(window.location.search);
+            return params.get('code');
+        }
+
+        // State management
+        function showState(stateId) {
+            ['loadingState', 'errorState', 'previewState', 'alreadyMemberState', 'successState'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(stateId).classList.remove('hidden');
+        }
+
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            showState('errorState');
+        }
+
+        // Get list info
+        async function getListInfo(shareCode) {
+            try {
+                const response = await fetch(LIST_SHARE_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'get_link_info',
+                        share_code: shareCode
+                    })
+                });
+
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
+                return data.list;
+            } catch (e) {
+                console.error('Error getting list info:', e);
+                throw e;
+            }
+        }
+
+        // Join list
+        async function joinList() {
+            const shareCode = getShareCode();
+            const telegramAuth = localStorage.getItem('telegram_auth');
+
+            if (!telegramAuth) {
+                alert('Please log in with Telegram first');
+                return;
+            }
+
+            const joinBtn = document.getElementById('joinBtn');
+            joinBtn.disabled = true;
+            joinBtn.textContent = 'Joining...';
+
+            try {
+                const auth = JSON.parse(telegramAuth);
+                const response = await fetch(LIST_SHARE_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'join',
+                        share_code: shareCode,
+                        telegram_id: auth.id.toString()
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                if (data.already_member) {
+                    showState('alreadyMemberState');
+                } else {
+                    document.getElementById('joinedListName').textContent = data.list.name;
+                    showState('successState');
+                }
+            } catch (e) {
+                console.error('Join error:', e);
+                alert('Failed to join: ' + e.message);
+                joinBtn.disabled = false;
+                joinBtn.textContent = 'Join List';
+            }
+        }
+
+        // Check if user is logged in
+        function checkLogin() {
+            const telegramAuth = localStorage.getItem('telegram_auth');
+            if (telegramAuth) {
+                try {
+                    const auth = JSON.parse(telegramAuth);
+                    document.getElementById('loginRequired').classList.add('hidden');
+                    document.getElementById('readyToJoin').classList.remove('hidden');
+                    document.getElementById('userName').textContent = auth.username || auth.first_name || 'User';
+                    return true;
+                } catch (e) {
+                    console.error('Error parsing auth:', e);
+                }
+            }
+            return false;
+        }
+
+        // Setup Telegram login
+        function setupTelegramLogin() {
+            const btn = document.getElementById('telegramLoginBtn');
+            btn.addEventListener('click', () => {
+                // Save current URL to return after login
+                localStorage.setItem('return_after_login', window.location.href);
+                window.location.href = 'profile.html';
+            });
+        }
+
+        // Initialize
+        async function init() {
+            const shareCode = getShareCode();
+
+            if (!shareCode) {
+                showError('No share code provided. Make sure you have the complete invite link.');
+                return;
+            }
+
+            try {
+                const listInfo = await getListInfo(shareCode);
+
+                // Update UI with list info
+                document.getElementById('listIcon').textContent = listInfo.icon || '📝';
+                document.getElementById('listName').textContent = listInfo.name;
+                document.getElementById('ownerName').textContent = listInfo.owner_name;
+                document.getElementById('memberCount').textContent = listInfo.member_count;
+
+                showState('previewState');
+
+                // Check login status
+                checkLogin();
+                setupTelegramLogin();
+
+            } catch (e) {
+                showError(e.message || 'This share link is invalid or has expired.');
+            }
+        }
+
+        // Check for return after login
+        const returnUrl = localStorage.getItem('return_after_login');
+        if (returnUrl && returnUrl.includes('/join/')) {
+            localStorage.removeItem('return_after_login');
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

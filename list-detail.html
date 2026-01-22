@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>List | SUITE</title>
+    <link rel="icon" type="image/png" href="assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="suite-styles.css">
+    <link rel="stylesheet" href="nav.css">
+    <style>
+        html {
+            overflow-y: scroll;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fff5eb 0%, #ffe4d4 20%, #ffd4e3 50%, #e8d5f9 80%, #d4e5ff 100%);
+            min-height: 100vh;
+            color: #2d1b4e;
+        }
+
+        .detail-container {
+            max-width: 700px;
+            margin: 100px auto 40px;
+            padding: 0 20px;
+        }
+
+        /* Back link */
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #5a4a6f;
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 20px;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: #ff9500;
+        }
+
+        /* List Header */
+        .list-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08);
+        }
+
+        .list-header-top {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .list-icon {
+            font-size: 2.5rem;
+            width: 64px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 149, 0, 0.1);
+            border-radius: 18px;
+        }
+
+        .list-info {
+            flex: 1;
+        }
+
+        .list-name {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: #2d1b4e;
+            margin-bottom: 4px;
+        }
+
+        .list-meta {
+            color: #5a4a6f;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .shared-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0, 136, 204, 0.1);
+            color: #0088cc;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        /* Header Actions */
+        .header-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(255, 149, 0, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(0, 0, 0, 0.05);
+            color: #5a4a6f;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-danger {
+            background: rgba(244, 67, 54, 0.1);
+            color: #f44336;
+        }
+
+        .btn-danger:hover {
+            background: rgba(244, 67, 54, 0.2);
+        }
+
+        /* Add Item */
+        .add-item-bar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            display: flex;
+            gap: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+        }
+
+        .add-item-input {
+            flex: 1;
+            border: 2px solid rgba(255, 149, 0, 0.2);
+            border-radius: 10px;
+            padding: 12px 14px;
+            font-size: 1rem;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .add-item-input:focus {
+            border-color: #ff9500;
+        }
+
+        /* Items List */
+        .items-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08);
+        }
+
+        .items-section-title {
+            padding: 16px 20px 8px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .item-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            transition: background 0.2s;
+        }
+
+        .item-row:hover {
+            background: rgba(255, 149, 0, 0.03);
+        }
+
+        .item-row:last-child {
+            border-bottom: none;
+        }
+
+        .item-checkbox {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .item-checkbox:hover {
+            border-color: #ff9500;
+        }
+
+        .item-checkbox.completed {
+            background: #4caf50;
+            border-color: #4caf50;
+            color: white;
+        }
+
+        .item-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .item-text {
+            font-size: 1rem;
+            color: #2d1b4e;
+        }
+
+        .item-text.completed {
+            text-decoration: line-through;
+            color: #888;
+        }
+
+        .item-meta {
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 8px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .item-row:hover .item-actions {
+            opacity: 1;
+        }
+
+        .item-action-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .item-action-btn:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .item-action-btn.delete:hover {
+            background: rgba(244, 67, 54, 0.2);
+        }
+
+        /* Empty state */
+        .empty-items {
+            padding: 48px 20px;
+            text-align: center;
+            color: #888;
+        }
+
+        .empty-items-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        /* Share Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 24px;
+            padding: 32px;
+            max-width: 400px;
+            width: 90%;
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #2d1b4e;
+            margin-bottom: 16px;
+        }
+
+        .modal-desc {
+            color: #5a4a6f;
+            margin-bottom: 20px;
+        }
+
+        .share-link-box {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .share-link-input {
+            flex: 1;
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+
+        .copy-btn {
+            padding: 12px 16px;
+            background: #ff9500;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: #e68600;
+        }
+
+        .copy-btn.copied {
+            background: #4caf50;
+        }
+
+        /* Members list */
+        .members-list {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .members-title {
+            font-weight: 700;
+            color: #2d1b4e;
+            margin-bottom: 12px;
+        }
+
+        .member-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+        }
+
+        .member-avatar {
+            width: 36px;
+            height: 36px;
+            background: rgba(255, 149, 0, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #ff9500;
+        }
+
+        .member-name {
+            flex: 1;
+            font-weight: 600;
+        }
+
+        .member-role {
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .modal-actions button {
+            flex: 1;
+        }
+
+        /* Footer */
+        .footer {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+            margin-top: 60px;
+        }
+
+        .footer p {
+            opacity: 0.7;
+        }
+
+        @media (max-width: 600px) {
+            .list-header-top {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .header-actions {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .item-actions {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav id="main-nav"></nav>
+    <script src="nav-component.js"></script>
+
+    <div class="detail-container">
+        <a href="lists.html" class="back-link">← Back to Lists</a>
+
+        <!-- List Header -->
+        <div class="list-header" id="listHeader">
+            <div class="list-header-top">
+                <div class="list-icon" id="listIcon">📝</div>
+                <div class="list-info">
+                    <h1 class="list-name" id="listName">Loading...</h1>
+                    <div class="list-meta">
+                        <span id="itemCount">0 items</span>
+                        <span class="shared-badge" id="sharedBadge" style="display: none;">
+                            👥 Shared
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-actions" id="headerActions">
+                <button class="action-btn btn-primary" id="shareBtn" onclick="openShareModal()">
+                    🔗 Share
+                </button>
+                <button class="action-btn btn-secondary" onclick="clearCompleted()">
+                    Clear Completed
+                </button>
+                <button class="action-btn btn-danger" id="leaveBtn" style="display: none;" onclick="leaveList()">
+                    Leave List
+                </button>
+            </div>
+        </div>
+
+        <!-- Add Item -->
+        <div class="add-item-bar">
+            <input type="text" class="add-item-input" id="addItemInput" placeholder="Add an item...">
+            <button class="action-btn btn-primary" onclick="addItem()">Add</button>
+        </div>
+
+        <!-- Items -->
+        <div class="items-container" id="itemsContainer">
+            <div class="empty-items" id="emptyItems">
+                <div class="empty-items-icon">📝</div>
+                <p>No items yet. Add your first item above!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div class="modal-overlay" id="shareModal" onclick="closeShareModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <h2 class="modal-title">Share List</h2>
+            <p class="modal-desc">Anyone with this link can join and add items to this list.</p>
+
+            <div class="share-link-box" id="shareLinkBox" style="display: none;">
+                <input type="text" class="share-link-input" id="shareLinkInput" readonly>
+                <button class="copy-btn" onclick="copyShareLink()">Copy</button>
+            </div>
+
+            <button class="action-btn btn-primary" id="generateLinkBtn" onclick="generateShareLink()" style="width: 100%;">
+                Generate Share Link
+            </button>
+
+            <div class="members-list" id="membersList">
+                <div class="members-title">Members</div>
+                <!-- Members will be populated here -->
+            </div>
+
+            <div class="modal-actions">
+                <button class="action-btn btn-secondary" onclick="closeShareModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>© 2026 SUITE. Anyone Can Build. Everyone Gets Paid.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY0MTM3MjEsImV4cCI6MjA1MTk4OTcyMX0.02TknSSBBbp9VaG5cR_0jXy8lP3BhyXFZSRvMXMYsAM';
+        const GET_LISTS_ENDPOINT = SUPABASE_URL + '/functions/v1/widget-get-lists';
+        const QUICK_ADD_ENDPOINT = SUPABASE_URL + '/functions/v1/widget-quick-add';
+        const TOGGLE_ENDPOINT = SUPABASE_URL + '/functions/v1/widget-toggle-item';
+        const SHARE_ENDPOINT = SUPABASE_URL + '/functions/v1/list-share';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let currentUser = null;
+        let currentList = null;
+        let listId = null;
+
+        // Get list ID from URL
+        function getListId() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('id');
+        }
+
+        // Check login
+        function checkLogin() {
+            const telegramAuth = localStorage.getItem('telegram_auth');
+            if (telegramAuth) {
+                try {
+                    const auth = JSON.parse(telegramAuth);
+                    if (auth.id) {
+                        currentUser = auth;
+                        return true;
+                    }
+                } catch (e) {
+                    console.error('Error parsing auth:', e);
+                }
+            }
+            window.location.href = 'lists.html';
+            return false;
+        }
+
+        // Fetch list data
+        async function fetchList() {
+            try {
+                const response = await fetch(GET_LISTS_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ telegram_id: currentUser.id.toString() })
+                });
+
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
+
+                currentList = data.lists?.find(l => l.id === listId);
+                if (!currentList) {
+                    alert('List not found');
+                    window.location.href = 'lists.html';
+                    return;
+                }
+
+                renderList();
+            } catch (e) {
+                console.error('Error fetching list:', e);
+            }
+        }
+
+        // Render list
+        function renderList() {
+            document.title = `${currentList.name} | SUITE`;
+
+            document.getElementById('listIcon').textContent = currentList.icon;
+            document.getElementById('listName').textContent = currentList.name;
+
+            const incompleteCount = currentList.items.filter(i => !i.is_completed).length;
+            const totalCount = currentList.items.length;
+            document.getElementById('itemCount').textContent = `${incompleteCount} of ${totalCount} items`;
+
+            // Show shared badge if shared
+            if (currentList.is_shared || currentList.shared_with?.length > 0) {
+                document.getElementById('sharedBadge').style.display = 'inline-flex';
+            }
+
+            // Show leave button if not owner
+            if (!currentList.is_owner) {
+                document.getElementById('shareBtn').style.display = 'none';
+                document.getElementById('leaveBtn').style.display = 'inline-flex';
+            }
+
+            renderItems();
+        }
+
+        // Render items
+        function renderItems() {
+            const container = document.getElementById('itemsContainer');
+            const emptyState = document.getElementById('emptyItems');
+
+            if (currentList.items.length === 0) {
+                container.innerHTML = '';
+                container.appendChild(emptyState);
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            const incomplete = currentList.items.filter(i => !i.is_completed);
+            const completed = currentList.items.filter(i => i.is_completed);
+
+            let html = '';
+
+            if (incomplete.length > 0) {
+                html += incomplete.map(item => renderItemRow(item)).join('');
+            }
+
+            if (completed.length > 0) {
+                html += `<div class="items-section-title">Completed (${completed.length})</div>`;
+                html += completed.map(item => renderItemRow(item)).join('');
+            }
+
+            container.innerHTML = html;
+        }
+
+        function renderItemRow(item) {
+            return `
+                <div class="item-row" data-id="${item.id}">
+                    <div class="item-checkbox ${item.is_completed ? 'completed' : ''}"
+                         onclick="toggleItem('${item.id}')">
+                        ${item.is_completed ? '✓' : ''}
+                    </div>
+                    <div class="item-content">
+                        <div class="item-text ${item.is_completed ? 'completed' : ''}">${escapeHtml(item.content)}</div>
+                    </div>
+                    <div class="item-actions">
+                        <button class="item-action-btn delete" onclick="deleteItem('${item.id}')" title="Delete">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Add item
+        async function addItem() {
+            const input = document.getElementById('addItemInput');
+            const text = input.value.trim();
+
+            if (!text) return;
+
+            input.disabled = true;
+
+            try {
+                const response = await fetch(QUICK_ADD_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text,
+                        telegram_id: currentUser.id.toString(),
+                        list_id: listId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                } else {
+                    input.value = '';
+                    await fetchList();
+                }
+            } catch (e) {
+                console.error('Add item error:', e);
+                alert('Failed to add item');
+            }
+
+            input.disabled = false;
+            input.focus();
+        }
+
+        // Enter key handler
+        document.getElementById('addItemInput')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addItem();
+        });
+
+        // Toggle item
+        async function toggleItem(itemId) {
+            try {
+                const response = await fetch(TOGGLE_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        item_id: itemId,
+                        action: 'toggle',
+                        telegram_id: currentUser.id.toString()
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    await fetchList();
+                }
+            } catch (e) {
+                console.error('Toggle error:', e);
+            }
+        }
+
+        // Delete item
+        async function deleteItem(itemId) {
+            if (!confirm('Delete this item?')) return;
+
+            try {
+                const response = await fetch(TOGGLE_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        item_id: itemId,
+                        action: 'delete',
+                        telegram_id: currentUser.id.toString()
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    await fetchList();
+                }
+            } catch (e) {
+                console.error('Delete error:', e);
+            }
+        }
+
+        // Clear completed
+        async function clearCompleted() {
+            const completed = currentList.items.filter(i => i.is_completed);
+            if (completed.length === 0) {
+                alert('No completed items to clear');
+                return;
+            }
+
+            if (!confirm(`Delete ${completed.length} completed items?`)) return;
+
+            for (const item of completed) {
+                await fetch(TOGGLE_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        item_id: item.id,
+                        action: 'delete',
+                        telegram_id: currentUser.id.toString()
+                    })
+                });
+            }
+
+            await fetchList();
+        }
+
+        // Share modal
+        function openShareModal() {
+            document.getElementById('shareModal').classList.add('active');
+            renderMembers();
+        }
+
+        function closeShareModal(event) {
+            if (!event || event.target === event.currentTarget) {
+                document.getElementById('shareModal').classList.remove('active');
+            }
+        }
+
+        async function generateShareLink() {
+            const btn = document.getElementById('generateLinkBtn');
+            btn.disabled = true;
+            btn.textContent = 'Generating...';
+
+            try {
+                const response = await fetch(SHARE_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'create_link',
+                        list_id: listId,
+                        telegram_id: currentUser.id.toString()
+                    })
+                });
+
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
+
+                document.getElementById('shareLinkInput').value = data.share_url;
+                document.getElementById('shareLinkBox').style.display = 'flex';
+                btn.style.display = 'none';
+
+                currentList.is_shared = true;
+                document.getElementById('sharedBadge').style.display = 'inline-flex';
+
+            } catch (e) {
+                console.error('Share error:', e);
+                alert('Failed to generate share link: ' + e.message);
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'Generate Share Link';
+        }
+
+        function copyShareLink() {
+            const input = document.getElementById('shareLinkInput');
+            input.select();
+            document.execCommand('copy');
+
+            const btn = input.nextElementSibling;
+            btn.textContent = 'Copied!';
+            btn.classList.add('copied');
+
+            setTimeout(() => {
+                btn.textContent = 'Copy';
+                btn.classList.remove('copied');
+            }, 2000);
+        }
+
+        function renderMembers() {
+            const container = document.getElementById('membersList');
+            const members = currentList.shared_with || [];
+
+            let html = '<div class="members-title">Members</div>';
+
+            // Add owner (current user if owner)
+            html += `
+                <div class="member-row">
+                    <div class="member-avatar">${(currentUser.first_name || 'U').charAt(0)}</div>
+                    <div class="member-name">${currentList.is_owner ? 'You' : 'Owner'}</div>
+                    <div class="member-role">${currentList.is_owner ? 'Owner' : ''}</div>
+                </div>
+            `;
+
+            // Add other members
+            members.forEach(member => {
+                html += `
+                    <div class="member-row">
+                        <div class="member-avatar">${(member.name || 'U').charAt(0)}</div>
+                        <div class="member-name">${member.name}</div>
+                        <div class="member-role">${member.role}</div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Leave list
+        async function leaveList() {
+            if (!confirm('Leave this shared list? You can rejoin with a new invite link.')) return;
+
+            try {
+                const response = await fetch(SHARE_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'leave',
+                        list_id: listId,
+                        telegram_id: currentUser.id.toString()
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    window.location.href = 'lists.html';
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (e) {
+                console.error('Leave error:', e);
+                alert('Failed to leave list');
+            }
+        }
+
+        // Initialize
+        listId = getListId();
+        if (!listId) {
+            window.location.href = 'lists.html';
+        } else if (checkLogin()) {
+            fetchList();
+        }
+    </script>
+</body>
+
+</html>

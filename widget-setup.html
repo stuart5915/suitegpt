@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Widget Setup | SUITE</title>
+    <link rel="icon" type="image/png" href="assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="suite-styles.css">
+    <link rel="stylesheet" href="nav.css">
+    <style>
+        html {
+            overflow-y: scroll;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fff5eb 0%, #ffe4d4 20%, #ffd4e3 50%, #e8d5f9 80%, #d4e5ff 100%);
+            min-height: 100vh;
+            color: #2d1b4e;
+        }
+
+        .setup-container {
+            max-width: 800px;
+            margin: 100px auto 40px;
+            padding: 0 20px;
+        }
+
+        .setup-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .setup-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+
+        .setup-title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .setup-subtitle {
+            color: #5a4a6f;
+            font-size: 1.2rem;
+        }
+
+        /* Cards */
+        .setup-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .card-number {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .card-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #2d1b4e;
+        }
+
+        .card-desc {
+            color: #5a4a6f;
+            font-size: 0.95rem;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        /* Buttons */
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 28px;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 149, 0, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 149, 0, 0.1);
+            color: #ff9500;
+            border: 2px solid rgba(255, 149, 0, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 149, 0, 0.2);
+        }
+
+        .btn-app-store {
+            background: #000;
+            color: white;
+        }
+
+        .btn-app-store:hover {
+            background: #333;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        /* Code block */
+        .code-block {
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 16px 0;
+            overflow-x: auto;
+        }
+
+        .code-block pre {
+            margin: 0;
+            color: #e4e4e4;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .code-copy-btn {
+            position: relative;
+            float: right;
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 6px;
+            color: #888;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .code-copy-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .code-copy-btn.copied {
+            color: #4caf50;
+        }
+
+        /* Steps */
+        .steps-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .steps-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .steps-list li:last-child {
+            border-bottom: none;
+        }
+
+        .step-num {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(255, 149, 0, 0.15);
+            color: #ff9500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+
+        .step-text {
+            color: #5a4a6f;
+            line-height: 1.6;
+        }
+
+        .step-text strong {
+            color: #2d1b4e;
+        }
+
+        /* Telegram ID display */
+        .telegram-id-section {
+            background: rgba(255, 149, 0, 0.08);
+            border: 2px solid rgba(255, 149, 0, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .telegram-id-label {
+            font-size: 0.9rem;
+            color: #5a4a6f;
+            margin-bottom: 8px;
+        }
+
+        .telegram-id-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            font-family: monospace;
+            color: #ff9500;
+            cursor: pointer;
+            user-select: all;
+        }
+
+        .telegram-id-hint {
+            font-size: 0.85rem;
+            color: #888;
+            margin-top: 8px;
+        }
+
+        .not-logged-in {
+            padding: 24px;
+            text-align: center;
+        }
+
+        .not-logged-in p {
+            color: #5a4a6f;
+            margin-bottom: 16px;
+        }
+
+        /* Features preview */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .feature-item {
+            background: rgba(255, 149, 0, 0.05);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .feature-name {
+            font-weight: 700;
+            color: #2d1b4e;
+            margin-bottom: 4px;
+        }
+
+        .feature-desc {
+            font-size: 0.85rem;
+            color: #5a4a6f;
+        }
+
+        /* Footer */
+        .footer {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+            margin-top: 60px;
+        }
+
+        .footer p {
+            opacity: 0.7;
+        }
+
+        @media (max-width: 600px) {
+            .setup-title {
+                font-size: 2rem;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+
+            .action-btn {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav id="main-nav"></nav>
+    <script src="nav-component.js"></script>
+
+    <div class="setup-container">
+        <div class="setup-header">
+            <div class="setup-icon">📱</div>
+            <h1 class="setup-title">Widget Setup</h1>
+            <p class="setup-subtitle">Add tasks and groceries right from your iPhone home screen</p>
+        </div>
+
+        <!-- Your Telegram ID -->
+        <div class="setup-card">
+            <div class="card-header">
+                <div class="card-number">0</div>
+                <h2 class="card-title">Your Telegram ID</h2>
+            </div>
+            <p class="card-desc">You'll need this ID to connect the widget to your SUITE account.</p>
+
+            <div class="telegram-id-section" id="telegramSection">
+                <div class="not-logged-in" id="notLoggedIn">
+                    <p>Log in with Telegram to see your ID</p>
+                    <button class="action-btn btn-primary" onclick="window.location.href='profile.html'">
+                        Log In
+                    </button>
+                </div>
+                <div id="loggedIn" style="display: none;">
+                    <div class="telegram-id-label">Your Telegram ID</div>
+                    <div class="telegram-id-value" id="telegramIdValue" onclick="copyTelegramId()">Loading...</div>
+                    <div class="telegram-id-hint">Click to copy</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 1: Install Scriptable -->
+        <div class="setup-card">
+            <div class="card-header">
+                <div class="card-number">1</div>
+                <h2 class="card-title">Install Scriptable</h2>
+            </div>
+            <p class="card-desc">
+                Scriptable is a free app that lets you create custom widgets on your iPhone.
+                It's how we'll display your tasks and groceries on your home screen.
+            </p>
+            <div class="btn-group">
+                <a href="https://apps.apple.com/app/scriptable/id1405459188" target="_blank" class="action-btn btn-app-store">
+                     Download Scriptable
+                </a>
+            </div>
+        </div>
+
+        <!-- Step 2: Add the Widget Script -->
+        <div class="setup-card">
+            <div class="card-header">
+                <div class="card-number">2</div>
+                <h2 class="card-title">Add the Widget Script</h2>
+            </div>
+            <p class="card-desc">
+                Copy this script and paste it into a new Scriptable script. Run it once to configure your Telegram ID.
+            </p>
+
+            <div class="code-block">
+                <button class="code-copy-btn" onclick="copyScript(this)">Copy</button>
+                <pre id="widgetScript">// SUITE Widget - paste into Scriptable
+// After pasting, run the script once to set up
+
+const SUPABASE_URL = "https://rdsmdywbdiskxknluiym.supabase.co";
+const API = SUPABASE_URL + "/functions/v1/widget-get-lists";
+
+// Your Telegram ID - replace with your actual ID
+const TELEGRAM_ID = "YOUR_TELEGRAM_ID_HERE";
+
+async function fetchLists() {
+  const req = new Request(API);
+  req.method = "POST";
+  req.headers = { "Content-Type": "application/json" };
+  req.body = JSON.stringify({ telegram_id: TELEGRAM_ID });
+  return (await req.loadJSON()).lists || [];
+}
+
+const widget = new ListWidget();
+const gradient = new LinearGradient();
+gradient.locations = [0, 1];
+gradient.colors = [new Color("#1a1a2e"), new Color("#16213e")];
+widget.backgroundGradient = gradient;
+widget.setPadding(16, 16, 16, 16);
+
+const header = widget.addText("SUITE");
+header.font = Font.boldSystemFont(14);
+header.textColor = new Color("#ff9500");
+widget.addSpacer(8);
+
+const lists = await fetchLists();
+for (const list of lists.slice(0, 2)) {
+  const row = widget.addStack();
+  row.addText(list.icon + " " + list.name);
+  row.addSpacer();
+  row.addText(list.incomplete_count + "");
+  widget.addSpacer(4);
+
+  for (const item of list.items.filter(i => !i.is_completed).slice(0, 3)) {
+    const t = widget.addText("  " + item.content);
+    t.font = Font.systemFont(11);
+    t.textColor = Color.white();
+  }
+  widget.addSpacer(8);
+}
+
+widget.url = "https://getsuite.app/lists";
+widget.refreshAfterDate = new Date(Date.now() + 15*60*1000);
+Script.setWidget(widget);
+Script.complete();</pre>
+            </div>
+
+            <ol class="steps-list">
+                <li>
+                    <span class="step-num">1</span>
+                    <span class="step-text">Open <strong>Scriptable</strong> and tap <strong>+</strong> to create a new script</span>
+                </li>
+                <li>
+                    <span class="step-num">2</span>
+                    <span class="step-text">Paste the code above</span>
+                </li>
+                <li>
+                    <span class="step-num">3</span>
+                    <span class="step-text">Replace <strong>YOUR_TELEGRAM_ID_HERE</strong> with your actual Telegram ID</span>
+                </li>
+                <li>
+                    <span class="step-num">4</span>
+                    <span class="step-text">Tap the <strong>play button</strong> to run and test</span>
+                </li>
+            </ol>
+        </div>
+
+        <!-- Step 3: Add Widget to Home Screen -->
+        <div class="setup-card">
+            <div class="card-header">
+                <div class="card-number">3</div>
+                <h2 class="card-title">Add Widget to Home Screen</h2>
+            </div>
+            <ol class="steps-list">
+                <li>
+                    <span class="step-num">1</span>
+                    <span class="step-text">Long-press on your home screen and tap the <strong>+</strong> button</span>
+                </li>
+                <li>
+                    <span class="step-num">2</span>
+                    <span class="step-text">Search for <strong>Scriptable</strong></span>
+                </li>
+                <li>
+                    <span class="step-num">3</span>
+                    <span class="step-text">Choose your preferred widget size (Medium recommended)</span>
+                </li>
+                <li>
+                    <span class="step-num">4</span>
+                    <span class="step-text">Long-press the widget and tap <strong>Edit Widget</strong></span>
+                </li>
+                <li>
+                    <span class="step-num">5</span>
+                    <span class="step-text">Select your <strong>SUITE Widget</strong> script</span>
+                </li>
+            </ol>
+        </div>
+
+        <!-- Step 4: Create Quick Add Shortcut -->
+        <div class="setup-card">
+            <div class="card-header">
+                <div class="card-number">4</div>
+                <h2 class="card-title">Quick Add Shortcut (Optional)</h2>
+            </div>
+            <p class="card-desc">
+                Create an iOS Shortcut to quickly add items from your home screen or via Siri.
+                Say "Hey Siri, add to SUITE" to add tasks hands-free!
+            </p>
+
+            <ol class="steps-list">
+                <li>
+                    <span class="step-num">1</span>
+                    <span class="step-text">Open the <strong>Shortcuts</strong> app</span>
+                </li>
+                <li>
+                    <span class="step-num">2</span>
+                    <span class="step-text">Create a new shortcut with these actions:
+                        <br>- <strong>Ask for Input</strong> (Text, "What do you want to add?")
+                        <br>- <strong>Get Contents of URL</strong> (POST to the API below)
+                        <br>- <strong>Show Result</strong>
+                    </span>
+                </li>
+                <li>
+                    <span class="step-num">3</span>
+                    <span class="step-text">Name it "Add to SUITE" and add to home screen</span>
+                </li>
+            </ol>
+
+            <div class="code-block">
+                <button class="code-copy-btn" onclick="copyApiUrl(this)">Copy URL</button>
+                <pre>POST https://rdsmdywbdiskxknluiym.supabase.co/functions/v1/widget-quick-add
+
+{
+  "text": "[Your input]",
+  "telegram_id": "YOUR_TELEGRAM_ID"
+}</pre>
+            </div>
+        </div>
+
+        <!-- Features -->
+        <div class="setup-card">
+            <div class="card-header">
+                <div class="card-number">✨</div>
+                <h2 class="card-title">What You Can Do</h2>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-item">
+                    <div class="feature-icon">📝</div>
+                    <div class="feature-name">View Tasks</div>
+                    <div class="feature-desc">See your to-do list at a glance</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🛒</div>
+                    <div class="feature-name">Groceries</div>
+                    <div class="feature-desc">Never forget what to buy</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🤖</div>
+                    <div class="feature-name">Smart Add</div>
+                    <div class="feature-desc">AI sorts items automatically</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">👥</div>
+                    <div class="feature-name">Share Lists</div>
+                    <div class="feature-desc">Collaborate with family</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help -->
+        <div class="setup-card">
+            <div class="card-header">
+                <div class="card-number">?</div>
+                <h2 class="card-title">Need Help?</h2>
+            </div>
+            <p class="card-desc">
+                Having trouble setting up? Check out our documentation or ask in the community.
+            </p>
+            <div class="btn-group">
+                <a href="lists.html" class="action-btn btn-primary">
+                    Manage Lists Online
+                </a>
+                <a href="https://discord.gg/suite" target="_blank" class="action-btn btn-secondary">
+                    Ask on Discord
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>© 2026 SUITE. Anyone Can Build. Everyone Gets Paid.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY0MTM3MjEsImV4cCI6MjA1MTk4OTcyMX0.02TknSSBBbp9VaG5cR_0jXy8lP3BhyXFZSRvMXMYsAM';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Check for logged in user
+        async function checkUser() {
+            const telegramAuth = localStorage.getItem('telegram_auth');
+            if (telegramAuth) {
+                try {
+                    const auth = JSON.parse(telegramAuth);
+                    if (auth.id) {
+                        document.getElementById('notLoggedIn').style.display = 'none';
+                        document.getElementById('loggedIn').style.display = 'block';
+                        document.getElementById('telegramIdValue').textContent = auth.id;
+
+                        // Also update the script placeholder
+                        const scriptEl = document.getElementById('widgetScript');
+                        scriptEl.textContent = scriptEl.textContent.replace('YOUR_TELEGRAM_ID_HERE', auth.id);
+                    }
+                } catch (e) {
+                    console.error('Error parsing telegram auth:', e);
+                }
+            }
+        }
+
+        function copyTelegramId() {
+            const id = document.getElementById('telegramIdValue').textContent;
+            navigator.clipboard.writeText(id).then(() => {
+                const hint = document.querySelector('.telegram-id-hint');
+                hint.textContent = 'Copied!';
+                setTimeout(() => hint.textContent = 'Click to copy', 2000);
+            });
+        }
+
+        function copyScript(btn) {
+            const script = document.getElementById('widgetScript').textContent;
+            navigator.clipboard.writeText(script).then(() => {
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = 'Copy';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        function copyApiUrl(btn) {
+            const url = 'https://rdsmdywbdiskxknluiym.supabase.co/functions/v1/widget-quick-add';
+            navigator.clipboard.writeText(url).then(() => {
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = 'Copy URL';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        // Initialize
+        checkUser();
+    </script>
+</body>
+
+</html>
