@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redemption Admin | SUITE</title>
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.umd.min.js"></script>
+    <link rel="stylesheet" href="/suite-styles.css">
+    <link rel="stylesheet" href="/nav.css">
+    <style>
+        :root {
+            --gradient-warm: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            --accent-orange: #ff9500;
+            --accent-green: #22c55e;
+            --accent-red: #ef4444;
+            --accent-purple: #a855f7;
+            --accent-blue: #3b82f6;
+            --text-light: #f8fafc;
+            --text-medium: #94a3b8;
+            --text-muted: #64748b;
+            --card-bg: rgba(30, 41, 59, 0.8);
+            --card-border: rgba(148, 163, 184, 0.1);
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: var(--gradient-warm);
+            min-height: 100vh;
+            color: var(--text-light);
+        }
+
+        .admin-page {
+            padding-top: 100px;
+            min-height: 100vh;
+        }
+
+        .admin-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 20px 60px 20px;
+        }
+
+        .page-header {
+            margin-bottom: 30px;
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            margin: 0 0 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .page-header p {
+            color: var(--text-medium);
+            margin: 0;
+        }
+
+        .admin-badge {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        /* Cards */
+        .admin-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .card-header h2 {
+            font-size: 1.1rem;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .stat-value.green { color: var(--accent-green); }
+        .stat-value.orange { color: var(--accent-orange); }
+        .stat-value.purple { color: var(--accent-purple); }
+        .stat-value.blue { color: var(--accent-blue); }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-medium);
+        }
+
+        /* Rate Display */
+        .rate-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            padding: 24px;
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(59, 130, 246, 0.1));
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .rate-percentage {
+            font-size: 3.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .rate-info {
+            text-align: left;
+        }
+
+        .rate-info-label {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .rate-info-desc {
+            font-size: 0.85rem;
+            color: var(--text-medium);
+        }
+
+        /* Input Groups */
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.9rem;
+            color: var(--text-medium);
+            margin-bottom: 8px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            color: var(--text-light);
+            font-size: 1rem;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--accent-purple);
+        }
+
+        .input-field::placeholder {
+            color: var(--text-muted);
+        }
+
+        .btn {
+            padding: 14px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--accent-green), #10b981);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Pending Requests */
+        .pending-summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            background: rgba(255, 149, 0, 0.1);
+            border: 1px solid rgba(255, 149, 0, 0.2);
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .pending-amount {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--accent-orange);
+        }
+
+        .pending-label {
+            color: var(--text-medium);
+            font-size: 0.9rem;
+        }
+
+        /* Fund Section */
+        .fund-section {
+            background: rgba(34, 197, 94, 0.05);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .fund-section h3 {
+            margin: 0 0 16px 0;
+            font-size: 1rem;
+            color: var(--accent-green);
+        }
+
+        /* Help Text */
+        .help-text {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--text-light);
+            color: #1a1a2e;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            z-index: 10001;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success { background: var(--accent-green); color: white; }
+        .toast.error { background: var(--accent-red); color: white; }
+
+        /* Access Denied */
+        .access-denied {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .access-denied-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        .access-denied h2 {
+            margin: 0 0 10px 0;
+        }
+
+        .access-denied p {
+            color: var(--text-medium);
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-medium);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--accent-purple);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Back link */
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-medium);
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+
+        .back-link:hover {
+            color: var(--text-light);
+        }
+    </style>
+</head>
+
+<body>
+    <nav id="main-nav"></nav>
+    <script src="/nav-component.js"></script>
+
+    <div class="admin-page">
+        <div class="admin-container">
+            <a href="/profile.html" class="back-link">&larr; Back to Profile</a>
+
+            <div class="page-header">
+                <h1>
+                    Redemption Dashboard
+                    <span class="admin-badge">ADMIN ONLY</span>
+                </h1>
+                <p>Manage bonus credits and USDC redemption pool</p>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loadingState" class="admin-card">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading contract data...</p>
+                </div>
+            </div>
+
+            <!-- Access Denied State -->
+            <div id="accessDenied" class="admin-card" style="display: none;">
+                <div class="access-denied">
+                    <div class="access-denied-icon">&#128683;</div>
+                    <h2>Access Denied</h2>
+                    <p>You must be an admin to access this page.</p>
+                </div>
+            </div>
+
+            <!-- Admin Content -->
+            <div id="adminContent" style="display: none;">
+
+                <!-- Overview Stats -->
+                <div class="admin-card">
+                    <div class="card-header">
+                        <h2>&#128202; Overview</h2>
+                        <button class="btn btn-primary" onclick="refreshData()" style="padding: 8px 16px; font-size: 0.85rem;">
+                            Refresh
+                        </button>
+                    </div>
+
+                    <div class="rate-display">
+                        <div class="rate-percentage" id="redemptionRate">0%</div>
+                        <div class="rate-info">
+                            <div class="rate-info-label">Current Redemption Rate</div>
+                            <div class="rate-info-desc">Users redeem credits at this rate</div>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value purple" id="totalBonusCredits">0</div>
+                            <div class="stat-label">Total Bonus Credits</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value blue" id="faceValue">$0</div>
+                            <div class="stat-label">Face Value (100%)</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value green" id="reportedValue">$0</div>
+                            <div class="stat-label">Reported Liquid Value</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value orange" id="fundedPool">$0</div>
+                            <div class="stat-label">Funded Pool</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Report Liquid Value -->
+                <div class="admin-card">
+                    <div class="card-header">
+                        <h2>&#128200; Report Liquid Value</h2>
+                    </div>
+                    <p style="color: var(--text-medium); margin-bottom: 20px;">
+                        Set how much USDC value is available for redemption. This controls the rate.
+                    </p>
+                    <div class="input-group">
+                        <label>Liquid Value (USDC)</label>
+                        <div class="input-row">
+                            <input type="number" class="input-field" id="liquidValueInput"
+                                   placeholder="800" min="0" step="1" oninput="previewRate()">
+                            <button class="btn btn-primary" id="btnReportValue" onclick="reportLiquidValue()">
+                                Update Value
+                            </button>
+                        </div>
+                        <p class="help-text" id="ratePreview">Enter a value to see the new rate</p>
+                    </div>
+                </div>
+
+                <!-- Pending Requests -->
+                <div class="admin-card">
+                    <div class="card-header">
+                        <h2>&#128203; Pending Requests</h2>
+                    </div>
+
+                    <div class="pending-summary">
+                        <div>
+                            <div class="pending-amount" id="totalPending">$0</div>
+                            <div class="pending-label">Total pending USDC to fund</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 1.2rem; font-weight: 700;" id="lockedCredits">0</div>
+                            <div class="pending-label">Credits locked</div>
+                        </div>
+                    </div>
+
+                    <div class="fund-section">
+                        <h3>Fund Pending Requests</h3>
+                        <p style="color: var(--text-medium); margin-bottom: 16px; font-size: 0.9rem;">
+                            Deposit USDC to allow users to claim their pending requests.
+                        </p>
+                        <div class="input-row">
+                            <input type="number" class="input-field" id="fundAmountInput"
+                                   placeholder="Enter USDC amount" min="0" step="1">
+                            <button class="btn btn-success" id="btnFundPool" onclick="fundPool()">
+                                Fund Pool
+                            </button>
+                        </div>
+                        <p class="help-text">
+                            Tip: Click the pending amount to auto-fill
+                            <a href="#" onclick="autoFillPending(); return false;" style="color: var(--accent-green);">
+                                Fill pending amount
+                            </a>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="admin-card">
+                    <div class="card-header">
+                        <h2>&#128200; Statistics</h2>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value green" id="totalClaimed">$0</div>
+                            <div class="stat-label">Total Claimed (All-time)</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Contract addresses - UPDATE THESE AFTER DEPLOYMENT
+        const USDC_WITHDRAWALS_ADDRESS = '0x0000000000000000000000000000000000000000'; // TODO: Update after deploy
+        const SUITE_STAKING_ADDRESS = '0xe8fE3C3f071AbaE0aB2f42E0B9bF6C00347dCcE3';
+        const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+        const BASE_CHAIN_ID = 8453;
+        const BASE_RPC = 'https://mainnet.base.org';
+
+        // Admin addresses (lowercase)
+        const ADMIN_ADDRESSES = [
+            '0x92d67d8ad8b986e78b369be0272e121ae5acad59'
+        ];
+
+        const WITHDRAWALS_ABI = [
+            'function reportedLiquidValue() view returns (uint256)',
+            'function totalPendingRequests() view returns (uint256)',
+            'function totalLockedCredits() view returns (uint256)',
+            'function fundedPool() view returns (uint256)',
+            'function totalClaimedUsdc() view returns (uint256)',
+            'function getRedemptionPercentage() view returns (uint256)',
+            'function reportLiquidValue(uint256 newValue) external',
+            'function fundPool(uint256 amount) external'
+        ];
+
+        const STAKING_ABI = [
+            'function totalBonusCredits() view returns (uint256)'
+        ];
+
+        const ERC20_ABI = [
+            'function approve(address spender, uint256 amount) returns (bool)',
+            'function allowance(address owner, address spender) view returns (uint256)'
+        ];
+
+        let provider, signer, withdrawalsContract, stakingContract, usdcContract;
+        let currentData = {};
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAccess();
+        });
+
+        window.addEventListener('navAuthChanged', () => {
+            checkAccess();
+        });
+
+        async function checkAccess() {
+            const wallet = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWalletAddress');
+
+            if (!wallet || !ADMIN_ADDRESSES.includes(wallet.toLowerCase())) {
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('accessDenied').style.display = 'block';
+                document.getElementById('adminContent').style.display = 'none';
+                return;
+            }
+
+            // Check if contract is deployed
+            if (USDC_WITHDRAWALS_ADDRESS === '0x0000000000000000000000000000000000000000') {
+                document.getElementById('loadingState').innerHTML = `
+                    <div class="loading">
+                        <div style="font-size: 3rem; margin-bottom: 16px;">&#128679;</div>
+                        <h3>Contract Not Deployed</h3>
+                        <p>The UsdcWithdrawals contract has not been deployed yet.</p>
+                        <p style="margin-top: 16px; font-family: monospace; font-size: 0.85rem;">
+                            Deploy the contract and update USDC_WITHDRAWALS_ADDRESS in this file.
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('accessDenied').style.display = 'none';
+            document.getElementById('adminContent').style.display = 'block';
+
+            await loadContractData();
+        }
+
+        async function loadContractData() {
+            try {
+                const readProvider = new ethers.JsonRpcProvider(BASE_RPC);
+                const withdrawals = new ethers.Contract(USDC_WITHDRAWALS_ADDRESS, WITHDRAWALS_ABI, readProvider);
+                const staking = new ethers.Contract(SUITE_STAKING_ADDRESS, STAKING_ABI, readProvider);
+
+                // Fetch all data
+                const [
+                    reportedValue,
+                    totalPending,
+                    lockedCredits,
+                    fundedPool,
+                    totalClaimed,
+                    redemptionPct,
+                    totalBonusCredits
+                ] = await Promise.all([
+                    withdrawals.reportedLiquidValue(),
+                    withdrawals.totalPendingRequests(),
+                    withdrawals.totalLockedCredits(),
+                    withdrawals.fundedPool(),
+                    withdrawals.totalClaimedUsdc(),
+                    withdrawals.getRedemptionPercentage().catch(() => 0n),
+                    staking.totalBonusCredits()
+                ]);
+
+                // Store for later use
+                currentData = {
+                    reportedValue: Number(reportedValue) / 1e6,
+                    totalPending: Number(totalPending) / 1e6,
+                    lockedCredits: Number(lockedCredits) / 1e18,
+                    fundedPool: Number(fundedPool) / 1e6,
+                    totalClaimed: Number(totalClaimed) / 1e6,
+                    redemptionPct: Number(redemptionPct) / 1e16, // Convert to percentage
+                    totalBonusCredits: Number(totalBonusCredits) / 1e18
+                };
+
+                // Face value = total bonus credits / 1000 (1000 credits = $1)
+                const faceValue = currentData.totalBonusCredits / 1000;
+
+                // Update UI
+                document.getElementById('redemptionRate').textContent = currentData.redemptionPct.toFixed(0) + '%';
+                document.getElementById('totalBonusCredits').textContent = formatNumber(currentData.totalBonusCredits);
+                document.getElementById('faceValue').textContent = '$' + formatNumber(faceValue);
+                document.getElementById('reportedValue').textContent = '$' + formatNumber(currentData.reportedValue);
+                document.getElementById('fundedPool').textContent = '$' + formatNumber(currentData.fundedPool);
+                document.getElementById('totalPending').textContent = '$' + formatNumber(currentData.totalPending);
+                document.getElementById('lockedCredits').textContent = formatNumber(currentData.lockedCredits);
+                document.getElementById('totalClaimed').textContent = '$' + formatNumber(currentData.totalClaimed);
+
+            } catch (err) {
+                console.error('Failed to load contract data:', err);
+                showToast('Failed to load data: ' + err.message, 'error');
+            }
+        }
+
+        function previewRate() {
+            const newValue = parseFloat(document.getElementById('liquidValueInput').value) || 0;
+            const faceValue = currentData.totalBonusCredits / 1000;
+
+            if (faceValue > 0) {
+                const newRate = (newValue / faceValue * 100).toFixed(1);
+                document.getElementById('ratePreview').textContent =
+                    `New rate will be ${newRate}% (Face value: $${formatNumber(faceValue)})`;
+            }
+        }
+
+        async function reportLiquidValue() {
+            const btn = document.getElementById('btnReportValue');
+            const originalText = btn.textContent;
+
+            try {
+                btn.disabled = true;
+                btn.textContent = 'Connecting...';
+
+                await ensureBaseNetwork();
+                provider = new ethers.BrowserProvider(window.ethereum);
+                signer = await provider.getSigner();
+
+                const newValue = parseFloat(document.getElementById('liquidValueInput').value);
+                if (!newValue || newValue < 0) {
+                    throw new Error('Please enter a valid value');
+                }
+
+                // USDC has 6 decimals
+                const valueWei = ethers.parseUnits(newValue.toString(), 6);
+
+                btn.textContent = 'Updating...';
+                withdrawalsContract = new ethers.Contract(USDC_WITHDRAWALS_ADDRESS, WITHDRAWALS_ABI, signer);
+                const tx = await withdrawalsContract.reportLiquidValue(valueWei);
+                await tx.wait();
+
+                showToast('Liquid value updated!', 'success');
+                document.getElementById('liquidValueInput').value = '';
+                await loadContractData();
+
+            } catch (err) {
+                console.error('Failed to report value:', err);
+                showToast(err.message || 'Transaction failed', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        async function fundPool() {
+            const btn = document.getElementById('btnFundPool');
+            const originalText = btn.textContent;
+
+            try {
+                btn.disabled = true;
+                btn.textContent = 'Connecting...';
+
+                await ensureBaseNetwork();
+                provider = new ethers.BrowserProvider(window.ethereum);
+                signer = await provider.getSigner();
+
+                const amount = parseFloat(document.getElementById('fundAmountInput').value);
+                if (!amount || amount <= 0) {
+                    throw new Error('Please enter a valid amount');
+                }
+
+                const amountWei = ethers.parseUnits(amount.toString(), 6);
+
+                // Check and approve USDC
+                btn.textContent = 'Checking approval...';
+                usdcContract = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, signer);
+                const allowance = await usdcContract.allowance(await signer.getAddress(), USDC_WITHDRAWALS_ADDRESS);
+
+                if (allowance < amountWei) {
+                    btn.textContent = 'Approving USDC...';
+                    const approveTx = await usdcContract.approve(USDC_WITHDRAWALS_ADDRESS, ethers.MaxUint256);
+                    await approveTx.wait();
+                }
+
+                // Fund pool
+                btn.textContent = 'Funding pool...';
+                withdrawalsContract = new ethers.Contract(USDC_WITHDRAWALS_ADDRESS, WITHDRAWALS_ABI, signer);
+                const tx = await withdrawalsContract.fundPool(amountWei);
+                await tx.wait();
+
+                showToast('Pool funded successfully!', 'success');
+                document.getElementById('fundAmountInput').value = '';
+                await loadContractData();
+
+            } catch (err) {
+                console.error('Failed to fund pool:', err);
+                showToast(err.message || 'Transaction failed', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        function autoFillPending() {
+            document.getElementById('fundAmountInput').value = currentData.totalPending.toFixed(2);
+        }
+
+        async function refreshData() {
+            showToast('Refreshing...', 'info');
+            await loadContractData();
+            showToast('Data refreshed', 'success');
+        }
+
+        async function ensureBaseNetwork() {
+            if (!window.ethereum) {
+                throw new Error('Please install MetaMask');
+            }
+
+            const chainIdHex = await window.ethereum.request({ method: 'eth_chainId' });
+            const chainId = parseInt(chainIdHex, 16);
+
+            if (chainId !== BASE_CHAIN_ID) {
+                try {
+                    await window.ethereum.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: '0x' + BASE_CHAIN_ID.toString(16) }]
+                    });
+                } catch (switchError) {
+                    if (switchError.code === 4902) {
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [{
+                                chainId: '0x' + BASE_CHAIN_ID.toString(16),
+                                chainName: 'Base',
+                                nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+                                rpcUrls: ['https://mainnet.base.org'],
+                                blockExplorerUrls: ['https://basescan.org']
+                            }]
+                        });
+                    } else {
+                        throw new Error('Please switch to Base network');
+                    }
+                }
+            }
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(2) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num.toLocaleString(undefined, { maximumFractionDigits: 2 });
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast ' + type + ' show';
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
