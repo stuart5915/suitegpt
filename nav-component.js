@@ -47,9 +47,6 @@
             </a>
             <div class="nav-links">
                 <a href="/suite-shell.html">Apps</a>
-                <a href="/docs/">Docs</a>
-                <a href="/learn.html">Learn</a>
-                <a href="/factory.html">Governance</a>
                 <a href="/profile.html">Profile</a>
             </div>
             <div class="nav-actions" id="navAuthArea">
@@ -79,6 +76,55 @@
             </button>
         </div>
     `;
+
+    // Inject bottom nav for mobile
+    const bottomNavHtml = `
+        <nav class="bottom-nav" id="bottom-nav">
+            <div class="bottom-nav-inner">
+                <a href="/" class="bottom-nav-item">
+                    <span class="nav-icon">&#127968;</span>
+                    <span class="nav-label">Home</span>
+                </a>
+                <a href="/docs/" class="bottom-nav-item">
+                    <span class="nav-icon">&#128218;</span>
+                    <span class="nav-label">Docs</span>
+                </a>
+                <a href="/learn.html" class="bottom-nav-item">
+                    <span class="nav-icon">&#128214;</span>
+                    <span class="nav-label">Learn</span>
+                </a>
+                <button class="bottom-nav-item" onclick="toggleBottomNavSubmenu(this, 'community')">
+                    <span class="nav-icon">&#128172;</span>
+                    <span class="nav-label">Community</span>
+                    <div class="bottom-nav-submenu">
+                        <a href="https://x.com/glosuiteapp" target="_blank" rel="noopener">
+                            <span class="submenu-icon">&#120143;</span>
+                            <span>Follow on X</span>
+                        </a>
+                        <a href="https://t.me/getsuite" target="_blank" rel="noopener">
+                            <span class="submenu-icon">&#9993;</span>
+                            <span>Telegram</span>
+                        </a>
+                    </div>
+                </button>
+                <button class="bottom-nav-item" onclick="toggleBottomNavSubmenu(this, 'legal')">
+                    <span class="nav-icon">&#9878;</span>
+                    <span class="nav-label">Legal</span>
+                    <div class="bottom-nav-submenu">
+                        <a href="/privacy.html">
+                            <span class="submenu-icon">&#128274;</span>
+                            <span>Privacy</span>
+                        </a>
+                        <a href="/terms.html">
+                            <span class="submenu-icon">&#128220;</span>
+                            <span>Terms</span>
+                        </a>
+                    </div>
+                </button>
+            </div>
+        </nav>
+    `;
+    document.body.insertAdjacentHTML('beforeend', bottomNavHtml);
 
     // Inject connect modal
     const modalHtml = `
@@ -638,3 +684,25 @@ async function handleNavCreditsClick(event) {
     openNavConnectModal();
     return false;
 }
+
+// Bottom nav submenu toggle
+function toggleBottomNavSubmenu(btn, type) {
+    // Close other open submenus first
+    document.querySelectorAll('.bottom-nav-item.expanded').forEach(item => {
+        if (item !== btn) {
+            item.classList.remove('expanded');
+        }
+    });
+
+    // Toggle this submenu
+    btn.classList.toggle('expanded');
+}
+
+// Close bottom nav submenus when clicking outside
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.bottom-nav-item')) {
+        document.querySelectorAll('.bottom-nav-item.expanded').forEach(item => {
+            item.classList.remove('expanded');
+        });
+    }
+});
