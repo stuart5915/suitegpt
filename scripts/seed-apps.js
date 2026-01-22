@@ -12,7 +12,7 @@ const apps = [
         description: 'Scan food labels and get instant nutrition analysis with AI',
         category: 'health',
         status: 'approved',
-        icon_url: '/assets/icons/foodvitals-icon.png',
+        icon_url: '/assets/icons/foodvitals-icon.jpg',
         app_url: '/foodvitals/index.html',
         creator_name: 'SUITE',
         creator_username: 'Stu'
@@ -36,7 +36,7 @@ const apps = [
         description: 'AI-powered workout rep counter using your camera',
         category: 'health',
         status: 'approved',
-        icon_url: '/assets/icons/opticrep-icon.png',
+        icon_url: '/assets/icons/opticrep-icon.jpg',
         app_url: null,
         creator_name: 'SUITE',
         creator_username: 'Stu'
@@ -60,7 +60,7 @@ const apps = [
         description: 'AI-guided daily reflection and journaling',
         category: 'productivity',
         status: 'approved',
-        icon_url: '/assets/icons/cheshbon-icon.png',
+        icon_url: '/assets/icons/cheshbon-icon.jpg',
         app_url: '/cheshbon.html',
         creator_name: 'SUITE',
         creator_username: 'Stu'
@@ -84,7 +84,7 @@ const apps = [
         description: 'Record voice memos and get AI summaries',
         category: 'productivity',
         status: 'approved',
-        icon_url: '/assets/icons/remcast-icon.png',
+        icon_url: '/assets/icons/remcast-icon.jpg',
         app_url: null,
         creator_name: 'SUITE',
         creator_username: 'Stu'
@@ -96,7 +96,7 @@ const apps = [
         description: 'Central AI hub connected to all your SUITE apps',
         category: 'productivity',
         status: 'approved',
-        icon_url: '/assets/suite-logo-new.png',
+        icon_url: '/assets/icons/suitehub-icon.jpg',
         app_url: '/suitehub.html',
         creator_name: 'SUITE',
         creator_username: 'Stu'
@@ -108,7 +108,7 @@ const apps = [
         description: 'AI-powered social media content scheduling',
         category: 'creative',
         status: 'approved',
-        icon_url: '/assets/icons/cadence-icon.png',
+        icon_url: '/assets/icons/cadence-icon.jpg',
         app_url: null,
         creator_name: 'SUITE',
         creator_username: 'Stu'
@@ -144,7 +144,7 @@ const apps = [
         description: 'Learn decentralized finance with AI tutoring',
         category: 'finance',
         status: 'approved',
-        icon_url: '/assets/icons/defi-knowledge-icon.png',
+        icon_url: '/assets/icons/defiknowledge-icon.png',
         app_url: null,
         creator_name: 'SUITE',
         creator_username: 'Stu'
