@@ -23,8 +23,14 @@ import {
     RefreshCw,
     Target,
     Hash,
-    AtSign
+    AtSign,
+    Twitter,
+    Instagram
 } from 'lucide-react'
+import InstagramEngagement from '@/components/InstagramEngagement'
+
+// Platform tabs
+type Platform = 'twitter' | 'instagram'
 
 // Types
 interface EngagementConfig {
@@ -88,6 +94,9 @@ const DEFAULT_CONFIG: EngagementConfig = {
 }
 
 export default function EngagementPage() {
+    // Platform tab state
+    const [activePlatform, setActivePlatform] = useState<Platform>('twitter')
+
     // State
     const [config, setConfig] = useState<EngagementConfig>(DEFAULT_CONFIG)
     const [stats, setStats] = useState<EngagementStats>({ totalEngaged: 0, totalSkipped: 0, skipRate: 0 })
@@ -482,7 +491,7 @@ export default function EngagementPage() {
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
                 <div className="mb-8">
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex items-center gap-3 mb-4">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
                             <Target className="w-5 h-5 text-white" />
                         </div>
@@ -491,8 +500,40 @@ export default function EngagementPage() {
                             <p className="text-[var(--foreground-muted)]">Find high-quality posts to grow your reach</p>
                         </div>
                     </div>
+
+                    {/* Platform Tabs */}
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setActivePlatform('twitter')}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                                activePlatform === 'twitter'
+                                    ? 'bg-blue-500 text-white'
+                                    : 'bg-[var(--surface)] text-[var(--foreground-muted)] hover:bg-[var(--surface-hover)]'
+                            }`}
+                        >
+                            <Twitter className="w-4 h-4" />
+                            X / Twitter
+                        </button>
+                        <button
+                            onClick={() => setActivePlatform('instagram')}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                                activePlatform === 'instagram'
+                                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                                    : 'bg-[var(--surface)] text-[var(--foreground-muted)] hover:bg-[var(--surface-hover)]'
+                            }`}
+                        >
+                            <Instagram className="w-4 h-4" />
+                            Instagram
+                        </button>
+                    </div>
                 </div>
 
+                {/* Instagram Engagement */}
+                {activePlatform === 'instagram' && <InstagramEngagement />}
+
+                {/* Twitter Engagement - only show when Twitter tab active */}
+                {activePlatform === 'twitter' && (
+                <>
                 {/* Messages */}
                 {error && (
                     <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center gap-3">
@@ -868,6 +909,8 @@ export default function EngagementPage() {
                         )}
                     </div>
                 </div>
+                </>
+                )}
             </div>
 
             {/* Reply Modal */}

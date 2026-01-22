@@ -10,8 +10,11 @@ import {
     ChevronRight,
     RefreshCw,
     Calendar,
-    MessageCircle
+    MessageCircle,
+    Instagram,
+    Twitter
 } from 'lucide-react'
+import CreditsDisplay from '@/components/CreditsDisplay'
 
 interface SidebarProps {
     children: React.ReactNode
@@ -31,6 +34,18 @@ export default function DashboardLayout({ children }: SidebarProps) {
 
     return (
         <div className="flex min-h-screen bg-[var(--background)]">
+            {/* Top Header Bar */}
+            <header className="fixed top-0 left-0 right-0 z-50 h-[60px] bg-[var(--surface)] border-b border-[var(--surface-border)]">
+                <div className={`h-full flex items-center justify-between px-4 transition-all duration-300 ${collapsed ? 'ml-16' : 'ml-64'}`}>
+                    <div className="flex items-center gap-2">
+                        {/* Can add breadcrumbs or page title here */}
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <CreditsDisplay compact />
+                    </div>
+                </div>
+            </header>
+
             {/* Sidebar */}
             <aside
                 className={`
@@ -107,7 +122,7 @@ export default function DashboardLayout({ children }: SidebarProps) {
             {/* Main Content */}
             <main
                 className={`
-          flex-1 transition-all duration-300
+          flex-1 transition-all duration-300 pt-[60px]
           ${collapsed ? 'ml-16' : 'ml-64'}
         `}
             >

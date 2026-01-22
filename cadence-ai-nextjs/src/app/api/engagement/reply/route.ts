@@ -8,6 +8,7 @@ import { createClient } from '@supabase/supabase-js'
 import { verifySessionToken } from '@/lib/telegram/validate'
 import { postReply } from '@/lib/twitter'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { deductCredits, CREDIT_COSTS } from '@/lib/credits'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -130,6 +131,13 @@ Return ONLY a JSON array with 3 reply options, nothing else:
 
         const suggestions = JSON.parse(text)
 
+        // Deduct credits (will be free for demo mode if no wallet linked)
+        await deductCredits(
+            { telegramId },
+            'twitter_reply_suggestion',
+            `Twitter reply suggestions for @${authorHandle}`
+        )
+
         return NextResponse.json({
             success: true,
             suggestions: suggestions.map((s: { text: string; approach: string }, i: number) => ({
@@ -137,7 +145,8 @@ Return ONLY a JSON array with 3 reply options, nothing else:
                 text: s.text,
                 approach: s.approach,
                 characterCount: s.text.length
-            }))
+            })),
+            creditsUsed: CREDIT_COSTS.twitter_reply_suggestion
         })
     } catch (error) {
         console.error('Error generating replies:', error)
