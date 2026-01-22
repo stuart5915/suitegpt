@@ -36,6 +36,7 @@ import {
     FileText
 } from 'lucide-react'
 import { Project, Audience, ContentVariant } from '@/lib/supabase/types'
+import { useTelegramAuth } from '@/contexts/TelegramAuthContext'
 import AudienceManager from '@/components/loops/AudienceManager'
 import AIFleetSection from '@/components/loops/AIFleetSection'
 import VariantEditor from '@/components/loops/VariantEditor'
@@ -167,6 +168,7 @@ const LOOP_TEMPLATES = [
 function LoopsPageContent() {
     const searchParams = useSearchParams()
     const supabase = createClient()
+    const { user, isLoading: authLoading } = useTelegramAuth()
 
     const projectId = searchParams.get('project')
 
@@ -274,13 +276,19 @@ function LoopsPageContent() {
         loadWorkLogConfig()
     }, [])
 
-    // Load projects
+    // Load projects (filtered by user's telegram_id)
     useEffect(() => {
         async function loadProjects() {
+            if (!user?.id) {
+                setLoading(false)
+                return
+            }
+
             try {
                 const { data, error } = await supabase
                     .from('projects')
                     .select('*')
+                    .eq('telegram_id', user.id)
                     .order('created_at', { ascending: false })
 
                 if (error) throw error
@@ -296,8 +304,11 @@ function LoopsPageContent() {
                 setLoading(false)
             }
         }
-        loadProjects()
-    }, [supabase])
+
+        if (!authLoading) {
+            loadProjects()
+        }
+    }, [supabase, user, authLoading])
 
     // Load loops when project changes
     useEffect(() => {
@@ -942,7 +953,7 @@ function LoopsPageContent() {
         return Math.min(100, (loop.items.length / targetItems) * 100)
     }
 
-    if (loading) {
+    if (loading || authLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-[var(--primary)]" />
