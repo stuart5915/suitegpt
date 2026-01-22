@@ -1,0 +1,1727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Proto Golf | SUITE</title>
+    <link rel="icon" type="image/png" href="assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: #0d1f0d;
+            color: #ffffff;
+            min-height: 100vh;
+            padding-bottom: 80px;
+        }
+
+        /* Header */
+        .app-header {
+            background: linear-gradient(135deg, #1a3d1a 0%, #0d1f0d 100%);
+            padding: 60px 20px 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-logo {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .header-title span {
+            color: #4ade80;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .header-btn {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .header-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Quick Stats */
+        .quick-stats {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+
+        .quick-stat {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px 16px;
+            min-width: 120px;
+            flex-shrink: 0;
+        }
+
+        .quick-stat-label {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 4px;
+        }
+
+        .quick-stat-value {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #4ade80;
+        }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            gap: 8px;
+            padding: 16px 20px;
+            overflow-x: auto;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-tab {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 100px;
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .nav-tab:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-tab.active {
+            background: #4ade80;
+            color: #0d1f0d;
+            border-color: #4ade80;
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+        }
+
+        .see-all {
+            color: #4ade80;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        /* Cards */
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            transition: all 0.2s;
+        }
+
+        .card:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        /* === HOME SECTION === */
+        .welcome-card {
+            background: linear-gradient(135deg, #1a3d1a, #0d2f0d);
+            border: 1px solid rgba(74, 222, 128, 0.2);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .welcome-card h2 {
+            font-size: 1.3rem;
+            margin-bottom: 8px;
+        }
+
+        .welcome-card p {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 16px;
+        }
+
+        .welcome-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: #4ade80;
+            color: #0d1f0d;
+        }
+
+        .btn-primary:hover {
+            background: #22c55e;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Feature Grid */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .feature-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            transform: translateY(-2px);
+        }
+
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .feature-name {
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .feature-desc {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* === SHOP SECTION === */
+        .shop-categories {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+
+        .shop-category {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .shop-category.active {
+            background: rgba(74, 222, 128, 0.15);
+            border-color: #4ade80;
+            color: #4ade80;
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 16px;
+        }
+
+        .product-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .product-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 140px;
+            background: linear-gradient(135deg, #1a3d1a, #2d5a2d);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+        }
+
+        .product-info {
+            padding: 14px;
+        }
+
+        .product-brand {
+            font-size: 0.7rem;
+            color: #4ade80;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .product-name {
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+
+        .product-price {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #4ade80;
+        }
+
+        .product-price .original {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.4);
+            text-decoration: line-through;
+            margin-left: 8px;
+            font-weight: 600;
+        }
+
+        /* Featured Product */
+        .featured-product {
+            background: linear-gradient(135deg, #1a3d1a, #0d2f0d);
+            border: 1px solid rgba(74, 222, 128, 0.3);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .featured-image {
+            background: linear-gradient(135deg, #2d5a2d, #1a3d1a);
+            border-radius: 16px;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+        }
+
+        .featured-info h3 {
+            font-size: 0.8rem;
+            color: #4ade80;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .featured-info h2 {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+
+        .featured-info p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+            margin-bottom: 16px;
+        }
+
+        .featured-price {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #4ade80;
+            margin-bottom: 16px;
+        }
+
+        /* === COURSES SECTION === */
+        .search-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 14px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #4ade80;
+        }
+
+        .search-btn {
+            padding: 14px 20px;
+            background: #4ade80;
+            border: none;
+            border-radius: 12px;
+            color: #0d1f0d;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .course-card {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .course-image {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #2d5a2d, #1a3d1a);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            flex-shrink: 0;
+        }
+
+        .course-info {
+            flex: 1;
+        }
+
+        .course-name {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 4px;
+        }
+
+        .course-location {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 8px;
+        }
+
+        .course-stats {
+            display: flex;
+            gap: 16px;
+            font-size: 0.8rem;
+        }
+
+        .course-stat {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .course-stat span {
+            color: #4ade80;
+            font-weight: 700;
+        }
+
+        /* Map Placeholder */
+        .map-container {
+            background: linear-gradient(135deg, #1a3d1a, #0d2f0d);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            height: 200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .map-icon {
+            font-size: 3rem;
+            margin-bottom: 12px;
+        }
+
+        .map-text {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.9rem;
+        }
+
+        /* === TRACK SECTION === */
+        .track-card {
+            text-align: center;
+            padding: 32px 20px;
+        }
+
+        .track-icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+        }
+
+        .track-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+        }
+
+        .track-card p {
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 20px;
+        }
+
+        .swing-analysis {
+            background: linear-gradient(135deg, #1a3d1a, #0d2f0d);
+            border: 1px solid rgba(74, 222, 128, 0.2);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .swing-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .swing-title {
+            font-size: 1.2rem;
+            font-weight: 800;
+        }
+
+        .swing-badge {
+            background: rgba(74, 222, 128, 0.15);
+            color: #4ade80;
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .swing-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .swing-stat {
+            text-align: center;
+        }
+
+        .swing-stat-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #4ade80;
+        }
+
+        .swing-stat-label {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+        }
+
+        .round-history {
+            margin-top: 24px;
+        }
+
+        .round-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .round-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .round-date {
+            width: 44px;
+            height: 44px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+        }
+
+        .round-date strong {
+            font-size: 1rem;
+        }
+
+        .round-course {
+            font-weight: 600;
+        }
+
+        .round-details {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .round-score {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #4ade80;
+        }
+
+        /* === LEARN SECTION === */
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .video-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .video-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            transform: translateY(-4px);
+        }
+
+        .video-thumbnail {
+            width: 100%;
+            height: 160px;
+            background: linear-gradient(135deg, #1a3d1a, #2d5a2d);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .video-play {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .video-duration {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+
+        .video-info {
+            padding: 14px;
+        }
+
+        .video-title {
+            font-weight: 700;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .video-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .article-card {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .article-image {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #2d5a2d, #1a3d1a);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            flex-shrink: 0;
+        }
+
+        .article-info h3 {
+            font-weight: 700;
+            margin-bottom: 4px;
+            line-height: 1.3;
+        }
+
+        .article-meta {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* === MY BAG SECTION === */
+        .bag-summary {
+            background: linear-gradient(135deg, #1a3d1a, #0d2f0d);
+            border: 1px solid rgba(74, 222, 128, 0.2);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .bag-count {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #4ade80;
+        }
+
+        .bag-label {
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 16px;
+        }
+
+        .club-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .club-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #2d5a2d, #1a3d1a);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .club-info {
+            flex: 1;
+        }
+
+        .club-name {
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .club-details {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .club-action {
+            color: #4ade80;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(13, 31, 13, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 8px 0;
+            padding-bottom: max(8px, env(safe-area-inset-bottom));
+            z-index: 1000;
+        }
+
+        .bottom-nav-inner {
+            display: flex;
+            justify-content: space-around;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .bottom-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 16px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: none;
+            border: none;
+        }
+
+        .bottom-nav-item .icon {
+            font-size: 1.4rem;
+        }
+
+        .bottom-nav-item.active {
+            color: #4ade80;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 600px) {
+            .featured-product {
+                grid-template-columns: 1fr;
+            }
+
+            .featured-image {
+                height: 160px;
+            }
+
+            .swing-stats {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+
+            .swing-stat-value {
+                font-size: 1.4rem;
+            }
+        }
+
+        /* Cart Badge */
+        .cart-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 18px;
+            height: 18px;
+            background: #ef4444;
+            border-radius: 50%;
+            font-size: 0.7rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-btn {
+            position: relative;
+        }
+
+        /* Product Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: #1a3d1a;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 400px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-image {
+            width: 100%;
+            height: 250px;
+            background: linear-gradient(135deg, #2d5a2d, #1a3d1a);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 6rem;
+            border-radius: 24px 24px 0 0;
+        }
+
+        .modal-content {
+            padding: 24px;
+        }
+
+        .modal-brand {
+            font-size: 0.8rem;
+            color: #4ade80;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+
+        .modal-desc {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .modal-specs {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .modal-spec {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .modal-spec:last-child {
+            border-bottom: none;
+        }
+
+        .modal-spec-label {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .modal-spec-value {
+            font-weight: 600;
+        }
+
+        .modal-price {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #4ade80;
+            margin-bottom: 20px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .modal-actions .btn {
+            flex: 1;
+            justify-content: center;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 36px;
+            height: 36px;
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .modal {
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="app-header">
+        <div class="header-top">
+            <div class="header-brand">
+                <div class="header-logo">⛳</div>
+                <h1 class="header-title">Proto <span>Golf</span></h1>
+            </div>
+            <div class="header-actions">
+                <button class="header-btn" onclick="showSection('bag')">🎒</button>
+                <button class="header-btn" onclick="openCart()">
+                    🛒
+                    <span class="cart-badge" id="cartBadge">0</span>
+                </button>
+            </div>
+        </div>
+        <div class="quick-stats">
+            <div class="quick-stat">
+                <div class="quick-stat-label">Handicap</div>
+                <div class="quick-stat-value">12.4</div>
+            </div>
+            <div class="quick-stat">
+                <div class="quick-stat-label">Rounds</div>
+                <div class="quick-stat-value">24</div>
+            </div>
+            <div class="quick-stat">
+                <div class="quick-stat-label">Best Score</div>
+                <div class="quick-stat-value">78</div>
+            </div>
+            <div class="quick-stat">
+                <div class="quick-stat-label">Avg Score</div>
+                <div class="quick-stat-value">84</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+        <button class="nav-tab active" onclick="showSection('home')">Home</button>
+        <button class="nav-tab" onclick="showSection('shop')">Shop</button>
+        <button class="nav-tab" onclick="showSection('courses')">Courses</button>
+        <button class="nav-tab" onclick="showSection('track')">Track</button>
+        <button class="nav-tab" onclick="showSection('learn')">Learn</button>
+        <button class="nav-tab" onclick="showSection('bag')">My Bag</button>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+        <!-- HOME SECTION -->
+        <section class="section active" id="section-home">
+            <div class="welcome-card">
+                <h2>Welcome back, Golfer! 🏌️</h2>
+                <p>Ready to improve your game? Check out today's tips or log a new round.</p>
+                <div class="welcome-actions">
+                    <button class="btn btn-primary" onclick="showSection('track')">📍 Log Round</button>
+                    <button class="btn btn-secondary" onclick="showSection('learn')">📚 Today's Tip</button>
+                </div>
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-card" onclick="showSection('shop')">
+                    <div class="feature-icon">🏌️</div>
+                    <div class="feature-name">Shop Clubs</div>
+                    <div class="feature-desc">Find your perfect putter</div>
+                </div>
+                <div class="feature-card" onclick="showSection('courses')">
+                    <div class="feature-icon">🗺️</div>
+                    <div class="feature-name">Find Courses</div>
+                    <div class="feature-desc">Discover nearby courses</div>
+                </div>
+                <div class="feature-card" onclick="showSection('track')">
+                    <div class="feature-icon">📊</div>
+                    <div class="feature-name">Track Swing</div>
+                    <div class="feature-desc">Analyze your technique</div>
+                </div>
+                <div class="feature-card" onclick="showSection('learn')">
+                    <div class="feature-icon">🎓</div>
+                    <div class="feature-name">Learn</div>
+                    <div class="feature-desc">Pro tips & tutorials</div>
+                </div>
+            </div>
+
+            <div class="section-header">
+                <h2 class="section-title">Featured Gear</h2>
+                <span class="see-all" onclick="showSection('shop')">See All →</span>
+            </div>
+
+            <div class="featured-product">
+                <div class="featured-image">🏌️</div>
+                <div class="featured-info">
+                    <h3>New Arrival</h3>
+                    <h2>Proto Blade Putter</h2>
+                    <p>Tour-proven design with precision milled face for ultimate feel and control.</p>
+                    <div class="featured-price">$249</div>
+                    <button class="btn btn-primary" onclick="addToCart('Proto Blade Putter', 249)">Add to Cart</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SHOP SECTION -->
+        <section class="section" id="section-shop">
+            <div class="section-header">
+                <h2 class="section-title">Shop Equipment</h2>
+            </div>
+
+            <div class="shop-categories">
+                <div class="shop-category active">All</div>
+                <div class="shop-category">Putters</div>
+                <div class="shop-category">Drivers</div>
+                <div class="shop-category">Irons</div>
+                <div class="shop-category">Wedges</div>
+                <div class="shop-category">Accessories</div>
+            </div>
+
+            <div class="featured-product" style="margin-bottom: 24px;">
+                <div class="featured-image">🏌️</div>
+                <div class="featured-info">
+                    <h3>⭐ Best Seller</h3>
+                    <h2>Proto Mallet Putter</h2>
+                    <p>High MOI design with alignment aid. Perfect for golfers seeking forgiveness and consistency.</p>
+                    <div class="featured-price">$279 <span style="font-size: 1rem; color: rgba(255,255,255,0.4); text-decoration: line-through;">$349</span></div>
+                    <button class="btn btn-primary" onclick="openProductModal('mallet')">View Details</button>
+                </div>
+            </div>
+
+            <div class="section-header">
+                <h2 class="section-title">Putters</h2>
+            </div>
+
+            <div class="product-grid">
+                <div class="product-card" onclick="openProductModal('blade')">
+                    <div class="product-image">🏌️</div>
+                    <div class="product-info">
+                        <div class="product-brand">Proto Golf</div>
+                        <div class="product-name">Blade Putter</div>
+                        <div class="product-price">$249</div>
+                    </div>
+                </div>
+                <div class="product-card" onclick="openProductModal('mallet')">
+                    <div class="product-image">🏌️</div>
+                    <div class="product-info">
+                        <div class="product-brand">Proto Golf</div>
+                        <div class="product-name">Mallet Putter</div>
+                        <div class="product-price">$279 <span class="original">$349</span></div>
+                    </div>
+                </div>
+                <div class="product-card" onclick="openProductModal('tour')">
+                    <div class="product-image">🏌️</div>
+                    <div class="product-info">
+                        <div class="product-brand">Proto Golf</div>
+                        <div class="product-name">Tour Blade</div>
+                        <div class="product-price">$349</div>
+                    </div>
+                </div>
+                <div class="product-card" onclick="openProductModal('classic')">
+                    <div class="product-image">🏌️</div>
+                    <div class="product-info">
+                        <div class="product-brand">Proto Golf</div>
+                        <div class="product-name">Classic Anser</div>
+                        <div class="product-price">$199</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-header" style="margin-top: 32px;">
+                <h2 class="section-title">Accessories</h2>
+            </div>
+
+            <div class="product-grid">
+                <div class="product-card">
+                    <div class="product-image">🧢</div>
+                    <div class="product-info">
+                        <div class="product-brand">Proto Golf</div>
+                        <div class="product-name">Tour Cap</div>
+                        <div class="product-price">$34</div>
+                    </div>
+                </div>
+                <div class="product-card">
+                    <div class="product-image">🧤</div>
+                    <div class="product-info">
+                        <div class="product-brand">Proto Golf</div>
+                        <div class="product-name">Premium Glove</div>
+                        <div class="product-price">$28</div>
+                    </div>
+                </div>
+                <div class="product-card">
+                    <div class="product-image">⛳</div>
+                    <div class="product-info">
+                        <div class="product-brand">Proto Golf</div>
+                        <div class="product-name">Ball Markers (3)</div>
+                        <div class="product-price">$15</div>
+                    </div>
+                </div>
+                <div class="product-card">
+                    <div class="product-image">🎒</div>
+                    <div class="product-info">
+                        <div class="product-brand">Proto Golf</div>
+                        <div class="product-name">Stand Bag</div>
+                        <div class="product-price">$189</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- COURSES SECTION -->
+        <section class="section" id="section-courses">
+            <div class="section-header">
+                <h2 class="section-title">Find Courses</h2>
+            </div>
+
+            <div class="search-bar">
+                <input type="text" class="search-input" placeholder="Search courses near you...">
+                <button class="search-btn">🔍</button>
+            </div>
+
+            <div class="map-container">
+                <div class="map-icon">🗺️</div>
+                <div class="map-text">Interactive map with course locations</div>
+            </div>
+
+            <div class="section-header">
+                <h2 class="section-title">Nearby Courses</h2>
+                <span class="see-all">View Map →</span>
+            </div>
+
+            <div class="card course-card">
+                <div class="course-image">⛳</div>
+                <div class="course-info">
+                    <div class="course-name">Pebble Beach Golf Links</div>
+                    <div class="course-location">📍 Pebble Beach, CA • 12 mi</div>
+                    <div class="course-stats">
+                        <div class="course-stat">Par <span>72</span></div>
+                        <div class="course-stat">Rating <span>75.5</span></div>
+                        <div class="course-stat">Slope <span>145</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card course-card">
+                <div class="course-image">⛳</div>
+                <div class="course-info">
+                    <div class="course-name">Torrey Pines (South)</div>
+                    <div class="course-location">📍 La Jolla, CA • 8 mi</div>
+                    <div class="course-stats">
+                        <div class="course-stat">Par <span>72</span></div>
+                        <div class="course-stat">Rating <span>74.6</span></div>
+                        <div class="course-stat">Slope <span>136</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card course-card">
+                <div class="course-image">⛳</div>
+                <div class="course-info">
+                    <div class="course-name">Riviera Country Club</div>
+                    <div class="course-location">📍 Pacific Palisades, CA • 25 mi</div>
+                    <div class="course-stats">
+                        <div class="course-stat">Par <span>71</span></div>
+                        <div class="course-stat">Rating <span>75.3</span></div>
+                        <div class="course-stat">Slope <span>148</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="text-align: center; padding: 32px;">
+                <div style="font-size: 2rem; margin-bottom: 12px;">📏</div>
+                <h3 style="margin-bottom: 8px;">GPS Rangefinder</h3>
+                <p style="color: rgba(255,255,255,0.6); margin-bottom: 16px;">Get exact distances to pins, hazards, and landing zones</p>
+                <button class="btn btn-primary">Enable Location</button>
+            </div>
+        </section>
+
+        <!-- TRACK SECTION -->
+        <section class="section" id="section-track">
+            <div class="swing-analysis">
+                <div class="swing-header">
+                    <h2 class="swing-title">Swing Analysis</h2>
+                    <span class="swing-badge">AI Powered</span>
+                </div>
+
+                <div class="swing-stats">
+                    <div class="swing-stat">
+                        <div class="swing-stat-value">94</div>
+                        <div class="swing-stat-label">Club Speed</div>
+                    </div>
+                    <div class="swing-stat">
+                        <div class="swing-stat-value">1.48</div>
+                        <div class="swing-stat-label">Smash Factor</div>
+                    </div>
+                    <div class="swing-stat">
+                        <div class="swing-stat-value">12°</div>
+                        <div class="swing-stat-label">Launch Angle</div>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" style="width: 100%;">📹 Record New Swing</button>
+            </div>
+
+            <div class="card track-card">
+                <div class="track-icon">📱</div>
+                <h3>Phone-Based Tracking</h3>
+                <p>Use your phone camera to analyze your swing mechanics with AI</p>
+                <button class="btn btn-secondary">Learn How</button>
+            </div>
+
+            <div class="section-header">
+                <h2 class="section-title">Round History</h2>
+                <span class="see-all">See All →</span>
+            </div>
+
+            <div class="card">
+                <div class="round-history">
+                    <div class="round-item">
+                        <div class="round-info">
+                            <div class="round-date">
+                                <span>Jan</span>
+                                <strong>18</strong>
+                            </div>
+                            <div>
+                                <div class="round-course">Torrey Pines (South)</div>
+                                <div class="round-details">18 holes • 4h 12m</div>
+                            </div>
+                        </div>
+                        <div class="round-score">82</div>
+                    </div>
+                    <div class="round-item">
+                        <div class="round-info">
+                            <div class="round-date">
+                                <span>Jan</span>
+                                <strong>12</strong>
+                            </div>
+                            <div>
+                                <div class="round-course">Pebble Beach</div>
+                                <div class="round-details">18 holes • 4h 35m</div>
+                            </div>
+                        </div>
+                        <div class="round-score">78</div>
+                    </div>
+                    <div class="round-item">
+                        <div class="round-info">
+                            <div class="round-date">
+                                <span>Jan</span>
+                                <strong>5</strong>
+                            </div>
+                            <div>
+                                <div class="round-course">Riviera CC</div>
+                                <div class="round-details">18 holes • 4h 20m</div>
+                            </div>
+                        </div>
+                        <div class="round-score">85</div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" style="width: 100%; margin-top: 16px;">+ Log New Round</button>
+        </section>
+
+        <!-- LEARN SECTION -->
+        <section class="section" id="section-learn">
+            <div class="section-header">
+                <h2 class="section-title">Video Lessons</h2>
+                <span class="see-all">See All →</span>
+            </div>
+
+            <div class="video-grid">
+                <div class="video-card">
+                    <div class="video-thumbnail">
+                        <div class="video-play">▶</div>
+                        <span class="video-duration">8:24</span>
+                    </div>
+                    <div class="video-info">
+                        <div class="video-title">Perfect Your Putting Stroke</div>
+                        <div class="video-meta">
+                            <span>⭐ 4.9</span>
+                            <span>12K views</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="video-card">
+                    <div class="video-thumbnail">
+                        <div class="video-play">▶</div>
+                        <span class="video-duration">12:15</span>
+                    </div>
+                    <div class="video-info">
+                        <div class="video-title">Driver Distance Secrets</div>
+                        <div class="video-meta">
+                            <span>⭐ 4.8</span>
+                            <span>28K views</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="video-card">
+                    <div class="video-thumbnail">
+                        <div class="video-play">▶</div>
+                        <span class="video-duration">6:42</span>
+                    </div>
+                    <div class="video-info">
+                        <div class="video-title">Chip Like a Pro</div>
+                        <div class="video-meta">
+                            <span>⭐ 4.7</span>
+                            <span>8K views</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-header">
+                <h2 class="section-title">Articles & Tips</h2>
+                <span class="see-all">See All →</span>
+            </div>
+
+            <div class="card article-card">
+                <div class="article-image">📖</div>
+                <div class="article-info">
+                    <h3>5 Drills to Fix Your Slice</h3>
+                    <div class="article-meta">Golf Digest • 5 min read</div>
+                </div>
+            </div>
+
+            <div class="card article-card">
+                <div class="article-image">📖</div>
+                <div class="article-info">
+                    <h3>Mental Game: Pre-Shot Routine</h3>
+                    <div class="article-meta">PGA Tour • 4 min read</div>
+                </div>
+            </div>
+
+            <div class="card article-card">
+                <div class="article-image">📖</div>
+                <div class="article-info">
+                    <h3>How to Read Greens Like a Pro</h3>
+                    <div class="article-meta">Golf.com • 6 min read</div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 24px; text-align: center; padding: 32px;">
+                <div style="font-size: 2rem; margin-bottom: 12px;">🤖</div>
+                <h3 style="margin-bottom: 8px;">Ask the AI Coach</h3>
+                <p style="color: rgba(255,255,255,0.6); margin-bottom: 16px;">Get personalized tips based on your game</p>
+                <button class="btn btn-primary">Start Chat</button>
+            </div>
+        </section>
+
+        <!-- MY BAG SECTION -->
+        <section class="section" id="section-bag">
+            <div class="bag-summary">
+                <div class="bag-count">14</div>
+                <div class="bag-label">Clubs in Your Bag</div>
+                <button class="btn btn-secondary">+ Add Club</button>
+            </div>
+
+            <div class="section-header">
+                <h2 class="section-title">Your Clubs</h2>
+            </div>
+
+            <div class="card club-item">
+                <div class="club-icon">🏌️</div>
+                <div class="club-info">
+                    <div class="club-name">Driver</div>
+                    <div class="club-details">TaylorMade Stealth 2 • 10.5° • Stiff</div>
+                </div>
+                <div class="club-action">✏️</div>
+            </div>
+
+            <div class="card club-item">
+                <div class="club-icon">🏌️</div>
+                <div class="club-info">
+                    <div class="club-name">3 Wood</div>
+                    <div class="club-details">Callaway Paradym • 15° • Stiff</div>
+                </div>
+                <div class="club-action">✏️</div>
+            </div>
+
+            <div class="card club-item">
+                <div class="club-icon">🏌️</div>
+                <div class="club-info">
+                    <div class="club-name">4-PW Irons</div>
+                    <div class="club-details">Titleist T200 • Steel • Stiff</div>
+                </div>
+                <div class="club-action">✏️</div>
+            </div>
+
+            <div class="card club-item">
+                <div class="club-icon">🏌️</div>
+                <div class="club-info">
+                    <div class="club-name">Putter</div>
+                    <div class="club-details">Proto Golf Mallet • 34"</div>
+                </div>
+                <div class="club-action">✏️</div>
+            </div>
+
+            <div class="section-header" style="margin-top: 32px;">
+                <h2 class="section-title">Upgrade Suggestions</h2>
+            </div>
+
+            <div class="card" style="display: flex; gap: 16px; align-items: center;">
+                <div class="club-icon" style="background: linear-gradient(135deg, #4ade80, #22c55e);">⬆️</div>
+                <div class="club-info">
+                    <div class="club-name">Upgrade Your Wedges</div>
+                    <div class="club-details">Based on your short game stats, new wedges could save you 2-3 strokes per round.</div>
+                </div>
+                <button class="btn btn-primary" style="white-space: nowrap;" onclick="showSection('shop')">Shop</button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <div class="bottom-nav-inner">
+            <button class="bottom-nav-item active" onclick="showSection('home')">
+                <span class="icon">🏠</span>
+                <span>Home</span>
+            </button>
+            <button class="bottom-nav-item" onclick="showSection('shop')">
+                <span class="icon">🛒</span>
+                <span>Shop</span>
+            </button>
+            <button class="bottom-nav-item" onclick="showSection('courses')">
+                <span class="icon">⛳</span>
+                <span>Courses</span>
+            </button>
+            <button class="bottom-nav-item" onclick="showSection('track')">
+                <span class="icon">📊</span>
+                <span>Track</span>
+            </button>
+            <button class="bottom-nav-item" onclick="showSection('learn')">
+                <span class="icon">🎓</span>
+                <span>Learn</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Product Modal -->
+    <div class="modal-overlay" id="productModal" onclick="if(event.target === this) closeProductModal()">
+        <div class="modal">
+            <button class="modal-close" onclick="closeProductModal()">×</button>
+            <div class="modal-image">🏌️</div>
+            <div class="modal-content">
+                <div class="modal-brand">Proto Golf</div>
+                <h2 class="modal-title" id="modalTitle">Mallet Putter</h2>
+                <p class="modal-desc" id="modalDesc">High MOI design with advanced alignment technology. The weighted perimeter provides exceptional forgiveness on off-center strikes, while the precision-milled face ensures consistent ball speed across the entire hitting area.</p>
+
+                <div class="modal-specs">
+                    <div class="modal-spec">
+                        <span class="modal-spec-label">Length</span>
+                        <span class="modal-spec-value">33" / 34" / 35"</span>
+                    </div>
+                    <div class="modal-spec">
+                        <span class="modal-spec-label">Head Weight</span>
+                        <span class="modal-spec-value">350g</span>
+                    </div>
+                    <div class="modal-spec">
+                        <span class="modal-spec-label">Loft</span>
+                        <span class="modal-spec-value">3°</span>
+                    </div>
+                    <div class="modal-spec">
+                        <span class="modal-spec-label">Lie Angle</span>
+                        <span class="modal-spec-value">70°</span>
+                    </div>
+                </div>
+
+                <div class="modal-price" id="modalPrice">$279</div>
+
+                <div class="modal-actions">
+                    <button class="btn btn-primary" onclick="addToCartFromModal()">Add to Cart</button>
+                    <button class="btn btn-secondary" onclick="closeProductModal()">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let cart = [];
+        let currentProduct = null;
+
+        const products = {
+            blade: { name: 'Blade Putter', price: 249, desc: 'Classic blade design for players who prefer feel and feedback. Precision milled from 303 stainless steel.' },
+            mallet: { name: 'Mallet Putter', price: 279, desc: 'High MOI design with advanced alignment technology. Exceptional forgiveness on off-center strikes.' },
+            tour: { name: 'Tour Blade', price: 349, desc: 'Tour-proven design used by professionals. Carbon steel construction with tungsten weights.' },
+            classic: { name: 'Classic Anser', price: 199, desc: 'Timeless Anser-style head shape. Perfect balance of feel and forgiveness for all skill levels.' }
+        };
+
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+
+            // Show selected section
+            document.getElementById('section-' + sectionId).classList.add('active');
+
+            // Update tab styles
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.bottom-nav-item').forEach(t => t.classList.remove('active'));
+
+            // Find and activate the correct tabs
+            document.querySelectorAll('.nav-tab').forEach(t => {
+                if (t.textContent.toLowerCase() === sectionId ||
+                    (sectionId === 'home' && t.textContent === 'Home') ||
+                    (sectionId === 'bag' && t.textContent === 'My Bag')) {
+                    t.classList.add('active');
+                }
+            });
+
+            document.querySelectorAll('.bottom-nav-item').forEach(t => {
+                const label = t.querySelector('span:last-child').textContent.toLowerCase();
+                if (label === sectionId || (sectionId === 'bag' && label === 'home')) {
+                    t.classList.add('active');
+                }
+            });
+
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function openProductModal(productId) {
+            currentProduct = products[productId];
+            document.getElementById('modalTitle').textContent = currentProduct.name;
+            document.getElementById('modalDesc').textContent = currentProduct.desc;
+            document.getElementById('modalPrice').textContent = '$' + currentProduct.price;
+            document.getElementById('productModal').classList.add('active');
+        }
+
+        function closeProductModal() {
+            document.getElementById('productModal').classList.remove('active');
+        }
+
+        function addToCart(name, price) {
+            cart.push({ name, price });
+            updateCartBadge();
+            showToast(name + ' added to cart!');
+        }
+
+        function addToCartFromModal() {
+            if (currentProduct) {
+                addToCart(currentProduct.name, currentProduct.price);
+                closeProductModal();
+            }
+        }
+
+        function updateCartBadge() {
+            document.getElementById('cartBadge').textContent = cart.length;
+        }
+
+        function openCart() {
+            if (cart.length === 0) {
+                showToast('Your cart is empty');
+                return;
+            }
+            const total = cart.reduce((sum, item) => sum + item.price, 0);
+            alert('Cart (' + cart.length + ' items):\n\n' +
+                cart.map(item => item.name + ' - $' + item.price).join('\n') +
+                '\n\nTotal: $' + total);
+        }
+
+        function showToast(message) {
+            // Create toast if it doesn't exist
+            let toast = document.getElementById('toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'toast';
+                toast.style.cssText = `
+                    position: fixed;
+                    bottom: 100px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: #4ade80;
+                    color: #0d1f0d;
+                    padding: 12px 24px;
+                    border-radius: 100px;
+                    font-weight: 700;
+                    z-index: 3000;
+                    opacity: 0;
+                    transition: opacity 0.3s;
+                `;
+                document.body.appendChild(toast);
+            }
+
+            toast.textContent = message;
+            toast.style.opacity = '1';
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+            }, 2000);
+        }
+
+        // Handle shop category clicks
+        document.querySelectorAll('.shop-category').forEach(cat => {
+            cat.addEventListener('click', function() {
+                document.querySelectorAll('.shop-category').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
