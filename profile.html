@@ -726,6 +726,14 @@
                                 </button>
                             </div>
                         </div>
+                        <!-- Bonus Credits Row -->
+                        <div class="profile-row" style="background: rgba(125, 155, 138, 0.08); border: 1px solid rgba(125, 155, 138, 0.15);">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span class="profile-row-label">Bonus Credits</span>
+                                <span style="font-weight: 700; color: var(--accent-sage);" id="bonusCreditsBalance">0</span>
+                            </div>
+                            <a href="/docs/vault/" style="font-size: 0.8rem; color: var(--accent-sage); text-decoration: none;">Learn more →</a>
+                        </div>
                     </div>
                 </div>
 
@@ -1145,6 +1153,7 @@
 
             // Credits - disabled without wallet
             document.getElementById('creditsBalance').textContent = '0';
+            document.getElementById('bonusCreditsBalance').textContent = '0';
             document.getElementById('btnBuy').disabled = true;
             document.getElementById('btnBuy').title = 'Connect wallet to buy credits';
             document.getElementById('btnWithdraw').disabled = true;
@@ -1155,10 +1164,19 @@
             try {
                 const readProvider = new ethers.JsonRpcProvider(BASE_RPC);
                 const readStaking = new ethers.Contract(SUITE_STAKING_ADDRESS, STAKING_ABI, readProvider);
-                const creditsRaw = await readStaking.availableCredits(wallet);
+
+                // Fetch credits and bonus credits
+                const [creditsRaw, bonusRaw] = await Promise.all([
+                    readStaking.availableCredits(wallet),
+                    readStaking.bonusCredits(wallet)
+                ]);
+
                 currentCredits = Number(creditsRaw) / 1e18;
+                const bonusCredits = Number(bonusRaw) / 1e18;
+
                 document.getElementById('creditsBalance').textContent = Math.floor(currentCredits).toLocaleString();
-                document.getElementById('btnWithdraw').disabled = currentCredits < 1000;
+                document.getElementById('bonusCreditsBalance').textContent = Math.floor(bonusCredits).toLocaleString();
+                document.getElementById('btnWithdraw').disabled = bonusCredits < 1000;
 
                 // Fetch and display redemption rate (or show placeholder)
                 try {
@@ -1178,6 +1196,7 @@
             } catch (err) {
                 console.error('Failed to load credits:', err);
                 document.getElementById('creditsBalance').textContent = '0';
+                document.getElementById('bonusCreditsBalance').textContent = '0';
             }
         }
 
