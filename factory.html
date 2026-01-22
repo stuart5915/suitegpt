@@ -4211,19 +4211,9 @@
                     }
                 );
 
-                console.log('[updateItemStatus] Response status:', response.status);
                 if (response.ok) {
-                    console.log('[updateItemStatus] Success! Reloading data...');
                     await loadGovernanceProposals();
-                    // Debug: check if the proposal status actually changed
-                    const updatedProposal = governanceProposals.find(p => p.id === id);
-                    console.log('[updateItemStatus] After reload, proposal status:', updatedProposal?.status, 'expected:', newStatus);
-                    if (updatedProposal?.status !== newStatus) {
-                        console.error('[updateItemStatus] STATUS DID NOT CHANGE! RLS policy may be blocking update.');
-                    }
-                    console.log('[updateItemStatus] Re-rendering...');
                     renderGovernanceSections();
-                    console.log('[updateItemStatus] Done!');
                 } else {
                     const errorText = await response.text();
                     console.error('Failed to update status:', errorText);
