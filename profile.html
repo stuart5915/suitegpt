@@ -556,9 +556,11 @@
         .modal {
             background: white;
             border-radius: 24px;
-            padding: clamp(20px, 5vw, 28px);
+            padding: clamp(16px, 4vw, 24px);
             width: 95%;
             max-width: min(400px, 95vw);
+            max-height: 85vh;
+            overflow-y: auto;
             position: relative;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
             margin: 0 auto;
@@ -1289,37 +1291,38 @@
 
     <!-- App Edit Modal -->
     <div class="modal-overlay" id="appEditModal" onclick="if(event.target === this) closeAppEditModal()">
-        <div class="modal" style="max-width: 500px;">
+        <div class="modal" style="max-width: 650px; max-height: 80vh;">
             <button class="modal-close" onclick="closeAppEditModal()">&times;</button>
-            <h3 id="appEditModalTitle">Edit App</h3>
+            <h3 id="appEditModalTitle" style="margin-bottom: 12px; font-size: 1.1rem;">Edit App</h3>
 
-            <div style="display: flex; flex-direction: column; gap: 14px;">
+            <div style="display: flex; flex-direction: column; gap: 10px;">
                 <input type="hidden" id="appEditId">
 
-                <div class="modal-input-group" style="margin-bottom: 0;">
-                    <label>App Name</label>
-                    <input type="text" class="modal-input" id="appEditName" placeholder="e.g. TrueForm">
-                </div>
-
-                <div class="modal-input-group" style="margin-bottom: 0;">
-                    <label>Slug (URL-friendly)</label>
-                    <input type="text" class="modal-input" id="appEditSlug" placeholder="e.g. trueform" style="font-family: monospace;">
-                </div>
-
-                <div class="modal-input-group" style="margin-bottom: 0;">
-                    <label>Short Tagline</label>
-                    <input type="text" class="modal-input" id="appEditTagline" placeholder="e.g. Recovery tracking">
-                </div>
-
-                <div class="modal-input-group" style="margin-bottom: 0;">
-                    <label>Description</label>
-                    <textarea class="modal-input" id="appEditDescription" placeholder="Full description of the app..." rows="3" style="resize: vertical;"></textarea>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                     <div class="modal-input-group" style="margin-bottom: 0;">
-                        <label>Category</label>
-                        <select class="modal-input" id="appEditCategory">
+                        <label style="font-size: 0.8rem;">App Name</label>
+                        <input type="text" class="modal-input" id="appEditName" placeholder="e.g. TrueForm" style="padding: 8px 10px;">
+                    </div>
+                    <div class="modal-input-group" style="margin-bottom: 0;">
+                        <label style="font-size: 0.8rem;">Slug</label>
+                        <input type="text" class="modal-input" id="appEditSlug" placeholder="e.g. trueform" style="font-family: monospace; padding: 8px 10px;">
+                    </div>
+                </div>
+
+                <div class="modal-input-group" style="margin-bottom: 0;">
+                    <label style="font-size: 0.8rem;">Tagline</label>
+                    <input type="text" class="modal-input" id="appEditTagline" placeholder="e.g. Recovery tracking" style="padding: 8px 10px;">
+                </div>
+
+                <div class="modal-input-group" style="margin-bottom: 0;">
+                    <label style="font-size: 0.8rem;">Description</label>
+                    <textarea class="modal-input" id="appEditDescription" placeholder="Full description..." rows="2" style="resize: none; padding: 8px 10px;"></textarea>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                    <div class="modal-input-group" style="margin-bottom: 0;">
+                        <label style="font-size: 0.8rem;">Category</label>
+                        <select class="modal-input" id="appEditCategory" style="padding: 8px 10px;">
                             <option value="health">Health</option>
                             <option value="productivity">Productivity</option>
                             <option value="finance">Finance</option>
@@ -1327,90 +1330,62 @@
                             <option value="games">Games</option>
                         </select>
                     </div>
-
                     <div class="modal-input-group" style="margin-bottom: 0;">
-                        <label>Status</label>
-                        <select class="modal-input" id="appEditStatus">
-                            <option value="approved">Approved (Live)</option>
+                        <label style="font-size: 0.8rem;">Status</label>
+                        <select class="modal-input" id="appEditStatus" style="padding: 8px 10px;">
+                            <option value="approved">Approved</option>
                             <option value="pending">Pending</option>
                             <option value="beta">Beta</option>
                             <option value="hidden">Hidden</option>
                         </select>
                     </div>
                     <div class="modal-input-group" style="margin-bottom: 0;">
-                        <label>Best Viewed On</label>
-                        <select class="modal-input" id="appEditPlatform">
-                            <option value="both">📱💻 Mobile & Web</option>
-                            <option value="mobile">📱 Mobile First</option>
-                            <option value="web">💻 Web First</option>
+                        <label style="font-size: 0.8rem;">Platform</label>
+                        <select class="modal-input" id="appEditPlatform" style="padding: 8px 10px;">
+                            <option value="both">Both</option>
+                            <option value="mobile">Mobile</option>
+                            <option value="web">Web</option>
                         </select>
                     </div>
                 </div>
 
-                <div class="modal-input-group" style="margin-bottom: 0;">
-                    <label>App Icon</label>
-                    <div id="iconDropZone" style="border: 2px dashed rgba(0,0,0,0.2); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s; background: rgba(255,255,255,0.5);">
-                        <img id="appEditIconPreview" src="" style="width: 64px; height: 64px; border-radius: 12px; object-fit: cover; display: none; margin: 0 auto 8px;">
-                        <div id="iconDropText" style="color: var(--text-light); font-size: 0.85rem;">
-                            📁 Drop image here or click to upload
+                <div style="display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start;">
+                    <div class="modal-input-group" style="margin-bottom: 0;">
+                        <label style="font-size: 0.8rem;">Icon</label>
+                        <div id="iconDropZone" style="border: 2px dashed rgba(0,0,0,0.2); border-radius: 8px; padding: 8px; text-align: center; cursor: pointer; background: rgba(255,255,255,0.5); width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;">
+                            <img id="appEditIconPreview" src="" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover; display: none;">
+                            <div id="iconDropText" style="color: var(--text-light); font-size: 0.7rem;">+</div>
+                            <input type="file" id="iconFileInput" accept="image/*" style="display: none;">
+                            <div id="iconUploadProgress" style="display: none;"></div>
                         </div>
-                        <input type="file" id="iconFileInput" accept="image/*" style="display: none;">
-                        <div id="iconUploadProgress" style="display: none; margin-top: 8px;">
-                            <div style="background: rgba(0,0,0,0.1); border-radius: 4px; height: 4px; overflow: hidden;">
-                                <div id="iconProgressBar" style="background: var(--accent-green); height: 100%; width: 0%; transition: width 0.3s;"></div>
-                            </div>
-                            <span style="font-size: 0.75rem; color: var(--text-light);">Uploading...</span>
-                        </div>
+                        <input type="hidden" id="appEditIcon">
                     </div>
-                    <input type="hidden" id="appEditIcon">
-                    <div style="margin-top: 8px; font-size: 0.75rem; color: var(--text-light);">
-                        Or enter URL directly: <input type="text" id="appEditIconUrl" class="modal-input" style="margin-top: 4px; font-size: 0.85rem;" placeholder="https://... or /assets/icons/...">
+                    <div class="modal-input-group" style="margin-bottom: 0;">
+                        <label style="font-size: 0.8rem;">Icon URL</label>
+                        <input type="text" id="appEditIconUrl" class="modal-input" style="padding: 8px 10px; font-size: 0.85rem;" placeholder="https://... or /assets/icons/...">
                     </div>
-                </div>
-
-                <div class="modal-input-group" style="margin-bottom: 12px;">
-                    <label>Screenshots (up to 5)</label>
-                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 8px;">
-                        <div class="screenshot-drop-zone" style="aspect-ratio: 9/16; border: 2px dashed rgba(0,0,0,0.2); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.3); font-size: 1.5rem; color: var(--text-light);">
-                            +
-                            <input type="file" accept="image/*" style="display: none;">
-                        </div>
-                        <div class="screenshot-drop-zone" style="aspect-ratio: 9/16; border: 2px dashed rgba(0,0,0,0.2); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.3); font-size: 1.5rem; color: var(--text-light);">
-                            +
-                            <input type="file" accept="image/*" style="display: none;">
-                        </div>
-                        <div class="screenshot-drop-zone" style="aspect-ratio: 9/16; border: 2px dashed rgba(0,0,0,0.2); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.3); font-size: 1.5rem; color: var(--text-light);">
-                            +
-                            <input type="file" accept="image/*" style="display: none;">
-                        </div>
-                        <div class="screenshot-drop-zone" style="aspect-ratio: 9/16; border: 2px dashed rgba(0,0,0,0.2); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.3); font-size: 1.5rem; color: var(--text-light);">
-                            +
-                            <input type="file" accept="image/*" style="display: none;">
-                        </div>
-                        <div class="screenshot-drop-zone" style="aspect-ratio: 9/16; border: 2px dashed rgba(0,0,0,0.2); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.3); font-size: 1.5rem; color: var(--text-light);">
-                            +
-                            <input type="file" accept="image/*" style="display: none;">
-                        </div>
-                    </div>
-                    <input type="hidden" id="appEditScreenshot1">
-                    <input type="hidden" id="appEditScreenshot2">
-                    <input type="hidden" id="appEditScreenshot3">
-                    <input type="hidden" id="appEditScreenshot4">
-                    <input type="hidden" id="appEditScreenshot5">
                 </div>
 
                 <div class="modal-input-group" style="margin-bottom: 0;">
-                    <label>App URL (if external)</label>
-                    <input type="text" class="modal-input" id="appEditUrl" placeholder="Leave blank for suite-shell apps">
+                    <label style="font-size: 0.8rem;">Screenshots (5 max)</label>
+                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;">
+                        <div class="screenshot-drop-zone" style="aspect-ratio: 9/16; border: 2px dashed rgba(0,0,0,0.15); border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.3); font-size: 1rem; color: var(--text-light);">+<input type="file" accept="image/*" style="display: none;"></div>
+                        <div class="screenshot-drop-zone" style="aspect-ratio: 9/16; border: 2px dashed rgba(0,0,0,0.15); border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.3); font-size: 1rem; color: var(--text-light);">+<input type="file" accept="image/*" style="display: none;"></div>
+                        <div class="screenshot-drop-zone" style="aspect-ratio: 9/16; border: 2px dashed rgba(0,0,0,0.15); border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.3); font-size: 1rem; color: var(--text-light);">+<input type="file" accept="image/*" style="display: none;"></div>
+                        <div class="screenshot-drop-zone" style="aspect-ratio: 9/16; border: 2px dashed rgba(0,0,0,0.15); border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.3); font-size: 1rem; color: var(--text-light);">+<input type="file" accept="image/*" style="display: none;"></div>
+                        <div class="screenshot-drop-zone" style="aspect-ratio: 9/16; border: 2px dashed rgba(0,0,0,0.15); border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.3); font-size: 1rem; color: var(--text-light);">+<input type="file" accept="image/*" style="display: none;"></div>
+                    </div>
+                    <input type="hidden" id="appEditScreenshot1"><input type="hidden" id="appEditScreenshot2"><input type="hidden" id="appEditScreenshot3"><input type="hidden" id="appEditScreenshot4"><input type="hidden" id="appEditScreenshot5">
                 </div>
 
-                <div style="display: flex; gap: 12px; margin-top: 8px;">
-                    <button onclick="saveAppEdit()" class="btn-modal-action buy" style="flex: 1;">
-                        Save App
-                    </button>
-                    <button onclick="deleteApp()" id="btnDeleteApp" class="btn-modal-action" style="flex: 0 0 auto; background: rgba(239, 68, 68, 0.1); color: #ef4444; display: none;">
-                        Delete
-                    </button>
+                <div class="modal-input-group" style="margin-bottom: 0;">
+                    <label style="font-size: 0.8rem;">App URL (if external)</label>
+                    <input type="text" class="modal-input" id="appEditUrl" placeholder="Leave blank for suite-shell apps" style="padding: 8px 10px;">
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 4px;">
+                    <button onclick="saveAppEdit()" class="btn-modal-action buy" style="flex: 1; padding: 10px;">Save</button>
+                    <button onclick="deleteApp()" id="btnDeleteApp" class="btn-modal-action" style="flex: 0 0 auto; background: rgba(239, 68, 68, 0.1); color: #ef4444; display: none; padding: 10px;">Delete</button>
                 </div>
             </div>
         </div>
