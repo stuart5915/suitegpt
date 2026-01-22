@@ -631,14 +631,13 @@
                             <span>&#43;</span> Buy Credits
                         </button>
                         <button class="btn-credits btn-withdraw" onclick="openWithdrawModal()" id="btnWithdraw">
-                            <span>&#8594;</span> Withdraw USDC
+                            <span>&#8592;</span> Withdraw Credits
                         </button>
                     </div>
                     <div class="credits-info">
                         <strong>$1 = 1,000 Credits</strong><br>
                         Credits are used to access SUITE apps and services.
                     </div>
-                    <a href="/docs/suite-token.html" class="defi-link">See DeFi details &rarr;</a>
                 </div>
 
                 <!-- Vote for Apps Card -->
@@ -764,19 +763,72 @@
     <div class="modal-overlay" id="buyModal" onclick="if(event.target === this) closeBuyModal()">
         <div class="modal">
             <button class="modal-close" onclick="closeBuyModal()">&times;</button>
-            <h3>Buy Credits</h3>
-            <div class="modal-input-group">
-                <label>Amount (USDC)</label>
-                <input type="number" class="modal-input" id="buyAmount" placeholder="10" min="1" step="1" oninput="updateBuyPreview()">
+
+            <!-- Step 1: Choose Payment Method -->
+            <div id="buyMethodState">
+                <h3>Buy Credits</h3>
+                <p style="color: var(--text-medium); font-size: 0.9rem; margin-bottom: 20px;">Choose how you'd like to pay</p>
+
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <button onclick="showBuyCryptoState()" style="display: flex; align-items: center; gap: 14px; padding: 16px; background: rgba(255, 255, 255, 0.5); border: 2px solid rgba(0, 0, 0, 0.1); border-radius: 14px; cursor: pointer; transition: all 0.2s ease; text-align: left;">
+                        <div style="width: 44px; height: 44px; background: linear-gradient(135deg, #627EEA, #3B5998); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.3rem;">&#9830;</div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 700; color: var(--text-dark);">Pay with Crypto</div>
+                            <div style="font-size: 0.8rem; color: var(--text-medium);">USDC on Base network</div>
+                        </div>
+                        <span style="color: var(--text-light);">&#8250;</span>
+                    </button>
+
+                    <button onclick="showBuyFiatState()" style="display: flex; align-items: center; gap: 14px; padding: 16px; background: rgba(255, 255, 255, 0.5); border: 2px solid rgba(0, 0, 0, 0.1); border-radius: 14px; cursor: pointer; transition: all 0.2s ease; text-align: left;">
+                        <div style="width: 44px; height: 44px; background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange)); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.3rem;">&#128179;</div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 700; color: var(--text-dark);">Pay with Card</div>
+                            <div style="font-size: 0.8rem; color: var(--text-medium);">Credit/debit card via Stripe</div>
+                        </div>
+                        <span style="color: var(--text-light);">&#8250;</span>
+                    </button>
+                </div>
+
+                <div style="text-align: center; margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(0,0,0,0.1);">
+                    <div style="font-size: 0.85rem; color: var(--text-medium);"><strong>$1 = 1,000 Credits</strong></div>
+                </div>
             </div>
-            <div class="modal-preview">
-                <div class="modal-preview-value" id="buyPreviewCredits">10,000</div>
-                <div class="modal-preview-label">Credits you'll receive</div>
+
+            <!-- Step 2a: Crypto Payment -->
+            <div id="buyCryptoState" style="display: none;">
+                <div onclick="showBuyMethodState()" style="color: var(--text-medium); font-size: 0.85rem; cursor: pointer; margin-bottom: 16px;">&#8592; Back</div>
+                <h3>Pay with Crypto</h3>
+                <div class="modal-input-group">
+                    <label>Amount (USDC)</label>
+                    <input type="number" class="modal-input" id="buyAmount" placeholder="10" min="1" step="1" oninput="updateBuyPreview()">
+                </div>
+                <div class="modal-preview">
+                    <div class="modal-preview-value" id="buyPreviewCredits">10,000</div>
+                    <div class="modal-preview-label">Credits you'll receive</div>
+                </div>
+                <button class="btn-modal-action buy" id="btnBuyConfirm" onclick="executeBuy()">
+                    Pay with USDC
+                </button>
+                <p class="modal-note">Requires USDC on Base network</p>
             </div>
-            <button class="btn-modal-action buy" id="btnBuyConfirm" onclick="executeBuy()">
-                Buy Credits
-            </button>
-            <p class="modal-note">Requires USDC approval</p>
+
+            <!-- Step 2b: Fiat Payment -->
+            <div id="buyFiatState" style="display: none;">
+                <div onclick="showBuyMethodState()" style="color: var(--text-medium); font-size: 0.85rem; cursor: pointer; margin-bottom: 16px;">&#8592; Back</div>
+                <h3>Pay with Card</h3>
+
+                <div style="text-align: center; padding: 30px 0;">
+                    <div style="font-size: 3rem; margin-bottom: 16px;">&#128679;</div>
+                    <div style="font-weight: 700; color: var(--text-dark); margin-bottom: 8px;">Coming Soon</div>
+                    <div style="color: var(--text-medium); font-size: 0.9rem;">
+                        Card payments will be available soon.<br>For now, use USDC on Base.
+                    </div>
+                </div>
+
+                <button onclick="showBuyCryptoState()" class="btn-modal-action buy">
+                    Pay with Crypto Instead
+                </button>
+            </div>
         </div>
     </div>
 
@@ -787,7 +839,8 @@
 
             <!-- Default State: Request Withdrawal -->
             <div id="withdrawRequestState">
-                <h3>Withdraw to USDC</h3>
+                <h3>Withdraw Credits</h3>
+                <p style="color: var(--text-medium); font-size: 0.85rem; margin-bottom: 16px;">Convert your credits back to USDC</p>
 
                 <!-- Rate Info -->
                 <div style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(16, 185, 129, 0.1)); border-radius: 12px; padding: 16px; margin-bottom: 20px; text-align: center;">
@@ -1025,6 +1078,8 @@
 
         // Modal functions
         function openBuyModal() {
+            // Reset to method selection
+            showBuyMethodState();
             document.getElementById('buyAmount').value = '10';
             updateBuyPreview();
             document.getElementById('buyModal').classList.add('active');
@@ -1032,6 +1087,24 @@
 
         function closeBuyModal() {
             document.getElementById('buyModal').classList.remove('active');
+        }
+
+        function showBuyMethodState() {
+            document.getElementById('buyMethodState').style.display = 'block';
+            document.getElementById('buyCryptoState').style.display = 'none';
+            document.getElementById('buyFiatState').style.display = 'none';
+        }
+
+        function showBuyCryptoState() {
+            document.getElementById('buyMethodState').style.display = 'none';
+            document.getElementById('buyCryptoState').style.display = 'block';
+            document.getElementById('buyFiatState').style.display = 'none';
+        }
+
+        function showBuyFiatState() {
+            document.getElementById('buyMethodState').style.display = 'none';
+            document.getElementById('buyCryptoState').style.display = 'none';
+            document.getElementById('buyFiatState').style.display = 'block';
         }
 
         function updateBuyPreview() {
