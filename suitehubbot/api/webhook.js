@@ -11,9 +11,9 @@ const SUITE_CONTEXT = `
 SUITE is a decentralized app ecosystem where Anyone Can Build and Everyone Gets Paid.
 
 Key Features:
-- **Credits System**: Buy credits to use AI features across all SUITE apps. 1000 credits = $1.
-- **Governance**: Vote on proposals, submit ideas, earn reputation in the Factory.
-- **Apps**: TrueForm (fitness AI), Cadence AI (social media), OptiRep (workouts), RemCast (dream journal), Cheshbon (daily reflection), and more.
+- **Credits System**: Buy credits to use AI features across all SUITE apps. 1000 credits = $1. Credits are universal across all apps.
+- **Governance**: Vote on proposals and submit ideas in the Factory. Voting costs credits (first vote on any proposal is FREE).
+- **Apps**: TrueForm (AI physiotherapy & movement analysis), Cadence AI (AI marketing tool for content creation), OptiRep (AI workout trainer), RemCast (dream journal & interpretation), Cheshbon (daily reflection & growth), and more.
 - **AI Fleet**: Every app is powered by AI assistants that help users.
 
 Website: getsuite.app
@@ -24,7 +24,7 @@ How to get started:
 1. Connect your wallet at getsuite.app
 2. Buy credits in your profile
 3. Use any SUITE app
-4. Earn reputation by participating in governance
+4. Participate in governance to help shape the ecosystem
 `;
 
 // Send message via Telegram API
@@ -179,8 +179,8 @@ module.exports = async (req, res) => {
       const chatId = message.chat.id;
       await sendMessage(chatId,
         `📱 *SUITE Apps*\n\n` +
-        `🏋️ *TrueForm* - AI posture & movement analysis\n` +
-        `🎯 *Cadence AI* - Social media engagement assistant\n` +
+        `🏥 *TrueForm* - AI physiotherapy & movement analysis\n` +
+        `📣 *Cadence AI* - AI marketing tool for content creation\n` +
         `💪 *OptiRep* - AI workout trainer\n` +
         `🌙 *RemCast* - Dream journal & interpretation\n` +
         `📝 *Cheshbon* - Daily reflection & growth\n\n` +
@@ -228,9 +228,9 @@ module.exports = async (req, res) => {
         `Shape the future of SUITE!\n\n` +
         `*How it works:*\n` +
         `• Submit proposals for new features or apps\n` +
-        `• Vote on community proposals\n` +
-        `• Earn reputation for participating\n` +
-        `• First vote on any proposal is FREE\n\n` +
+        `• Vote on community proposals using credits\n` +
+        `• First vote on any proposal is FREE\n` +
+        `• Help decide what gets built next\n\n` +
         `*Sections:*\n` +
         `📱 Apps - Vote on new apps & features\n` +
         `💼 Business - Ecosystem decisions\n` +
