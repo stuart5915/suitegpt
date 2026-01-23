@@ -16,6 +16,35 @@
 
 const { spawn } = require('child_process');
 const path = require('path');
+const fs = require('fs');
+
+// Load .env.daemon file if it exists
+function loadEnvFile() {
+    const envPaths = [
+        path.join(__dirname, '.env.daemon'),
+        path.join(__dirname, '..', '.env.daemon'),
+    ];
+
+    for (const envPath of envPaths) {
+        if (fs.existsSync(envPath)) {
+            const content = fs.readFileSync(envPath, 'utf8');
+            for (const line of content.split('\n')) {
+                const trimmed = line.trim();
+                if (trimmed && !trimmed.startsWith('#')) {
+                    const [key, ...valueParts] = trimmed.split('=');
+                    const value = valueParts.join('=').trim();
+                    if (key && value && !process.env[key]) {
+                        process.env[key] = value;
+                    }
+                }
+            }
+            console.log(`Loaded config from: ${envPath}`);
+            return;
+        }
+    }
+}
+
+loadEnvFile();
 
 // Parse command line args
 const args = process.argv.slice(2);
@@ -28,12 +57,21 @@ const specificAgent = args.includes('--agent')
     : null;
 
 // Supabase config - same as factory.html
-const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://rdsmdywbdiskxknluiym.supabase.co';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
 if (!SUPABASE_SERVICE_KEY) {
-    console.error('ERROR: SUPABASE_SERVICE_KEY environment variable is required');
-    console.error('Set it with: export SUPABASE_SERVICE_KEY=your-service-key');
+    console.error('');
+    console.error('ERROR: SUPABASE_SERVICE_KEY is required');
+    console.error('');
+    console.error('Option 1: Create scripts/.env.daemon with:');
+    console.error('  SUPABASE_SERVICE_KEY=your-service-role-key');
+    console.error('');
+    console.error('Option 2: Set environment variable:');
+    console.error('  export SUPABASE_SERVICE_KEY=your-service-role-key');
+    console.error('');
+    console.error('Get the key from: Supabase Dashboard → Project Settings → API → service_role');
+    console.error('');
     process.exit(1);
 }
 
@@ -135,13 +173,23 @@ async function completeRequest(requestId, proposalId = null, errorMessage = null
 }
 
 // Run the wake-agent.js script
-function runWakeAgent(agentSlug) {
+function runWakeAgent(agentSlug, wakeType = 'proposal', proposalId = null) {
     return new Promise((resolve, reject) => {
         const scriptPath = path.join(__dirname, 'wake-agent.js');
 
-        log(`Spawning: node ${scriptPath} ${agentSlug}`, colors.blue);
+        // Build command args
+        const args = [scriptPath, agentSlug];
+        if (wakeType && wakeType !== 'proposal') {
+            args.push('--wake-type', wakeType);
+        }
+        if (proposalId) {
+            args.push('--proposal-id', proposalId);
+        }
 
-        const child = spawn('node', [scriptPath, agentSlug], {
+        log(`Spawning: node ${args.join(' ')}`, colors.blue);
+        log(`Wake type: ${wakeType || 'proposal'}`, colors.dim);
+
+        const child = spawn('node', args, {
             cwd: path.join(__dirname, '..'),
             stdio: ['inherit', 'pipe', 'pipe'],
             env: { ...process.env },
@@ -182,13 +230,14 @@ function runWakeAgent(agentSlug) {
 
 // Process a single wake request
 async function processRequest(request) {
-    const { request_id, agent_slug, requested_at } = request;
+    const { request_id, agent_slug, requested_at, wake_type, proposal_id } = request;
     const age = Math.round((Date.now() - new Date(requested_at).getTime()) / 1000);
 
-    log(`Processing wake request for ${agent_slug} (queued ${age}s ago)`, colors.green);
+    const wakeTypeLabel = wake_type || 'proposal';
+    log(`Processing ${wakeTypeLabel} wake for ${agent_slug} (queued ${age}s ago)`, colors.green);
 
     try {
-        const result = await runWakeAgent(agent_slug);
+        const result = await runWakeAgent(agent_slug, wake_type, proposal_id);
 
         log(`Wake completed successfully for ${agent_slug}`, colors.green);
         if (result.proposalId) {

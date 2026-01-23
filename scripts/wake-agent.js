@@ -488,10 +488,16 @@ function runClaude(agentSlug, prompt) {
 
 /**
  * Main wake function
+ * @param {string} agentSlug - The agent to wake
+ * @param {string} overrideWakeType - Optional wake type override from CLI (execution, continue_execution)
+ * @param {string} overrideProposalId - Optional proposal ID for execution wakes
  */
-async function wakeAgent(agentSlug) {
+async function wakeAgent(agentSlug, overrideWakeType = null, overrideProposalId = null) {
     log(`\n${'='.repeat(60)}`, 'cyan');
     log(`  SUITE Agent Wake v2: ${agentSlug}`, 'bright');
+    if (overrideWakeType) {
+        log(`  Wake Type Override: ${overrideWakeType}`, 'yellow');
+    }
     log(`${'='.repeat(60)}\n`, 'cyan');
 
     // Validate agent exists
@@ -518,9 +524,44 @@ async function wakeAgent(agentSlug) {
         process.exit(1);
     }
 
-    // Determine wake mode
+    // Determine wake mode (may be overridden by CLI args)
     logStep('2', 'Determining wake mode...');
-    const wakeMode = await determineWakeMode(state);
+    let wakeMode;
+
+    // If we have an override wake type, use it directly
+    if (overrideWakeType === 'execution' && overrideProposalId) {
+        // Fetch the approved proposal
+        const proposal = await getProposal(overrideProposalId);
+        if (proposal && proposal.status === 'passed') {
+            wakeMode = {
+                mode: 'start_execution',
+                reason: 'cli_override_execution',
+                proposal: proposal,
+                feedback: proposal.agent_feedback || null
+            };
+            log('   Override: Starting execution from CLI', 'yellow');
+        } else {
+            wakeMode = await determineWakeMode(state);
+        }
+    } else if (overrideWakeType === 'continue_execution' && overrideProposalId) {
+        // Continue execution after assistance
+        const assistance = await checkForAssistance(overrideProposalId);
+        if (assistance && state.current_task) {
+            wakeMode = {
+                mode: 'continue_execution',
+                reason: 'cli_override_continue',
+                assistance: assistance,
+                task: state.current_task
+            };
+            log('   Override: Continuing execution from CLI', 'yellow');
+        } else {
+            wakeMode = await determineWakeMode(state);
+        }
+    } else {
+        // Normal wake mode determination
+        wakeMode = await determineWakeMode(state);
+    }
+
     log(`   Mode: ${wakeMode.mode}`, 'green');
     log(`   Reason: ${wakeMode.reason}`, 'dim');
 
@@ -564,11 +605,31 @@ async function wakeAgent(agentSlug) {
 // CLI Entry Point
 const args = process.argv.slice(2);
 
-if (args.length === 0) {
+// Parse command line args
+function getArg(name) {
+    const idx = args.indexOf(name);
+    return idx !== -1 && args[idx + 1] ? args[idx + 1] : null;
+}
+
+const wakeTypeArg = getArg('--wake-type');
+const proposalIdArg = getArg('--proposal-id');
+
+// Filter out option flags to get the agent slug
+const positionalArgs = args.filter((arg, i) => {
+    if (arg.startsWith('--')) return false;
+    if (i > 0 && args[i - 1].startsWith('--')) return false;
+    return true;
+});
+
+if (positionalArgs.length === 0) {
     log('\nSUITE Agent Wake Script v2 - Execution Mode', 'bright');
-    log('\nUsage: node wake-agent.js <agent-slug>', 'yellow');
+    log('\nUsage: node wake-agent.js <agent-slug> [options]', 'yellow');
+    log('\nOptions:', 'dim');
+    log('  --wake-type <type>      Wake type: proposal, execution, continue_execution', 'dim');
+    log('  --proposal-id <id>      Associated proposal ID for execution wakes', 'dim');
     log('\nExample:', 'dim');
     log('  node wake-agent.js foodvitals-agent', 'dim');
+    log('  node wake-agent.js foodvitals-agent --wake-type execution --proposal-id abc123', 'dim');
     log('\nAvailable agents:', 'dim');
 
     if (fs.existsSync(AGENTS_DIR)) {
@@ -586,7 +647,7 @@ if (args.length === 0) {
     process.exit(1);
 }
 
-const agentSlug = args[0];
+const agentSlug = positionalArgs[0];
 
 // Check for required environment variables
 if (!SUPABASE_ANON_KEY) {
@@ -594,8 +655,8 @@ if (!SUPABASE_ANON_KEY) {
     log('Set it with: export SUPABASE_ANON_KEY=your-key\n', 'dim');
 }
 
-// Run
-wakeAgent(agentSlug).catch(err => {
+// Run with optional wake type override
+wakeAgent(agentSlug, wakeTypeArg, proposalIdArg).catch(err => {
     logError(`Wake failed: ${err.message}`);
     process.exit(1);
 });
