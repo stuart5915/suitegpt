@@ -1537,6 +1537,11 @@
                         <textarea id="articleChatInput" placeholder="Ask AI to refine, expand, or adjust the article..." style="flex: 1; min-height: 50px; resize: none;"></textarea>
                         <button onclick="sendArticleChat()" style="padding: 10px 20px; background: #a855f7; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Send</button>
                     </div>
+                    <!-- Expansion Pills -->
+                    <div id="expansionPills" style="padding: 12px; border-top: 1px solid var(--border); display: none;">
+                        <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px;">Expand further:</div>
+                        <div id="expansionPillsContainer" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+                    </div>
                 </div>
 
                 <!-- Article Content Preview -->
@@ -2916,6 +2921,9 @@ Format as a numbered list from most to least promising.`;
             // Reset state
             articleChatHistory = [];
             document.getElementById('articleChatHistory').innerHTML = '';
+            document.getElementById('expansionPills').style.display = 'none';
+            document.getElementById('expansionPillsContainer').innerHTML = '';
+            selectedPills = new Set();
             document.getElementById('articleTitle').value = idea.title || '';
             document.getElementById('articleSummary').value = '';
             document.getElementById('articleContent').value = idea.content || idea.title || '';
@@ -2940,6 +2948,7 @@ Format as a numbered list from most to least promising.`;
             document.getElementById('articleRefinementModal').style.display = 'none';
             artStuIdeaId = null;
             articleChatHistory = [];
+            clearExpansionPills();
         }
 
         function updateXPostCharCount() {
@@ -2981,6 +2990,9 @@ Format as a numbered list from most to least promising.`;
             // Add user message
             addArticleChatMessage('user', message);
             input.value = '';
+
+            // Clear expansion pills when sending
+            clearExpansionPills();
 
             // Get current article state
             const title = document.getElementById('articleTitle').value;
@@ -3072,6 +3084,10 @@ Stuart's request: ${message}`
                     }
                 }
 
+                // Generate expansion pills for further refinement
+                const currentContent = document.getElementById('articleContent').value;
+                generateExpansionPills(currentContent || content, aiResponse);
+
             } catch (err) {
                 document.getElementById('chatLoading')?.remove();
                 console.error('AI chat error:', err);
@@ -3098,6 +3114,158 @@ Stuart's request: ${message}`
             // Auto-generate summary and X post
             autoGenerateSummary();
             generateXPostText();
+        }
+
+        // Expansion Pills for article refinement
+        let selectedPills = new Set();
+
+        async function generateExpansionPills(articleContent, lastAiResponse) {
+            const pillsContainer = document.getElementById('expansionPillsContainer');
+            const pillsWrapper = document.getElementById('expansionPills');
+
+            // Show loading state
+            pillsWrapper.style.display = 'block';
+            pillsContainer.innerHTML = '<span style="color: var(--text-dim); font-size: 0.8rem;">Generating suggestions...</span>';
+
+            try {
+                const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEMINI_API_KEY, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: `Based on this article content and the last AI refinement, suggest 5 short prompts (max 6 words each) for areas the author could expand on. Consider:
+- Unexplored themes or angles
+- Places needing more depth or examples
+- Connections to broader ideas
+- Personal touches that could be added
+- Philosophical or spiritual dimensions to explore
+
+Return ONLY a valid JSON array, no explanation:
+[{"emoji": "💭", "label": "short label", "prompt": "Expand on [specific topic] by adding..."}]
+
+Article Content:
+${articleContent.slice(0, 1500)}
+
+Last AI Response:
+${lastAiResponse.slice(0, 500)}`
+                            }]
+                        }],
+                        generationConfig: {
+                            temperature: 0.8,
+                            maxOutputTokens: 500
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('API error');
+                }
+
+                const data = await response.json();
+                let pillsText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+                // Extract JSON from response (handle markdown code blocks)
+                const jsonMatch = pillsText.match(/\[[\s\S]*\]/);
+                if (jsonMatch) {
+                    const pills = JSON.parse(jsonMatch[0]);
+                    renderExpansionPills(pills);
+                } else {
+                    throw new Error('No valid JSON found');
+                }
+            } catch (err) {
+                console.error('Failed to generate expansion pills:', err);
+                // Fallback to generic pills
+                renderExpansionPills([
+                    { emoji: '💭', label: 'Go deeper', prompt: 'Expand on the main idea with more depth and nuance' },
+                    { emoji: '📖', label: 'Add example', prompt: 'Add a concrete example or analogy to illustrate the point' },
+                    { emoji: '🔗', label: 'Connect ideas', prompt: 'Connect this to related themes or your broader philosophy' },
+                    { emoji: '⚡', label: 'Make vivid', prompt: 'Make the language more vivid and engaging' },
+                    { emoji: '🌍', label: 'Broader scope', prompt: 'Tie this to broader implications for humanity or society' }
+                ]);
+            }
+        }
+
+        function renderExpansionPills(pills) {
+            const container = document.getElementById('expansionPillsContainer');
+            const wrapper = document.getElementById('expansionPills');
+            selectedPills.clear();
+
+            container.innerHTML = '';
+            wrapper.style.display = 'block';
+
+            pills.forEach((pill, index) => {
+                const pillBtn = document.createElement('button');
+                pillBtn.className = 'expansion-pill';
+                pillBtn.dataset.prompt = pill.prompt;
+                pillBtn.dataset.index = index;
+                pillBtn.style.cssText = `
+                    padding: 6px 12px;
+                    background: rgba(168, 85, 247, 0.15);
+                    border: 1px solid rgba(168, 85, 247, 0.3);
+                    border-radius: 20px;
+                    color: var(--text);
+                    cursor: pointer;
+                    font-size: 0.8rem;
+                    transition: all 0.2s ease;
+                `;
+                pillBtn.innerHTML = `${pill.emoji || '✨'} ${pill.label}`;
+
+                pillBtn.onmouseenter = () => {
+                    if (!selectedPills.has(index)) {
+                        pillBtn.style.background = 'rgba(168, 85, 247, 0.25)';
+                    }
+                };
+                pillBtn.onmouseleave = () => {
+                    if (!selectedPills.has(index)) {
+                        pillBtn.style.background = 'rgba(168, 85, 247, 0.15)';
+                        pillBtn.style.borderColor = 'rgba(168, 85, 247, 0.3)';
+                    }
+                };
+
+                pillBtn.onclick = () => togglePillSelection(pillBtn, pill.prompt, index);
+
+                container.appendChild(pillBtn);
+            });
+        }
+
+        function togglePillSelection(btn, prompt, index) {
+            const input = document.getElementById('articleChatInput');
+
+            if (selectedPills.has(index)) {
+                // Deselect
+                selectedPills.delete(index);
+                btn.style.background = 'rgba(168, 85, 247, 0.15)';
+                btn.style.borderColor = 'rgba(168, 85, 247, 0.3)';
+
+                // Remove prompt from input
+                const currentPrompts = input.value.split('\n\n').filter(p => p.trim() !== prompt.trim());
+                input.value = currentPrompts.join('\n\n');
+            } else {
+                // Select
+                selectedPills.add(index);
+                btn.style.background = 'rgba(168, 85, 247, 0.4)';
+                btn.style.borderColor = '#a855f7';
+
+                // Add prompt to input
+                if (input.value.trim()) {
+                    input.value += '\n\n' + prompt;
+                } else {
+                    input.value = prompt;
+                }
+            }
+
+            // Auto-resize textarea if needed
+            input.style.height = 'auto';
+            input.style.height = Math.min(input.scrollHeight, 150) + 'px';
+        }
+
+        function clearExpansionPills() {
+            const wrapper = document.getElementById('expansionPills');
+            const container = document.getElementById('expansionPillsContainer');
+            wrapper.style.display = 'none';
+            container.innerHTML = '';
+            selectedPills.clear();
         }
 
         async function autoGenerateSummary() {
