@@ -1132,13 +1132,13 @@
                             </div>
                         </div>
 
-                        <!-- Panel 2: Job Postings -->
-                        <div class="admin-panel">
+                        <!-- Panel 2: Job Postings & Leads -->
+                        <div class="admin-panel two-cols" style="min-height: 350px;">
                             <div class="admin-panel-header">
-                                <div class="admin-panel-title"><span>&#128203;</span> Job Postings</div>
-                                <button onclick="openCreateJobModal()" style="padding: 8px 14px; background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange)); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.8rem;">+ New</button>
+                                <div class="admin-panel-title"><span>&#128203;</span> Job Postings & Leads</div>
+                                <button onclick="openCreateJobModal()" style="padding: 8px 14px; background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange)); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.8rem;">+ New Source</button>
                             </div>
-                            <div id="jobPostingsList" style="display: flex; flex-direction: column; gap: 10px; max-height: 220px; overflow-y: auto;">
+                            <div id="jobPostingsList" style="display: flex; flex-direction: column; gap: 12px; max-height: 400px; overflow-y: auto;">
                                 <div style="text-align: center; padding: 20px; color: var(--text-light); font-size: 0.85rem;">Loading job postings...</div>
                             </div>
                         </div>
@@ -3398,50 +3398,310 @@
             return next.toISOString();
         }
 
-        function loadJobPostings() {
+        // Job posting leads data
+        let jobPostingLeadsData = {};
+
+        async function loadJobPostings() {
             const container = document.getElementById('jobPostingsList');
 
             if (!jobPostingsData || jobPostingsData.length === 0) {
                 container.innerHTML = `
                     <div style="text-align: center; padding: 24px; color: var(--text-light);">
                         <div style="font-size: 2rem; margin-bottom: 8px;">&#128203;</div>
-                        <div style="font-size: 0.85rem;">No job postings yet</div>
-                        <div style="font-size: 0.75rem; margin-top: 4px;">Create your first job posting to attract operators</div>
+                        <div style="font-size: 0.85rem;">No job posting sources yet</div>
+                        <div style="font-size: 0.75rem; margin-top: 4px;">Add job boards where you're posting to track leads</div>
                     </div>
                 `;
                 return;
             }
 
+            // Fetch leads for all postings
+            try {
+                const leadsResponse = await fetch(`${SUPABASE_URL}/rest/v1/job_posting_leads?select=*&order=created_at.desc`, {
+                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+                });
+                if (leadsResponse.ok) {
+                    const leads = await leadsResponse.json();
+                    jobPostingLeadsData = {};
+                    leads.forEach(lead => {
+                        if (!jobPostingLeadsData[lead.job_posting_id]) {
+                            jobPostingLeadsData[lead.job_posting_id] = [];
+                        }
+                        jobPostingLeadsData[lead.job_posting_id].push(lead);
+                    });
+                }
+            } catch (err) {
+                console.log('Could not load leads (table may not exist yet):', err);
+            }
+
             container.innerHTML = jobPostingsData.map(posting => {
-                const statusColors = {
-                    active: { bg: 'rgba(34, 197, 94, 0.1)', text: '#22c55e' },
-                    expired: { bg: 'rgba(251, 191, 36, 0.1)', text: '#f59e0b' },
-                    taken_down: { bg: 'rgba(107, 114, 128, 0.1)', text: '#6b7280' }
-                };
-                const colors = statusColors[posting.status] || statusColors.active;
+                const leads = jobPostingLeadsData[posting.id] || [];
+                const postedDate = new Date(posting.posted_at);
+                const daysAgo = Math.floor((Date.now() - postedDate) / (1000 * 60 * 60 * 24));
+                const refreshDays = posting.refresh_interval_days || 14;
+                const daysUntilRefresh = refreshDays - daysAgo;
+                const needsRefresh = daysUntilRefresh <= 0;
+                const refreshSoon = daysUntilRefresh > 0 && daysUntilRefresh <= 3;
+
+                let refreshStatus = '';
+                if (needsRefresh) {
+                    refreshStatus = `<span style="color: #ef4444; font-weight: 600;">&#9888; Refresh now</span>`;
+                } else if (refreshSoon) {
+                    refreshStatus = `<span style="color: #f59e0b;">Refresh in ${daysUntilRefresh} day${daysUntilRefresh !== 1 ? 's' : ''}</span>`;
+                } else {
+                    refreshStatus = `<span style="color: var(--text-light);">Refresh in ${daysUntilRefresh} days</span>`;
+                }
+
+                const leadsHtml = leads.length > 0 ? leads.map(lead => `
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; background: rgba(255,255,255,0.7); border-radius: 8px; margin-top: 6px;">
+                        <div style="flex: 1;">
+                            <span style="font-weight: 600; font-size: 0.85rem; color: var(--text-dark);">${lead.name}</span>
+                            ${lead.contact ? `<span style="font-size: 0.75rem; color: var(--text-medium); margin-left: 8px;">${lead.contact}</span>` : ''}
+                            ${lead.notes ? `<div style="font-size: 0.7rem; color: var(--text-light); margin-top: 2px;">${lead.notes}</div>` : ''}
+                        </div>
+                        <div style="display: flex; gap: 6px; align-items: center;">
+                            ${lead.added_to_pipeline ?
+                                `<span style="font-size: 0.7rem; padding: 3px 8px; background: rgba(34, 197, 94, 0.1); color: #22c55e; border-radius: 6px;">In Pipeline</span>` :
+                                `<button onclick="addLeadToPipeline('${lead.id}', '${lead.name}', '${lead.contact || ''}')" style="padding: 4px 10px; background: linear-gradient(135deg, var(--accent-sage), #5a8a6f); color: white; border: none; border-radius: 6px; font-size: 0.7rem; cursor: pointer; font-weight: 600;">+ Pipeline</button>`
+                            }
+                            <button onclick="deleteLead('${lead.id}')" style="padding: 4px 8px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: none; border-radius: 6px; font-size: 0.7rem; cursor: pointer;">&#10005;</button>
+                        </div>
+                    </div>
+                `).join('') : '';
 
                 return `
-                    <div style="background: rgba(255,255,255,0.6); border-radius: 10px; padding: 14px; border: 1px solid rgba(0,0,0,0.05);">
-                        <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px;">
-                            <div style="font-weight: 600; color: var(--text-dark); font-size: 0.9rem;">${posting.title}</div>
-                            <span style="font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; background: ${colors.bg}; color: ${colors.text}; text-transform: capitalize;">${posting.status}</span>
+                    <div style="background: ${needsRefresh ? 'rgba(239, 68, 68, 0.03)' : 'rgba(255,255,255,0.6)'}; border-radius: 12px; padding: 16px; border: 1px solid ${needsRefresh ? 'rgba(239, 68, 68, 0.2)' : 'rgba(0,0,0,0.05)'};">
+                        <!-- Header: Platform Name + Link -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 1.1rem;">${getPlatformIcon(posting.platform)}</span>
+                                <a href="${posting.platform_url || '#'}" target="_blank" style="font-weight: 700; color: var(--text-dark); font-size: 1rem; text-decoration: ${posting.platform_url ? 'none' : 'none'}; ${posting.platform_url ? '' : 'pointer-events: none;'}">
+                                    ${formatPlatformName(posting.platform)}
+                                    ${posting.platform_url ? '<span style="font-size: 0.8rem; margin-left: 4px;">&#8599;</span>' : ''}
+                                </a>
+                            </div>
+                            <div style="display: flex; gap: 6px; align-items: center;">
+                                <button onclick="markJobRefreshed('${posting.id}')" style="padding: 5px 10px; background: ${needsRefresh ? 'linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange))' : 'rgba(255,255,255,0.8)'}; color: ${needsRefresh ? 'white' : 'var(--text-medium)'}; border: ${needsRefresh ? 'none' : '1px solid #e5e7eb'}; border-radius: 6px; font-size: 0.7rem; cursor: pointer; font-weight: ${needsRefresh ? '600' : '400'};">
+                                    ${needsRefresh ? 'Mark Refreshed' : 'Refresh'}
+                                </button>
+                                <button onclick="editJobPosting('${posting.id}')" style="padding: 5px 10px; background: rgba(255,255,255,0.8); border: 1px solid #e5e7eb; border-radius: 6px; font-size: 0.7rem; cursor: pointer;">Edit</button>
+                            </div>
                         </div>
-                        <div style="font-size: 0.8rem; color: var(--text-medium); margin-bottom: 8px;">
-                            Platform: <strong>${formatPlatformName(posting.platform)}</strong>
-                            ${posting.applications_count > 0 ? ` | ${posting.applications_count} applications` : ''}
+
+                        <!-- Timing Info -->
+                        <div style="font-size: 0.8rem; color: var(--text-medium); margin-bottom: 12px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                            <span>Posted ${daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : daysAgo + ' days ago'}</span>
+                            <span>&#8226;</span>
+                            ${refreshStatus}
+                            ${leads.length > 0 ? `<span>&#8226;</span><span style="color: var(--accent-terracotta); font-weight: 600;">${leads.length} lead${leads.length !== 1 ? 's' : ''}</span>` : ''}
                         </div>
-                        <div style="font-size: 0.75rem; color: var(--text-light); margin-bottom: 10px;">
-                            Posted: ${new Date(posting.posted_at).toLocaleDateString()}
-                            ${posting.platform_url ? ` | <a href="${posting.platform_url}" target="_blank" style="color: var(--accent-terracotta);">View on ${formatPlatformName(posting.platform)}</a>` : ''}
-                        </div>
-                        <div style="display: flex; gap: 6px;">
-                            <button onclick="editJobPosting('${posting.id}')" style="padding: 5px 10px; background: rgba(255,255,255,0.8); border: 1px solid #e5e7eb; border-radius: 6px; font-size: 0.7rem; cursor: pointer;">Edit</button>
-                            <button onclick="refreshJobCopy('${posting.id}')" style="padding: 5px 10px; background: rgba(255,255,255,0.8); border: 1px solid #e5e7eb; border-radius: 6px; font-size: 0.7rem; cursor: pointer;">AI Refresh Copy</button>
-                            <button onclick="toggleJobStatus('${posting.id}', '${posting.status}')" style="padding: 5px 10px; background: ${posting.status === 'active' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.1)'}; border: none; border-radius: 6px; font-size: 0.7rem; cursor: pointer; color: ${posting.status === 'active' ? '#ef4444' : '#22c55e'};">${posting.status === 'active' ? 'Take Down' : 'Reactivate'}</button>
+
+                        <!-- Leads Section -->
+                        <div style="border-top: 1px solid rgba(0,0,0,0.05); padding-top: 10px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                                <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-medium); text-transform: uppercase; letter-spacing: 0.5px;">Leads</span>
+                                <button onclick="openAddLeadModal('${posting.id}')" style="padding: 4px 10px; background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: none; border-radius: 6px; font-size: 0.7rem; cursor: pointer; font-weight: 600;">+ Add Lead</button>
+                            </div>
+                            ${leads.length > 0 ? leadsHtml : `<div style="text-align: center; padding: 12px; color: var(--text-light); font-size: 0.8rem; background: rgba(255,255,255,0.5); border-radius: 8px;">No leads yet. Add someone who applied from this source.</div>`}
                         </div>
                     </div>
                 `;
             }).join('');
+        }
+
+        function getPlatformIcon(platform) {
+            const icons = {
+                cryptojobslist: '&#128279;',  // Link
+                web3career: '&#127760;',      // Globe
+                indeed: '&#128188;',          // Briefcase
+                linkedin: '&#128101;',        // People
+                glassdoor: '&#128194;',       // Door
+                wellfound: '&#128640;',       // Rocket
+                remote3: '&#127968;'          // House (remote)
+            };
+            return icons[platform] || '&#128203;';
+        }
+
+        async function openAddLeadModal(postingId) {
+            const modal = document.createElement('div');
+            modal.id = 'addLeadModal';
+            modal.className = 'modal-overlay';
+            modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+            modal.innerHTML = `
+                <div class="modal" style="max-width: 400px;">
+                    <button class="modal-close" onclick="document.getElementById('addLeadModal').remove()">&times;</button>
+                    <h3 style="margin-bottom: 16px;">Add Lead</h3>
+
+                    <div class="modal-input-group">
+                        <label>Name *</label>
+                        <input type="text" class="modal-input" id="leadName" placeholder="John Smith">
+                    </div>
+
+                    <div class="modal-input-group">
+                        <label>Contact</label>
+                        <input type="text" class="modal-input" id="leadContact" placeholder="email, telegram, or phone">
+                    </div>
+
+                    <div class="modal-input-group">
+                        <label>Contact Type</label>
+                        <select id="leadContactType" class="modal-input" style="padding: 12px;">
+                            <option value="email">Email</option>
+                            <option value="telegram">Telegram</option>
+                            <option value="phone">Phone</option>
+                            <option value="linkedin">LinkedIn</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="modal-input-group">
+                        <label>Notes</label>
+                        <textarea class="modal-input" id="leadNotes" rows="2" placeholder="Any notes about this lead..."></textarea>
+                    </div>
+
+                    <button onclick="saveLead('${postingId}')" style="width: 100%; padding: 12px; background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange)); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; margin-top: 8px;">
+                        Add Lead
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            document.getElementById('leadName').focus();
+        }
+
+        async function saveLead(postingId) {
+            const name = document.getElementById('leadName').value.trim();
+            const contact = document.getElementById('leadContact').value.trim();
+            const contactType = document.getElementById('leadContactType').value;
+            const notes = document.getElementById('leadNotes').value.trim();
+
+            if (!name) {
+                showToast('Please enter a name', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/job_posting_leads`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify({
+                        job_posting_id: postingId,
+                        name,
+                        contact: contact || null,
+                        contact_type: contactType,
+                        notes: notes || null
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to save lead');
+
+                document.getElementById('addLeadModal').remove();
+                showToast('Lead added!', 'success');
+                await loadCadenceConfig();
+
+            } catch (err) {
+                console.error('Failed to save lead:', err);
+                showToast('Failed to add lead', 'error');
+            }
+        }
+
+        async function deleteLead(leadId) {
+            if (!confirm('Delete this lead?')) return;
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/job_posting_leads?id=eq.${leadId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to delete');
+
+                showToast('Lead deleted', 'success');
+                await loadCadenceConfig();
+
+            } catch (err) {
+                console.error('Failed to delete lead:', err);
+                showToast('Failed to delete lead', 'error');
+            }
+        }
+
+        async function addLeadToPipeline(leadId, name, contact) {
+            // Create an application in the pipeline
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/app_operator_applications`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify({
+                        email: contact || null,
+                        motivation: `Lead from job posting`,
+                        source_campaign: 'job_posting',
+                        pipeline_stage: 'applied',
+                        stage_entered_at: new Date().toISOString()
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to create application');
+                const [application] = await response.json();
+
+                // Update the lead to mark it as added to pipeline
+                await fetch(`${SUPABASE_URL}/rest/v1/job_posting_leads?id=eq.${leadId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        added_to_pipeline: true,
+                        pipeline_application_id: application.id
+                    })
+                });
+
+                showToast(`${name} added to pipeline!`, 'success');
+                await loadCadenceConfig();
+                await loadPipelineData();
+
+            } catch (err) {
+                console.error('Failed to add to pipeline:', err);
+                showToast('Failed to add to pipeline', 'error');
+            }
+        }
+
+        async function markJobRefreshed(postingId) {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/job_board_postings?id=eq.${postingId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        posted_at: new Date().toISOString(),
+                        last_refreshed_at: new Date().toISOString()
+                    })
+                });
+
+                if (!response.ok) throw new Error('Update failed');
+
+                showToast('Marked as refreshed!', 'success');
+                await loadCadenceConfig();
+
+            } catch (err) {
+                console.error('Failed to mark refreshed:', err);
+                showToast('Failed to update', 'error');
+            }
         }
 
         function formatPlatformName(platform) {
@@ -3498,13 +3758,8 @@
             modal.innerHTML = `
                 <div class="modal" style="max-width: 500px;">
                     <button class="modal-close" onclick="document.getElementById('createJobModal').remove()">&times;</button>
-                    <h3>Create Job Posting</h3>
-                    <p style="color: var(--text-medium); font-size: 0.85rem; margin-bottom: 16px;">Create a job posting to track on external platforms</p>
-
-                    <div class="modal-input-group">
-                        <label>Job Title</label>
-                        <input type="text" class="modal-input" id="jobTitle" value="App Operator - Remote (90% Revenue Share)" placeholder="e.g., App Operator - Remote">
-                    </div>
+                    <h3>Add Job Source</h3>
+                    <p style="color: var(--text-medium); font-size: 0.85rem; margin-bottom: 16px;">Track where you're posting jobs and collect leads</p>
 
                     <div class="modal-input-group">
                         <label>Platform</label>
@@ -3520,21 +3775,33 @@
                     </div>
 
                     <div class="modal-input-group">
-                        <label>Platform URL (optional)</label>
-                        <input type="url" class="modal-input" id="jobPlatformUrl" placeholder="https://...">
+                        <label>Job Posting URL</label>
+                        <input type="url" class="modal-input" id="jobPlatformUrl" placeholder="https://cryptojobslist.com/jobs/...">
+                        <span style="font-size: 0.75rem; color: var(--text-light);">Link to your live job posting</span>
                     </div>
 
                     <div class="modal-input-group">
-                        <label>Description</label>
-                        <textarea class="modal-input" id="jobDescription" rows="6" placeholder="Job description...">${getDefaultJobDescription()}</textarea>
+                        <label>Refresh Reminder (days)</label>
+                        <select id="jobRefreshInterval" class="modal-input" style="padding: 12px;">
+                            <option value="7">Every 7 days</option>
+                            <option value="14" selected>Every 14 days</option>
+                            <option value="21">Every 21 days</option>
+                            <option value="30">Every 30 days</option>
+                        </select>
+                        <span style="font-size: 0.75rem; color: var(--text-light);">Get reminded to refresh your job post</span>
+                    </div>
+
+                    <div class="modal-input-group">
+                        <label>Job Title (for reference)</label>
+                        <input type="text" class="modal-input" id="jobTitle" value="App Operator - Remote (90% Revenue Share)" placeholder="e.g., App Operator - Remote">
                     </div>
 
                     <div style="display: flex; gap: 10px; margin-top: 16px;">
-                        <button onclick="generateJobDescription()" style="flex: 1; padding: 12px; background: rgba(168, 85, 247, 0.1); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 10px; font-weight: 600; cursor: pointer;">
-                            &#10024; AI Generate
+                        <button onclick="document.getElementById('createJobModal').remove()" style="flex: 1; padding: 12px; background: rgba(255,255,255,0.8); color: var(--text-medium); border: 1px solid #e5e7eb; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                            Cancel
                         </button>
                         <button onclick="saveJobPosting()" style="flex: 1; padding: 12px; background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange)); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">
-                            Save Posting
+                            Add Source
                         </button>
                     </div>
                 </div>
@@ -3574,10 +3841,10 @@ Apply at: getsuite.app/become-operator`;
             const title = document.getElementById('jobTitle').value.trim();
             const platform = document.getElementById('jobPlatform').value;
             const platformUrl = document.getElementById('jobPlatformUrl').value.trim();
-            const description = document.getElementById('jobDescription').value.trim();
+            const refreshInterval = parseInt(document.getElementById('jobRefreshInterval').value) || 14;
 
-            if (!title) {
-                showToast('Please enter a job title', 'error');
+            if (!platformUrl) {
+                showToast('Please enter the job posting URL', 'error');
                 return;
             }
 
@@ -3591,10 +3858,10 @@ Apply at: getsuite.app/become-operator`;
                         'Prefer': 'return=representation'
                     },
                     body: JSON.stringify({
-                        title,
+                        title: title || `App Operator on ${formatPlatformName(platform)}`,
                         platform,
-                        platform_url: platformUrl || null,
-                        description,
+                        platform_url: platformUrl,
+                        refresh_interval_days: refreshInterval,
                         status: 'active',
                         posted_at: new Date().toISOString()
                     })
@@ -3602,13 +3869,13 @@ Apply at: getsuite.app/become-operator`;
 
                 if (!response.ok) throw new Error('Failed to save');
 
-                showToast('Job posting created!', 'success');
+                showToast('Job source added!', 'success');
                 document.getElementById('createJobModal').remove();
                 await loadCadenceConfig();
 
             } catch (err) {
                 console.error('Failed to save job posting:', err);
-                showToast('Failed to save job posting', 'error');
+                showToast('Failed to add job source', 'error');
             }
         }
 
@@ -3616,38 +3883,50 @@ Apply at: getsuite.app/become-operator`;
             const posting = jobPostingsData.find(p => p.id === postingId);
             if (!posting) return;
 
+            const refreshInterval = posting.refresh_interval_days || 14;
+
             const modal = document.createElement('div');
             modal.id = 'editJobModal';
             modal.className = 'modal-overlay';
             modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
             modal.innerHTML = `
-                <div class="modal" style="max-width: 500px;">
+                <div class="modal" style="max-width: 450px;">
                     <button class="modal-close" onclick="document.getElementById('editJobModal').remove()">&times;</button>
-                    <h3>Edit Job Posting</h3>
+                    <h3>Edit ${formatPlatformName(posting.platform)}</h3>
 
                     <div class="modal-input-group">
-                        <label>Job Title</label>
-                        <input type="text" class="modal-input" id="editJobTitle" value="${posting.title}">
-                    </div>
-
-                    <div class="modal-input-group">
-                        <label>Platform URL</label>
+                        <label>Job Posting URL</label>
                         <input type="url" class="modal-input" id="editJobPlatformUrl" value="${posting.platform_url || ''}" placeholder="https://...">
                     </div>
 
                     <div class="modal-input-group">
-                        <label>Applications Count</label>
-                        <input type="number" class="modal-input" id="editJobApps" value="${posting.applications_count || 0}" min="0">
+                        <label>Refresh Reminder (days)</label>
+                        <select id="editJobRefreshInterval" class="modal-input" style="padding: 12px;">
+                            <option value="7" ${refreshInterval == 7 ? 'selected' : ''}>Every 7 days</option>
+                            <option value="14" ${refreshInterval == 14 ? 'selected' : ''}>Every 14 days</option>
+                            <option value="21" ${refreshInterval == 21 ? 'selected' : ''}>Every 21 days</option>
+                            <option value="30" ${refreshInterval == 30 ? 'selected' : ''}>Every 30 days</option>
+                        </select>
                     </div>
 
                     <div class="modal-input-group">
-                        <label>Description</label>
-                        <textarea class="modal-input" id="editJobDescription" rows="6">${posting.description || ''}</textarea>
+                        <label>Job Title (for reference)</label>
+                        <input type="text" class="modal-input" id="editJobTitle" value="${posting.title}">
                     </div>
 
-                    <button onclick="updateJobPosting('${postingId}')" style="width: 100%; padding: 14px; background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange)); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; margin-top: 16px;">
-                        Save Changes
-                    </button>
+                    <div class="modal-input-group">
+                        <label>Notes</label>
+                        <textarea class="modal-input" id="editJobNotes" rows="2" placeholder="Any notes about this source...">${posting.notes || ''}</textarea>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-top: 16px;">
+                        <button onclick="deleteJobPosting('${postingId}')" style="padding: 12px 16px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                            Delete
+                        </button>
+                        <button onclick="updateJobPosting('${postingId}')" style="flex: 1; padding: 12px; background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange)); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                            Save Changes
+                        </button>
+                    </div>
                 </div>
             `;
             document.body.appendChild(modal);
@@ -3656,8 +3935,8 @@ Apply at: getsuite.app/become-operator`;
         async function updateJobPosting(postingId) {
             const title = document.getElementById('editJobTitle').value.trim();
             const platformUrl = document.getElementById('editJobPlatformUrl').value.trim();
-            const applicationsCount = parseInt(document.getElementById('editJobApps').value) || 0;
-            const description = document.getElementById('editJobDescription').value.trim();
+            const refreshInterval = parseInt(document.getElementById('editJobRefreshInterval').value) || 14;
+            const notes = document.getElementById('editJobNotes').value.trim();
 
             try {
                 const response = await fetch(`${SUPABASE_URL}/rest/v1/job_board_postings?id=eq.${postingId}`, {
@@ -3670,21 +3949,44 @@ Apply at: getsuite.app/become-operator`;
                     body: JSON.stringify({
                         title,
                         platform_url: platformUrl || null,
-                        applications_count: applicationsCount,
-                        description,
-                        updated_at: new Date().toISOString()
+                        refresh_interval_days: refreshInterval,
+                        notes: notes || null
                     })
                 });
 
                 if (!response.ok) throw new Error('Update failed');
 
-                showToast('Job posting updated!', 'success');
+                showToast('Updated!', 'success');
                 document.getElementById('editJobModal').remove();
                 await loadCadenceConfig();
 
             } catch (err) {
                 console.error('Failed to update job posting:', err);
-                showToast('Failed to update job posting', 'error');
+                showToast('Failed to update', 'error');
+            }
+        }
+
+        async function deleteJobPosting(postingId) {
+            if (!confirm('Delete this job source and all its leads?')) return;
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/job_board_postings?id=eq.${postingId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Delete failed');
+
+                showToast('Job source deleted', 'success');
+                document.getElementById('editJobModal').remove();
+                await loadCadenceConfig();
+
+            } catch (err) {
+                console.error('Failed to delete:', err);
+                showToast('Failed to delete', 'error');
             }
         }
 
