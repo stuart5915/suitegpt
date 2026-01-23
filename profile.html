@@ -413,9 +413,69 @@
             transform: translateY(-1px);
         }
 
-        /* Admin Section */
+        /* Admin Section - Full Width Dashboard */
         .admin-card {
             border: 2px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .admin-card.admin-fullwidth {
+            position: relative;
+            width: 100vw;
+            left: 50%;
+            transform: translateX(-50%);
+            max-width: none;
+            border-radius: 0;
+            padding: 32px 48px;
+            margin-bottom: 0;
+            border-left: none;
+            border-right: none;
+            background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,251,247,0.98) 100%);
+        }
+
+        .admin-dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .admin-panel {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 16px;
+            padding: 20px;
+            min-height: 300px;
+        }
+
+        .admin-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+        }
+
+        .admin-panel-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text-dark);
+        }
+
+        .admin-panel-title span {
+            font-size: 1.2rem;
+        }
+
+        .admin-panel.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .admin-panel.two-cols {
+            grid-column: span 2;
         }
 
         .admin-badge {
@@ -455,6 +515,28 @@
 
         .btn-admin-icon {
             font-size: 1.2rem;
+        }
+
+        @media (max-width: 1200px) {
+            .admin-dashboard-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .admin-panel.two-cols {
+                grid-column: span 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .admin-card.admin-fullwidth {
+                padding: 20px 16px;
+            }
+            .admin-dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            .admin-panel.two-cols,
+            .admin-panel.full-width {
+                grid-column: span 1;
+            }
         }
 
         /* Action Buttons (Vote, Request) */
@@ -954,252 +1036,191 @@
                     </div>
                 </div>
 
-                <!-- Admin Card (hidden by default) -->
-                <div class="glass-card admin-card" id="adminSection" style="display: none;">
-                    <div class="card-header">
-                        <span class="card-header-icon">&#9881;&#65039;</span>
-                        <h2>Admin</h2>
-                        <span class="admin-badge">ADMIN ONLY</span>
-                    </div>
-
-                    <!-- Apps Admin Dashboard -->
-                    <div id="appsAdminPanel" style="margin-bottom: 24px;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-                            <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: var(--text-dark);">Apps Dashboard</h3>
-                            <button onclick="openAddAppModal()" style="padding: 8px 14px; background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange)); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">+ Add App</button>
+                <!-- Admin Dashboard (hidden by default) - FULL WIDTH -->
+                <div class="glass-card admin-card admin-fullwidth" id="adminSection" style="display: none;">
+                    <!-- Admin Header -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; max-width: 1600px; margin-left: auto; margin-right: auto;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span style="font-size: 1.8rem;">&#9881;&#65039;</span>
+                            <h2 style="margin: 0; font-size: 1.5rem; font-weight: 800; color: var(--text-dark);">Admin Dashboard</h2>
+                            <span class="admin-badge">ADMIN ONLY</span>
                         </div>
-
-                        <!-- Apps List -->
-                        <div id="appsAdminList" style="display: flex; flex-direction: column; gap: 10px; max-height: 400px; overflow-y: auto;">
-                            <div style="text-align: center; padding: 20px; color: var(--text-light);">Loading apps...</div>
+                        <div style="display: flex; gap: 10px;">
+                            <button onclick="refreshCadenceConfig(); loadAppsAdmin(); loadOperatorApplications();" style="padding: 8px 16px; background: rgba(255,255,255,0.8); border: 1px solid #e5e7eb; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600;">Refresh All</button>
                         </div>
                     </div>
 
-                    <hr style="border: none; border-top: 1px solid rgba(0,0,0,0.08); margin: 20px 0;">
-
-                    <!-- Cadence AI Control Center -->
-                    <div id="cadenceAIPanel" style="margin-bottom: 24px;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-                            <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: var(--text-dark);">Cadence AI Control Center</h3>
-                            <button onclick="refreshCadenceConfig()" style="padding: 6px 12px; background: rgba(255,255,255,0.5); border: 1px solid #e5e7eb; border-radius: 8px; cursor: pointer; font-size: 0.8rem;">Refresh</button>
+                    <!-- Stats Bar -->
+                    <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-bottom: 28px; max-width: 1600px; margin-left: auto; margin-right: auto;">
+                        <div style="background: rgba(59, 130, 246, 0.1); border-radius: 12px; padding: 16px; text-align: center;">
+                            <div style="font-size: 1.8rem; font-weight: 800; color: #3b82f6;" id="cadenceActiveLoops">0</div>
+                            <div style="font-size: 0.8rem; color: var(--text-medium);">Active Loops</div>
                         </div>
-
-                        <!-- Stats Grid -->
-                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px;">
-                            <div style="background: rgba(59, 130, 246, 0.1); border-radius: 10px; padding: 12px; text-align: center;">
-                                <div style="font-size: 1.3rem; font-weight: 800; color: #3b82f6;" id="cadenceActiveLoops">0</div>
-                                <div style="font-size: 0.7rem; color: var(--text-medium);">Active Loops</div>
-                            </div>
-                            <div style="background: rgba(196, 114, 95, 0.1); border-radius: 10px; padding: 12px; text-align: center;">
-                                <div style="font-size: 1.3rem; font-weight: 800; color: var(--accent-terracotta);" id="cadencePostsMonth">0</div>
-                                <div style="font-size: 0.7rem; color: var(--text-medium);">Posts This Month</div>
-                            </div>
-                            <div style="background: rgba(34, 197, 94, 0.1); border-radius: 10px; padding: 12px; text-align: center;">
-                                <div style="font-size: 1.3rem; font-weight: 800; color: #22c55e;" id="cadenceAppsReached">0</div>
-                                <div style="font-size: 0.7rem; color: var(--text-medium);">Apps Promoted</div>
-                            </div>
-                            <div style="background: rgba(168, 85, 247, 0.1); border-radius: 10px; padding: 12px; text-align: center;">
-                                <div style="font-size: 1.3rem; font-weight: 800; color: #a855f7;" id="cadenceLeadsWeek">0</div>
-                                <div style="font-size: 0.7rem; color: var(--text-medium);">Leads This Week</div>
-                            </div>
+                        <div style="background: rgba(196, 114, 95, 0.1); border-radius: 12px; padding: 16px; text-align: center;">
+                            <div style="font-size: 1.8rem; font-weight: 800; color: var(--accent-terracotta);" id="cadencePostsMonth">0</div>
+                            <div style="font-size: 0.8rem; color: var(--text-medium);">Posts This Month</div>
                         </div>
+                        <div style="background: rgba(168, 85, 247, 0.1); border-radius: 12px; padding: 16px; text-align: center;">
+                            <div style="font-size: 1.8rem; font-weight: 800; color: #a855f7;" id="cadenceLeadsWeek">0</div>
+                            <div style="font-size: 0.8rem; color: var(--text-medium);">Leads This Week</div>
+                        </div>
+                        <div style="background: rgba(251, 191, 36, 0.1); border-radius: 12px; padding: 16px; text-align: center;">
+                            <div style="font-size: 1.8rem; font-weight: 800; color: #f59e0b;" id="pendingCount">0</div>
+                            <div style="font-size: 0.8rem; color: var(--text-medium);">Pending Apps</div>
+                        </div>
+                        <div style="background: rgba(34, 197, 94, 0.1); border-radius: 12px; padding: 16px; text-align: center;">
+                            <div style="font-size: 1.8rem; font-weight: 800; color: #22c55e;" id="acceptedCount">0</div>
+                            <div style="font-size: 0.8rem; color: var(--text-medium);">Operators</div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, rgba(196, 114, 95, 0.15), rgba(232, 147, 90, 0.15)); border-radius: 12px; padding: 16px; text-align: center;">
+                            <div style="font-size: 1.8rem; font-weight: 800; background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;" id="adminRedemptionRate">--%</div>
+                            <div style="font-size: 0.8rem; color: var(--text-medium);">Redemption Rate</div>
+                        </div>
+                    </div>
 
-                        <!-- Hiring Loop -->
-                        <div style="background: rgba(255,255,255,0.5); border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; padding: 16px; margin-bottom: 12px;">
-                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 1.2rem;">&#128226;</span>
-                                    <span style="font-weight: 700; color: var(--text-dark);">HIRING LOOP</span>
-                                </div>
+                    <!-- Main Grid -->
+                    <div class="admin-dashboard-grid">
+
+                        <!-- Panel 1: Cadence AI - Hiring Loop -->
+                        <div class="admin-panel">
+                            <div class="admin-panel-header">
+                                <div class="admin-panel-title"><span>&#128226;</span> Hiring Loop</div>
                                 <div style="display: flex; align-items: center; gap: 8px;">
-                                    <span id="hiringLoopStatus" style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; padding: 4px 8px; border-radius: 12px; background: rgba(107, 114, 128, 0.1); color: #6b7280;">
+                                    <span id="hiringLoopStatus" style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; background: rgba(107, 114, 128, 0.1); color: #6b7280;">
                                         <span style="width: 6px; height: 6px; border-radius: 50%; background: currentColor;"></span>
                                         Paused
                                     </span>
-                                    <button id="hiringLoopToggle" onclick="toggleHiringLoop('hiring')" style="padding: 6px 12px; background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange)); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.8rem;">Start</button>
+                                    <button id="hiringLoopToggle" onclick="toggleHiringLoop('hiring')" style="padding: 8px 16px; background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange)); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">Start</button>
                                 </div>
                             </div>
-                            <div style="font-size: 0.85rem; color: var(--text-medium); margin-bottom: 8px;">
-                                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                                    <span>Social Platforms:</span>
-                                    <span id="hiringPlatformsDisplay">X, LinkedIn, Instagram</span>
-                                </div>
-                                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                                    <span>Next post:</span>
-                                    <span id="hiringNextPost">Not scheduled</span>
-                                </div>
-                                <div style="display: flex; align-items: center; gap: 6px;">
-                                    <span>Stats:</span>
-                                    <span id="hiringLoopStats">0 posts → 0 applications</span>
-                                </div>
+                            <div style="font-size: 0.9rem; color: var(--text-medium); line-height: 1.8;">
+                                <div><strong>Platforms:</strong> <span id="hiringPlatformsDisplay">X, LinkedIn, Instagram</span></div>
+                                <div><strong>Next post:</strong> <span id="hiringNextPost">Not scheduled</span></div>
+                                <div><strong>Stats:</strong> <span id="hiringLoopStats">0 posts → 0 applications</span></div>
                             </div>
-                            <div style="display: flex; gap: 8px; margin-top: 12px;">
-                                <button onclick="openEditMessagingModal('hiring')" style="padding: 6px 12px; background: rgba(255,255,255,0.8); border: 1px solid #e5e7eb; border-radius: 6px; font-size: 0.75rem; cursor: pointer;">Edit Messaging</button>
-                                <button onclick="viewLoopPosts('hiring')" style="padding: 6px 12px; background: rgba(255,255,255,0.8); border: 1px solid #e5e7eb; border-radius: 6px; font-size: 0.75rem; cursor: pointer;">View Posts</button>
-                                <button onclick="openCreateJobModal()" style="padding: 6px 12px; background: rgba(255,255,255,0.8); border: 1px solid #e5e7eb; border-radius: 6px; font-size: 0.75rem; cursor: pointer;">Create Job Posting</button>
+                            <div style="display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap;">
+                                <button onclick="openEditMessagingModal('hiring')" style="padding: 8px 14px; background: rgba(255,255,255,0.8); border: 1px solid #e5e7eb; border-radius: 8px; font-size: 0.8rem; cursor: pointer;">Edit Messaging</button>
+                                <button onclick="viewLoopPosts('hiring')" style="padding: 8px 14px; background: rgba(255,255,255,0.8); border: 1px solid #e5e7eb; border-radius: 8px; font-size: 0.8rem; cursor: pointer;">View Posts</button>
                             </div>
                         </div>
 
-                        <!-- App Marketing Loop -->
-                        <div style="background: rgba(255,255,255,0.5); border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 1.2rem;">&#128241;</span>
-                                    <span style="font-weight: 700; color: var(--text-dark);">APP MARKETING LOOP</span>
-                                </div>
+                        <!-- Panel 2: Cadence AI - Marketing Loop -->
+                        <div class="admin-panel">
+                            <div class="admin-panel-header">
+                                <div class="admin-panel-title"><span>&#128241;</span> App Marketing Loop</div>
                                 <div style="display: flex; align-items: center; gap: 8px;">
-                                    <span id="marketingLoopStatus" style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; padding: 4px 8px; border-radius: 12px; background: rgba(107, 114, 128, 0.1); color: #6b7280;">
+                                    <span id="marketingLoopStatus" style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; background: rgba(107, 114, 128, 0.1); color: #6b7280;">
                                         <span style="width: 6px; height: 6px; border-radius: 50%; background: currentColor;"></span>
                                         Paused
                                     </span>
-                                    <button id="marketingLoopToggle" onclick="toggleHiringLoop('app_marketing')" style="padding: 6px 12px; background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange)); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.8rem;">Start</button>
+                                    <button id="marketingLoopToggle" onclick="toggleHiringLoop('app_marketing')" style="padding: 8px 16px; background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange)); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">Start</button>
                                 </div>
                             </div>
-                            <div style="font-size: 0.85rem; color: var(--text-medium);">
-                                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                                    <span>Platforms:</span>
-                                    <span id="marketingPlatformsDisplay">X, Instagram</span>
-                                </div>
-                                <div style="display: flex; align-items: center; gap: 6px;">
-                                    <span>Promoting:</span>
-                                    <span>All SUITE Apps (rotating)</span>
-                                </div>
+                            <div style="font-size: 0.9rem; color: var(--text-medium); line-height: 1.8;">
+                                <div><strong>Platforms:</strong> <span id="marketingPlatformsDisplay">X, Instagram</span></div>
+                                <div><strong>Promoting:</strong> All SUITE Apps (rotating)</div>
+                                <div id="cadenceAppsReached" style="display:none;">0</div>
                             </div>
-                            <div style="display: flex; gap: 8px; margin-top: 12px;">
-                                <button onclick="openConfigureMarketingModal()" style="padding: 6px 12px; background: rgba(255,255,255,0.8); border: 1px solid #e5e7eb; border-radius: 6px; font-size: 0.75rem; cursor: pointer;">Configure</button>
+                            <div style="display: flex; gap: 8px; margin-top: 16px;">
+                                <button onclick="openConfigureMarketingModal()" style="padding: 8px 14px; background: rgba(255,255,255,0.8); border: 1px solid #e5e7eb; border-radius: 8px; font-size: 0.8rem; cursor: pointer;">Configure</button>
                             </div>
                         </div>
 
-                        <!-- Job Postings Manager -->
-                        <div style="background: rgba(255,255,255,0.5); border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; padding: 16px;">
-                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 1.2rem;">&#128203;</span>
-                                    <span style="font-weight: 700; color: var(--text-dark);">JOB POSTINGS</span>
-                                </div>
-                                <button onclick="openCreateJobModal()" style="padding: 6px 12px; background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange)); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.8rem;">+ New Posting</button>
+                        <!-- Panel 3: Job Postings -->
+                        <div class="admin-panel">
+                            <div class="admin-panel-header">
+                                <div class="admin-panel-title"><span>&#128203;</span> Job Postings</div>
+                                <button onclick="openCreateJobModal()" style="padding: 8px 14px; background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange)); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.8rem;">+ New</button>
                             </div>
-                            <div id="jobPostingsList" style="display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow-y: auto;">
-                                <div style="text-align: center; padding: 16px; color: var(--text-light); font-size: 0.85rem;">Loading job postings...</div>
+                            <div id="jobPostingsList" style="display: flex; flex-direction: column; gap: 10px; max-height: 220px; overflow-y: auto;">
+                                <div style="text-align: center; padding: 20px; color: var(--text-light); font-size: 0.85rem;">Loading job postings...</div>
                             </div>
                         </div>
-                    </div>
 
-                    <hr style="border: none; border-top: 1px solid rgba(0,0,0,0.08); margin: 20px 0;">
-
-                    <!-- Redemption Dashboard (always visible for admins) -->
-                    <div id="redemptionPanel" style="margin-top: 8px;">
-                        <div style="padding-top: 8px;">
-
-                            <!-- Rate Display -->
-                            <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, rgba(196, 114, 95, 0.1), rgba(232, 147, 90, 0.1)); border-radius: 16px; margin-bottom: 20px;">
-                                <div style="font-size: 2.5rem; font-weight: 900; background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;" id="adminRedemptionRate">--%</div>
-                                <div style="font-size: 0.9rem; color: var(--text-medium);">Current Redemption Rate</div>
+                        <!-- Panel 4: Apps Dashboard -->
+                        <div class="admin-panel two-cols" id="appsAdminPanel">
+                            <div class="admin-panel-header">
+                                <div class="admin-panel-title"><span>&#128187;</span> Apps Dashboard</div>
+                                <button onclick="openAddAppModal()" style="padding: 8px 14px; background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange)); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.8rem;">+ Add App</button>
                             </div>
-
-                            <!-- Stats Grid -->
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
-                                <div style="background: rgba(255,255,255,0.5); border-radius: 12px; padding: 16px; text-align: center;">
-                                    <div style="font-size: 1.3rem; font-weight: 800; color: var(--accent-terracotta);" id="adminTotalCredits">--</div>
-                                    <div style="font-size: 0.75rem; color: var(--text-medium);">Total Bonus Credits</div>
-                                </div>
-                                <div style="background: rgba(255,255,255,0.5); border-radius: 12px; padding: 16px; text-align: center;">
-                                    <div style="font-size: 1.3rem; font-weight: 800; color: var(--accent-green);" id="adminReportedValue">$--</div>
-                                    <div style="font-size: 0.75rem; color: var(--text-medium);">Reported Value</div>
-                                </div>
-                                <div style="background: rgba(255,255,255,0.5); border-radius: 12px; padding: 16px; text-align: center;">
-                                    <div style="font-size: 1.3rem; font-weight: 800; color: var(--accent-orange);" id="adminPendingRequests">$--</div>
-                                    <div style="font-size: 0.75rem; color: var(--text-medium);">Pending Requests</div>
-                                </div>
-                                <div style="background: rgba(255,255,255,0.5); border-radius: 12px; padding: 16px; text-align: center;">
-                                    <div style="font-size: 1.3rem; font-weight: 800; color: #3b82f6;" id="adminFundedPool">$--</div>
-                                    <div style="font-size: 0.75rem; color: var(--text-medium);">Funded Pool</div>
-                                </div>
+                            <div id="appsAdminList" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; max-height: 300px; overflow-y: auto;">
+                                <div style="text-align: center; padding: 20px; color: var(--text-light); grid-column: 1/-1;">Loading apps...</div>
                             </div>
-
-                            <!-- Report Liquid Value -->
-                            <div style="background: rgba(196, 114, 95, 0.05); border: 1px solid rgba(196, 114, 95, 0.2); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                                <div style="font-weight: 700; margin-bottom: 12px; color: var(--accent-terracotta);">Report Liquid Value</div>
-                                <div style="display: flex; gap: 10px;">
-                                    <input type="number" id="adminLiquidValueInput" placeholder="Enter USDC"
-                                           style="flex: 1; padding: 12px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 1rem;"
-                                           oninput="previewAdminRate()">
-                                    <button onclick="adminReportValue()" id="btnAdminReport"
-                                            style="padding: 12px 20px; background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange)); color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer;">
-                                        Update
-                                    </button>
-                                </div>
-                                <div style="font-size: 0.8rem; color: var(--text-light); margin-top: 8px;" id="adminRatePreview">Enter value to preview new rate</div>
-                            </div>
-
-                            <!-- Fund Pool -->
-                            <div style="background: rgba(34, 197, 94, 0.05); border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 12px; padding: 16px;">
-                                <div style="font-weight: 700; margin-bottom: 12px; color: var(--accent-green);">Fund Pool</div>
-                                <div style="display: flex; gap: 10px;">
-                                    <input type="number" id="adminFundInput" placeholder="USDC amount"
-                                           style="flex: 1; padding: 12px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 1rem;">
-                                    <button onclick="adminFundPool()" id="btnAdminFund"
-                                            style="padding: 12px 20px; background: linear-gradient(135deg, var(--accent-green), #10b981); color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer;">
-                                        Fund
-                                    </button>
-                                </div>
-                                <div style="font-size: 0.8rem; color: var(--text-light); margin-top: 8px;">
-                                    <a href="#" onclick="autoFillAdminPending(); return false;" style="color: var(--accent-green);">Fill pending amount</a>
-                                </div>
-                            </div>
-
-                            <!-- Contract Not Deployed Warning -->
-                            <div id="contractNotDeployed" style="display: none; text-align: center; padding: 20px; background: rgba(239, 68, 68, 0.1); border-radius: 12px; margin-top: 16px;">
-                                <div style="font-size: 1.5rem; margin-bottom: 8px;">&#128679;</div>
-                                <div style="font-weight: 700; color: #ef4444;">Contract Not Deployed</div>
-                                <div style="font-size: 0.85rem; color: var(--text-medium);">Deploy UsdcWithdrawals and update the address</div>
-                            </div>
-
                         </div>
-                    </div>
 
-                    <hr style="border: none; border-top: 1px solid rgba(0,0,0,0.08); margin: 20px 0;">
-
-                    <!-- Operator Applications Panel -->
-                    <div id="operatorApplicationsPanel" style="margin-top: 8px;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-                            <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: var(--text-dark);">Operator Applications</h3>
+                        <!-- Panel 5: Redemption Dashboard -->
+                        <div class="admin-panel" id="redemptionPanel">
+                            <div class="admin-panel-header">
+                                <div class="admin-panel-title"><span>&#128176;</span> Redemption Pool</div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;">
+                                <div style="background: rgba(255,255,255,0.6); border-radius: 10px; padding: 12px; text-align: center;">
+                                    <div style="font-size: 1.1rem; font-weight: 800; color: var(--accent-terracotta);" id="adminTotalCredits">--</div>
+                                    <div style="font-size: 0.7rem; color: var(--text-medium);">Total Credits</div>
+                                </div>
+                                <div style="background: rgba(255,255,255,0.6); border-radius: 10px; padding: 12px; text-align: center;">
+                                    <div style="font-size: 1.1rem; font-weight: 800; color: var(--accent-green);" id="adminReportedValue">$--</div>
+                                    <div style="font-size: 0.7rem; color: var(--text-medium);">Reported Value</div>
+                                </div>
+                                <div style="background: rgba(255,255,255,0.6); border-radius: 10px; padding: 12px; text-align: center;">
+                                    <div style="font-size: 1.1rem; font-weight: 800; color: var(--accent-orange);" id="adminPendingRequests">$--</div>
+                                    <div style="font-size: 0.7rem; color: var(--text-medium);">Pending</div>
+                                </div>
+                                <div style="background: rgba(255,255,255,0.6); border-radius: 10px; padding: 12px; text-align: center;">
+                                    <div style="font-size: 1.1rem; font-weight: 800; color: #3b82f6;" id="adminFundedPool">$--</div>
+                                    <div style="font-size: 0.7rem; color: var(--text-medium);">Funded</div>
+                                </div>
+                            </div>
                             <div style="display: flex; gap: 8px;">
-                                <select id="appFilterSelect" onchange="filterApplications()" style="padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 0.8rem; background: white;">
-                                    <option value="pending">Pending</option>
-                                    <option value="under_review">Under Review</option>
-                                    <option value="accepted">Accepted</option>
-                                    <option value="rejected">Rejected</option>
-                                    <option value="all">All</option>
-                                </select>
-                                <button onclick="refreshApplications()" style="padding: 6px 12px; background: rgba(255,255,255,0.5); border: 1px solid #e5e7eb; border-radius: 8px; cursor: pointer; font-size: 0.8rem;">Refresh</button>
+                                <input type="number" id="adminLiquidValueInput" placeholder="Report USDC" style="flex: 1; padding: 10px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 0.9rem;" oninput="previewAdminRate()">
+                                <button onclick="adminReportValue()" style="padding: 10px 14px; background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange)); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.8rem;">Update</button>
+                            </div>
+                            <div style="font-size: 0.75rem; color: var(--text-light); margin-top: 6px;" id="adminRatePreview">Enter value to preview rate</div>
+                            <div style="display: flex; gap: 8px; margin-top: 12px;">
+                                <input type="number" id="adminFundInput" placeholder="Fund USDC" style="flex: 1; padding: 10px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 0.9rem;">
+                                <button onclick="adminFundPool()" style="padding: 10px 14px; background: linear-gradient(135deg, var(--accent-green), #10b981); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.8rem;">Fund</button>
+                            </div>
+                            <div id="contractNotDeployed" style="display: none; text-align: center; padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; margin-top: 12px; font-size: 0.8rem; color: #ef4444;">Contract Not Deployed</div>
+                        </div>
+
+                        <!-- Panel 6: Operator Applications -->
+                        <div class="admin-panel two-cols" id="operatorApplicationsPanel">
+                            <div class="admin-panel-header">
+                                <div class="admin-panel-title"><span>&#128101;</span> Operator Applications</div>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <select id="appFilterSelect" onchange="filterApplications()" style="padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 0.8rem; background: white;">
+                                        <option value="pending">Pending</option>
+                                        <option value="under_review">Under Review</option>
+                                        <option value="accepted">Accepted</option>
+                                        <option value="rejected">Rejected</option>
+                                        <option value="all">All</option>
+                                    </select>
+                                    <button onclick="refreshApplications()" style="padding: 8px 12px; background: rgba(255,255,255,0.8); border: 1px solid #e5e7eb; border-radius: 8px; cursor: pointer; font-size: 0.8rem;">Refresh</button>
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px;">
+                                <div style="background: rgba(251, 191, 36, 0.1); border-radius: 8px; padding: 10px; text-align: center;">
+                                    <div style="font-size: 1.1rem; font-weight: 800; color: #f59e0b;" id="pendingCountAlt">0</div>
+                                    <div style="font-size: 0.65rem; color: var(--text-medium);">Pending</div>
+                                </div>
+                                <div style="background: rgba(59, 130, 246, 0.1); border-radius: 8px; padding: 10px; text-align: center;">
+                                    <div style="font-size: 1.1rem; font-weight: 800; color: #3b82f6;" id="reviewCount">0</div>
+                                    <div style="font-size: 0.65rem; color: var(--text-medium);">Review</div>
+                                </div>
+                                <div style="background: rgba(34, 197, 94, 0.1); border-radius: 8px; padding: 10px; text-align: center;">
+                                    <div style="font-size: 1.1rem; font-weight: 800; color: #22c55e;" id="acceptedCountAlt">0</div>
+                                    <div style="font-size: 0.65rem; color: var(--text-medium);">Accepted</div>
+                                </div>
+                                <div style="background: rgba(239, 68, 68, 0.1); border-radius: 8px; padding: 10px; text-align: center;">
+                                    <div style="font-size: 1.1rem; font-weight: 800; color: #ef4444;" id="rejectedCount">0</div>
+                                    <div style="font-size: 0.65rem; color: var(--text-medium);">Rejected</div>
+                                </div>
+                            </div>
+                            <div id="operatorApplicationsList" style="display: flex; flex-direction: column; gap: 10px; max-height: 220px; overflow-y: auto;">
+                                <div style="text-align: center; padding: 20px; color: var(--text-light);">Loading applications...</div>
                             </div>
                         </div>
 
-                        <!-- Applications Stats -->
-                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px;">
-                            <div style="background: rgba(251, 191, 36, 0.1); border-radius: 10px; padding: 12px; text-align: center;">
-                                <div style="font-size: 1.3rem; font-weight: 800; color: #f59e0b;" id="pendingCount">0</div>
-                                <div style="font-size: 0.7rem; color: var(--text-medium);">Pending</div>
-                            </div>
-                            <div style="background: rgba(59, 130, 246, 0.1); border-radius: 10px; padding: 12px; text-align: center;">
-                                <div style="font-size: 1.3rem; font-weight: 800; color: #3b82f6;" id="reviewCount">0</div>
-                                <div style="font-size: 0.7rem; color: var(--text-medium);">Reviewing</div>
-                            </div>
-                            <div style="background: rgba(34, 197, 94, 0.1); border-radius: 10px; padding: 12px; text-align: center;">
-                                <div style="font-size: 1.3rem; font-weight: 800; color: #22c55e;" id="acceptedCount">0</div>
-                                <div style="font-size: 0.7rem; color: var(--text-medium);">Accepted</div>
-                            </div>
-                            <div style="background: rgba(239, 68, 68, 0.1); border-radius: 10px; padding: 12px; text-align: center;">
-                                <div style="font-size: 1.3rem; font-weight: 800; color: #ef4444;" id="rejectedCount">0</div>
-                                <div style="font-size: 0.7rem; color: var(--text-medium);">Rejected</div>
-                            </div>
-                        </div>
-
-                        <!-- Applications List -->
-                        <div id="operatorApplicationsList" style="display: flex; flex-direction: column; gap: 12px; max-height: 500px; overflow-y: auto;">
-                            <div style="text-align: center; padding: 24px; color: var(--text-light);">Loading applications...</div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -2768,6 +2789,13 @@
                 document.getElementById('reviewCount').textContent = counts.under_review;
                 document.getElementById('acceptedCount').textContent = counts.accepted;
                 document.getElementById('rejectedCount').textContent = counts.rejected;
+                // Update alternate stat elements in the grid
+                if (document.getElementById('pendingCountAlt')) {
+                    document.getElementById('pendingCountAlt').textContent = counts.pending;
+                }
+                if (document.getElementById('acceptedCountAlt')) {
+                    document.getElementById('acceptedCountAlt').textContent = counts.accepted;
+                }
 
             } catch (err) {
                 console.error('Failed to update counts:', err);
