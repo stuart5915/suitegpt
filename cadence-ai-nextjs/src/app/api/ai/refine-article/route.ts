@@ -36,9 +36,14 @@ Output the refined article:`
 
         return NextResponse.json({ refined })
     } catch (error: any) {
-        console.error('Article refinement error:', error?.message || error)
+        console.error('Article refinement error:', error)
+        // Return detailed error info for debugging
         return NextResponse.json(
-            { error: error?.message || 'Failed to refine article' },
+            {
+                error: error?.message || 'Failed to refine article',
+                details: error?.toString(),
+                stack: error?.stack?.substring(0, 500)
+            },
             { status: 500 }
         )
     }

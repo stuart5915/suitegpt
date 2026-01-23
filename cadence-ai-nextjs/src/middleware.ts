@@ -17,6 +17,7 @@ export async function middleware(request: NextRequest) {
         '/api/work-log/cron',
         '/api/auth/telegram', // Auth endpoints should be public
         '/api/twitter/latest-poll', // Public poll embed API
+        '/api/ai/', // AI endpoints for extensions
     ]
 
     const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
