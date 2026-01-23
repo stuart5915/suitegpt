@@ -30,15 +30,9 @@ INSTRUCTIONS: ${instructions || 'Clean this up and make it flow better'}
 
 Output the refined article:`
 
-        const result = await model.generateContent({
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: {
-                temperature: 0.7,
-                maxOutputTokens: 4000
-            }
-        })
-
-        const refined = result.response.text()
+        const result = await model.generateContent(prompt)
+        const response = await result.response
+        const refined = response.text().trim()
 
         return NextResponse.json({ refined })
     } catch (error: any) {

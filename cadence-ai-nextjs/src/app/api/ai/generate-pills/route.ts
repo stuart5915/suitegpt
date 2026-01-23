@@ -30,15 +30,9 @@ ${content}
 
 Last instruction: ${lastInstruction || 'Initial refinement'}`
 
-        const result = await model.generateContent({
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: {
-                temperature: 0.8,
-                maxOutputTokens: 500
-            }
-        })
-
-        const responseText = result.response.text()
+        const result = await model.generateContent(prompt)
+        const response = await result.response
+        const responseText = response.text().trim()
         const jsonMatch = responseText.match(/\[[\s\S]*\]/)
 
         if (jsonMatch) {
