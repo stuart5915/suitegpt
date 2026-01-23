@@ -1046,36 +1046,18 @@
                             <span class="admin-badge">ADMIN ONLY</span>
                         </div>
                         <div style="display: flex; gap: 10px;">
-                            <button onclick="refreshCadenceConfig(); loadAppsAdmin(); loadOperatorApplications();" style="padding: 8px 16px; background: rgba(255,255,255,0.8); border: 1px solid #e5e7eb; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600;">Refresh All</button>
+                            <button onclick="refreshCadenceConfig(); loadAppsAdmin(); loadPipelineData();" style="padding: 8px 16px; background: rgba(255,255,255,0.8); border: 1px solid #e5e7eb; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600;">Refresh All</button>
                         </div>
                     </div>
 
-                    <!-- Stats Bar -->
-                    <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-bottom: 28px; max-width: 1600px; margin-left: auto; margin-right: auto;">
-                        <div style="background: rgba(59, 130, 246, 0.1); border-radius: 12px; padding: 16px; text-align: center;">
-                            <div style="font-size: 1.8rem; font-weight: 800; color: #3b82f6;" id="cadenceActiveLoops">0</div>
-                            <div style="font-size: 0.8rem; color: var(--text-medium);">Active Loops</div>
-                        </div>
-                        <div style="background: rgba(196, 114, 95, 0.1); border-radius: 12px; padding: 16px; text-align: center;">
-                            <div style="font-size: 1.8rem; font-weight: 800; color: var(--accent-terracotta);" id="cadencePostsMonth">0</div>
-                            <div style="font-size: 0.8rem; color: var(--text-medium);">Posts This Month</div>
-                        </div>
-                        <div style="background: rgba(168, 85, 247, 0.1); border-radius: 12px; padding: 16px; text-align: center;">
-                            <div style="font-size: 1.8rem; font-weight: 800; color: #a855f7;" id="cadenceLeadsWeek">0</div>
-                            <div style="font-size: 0.8rem; color: var(--text-medium);">Leads This Week</div>
-                        </div>
-                        <div style="background: rgba(251, 191, 36, 0.1); border-radius: 12px; padding: 16px; text-align: center;">
-                            <div style="font-size: 1.8rem; font-weight: 800; color: #f59e0b;" id="pendingCount">0</div>
-                            <div style="font-size: 0.8rem; color: var(--text-medium);">Pending Apps</div>
-                        </div>
-                        <div style="background: rgba(34, 197, 94, 0.1); border-radius: 12px; padding: 16px; text-align: center;">
-                            <div style="font-size: 1.8rem; font-weight: 800; color: #22c55e;" id="acceptedCount">0</div>
-                            <div style="font-size: 0.8rem; color: var(--text-medium);">Operators</div>
-                        </div>
-                        <div style="background: linear-gradient(135deg, rgba(196, 114, 95, 0.15), rgba(232, 147, 90, 0.15)); border-radius: 12px; padding: 16px; text-align: center;">
-                            <div style="font-size: 1.8rem; font-weight: 800; background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;" id="adminRedemptionRate">--%</div>
-                            <div style="font-size: 0.8rem; color: var(--text-medium);">Redemption Rate</div>
-                        </div>
+                    <!-- Hidden stat elements for JS compatibility -->
+                    <div style="display: none;">
+                        <span id="cadenceActiveLoops">0</span>
+                        <span id="cadencePostsMonth">0</span>
+                        <span id="cadenceLeadsWeek">0</span>
+                        <span id="pendingCount">0</span>
+                        <span id="acceptedCount">0</span>
+                        <span id="adminRedemptionRate">0</span>
                     </div>
 
                     <!-- Main Grid -->
@@ -1207,41 +1189,105 @@
                             <div id="contractNotDeployed" style="display: none; text-align: center; padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; margin-top: 12px; font-size: 0.8rem; color: #ef4444;">Contract Not Deployed</div>
                         </div>
 
-                        <!-- Panel 6: Operator Applications -->
-                        <div class="admin-panel two-cols" id="operatorApplicationsPanel">
+                        <!-- Panel 6: Hiring Pipeline (Full Width) -->
+                        <div class="admin-panel full-width" id="operatorApplicationsPanel" style="min-height: 400px;">
                             <div class="admin-panel-header">
-                                <div class="admin-panel-title"><span>&#128101;</span> Operator Applications</div>
+                                <div class="admin-panel-title"><span>&#128101;</span> Hiring Pipeline</div>
                                 <div style="display: flex; gap: 8px; align-items: center;">
-                                    <select id="appFilterSelect" onchange="filterApplications()" style="padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 0.8rem; background: white;">
-                                        <option value="pending">Pending</option>
-                                        <option value="under_review">Under Review</option>
-                                        <option value="accepted">Accepted</option>
-                                        <option value="rejected">Rejected</option>
-                                        <option value="all">All</option>
-                                    </select>
-                                    <button onclick="refreshApplications()" style="padding: 8px 12px; background: rgba(255,255,255,0.8); border: 1px solid #e5e7eb; border-radius: 8px; cursor: pointer; font-size: 0.8rem;">Refresh</button>
+                                    <button onclick="togglePipelineView()" id="pipelineViewToggle" style="padding: 8px 12px; background: rgba(255,255,255,0.8); border: 1px solid #e5e7eb; border-radius: 8px; cursor: pointer; font-size: 0.8rem;">List View</button>
+                                    <button onclick="loadPipelineData()" style="padding: 8px 12px; background: rgba(255,255,255,0.8); border: 1px solid #e5e7eb; border-radius: 8px; cursor: pointer; font-size: 0.8rem;">Refresh</button>
                                 </div>
                             </div>
-                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px;">
-                                <div style="background: rgba(251, 191, 36, 0.1); border-radius: 8px; padding: 10px; text-align: center;">
-                                    <div style="font-size: 1.1rem; font-weight: 800; color: #f59e0b;" id="pendingCountAlt">0</div>
-                                    <div style="font-size: 0.65rem; color: var(--text-medium);">Pending</div>
+
+                            <!-- Pipeline Kanban View -->
+                            <div id="pipelineKanban" style="display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px;">
+                                <!-- Applied Column -->
+                                <div class="pipeline-column" data-stage="applied" style="min-width: 220px; flex: 1; background: rgba(251, 191, 36, 0.05); border: 1px solid rgba(251, 191, 36, 0.2); border-radius: 12px; padding: 12px;">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                        <div style="display: flex; align-items: center; gap: 6px;">
+                                            <span style="width: 10px; height: 10px; background: #f59e0b; border-radius: 50%;"></span>
+                                            <span style="font-weight: 700; font-size: 0.85rem; color: var(--text-dark);">Applied</span>
+                                        </div>
+                                        <span id="count-applied" style="background: rgba(251, 191, 36, 0.2); color: #f59e0b; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 700;">0</span>
+                                    </div>
+                                    <div id="cards-applied" class="pipeline-cards" style="display: flex; flex-direction: column; gap: 8px; min-height: 100px;"></div>
                                 </div>
-                                <div style="background: rgba(59, 130, 246, 0.1); border-radius: 8px; padding: 10px; text-align: center;">
-                                    <div style="font-size: 1.1rem; font-weight: 800; color: #3b82f6;" id="reviewCount">0</div>
-                                    <div style="font-size: 0.65rem; color: var(--text-medium);">Review</div>
+
+                                <!-- Screening Column -->
+                                <div class="pipeline-column" data-stage="screening" style="min-width: 220px; flex: 1; background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 12px; padding: 12px;">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                        <div style="display: flex; align-items: center; gap: 6px;">
+                                            <span style="width: 10px; height: 10px; background: #3b82f6; border-radius: 50%;"></span>
+                                            <span style="font-weight: 700; font-size: 0.85rem; color: var(--text-dark);">Screening</span>
+                                        </div>
+                                        <span id="count-screening" style="background: rgba(59, 130, 246, 0.2); color: #3b82f6; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 700;">0</span>
+                                    </div>
+                                    <div id="cards-screening" class="pipeline-cards" style="display: flex; flex-direction: column; gap: 8px; min-height: 100px;"></div>
                                 </div>
-                                <div style="background: rgba(34, 197, 94, 0.1); border-radius: 8px; padding: 10px; text-align: center;">
-                                    <div style="font-size: 1.1rem; font-weight: 800; color: #22c55e;" id="acceptedCountAlt">0</div>
-                                    <div style="font-size: 0.65rem; color: var(--text-medium);">Accepted</div>
+
+                                <!-- Interview Column -->
+                                <div class="pipeline-column" data-stage="interview" style="min-width: 220px; flex: 1; background: rgba(139, 92, 246, 0.05); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 12px; padding: 12px;">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                        <div style="display: flex; align-items: center; gap: 6px;">
+                                            <span style="width: 10px; height: 10px; background: #8b5cf6; border-radius: 50%;"></span>
+                                            <span style="font-weight: 700; font-size: 0.85rem; color: var(--text-dark);">Interview</span>
+                                        </div>
+                                        <span id="count-interview" style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 700;">0</span>
+                                    </div>
+                                    <div id="cards-interview" class="pipeline-cards" style="display: flex; flex-direction: column; gap: 8px; min-height: 100px;"></div>
                                 </div>
-                                <div style="background: rgba(239, 68, 68, 0.1); border-radius: 8px; padding: 10px; text-align: center;">
-                                    <div style="font-size: 1.1rem; font-weight: 800; color: #ef4444;" id="rejectedCount">0</div>
-                                    <div style="font-size: 0.65rem; color: var(--text-medium);">Rejected</div>
+
+                                <!-- Offer Column -->
+                                <div class="pipeline-column" data-stage="offer" style="min-width: 220px; flex: 1; background: rgba(236, 72, 153, 0.05); border: 1px solid rgba(236, 72, 153, 0.2); border-radius: 12px; padding: 12px;">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                        <div style="display: flex; align-items: center; gap: 6px;">
+                                            <span style="width: 10px; height: 10px; background: #ec4899; border-radius: 50%;"></span>
+                                            <span style="font-weight: 700; font-size: 0.85rem; color: var(--text-dark);">Offer</span>
+                                        </div>
+                                        <span id="count-offer" style="background: rgba(236, 72, 153, 0.2); color: #ec4899; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 700;">0</span>
+                                    </div>
+                                    <div id="cards-offer" class="pipeline-cards" style="display: flex; flex-direction: column; gap: 8px; min-height: 100px;"></div>
+                                </div>
+
+                                <!-- Onboarding Column -->
+                                <div class="pipeline-column" data-stage="onboarding" style="min-width: 220px; flex: 1; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 12px;">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                        <div style="display: flex; align-items: center; gap: 6px;">
+                                            <span style="width: 10px; height: 10px; background: #10b981; border-radius: 50%;"></span>
+                                            <span style="font-weight: 700; font-size: 0.85rem; color: var(--text-dark);">Onboarding</span>
+                                        </div>
+                                        <span id="count-onboarding" style="background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 700;">0</span>
+                                    </div>
+                                    <div id="cards-onboarding" class="pipeline-cards" style="display: flex; flex-direction: column; gap: 8px; min-height: 100px;"></div>
+                                </div>
+
+                                <!-- Active Column -->
+                                <div class="pipeline-column" data-stage="active" style="min-width: 220px; flex: 1; background: rgba(34, 197, 94, 0.05); border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 12px; padding: 12px;">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                        <div style="display: flex; align-items: center; gap: 6px;">
+                                            <span style="width: 10px; height: 10px; background: #22c55e; border-radius: 50%;"></span>
+                                            <span style="font-weight: 700; font-size: 0.85rem; color: var(--text-dark);">Active</span>
+                                        </div>
+                                        <span id="count-active" style="background: rgba(34, 197, 94, 0.2); color: #22c55e; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 700;">0</span>
+                                    </div>
+                                    <div id="cards-active" class="pipeline-cards" style="display: flex; flex-direction: column; gap: 8px; min-height: 100px;"></div>
                                 </div>
                             </div>
-                            <div id="operatorApplicationsList" style="display: flex; flex-direction: column; gap: 10px; max-height: 220px; overflow-y: auto;">
-                                <div style="text-align: center; padding: 20px; color: var(--text-light);">Loading applications...</div>
+
+                            <!-- List View (hidden by default) -->
+                            <div id="pipelineList" style="display: none;">
+                                <div id="operatorApplicationsList" style="display: flex; flex-direction: column; gap: 10px; max-height: 350px; overflow-y: auto;">
+                                    <div style="text-align: center; padding: 20px; color: var(--text-light);">Loading applications...</div>
+                                </div>
+                            </div>
+
+                            <!-- Hidden elements for JS compatibility -->
+                            <div style="display: none;">
+                                <span id="pendingCountAlt">0</span>
+                                <span id="reviewCount">0</span>
+                                <span id="acceptedCountAlt">0</span>
+                                <span id="rejectedCount">0</span>
+                                <select id="appFilterSelect"><option value="all">All</option></select>
                             </div>
                         </div>
 
@@ -1650,7 +1696,7 @@
             if (ADMIN_ADDRESSES.includes(wallet.toLowerCase())) {
                 document.getElementById('adminSection').style.display = 'block';
                 loadRedemptionData(); // Load redemption data when admin section is shown
-                loadOperatorApplications(); // Load operator applications
+                loadPipelineData(); // Load hiring pipeline
             } else {
                 document.getElementById('adminSection').style.display = 'none';
             }
@@ -2841,7 +2887,191 @@
         }
 
         function refreshApplications() {
-            loadOperatorApplications();
+            loadPipelineData();
+        }
+
+        // ============ Pipeline Kanban View ============
+        let pipelineViewMode = 'kanban'; // 'kanban' or 'list'
+        const PIPELINE_STAGES = ['applied', 'screening', 'interview', 'offer', 'onboarding', 'active'];
+        const STAGE_COLORS = {
+            applied: '#f59e0b',
+            screening: '#3b82f6',
+            interview: '#8b5cf6',
+            offer: '#ec4899',
+            onboarding: '#10b981',
+            active: '#22c55e',
+            rejected: '#ef4444'
+        };
+
+        async function loadPipelineData() {
+            try {
+                // Load all applications
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/app_operator_applications?order=created_at.desc`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load applications');
+
+                operatorApplicationsData = await response.json();
+
+                // Map old status to pipeline stages for backwards compatibility
+                operatorApplicationsData = operatorApplicationsData.map(app => {
+                    if (!app.pipeline_stage) {
+                        // Map old status to new pipeline stage
+                        if (app.status === 'pending') app.pipeline_stage = 'applied';
+                        else if (app.status === 'under_review') app.pipeline_stage = 'screening';
+                        else if (app.status === 'accepted') app.pipeline_stage = 'active';
+                        else if (app.status === 'rejected') app.pipeline_stage = 'rejected';
+                        else app.pipeline_stage = 'applied';
+                    }
+                    return app;
+                });
+
+                renderPipelineKanban();
+                updateApplicationCounts();
+
+            } catch (err) {
+                console.error('Failed to load pipeline data:', err);
+                // Show error in first column
+                document.getElementById('cards-applied').innerHTML = '<div style="text-align: center; padding: 16px; color: #ef4444; font-size: 0.8rem;">Failed to load. Run migration first.</div>';
+            }
+        }
+
+        function renderPipelineKanban() {
+            // Clear all columns
+            PIPELINE_STAGES.forEach(stage => {
+                const container = document.getElementById(`cards-${stage}`);
+                if (container) container.innerHTML = '';
+            });
+
+            // Count per stage
+            const counts = {};
+            PIPELINE_STAGES.forEach(s => counts[s] = 0);
+
+            // Render cards to appropriate columns
+            operatorApplicationsData.forEach(app => {
+                const stage = app.pipeline_stage || 'applied';
+                if (!PIPELINE_STAGES.includes(stage)) return; // Skip rejected etc
+
+                counts[stage] = (counts[stage] || 0) + 1;
+
+                const container = document.getElementById(`cards-${stage}`);
+                if (!container) return;
+
+                const card = document.createElement('div');
+                card.className = 'pipeline-card';
+                card.style.cssText = 'background: white; border-radius: 10px; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); cursor: pointer; transition: all 0.15s ease;';
+                card.onmouseover = () => card.style.boxShadow = '0 4px 12px rgba(0,0,0,0.12)';
+                card.onmouseout = () => card.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
+                card.onclick = () => openPipelineCardDetail(app.id);
+
+                const initials = (app.telegram_username || app.discord_username || app.email || '?').charAt(0).toUpperCase();
+                const name = app.telegram_username || app.discord_username || app.email?.split('@')[0] || 'Unknown';
+                const appName = app.preferred_app_slug || 'Any app';
+                const daysAgo = Math.floor((Date.now() - new Date(app.created_at).getTime()) / (1000 * 60 * 60 * 24));
+
+                card.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                        <div style="width: 28px; height: 28px; background: linear-gradient(135deg, ${STAGE_COLORS[stage]}, ${STAGE_COLORS[stage]}dd); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 0.75rem;">${initials}</div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-weight: 600; font-size: 0.85rem; color: var(--text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}</div>
+                        </div>
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--text-medium); margin-bottom: 6px;">${appName}</div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.7rem; color: var(--text-light);">${daysAgo === 0 ? 'Today' : daysAgo + 'd ago'}</span>
+                        <select onchange="moveToStage('${app.id}', this.value); event.stopPropagation();" onclick="event.stopPropagation();" style="padding: 2px 4px; font-size: 0.65rem; border: 1px solid #e5e7eb; border-radius: 4px; background: white; cursor: pointer;">
+                            ${PIPELINE_STAGES.map(s => `<option value="${s}" ${s === stage ? 'selected' : ''}>${s.charAt(0).toUpperCase() + s.slice(1)}</option>`).join('')}
+                            <option value="rejected">Rejected</option>
+                        </select>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+
+            // Update counts
+            PIPELINE_STAGES.forEach(stage => {
+                const countEl = document.getElementById(`count-${stage}`);
+                if (countEl) countEl.textContent = counts[stage] || 0;
+            });
+        }
+
+        async function moveToStage(appId, newStage) {
+            try {
+                // Update pipeline_stage in database
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/app_operator_applications?id=eq.${appId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        pipeline_stage: newStage,
+                        stage_entered_at: new Date().toISOString(),
+                        // Also update old status field for compatibility
+                        status: newStage === 'active' ? 'accepted' : (newStage === 'rejected' ? 'rejected' : (newStage === 'applied' ? 'pending' : 'under_review'))
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to update stage');
+
+                // Log to stage history
+                await fetch(`${SUPABASE_URL}/rest/v1/application_stage_history`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        application_id: appId,
+                        from_stage: operatorApplicationsData.find(a => a.id === appId)?.pipeline_stage,
+                        to_stage: newStage
+                    })
+                });
+
+                // If moving to active, create operator record
+                if (newStage === 'active') {
+                    const app = operatorApplicationsData.find(a => a.id === appId);
+                    if (app) await createOperatorFromApplication(app);
+                }
+
+                showToast(`Moved to ${newStage}`, 'success');
+                loadPipelineData();
+
+            } catch (err) {
+                console.error('Failed to move to stage:', err);
+                showToast('Failed to update', 'error');
+            }
+        }
+
+        function togglePipelineView() {
+            const kanban = document.getElementById('pipelineKanban');
+            const list = document.getElementById('pipelineList');
+            const btn = document.getElementById('pipelineViewToggle');
+
+            if (pipelineViewMode === 'kanban') {
+                pipelineViewMode = 'list';
+                kanban.style.display = 'none';
+                list.style.display = 'block';
+                btn.textContent = 'Kanban View';
+                loadOperatorApplications();
+            } else {
+                pipelineViewMode = 'kanban';
+                kanban.style.display = 'flex';
+                list.style.display = 'none';
+                btn.textContent = 'List View';
+                loadPipelineData();
+            }
+        }
+
+        function openPipelineCardDetail(appId) {
+            openApplicationDetail(appId);
         }
 
         function openApplicationDetail(appId) {
