@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 /**
- * SUITE Autonomous Agent Wake Script
+ * SUITE Autonomous Agent Wake Script v2 - Execution Mode
  *
  * Usage: node scripts/wake-agent.js <agent-slug>
  * Example: node scripts/wake-agent.js foodvitals-agent
  *
- * This script:
- * 1. Checks if agent has a pending proposal awaiting response
- * 2. Syncs feedback from governance if responded
- * 3. Runs Claude in the agent's directory with context
+ * v2 Changes:
+ * - Checks for approved tasks to execute
+ * - Handles assistance responses
+ * - Supports execution state transitions
+ * - Builds context-aware prompts based on agent state
  */
 
 const fs = require('fs');
@@ -48,6 +49,10 @@ function logError(message) {
 
 function logSuccess(message) {
     console.log(`${colors.green}[SUCCESS]${colors.reset} ${message}`);
+}
+
+function logInfo(message) {
+    console.log(`${colors.blue}[INFO]${colors.reset} ${message}`);
 }
 
 /**
@@ -120,94 +125,339 @@ async function getProposal(proposalId) {
 }
 
 /**
- * Check if agent should wake up
+ * Check for assistance response on a blocked request
  */
-async function shouldAgentWake(state) {
-    // If no last proposal, agent can wake up
-    if (!state.last_proposal) {
-        return { canWake: true, reason: 'no_prior_proposal' };
-    }
+async function checkForAssistance(proposalId) {
+    const proposal = await getProposal(proposalId);
+    if (!proposal) return null;
 
-    // If last proposal still pending, don't wake
-    if (state.last_proposal.status === 'submitted' || state.last_proposal.status === 'open_voting') {
-        // Check if governance has responded
-        const proposal = await getProposal(state.last_proposal.id);
-
-        if (!proposal) {
-            return { canWake: false, reason: 'proposal_not_found' };
-        }
-
-        // Still waiting
-        if (proposal.status === 'submitted' || proposal.status === 'open_voting') {
-            return {
-                canWake: false,
-                reason: 'waiting_for_response',
-                message: `Proposal "${state.last_proposal.title}" is still awaiting response`
-            };
-        }
-
-        // Governance has responded - return the feedback
+    // Check if assistance was provided
+    if (proposal.assistance_response && proposal.assistance_provided_at) {
         return {
-            canWake: true,
-            reason: 'feedback_received',
-            proposal: proposal,
-            feedback: proposal.agent_feedback || proposal.reject_reason || null
+            response: proposal.assistance_response,
+            provided_at: proposal.assistance_provided_at
         };
     }
 
-    // Proposal was already processed
-    return { canWake: true, reason: 'ready' };
+    return null;
 }
 
 /**
- * Update state with feedback from governance
+ * Extract learned pattern from rejected proposal
  */
-function updateStateWithFeedback(state, proposal, feedback) {
-    // Update last proposal status
-    state.last_proposal.status = proposal.status;
-    state.last_proposal.feedback = feedback;
+function extractPatternFromRejection(proposal, feedback) {
+    const patterns = [];
 
-    // Add to feedback history
-    state.feedback_history.push({
-        proposal_id: proposal.id,
-        title: state.last_proposal.title,
-        outcome: proposal.status,
-        feedback: feedback,
-        implemented: proposal.status === 'implemented',
-        responded_at: proposal.feedback_at || new Date().toISOString()
-    });
+    // Simple keyword-based pattern extraction
+    const feedbackLower = (feedback || '').toLowerCase();
+    const title = proposal.title || '';
 
-    // Update stats
-    if (proposal.status === 'passed' || proposal.status === 'implemented') {
-        state.approved_proposals++;
-    } else if (proposal.status === 'rejected') {
-        state.rejected_proposals++;
+    if (feedbackLower.includes('too broad') || feedbackLower.includes('too large') || feedbackLower.includes('focus on one')) {
+        patterns.push({ type: 'rejected_because_too_broad', text: title });
+    }
+    if (feedbackLower.includes('priority') || feedbackLower.includes('first') || feedbackLower.includes('before')) {
+        patterns.push({ type: 'rejected_because_wrong_priority', text: title });
+    }
+    if (feedbackLower.includes('justify') || feedbackLower.includes('why') || feedbackLower.includes('reason')) {
+        patterns.push({ type: 'rejected_because_missing_justification', text: title });
+    }
+    if (feedbackLower.includes('scope') || feedbackLower.includes('not your') || feedbackLower.includes('out of')) {
+        patterns.push({ type: 'rejected_because_out_of_scope', text: title });
     }
 
-    state.current_status = 'idle';
+    return patterns;
+}
+
+/**
+ * Add learned patterns to state
+ */
+function addLearnedPatterns(state, patterns) {
+    if (!state.learned_patterns) {
+        state.learned_patterns = {
+            rejected_because_too_broad: [],
+            rejected_because_wrong_priority: [],
+            rejected_because_missing_justification: [],
+            rejected_because_out_of_scope: [],
+            successful_patterns: []
+        };
+    }
+
+    for (const pattern of patterns) {
+        if (state.learned_patterns[pattern.type]) {
+            // Avoid duplicates
+            if (!state.learned_patterns[pattern.type].includes(pattern.text)) {
+                state.learned_patterns[pattern.type].push(pattern.text);
+            }
+        }
+    }
 
     return state;
 }
 
 /**
- * Run Claude in the agent's directory
+ * Determine agent wake mode based on current state
  */
-function runClaude(agentSlug, wakeReason) {
-    const agentDir = path.join(AGENTS_DIR, agentSlug);
+async function determineWakeMode(state) {
+    // Mode 1: Agent is blocked and waiting for assistance
+    if (state.execution_state === 'blocked' && state.current_task) {
+        // Find the assistance request
+        const lastAssistanceRequest = state.feedback_history
+            .filter(f => f.submission_type === 'assistance_request')
+            .pop();
 
-    // Build the wake prompt
-    let prompt = 'Wake up and do your job. ';
-
-    if (wakeReason === 'feedback_received') {
-        prompt = 'Wake up. Your last proposal has received a response. Read your state.json to see the feedback, then generate your next proposal. ';
-    } else if (wakeReason === 'no_prior_proposal') {
-        prompt = 'Wake up. This is your first wake cycle. Read your telos-objective.md to understand your mission, then generate your first proposal. ';
+        if (lastAssistanceRequest) {
+            const assistance = await checkForAssistance(lastAssistanceRequest.proposal_id);
+            if (assistance) {
+                return {
+                    mode: 'continue_execution',
+                    reason: 'assistance_received',
+                    assistance: assistance,
+                    task: state.current_task
+                };
+            } else {
+                return {
+                    mode: 'still_blocked',
+                    reason: 'waiting_for_assistance',
+                    message: `Still waiting for assistance on: "${lastAssistanceRequest.title}"`
+                };
+            }
+        }
     }
 
-    prompt += 'Remember: Submit ONE proposal, then STOP.';
+    // Mode 2: Agent has an executing task (approved proposal)
+    if (state.execution_state === 'executing' && state.current_task) {
+        return {
+            mode: 'execute',
+            reason: 'task_in_progress',
+            task: state.current_task
+        };
+    }
 
-    logStep('4', `Running Claude in ${agentDir}`);
-    log(`Prompt: "${prompt}"`, 'dim');
+    // Mode 3: Agent has a pending proposal waiting for response
+    if (state.last_proposal && state.current_status === 'waiting') {
+        const proposal = await getProposal(state.last_proposal.id);
+
+        if (!proposal) {
+            return { mode: 'propose', reason: 'proposal_not_found' };
+        }
+
+        // Still waiting for response
+        if (proposal.status === 'submitted' || proposal.status === 'open_voting') {
+            return {
+                mode: 'waiting',
+                reason: 'waiting_for_response',
+                message: `Proposal "${state.last_proposal.title}" is still awaiting response`
+            };
+        }
+
+        // Proposal was approved - start execution
+        if (proposal.status === 'passed') {
+            return {
+                mode: 'start_execution',
+                reason: 'proposal_approved',
+                proposal: proposal,
+                feedback: proposal.agent_feedback || null
+            };
+        }
+
+        // Proposal was rejected - learn and propose again
+        if (proposal.status === 'rejected') {
+            return {
+                mode: 'propose',
+                reason: 'proposal_rejected',
+                proposal: proposal,
+                feedback: proposal.agent_feedback || proposal.reject_reason || null
+            };
+        }
+
+        // Proposal was implemented (by human) - agent can propose next
+        if (proposal.status === 'implemented') {
+            return {
+                mode: 'propose',
+                reason: 'task_completed_externally',
+                proposal: proposal
+            };
+        }
+    }
+
+    // Mode 4: Agent is idle - generate new proposal
+    return {
+        mode: 'propose',
+        reason: state.last_proposal ? 'ready' : 'no_prior_proposal'
+    };
+}
+
+/**
+ * Update state based on wake mode
+ */
+function updateStateForMode(state, wakeMode) {
+    switch (wakeMode.mode) {
+        case 'start_execution':
+            // Approved proposal - set up execution state
+            state.current_task = {
+                proposal_id: wakeMode.proposal.id,
+                title: wakeMode.proposal.title,
+                status: 'executing',
+                started_at: new Date().toISOString(),
+                progress_updates: [],
+                blockers: [],
+                assistance_received: null
+            };
+            state.execution_state = 'executing';
+            state.current_status = 'working';
+
+            // Update last proposal status
+            if (state.last_proposal) {
+                state.last_proposal.status = 'passed';
+                state.last_proposal.feedback = wakeMode.feedback;
+            }
+
+            // Add to feedback history
+            state.feedback_history.push({
+                proposal_id: wakeMode.proposal.id,
+                title: wakeMode.proposal.title,
+                submission_type: 'proposal',
+                outcome: 'passed',
+                feedback: wakeMode.feedback,
+                responded_at: new Date().toISOString()
+            });
+
+            // Update stats
+            state.approved_proposals++;
+
+            // Add to successful patterns
+            if (!state.learned_patterns.successful_patterns.includes(wakeMode.proposal.title)) {
+                state.learned_patterns.successful_patterns.push(wakeMode.proposal.title);
+            }
+            break;
+
+        case 'continue_execution':
+            // Assistance received - update state
+            if (state.current_task) {
+                state.current_task.assistance_received = wakeMode.assistance;
+                state.current_task.status = 'executing';
+            }
+            state.execution_state = 'executing';
+            state.current_status = 'working';
+            break;
+
+        case 'propose':
+            // Ready to propose - handle rejection learning
+            if (wakeMode.reason === 'proposal_rejected' && wakeMode.proposal) {
+                // Update last proposal status
+                if (state.last_proposal) {
+                    state.last_proposal.status = 'rejected';
+                    state.last_proposal.feedback = wakeMode.feedback;
+                }
+
+                // Add to feedback history
+                state.feedback_history.push({
+                    proposal_id: wakeMode.proposal.id,
+                    title: wakeMode.proposal.title,
+                    submission_type: 'proposal',
+                    outcome: 'rejected',
+                    feedback: wakeMode.feedback,
+                    responded_at: new Date().toISOString()
+                });
+
+                // Update stats
+                state.rejected_proposals++;
+
+                // Learn from rejection
+                const patterns = extractPatternFromRejection(wakeMode.proposal, wakeMode.feedback);
+                state = addLearnedPatterns(state, patterns);
+            }
+
+            state.execution_state = 'idle';
+            state.current_status = 'idle';
+            state.current_task = null;
+            break;
+    }
+
+    return state;
+}
+
+/**
+ * Build the wake prompt based on mode
+ */
+function buildWakePrompt(wakeMode, state) {
+    let prompt = '';
+
+    switch (wakeMode.mode) {
+        case 'start_execution':
+            prompt = `Wake up. Your proposal "${wakeMode.proposal.title}" has been APPROVED!
+
+You are now in EXECUTION MODE. Execute the approved task.
+
+Work autonomously until:
+- COMPLETED: Submit a completion update
+- BLOCKED: Submit an assistance request with exactly what you need
+- PROGRESS: Continue working or stop if session is long
+
+Remember: You are a DOER now, not just a suggester. Execute the work.`;
+            break;
+
+        case 'continue_execution':
+            prompt = `Wake up. You requested assistance and it has been provided!
+
+Assistance received: "${wakeMode.assistance.response}"
+
+Continue executing your task: "${wakeMode.task.title}"
+
+Apply the provided assistance and continue working until completed or blocked again.`;
+            break;
+
+        case 'execute':
+            prompt = `Wake up. You have a task in progress: "${wakeMode.task.title}"
+
+Continue executing. Work until completed or blocked.
+
+If you need human help, submit an assistance_request with exactly what you need.`;
+            break;
+
+        case 'propose':
+            if (wakeMode.reason === 'proposal_rejected') {
+                prompt = `Wake up. Your last proposal was REJECTED.
+
+Feedback: "${wakeMode.feedback || 'No specific feedback provided'}"
+
+Learn from this feedback. Review your learned_patterns in state.json.
+Generate a NEW proposal that avoids this rejection pattern.
+Remember: Be specific, focused, and justify with metrics.`;
+            } else if (wakeMode.reason === 'no_prior_proposal') {
+                prompt = `Wake up. This is your first wake cycle!
+
+Read your telos-objective.md to understand your mission.
+Then generate your first proposal.
+
+Remember: ONE focused proposal. Be specific. Tie to metrics.`;
+            } else {
+                prompt = `Wake up. Generate your next proposal.
+
+Review your feedback history and learned patterns.
+What is the SINGLE BEST next action to achieve your telos?
+
+Remember: Be specific, justify with metrics, and ensure you can execute it autonomously.`;
+            }
+            break;
+
+        default:
+            prompt = 'Wake up and do your job. Check state.json for your current status.';
+    }
+
+    prompt += '\n\nAfter submitting (any type), STOP and wait for response.';
+
+    return prompt;
+}
+
+/**
+ * Run Claude in the agent's directory
+ */
+function runClaude(agentSlug, prompt) {
+    const agentDir = path.join(AGENTS_DIR, agentSlug);
+
+    logStep('5', `Running Claude in ${agentDir}`);
+    log(`Prompt: "${prompt.split('\n')[0]}..."`, 'dim');
 
     // Run claude command
     try {
@@ -240,9 +490,9 @@ function runClaude(agentSlug, wakeReason) {
  * Main wake function
  */
 async function wakeAgent(agentSlug) {
-    log(`\n${'='.repeat(50)}`, 'cyan');
-    log(`  SUITE Agent Wake: ${agentSlug}`, 'bright');
-    log(`${'='.repeat(50)}\n`, 'cyan');
+    log(`\n${'='.repeat(60)}`, 'cyan');
+    log(`  SUITE Agent Wake v2: ${agentSlug}`, 'bright');
+    log(`${'='.repeat(60)}\n`, 'cyan');
 
     // Validate agent exists
     const agentDir = path.join(AGENTS_DIR, agentSlug);
@@ -258,54 +508,64 @@ async function wakeAgent(agentSlug) {
     try {
         state = loadAgentState(agentSlug);
         log(`   Current status: ${state.current_status}`, 'dim');
+        log(`   Execution state: ${state.execution_state}`, 'dim');
         log(`   Total proposals: ${state.total_proposals}`, 'dim');
+        if (state.current_task) {
+            log(`   Current task: ${state.current_task.title}`, 'dim');
+        }
     } catch (err) {
         logError(`Failed to load state: ${err.message}`);
         process.exit(1);
     }
 
-    // Check if agent should wake
-    logStep('2', 'Checking if agent should wake...');
-    const wakeCheck = await shouldAgentWake(state);
+    // Determine wake mode
+    logStep('2', 'Determining wake mode...');
+    const wakeMode = await determineWakeMode(state);
+    log(`   Mode: ${wakeMode.mode}`, 'green');
+    log(`   Reason: ${wakeMode.reason}`, 'dim');
 
-    if (!wakeCheck.canWake) {
-        log(`\n${colors.yellow}Agent cannot wake: ${wakeCheck.reason}${colors.reset}`);
-        if (wakeCheck.message) {
-            log(`   ${wakeCheck.message}`, 'dim');
-        }
+    // Handle modes that don't proceed
+    if (wakeMode.mode === 'waiting') {
+        log(`\n${colors.yellow}Agent cannot wake: ${wakeMode.reason}${colors.reset}`);
+        log(`   ${wakeMode.message}`, 'dim');
         log('\nWaiting for human response on pending proposal.', 'yellow');
         process.exit(0);
     }
 
-    log(`   Can wake: ${wakeCheck.reason}`, 'green');
-
-    // Update state with feedback if received
-    if (wakeCheck.reason === 'feedback_received') {
-        logStep('3', 'Processing feedback...');
-        log(`   Status: ${wakeCheck.proposal.status}`, 'dim');
-        if (wakeCheck.feedback) {
-            log(`   Feedback: "${wakeCheck.feedback}"`, 'dim');
-        }
-
-        state = updateStateWithFeedback(state, wakeCheck.proposal, wakeCheck.feedback);
-        saveAgentState(agentSlug, state);
-        logSuccess('State updated with feedback');
-    } else {
-        logStep('3', 'No feedback to process');
+    if (wakeMode.mode === 'still_blocked') {
+        log(`\n${colors.yellow}Agent still blocked: ${wakeMode.reason}${colors.reset}`);
+        log(`   ${wakeMode.message}`, 'dim');
+        log('\nWaiting for human to provide assistance.', 'yellow');
+        process.exit(0);
     }
 
-    // Update wake timestamp
+    // Update state based on mode
+    logStep('3', 'Updating state...');
+    state = updateStateForMode(state, wakeMode);
     state.last_wake = new Date().toISOString();
     saveAgentState(agentSlug, state);
 
+    if (wakeMode.mode === 'start_execution') {
+        logInfo('Approved proposal! Starting execution mode.');
+    } else if (wakeMode.mode === 'continue_execution') {
+        logInfo('Assistance received! Continuing execution.');
+    } else if (wakeMode.reason === 'proposal_rejected') {
+        logInfo('Proposal rejected. Learning from feedback.');
+    }
+
+    // Build and run prompt
+    logStep('4', 'Building wake prompt...');
+    const prompt = buildWakePrompt(wakeMode, state);
+
     // Run Claude
-    runClaude(agentSlug, wakeCheck.reason);
+    runClaude(agentSlug, prompt);
 }
 
 // CLI Entry Point
 const args = process.argv.slice(2);
 
 if (args.length === 0) {
+    log('\nSUITE Agent Wake Script v2 - Execution Mode', 'bright');
     log('\nUsage: node wake-agent.js <agent-slug>', 'yellow');
     log('\nExample:', 'dim');
     log('  node wake-agent.js foodvitals-agent', 'dim');
@@ -317,6 +577,11 @@ if (args.length === 0) {
         );
         agents.forEach(a => log(`  - ${a}`, 'dim'));
     }
+
+    log('\nv2 Features:', 'cyan');
+    log('  - Execution mode: agents execute approved tasks', 'dim');
+    log('  - Assistance requests: agents ask for help when blocked', 'dim');
+    log('  - Pattern learning: agents learn from rejected proposals', 'dim');
 
     process.exit(1);
 }

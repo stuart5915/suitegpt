@@ -2187,6 +2187,179 @@
             border-left: 3px solid #a855f7;
         }
 
+        /* Submission Type Badges (v2) */
+        .submission-type-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 100px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: 6px;
+        }
+
+        .submission-type-badge.proposal {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.2));
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.4);
+        }
+
+        .submission-type-badge.work_update {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(22, 163, 74, 0.2));
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.4);
+        }
+
+        .submission-type-badge.assistance_request {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.2));
+            color: #fbbf24;
+            border: 1px solid rgba(251, 191, 36, 0.4);
+        }
+
+        .submission-type-badge.completion {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(139, 92, 246, 0.2));
+            color: #a855f7;
+            border: 1px solid rgba(168, 85, 247, 0.4);
+        }
+
+        /* Assistance Request Section */
+        .assistance-request-section {
+            margin-top: 12px;
+            padding: 12px;
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.05));
+            border-radius: 8px;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .assistance-request-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #fbbf24;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .assistance-needed-text {
+            font-size: 0.85rem;
+            color: var(--text);
+            padding: 10px;
+            background: var(--bg-elevated);
+            border-radius: 6px;
+            border-left: 3px solid #fbbf24;
+            margin-bottom: 10px;
+        }
+
+        .assistance-response-input {
+            width: 100%;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px;
+            color: var(--text);
+            font-size: 0.85rem;
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .assistance-response-input:focus {
+            outline: none;
+            border-color: #fbbf24;
+        }
+
+        .assistance-response-input::placeholder {
+            color: var(--text-dim);
+        }
+
+        .assistance-btn {
+            margin-top: 8px;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #000;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .assistance-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+        }
+
+        .assistance-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Completion Display */
+        .completion-display {
+            margin-top: 12px;
+            padding: 12px;
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(139, 92, 246, 0.05));
+            border-radius: 8px;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+        }
+
+        .completion-display-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #a855f7;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Execution State Indicator */
+        .agent-execution-state {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-left: 8px;
+        }
+
+        .agent-execution-state.executing {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .agent-execution-state.blocked {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+        }
+
+        .agent-execution-state.idle {
+            background: rgba(148, 163, 184, 0.2);
+            color: #94a3b8;
+        }
+
+        /* Assistance Provided Display */
+        .assistance-provided-display {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            padding: 10px;
+            background: var(--bg-elevated);
+            border-radius: 6px;
+            border-left: 3px solid #22c55e;
+            margin-top: 10px;
+        }
+
+        .assistance-provided-display strong {
+            color: #22c55e;
+        }
+
         .agent-feedback-display strong {
             color: var(--text);
         }
@@ -5364,11 +5537,30 @@
             const rejectionReason = proposal.reject_reason || proposal.rejection_reason;
             const agentFeedback = proposal.agent_feedback;
 
-            // Agent badge
+            // Get submission type (v2)
+            const submissionType = proposal.submission_type || 'proposal';
+            const submissionTypeLabels = {
+                'proposal': 'Proposal',
+                'work_update': 'Update',
+                'assistance_request': 'Help Needed',
+                'completion': 'Completed'
+            };
+            const submissionTypeEmojis = {
+                'proposal': '📝',
+                'work_update': '📊',
+                'assistance_request': '🆘',
+                'completion': '✅'
+            };
+
+            // Agent badge with submission type
             let agentBadge = '';
             if (isFromAgent) {
                 const agentSlug = proposal.author?.agent_slug || '';
                 agentBadge = `<span class="agent-badge"><a href="#" onclick="event.stopPropagation(); event.preventDefault(); showAgentProfile('${escapeHtml(agentSlug)}')" title="View agent profile">AI Agent</a></span>`;
+                // Add submission type badge for agents
+                if (submissionType !== 'proposal') {
+                    agentBadge += `<span class="submission-type-badge ${submissionType}">${submissionTypeEmojis[submissionType]} ${submissionTypeLabels[submissionType]}</span>`;
+                }
             }
 
             // Get app name if proposal is linked to an app, or show New App tag
@@ -5383,19 +5575,58 @@
                 }
             }
 
-            // Agent feedback section for admins
-            let agentFeedbackSection = '';
+            // Agent response section based on submission type (v2)
+            let agentResponseSection = '';
             if (isFromAgent && isAdmin && ['submitted', 'open_voting'].includes(proposal.status)) {
-                agentFeedbackSection = `
-                    <div class="agent-feedback-section" onclick="event.stopPropagation()">
-                        <div class="agent-feedback-label">Respond to Agent</div>
-                        <textarea class="agent-feedback-input" id="agent-feedback-${proposal.id}" placeholder="Optional: Add feedback for the agent (will be visible to the agent for learning)..."></textarea>
-                        <div style="display: flex; gap: 8px; margin-top: 8px;">
-                            <button class="agent-feedback-btn" style="background: linear-gradient(135deg, #22c55e, #16a34a);" onclick="respondToAgent('${proposal.id}', 'passed')">Approve</button>
-                            <button class="agent-feedback-btn" style="background: linear-gradient(135deg, #ef4444, #dc2626);" onclick="respondToAgent('${proposal.id}', 'rejected')">Reject</button>
+                if (submissionType === 'assistance_request') {
+                    // Assistance request - show help form
+                    agentResponseSection = `
+                        <div class="assistance-request-section" onclick="event.stopPropagation()">
+                            <div class="assistance-request-label">🆘 Agent Needs Help</div>
+                            ${proposal.assistance_needed ? `<div class="assistance-needed-text">${escapeHtml(proposal.assistance_needed)}</div>` : ''}
+                            <textarea class="assistance-response-input" id="assistance-response-${proposal.id}" placeholder="Provide the assistance the agent needs (e.g., API key, credentials, guidance)..."></textarea>
+                            <div style="display: flex; gap: 8px; margin-top: 8px;">
+                                <button class="assistance-btn" onclick="provideAssistance('${proposal.id}')">Provide Assistance</button>
+                                <button class="agent-feedback-btn" style="background: linear-gradient(135deg, #64748b, #475569);" onclick="respondToAgent('${proposal.id}', 'rejected')">Can't Help Now</button>
+                            </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                } else if (submissionType === 'completion') {
+                    // Completion - show confirm/request changes
+                    agentResponseSection = `
+                        <div class="completion-display" onclick="event.stopPropagation()">
+                            <div class="completion-display-label">✅ Agent Reports Task Complete</div>
+                            <textarea class="agent-feedback-input" id="agent-feedback-${proposal.id}" placeholder="Optional: Add feedback or request changes..."></textarea>
+                            <div style="display: flex; gap: 8px; margin-top: 8px;">
+                                <button class="agent-feedback-btn" style="background: linear-gradient(135deg, #22c55e, #16a34a);" onclick="respondToAgent('${proposal.id}', 'implemented')">Confirm Done</button>
+                                <button class="agent-feedback-btn" style="background: linear-gradient(135deg, #f59e0b, #d97706);" onclick="respondToAgent('${proposal.id}', 'passed')">Request Changes</button>
+                            </div>
+                        </div>
+                    `;
+                } else if (submissionType === 'work_update') {
+                    // Work update - just acknowledge
+                    agentResponseSection = `
+                        <div class="agent-feedback-section" onclick="event.stopPropagation()">
+                            <div class="agent-feedback-label">📊 Progress Update</div>
+                            <textarea class="agent-feedback-input" id="agent-feedback-${proposal.id}" placeholder="Optional: Add feedback or guidance..."></textarea>
+                            <div style="display: flex; gap: 8px; margin-top: 8px;">
+                                <button class="agent-feedback-btn" style="background: linear-gradient(135deg, #22c55e, #16a34a);" onclick="respondToAgent('${proposal.id}', 'passed')">Acknowledge</button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Regular proposal - approve/reject
+                    agentResponseSection = `
+                        <div class="agent-feedback-section" onclick="event.stopPropagation()">
+                            <div class="agent-feedback-label">Respond to Agent</div>
+                            <textarea class="agent-feedback-input" id="agent-feedback-${proposal.id}" placeholder="Optional: Add feedback for the agent (will be visible to the agent for learning)..."></textarea>
+                            <div style="display: flex; gap: 8px; margin-top: 8px;">
+                                <button class="agent-feedback-btn" style="background: linear-gradient(135deg, #22c55e, #16a34a);" onclick="respondToAgent('${proposal.id}', 'passed')">Approve</button>
+                                <button class="agent-feedback-btn" style="background: linear-gradient(135deg, #ef4444, #dc2626);" onclick="respondToAgent('${proposal.id}', 'rejected')">Reject</button>
+                            </div>
+                        </div>
+                    `;
+                }
             }
 
             // Show agent feedback if already responded
@@ -5404,6 +5635,15 @@
                 agentFeedbackDisplay = `
                     <div class="agent-feedback-display">
                         <strong>Agent Feedback:</strong> ${escapeHtml(agentFeedback)}
+                    </div>
+                `;
+            }
+
+            // Show assistance provided if applicable
+            if (isFromAgent && proposal.assistance_response && proposal.assistance_provided_at) {
+                agentFeedbackDisplay += `
+                    <div class="assistance-provided-display">
+                        <strong>Assistance Provided:</strong> ${escapeHtml(proposal.assistance_response)}
                     </div>
                 `;
             }
@@ -5428,7 +5668,7 @@
                         ${proposal.status === 'rejected' && rejectionReason ? `<div class="rejection-reason">${escapeHtml(rejectionReason)}</div>` : ''}
                         ${agentFeedbackDisplay}
                         ${proposal.status === 'working_on' ? `<button class="work-btn" disabled>Get to work</button>` : ''}
-                        ${agentFeedbackSection}
+                        ${agentResponseSection}
                         <div class="vote-buttons">
                             <button class="vote-btn for" onclick="event.stopPropagation(); addVote('${proposal.id}')" ${!canVote ? 'disabled' : ''} title="Add vote (${nextVoteCost === 0 ? 'FREE' : nextVoteCost + ' credits'})">
                                 👍 <span class="vote-count">${votesFor}</span>
@@ -5509,6 +5749,57 @@
             } catch (err) {
                 console.error('Error responding to agent:', err);
                 alert('Failed to respond to agent proposal');
+            }
+        }
+
+        // Provide assistance to a blocked agent (v2)
+        async function provideAssistance(proposalId) {
+            if (!currentUser || !currentUser.is_founder) {
+                alert('Only founders can provide assistance');
+                return;
+            }
+
+            const responseInput = document.getElementById(`assistance-response-${proposalId}`);
+            const assistanceResponse = responseInput ? responseInput.value.trim() : '';
+
+            if (!assistanceResponse) {
+                alert('Please provide the assistance the agent needs (API key, credentials, guidance, etc.)');
+                return;
+            }
+
+            try {
+                const updateData = {
+                    status: 'passed',
+                    assistance_response: assistanceResponse,
+                    assistance_provided_at: new Date().toISOString(),
+                    agent_feedback: 'Assistance provided. Continue with your task.',
+                    feedback_at: new Date().toISOString()
+                };
+
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/factory_proposals?id=eq.${proposalId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify(updateData)
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error('Failed to provide assistance');
+                }
+
+                showNotification('Assistance provided! Agent will continue execution on next wake.');
+                await loadProposals('governance');
+
+            } catch (err) {
+                console.error('Error providing assistance:', err);
+                alert('Failed to provide assistance');
             }
         }
 
