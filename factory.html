@@ -5564,13 +5564,19 @@
             element.classList.toggle('expanded');
         }
 
+        // Telos file paths by agent
+        const telosFilePaths = {
+            'foodvitals-agent': '/agents/foodvitals-agent/FOODVITALS_TELOS.md'
+        };
+
         // Load agent telos document
         async function loadAgentTelos(agentSlug) {
             const telosContent = document.getElementById('agentTelosContent');
 
             try {
-                // Fetch the telos-objective.md file
-                const response = await fetch(`/agents/${agentSlug}/telos-objective.md`);
+                // Fetch the telos document (use mapping or fallback)
+                const telosPath = telosFilePaths[agentSlug] || `/agents/${agentSlug}/telos-objective.md`;
+                const response = await fetch(telosPath);
 
                 if (!response.ok) {
                     throw new Error('Telos document not found');
