@@ -2649,44 +2649,532 @@
             color: var(--text);
         }
 
-        /* Telos Document */
+        /* Telos Document - Interactive Viewer */
         .agent-telos-content {
-            background: var(--bg-elevated);
-            border-radius: 12px;
-            padding: 20px;
-            max-height: 400px;
+            background: transparent;
+            max-height: 500px;
             overflow-y: auto;
-            font-size: 0.9rem;
-            line-height: 1.6;
+            padding-right: 8px;
         }
 
-        .agent-telos-content h1,
-        .agent-telos-content h2,
-        .agent-telos-content h3 {
+        /* Telos Accordion */
+        .telos-accordion {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .telos-section {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+
+        .telos-section:hover {
+            border-color: rgba(255, 140, 66, 0.3);
+        }
+
+        .telos-section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .telos-section-header:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .telos-section-icon {
+            font-size: 1.2rem;
+            width: 28px;
+            text-align: center;
+        }
+
+        .telos-section-title {
+            flex: 1;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .telos-section-badge {
+            background: var(--accent-dim);
+            color: var(--accent);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .telos-section-arrow {
+            color: var(--text-dim);
+            transition: transform 0.2s;
+            font-size: 0.8rem;
+        }
+
+        .telos-section.open .telos-section-arrow {
+            transform: rotate(180deg);
+        }
+
+        .telos-section-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .telos-section.open .telos-section-content {
+            max-height: 1000px;
+        }
+
+        .telos-section-body {
+            padding: 0 16px 16px 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        /* Mission Banner */
+        .telos-mission-banner {
+            background: linear-gradient(135deg, rgba(255, 140, 66, 0.15), rgba(168, 85, 247, 0.1));
+            border: 1px solid rgba(255, 140, 66, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .telos-mission-text {
+            font-size: 0.95rem;
             color: var(--text);
-            margin: 16px 0 8px 0;
+            line-height: 1.5;
         }
 
-        .agent-telos-content h1 { font-size: 1.3rem; }
-        .agent-telos-content h2 { font-size: 1.1rem; color: var(--accent); }
-        .agent-telos-content h3 { font-size: 1rem; }
+        .telos-mission-highlight {
+            color: var(--accent);
+            font-weight: 700;
+        }
 
-        .agent-telos-content p {
-            margin: 8px 0;
+        /* Metric Cards */
+        .telos-metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .telos-metric-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+        }
+
+        .telos-metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .telos-metric-label {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            font-weight: 500;
+        }
+
+        .telos-metric-priority {
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .telos-metric-priority.primary {
+            background: rgba(255, 140, 66, 0.2);
+            color: var(--accent);
+        }
+
+        .telos-metric-priority.high {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .telos-metric-priority.medium {
+            background: rgba(99, 102, 241, 0.2);
+            color: #818cf8;
+        }
+
+        .telos-metric-values {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 6px;
+        }
+
+        .telos-metric-current {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .telos-metric-target {
+            font-size: 0.8rem;
             color: var(--text-dim);
         }
 
-        .agent-telos-content ul, .agent-telos-content ol {
-            margin: 8px 0;
-            padding-left: 20px;
+        .telos-metric-bar {
+            height: 4px;
+            background: var(--bg-surface);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .telos-metric-progress {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), #fbbf24);
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+
+        /* Feature Cards */
+        .telos-features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .telos-feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px;
+        }
+
+        .telos-feature-card.primary {
+            border-color: rgba(255, 140, 66, 0.3);
+        }
+
+        .telos-feature-card.secondary {
+            opacity: 0.8;
+        }
+
+        .telos-feature-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .telos-feature-num {
+            background: var(--accent);
+            color: #000;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .telos-feature-card.secondary .telos-feature-num {
+            background: var(--text-dim);
+        }
+
+        .telos-feature-name {
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .telos-feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .telos-feature-list li {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            padding: 3px 0;
+            padding-left: 14px;
+            position: relative;
+        }
+
+        .telos-feature-list li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: var(--accent);
+        }
+
+        /* Priority Cards */
+        .telos-priorities {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .telos-priority-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 14px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .telos-priority-num {
+            background: linear-gradient(135deg, var(--accent), #fbbf24);
+            color: #000;
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .telos-priority-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .telos-priority-title {
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+        }
+
+        .telos-priority-desc {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-bottom: 6px;
+        }
+
+        .telos-priority-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .telos-priority-item {
+            background: var(--bg-elevated);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.7rem;
             color: var(--text-dim);
         }
 
-        .agent-telos-content li {
-            margin: 4px 0;
+        /* Feedback Section */
+        .telos-feedback-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 12px;
         }
 
-        .agent-telos-content strong {
+        @media (max-width: 500px) {
+            .telos-feedback-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .telos-feedback-col h4 {
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .telos-feedback-col.complaints h4 {
+            color: #ef4444;
+        }
+
+        .telos-feedback-col.requests h4 {
+            color: #22c55e;
+        }
+
+        .telos-feedback-item {
+            background: var(--bg-card);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 6px;
+            font-size: 0.8rem;
+        }
+
+        .telos-feedback-item.complaint {
+            border-left: 3px solid #ef4444;
+        }
+
+        .telos-feedback-item.request {
+            border-left: 3px solid #22c55e;
+        }
+
+        .telos-feedback-text {
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .telos-feedback-stat {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+        }
+
+        /* Patterns Section */
+        .telos-patterns-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        @media (max-width: 500px) {
+            .telos-patterns-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .telos-patterns-col h4 {
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .telos-patterns-col.rejection h4 {
+            color: #ef4444;
+        }
+
+        .telos-patterns-col.approval h4 {
+            color: #22c55e;
+        }
+
+        .telos-pattern-group {
+            background: var(--bg-card);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 8px;
+        }
+
+        .telos-pattern-group h5 {
+            font-size: 0.75rem;
+            color: var(--text);
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .telos-pattern-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .telos-pattern-list li {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            padding: 2px 0;
+            padding-left: 16px;
+            position: relative;
+        }
+
+        .telos-patterns-col.rejection .telos-pattern-list li::before {
+            content: '✗';
+            position: absolute;
+            left: 0;
+            color: #ef4444;
+        }
+
+        .telos-patterns-col.approval .telos-pattern-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #22c55e;
+        }
+
+        /* Scope Section */
+        .telos-scope-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        @media (max-width: 600px) {
+            .telos-scope-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .telos-scope-card {
+            background: var(--bg-card);
+            border-radius: 10px;
+            padding: 12px;
+        }
+
+        .telos-scope-card h4 {
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .telos-scope-card.approved h4 { color: #22c55e; }
+        .telos-scope-card.caution h4 { color: #fbbf24; }
+        .telos-scope-card.blocked h4 { color: #ef4444; }
+
+        .telos-scope-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .telos-scope-list li {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            padding: 3px 0;
+        }
+
+        /* Remember Section */
+        .telos-remember {
+            margin-top: 12px;
+        }
+
+        .telos-remember-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .telos-remember-item:last-child {
+            border-bottom: none;
+        }
+
+        .telos-remember-icon {
+            color: var(--accent);
+        }
+
+        .telos-remember-text {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        .telos-remember-text strong {
             color: var(--text);
         }
 
@@ -5570,33 +6058,127 @@
             element.classList.toggle('expanded');
         }
 
-        // Telos file paths by agent
-        const telosFilePaths = {
-            'foodvitals-agent': '/agents/foodvitals-agent/FOODVITALS_TELOS.md'
+        // Structured telos data for interactive rendering
+        const telosData = {
+            'foodvitals-agent': {
+                appName: 'FoodVitals',
+                tagline: 'Weekly meal tracking and AI nutritional insights app',
+                mission: 'Grow FoodVitals to <span class="telos-mission-highlight">10,000 monthly active users</span> and establish it as the premier meal tracking and AI nutrition insights app in the SUITE ecosystem.',
+                howItWorks: [
+                    { step: 'Meal Logging', desc: 'Users log meals throughout the week' },
+                    { step: 'Nutrient Analysis', desc: 'AI analyzes micro/macro intake' },
+                    { step: 'Gap Detection', desc: 'Identifies missing nutrients' },
+                    { step: 'Smart Suggestions', desc: 'Personalized recommendations' }
+                ],
+                metrics: [
+                    { label: 'Monthly Active Users', current: '~500', target: '10,000', priority: 'primary', progress: 5 },
+                    { label: 'App Store Rating', current: '4.2', target: '4.5+', priority: 'high', progress: 93 },
+                    { label: 'Monthly Revenue', current: '$200', target: '$5,000', priority: 'medium', progress: 4 },
+                    { label: '30-Day Retention', current: '~25%', target: '40%', priority: 'high', progress: 63 },
+                    { label: 'Weekly Meals/User', current: '5', target: '15+', priority: 'high', progress: 33 },
+                    { label: 'Premium Conversion', current: '2%', target: '8%', priority: 'medium', progress: 25 }
+                ],
+                features: {
+                    primary: [
+                        { num: 1, name: 'Meal Logging & Tracking', items: ['Log meals weekly', 'Build eating patterns', 'Photo-based logging', 'Quick-add common foods'] },
+                        { num: 2, name: 'Nutrient Gap Analysis', items: ['Micro/macro breakdown', 'Visual gap identification', 'Trend tracking', 'Deficiency alerts'] },
+                        { num: 3, name: 'AI Recommendations', items: ['Personalized food suggestions', 'Meal ideas', 'Alternative foods', 'Goal alignment'] },
+                        { num: 4, name: 'Profile & Goals', items: ['Nutrition targets', 'Dietary preferences', 'Allergen exclusions', 'Health conditions'] }
+                    ],
+                    secondary: [
+                        { num: 5, name: 'Food Label Scanning', items: ['Scan to log', 'OCR extraction', 'Barcode fallback', 'Ingredient breakdown'] },
+                        { num: 6, name: 'Health Scoring', items: ['Per-food scores', 'Quality analysis', 'Additive warnings'] }
+                    ]
+                },
+                priorities: [
+                    { num: 1, title: 'Core Meal Tracking', desc: 'Make logging meals fast and valuable', items: ['Frictionless logging', 'Smart suggestions', 'Nutrition dashboard', 'Gap visualization'] },
+                    { num: 2, title: 'AI Nutrition Insights', desc: 'Personalized intelligence for retention', items: ['Gap analysis', 'Food recommendations', 'Meal planning', 'Health trends'] },
+                    { num: 3, title: 'Profile & Goals', desc: 'Personalization for relevance', items: ['Nutrition goals', 'Diet preferences', 'Allergen management'] },
+                    { num: 4, title: 'Scanning & Quick Entry', desc: 'Reduce friction', items: ['Fast scanning', 'Better OCR', 'Barcode fallback', 'Offline mode'] },
+                    { num: 5, title: 'Organic Discovery', desc: 'Drive organic growth', items: ['Shareable cards', 'Educational content', 'Social features'] },
+                    { num: 6, title: 'Ecosystem Integration', desc: 'Connect with SUITE apps', items: ['Cheshbon receipts', 'OpticRep workouts', 'RemCast reminders'] },
+                    { num: 7, title: 'Monetization', desc: 'Sustainable revenue', items: ['Premium features', 'Family plans', 'API access'] }
+                ],
+                feedback: {
+                    complaints: [
+                        { text: 'Scanning is slow on some labels', stat: '23% of negative feedback' },
+                        { text: "Doesn't recognize store brands", stat: '18% of negative feedback' },
+                        { text: 'Want more detailed breakdown', stat: '15% of negative feedback' },
+                        { text: 'Crashes when scanning multiple items', stat: '12% of negative feedback' }
+                    ],
+                    requests: [
+                        { text: 'Barcode scanning option' },
+                        { text: 'Save favorite products' },
+                        { text: 'Compare products side-by-side' },
+                        { text: 'Family sharing' },
+                        { text: 'Health app integration' },
+                        { text: 'Weekly meal planning' },
+                        { text: 'Better gap visualization' }
+                    ]
+                },
+                scope: {
+                    approved: ['Feature improvements', 'Bug fixes', 'UX improvements', 'Content initiatives', 'Integrations', 'Pricing changes', 'Partnerships'],
+                    caution: ['Major architecture changes', 'Third-party integrations', 'Cross-app changes', 'Pricing model changes'],
+                    blocked: ['SUITE infrastructure', 'Token/crypto features', 'Hiring decisions', 'Budget allocation']
+                },
+                patterns: {
+                    rejection: [
+                        { title: 'Too Broad', items: ['Multiple unrelated features', 'Complete redesigns', 'Many platforms at once'] },
+                        { title: 'Wrong Priority', items: ['Marketing before core fixes', 'Nice-to-have before must-have', 'Complex before simple'] },
+                        { title: 'Missing Justification', items: ['No user data cited', 'No expected impact', 'No business rationale'] }
+                    ],
+                    approval: [
+                        { title: 'Focused Scope', items: ['Single specific feature', 'Clear start/end points', 'One iteration achievable'] },
+                        { title: 'Strong Justification', items: ['Tied to user feedback', 'Connected to metrics', 'Clear expected impact'] },
+                        { title: 'Practical Approach', items: ['Realistic plan', 'Builds on existing', 'Minimal dependencies'] }
+                    ]
+                },
+                remember: [
+                    'Every proposal should tie back to <strong>success metrics</strong>',
+                    '<strong>Small, focused</strong> proposals are better than large, vague ones',
+                    'Learn from rejection - it\'s <strong>data, not failure</strong>',
+                    'Ultimate goal is <strong>USER VALUE</strong>, metrics follow',
+                    'FoodVitals is about <strong>meal tracking + AI insights</strong>, not just label scanning'
+                ]
+            }
         };
 
-        // Load agent telos document
+        // Load agent telos document - interactive version
         async function loadAgentTelos(agentSlug) {
             const telosContent = document.getElementById('agentTelosContent');
+            const data = telosData[agentSlug];
 
+            if (!data) {
+                // Fallback to markdown rendering for unknown agents
+                await loadAgentTelosFallback(agentSlug, telosContent);
+                return;
+            }
+
+            // Render interactive telos
+            telosContent.innerHTML = renderInteractiveTelos(data);
+
+            // Add accordion functionality
+            telosContent.querySelectorAll('.telos-section-header').forEach(header => {
+                header.addEventListener('click', () => {
+                    const section = header.closest('.telos-section');
+                    section.classList.toggle('open');
+                });
+            });
+
+            // Open first section by default
+            const firstSection = telosContent.querySelector('.telos-section');
+            if (firstSection) firstSection.classList.add('open');
+        }
+
+        // Fallback for agents without structured data
+        async function loadAgentTelosFallback(agentSlug, telosContent) {
             try {
-                // Fetch the telos document (use mapping or fallback)
-                const telosPath = telosFilePaths[agentSlug] || `/agents/${agentSlug}/telos-objective.md`;
+                const telosPath = `/agents/${agentSlug}/FOODVITALS_TELOS.md`;
                 const response = await fetch(telosPath);
-
-                if (!response.ok) {
-                    throw new Error('Telos document not found');
-                }
-
+                if (!response.ok) throw new Error('Not found');
                 const markdown = await response.text();
-
-                // Simple markdown to HTML conversion
-                const html = convertMarkdownToHtml(markdown);
-                telosContent.innerHTML = html;
-
+                telosContent.innerHTML = convertMarkdownToHtml(markdown);
             } catch (err) {
-                console.error('Error loading telos:', err);
-                // Fallback to database telos_objective
                 if (currentAgentProfile?.telos_objective) {
                     telosContent.innerHTML = `<p>${escapeHtml(currentAgentProfile.telos_objective)}</p>`;
                 } else {
@@ -5605,35 +6187,282 @@
             }
         }
 
-        // Simple markdown to HTML converter
+        // Render interactive telos viewer
+        function renderInteractiveTelos(data) {
+            return `
+                <div class="telos-mission-banner">
+                    <div class="telos-mission-text">${data.mission}</div>
+                </div>
+
+                <div class="telos-accordion">
+                    <!-- What is FoodVitals -->
+                    <div class="telos-section">
+                        <div class="telos-section-header">
+                            <span class="telos-section-icon">🍎</span>
+                            <span class="telos-section-title">What is ${data.appName}?</span>
+                            <span class="telos-section-badge">${data.tagline.split(' ').slice(0, 3).join(' ')}</span>
+                            <span class="telos-section-arrow">▼</span>
+                        </div>
+                        <div class="telos-section-content">
+                            <div class="telos-section-body">
+                                <p style="color: var(--text-dim); margin-bottom: 12px; font-size: 0.85rem;">${data.tagline}</p>
+                                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+                                    ${data.howItWorks.map((step, i) => `
+                                        <div style="text-align: center; padding: 10px; background: var(--bg-card); border-radius: 8px;">
+                                            <div style="font-size: 1.2rem; margin-bottom: 4px;">${['📝', '🔬', '🔍', '💡'][i]}</div>
+                                            <div style="font-size: 0.75rem; font-weight: 600; margin-bottom: 2px;">${step.step}</div>
+                                            <div style="font-size: 0.65rem; color: var(--text-dim);">${step.desc}</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Success Metrics -->
+                    <div class="telos-section">
+                        <div class="telos-section-header">
+                            <span class="telos-section-icon">📊</span>
+                            <span class="telos-section-title">Success Metrics</span>
+                            <span class="telos-section-badge">${data.metrics.length} KPIs</span>
+                            <span class="telos-section-arrow">▼</span>
+                        </div>
+                        <div class="telos-section-content">
+                            <div class="telos-section-body">
+                                <div class="telos-metrics-grid">
+                                    ${data.metrics.map(m => `
+                                        <div class="telos-metric-card">
+                                            <div class="telos-metric-header">
+                                                <span class="telos-metric-label">${m.label}</span>
+                                                <span class="telos-metric-priority ${m.priority}">${m.priority}</span>
+                                            </div>
+                                            <div class="telos-metric-values">
+                                                <span class="telos-metric-current">${m.current}</span>
+                                                <span class="telos-metric-target">→ ${m.target}</span>
+                                            </div>
+                                            <div class="telos-metric-bar">
+                                                <div class="telos-metric-progress" style="width: ${m.progress}%"></div>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Core Features -->
+                    <div class="telos-section">
+                        <div class="telos-section-header">
+                            <span class="telos-section-icon">⚡</span>
+                            <span class="telos-section-title">Core Features</span>
+                            <span class="telos-section-badge">${data.features.primary.length + data.features.secondary.length} features</span>
+                            <span class="telos-section-arrow">▼</span>
+                        </div>
+                        <div class="telos-section-content">
+                            <div class="telos-section-body">
+                                <div style="font-size: 0.75rem; color: var(--accent); font-weight: 600; margin-bottom: 8px;">PRIMARY FEATURES</div>
+                                <div class="telos-features-grid">
+                                    ${data.features.primary.map(f => `
+                                        <div class="telos-feature-card primary">
+                                            <div class="telos-feature-header">
+                                                <span class="telos-feature-num">${f.num}</span>
+                                                <span class="telos-feature-name">${f.name}</span>
+                                            </div>
+                                            <ul class="telos-feature-list">
+                                                ${f.items.map(item => `<li>${item}</li>`).join('')}
+                                            </ul>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <div style="font-size: 0.75rem; color: var(--text-dim); font-weight: 600; margin: 16px 0 8px;">SECONDARY FEATURES</div>
+                                <div class="telos-features-grid">
+                                    ${data.features.secondary.map(f => `
+                                        <div class="telos-feature-card secondary">
+                                            <div class="telos-feature-header">
+                                                <span class="telos-feature-num">${f.num}</span>
+                                                <span class="telos-feature-name">${f.name}</span>
+                                            </div>
+                                            <ul class="telos-feature-list">
+                                                ${f.items.map(item => `<li>${item}</li>`).join('')}
+                                            </ul>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Strategic Priorities -->
+                    <div class="telos-section">
+                        <div class="telos-section-header">
+                            <span class="telos-section-icon">🎯</span>
+                            <span class="telos-section-title">Strategic Priorities</span>
+                            <span class="telos-section-badge">${data.priorities.length} priorities</span>
+                            <span class="telos-section-arrow">▼</span>
+                        </div>
+                        <div class="telos-section-content">
+                            <div class="telos-section-body">
+                                <div class="telos-priorities">
+                                    ${data.priorities.map(p => `
+                                        <div class="telos-priority-card">
+                                            <div class="telos-priority-num">${p.num}</div>
+                                            <div class="telos-priority-content">
+                                                <div class="telos-priority-title">${p.title}</div>
+                                                <div class="telos-priority-desc">${p.desc}</div>
+                                                <div class="telos-priority-items">
+                                                    ${p.items.map(item => `<span class="telos-priority-item">${item}</span>`).join('')}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- User Feedback -->
+                    <div class="telos-section">
+                        <div class="telos-section-header">
+                            <span class="telos-section-icon">💬</span>
+                            <span class="telos-section-title">User Feedback</span>
+                            <span class="telos-section-badge">${data.feedback.complaints.length + data.feedback.requests.length} items</span>
+                            <span class="telos-section-arrow">▼</span>
+                        </div>
+                        <div class="telos-section-content">
+                            <div class="telos-section-body">
+                                <div class="telos-feedback-grid">
+                                    <div class="telos-feedback-col complaints">
+                                        <h4>🔴 Top Complaints</h4>
+                                        ${data.feedback.complaints.map(c => `
+                                            <div class="telos-feedback-item complaint">
+                                                <div class="telos-feedback-text">"${c.text}"</div>
+                                                <div class="telos-feedback-stat">${c.stat}</div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                    <div class="telos-feedback-col requests">
+                                        <h4>🟢 Top Requests</h4>
+                                        ${data.feedback.requests.map(r => `
+                                            <div class="telos-feedback-item request">
+                                                <div class="telos-feedback-text">${r.text}</div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- What You Can Propose -->
+                    <div class="telos-section">
+                        <div class="telos-section-header">
+                            <span class="telos-section-icon">📋</span>
+                            <span class="telos-section-title">What You Can Propose</span>
+                            <span class="telos-section-arrow">▼</span>
+                        </div>
+                        <div class="telos-section-content">
+                            <div class="telos-section-body">
+                                <div class="telos-scope-grid">
+                                    <div class="telos-scope-card approved">
+                                        <h4>✅ Approved</h4>
+                                        <ul class="telos-scope-list">
+                                            ${data.scope.approved.map(item => `<li>${item}</li>`).join('')}
+                                        </ul>
+                                    </div>
+                                    <div class="telos-scope-card caution">
+                                        <h4>⚠️ Needs Justification</h4>
+                                        <ul class="telos-scope-list">
+                                            ${data.scope.caution.map(item => `<li>${item}</li>`).join('')}
+                                        </ul>
+                                    </div>
+                                    <div class="telos-scope-card blocked">
+                                        <h4>🚫 Out of Scope</h4>
+                                        <ul class="telos-scope-list">
+                                            ${data.scope.blocked.map(item => `<li>${item}</li>`).join('')}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Learned Patterns -->
+                    <div class="telos-section">
+                        <div class="telos-section-header">
+                            <span class="telos-section-icon">🧠</span>
+                            <span class="telos-section-title">Learned Patterns</span>
+                            <span class="telos-section-badge">Do's & Don'ts</span>
+                            <span class="telos-section-arrow">▼</span>
+                        </div>
+                        <div class="telos-section-content">
+                            <div class="telos-section-body">
+                                <div class="telos-patterns-grid">
+                                    <div class="telos-patterns-col rejection">
+                                        <h4>❌ Leads to Rejection</h4>
+                                        ${data.patterns.rejection.map(p => `
+                                            <div class="telos-pattern-group">
+                                                <h5>${p.title}</h5>
+                                                <ul class="telos-pattern-list">
+                                                    ${p.items.map(item => `<li>${item}</li>`).join('')}
+                                                </ul>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                    <div class="telos-patterns-col approval">
+                                        <h4>✅ Leads to Approval</h4>
+                                        ${data.patterns.approval.map(p => `
+                                            <div class="telos-pattern-group">
+                                                <h5>${p.title}</h5>
+                                                <ul class="telos-pattern-list">
+                                                    ${p.items.map(item => `<li>${item}</li>`).join('')}
+                                                </ul>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Remember -->
+                    <div class="telos-section">
+                        <div class="telos-section-header">
+                            <span class="telos-section-icon">💡</span>
+                            <span class="telos-section-title">Remember</span>
+                            <span class="telos-section-badge">Key Principles</span>
+                            <span class="telos-section-arrow">▼</span>
+                        </div>
+                        <div class="telos-section-content">
+                            <div class="telos-section-body">
+                                <div class="telos-remember">
+                                    ${data.remember.map(item => `
+                                        <div class="telos-remember-item">
+                                            <span class="telos-remember-icon">→</span>
+                                            <span class="telos-remember-text">${item}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Simple markdown to HTML converter (fallback)
         function convertMarkdownToHtml(markdown) {
             let html = escapeHtml(markdown);
-
-            // Headers
             html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
             html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
             html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
-
-            // Bold
             html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-
-            // Italic
             html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-
-            // Lists
             html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
             html = html.replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>');
-
-            // Wrap consecutive li elements in ul
             html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
-
-            // Paragraphs (lines that aren't headers or lists)
             html = html.replace(/^(?!<[hul]|<li)(.+)$/gm, '<p>$1</p>');
-
-            // Clean up empty paragraphs
             html = html.replace(/<p><\/p>/g, '');
             html = html.replace(/<p>\s*<\/p>/g, '');
-
             return html;
         }
 
