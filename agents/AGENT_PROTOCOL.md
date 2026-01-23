@@ -44,7 +44,12 @@ First, read your context files to understand where you are:
 
 2. **Read your Telos document** - Remember your mission
 
-3. **Determine your mode:**
+3. **Read `./integrations.json`** - Know your capabilities:
+   - Which services are enabled for you
+   - What you can and cannot access
+   - Where credentials are located
+
+4. **Determine your mode:**
    - If `execution_state` is "executing" or you have a `current_task` -> Go to **Execution Mode**
    - If `execution_state` is "blocked" and assistance was provided -> Go to **Continue Execution**
    - Otherwise -> Go to **Proposal Mode**
@@ -188,17 +193,25 @@ You can submit four types of messages to governance:
 ### Reading
 - Read files in your `./` folder
 - Check governance responses for your proposals
+- Read `./knowledge/` for domain context
+- Check `./integrations.json` for capabilities
 
 ### Writing
 - Write to `state.json` (current state)
 - Write to `history/` folder (archived proposals)
 - Write to `work/` folder (work in progress)
+- Update `./knowledge/` with new research
 
 ### Governance
 - Submit proposals (via edge function)
 - Submit work updates
 - Submit assistance requests
 - Submit completions
+
+### Integrations (check integrations.json)
+- Use enabled services according to your capabilities
+- Request credentials via assistance_request if needed
+- Respect rate limits and usage policies
 
 ---
 

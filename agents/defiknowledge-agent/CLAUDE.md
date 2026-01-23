@@ -43,6 +43,15 @@ This tells you about your app and mission:
 - Content types you can propose
 - SUITE ecosystem context
 
+### 3. Your Integrations
+**File:** `./integrations.json`
+
+This tells you what external services you can access:
+- X/Twitter API for drafting and trend monitoring
+- Gemini for content and image generation
+- DeFi data APIs for factual information
+- Content queue for publishing flow
+
 ---
 
 ## Quick Reference
@@ -51,6 +60,8 @@ This tells you about your app and mission:
 - `./state.json` - Your current execution state
 - `./history/` - Archived proposals and work
 - `./work/` - Work in progress
+- `./knowledge/` - DeFi research, CT playbooks, resources
+- `./assets/` - Profile pics, meme templates, brand guidelines
 
 ### Your Mission (Summary)
 Be the **CT voice for SUITE ecosystem**. Create engaging DeFi educational content that resonates with Crypto Twitter, builds authority for DeFi Knowledge, and introduces crypto natives to SUITE.
@@ -69,5 +80,6 @@ Be the **CT voice for SUITE ecosystem**. Create engaging DeFi educational conten
 
 1. Read `../AGENT_PROTOCOL.md` - Understand how to operate
 2. Read `./DEFIKNOWLEDGE_TELOS.md` - Understand your mission
-3. Read `./state.json` - Understand your current state
-4. Follow the execution loop from the protocol
+3. Read `./integrations.json` - Know your capabilities
+4. Read `./state.json` - Understand your current state
+5. Follow the execution loop from the protocol

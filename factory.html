@@ -4847,7 +4847,12 @@
                 <div class="main-view" id="agentsMainView">
                     <div class="agents-container" id="agentsContainer">
                         <div class="agents-header">
-                            <h3 style="margin: 0 0 8px 0; font-weight: 700;">Autonomous AI Agents</h3>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <h3 style="margin: 0; font-weight: 700;">Autonomous AI Agents</h3>
+                                <div id="daemonStatusIndicator" style="font-size: 0.8rem; padding: 4px 10px; background: var(--bg-elevated); border-radius: 12px;">
+                                    <span style="color: var(--text-dim);">● Checking daemon...</span>
+                                </div>
+                            </div>
                             <p class="agents-description">Each agent "owns" a SUITE app and proposes improvements. You approve or reject with feedback - they learn and iterate.</p>
                         </div>
                         <div class="agents-grid" id="agentsGrid">
@@ -5146,6 +5151,33 @@
         </div>
     </div>
 
+    <!-- Daemon Offline Modal -->
+    <div class="modal-overlay" id="daemonOfflineModal">
+        <div class="modal-content" style="max-width: 480px; text-align: center;">
+            <div class="modal-header">
+                <h3 class="modal-title">⚠️ Wake Daemon Offline</h3>
+                <button class="modal-close" onclick="hideDaemonOfflineModal()">&times;</button>
+            </div>
+            <p style="color: var(--text-dim); margin-bottom: 20px; line-height: 1.6;">
+                Your wake request has been queued, but the local daemon isn't running.
+                Start the daemon to process wake requests:
+            </p>
+            <div style="background: var(--bg); border-radius: 12px; padding: 16px; margin-bottom: 20px; position: relative;">
+                <code id="daemonCommand" style="color: var(--accent); font-size: 0.95rem; font-family: 'Monaco', 'Menlo', monospace;">node scripts/wake-daemon.js</code>
+                <button onclick="copyDaemonCommand()" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem;">
+                    📋 Copy
+                </button>
+            </div>
+            <p style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 16px;">
+                The daemon polls for wake requests and executes them locally using Claude Code.
+                Keep it running in a terminal to enable dashboard wake buttons.
+            </p>
+            <div class="modal-actions" style="justify-content: center;">
+                <button type="button" class="modal-btn submit" onclick="hideDaemonOfflineModal()">Got It</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Supabase config
         const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
@@ -5372,6 +5404,17 @@
             // Load agents data when switching to agents view
             if (viewName === 'agents') {
                 loadAgents();
+                checkDaemonStatus();
+                // Start periodic daemon status check
+                if (!window.daemonCheckInterval) {
+                    window.daemonCheckInterval = setInterval(checkDaemonStatus, 10000); // Every 10 seconds
+                }
+            } else {
+                // Stop checking when leaving agents view
+                if (window.daemonCheckInterval) {
+                    clearInterval(window.daemonCheckInterval);
+                    window.daemonCheckInterval = null;
+                }
             }
         }
 
@@ -5803,17 +5846,154 @@
             `;
         }
 
-        // Wake an agent (admin only)
+        // Daemon status tracking
+        let daemonOnline = false;
+        let lastDaemonCheck = null;
+        let daemonHostname = null;
+
+        // Check if daemon is online (via heartbeat table)
+        async function checkDaemonStatus() {
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/daemon_heartbeat?id=eq.wake-daemon&select=last_heartbeat,hostname`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+                const data = await response.json();
+
+                if (data.length > 0) {
+                    const lastHeartbeat = new Date(data[0].last_heartbeat);
+                    const ageSeconds = (Date.now() - lastHeartbeat.getTime()) / 1000;
+                    // Consider online if heartbeat within last 30 seconds
+                    daemonOnline = ageSeconds < 30;
+                    daemonHostname = data[0].hostname;
+                } else {
+                    daemonOnline = false;
+                }
+
+                lastDaemonCheck = Date.now();
+                updateDaemonStatusUI();
+            } catch (err) {
+                console.log('Could not check daemon status:', err);
+                daemonOnline = false;
+                updateDaemonStatusUI();
+            }
+        }
+
+        // Update daemon status indicator in UI
+        function updateDaemonStatusUI() {
+            const indicator = document.getElementById('daemonStatusIndicator');
+            if (indicator) {
+                if (daemonOnline) {
+                    indicator.innerHTML = `<span style="color: #22c55e;">● Online</span>`;
+                    indicator.title = daemonHostname ? `Running on ${daemonHostname}` : 'Daemon is running';
+                    indicator.style.cursor = 'default';
+                } else {
+                    indicator.innerHTML = `<span style="color: #ef4444;">● Offline</span> <button onclick="showDaemonOfflineModal()" style="background: transparent; border: 1px solid var(--border); color: var(--text-dim); padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; margin-left: 6px;">Start</button>`;
+                    indicator.title = 'Daemon not running - click Start for instructions';
+                }
+            }
+        }
+
+        // Check for pending wake requests for an agent
+        async function hasPendingWakeRequest(agentSlug) {
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/agent_wake_requests?agent_slug=eq.${encodeURIComponent(agentSlug)}&status=in.(pending,processing)&limit=1`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+                const data = await response.json();
+                return data.length > 0;
+            } catch (err) {
+                return false;
+            }
+        }
+
+        // Wake an agent (admin only) - now queues a request
         async function wakeAgent(agentSlug) {
             if (!currentUser?.is_founder) {
                 alert('Only founders can wake agents');
                 return;
             }
 
-            const confirmed = confirm(`Wake ${agentSlug}? This will trigger the agent to generate a new proposal.`);
+            // Check if there's already a pending request
+            const hasPending = await hasPendingWakeRequest(agentSlug);
+            if (hasPending) {
+                showNotification('Wake request already queued for this agent', 'warning');
+                return;
+            }
+
+            const confirmed = confirm(`Wake ${agentSlug}? This will queue a wake request.`);
             if (!confirmed) return;
 
-            showNotification(`To wake ${agentSlug}, run: node scripts/wake-agent.js ${agentSlug}`);
+            try {
+                // Insert wake request into queue
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/agent_wake_requests`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify({
+                        agent_slug: agentSlug,
+                        requested_by: currentUser?.id || null
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to queue wake request');
+                }
+
+                showNotification(`Wake request queued for ${agentSlug}!`, 'success');
+
+                // Check if daemon is online
+                if (!daemonOnline) {
+                    setTimeout(() => {
+                        showDaemonOfflineModal(agentSlug);
+                    }, 500);
+                }
+
+                // Refresh agents to show updated state
+                loadAgents();
+
+            } catch (err) {
+                console.error('Error queuing wake request:', err);
+                showNotification('Failed to queue wake request: ' + err.message, 'error');
+            }
+        }
+
+        // Show modal when daemon is offline
+        function showDaemonOfflineModal(agentSlug) {
+            const modal = document.getElementById('daemonOfflineModal');
+            const command = document.getElementById('daemonCommand');
+            if (modal && command) {
+                command.textContent = 'node scripts/wake-daemon.js';
+                modal.classList.add('active');
+            }
+        }
+
+        function hideDaemonOfflineModal() {
+            const modal = document.getElementById('daemonOfflineModal');
+            if (modal) modal.classList.remove('active');
+        }
+
+        function copyDaemonCommand() {
+            const command = document.getElementById('daemonCommand')?.textContent;
+            if (command) {
+                navigator.clipboard.writeText(command);
+                showNotification('Command copied to clipboard!', 'success');
+            }
         }
 
         // Current agent being viewed in profile modal

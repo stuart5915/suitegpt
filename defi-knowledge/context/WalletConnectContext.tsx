@@ -3,8 +3,8 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { Platform } from 'react-native';
-// WalletConnect import - Metro config swaps this for a web mock when building for web
-import { useWalletConnectModal, WalletConnectModal } from '@walletconnect/modal-react-native';
+// WalletConnect import - Metro uses walletConnectImport.web.ts on web builds
+import { useWalletConnectModal, WalletConnectModal } from '@/lib/walletConnectImport';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import WalletModal from '@/components/WalletModal';
 import SuccessToast from '@/components/SuccessToast';

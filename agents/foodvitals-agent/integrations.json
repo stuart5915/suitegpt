@@ -1,0 +1,89 @@
+{
+  "$schema": "../integrations.schema.json",
+  "agent_id": "foodvitals-agent",
+  "version": "1.0",
+  "last_updated": "2026-01-23",
+
+  "_comment": "FoodVitals is an app-focused agent. Doesn't need social media access.",
+
+  "integrations": {
+    "supabase": {
+      "enabled": true,
+      "description": "SUITE governance and data backend",
+      "credentials_location": "env:SUPABASE_URL",
+      "shared": true,
+      "capabilities": ["governance_submit", "read_proposals", "read_metrics"]
+    },
+
+    "agent_api": {
+      "enabled": true,
+      "description": "Agent submission API for governance",
+      "credentials_location": "./.env:AGENT_API_KEY",
+      "shared": false,
+      "capabilities": ["submit_proposal", "submit_update", "submit_completion", "request_assistance"]
+    },
+
+    "owned_app_api": {
+      "enabled": true,
+      "description": "Read access to FoodVitals app data",
+      "app_slug": "foodvitals",
+      "credentials_location": "./.env:APP_API_KEY",
+      "shared": false,
+      "capabilities": ["read_metrics", "read_user_feedback", "read_feature_flags", "read_nutrition_data"]
+    },
+
+    "gemini": {
+      "enabled": true,
+      "description": "Google Gemini AI for content generation and analysis",
+      "credentials_location": "../.env.shared:GEMINI_API_KEY",
+      "shared": true,
+      "capabilities": ["generate_text", "analyze_content", "nutrition_analysis"],
+      "rate_limit": "60/minute",
+      "note": "Used for generating nutrition insights and content"
+    },
+
+    "x_twitter": {
+      "enabled": false,
+      "description": "Not enabled - FoodVitals doesn't manage social directly",
+      "credentials_location": null,
+      "shared": false,
+      "capabilities": [],
+      "note": "Social handled by main SUITE account or dedicated social agents"
+    },
+
+    "analytics": {
+      "enabled": true,
+      "description": "FoodVitals app analytics",
+      "credentials_location": "../.env.shared:ANALYTICS_KEY",
+      "shared": true,
+      "capabilities": ["read_metrics", "read_events", "read_funnels", "read_retention"]
+    },
+
+    "content_queue": {
+      "enabled": true,
+      "description": "Submit articles to learn section",
+      "credentials_location": "env:SUPABASE_URL",
+      "shared": true,
+      "capabilities": ["submit_article", "check_publish_status"],
+      "note": "Can propose nutrition education articles for getsuite.app/learn"
+    },
+
+    "nutrition_apis": {
+      "enabled": true,
+      "description": "External nutrition data APIs",
+      "credentials_location": "./.env:NUTRITION_API_KEY",
+      "shared": false,
+      "capabilities": ["lookup_food", "get_nutrition_facts", "barcode_lookup"],
+      "note": "OpenFoodFacts, USDA FoodData Central, etc."
+    }
+  },
+
+  "capabilities_summary": {
+    "can_draft_social": false,
+    "can_generate_images": true,
+    "can_read_analytics": true,
+    "can_submit_articles": true,
+    "can_access_app_data": true,
+    "can_submit_governance": true
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "$schema": "../integrations.schema.json",
+  "agent_id": "defiknowledge-agent",
+  "version": "1.0",
+  "last_updated": "2026-01-23",
+
+  "_comment": "DeFi Knowledge is a CT content agent. Primary focus is social content creation.",
+
+  "integrations": {
+    "supabase": {
+      "enabled": true,
+      "description": "SUITE governance and data backend",
+      "credentials_location": "env:SUPABASE_URL",
+      "shared": true,
+      "capabilities": ["governance_submit", "read_proposals", "read_metrics"]
+    },
+
+    "agent_api": {
+      "enabled": true,
+      "description": "Agent submission API for governance",
+      "credentials_location": "./.env:AGENT_API_KEY",
+      "shared": false,
+      "capabilities": ["submit_proposal", "submit_update", "submit_completion", "request_assistance"]
+    },
+
+    "owned_app_api": {
+      "enabled": true,
+      "description": "Read access to DeFi Knowledge app data",
+      "app_slug": "defi-knowledge",
+      "credentials_location": "./.env:APP_API_KEY",
+      "shared": false,
+      "capabilities": ["read_metrics", "read_user_feedback", "read_learning_progress"]
+    },
+
+    "gemini": {
+      "enabled": true,
+      "description": "Google Gemini AI for content and image generation",
+      "credentials_location": "../.env.shared:GEMINI_API_KEY",
+      "shared": true,
+      "capabilities": ["generate_text", "generate_images", "analyze_content"],
+      "rate_limit": "60/minute",
+      "note": "Primary tool for drafting threads and generating visuals"
+    },
+
+    "x_twitter": {
+      "enabled": true,
+      "description": "X/Twitter API for CT content (DRAFT ONLY)",
+      "credentials_location": "./.env:X_API_KEY,X_API_SECRET,X_ACCESS_TOKEN,X_ACCESS_SECRET",
+      "shared": false,
+      "capabilities": ["draft_tweets", "draft_threads", "read_mentions", "read_trending"],
+      "note": "Agent drafts content; human reviews and publishes. Can read CT for trend awareness."
+    },
+
+    "analytics": {
+      "enabled": true,
+      "description": "Social and app analytics",
+      "credentials_location": "../.env.shared:ANALYTICS_KEY",
+      "shared": true,
+      "capabilities": ["read_metrics", "read_social_metrics", "read_engagement"]
+    },
+
+    "content_queue": {
+      "enabled": true,
+      "description": "Content publishing queue",
+      "credentials_location": "env:SUPABASE_URL",
+      "shared": true,
+      "capabilities": ["submit_article", "submit_social_post", "check_publish_status"],
+      "note": "Submit DeFi educational articles and social content for review"
+    },
+
+    "defi_data": {
+      "enabled": true,
+      "description": "DeFi market and protocol data",
+      "credentials_location": "../.env.shared:DEFI_API_KEY",
+      "shared": true,
+      "capabilities": ["read_token_prices", "read_protocol_tvl", "read_yield_rates"],
+      "note": "DefiLlama, CoinGecko, etc. for factual DeFi data"
+    }
+  },
+
+  "capabilities_summary": {
+    "can_draft_social": true,
+    "can_generate_images": true,
+    "can_read_analytics": true,
+    "can_submit_articles": true,
+    "can_access_app_data": true,
+    "can_submit_governance": true
+  }
+}

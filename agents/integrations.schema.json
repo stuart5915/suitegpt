@@ -1,0 +1,93 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://getsuite.app/schemas/agent-integrations.json",
+  "title": "Agent Integrations Configuration",
+  "description": "Defines what external services an agent can access",
+  "type": "object",
+  "required": ["agent_id", "version", "integrations", "capabilities_summary"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Reference to this schema"
+    },
+    "agent_id": {
+      "type": "string",
+      "description": "The agent's unique identifier (slug)",
+      "pattern": "^[a-z0-9-]+$"
+    },
+    "version": {
+      "type": "string",
+      "description": "Schema version",
+      "pattern": "^[0-9]+\\.[0-9]+$"
+    },
+    "last_updated": {
+      "type": "string",
+      "description": "Date this file was last updated",
+      "format": "date"
+    },
+    "_comment": {
+      "type": "string",
+      "description": "Human-readable description"
+    },
+    "integrations": {
+      "type": "object",
+      "description": "Map of integration name to configuration",
+      "additionalProperties": {
+        "$ref": "#/definitions/integration"
+      }
+    },
+    "capabilities_summary": {
+      "type": "object",
+      "description": "Quick boolean flags for common capabilities",
+      "properties": {
+        "can_draft_social": { "type": "boolean" },
+        "can_generate_images": { "type": "boolean" },
+        "can_read_analytics": { "type": "boolean" },
+        "can_submit_articles": { "type": "boolean" },
+        "can_access_app_data": { "type": "boolean" },
+        "can_submit_governance": { "type": "boolean" }
+      }
+    }
+  },
+  "definitions": {
+    "integration": {
+      "type": "object",
+      "required": ["enabled", "description"],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether this integration is active for this agent"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of what this integration does"
+        },
+        "credentials_location": {
+          "type": "string",
+          "description": "Where to find credentials. Formats: 'env:VAR_NAME', './.env:VAR_NAME', '../.env.shared:VAR_NAME'"
+        },
+        "shared": {
+          "type": "boolean",
+          "description": "Whether this uses shared ecosystem credentials"
+        },
+        "app_slug": {
+          "type": "string",
+          "description": "For app-specific integrations, which app this connects to"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of specific capabilities this integration provides"
+        },
+        "rate_limit": {
+          "type": "string",
+          "description": "Rate limit if applicable (e.g., '60/minute')"
+        },
+        "note": {
+          "type": "string",
+          "description": "Additional notes about this integration"
+        }
+      }
+    }
+  }
+}
