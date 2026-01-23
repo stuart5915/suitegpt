@@ -1485,6 +1485,88 @@
             </div>
         </div>
 
+        <!-- ArtStu Submenu Modal -->
+        <div class="dismiss-modal" id="artStuMenuModal" style="display: none;">
+            <div class="dismiss-modal-content" style="max-width: 360px;">
+                <h3>🎨 artstu.ca</h3>
+                <p style="color: #888; font-size: 0.9rem; margin-bottom: 16px;">What would you like to do?</p>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <button class="section-option-btn" onclick="openArtStuWebsite()">
+                        <span>🌐</span> Edit Website
+                    </button>
+                    <button class="section-option-btn" onclick="openArticleRefinementModal()">
+                        <span>📝</span> Add Article + Post to X
+                    </button>
+                </div>
+                <div class="dismiss-modal-actions" style="margin-top: 16px;">
+                    <button class="cancel-btn" onclick="closeArtStuMenu()">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Article Refinement Modal -->
+        <div class="dismiss-modal" id="articleRefinementModal" style="display: none;">
+            <div class="dismiss-modal-content" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+                <h3>📝 Refine Article for artstu.ca</h3>
+                <p style="color: var(--text-dim); margin-bottom: 16px; font-size: 0.9rem;">Chat with AI to refine your article, then publish</p>
+
+                <!-- Article Fields -->
+                <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
+                    <div class="form-group">
+                        <label>Article Title</label>
+                        <input type="text" id="articleTitle" placeholder="Enter article title..." style="width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: var(--text);">
+                    </div>
+                    <div class="form-group">
+                        <label>Summary (for listing page)</label>
+                        <textarea id="articleSummary" placeholder="Brief summary for the writings page..." style="min-height: 60px;"></textarea>
+                    </div>
+                </div>
+
+                <!-- AI Chat Section -->
+                <div style="border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 16px;">
+                    <div style="background: rgba(168, 85, 247, 0.1); padding: 10px 16px; border-bottom: 1px solid var(--border);">
+                        <span style="font-weight: 600; color: #a855f7;">AI Article Refinement</span>
+                    </div>
+                    <div id="articleChatHistory" style="height: 250px; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+                        <!-- Chat messages will appear here -->
+                    </div>
+                    <div style="padding: 12px; border-top: 1px solid var(--border); display: flex; gap: 8px;">
+                        <textarea id="articleChatInput" placeholder="Ask AI to refine, expand, or adjust the article..." style="flex: 1; min-height: 50px; resize: none;"></textarea>
+                        <button onclick="sendArticleChat()" style="padding: 10px 20px; background: #a855f7; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Send</button>
+                    </div>
+                </div>
+
+                <!-- Article Content Preview -->
+                <div class="form-group">
+                    <label>Article Content</label>
+                    <textarea id="articleContent" placeholder="Article content will be generated and refined here..." style="min-height: 200px;"></textarea>
+                </div>
+
+                <!-- X Post Preview -->
+                <div class="form-group">
+                    <label>X Post Text</label>
+                    <textarea id="xPostText" placeholder="Auto-generated tweet to promote the article..." style="min-height: 80px;"></textarea>
+                    <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 4px;">
+                        <span id="xPostCharCount">0</span>/280 characters
+                    </div>
+                </div>
+
+                <!-- Generate Cover Image Toggle -->
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+                    <input type="checkbox" id="generateCoverImage" checked style="width: 18px; height: 18px;">
+                    <label for="generateCoverImage" style="cursor: pointer; color: var(--text);">Generate AI cover image</label>
+                </div>
+
+                <div class="dismiss-modal-actions" style="margin-top: 20px;">
+                    <button class="cancel-btn" onclick="closeArticleRefinementModal()">Cancel</button>
+                    <button class="confirm-btn" id="publishArticleBtn" style="background: #a855f7;" onclick="publishArticle()">
+                        <span id="publishBtnText">Publish to artstu.ca + X</span>
+                        <span id="publishBtnLoading" style="display: none;">Publishing...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Dismiss Modal -->
         <div class="dismiss-modal" id="dismissModal" style="display: none;">
             <div class="dismiss-modal-content">
@@ -1729,6 +1811,7 @@ vercel --prod
         // Supabase config
         const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
+        const GEMINI_API_KEY = 'AIzaSyDw-ukCe45NQwbQlJXiQYAGVX3P4rcWN0c';
 
         // ========================================
         // AUTH - NoteBox User Authentication
@@ -2717,7 +2800,7 @@ Format as a numbered list from most to least promising.`;
                             <button class="idea-action-btn push-to" onclick="event.stopPropagation(); togglePushDropdown('${idea.id}')" title="Push to...">📤</button>
                             <div class="push-to-menu" id="pushMenu-${idea.id}">
                                 <button onclick="event.stopPropagation(); pushTo('${idea.id}', 'suite')">◈ getSUITE Governance</button>
-                                <button onclick="event.stopPropagation(); pushTo('${idea.id}', 'artstu')">🎨 artstu.ca</button>
+                                <button onclick="event.stopPropagation(); showArtStuMenu('${idea.id}')">🎨 artstu.ca</button>
                             </div>
                         </div>
                     </div>
@@ -2783,6 +2866,338 @@ Format as a numbered list from most to least promising.`;
                 openPushModal(ideaId, target);
             }
         }
+
+        // ========================================
+        // ARTSTU ARTICLE PUBLISHING FLOW
+        // ========================================
+
+        let artStuIdeaId = null;
+        let articleChatHistory = [];
+
+        function showArtStuMenu(ideaId) {
+            document.getElementById(`pushMenu-${ideaId}`).classList.remove('active');
+            artStuIdeaId = ideaId;
+            document.getElementById('artStuMenuModal').style.display = 'flex';
+        }
+
+        function closeArtStuMenu() {
+            document.getElementById('artStuMenuModal').style.display = 'none';
+            artStuIdeaId = null;
+        }
+
+        function openArtStuWebsite() {
+            closeArtStuMenu();
+            window.open('https://artstu.ca', '_blank');
+        }
+
+        function openArticleRefinementModal() {
+            closeArtStuMenu();
+
+            const idea = ideas.find(i => i.id === artStuIdeaId);
+            if (!idea) return;
+
+            // Reset state
+            articleChatHistory = [];
+            document.getElementById('articleChatHistory').innerHTML = '';
+            document.getElementById('articleTitle').value = idea.title || '';
+            document.getElementById('articleSummary').value = '';
+            document.getElementById('articleContent').value = idea.content || idea.title || '';
+            document.getElementById('xPostText').value = '';
+            document.getElementById('articleChatInput').value = '';
+            document.getElementById('publishBtnText').style.display = 'inline';
+            document.getElementById('publishBtnLoading').style.display = 'none';
+            document.getElementById('publishArticleBtn').disabled = false;
+            document.getElementById('generateCoverImage').checked = true;
+            updateXPostCharCount();
+
+            // Add system message to chat
+            addArticleChatMessage('system', `Starting with your idea: "${idea.title}"${idea.content ? '\n\n' + idea.content : ''}\n\nHow would you like to develop this into an article? I can help expand it, suggest structure, add depth, or refine the tone.`);
+
+            document.getElementById('articleRefinementModal').style.display = 'flex';
+
+            // Setup char count listener
+            document.getElementById('xPostText').addEventListener('input', updateXPostCharCount);
+        }
+
+        function closeArticleRefinementModal() {
+            document.getElementById('articleRefinementModal').style.display = 'none';
+            artStuIdeaId = null;
+            articleChatHistory = [];
+        }
+
+        function updateXPostCharCount() {
+            const text = document.getElementById('xPostText').value;
+            const count = text.length;
+            const countEl = document.getElementById('xPostCharCount');
+            countEl.textContent = count;
+            countEl.style.color = count > 280 ? '#ef4444' : count > 250 ? '#f59e0b' : 'var(--text-dim)';
+        }
+
+        function addArticleChatMessage(role, content) {
+            const chatContainer = document.getElementById('articleChatHistory');
+            const msgDiv = document.createElement('div');
+            msgDiv.style.cssText = role === 'user'
+                ? 'background: rgba(59, 130, 246, 0.2); border-radius: 12px; padding: 12px; margin-left: 40px;'
+                : 'background: rgba(168, 85, 247, 0.15); border-radius: 12px; padding: 12px; margin-right: 40px;';
+
+            const labelSpan = document.createElement('div');
+            labelSpan.style.cssText = 'font-size: 0.75rem; font-weight: 600; margin-bottom: 4px; color: ' + (role === 'user' ? '#3b82f6' : '#a855f7') + ';';
+            labelSpan.textContent = role === 'user' ? 'You' : 'AI';
+
+            const contentDiv = document.createElement('div');
+            contentDiv.style.cssText = 'color: var(--text); font-size: 0.9rem; white-space: pre-wrap;';
+            contentDiv.textContent = content;
+
+            msgDiv.appendChild(labelSpan);
+            msgDiv.appendChild(contentDiv);
+            chatContainer.appendChild(msgDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            articleChatHistory.push({ role, content });
+        }
+
+        async function sendArticleChat() {
+            const input = document.getElementById('articleChatInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            // Add user message
+            addArticleChatMessage('user', message);
+            input.value = '';
+
+            // Get current article state
+            const title = document.getElementById('articleTitle').value;
+            const summary = document.getElementById('articleSummary').value;
+            const content = document.getElementById('articleContent').value;
+
+            // Show loading
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = 'chatLoading';
+            loadingDiv.style.cssText = 'background: rgba(168, 85, 247, 0.15); border-radius: 12px; padding: 12px; margin-right: 40px; color: #a855f7;';
+            loadingDiv.innerHTML = '<div style="font-size: 0.75rem; font-weight: 600; margin-bottom: 4px;">AI</div><div>Thinking...</div>';
+            document.getElementById('articleChatHistory').appendChild(loadingDiv);
+            document.getElementById('articleChatHistory').scrollTop = document.getElementById('articleChatHistory').scrollHeight;
+
+            try {
+                const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + GEMINI_API_KEY, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: `You are helping refine an article for artstu.ca (Stuart Hollinger's personal site about art, philosophy, faith, and technology).
+
+Current Article State:
+- Title: ${title || '(not set)'}
+- Summary: ${summary || '(not set)'}
+- Content: ${content || '(empty)'}
+
+Previous conversation:
+${articleChatHistory.slice(0, -1).map(m => `${m.role}: ${m.content}`).join('\n\n')}
+
+User's request: ${message}
+
+Respond helpfully. If you make changes to the article, output them clearly. If you generate or revise content, format it nicely. Keep responses concise but thorough.
+
+For article content, write in a thoughtful, engaging style that connects ideas to deeper themes (faith, technology, philosophy, art). Stuart's writing is introspective but accessible.`
+                            }]
+                        }],
+                        generationConfig: {
+                            temperature: 0.7,
+                            maxOutputTokens: 2000
+                        }
+                    })
+                });
+
+                // Remove loading
+                document.getElementById('chatLoading')?.remove();
+
+                if (!response.ok) throw new Error('AI request failed');
+
+                const data = await response.json();
+                const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response generated';
+
+                addArticleChatMessage('assistant', aiResponse);
+
+                // Auto-extract content if AI provided a full article
+                if (aiResponse.includes('# ') || aiResponse.includes('## ') || aiResponse.length > 500) {
+                    // Check if user wants to use this content
+                    if (aiResponse.toLowerCase().includes('here is') || aiResponse.toLowerCase().includes('here\'s the') || aiResponse.toLowerCase().includes('revised article')) {
+                        // Extract the main content (skip any preamble)
+                        const lines = aiResponse.split('\n');
+                        let startIdx = 0;
+                        for (let i = 0; i < lines.length; i++) {
+                            if (lines[i].startsWith('#') || lines[i].startsWith('---')) {
+                                startIdx = i;
+                                break;
+                            }
+                        }
+                        const extractedContent = lines.slice(startIdx).join('\n').trim();
+                        if (extractedContent && extractedContent.length > 100) {
+                            // Offer to use it
+                            addUseContentButton(extractedContent);
+                        }
+                    }
+                }
+
+            } catch (err) {
+                document.getElementById('chatLoading')?.remove();
+                console.error('AI chat error:', err);
+                addArticleChatMessage('assistant', 'Sorry, there was an error. Please try again.');
+            }
+        }
+
+        function addUseContentButton(content) {
+            const chatContainer = document.getElementById('articleChatHistory');
+            const btnDiv = document.createElement('div');
+            btnDiv.style.cssText = 'padding: 8px 0;';
+            btnDiv.innerHTML = `<button onclick="useGeneratedContent(this)" data-content="${encodeURIComponent(content)}" style="padding: 8px 16px; background: rgba(168, 85, 247, 0.3); border: 1px solid #a855f7; border-radius: 8px; color: #a855f7; cursor: pointer; font-size: 0.85rem;">Use this content</button>`;
+            chatContainer.appendChild(btnDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function useGeneratedContent(btn) {
+            const content = decodeURIComponent(btn.dataset.content);
+            document.getElementById('articleContent').value = content;
+            btn.textContent = 'Content applied!';
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+        }
+
+        async function generateXPostText() {
+            const title = document.getElementById('articleTitle').value;
+            const content = document.getElementById('articleContent').value;
+            if (!title && !content) return;
+
+            try {
+                const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + GEMINI_API_KEY, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: `Generate a tweet (max 250 chars) to promote this article on X/Twitter. Make it engaging and include relevant hashtags.
+
+Title: ${title}
+Content preview: ${content.slice(0, 500)}
+
+Output ONLY the tweet text, nothing else.`
+                            }]
+                        }],
+                        generationConfig: { temperature: 0.8, maxOutputTokens: 100 }
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const tweet = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                    document.getElementById('xPostText').value = tweet.trim();
+                    updateXPostCharCount();
+                }
+            } catch (err) {
+                console.error('Failed to generate tweet:', err);
+            }
+        }
+
+        async function publishArticle() {
+            const title = document.getElementById('articleTitle').value.trim();
+            const summary = document.getElementById('articleSummary').value.trim();
+            const content = document.getElementById('articleContent').value.trim();
+            const xPostText = document.getElementById('xPostText').value.trim();
+            const generateImage = document.getElementById('generateCoverImage').checked;
+
+            if (!title) {
+                alert('Please enter an article title');
+                return;
+            }
+            if (!content || content.length < 50) {
+                alert('Please add article content (at least 50 characters)');
+                return;
+            }
+
+            // Update UI
+            document.getElementById('publishBtnText').style.display = 'none';
+            document.getElementById('publishBtnLoading').style.display = 'inline';
+            document.getElementById('publishArticleBtn').disabled = true;
+
+            try {
+                const response = await fetch('/api/publish-artstu', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title,
+                        summary: summary || title,
+                        content,
+                        xPostText,
+                        generateImage,
+                        ideaId: artStuIdeaId
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to publish');
+                }
+
+                // Success - update idea status
+                if (artStuIdeaId) {
+                    await fetch(
+                        `${SUPABASE_URL}/rest/v1/personal_ideas?id=eq.${artStuIdeaId}`,
+                        {
+                            method: 'PATCH',
+                            headers: {
+                                'apikey': SUPABASE_ANON_KEY,
+                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                                'Content-Type': 'application/json',
+                                'Prefer': 'return=minimal'
+                            },
+                            body: JSON.stringify({
+                                status: 'artstu',
+                                destination_slug: 'artstu-article'
+                            })
+                        }
+                    );
+
+                    const idea = ideas.find(i => i.id === artStuIdeaId);
+                    if (idea) {
+                        idea.status = 'artstu';
+                        idea.destination_slug = 'artstu-article';
+                    }
+                    renderKanban();
+                }
+
+                closeArticleRefinementModal();
+
+                // Show success message with links
+                const successMsg = `Article published!\n\n📄 Article: ${result.articleUrl}\n${result.tweetUrl ? '🐦 Tweet: ' + result.tweetUrl : '(Tweet not posted)'}`;
+                alert(successMsg);
+
+            } catch (err) {
+                console.error('Publish error:', err);
+                alert('Failed to publish: ' + err.message);
+                document.getElementById('publishBtnText').style.display = 'inline';
+                document.getElementById('publishBtnLoading').style.display = 'none';
+                document.getElementById('publishArticleBtn').disabled = false;
+            }
+        }
+
+        // Listen for Enter key in chat input
+        document.addEventListener('DOMContentLoaded', () => {
+            const chatInput = document.getElementById('articleChatInput');
+            if (chatInput) {
+                chatInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendArticleChat();
+                    }
+                });
+            }
+        });
+
+        // ========================================
+        // END ARTSTU ARTICLE PUBLISHING FLOW
+        // ========================================
 
         async function showAppSelector() {
             // Show step 2
