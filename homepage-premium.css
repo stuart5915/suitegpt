@@ -331,23 +331,23 @@ p {
 }
 
 .orbital-ring-1 {
-    width: 250px;
-    height: 250px;
-    animation: orbitRotate 30s linear infinite;
+    width: 220px;
+    height: 220px;
+    animation: orbitRotate 40s linear infinite;
 }
 
 .orbital-ring-2 {
-    width: 380px;
-    height: 380px;
-    animation: orbitRotate 45s linear infinite reverse;
+    width: 340px;
+    height: 340px;
+    animation: orbitRotate 55s linear infinite reverse;
 }
 
 .orbital-ring-3 {
-    width: 480px;
-    height: 480px;
+    width: 440px;
+    height: 440px;
     border-style: dashed;
     opacity: 0.5;
-    animation: orbitRotate 60s linear infinite;
+    animation: orbitRotate 70s linear infinite;
 }
 
 @keyframes orbitRotate {
@@ -355,25 +355,48 @@ p {
     to { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
+/* Counter-rotation to keep icons upright + wobble */
+@keyframes counterRotate1 {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(-360deg); }
+}
+
+@keyframes counterRotate2 {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes iconWobble {
+    0%, 100% { transform: translate(-50%, -50%) rotate(-5deg); }
+    50% { transform: translate(-50%, -50%) rotate(5deg); }
+}
+
 /* Orbiting Agent Nodes */
 .orbital-node {
     position: absolute;
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
     background: var(--bg-elevated);
     border: 2px solid var(--glass-border);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
     overflow: hidden;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+/* Counter-rotate icons to stay upright */
+.orbital-ring-1 .orbital-node {
+    animation: counterRotate1 40s linear infinite, iconWobble 4s ease-in-out infinite;
+}
+
+.orbital-ring-2 .orbital-node {
+    animation: counterRotate2 55s linear infinite, iconWobble 5s ease-in-out infinite;
 }
 
 .orbital-node:hover {
-    transform: scale(1.15);
     box-shadow: 0 8px 32px var(--glow-warm);
     border-color: var(--accent-warm);
     z-index: 20;
@@ -383,18 +406,23 @@ p {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 10px;
+    border-radius: 8px;
 }
 
-.orbital-node.node-1 { top: 0; left: 50%; transform: translateX(-50%); }
-.orbital-node.node-2 { top: 50%; right: 0; transform: translateY(-50%); }
-.orbital-node.node-3 { bottom: 0; left: 50%; transform: translateX(-50%); }
-.orbital-node.node-4 { top: 50%; left: 0; transform: translateY(-50%); }
+/* Position nodes around circle using transform-origin trick */
+/* Ring 1: 4 icons at 0°, 90°, 180°, 270° */
+.orbital-ring-1 .pos-0 { top: 0; left: 50%; transform: translate(-50%, -50%); }
+.orbital-ring-1 .pos-90 { top: 50%; right: 0; transform: translate(50%, -50%); }
+.orbital-ring-1 .pos-180 { bottom: 0; left: 50%; transform: translate(-50%, 50%); }
+.orbital-ring-1 .pos-270 { top: 50%; left: 0; transform: translate(-50%, -50%); }
 
-.orbital-node.node-1:hover { transform: translateX(-50%) scale(1.15); }
-.orbital-node.node-2:hover { transform: translateY(-50%) scale(1.15); }
-.orbital-node.node-3:hover { transform: translateX(-50%) scale(1.15); }
-.orbital-node.node-4:hover { transform: translateY(-50%) scale(1.15); }
+/* Ring 2: 6 icons at 0°, 60°, 120°, 180°, 240°, 300° */
+.orbital-ring-2 .pos-0 { top: 0; left: 50%; transform: translate(-50%, -50%); }
+.orbital-ring-2 .pos-60 { top: 25%; right: 6.7%; transform: translate(50%, -50%); }
+.orbital-ring-2 .pos-120 { bottom: 25%; right: 6.7%; transform: translate(50%, 50%); }
+.orbital-ring-2 .pos-180 { bottom: 0; left: 50%; transform: translate(-50%, 50%); }
+.orbital-ring-2 .pos-240 { bottom: 25%; left: 6.7%; transform: translate(-50%, 50%); }
+.orbital-ring-2 .pos-300 { top: 25%; left: 6.7%; transform: translate(-50%, -50%); }
 
 /* Human Photo Touchpoints */
 .orbital-photo {
@@ -446,9 +474,15 @@ p {
         height: 400px;
     }
 
-    .orbital-ring-1 { width: 200px; height: 200px; }
-    .orbital-ring-2 { width: 300px; height: 300px; }
-    .orbital-ring-3 { width: 380px; height: 380px; }
+    .orbital-ring-1 { width: 180px; height: 180px; }
+    .orbital-ring-2 { width: 280px; height: 280px; }
+    .orbital-ring-3 { width: 360px; height: 360px; }
+
+    .orbital-node {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+    }
 }
 
 @media (max-width: 600px) {
@@ -467,33 +501,32 @@ p {
     }
 
     .orbital-container {
-        width: 300px;
-        height: 300px;
+        width: 280px;
+        height: 280px;
     }
 
     .orbital-center {
-        width: 80px;
-        height: 80px;
+        width: 70px;
+        height: 70px;
     }
 
     .orbital-center img {
-        width: 50px;
-        height: 50px;
+        width: 45px;
+        height: 45px;
     }
 
-    .orbital-ring-1 { width: 150px; height: 150px; }
-    .orbital-ring-2 { width: 220px; height: 220px; }
-    .orbital-ring-3 { width: 280px; height: 280px; }
+    .orbital-ring-1 { width: 130px; height: 130px; }
+    .orbital-ring-2 { width: 200px; height: 200px; }
+    .orbital-ring-3 { width: 260px; height: 260px; }
 
     .orbital-node {
-        width: 36px;
-        height: 36px;
-        font-size: 1.1rem;
-        border-radius: 8px;
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
     }
 
     .orbital-node img {
-        border-radius: 6px;
+        border-radius: 4px;
     }
 
     .orbital-photo {
