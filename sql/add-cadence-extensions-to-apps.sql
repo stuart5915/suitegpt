@@ -4,7 +4,7 @@
 -- =====================================================
 
 -- Insert Social Engager
-INSERT INTO apps (slug, name, tagline, description, emoji_icon, category, url, status)
+INSERT INTO apps (slug, name, tagline, description, emoji_icon, category, app_url, status, type, creator_name, creator_username)
 VALUES (
     'social-engager',
     'Social Engager',
@@ -13,18 +13,22 @@ VALUES (
     '💬',
     'marketing',
     'https://cadence-ai-nextjs.vercel.app/extensions/social-engager',
-    'live'
+    'approved',
+    'extension',
+    'SUITE',
+    'SUITE'
 ) ON CONFLICT (slug) DO UPDATE SET
     name = EXCLUDED.name,
     tagline = EXCLUDED.tagline,
     description = EXCLUDED.description,
     emoji_icon = EXCLUDED.emoji_icon,
     category = EXCLUDED.category,
-    url = EXCLUDED.url,
-    status = EXCLUDED.status;
+    app_url = EXCLUDED.app_url,
+    status = EXCLUDED.status,
+    type = EXCLUDED.type;
 
 -- Insert AI Image Generator
-INSERT INTO apps (slug, name, tagline, description, emoji_icon, category, url, status)
+INSERT INTO apps (slug, name, tagline, description, emoji_icon, category, app_url, status, type, creator_name, creator_username)
 VALUES (
     'image-generator',
     'AI Image Generator',
@@ -33,18 +37,22 @@ VALUES (
     '🎨',
     'marketing',
     'https://cadence-ai-nextjs.vercel.app/extensions/image-generator',
-    'live'
+    'approved',
+    'extension',
+    'SUITE',
+    'SUITE'
 ) ON CONFLICT (slug) DO UPDATE SET
     name = EXCLUDED.name,
     tagline = EXCLUDED.tagline,
     description = EXCLUDED.description,
     emoji_icon = EXCLUDED.emoji_icon,
     category = EXCLUDED.category,
-    url = EXCLUDED.url,
-    status = EXCLUDED.status;
+    app_url = EXCLUDED.app_url,
+    status = EXCLUDED.status,
+    type = EXCLUDED.type;
 
 -- Insert Thread Writer
-INSERT INTO apps (slug, name, tagline, description, emoji_icon, category, url, status)
+INSERT INTO apps (slug, name, tagline, description, emoji_icon, category, app_url, status, type, creator_name, creator_username)
 VALUES (
     'thread-writer',
     'Thread Writer',
@@ -53,18 +61,22 @@ VALUES (
     '🧵',
     'marketing',
     'https://cadence-ai-nextjs.vercel.app/extensions/thread-writer',
-    'live'
+    'approved',
+    'extension',
+    'SUITE',
+    'SUITE'
 ) ON CONFLICT (slug) DO UPDATE SET
     name = EXCLUDED.name,
     tagline = EXCLUDED.tagline,
     description = EXCLUDED.description,
     emoji_icon = EXCLUDED.emoji_icon,
     category = EXCLUDED.category,
-    url = EXCLUDED.url,
-    status = EXCLUDED.status;
+    app_url = EXCLUDED.app_url,
+    status = EXCLUDED.status,
+    type = EXCLUDED.type;
 
 -- Insert Analytics Dashboard
-INSERT INTO apps (slug, name, tagline, description, emoji_icon, category, url, status)
+INSERT INTO apps (slug, name, tagline, description, emoji_icon, category, app_url, status, type, creator_name, creator_username)
 VALUES (
     'analytics-dashboard',
     'Analytics Dashboard',
@@ -73,18 +85,22 @@ VALUES (
     '📊',
     'marketing',
     'https://cadence-ai-nextjs.vercel.app/extensions/analytics-dashboard',
-    'live'
+    'approved',
+    'extension',
+    'SUITE',
+    'SUITE'
 ) ON CONFLICT (slug) DO UPDATE SET
     name = EXCLUDED.name,
     tagline = EXCLUDED.tagline,
     description = EXCLUDED.description,
     emoji_icon = EXCLUDED.emoji_icon,
     category = EXCLUDED.category,
-    url = EXCLUDED.url,
-    status = EXCLUDED.status;
+    app_url = EXCLUDED.app_url,
+    status = EXCLUDED.status,
+    type = EXCLUDED.type;
 
 -- Insert Hashtag Optimizer (Coming Soon)
-INSERT INTO apps (slug, name, tagline, description, emoji_icon, category, url, status)
+INSERT INTO apps (slug, name, tagline, description, emoji_icon, category, app_url, status, type, creator_name, creator_username)
 VALUES (
     'hashtag-optimizer',
     'Hashtag Optimizer',
@@ -93,18 +109,22 @@ VALUES (
     '#️⃣',
     'marketing',
     'https://cadence-ai-nextjs.vercel.app/extensions/hashtag-optimizer',
-    'approved'
+    'approved',
+    'extension',
+    'SUITE',
+    'SUITE'
 ) ON CONFLICT (slug) DO UPDATE SET
     name = EXCLUDED.name,
     tagline = EXCLUDED.tagline,
     description = EXCLUDED.description,
     emoji_icon = EXCLUDED.emoji_icon,
     category = EXCLUDED.category,
-    url = EXCLUDED.url,
-    status = EXCLUDED.status;
+    app_url = EXCLUDED.app_url,
+    status = EXCLUDED.status,
+    type = EXCLUDED.type;
 
 -- Insert Comment Responder (Coming Soon)
-INSERT INTO apps (slug, name, tagline, description, emoji_icon, category, url, status)
+INSERT INTO apps (slug, name, tagline, description, emoji_icon, category, app_url, status, type, creator_name, creator_username)
 VALUES (
     'comment-responder',
     'Comment Responder',
@@ -113,18 +133,22 @@ VALUES (
     '💭',
     'marketing',
     'https://cadence-ai-nextjs.vercel.app/extensions/comment-responder',
-    'approved'
+    'approved',
+    'extension',
+    'SUITE',
+    'SUITE'
 ) ON CONFLICT (slug) DO UPDATE SET
     name = EXCLUDED.name,
     tagline = EXCLUDED.tagline,
     description = EXCLUDED.description,
     emoji_icon = EXCLUDED.emoji_icon,
     category = EXCLUDED.category,
-    url = EXCLUDED.url,
-    status = EXCLUDED.status;
+    app_url = EXCLUDED.app_url,
+    status = EXCLUDED.status,
+    type = EXCLUDED.type;
 
 -- Insert Trend Surfer (Coming Soon)
-INSERT INTO apps (slug, name, tagline, description, emoji_icon, category, url, status)
+INSERT INTO apps (slug, name, tagline, description, emoji_icon, category, app_url, status, type, creator_name, creator_username)
 VALUES (
     'trend-surfer',
     'Trend Surfer',
@@ -133,18 +157,22 @@ VALUES (
     '🌊',
     'marketing',
     'https://cadence-ai-nextjs.vercel.app/extensions/trend-surfer',
-    'approved'
+    'approved',
+    'extension',
+    'SUITE',
+    'SUITE'
 ) ON CONFLICT (slug) DO UPDATE SET
     name = EXCLUDED.name,
     tagline = EXCLUDED.tagline,
     description = EXCLUDED.description,
     emoji_icon = EXCLUDED.emoji_icon,
     category = EXCLUDED.category,
-    url = EXCLUDED.url,
-    status = EXCLUDED.status;
+    app_url = EXCLUDED.app_url,
+    status = EXCLUDED.status,
+    type = EXCLUDED.type;
 
 -- Insert Link in Bio (Coming Soon)
-INSERT INTO apps (slug, name, tagline, description, emoji_icon, category, url, status)
+INSERT INTO apps (slug, name, tagline, description, emoji_icon, category, app_url, status, type, creator_name, creator_username)
 VALUES (
     'link-in-bio',
     'Link in Bio',
@@ -153,18 +181,22 @@ VALUES (
     '🔗',
     'marketing',
     'https://cadence-ai-nextjs.vercel.app/extensions/link-in-bio',
-    'approved'
+    'approved',
+    'extension',
+    'SUITE',
+    'SUITE'
 ) ON CONFLICT (slug) DO UPDATE SET
     name = EXCLUDED.name,
     tagline = EXCLUDED.tagline,
     description = EXCLUDED.description,
     emoji_icon = EXCLUDED.emoji_icon,
     category = EXCLUDED.category,
-    url = EXCLUDED.url,
-    status = EXCLUDED.status;
+    app_url = EXCLUDED.app_url,
+    status = EXCLUDED.status,
+    type = EXCLUDED.type;
 
 -- Insert DM Sequence Builder (Coming Soon)
-INSERT INTO apps (slug, name, tagline, description, emoji_icon, category, url, status)
+INSERT INTO apps (slug, name, tagline, description, emoji_icon, category, app_url, status, type, creator_name, creator_username)
 VALUES (
     'dm-sequence-builder',
     'DM Sequence Builder',
@@ -173,15 +205,19 @@ VALUES (
     '📬',
     'marketing',
     'https://cadence-ai-nextjs.vercel.app/extensions/dm-sequence-builder',
-    'approved'
+    'approved',
+    'extension',
+    'SUITE',
+    'SUITE'
 ) ON CONFLICT (slug) DO UPDATE SET
     name = EXCLUDED.name,
     tagline = EXCLUDED.tagline,
     description = EXCLUDED.description,
     emoji_icon = EXCLUDED.emoji_icon,
     category = EXCLUDED.category,
-    url = EXCLUDED.url,
-    status = EXCLUDED.status;
+    app_url = EXCLUDED.app_url,
+    status = EXCLUDED.status,
+    type = EXCLUDED.type;
 
 -- =====================================================
 -- DONE! 9 Cadence Extensions added to SUITE Shell
