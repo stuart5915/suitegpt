@@ -18,10 +18,14 @@ import {
     BarChart3,
     CheckCircle2,
     AlertCircle,
-    Loader2
+    Loader2,
+    Hash,
+    Wand2,
+    Sparkles
 } from 'lucide-react'
 import { ContentType, Platform, CONTENT_TYPE_CONFIG, PLATFORM_CONFIG } from '@/lib/supabase/types'
 import { PlatformIcon, PLATFORM_NAMES } from '@/components/ui/PlatformIcon'
+import { useExtensionPanel } from '@/contexts/ExtensionPanelContext'
 
 // Mock data
 const mockContent = [
@@ -95,6 +99,19 @@ export default function ContentPage() {
     const [selectedPlatform, setSelectedPlatform] = useState<string>('all')
     const [selectedStatus, setSelectedStatus] = useState<string>('all')
     const [copiedId, setCopiedId] = useState<string | null>(null)
+    const { openPanel } = useExtensionPanel()
+
+    const handleOpenHashtagOptimizer = (caption: string) => {
+        openPanel('hashtag-optimizer', { initialData: { content: caption } })
+    }
+
+    const handleOpenImageGenerator = (caption: string) => {
+        openPanel('image-generator', { initialData: { prompt: caption } })
+    }
+
+    const handleOpenThreadWriter = (caption: string) => {
+        openPanel('thread-writer', { initialData: { content: caption } })
+    }
 
     const filteredContent = mockContent.filter((item) => {
         const matchesSearch = item.caption.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -260,7 +277,7 @@ export default function ContentPage() {
                                         {content.caption}
                                     </p>
 
-                                    <div className="flex flex-wrap gap-1">
+                                    <div className="flex flex-wrap items-center gap-1">
                                         {content.hashtags.slice(0, 3).map((tag) => (
                                             <span
                                                 key={tag}
@@ -274,6 +291,13 @@ export default function ContentPage() {
                                                 +{content.hashtags.length - 3} more
                                             </span>
                                         )}
+                                        <button
+                                            onClick={() => handleOpenHashtagOptimizer(content.caption)}
+                                            className="ml-1 p-1 rounded hover:bg-[var(--surface-hover)] text-[var(--foreground-muted)] hover:text-[var(--primary)]"
+                                            title="Optimize hashtags"
+                                        >
+                                            <Hash className="w-3 h-3" />
+                                        </button>
                                     </div>
                                 </div>
 
@@ -293,6 +317,24 @@ export default function ContentPage() {
                                     </div>
 
                                     <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => handleOpenImageGenerator(content.caption)}
+                                            className="btn btn-ghost p-2 text-sm"
+                                            title="Generate image"
+                                        >
+                                            <Wand2 className="w-4 h-4" />
+                                        </button>
+
+                                        {content.content_type === 'thread' && (
+                                            <button
+                                                onClick={() => handleOpenThreadWriter(content.caption)}
+                                                className="btn btn-ghost p-2 text-sm"
+                                                title="Edit thread"
+                                            >
+                                                <Sparkles className="w-4 h-4" />
+                                            </button>
+                                        )}
+
                                         <button
                                             onClick={() => handleCopyCaption(content.id, content.caption)}
                                             className="btn btn-ghost p-2 text-sm"

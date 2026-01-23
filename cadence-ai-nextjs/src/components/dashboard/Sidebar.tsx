@@ -124,7 +124,7 @@ export default function DashboardLayout({ children }: SidebarProps) {
             {/* Main Content */}
             <main
                 className={`
-          flex-1 transition-all duration-300 pt-[60px]
+          flex-1 transition-all duration-300 pt-[60px] pb-16
           ${collapsed ? 'ml-16' : 'ml-64'}
         `}
             >
