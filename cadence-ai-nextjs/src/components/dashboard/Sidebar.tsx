@@ -12,7 +12,8 @@ import {
     Calendar,
     MessageCircle,
     Instagram,
-    Twitter
+    Twitter,
+    Puzzle
 } from 'lucide-react'
 import CreditsDisplay from '@/components/CreditsDisplay'
 
@@ -25,6 +26,7 @@ const navItems = [
     { href: '/loops', label: 'Content Loops', icon: RefreshCw },
     { href: '/engagement', label: 'Engagement', icon: MessageCircle },
     { href: '/calendar', label: 'Calendar', icon: Calendar },
+    { href: '/extensions', label: 'Extensions', icon: Puzzle },
     { href: '/settings', label: 'Settings', icon: Settings },
 ]
 
