@@ -1820,9 +1820,40 @@
         .governance-tabs-header {
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 16px;
             margin-bottom: 20px;
             flex-wrap: wrap;
+        }
+
+        .governance-sort-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        .governance-sort-control select {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 6px 10px;
+            color: var(--text);
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .governance-sort-control select:hover {
+            border-color: var(--accent);
+        }
+
+        .idea-card-date {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            margin-left: auto;
+            padding-right: 8px;
+            white-space: nowrap;
         }
 
         .governance-main-title {
@@ -2158,6 +2189,125 @@
 
         .agent-feedback-display strong {
             color: var(--text);
+        }
+
+        /* Agent Profile Modal */
+        .agent-profile-modal {
+            max-width: 500px;
+        }
+
+        .agent-profile-content {
+            padding: 0 4px;
+        }
+
+        .agent-profile-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .agent-profile-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #a855f7, #6366f1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+
+        .agent-profile-info h4 {
+            margin: 0 0 4px 0;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .agent-profile-info p {
+            margin: 0;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+
+        .agent-profile-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 6px;
+        }
+
+        .agent-profile-status.idle {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .agent-profile-status.waiting {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+        }
+
+        .agent-profile-status.working {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+        }
+
+        .agent-profile-mission {
+            background: var(--bg-elevated);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .agent-profile-mission h5 {
+            margin: 0 0 8px 0;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            font-weight: 600;
+        }
+
+        .agent-profile-mission p {
+            margin: 0;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .agent-profile-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .agent-stat {
+            background: var(--bg-elevated);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .agent-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .agent-stat-label {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+
+        .agent-stat.approved .agent-stat-value {
+            color: #22c55e;
+        }
+
+        .agent-stat.rejected .agent-stat-value {
+            color: #ef4444;
         }
 
         /* Main View Tabs (Governance / Agents) */
@@ -3531,6 +3681,13 @@
                                     🔄 Social <span class="tab-count" id="socialTabCount">0</span>
                                 </button>
                             </div>
+                            <div class="governance-sort-control">
+                                <label>Sort:</label>
+                                <select id="proposalSortOrder" onchange="changeProposalSort(this.value)">
+                                    <option value="desc">Newest First</option>
+                                    <option value="asc">Oldest First</option>
+                                </select>
+                            </div>
                         </div>
 
                         <!-- Tab Contents -->
@@ -3579,6 +3736,19 @@
             </main>
         </div>
 
+    </div>
+
+    <!-- Agent Profile Modal -->
+    <div class="modal-overlay" id="agentProfileModal">
+        <div class="modal-content agent-profile-modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="agentProfileTitle">Agent Profile</h3>
+                <button class="modal-close" onclick="hideAgentProfileModal()">&times;</button>
+            </div>
+            <div class="agent-profile-content" id="agentProfileContent">
+                <!-- Populated by JS -->
+            </div>
+        </div>
     </div>
 
     <!-- NoteBox Archive Modal -->
@@ -3862,6 +4032,7 @@
 
         // Governance Sections State
         let governanceProposals = [];  // From 'factory_proposals' table
+        let proposalSortOrder = 'desc'; // 'desc' = newest first, 'asc' = oldest first
 
         // Drag-Drop State
         let draggedItem = null;  // { id, type: 'idea' | 'proposal', section }
@@ -4405,7 +4576,7 @@
             }
         }
 
-        // App icons for agents
+        // App icons for agents (fallback if no image)
         const agentAppIcons = {
             'foodvitals': '🍎',
             'opticrep': '💪',
@@ -4417,9 +4588,25 @@
             'suitehub': '🏠'
         };
 
+        // Agent images (if available)
+        const agentImages = {
+            'foodvitals-agent': '/assets/agents/foodvitals-agent.png'
+        };
+
+        // Get agent avatar HTML (image or emoji fallback)
+        function getAgentAvatar(agentSlug, appSlug, size = 'normal') {
+            const imagePath = agentImages[agentSlug];
+            const fallbackIcon = agentAppIcons[appSlug] || '🤖';
+            const sizeClass = size === 'large' ? 'agent-profile-avatar' : 'agent-card-avatar';
+
+            if (imagePath) {
+                return `<div class="${sizeClass}" style="padding: 0; overflow: hidden;"><img src="${imagePath}" alt="${agentSlug}" style="width: 100%; height: 100%; object-fit: cover;"></div>`;
+            }
+            return `<div class="${sizeClass}">${fallbackIcon}</div>`;
+        }
+
         // Render a single agent card
         function renderAgentCard(agent) {
-            const icon = agentAppIcons[agent.owned_app_slug] || '🤖';
             const status = agent.agent_status || 'idle';
             const submitted = agent.proposals_submitted || 0;
             const approved = agent.proposals_approved || 0;
@@ -4436,7 +4623,7 @@
             return `
                 <div class="agent-card">
                     <div class="agent-card-header">
-                        <div class="agent-card-avatar">${icon}</div>
+                        ${getAgentAvatar(agent.agent_slug, agent.owned_app_slug)}
                         <div class="agent-card-info">
                             <div class="agent-card-name">
                                 ${escapeHtml(agent.display_name || agent.agent_slug)}
@@ -4467,7 +4654,7 @@
                         </div>
                     </div>
                     <div class="agent-card-actions">
-                        <a href="/agent-profile.html?id=${escapeHtml(agent.agent_slug)}" class="agent-action-btn secondary">View Profile</a>
+                        <button onclick="showAgentProfile('${escapeHtml(agent.agent_slug)}')" class="agent-action-btn secondary">View Profile</button>
                         ${isAdmin ? `<button class="agent-action-btn primary" onclick="wakeAgent('${escapeHtml(agent.agent_slug)}')" ${status === 'waiting' ? 'disabled title="Waiting for response"' : ''}>Wake Agent</button>` : ''}
                     </div>
                 </div>
@@ -4485,6 +4672,104 @@
             if (!confirmed) return;
 
             showNotification(`To wake ${agentSlug}, run: node scripts/wake-agent.js ${agentSlug}`);
+        }
+
+        // Show agent profile modal
+        async function showAgentProfile(agentSlug) {
+            const modal = document.getElementById('agentProfileModal');
+            const content = document.getElementById('agentProfileContent');
+            const title = document.getElementById('agentProfileTitle');
+
+            // Show loading state
+            content.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-dim);">Loading agent...</div>';
+            modal.classList.add('active');
+
+            try {
+                // Try to get from cache first
+                let agent = agentsData.find(a => a.agent_slug === agentSlug);
+
+                // If not in cache, fetch from database
+                if (!agent) {
+                    const response = await fetch(
+                        `${SUPABASE_URL}/rest/v1/factory_users?agent_slug=eq.${encodeURIComponent(agentSlug)}&is_agent=eq.true&select=*`,
+                        {
+                            headers: {
+                                'apikey': SUPABASE_ANON_KEY,
+                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                            }
+                        }
+                    );
+                    const data = await response.json();
+                    agent = data[0];
+                }
+
+                if (!agent) {
+                    content.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-dim);">Agent not found</div>';
+                    return;
+                }
+
+                const status = agent.agent_status || 'idle';
+                const submitted = agent.proposals_submitted || 0;
+                const approved = agent.proposals_approved || 0;
+                const rejected = agent.proposals_rejected || 0;
+                const rate = submitted > 0 ? Math.round((approved / submitted) * 100) : 0;
+                const lastWake = agent.last_wake_at ? new Date(agent.last_wake_at).toLocaleString() : 'Never';
+
+                title.textContent = agent.display_name || agent.agent_slug;
+
+                content.innerHTML = `
+                    <div class="agent-profile-header">
+                        ${getAgentAvatar(agent.agent_slug, agent.owned_app_slug, 'large')}
+                        <div class="agent-profile-info">
+                            <h4>${escapeHtml(agent.display_name || agent.agent_slug)}</h4>
+                            <p>Managing: ${escapeHtml(agent.owned_app_slug || 'Unknown')}</p>
+                            <span class="agent-profile-status ${status}">
+                                ${status === 'idle' ? '🟢' : status === 'waiting' ? '🟡' : '🔵'} ${status}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="agent-profile-mission">
+                        <h5>🎯 Mission</h5>
+                        <p>${escapeHtml(agent.telos_objective || 'No mission defined')}</p>
+                    </div>
+
+                    <div class="agent-profile-stats">
+                        <div class="agent-stat">
+                            <div class="agent-stat-value">${submitted}</div>
+                            <div class="agent-stat-label">Submitted</div>
+                        </div>
+                        <div class="agent-stat approved">
+                            <div class="agent-stat-value">${approved}</div>
+                            <div class="agent-stat-label">Approved</div>
+                        </div>
+                        <div class="agent-stat rejected">
+                            <div class="agent-stat-value">${rejected}</div>
+                            <div class="agent-stat-label">Rejected</div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.85rem; color: var(--text-dim); margin-bottom: 16px;">
+                        <div>📈 Approval Rate: <strong style="color: var(--text);">${rate}%</strong></div>
+                        <div>🕐 Last Wake: <strong style="color: var(--text);">${lastWake}</strong></div>
+                    </div>
+
+                    ${currentUser?.is_founder ? `
+                        <button class="form-btn" onclick="hideAgentProfileModal(); wakeAgent('${escapeHtml(agent.agent_slug)}')" ${status === 'waiting' ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>
+                            ${status === 'waiting' ? '⏳ Waiting for Response' : '⚡ Wake Agent'}
+                        </button>
+                    ` : ''}
+                `;
+
+            } catch (err) {
+                console.error('Error loading agent profile:', err);
+                content.innerHTML = `<div style="text-align: center; padding: 40px; color: #ef4444;">Error loading agent: ${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        // Hide agent profile modal
+        function hideAgentProfileModal() {
+            document.getElementById('agentProfileModal').classList.remove('active');
         }
 
         // Toggle proposal card collapse/expand
@@ -4525,6 +4810,19 @@
             if (loopItem) {
                 loopItem.classList.toggle('expanded');
             }
+        }
+
+        // Change proposal sort order
+        function changeProposalSort(order) {
+            proposalSortOrder = order;
+            // Re-sort the proposals array
+            governanceProposals.sort((a, b) => {
+                const dateA = new Date(a.created_at);
+                const dateB = new Date(b.created_at);
+                return order === 'desc' ? dateB - dateA : dateA - dateB;
+            });
+            // Re-render sections
+            renderGovernanceSections();
         }
 
         // Render all governance sections
@@ -4647,7 +4945,7 @@
             let agentBadge = '';
             if (isFromAgent) {
                 const agentSlug = proposal.author?.agent_slug || '';
-                agentBadge = `<span class="agent-badge"><a href="/agent-profile.html?id=${escapeHtml(agentSlug)}" onclick="event.stopPropagation()" title="View agent profile">AI Agent</a></span>`;
+                agentBadge = `<span class="agent-badge"><a href="#" onclick="event.stopPropagation(); event.preventDefault(); showAgentProfile('${escapeHtml(agentSlug)}')" title="View agent profile">AI Agent</a></span>`;
             }
 
             // Get app name if proposal is linked to an app, or show New App tag
@@ -4695,6 +4993,7 @@
                         ${isAdmin ? `<span class="idea-card-drag-handle" draggable="true" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()" ondragstart="handleDragStart(event, '${proposal.id}', 'proposal', '${sectionType}')" ondragend="handleDragEnd(event)" title="Drag to move">&#x22EE;&#x22EE;</span>` : ''}
                         <span class="idea-card-toggle">&#x25BC;</span>
                         <div class="idea-card-title">${escapeHtml(proposal.title)}</div>
+                        <span class="idea-card-date">${formattedDate}</span>
                     </div>
                     <div class="idea-card-details">
                         <div class="idea-card-tagline">${escapeHtml(proposal.content || 'No description')}</div>
