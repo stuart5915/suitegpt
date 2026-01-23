@@ -760,10 +760,10 @@
             }
         }
 
-        // Check login
+        // Check login (use same keys as profile.html)
         function checkLogin() {
-            const telegramAuth = localStorage.getItem('telegram_auth');
-            const walletAddress = localStorage.getItem('wallet_address');
+            const telegramAuth = localStorage.getItem('telegram_user');
+            const walletAddress = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWalletAddress');
 
             if (telegramAuth) {
                 try {
@@ -797,7 +797,7 @@
         window.onTelegramAuth = function(user) {
             currentUser = user;
             currentUser.isFromTelegram = true;
-            localStorage.setItem('telegram_auth', JSON.stringify(user));
+            localStorage.setItem('telegram_user', JSON.stringify(user));
             document.getElementById('connectedAccount').value = '@' + (user.username || user.first_name || 'telegram');
             onLoginSuccess();
         };
@@ -860,7 +860,7 @@
 
                 if (address) {
                     currentUser = { wallet: address, isFromWallet: true };
-                    localStorage.setItem('wallet_address', address);
+                    localStorage.setItem('connectedWallet', address);
                     document.getElementById('connectedAccount').value = address.slice(0, 6) + '...' + address.slice(-4);
                     onLoginSuccess();
                 }
