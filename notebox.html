@@ -3040,7 +3040,11 @@ Stuart's request: ${message}`
                 // Remove loading
                 document.getElementById('chatLoading')?.remove();
 
-                if (!response.ok) throw new Error('AI request failed');
+                if (!response.ok) {
+                    const errText = await response.text();
+                    console.error('Gemini API error:', response.status, errText);
+                    throw new Error(`API error ${response.status}`);
+                }
 
                 const data = await response.json();
                 const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response generated';
@@ -3071,7 +3075,7 @@ Stuart's request: ${message}`
             } catch (err) {
                 document.getElementById('chatLoading')?.remove();
                 console.error('AI chat error:', err);
-                addArticleChatMessage('assistant', 'Sorry, there was an error. Please try again.');
+                addArticleChatMessage('assistant', `Error: ${err.message}. Check console for details.`);
             }
         }
 
