@@ -2928,7 +2928,7 @@ Format as a numbered list from most to least promising.`;
             updateXPostCharCount();
 
             // Add system message to chat
-            addArticleChatMessage('system', `Starting with your idea: "${idea.title}"${idea.content ? '\n\n' + idea.content : ''}\n\nHow would you like to develop this into an article? I can help expand it, suggest structure, add depth, or refine the tone.`);
+            addArticleChatMessage('assistant', `Got your draft loaded. Just say "clean it up" or "expand this" and I'll refine it while keeping your voice. Or ask me anything specific.`);
 
             document.getElementById('articleRefinementModal').style.display = 'flex';
 
@@ -3002,7 +3002,22 @@ Format as a numbered list from most to least promising.`;
                     body: JSON.stringify({
                         contents: [{
                             parts: [{
-                                text: `You are helping refine an article for artstu.ca (Stuart Hollinger's personal site about art, philosophy, faith, and technology).
+                                text: `You are Stuart's writing assistant, helping refine articles for artstu.ca.
+
+ABOUT STUART & ARTSTU:
+- Stuart Hollinger is a builder, philosopher, and seeker based in Cambridge, Ontario
+- artstu.ca is his personal site exploring faith, philosophy, technology, art, and the examined life
+- He's the founder of SUITE (getsuite.app) - a decentralized app ecosystem where anyone can build and everyone gets paid
+- His writing style: introspective, conversational, sometimes stream-of-consciousness, connects everyday observations to deeper existential/spiritual themes
+- He explores AI consciousness, the nature of goodness, energy and creation, faith intersecting with technology
+- Tone: authentic, curious, contemplative but not pretentious, occasionally playful, grounded in real experience
+
+YOUR JOB:
+- Help clean up and refine Stuart's raw ideas into polished articles
+- Keep his voice and vibe intact - don't make it sound corporate or generic
+- Improve flow and clarity without losing the conversational, thinking-out-loud quality
+- Connect ideas to bigger themes when natural
+- Be concise in your responses - just give the refined content or specific suggestions
 
 Current Article State:
 - Title: ${title || '(not set)'}
@@ -3012,11 +3027,7 @@ Current Article State:
 Previous conversation:
 ${articleChatHistory.slice(0, -1).map(m => `${m.role}: ${m.content}`).join('\n\n')}
 
-User's request: ${message}
-
-Respond helpfully. If you make changes to the article, output them clearly. If you generate or revise content, format it nicely. Keep responses concise but thorough.
-
-For article content, write in a thoughtful, engaging style that connects ideas to deeper themes (faith, technology, philosophy, art). Stuart's writing is introspective but accessible.`
+Stuart's request: ${message}`
                             }]
                         }],
                         generationConfig: {
