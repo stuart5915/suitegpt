@@ -4032,10 +4032,29 @@
                 );
                 const countHeader = response.headers.get('content-range');
                 const count = countHeader ? parseInt(countHeader.split('/')[1]) || 0 : 0;
-                const countEl = document.getElementById('agentsTabCount');
+                const countEl = document.getElementById('agentsMainCount');
                 if (countEl) countEl.textContent = count;
             } catch (err) {
                 console.error('Error loading agents count:', err);
+            }
+        }
+
+        // Switch between main views (Governance / Agents)
+        function switchMainView(viewName) {
+            // Update tab buttons
+            document.querySelectorAll('.main-view-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.view === viewName);
+            });
+
+            // Update views
+            document.querySelectorAll('.main-view').forEach(view => {
+                view.classList.remove('active');
+            });
+            document.getElementById(`${viewName}MainView`).classList.add('active');
+
+            // Load agents data when switching to agents view
+            if (viewName === 'agents') {
+                loadAgents();
             }
         }
 
@@ -4327,11 +4346,6 @@
                 content.classList.remove('active');
             });
             document.getElementById(`${tabName}TabContent`).classList.add('active');
-
-            // Load agents data when switching to agents tab
-            if (tabName === 'agents') {
-                loadAgents();
-            }
         }
 
         // Agents data cache
@@ -4358,7 +4372,7 @@
                 agentsData = await response.json();
 
                 // Update tab count
-                const countEl = document.getElementById('agentsTabCount');
+                const countEl = document.getElementById('agentsMainCount');
                 if (countEl) countEl.textContent = agentsData.length;
 
                 // Render agents
