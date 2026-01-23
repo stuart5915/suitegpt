@@ -27,6 +27,146 @@ Help users identify nutrient gaps in their diet and get personalized food and me
 
 ---
 
+## Target User
+
+### Primary Persona: "Health-Curious Busy Professional"
+- **Age:** 25-45
+- **Lifestyle:** Works full-time, limited time for detailed tracking
+- **Motivation:** Wants to eat healthier but overwhelmed by nutrition complexity
+- **Pain Point:** Knows they should "eat better" but doesn't know what they're actually missing
+- **Behavior:** Will track for a week if it's easy, drops off if tedious
+- **Value Proposition:** "Know your gaps, not just your calories"
+
+### Secondary Persona: "Fitness Optimizer"
+- **Age:** 20-35
+- **Lifestyle:** Active, gym-goer, already tracks workouts
+- **Motivation:** Optimize performance through nutrition
+- **Pain Point:** Macros are easy, micronutrients are confusing
+- **Behavior:** Willing to put in effort if results are clear
+- **Value Proposition:** "The missing piece of your fitness stack"
+
+### Anti-Persona (NOT our target)
+- Calorie-counting obsessives (they use MyFitnessPal and love it)
+- People with eating disorders (we don't want to trigger unhealthy behavior)
+- Users wanting medical nutrition advice (we're not doctors)
+
+---
+
+## Competitors & Differentiation
+
+### Direct Competitors
+
+| App | Strength | Weakness | Our Advantage |
+|-----|----------|----------|---------------|
+| **MyFitnessPal** | Huge food database, brand recognition | Focused on calories, micronutrients buried | We surface gaps, not just totals |
+| **Cronometer** | Detailed micronutrient tracking | Complex UI, intimidating for beginners | We're simpler, AI does the analysis |
+| **Yazio** | Clean UI, meal plans | Generic plans, not personalized to gaps | We analyze YOUR gaps specifically |
+| **Noom** | Behavior change focus | Expensive coaching model, $200+/yr | We're affordable via SUITE credits |
+| **Lose It!** | Weight loss focus | Single metric (weight), ignores nutrition quality | We focus on nutrient quality |
+
+### Our Unique Position
+FoodVitals is **not** a calorie counter. We're a **nutrient gap analyzer**.
+
+- Others: "You ate 2,000 calories today"
+- FoodVitals: "You're low on Vitamin D, magnesium, and fiber this week. Here are foods that fix all three."
+
+### Competitive Moat
+1. **AI-powered gap analysis** - Not just showing data, interpreting it
+2. **Weekly view** - Less obsessive than daily, more actionable than monthly
+3. **SUITE ecosystem** - Cross-app benefits competitors can't match
+4. **Suggestion engine** - We tell you what to eat, not just what you ate
+
+---
+
+## Current App State
+
+### What Exists Today (v1.0)
+- ✅ Manual meal logging (text entry)
+- ✅ Basic nutrition database (~50,000 foods)
+- ✅ Daily nutrient breakdown view
+- ✅ Simple food label scanning (OCR)
+- ✅ User profile with basic preferences
+- ✅ SUITE credit integration
+
+### What's Partially Built
+- 🟡 Weekly dashboard (designed, not implemented)
+- 🟡 AI recommendations (prototype, needs refinement)
+- 🟡 Barcode scanning (integrated but unreliable)
+
+### What Doesn't Exist Yet
+- ❌ Photo-based meal logging
+- ❌ Nutrient gap alerts/notifications
+- ❌ Meal planning features
+- ❌ Social/sharing features
+- ❌ Health app integrations (Apple Health, Google Fit)
+- ❌ Offline mode
+- ❌ Family/household accounts
+
+### Known Technical Debt
+- OCR accuracy is ~70% (needs improvement)
+- Database missing many store brands
+- No caching = slow repeated lookups
+- Mobile PWA performance issues on older phones
+
+---
+
+## Technical Context
+
+### Tech Stack
+- **Frontend:** React (PWA via suite-shell)
+- **Backend:** Supabase (PostgreSQL + Edge Functions)
+- **AI:** OpenAI API for recommendations
+- **OCR:** Google Cloud Vision API
+- **Hosting:** Vercel (frontend), Supabase (backend)
+
+### Codebase Location
+- Main app: `suite-shell` repository
+- FoodVitals module: `/apps/foodvitals/`
+- Shared components: `/packages/ui/`
+
+### API Budget Constraints
+- OpenAI: ~$50/month current spend, can scale to $200/month
+- Google Cloud Vision: ~$20/month, can scale to $100/month
+- Total API budget ceiling: $500/month
+
+### Performance Targets
+- Meal log: < 3 seconds
+- Label scan: < 5 seconds
+- AI recommendation: < 10 seconds
+- App load: < 2 seconds
+
+### Integration Points
+- SUITE auth (shared login)
+- SUITE credits (payment)
+- Supabase real-time (sync)
+
+---
+
+## What Users Love
+
+Based on positive reviews and feedback:
+
+**Top Praise:**
+1. "Finally understand what I'm actually missing" - 34% of positive reviews
+2. "So much simpler than MyFitnessPal" - 28% of positive reviews
+3. "Love the weekly view, less obsessive" - 19% of positive reviews
+4. "AI suggestions are actually helpful" - 12% of positive reviews
+
+**Features to Protect:**
+- Simple, clean interface (don't over-complicate)
+- Weekly perspective (don't force daily tracking)
+- AI-generated suggestions (this is the magic)
+- Quick logging flow (don't add friction)
+
+**User Quotes:**
+> "I tried every nutrition app and gave up. FoodVitals is the first one that stuck because it doesn't make me feel bad about what I eat - it just tells me what to add."
+
+> "The weekly summary is genius. I don't stress about one bad meal anymore."
+
+> "Finally an app that tells me to eat MORE of something instead of less of everything."
+
+---
+
 ## Core Features
 
 ### Primary Features (What FoodVitals IS)

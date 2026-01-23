@@ -6070,6 +6070,49 @@
                     { step: 'Gap Detection', desc: 'Identifies missing nutrients' },
                     { step: 'Smart Suggestions', desc: 'Personalized recommendations' }
                 ],
+                targetUser: {
+                    primary: {
+                        name: 'Health-Curious Busy Professional',
+                        age: '25-45',
+                        motivation: 'Wants to eat healthier but overwhelmed by nutrition complexity',
+                        painPoint: 'Knows they should "eat better" but doesn\'t know what they\'re missing',
+                        value: 'Know your gaps, not just your calories'
+                    },
+                    secondary: {
+                        name: 'Fitness Optimizer',
+                        age: '20-35',
+                        motivation: 'Optimize performance through nutrition',
+                        painPoint: 'Macros are easy, micronutrients are confusing',
+                        value: 'The missing piece of your fitness stack'
+                    },
+                    antiPersona: ['Calorie-counting obsessives', 'People with eating disorders', 'Users wanting medical advice']
+                },
+                competitors: [
+                    { name: 'MyFitnessPal', strength: 'Huge food database', weakness: 'Focused on calories', advantage: 'We surface gaps, not totals' },
+                    { name: 'Cronometer', strength: 'Detailed micronutrients', weakness: 'Complex UI', advantage: 'We\'re simpler, AI analyzes' },
+                    { name: 'Yazio', strength: 'Clean UI, meal plans', weakness: 'Generic plans', advantage: 'We analyze YOUR gaps' },
+                    { name: 'Noom', strength: 'Behavior change', weakness: 'Expensive ($200+/yr)', advantage: 'Affordable via SUITE' }
+                ],
+                positioning: 'FoodVitals is NOT a calorie counter. We\'re a nutrient gap analyzer.',
+                currentState: {
+                    exists: ['Manual meal logging', 'Basic nutrition DB (~50k foods)', 'Daily nutrient breakdown', 'Simple label scanning', 'User profile', 'SUITE credits'],
+                    partial: ['Weekly dashboard', 'AI recommendations', 'Barcode scanning'],
+                    missing: ['Photo meal logging', 'Gap alerts', 'Meal planning', 'Social features', 'Health app sync', 'Offline mode', 'Family accounts'],
+                    techDebt: ['OCR ~70% accuracy', 'Missing store brands', 'No caching', 'PWA performance issues']
+                },
+                technical: {
+                    stack: ['React (PWA)', 'Supabase', 'OpenAI API', 'Google Cloud Vision', 'Vercel'],
+                    codebase: '/apps/foodvitals/ in suite-shell repo',
+                    apiBudget: '$500/month ceiling',
+                    perfTargets: ['Meal log < 3s', 'Scan < 5s', 'AI < 10s', 'Load < 2s']
+                },
+                usersLove: [
+                    { text: 'Finally understand what I\'m actually missing', stat: '34% of positive reviews' },
+                    { text: 'So much simpler than MyFitnessPal', stat: '28% of positive reviews' },
+                    { text: 'Love the weekly view, less obsessive', stat: '19% of positive reviews' },
+                    { text: 'AI suggestions are actually helpful', stat: '12% of positive reviews' }
+                ],
+                protect: ['Simple, clean interface', 'Weekly perspective', 'AI-generated suggestions', 'Quick logging flow'],
                 metrics: [
                     { label: 'Monthly Active Users', current: '~500', target: '10,000', priority: 'primary', progress: 5 },
                     { label: 'App Store Rating', current: '4.2', target: '4.5+', priority: 'high', progress: 93 },
@@ -6214,6 +6257,163 @@
                                             <div style="font-size: 0.65rem; color: var(--text-dim);">${step.desc}</div>
                                         </div>
                                     `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Target User -->
+                    <div class="telos-section">
+                        <div class="telos-section-header">
+                            <span class="telos-section-icon">👤</span>
+                            <span class="telos-section-title">Target User</span>
+                            <span class="telos-section-badge">2 Personas</span>
+                            <span class="telos-section-arrow">▼</span>
+                        </div>
+                        <div class="telos-section-content">
+                            <div class="telos-section-body">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                    <div style="background: var(--bg-card); border: 1px solid var(--accent); border-radius: 10px; padding: 14px;">
+                                        <div style="font-size: 0.7rem; color: var(--accent); font-weight: 600; margin-bottom: 6px;">PRIMARY PERSONA</div>
+                                        <div style="font-weight: 600; margin-bottom: 8px;">${data.targetUser.primary.name}</div>
+                                        <div style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 4px;">📅 Age: ${data.targetUser.primary.age}</div>
+                                        <div style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 4px;">💡 ${data.targetUser.primary.motivation}</div>
+                                        <div style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 8px;">😤 ${data.targetUser.primary.painPoint}</div>
+                                        <div style="font-size: 0.75rem; background: var(--accent-dim); color: var(--accent); padding: 6px 10px; border-radius: 6px; font-weight: 500;">"${data.targetUser.primary.value}"</div>
+                                    </div>
+                                    <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 14px;">
+                                        <div style="font-size: 0.7rem; color: var(--text-dim); font-weight: 600; margin-bottom: 6px;">SECONDARY PERSONA</div>
+                                        <div style="font-weight: 600; margin-bottom: 8px;">${data.targetUser.secondary.name}</div>
+                                        <div style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 4px;">📅 Age: ${data.targetUser.secondary.age}</div>
+                                        <div style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 4px;">💡 ${data.targetUser.secondary.motivation}</div>
+                                        <div style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 8px;">😤 ${data.targetUser.secondary.painPoint}</div>
+                                        <div style="font-size: 0.75rem; background: var(--bg-elevated); color: var(--text-dim); padding: 6px 10px; border-radius: 6px; font-weight: 500;">"${data.targetUser.secondary.value}"</div>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 12px; padding: 10px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; border-left: 3px solid #ef4444;">
+                                    <div style="font-size: 0.75rem; color: #ef4444; font-weight: 600; margin-bottom: 4px;">🚫 NOT Our Target (Anti-Personas)</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-dim);">${data.targetUser.antiPersona.join(' • ')}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Competitors -->
+                    <div class="telos-section">
+                        <div class="telos-section-header">
+                            <span class="telos-section-icon">⚔️</span>
+                            <span class="telos-section-title">Competitors & Positioning</span>
+                            <span class="telos-section-badge">${data.competitors.length} rivals</span>
+                            <span class="telos-section-arrow">▼</span>
+                        </div>
+                        <div class="telos-section-content">
+                            <div class="telos-section-body">
+                                <div style="background: linear-gradient(135deg, rgba(255, 140, 66, 0.1), rgba(168, 85, 247, 0.1)); border-radius: 8px; padding: 12px; margin-bottom: 12px; text-align: center;">
+                                    <div style="font-size: 0.85rem; font-weight: 600; color: var(--text);">${data.positioning}</div>
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 8px;">
+                                    ${data.competitors.map(c => `
+                                        <div style="background: var(--bg-card); border-radius: 8px; padding: 10px 12px; display: grid; grid-template-columns: 100px 1fr 1fr 1fr; gap: 12px; align-items: center; font-size: 0.8rem;">
+                                            <div style="font-weight: 600;">${c.name}</div>
+                                            <div style="color: var(--text-dim);"><span style="color: #22c55e;">✓</span> ${c.strength}</div>
+                                            <div style="color: var(--text-dim);"><span style="color: #ef4444;">✗</span> ${c.weakness}</div>
+                                            <div style="color: var(--accent); font-weight: 500;">→ ${c.advantage}</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Current App State -->
+                    <div class="telos-section">
+                        <div class="telos-section-header">
+                            <span class="telos-section-icon">🔧</span>
+                            <span class="telos-section-title">Current App State</span>
+                            <span class="telos-section-badge">What exists now</span>
+                            <span class="telos-section-arrow">▼</span>
+                        </div>
+                        <div class="telos-section-content">
+                            <div class="telos-section-body">
+                                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px;">
+                                    <div style="background: var(--bg-card); border-radius: 8px; padding: 10px;">
+                                        <div style="font-size: 0.7rem; color: #22c55e; font-weight: 600; margin-bottom: 6px;">✅ EXISTS</div>
+                                        ${data.currentState.exists.map(item => `<div style="font-size: 0.75rem; color: var(--text-dim); padding: 2px 0;">• ${item}</div>`).join('')}
+                                    </div>
+                                    <div style="background: var(--bg-card); border-radius: 8px; padding: 10px;">
+                                        <div style="font-size: 0.7rem; color: #fbbf24; font-weight: 600; margin-bottom: 6px;">🟡 PARTIAL</div>
+                                        ${data.currentState.partial.map(item => `<div style="font-size: 0.75rem; color: var(--text-dim); padding: 2px 0;">• ${item}</div>`).join('')}
+                                    </div>
+                                    <div style="background: var(--bg-card); border-radius: 8px; padding: 10px;">
+                                        <div style="font-size: 0.7rem; color: #ef4444; font-weight: 600; margin-bottom: 6px;">❌ MISSING</div>
+                                        ${data.currentState.missing.map(item => `<div style="font-size: 0.75rem; color: var(--text-dim); padding: 2px 0;">• ${item}</div>`).join('')}
+                                    </div>
+                                </div>
+                                <div style="background: rgba(239, 68, 68, 0.1); border-radius: 8px; padding: 10px; border-left: 3px solid #ef4444;">
+                                    <div style="font-size: 0.7rem; color: #ef4444; font-weight: 600; margin-bottom: 4px;">⚠️ TECH DEBT</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-dim);">${data.currentState.techDebt.join(' • ')}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Technical Context -->
+                    <div class="telos-section">
+                        <div class="telos-section-header">
+                            <span class="telos-section-icon">💻</span>
+                            <span class="telos-section-title">Technical Context</span>
+                            <span class="telos-section-badge">Stack & Limits</span>
+                            <span class="telos-section-arrow">▼</span>
+                        </div>
+                        <div class="telos-section-content">
+                            <div class="telos-section-body">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                    <div style="background: var(--bg-card); border-radius: 8px; padding: 12px;">
+                                        <div style="font-size: 0.75rem; color: var(--accent); font-weight: 600; margin-bottom: 8px;">🛠️ Tech Stack</div>
+                                        <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                                            ${data.technical.stack.map(t => `<span style="background: var(--bg-elevated); padding: 3px 8px; border-radius: 4px; font-size: 0.7rem;">${t}</span>`).join('')}
+                                        </div>
+                                    </div>
+                                    <div style="background: var(--bg-card); border-radius: 8px; padding: 12px;">
+                                        <div style="font-size: 0.75rem; color: var(--accent); font-weight: 600; margin-bottom: 8px;">📁 Codebase</div>
+                                        <div style="font-size: 0.8rem; color: var(--text-dim); font-family: monospace;">${data.technical.codebase}</div>
+                                    </div>
+                                    <div style="background: var(--bg-card); border-radius: 8px; padding: 12px;">
+                                        <div style="font-size: 0.75rem; color: var(--accent); font-weight: 600; margin-bottom: 8px;">💰 API Budget</div>
+                                        <div style="font-size: 0.9rem; font-weight: 600;">${data.technical.apiBudget}</div>
+                                    </div>
+                                    <div style="background: var(--bg-card); border-radius: 8px; padding: 12px;">
+                                        <div style="font-size: 0.75rem; color: var(--accent); font-weight: 600; margin-bottom: 8px;">⚡ Perf Targets</div>
+                                        <div style="font-size: 0.75rem; color: var(--text-dim);">${data.technical.perfTargets.join(' • ')}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- What Users Love -->
+                    <div class="telos-section">
+                        <div class="telos-section-header">
+                            <span class="telos-section-icon">💚</span>
+                            <span class="telos-section-title">What Users Love</span>
+                            <span class="telos-section-badge">Protect these!</span>
+                            <span class="telos-section-arrow">▼</span>
+                        </div>
+                        <div class="telos-section-content">
+                            <div class="telos-section-body">
+                                <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">
+                                    ${data.usersLove.map(item => `
+                                        <div style="background: var(--bg-card); border-left: 3px solid #22c55e; border-radius: 0 8px 8px 0; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center;">
+                                            <span style="font-size: 0.85rem; color: var(--text);">"${item.text}"</span>
+                                            <span style="font-size: 0.7rem; color: #22c55e; font-weight: 500;">${item.stat}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <div style="background: rgba(34, 197, 94, 0.1); border-radius: 8px; padding: 10px;">
+                                    <div style="font-size: 0.75rem; color: #22c55e; font-weight: 600; margin-bottom: 6px;">🛡️ FEATURES TO PROTECT</div>
+                                    <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                                        ${data.protect.map(p => `<span style="background: rgba(34, 197, 94, 0.2); color: #22c55e; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem;">${p}</span>`).join('')}
+                                    </div>
                                 </div>
                             </div>
                         </div>
