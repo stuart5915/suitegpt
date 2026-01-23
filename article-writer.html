@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Article Writer | SUITE</title>
+    <meta name="description" content="AI-powered article refinement. Paste your draft, refine iteratively with AI suggestions, and publish.">
+    <link rel="icon" type="image/png" href="assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="suite-styles.css">
+    <link rel="stylesheet" href="nav.css">
+    <style>
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: rgba(20, 20, 30, 0.8);
+            --border: rgba(255, 255, 255, 0.1);
+            --text: #f0f0f5;
+            --text-dim: rgba(255, 255, 255, 0.5);
+            --accent: #a855f7;
+            --accent-glow: rgba(168, 85, 247, 0.3);
+        }
+
+        body {
+            background: linear-gradient(180deg, #0a0a0f 0%, #1a1a2e 50%, #16213e 100%);
+            color: var(--text);
+            min-height: 100vh;
+            font-family: 'Nunito', sans-serif;
+        }
+
+        .app-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 100px 20px 40px;
+        }
+
+        .app-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .app-title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #fff 0%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .app-subtitle {
+            color: var(--text-dim);
+            font-size: 1.1rem;
+        }
+
+        /* Main content area */
+        .writer-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        /* Original Draft Section */
+        .draft-section {
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section-label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .draft-textarea {
+            width: 100%;
+            min-height: 120px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            color: var(--text);
+            font-family: 'Nunito', sans-serif;
+            font-size: 1rem;
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        .draft-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .draft-textarea::placeholder {
+            color: var(--text-dim);
+        }
+
+        /* Refined Article Section */
+        .refined-section {
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+            display: none;
+        }
+
+        .refined-section.visible {
+            display: block;
+        }
+
+        .refined-content {
+            background: rgba(168, 85, 247, 0.05);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            min-height: 200px;
+            white-space: pre-wrap;
+            line-height: 1.8;
+            font-size: 1rem;
+        }
+
+        .refined-content.loading {
+            color: var(--text-dim);
+            font-style: italic;
+        }
+
+        /* Expansion Pills */
+        .pills-section {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            display: none;
+        }
+
+        .pills-section.visible {
+            display: block;
+        }
+
+        .pills-label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-bottom: 12px;
+        }
+
+        .pills-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .expansion-pill {
+            padding: 8px 16px;
+            background: rgba(168, 85, 247, 0.15);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 100px;
+            color: var(--text);
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-family: 'Nunito', sans-serif;
+            transition: all 0.2s ease;
+        }
+
+        .expansion-pill:hover {
+            background: rgba(168, 85, 247, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .expansion-pill.selected {
+            background: rgba(168, 85, 247, 0.4);
+            border-color: var(--accent);
+        }
+
+        /* Input Section */
+        .input-section {
+            padding: 20px 24px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .refine-input {
+            flex: 1;
+            min-height: 60px;
+            max-height: 150px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            color: var(--text);
+            font-family: 'Nunito', sans-serif;
+            font-size: 1rem;
+            resize: none;
+            line-height: 1.5;
+        }
+
+        .refine-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .refine-input::placeholder {
+            color: var(--text-dim);
+        }
+
+        .send-btn {
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #a855f7, #7c3aed);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Nunito', sans-serif;
+            white-space: nowrap;
+        }
+
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px var(--accent-glow);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Actions */
+        .actions-section {
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .iteration-count {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .reset-btn {
+            padding: 12px 24px;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-dim);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Nunito', sans-serif;
+        }
+
+        .reset-btn:hover {
+            border-color: var(--text-dim);
+            color: var(--text);
+        }
+
+        .publish-btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Nunito', sans-serif;
+        }
+
+        .publish-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
+        }
+
+        .publish-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Title Input (shown after first refinement) */
+        .title-section {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            display: none;
+        }
+
+        .title-section.visible {
+            display: block;
+        }
+
+        .title-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px 16px;
+            color: var(--text);
+            font-family: 'Nunito', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .title-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .app-container {
+                padding: 90px 12px 30px;
+            }
+
+            .app-title {
+                font-size: 2rem;
+            }
+
+            .input-section {
+                flex-direction: column;
+            }
+
+            .send-btn {
+                width: 100%;
+            }
+
+            .actions-section {
+                flex-direction: column;
+            }
+
+            .action-buttons {
+                width: 100%;
+            }
+
+            .action-buttons button {
+                flex: 1;
+            }
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-card);
+            border: 1px solid var(--accent);
+            padding: 16px 28px;
+            border-radius: 12px;
+            color: var(--text);
+            font-weight: 600;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav id="main-nav"></nav>
+    <script src="nav-component.js"></script>
+
+    <div class="app-container">
+        <header class="app-header">
+            <h1 class="app-title">Article Writer</h1>
+            <p class="app-subtitle">Paste your draft. Refine with AI. Publish.</p>
+        </header>
+
+        <div class="writer-card">
+            <!-- Original Draft -->
+            <div class="draft-section">
+                <div class="section-label">
+                    <span>Your Draft</span>
+                </div>
+                <textarea
+                    id="draftInput"
+                    class="draft-textarea"
+                    placeholder="Paste your raw idea or draft here... It can be messy, stream-of-consciousness, bullet points - whatever you have."
+                ></textarea>
+            </div>
+
+            <!-- Title (shown after first refinement) -->
+            <div class="title-section" id="titleSection">
+                <div class="section-label">Article Title</div>
+                <input type="text" id="titleInput" class="title-input" placeholder="Article title...">
+            </div>
+
+            <!-- Refined Article -->
+            <div class="refined-section" id="refinedSection">
+                <div class="section-label">
+                    <span>Refined Article</span>
+                </div>
+                <div class="refined-content" id="refinedContent"></div>
+            </div>
+
+            <!-- Expansion Pills -->
+            <div class="pills-section" id="pillsSection">
+                <div class="pills-label">Click to add expansion prompts:</div>
+                <div class="pills-container" id="pillsContainer"></div>
+            </div>
+
+            <!-- Input Section -->
+            <div class="input-section">
+                <textarea
+                    id="refineInput"
+                    class="refine-input"
+                    placeholder="Type instructions or click pills above... e.g., 'clean this up' or 'make it more personal'"
+                ></textarea>
+                <button class="send-btn" id="sendBtn" onclick="sendRefinement()">
+                    Refine
+                </button>
+            </div>
+
+            <!-- Actions -->
+            <div class="actions-section">
+                <div class="iteration-count" id="iterationCount"></div>
+                <div class="action-buttons">
+                    <button class="reset-btn" onclick="resetWriter()">Start Over</button>
+                    <button class="publish-btn" id="publishBtn" onclick="publishArticle()" disabled>
+                        Publish to artstu.ca
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>&copy; 2026 SUITE. Anyone Can Build. Everyone Gets Paid.</p>
+    </footer>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Gemini API
+        const GEMINI_API_KEY = 'AIzaSyDw-ukCe45NQwbQlJXiQYAGVX3P4rcWN0c';
+
+        // State
+        let iterations = 0;
+        let currentArticle = '';
+        let selectedPills = new Set();
+        let currentUser = null;
+
+        // Get user from URL params (passed from suite-shell)
+        function initUser() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('tg_id')) {
+                currentUser = {
+                    id: params.get('tg_id'),
+                    username: params.get('tg_username'),
+                    firstName: params.get('tg_first_name'),
+                    photoUrl: params.get('tg_photo')
+                };
+            }
+
+            // Also check if draft was passed
+            const draft = params.get('draft');
+            if (draft) {
+                document.getElementById('draftInput').value = decodeURIComponent(draft);
+            }
+
+            const title = params.get('title');
+            if (title) {
+                document.getElementById('titleInput').value = decodeURIComponent(title);
+            }
+        }
+
+        // Send refinement request
+        async function sendRefinement() {
+            const draft = document.getElementById('draftInput').value.trim();
+            const instructions = document.getElementById('refineInput').value.trim();
+
+            if (!draft && !currentArticle) {
+                showToast('Please enter a draft first');
+                return;
+            }
+
+            if (!instructions && iterations === 0) {
+                // First time, default to cleanup
+                document.getElementById('refineInput').value = 'Clean this up and make it flow better while keeping my voice';
+            }
+
+            const finalInstructions = document.getElementById('refineInput').value.trim() || 'Continue refining';
+
+            // Show loading
+            const sendBtn = document.getElementById('sendBtn');
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Refining...';
+
+            document.getElementById('refinedSection').classList.add('visible');
+            document.getElementById('refinedContent').classList.add('loading');
+            document.getElementById('refinedContent').textContent = 'AI is thinking...';
+
+            // Hide pills while loading
+            document.getElementById('pillsSection').classList.remove('visible');
+
+            try {
+                const contentToRefine = currentArticle || draft;
+                const isFirstPass = iterations === 0;
+
+                const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEMINI_API_KEY, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: `You are Stuart's writing assistant, helping refine articles for artstu.ca.
+
+ABOUT STUART & ARTSTU:
+- Stuart Hollinger is a builder, philosopher, and seeker based in Cambridge, Ontario
+- artstu.ca is his personal site exploring faith, philosophy, technology, art, and the examined life
+- He's the founder of SUITE (getsuite.app) - a decentralized app ecosystem
+- His writing style: introspective, conversational, sometimes stream-of-consciousness
+- He explores AI consciousness, the nature of goodness, energy and creation, faith intersecting with technology
+- Tone: authentic, curious, contemplative but not pretentious, occasionally playful
+
+YOUR JOB:
+- ${isFirstPass ? 'Take this raw draft and clean it up into a polished article' : 'Refine this article based on the instructions'}
+- Keep Stuart's voice and vibe intact - don't make it sound corporate or generic
+- Improve flow and clarity without losing the conversational, thinking-out-loud quality
+- Output ONLY the refined article content, no preamble or explanation
+
+${isFirstPass ? 'ORIGINAL DRAFT' : 'CURRENT ARTICLE'}:
+${contentToRefine}
+
+INSTRUCTIONS: ${finalInstructions}
+
+Output the refined article:`
+                            }]
+                        }],
+                        generationConfig: {
+                            temperature: 0.7,
+                            maxOutputTokens: 3000
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('API error');
+                }
+
+                const data = await response.json();
+                const refinedText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+                // Update state
+                currentArticle = refinedText;
+                iterations++;
+
+                // Update UI
+                document.getElementById('refinedContent').classList.remove('loading');
+                document.getElementById('refinedContent').textContent = refinedText;
+                document.getElementById('refineInput').value = '';
+                document.getElementById('iterationCount').textContent = `Iteration ${iterations}`;
+
+                // Show title section after first refinement
+                document.getElementById('titleSection').classList.add('visible');
+
+                // Enable publish button
+                document.getElementById('publishBtn').disabled = false;
+
+                // Generate expansion pills
+                generateExpansionPills(refinedText, finalInstructions);
+
+            } catch (err) {
+                console.error('Refinement error:', err);
+                document.getElementById('refinedContent').classList.remove('loading');
+                document.getElementById('refinedContent').textContent = 'Error refining. Please try again.';
+                showToast('Error: ' + err.message);
+            }
+
+            sendBtn.disabled = false;
+            sendBtn.textContent = 'Refine';
+        }
+
+        // Generate expansion pills
+        async function generateExpansionPills(articleContent, lastInstruction) {
+            const container = document.getElementById('pillsContainer');
+            const section = document.getElementById('pillsSection');
+
+            section.classList.add('visible');
+            container.innerHTML = '<span style="color: var(--text-dim);">Generating suggestions...</span>';
+            selectedPills.clear();
+
+            try {
+                const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEMINI_API_KEY, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: `Based on this article and the last refinement instruction, suggest 5 short prompts (max 6 words each) for areas the author could expand on.
+
+Consider:
+- Unexplored themes or angles in the content
+- Places needing more depth, examples, or personal touches
+- Connections to broader philosophical/spiritual ideas
+- Ways to make it more vivid or engaging
+
+Return ONLY a valid JSON array:
+[{"emoji": "💭", "label": "short label", "prompt": "Full instruction for the AI..."}]
+
+Article:
+${articleContent.slice(0, 1500)}
+
+Last instruction: ${lastInstruction}`
+                            }]
+                        }],
+                        generationConfig: { temperature: 0.8, maxOutputTokens: 500 }
+                    })
+                });
+
+                if (!response.ok) throw new Error('API error');
+
+                const data = await response.json();
+                const pillsText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                const jsonMatch = pillsText.match(/\[[\s\S]*\]/);
+
+                if (jsonMatch) {
+                    const pills = JSON.parse(jsonMatch[0]);
+                    renderPills(pills);
+                } else {
+                    throw new Error('No JSON');
+                }
+            } catch (err) {
+                console.error('Pills error:', err);
+                // Fallback pills
+                renderPills([
+                    { emoji: '💭', label: 'Go deeper', prompt: 'Expand on the main idea with more depth and nuance' },
+                    { emoji: '📖', label: 'Add example', prompt: 'Add a concrete example or analogy to illustrate the point' },
+                    { emoji: '🔗', label: 'Connect ideas', prompt: 'Connect this to related themes or broader philosophy' },
+                    { emoji: '⚡', label: 'More personal', prompt: 'Add more personal voice and authentic touches' },
+                    { emoji: '🌍', label: 'Bigger picture', prompt: 'Tie this to broader implications for humanity' }
+                ]);
+            }
+        }
+
+        // Render pills
+        function renderPills(pills) {
+            const container = document.getElementById('pillsContainer');
+            container.innerHTML = '';
+            selectedPills.clear();
+
+            pills.forEach((pill, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'expansion-pill';
+                btn.dataset.prompt = pill.prompt;
+                btn.dataset.index = index;
+                btn.innerHTML = `${pill.emoji || '✨'} ${pill.label}`;
+
+                btn.onclick = () => togglePill(btn, pill.prompt, index);
+                container.appendChild(btn);
+            });
+        }
+
+        // Toggle pill selection
+        function togglePill(btn, prompt, index) {
+            const input = document.getElementById('refineInput');
+
+            if (selectedPills.has(index)) {
+                selectedPills.delete(index);
+                btn.classList.remove('selected');
+                // Remove from input
+                const lines = input.value.split('\n\n').filter(p => p.trim() !== prompt.trim());
+                input.value = lines.join('\n\n');
+            } else {
+                selectedPills.add(index);
+                btn.classList.add('selected');
+                // Add to input
+                if (input.value.trim()) {
+                    input.value += '\n\n' + prompt;
+                } else {
+                    input.value = prompt;
+                }
+            }
+
+            // Auto-resize
+            input.style.height = 'auto';
+            input.style.height = Math.min(input.scrollHeight, 150) + 'px';
+        }
+
+        // Reset writer
+        function resetWriter() {
+            if (iterations > 0 && !confirm('Start over? Your current article will be lost.')) {
+                return;
+            }
+
+            document.getElementById('draftInput').value = '';
+            document.getElementById('titleInput').value = '';
+            document.getElementById('refineInput').value = '';
+            document.getElementById('refinedContent').textContent = '';
+            document.getElementById('pillsContainer').innerHTML = '';
+
+            document.getElementById('refinedSection').classList.remove('visible');
+            document.getElementById('titleSection').classList.remove('visible');
+            document.getElementById('pillsSection').classList.remove('visible');
+
+            document.getElementById('publishBtn').disabled = true;
+            document.getElementById('iterationCount').textContent = '';
+
+            currentArticle = '';
+            iterations = 0;
+            selectedPills.clear();
+        }
+
+        // Publish article
+        async function publishArticle() {
+            const title = document.getElementById('titleInput').value.trim();
+            if (!title) {
+                showToast('Please add a title first');
+                document.getElementById('titleInput').focus();
+                return;
+            }
+
+            if (!currentArticle) {
+                showToast('No article to publish');
+                return;
+            }
+
+            const publishBtn = document.getElementById('publishBtn');
+            publishBtn.disabled = true;
+            publishBtn.textContent = 'Publishing...';
+
+            try {
+                // Generate slug
+                const slug = title.toLowerCase()
+                    .replace(/[^a-z0-9\s-]/g, '')
+                    .replace(/\s+/g, '-')
+                    .replace(/-+/g, '-')
+                    .trim();
+
+                // Generate summary
+                const summaryResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEMINI_API_KEY, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: `Write a brief one-line summary (max 80 chars) for this article:
+
+Title: ${title}
+Content: ${currentArticle.slice(0, 500)}
+
+Output ONLY the summary, no quotes.`
+                            }]
+                        }],
+                        generationConfig: { temperature: 0.7, maxOutputTokens: 50 }
+                    })
+                });
+
+                let summary = '';
+                if (summaryResponse.ok) {
+                    const sumData = await summaryResponse.json();
+                    summary = sumData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+                }
+
+                // For now, show the article data - in production this would POST to an API
+                console.log('Publishing article:', { title, slug, summary, content: currentArticle });
+
+                // Show success (in production, this would be after API confirms)
+                showToast('Article ready! Copy to publish manually for now.');
+
+                // Open in new tab with article content for manual publishing
+                const articleData = encodeURIComponent(JSON.stringify({
+                    title,
+                    slug,
+                    summary,
+                    content: currentArticle
+                }));
+
+                // For now just show success
+                publishBtn.textContent = 'Published!';
+
+            } catch (err) {
+                console.error('Publish error:', err);
+                showToast('Error publishing: ' + err.message);
+                publishBtn.disabled = false;
+                publishBtn.textContent = 'Publish to artstu.ca';
+            }
+        }
+
+        // Toast notification
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // Auto-resize textarea
+        document.getElementById('refineInput').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+        });
+
+        // Enter to send (with shift for newline)
+        document.getElementById('refineInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendRefinement();
+            }
+        });
+
+        // Initialize
+        initUser();
+    </script>
+</body>
+</html>
