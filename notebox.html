@@ -2891,17 +2891,21 @@ Format as a numbered list from most to least promising.`;
         }
 
         function openArticleRefinementModal() {
+            // Save the idea ID before closing menu (which resets it)
+            const ideaId = artStuIdeaId;
             closeArtStuMenu();
 
-            console.log('Opening article modal for idea:', artStuIdeaId);
-            console.log('Available ideas:', ideas.map(i => i.id));
+            console.log('Opening article modal for idea:', ideaId);
 
-            const idea = ideas.find(i => i.id === artStuIdeaId);
+            const idea = ideas.find(i => i.id === ideaId);
             if (!idea) {
-                console.error('Idea not found:', artStuIdeaId);
+                console.error('Idea not found:', ideaId);
                 alert('Error: Could not find the idea. Please try again.');
                 return;
             }
+
+            // Store for later use in publish
+            artStuIdeaId = ideaId;
 
             // Reset state
             articleChatHistory = [];
