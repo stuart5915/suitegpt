@@ -25,7 +25,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#0a0a1a">
+    <meta name="theme-color" content="#0a0a0f">
     <link rel="apple-touch-icon" href="/assets/suite-logo-new.png">
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/nav.css">
@@ -34,26 +34,33 @@
     <!-- QRCode.js for deposit address QR -->
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <style>
-        /* Dark theme override for nav on this page */
+        /* Dark theme override for nav on this page - Premium warm */
         .nav-inner {
-            background: rgba(26, 26, 46, 0.95) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(18, 18, 26, 0.95) !important;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border) !important;
         }
         .nav-logo {
-            color: #ffffff !important;
+            color: var(--text-primary) !important;
         }
         .nav-links a {
-            color: #9ca3af !important;
+            color: var(--text-secondary) !important;
         }
-        .nav-links a:hover,
+        .nav-links a:hover {
+            background: rgba(255, 140, 66, 0.15) !important;
+            color: var(--accent-warm) !important;
+        }
         .nav-links a.active {
-            color: #ffffff !important;
+            background: var(--accent-warm) !important;
+            color: white !important;
         }
         .mobile-menu-btn span {
-            background: #ffffff !important;
+            background: var(--text-primary) !important;
         }
         .connect-btn {
-            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            background: linear-gradient(135deg, var(--accent-warm), var(--accent-coral)) !important;
+            box-shadow: 0 4px 16px var(--glow-warm);
         }
         /* Mobile menu dropdown - dark theme */
         @media (max-width: 768px) {
@@ -68,21 +75,22 @@
                 left: 10px;
                 right: 10px;
                 width: calc(100% - 20px);
-                background: rgba(26, 26, 46, 0.98) !important;
-                border: 1px solid rgba(255, 255, 255, 0.1) !important;
+                background: rgba(18, 18, 26, 0.98) !important;
+                border: 1px solid var(--glass-border) !important;
                 border-radius: 16px;
                 padding: 12px;
                 z-index: 99999 !important;
                 box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
             }
             .nav-links.mobile-open a {
-                color: #ffffff !important;
+                color: var(--text-primary) !important;
                 padding: 12px 16px;
                 border-radius: 12px;
                 text-align: center;
             }
             .nav-links.mobile-open a:hover {
-                background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+                background: var(--accent-warm) !important;
+                color: white !important;
             }
         }
 
@@ -94,13 +102,22 @@
         }
 
         :root {
-            --bg-dark: #0a0a1a;
-            --bg-card: #1a1a2e;
-            --accent-orange: #ff9500;
-            --accent-green: #4ade80;
+            /* Dark Premium Palette */
+            --bg-dark: #0a0a0f;
+            --bg-card: #12121a;
+            --bg-surface: #1a1a28;
+            --accent-orange: #ff8c42;
+            --accent-warm: #ff8c42;
+            --accent-amber: #fbbf24;
+            --accent-coral: #ff6b6b;
+            --accent-green: #22c55e;
             --accent-purple: #a855f7;
-            --text-primary: #ffffff;
-            --text-secondary: #9ca3af;
+            --text-primary: #f5f5f7;
+            --text-secondary: #a1a1aa;
+            --text-tertiary: #71717a;
+            --text: #f5f5f7;
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glow-warm: rgba(255, 140, 66, 0.4);
         }
 
         body {
@@ -132,7 +149,7 @@
             z-index: 0;
         }
 
-        /* Animated glow pulses */
+        /* Animated glow pulses - Premium warm theme */
         body::after {
             content: '';
             position: fixed;
@@ -141,18 +158,18 @@
             right: 0;
             bottom: 0;
             background:
-                radial-gradient(ellipse 600px 400px at 20% 30%, rgba(168, 85, 247, 0.08) 0%, transparent 70%),
-                radial-gradient(ellipse 500px 350px at 80% 70%, rgba(249, 115, 22, 0.06) 0%, transparent 70%),
-                radial-gradient(ellipse 400px 300px at 60% 20%, rgba(34, 197, 94, 0.05) 0%, transparent 70%);
+                radial-gradient(ellipse 800px 600px at 20% 20%, rgba(255, 140, 66, 0.08) 0%, transparent 60%),
+                radial-gradient(ellipse 600px 500px at 80% 30%, rgba(168, 85, 247, 0.06) 0%, transparent 60%),
+                radial-gradient(ellipse 500px 400px at 60% 70%, rgba(59, 130, 246, 0.05) 0%, transparent 60%);
             pointer-events: none;
             z-index: 0;
-            animation: glowPulse 8s ease-in-out infinite alternate;
+            animation: ambientFloat 20s ease-in-out infinite alternate;
         }
 
-        @keyframes glowPulse {
-            0% { opacity: 0.6; }
-            50% { opacity: 1; }
-            100% { opacity: 0.7; }
+        @keyframes ambientFloat {
+            0% { transform: translate(0, 0) scale(1); opacity: 0.8; }
+            50% { transform: translate(-20px, 20px) scale(1.05); opacity: 1; }
+            100% { transform: translate(20px, -10px) scale(0.95); opacity: 0.9; }
         }
 
         /* Learn More dropdown animation */
@@ -246,7 +263,7 @@
 
         /* Credits button in main nav (light background) */
         .nav-actions .credits-btn {
-            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            background: linear-gradient(135deg, var(--accent-warm), var(--accent-coral));
             border: none;
             color: white;
             font-size: 0.85rem;
@@ -301,7 +318,7 @@
             align-items: center;
             gap: 6px;
             padding: 6px 12px;
-            background: linear-gradient(135deg, #ff9500, #f97316);
+            background: linear-gradient(135deg, var(--accent-warm), var(--accent-coral));
             border-radius: 100px;
             color: white;
             font-size: 0.85rem;
@@ -830,8 +847,9 @@
         }
 
         .apps-tab.active {
-            background: linear-gradient(135deg, var(--accent-orange), #f97316);
+            background: linear-gradient(135deg, var(--accent-warm), var(--accent-coral));
             color: white;
+            box-shadow: 0 4px 16px var(--glow-warm);
         }
 
         .apps-tab-icon {
@@ -867,7 +885,7 @@
 
         .leaderboard-item:hover {
             background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(255, 149, 0, 0.3);
+            border-color: rgba(255, 140, 66, 0.3);
         }
 
         .leaderboard-rank {
@@ -1564,7 +1582,7 @@
 
         .app-card:hover {
             background: rgba(255, 255, 255, 0.06);
-            border-color: rgba(255, 149, 0, 0.3);
+            border-color: rgba(255, 140, 66, 0.3);
         }
 
         .app-card:active {
@@ -1632,7 +1650,7 @@
 
         .app-card .view-btn:hover {
             background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 149, 0, 0.3);
+            border-color: rgba(255, 140, 66, 0.3);
         }
 
         .app-card .view-btn.mobile:hover {
@@ -1847,11 +1865,11 @@
 
         .app-action-btn:hover {
             background: rgba(255, 149, 0, 0.15);
-            border-color: rgba(255, 149, 0, 0.3);
+            border-color: rgba(255, 140, 66, 0.3);
         }
 
         .app-action-btn.primary {
-            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            background: linear-gradient(135deg, var(--accent-warm), var(--accent-coral));
             border: none;
             color: white;
         }
@@ -2146,7 +2164,7 @@
 
         .view-option-btn:hover {
             background: rgba(255, 149, 0, 0.15);
-            border-color: rgba(255, 149, 0, 0.3);
+            border-color: rgba(255, 140, 66, 0.3);
         }
 
         .view-option-btn .option-icon {
@@ -3457,7 +3475,7 @@
         }
 
         .influencer-notify-btn {
-            background: linear-gradient(135deg, #ff9500, #ff6b9d);
+            background: linear-gradient(135deg, var(--accent-warm), var(--accent-coral));
             color: white;
             border: none;
             padding: 12px 24px;
@@ -3589,7 +3607,7 @@
         .tier-launch:hover { border-color: #a855f7; box-shadow: 0 4px 20px rgba(168, 85, 247, 0.2); }
         .tier-launch .tier-name { color: #a855f7; }
 
-        .tier-scale { border-color: rgba(255, 149, 0, 0.3); }
+        .tier-scale { border-color: rgba(255, 140, 66, 0.3); }
         .tier-scale:hover { border-color: #ff9500; box-shadow: 0 4px 20px rgba(255, 149, 0, 0.2); }
         .tier-scale .tier-name { color: #ff9500; }
 
@@ -5354,7 +5372,7 @@
                 width: 120px;
                 height: 120px;
                 border-radius: 24px;
-                background: linear-gradient(135deg, #ff9500, #f97316);
+                background: linear-gradient(135deg, var(--accent-warm), var(--accent-coral));
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -5414,7 +5432,7 @@
             }
 
             .featured-btn.primary {
-                background: linear-gradient(135deg, #ff9500, #f97316);
+                background: linear-gradient(135deg, var(--accent-warm), var(--accent-coral));
                 color: white;
                 box-shadow: 0 4px 20px rgba(255, 149, 0, 0.3);
             }
@@ -5639,7 +5657,7 @@
                     </div>
 
                     <!-- Fund Button -->
-                    <button id="panelFundBtn" onclick="openPanelFundModal()" style="width: 100%; padding: 14px; font-size: 1rem; font-weight: 700; background: linear-gradient(135deg, #ff9500, #a855f7); border: none; border-radius: 12px; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
+                    <button id="panelFundBtn" onclick="openPanelFundModal()" style="width: 100%; padding: 14px; font-size: 1rem; font-weight: 700; background: linear-gradient(135deg, var(--accent-warm), var(--accent-amber)); border: none; border-radius: 12px; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
                         <span>💰</span> Fund This App
                     </button>
                 </div>
