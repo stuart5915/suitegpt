@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Programs & Pricing | MoveStrong</title>
+    <meta name="description" content="Choose your perfect training program. From beginner-friendly packages to elite athlete coaching, MoveStrong has a plan for every fitness goal.">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Programs & Pricing | MoveStrong">
+    <meta property="og:description" content="Personal training programs tailored to your goals. Start your transformation today.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://movestrong.fit/programs">
+
+    <link rel="icon" type="image/png" href="assets/images/logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        /* Programs page specific styles */
+        .programs-hero {
+            padding: 160px 24px 80px;
+            text-align: center;
+            position: relative;
+        }
+
+        .programs-hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255, 107, 53, 0.1), transparent);
+            pointer-events: none;
+        }
+
+        .programs-hero h1 {
+            margin-bottom: var(--space-md);
+        }
+
+        .programs-hero p {
+            color: var(--color-text-secondary);
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .program-tabs {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-3xl);
+            flex-wrap: wrap;
+        }
+
+        .program-tab {
+            padding: var(--space-md) var(--space-xl);
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-full);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .program-tab:hover,
+        .program-tab.active {
+            background: var(--color-accent);
+            border-color: var(--color-accent);
+            color: white;
+        }
+
+        .program-detail {
+            display: none;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .program-detail.active {
+            display: block;
+        }
+
+        .program-hero-card {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-2xl);
+            overflow: hidden;
+            margin-bottom: var(--space-3xl);
+        }
+
+        .program-hero-top {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-2xl);
+            padding: var(--space-3xl);
+        }
+
+        .program-hero-content h2 {
+            margin-bottom: var(--space-md);
+        }
+
+        .program-hero-content .price-big {
+            font-family: var(--font-display);
+            font-size: 5rem;
+            line-height: 1;
+            margin-bottom: var(--space-sm);
+        }
+
+        .program-hero-content .price-big span {
+            font-size: 2rem;
+            color: var(--color-text-muted);
+        }
+
+        .program-hero-content .price-period {
+            color: var(--color-text-muted);
+            margin-bottom: var(--space-xl);
+        }
+
+        .program-hero-content .program-desc {
+            color: var(--color-text-secondary);
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: var(--space-xl);
+        }
+
+        .program-hero-features {
+            background: var(--color-bg-elevated);
+            padding: var(--space-2xl);
+            border-radius: var(--radius-xl);
+        }
+
+        .program-hero-features h3 {
+            font-family: var(--font-family);
+            font-size: 1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: var(--space-lg);
+            color: var(--color-accent);
+        }
+
+        .feature-list {
+            list-style: none;
+        }
+
+        .feature-list li {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            padding: var(--space-md) 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+
+        .feature-list .check {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, var(--color-accent), var(--color-secondary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .program-cta-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-xl) var(--space-3xl);
+            background: linear-gradient(135deg, var(--color-accent-ultra), rgba(247, 147, 30, 0.05));
+            border-top: 1px solid var(--color-border);
+        }
+
+        .program-cta-bar .guarantee {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            color: var(--color-text-secondary);
+        }
+
+        .program-cta-bar .guarantee-icon {
+            font-size: 1.5rem;
+        }
+
+        /* One-time purchases section */
+        .one-time-section {
+            margin-top: var(--space-4xl);
+        }
+
+        .one-time-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-lg);
+        }
+
+        .one-time-card {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-xl);
+            padding: var(--space-2xl);
+            transition: all var(--transition-base);
+        }
+
+        .one-time-card:hover {
+            border-color: var(--color-border-accent);
+            transform: translateY(-5px);
+        }
+
+        .one-time-icon {
+            font-size: 2.5rem;
+            margin-bottom: var(--space-md);
+        }
+
+        .one-time-title {
+            font-family: var(--font-family);
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: var(--space-sm);
+            text-transform: none;
+            letter-spacing: 0;
+        }
+
+        .one-time-desc {
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: var(--space-lg);
+        }
+
+        .one-time-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .one-time-price {
+            font-family: var(--font-display);
+            font-size: 1.8rem;
+        }
+
+        /* FAQ Section */
+        .faq-section {
+            margin-top: var(--space-4xl);
+        }
+
+        .faq-grid {
+            display: grid;
+            gap: var(--space-md);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .faq-item {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+
+        .faq-question {
+            width: 100%;
+            padding: var(--space-lg);
+            background: none;
+            border: none;
+            color: var(--color-text);
+            font-family: var(--font-family);
+            font-size: 1rem;
+            font-weight: 600;
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all var(--transition-fast);
+        }
+
+        .faq-question:hover {
+            color: var(--color-accent);
+        }
+
+        .faq-question .icon {
+            font-size: 1.5rem;
+            transition: transform var(--transition-fast);
+        }
+
+        .faq-item.open .faq-question .icon {
+            transform: rotate(45deg);
+        }
+
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height var(--transition-base);
+        }
+
+        .faq-item.open .faq-answer {
+            max-height: 500px;
+        }
+
+        .faq-answer-content {
+            padding: 0 var(--space-lg) var(--space-lg);
+            color: var(--color-text-secondary);
+            line-height: 1.7;
+        }
+
+        @media (max-width: 768px) {
+            .program-hero-top {
+                grid-template-columns: 1fr;
+            }
+
+            .program-cta-bar {
+                flex-direction: column;
+                gap: var(--space-lg);
+                text-align: center;
+            }
+
+            .program-hero-content .price-big {
+                font-size: 3.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Preloader -->
+    <div class="preloader">
+        <div class="preloader-logo">MS</div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-brand">
+                <div class="nav-logo">MS</div>
+                <span class="nav-title">Move<span>Strong</span></span>
+            </a>
+
+            <ul class="nav-links" id="navLinks">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="programs.html" class="nav-link active">Programs</a></li>
+                <li><a href="analyzer.html" class="nav-link">AI Analyzer</a></li>
+                <li><a href="about.html" class="nav-link">About</a></li>
+                <li><a href="contact.html" class="nav-link">Contact</a></li>
+                <li><a href="clients.html" class="nav-link">Client Login</a></li>
+                <li class="nav-mobile-cta"><a href="contact.html" class="btn btn-primary">Book a Session</a></li>
+            </ul>
+
+            <div class="nav-cta">
+                <a href="contact.html" class="btn btn-primary btn-sm">Book a Session</a>
+                <button class="nav-toggle" onclick="toggleNav()">
+                    <span id="navIcon">&#9776;</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <!-- Programs Hero -->
+        <section class="programs-hero">
+            <div class="section-badge reveal">Coaching Programs</div>
+            <h1 class="reveal">Choose Your <span class="text-gradient">Program</span></h1>
+            <p class="reveal">Investment in yourself is always the best investment. Pick the program that fits your goals.</p>
+        </section>
+
+        <section class="section" style="padding-top: 0;">
+            <div class="container">
+                <!-- Program Tabs -->
+                <div class="program-tabs reveal">
+                    <button class="program-tab active" data-program="starter">Starter</button>
+                    <button class="program-tab" data-program="pro">Pro</button>
+                    <button class="program-tab" data-program="elite">Elite</button>
+                </div>
+
+                <!-- Starter Program -->
+                <div class="program-detail active" id="starter">
+                    <div class="program-hero-card reveal">
+                        <div class="program-hero-top">
+                            <div class="program-hero-content">
+                                <div class="section-badge">Starter Package</div>
+                                <h2>Perfect for <span class="text-gradient">Beginners</span></h2>
+                                <div class="price-big">$99<span>/mo</span></div>
+                                <div class="price-period">Billed monthly · Cancel anytime</div>
+                                <p class="program-desc">
+                                    Just getting started on your fitness journey? The Starter package gives you
+                                    the foundation you need with twice-weekly sessions and a basic workout plan
+                                    to build healthy habits.
+                                </p>
+                                <a href="#" class="btn btn-primary btn-lg" onclick="checkout('starter')">Get Started Now</a>
+                            </div>
+                            <div class="program-hero-features">
+                                <h3>What's Included</h3>
+                                <ul class="feature-list">
+                                    <li><span class="check">✓</span> 2 training sessions per week</li>
+                                    <li><span class="check">✓</span> Basic customized workout plan</li>
+                                    <li><span class="check">✓</span> Form check videos (up to 4/month)</li>
+                                    <li><span class="check">✓</span> Email support (48hr response)</li>
+                                    <li><span class="check">✓</span> Access to client portal</li>
+                                    <li><span class="check">✓</span> Monthly progress assessment</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="program-cta-bar">
+                            <div class="guarantee">
+                                <span class="guarantee-icon">🛡️</span>
+                                <span>14-day money-back guarantee · No questions asked</span>
+                            </div>
+                            <a href="contact.html" class="btn btn-outline">Questions? Let's Talk</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pro Program -->
+                <div class="program-detail" id="pro">
+                    <div class="program-hero-card reveal">
+                        <div class="program-hero-top">
+                            <div class="program-hero-content">
+                                <div class="section-badge" style="background: linear-gradient(135deg, var(--color-accent), var(--color-secondary)); color: white; border: none;">Most Popular</div>
+                                <h2>Serious <span class="text-gradient">Results</span></h2>
+                                <div class="price-big">$199<span>/mo</span></div>
+                                <div class="price-period">Billed monthly · Cancel anytime</div>
+                                <p class="program-desc">
+                                    Ready to commit? The Pro package is our most popular choice, combining
+                                    4 weekly sessions with comprehensive nutrition guidance and AI-powered
+                                    form analysis for maximum results.
+                                </p>
+                                <a href="#" class="btn btn-primary btn-lg btn-pulse" onclick="checkout('pro')">Get Started Now</a>
+                            </div>
+                            <div class="program-hero-features">
+                                <h3>What's Included</h3>
+                                <ul class="feature-list">
+                                    <li><span class="check">✓</span> 4 training sessions per week</li>
+                                    <li><span class="check">✓</span> Fully customized workout program</li>
+                                    <li><span class="check">✓</span> Complete nutrition guide & meal plans</li>
+                                    <li><span class="check">✓</span> AI form analysis (unlimited)</li>
+                                    <li><span class="check">✓</span> Weekly check-in calls</li>
+                                    <li><span class="check">✓</span> Priority email support (24hr)</li>
+                                    <li><span class="check">✓</span> Full progress tracking dashboard</li>
+                                    <li><span class="check">✓</span> Bi-weekly program adjustments</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="program-cta-bar">
+                            <div class="guarantee">
+                                <span class="guarantee-icon">🛡️</span>
+                                <span>14-day money-back guarantee · No questions asked</span>
+                            </div>
+                            <a href="contact.html" class="btn btn-outline">Questions? Let's Talk</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Elite Program -->
+                <div class="program-detail" id="elite">
+                    <div class="program-hero-card reveal">
+                        <div class="program-hero-top">
+                            <div class="program-hero-content">
+                                <div class="section-badge">Elite Package</div>
+                                <h2>No Limits <span class="text-gradient">Athlete</span></h2>
+                                <div class="price-big">$349<span>/mo</span></div>
+                                <div class="price-period">Billed monthly · Cancel anytime</div>
+                                <p class="program-desc">
+                                    For serious athletes who want unlimited access and VIP treatment.
+                                    Train as often as you want, get meal prep guidance, and have direct
+                                    24/7 access to me for questions and support.
+                                </p>
+                                <a href="#" class="btn btn-primary btn-lg" onclick="checkout('elite')">Get Started Now</a>
+                            </div>
+                            <div class="program-hero-features">
+                                <h3>What's Included</h3>
+                                <ul class="feature-list">
+                                    <li><span class="check">✓</span> <strong>Unlimited</strong> training sessions</li>
+                                    <li><span class="check">✓</span> Advanced periodized programming</li>
+                                    <li><span class="check">✓</span> Full nutrition plan + meal prep guidance</li>
+                                    <li><span class="check">✓</span> Unlimited AI form analysis</li>
+                                    <li><span class="check">✓</span> Daily check-ins</li>
+                                    <li><span class="check">✓</span> <strong>24/7 direct messaging access</strong></li>
+                                    <li><span class="check">✓</span> Competition/event prep support</li>
+                                    <li><span class="check">✓</span> Home visit option (local clients)</li>
+                                    <li><span class="check">✓</span> Priority scheduling</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="program-cta-bar">
+                            <div class="guarantee">
+                                <span class="guarantee-icon">🛡️</span>
+                                <span>14-day money-back guarantee · No questions asked</span>
+                            </div>
+                            <a href="contact.html" class="btn btn-outline">Questions? Let's Talk</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- One-Time Purchases -->
+                <div class="one-time-section">
+                    <div class="section-header reveal">
+                        <h2 class="section-title">One-Time <span class="text-gradient">Purchases</span></h2>
+                        <p class="section-subtitle">Not ready for a monthly commitment? Grab these standalone products.</p>
+                    </div>
+
+                    <div class="one-time-grid stagger-children">
+                        <div class="one-time-card reveal">
+                            <div class="one-time-icon">📋</div>
+                            <h3 class="one-time-title">Custom 8-Week Workout Plan</h3>
+                            <p class="one-time-desc">A personalized workout program designed for your specific goals, equipment, and schedule. Includes video demonstrations.</p>
+                            <div class="one-time-footer">
+                                <span class="one-time-price">$79</span>
+                                <button class="btn btn-sm btn-secondary" onclick="checkout('workout-plan')">Buy Now</button>
+                            </div>
+                        </div>
+
+                        <div class="one-time-card reveal">
+                            <div class="one-time-icon">🥗</div>
+                            <h3 class="one-time-title">Nutrition Guide + Meal Plan</h3>
+                            <p class="one-time-desc">4-week customized meal plan with macros, grocery lists, and recipes tailored to your dietary preferences and goals.</p>
+                            <div class="one-time-footer">
+                                <span class="one-time-price">$49</span>
+                                <button class="btn btn-sm btn-secondary" onclick="checkout('nutrition-guide')">Buy Now</button>
+                            </div>
+                        </div>
+
+                        <div class="one-time-card reveal">
+                            <div class="one-time-icon">🎥</div>
+                            <h3 class="one-time-title">1-on-1 Consultation</h3>
+                            <p class="one-time-desc">60-minute video call to discuss your goals, assess your current fitness, and create a roadmap for your transformation.</p>
+                            <div class="one-time-footer">
+                                <span class="one-time-price">$75</span>
+                                <button class="btn btn-sm btn-secondary" onclick="checkout('consultation')">Book Now</button>
+                            </div>
+                        </div>
+
+                        <div class="one-time-card reveal">
+                            <div class="one-time-icon">🏠</div>
+                            <h3 class="one-time-title">Home Gym Setup Guide</h3>
+                            <p class="one-time-desc">Personalized recommendations for building your perfect home gym based on your space, budget, and training style.</p>
+                            <div class="one-time-footer">
+                                <span class="one-time-price">$29</span>
+                                <button class="btn btn-sm btn-secondary" onclick="checkout('home-gym')">Buy Now</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ Section -->
+                <div class="faq-section">
+                    <div class="section-header reveal">
+                        <h2 class="section-title">Frequently Asked <span class="text-gradient">Questions</span></h2>
+                    </div>
+
+                    <div class="faq-grid">
+                        <div class="faq-item reveal">
+                            <button class="faq-question">
+                                <span>Can I switch between plans?</span>
+                                <span class="icon">+</span>
+                            </button>
+                            <div class="faq-answer">
+                                <div class="faq-answer-content">
+                                    Absolutely! You can upgrade or downgrade your plan at any time. Changes take effect at your next billing cycle. If you upgrade mid-cycle, we'll prorate the difference.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="faq-item reveal">
+                            <button class="faq-question">
+                                <span>What if I need to cancel?</span>
+                                <span class="icon">+</span>
+                            </button>
+                            <div class="faq-answer">
+                                <div class="faq-answer-content">
+                                    No problem at all. You can cancel anytime with no cancellation fees. Your access continues until the end of your current billing period. Plus, we offer a 14-day money-back guarantee if you're not satisfied.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="faq-item reveal">
+                            <button class="faq-question">
+                                <span>Where do training sessions take place?</span>
+                                <span class="icon">+</span>
+                            </button>
+                            <div class="faq-answer">
+                                <div class="faq-answer-content">
+                                    In-person sessions are held at Crunch Fitness. Online coaching clients can train anywhere—home, hotel, or their local gym. Elite clients also have the option for home visits within the local area.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="faq-item reveal">
+                            <button class="faq-question">
+                                <span>How does the AI form analyzer work?</span>
+                                <span class="icon">+</span>
+                            </button>
+                            <div class="faq-answer">
+                                <div class="faq-answer-content">
+                                    Simply upload a video of yourself performing any exercise. Our AI analyzes your form in real-time, identifies potential issues (posture, range of motion, technique), and provides specific corrections. It's like having a coach watching 24/7.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="faq-item reveal">
+                            <button class="faq-question">
+                                <span>Do I need any equipment?</span>
+                                <span class="icon">+</span>
+                            </button>
+                            <div class="faq-answer">
+                                <div class="faq-answer-content">
+                                    For in-person training, everything you need is available at the gym. For online clients, I design programs based on what equipment you have access to—whether that's a full gym, home equipment, or just bodyweight.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="faq-item reveal">
+                            <button class="faq-question">
+                                <span>What's included in the nutrition guide?</span>
+                                <span class="icon">+</span>
+                            </button>
+                            <div class="faq-answer">
+                                <div class="faq-answer-content">
+                                    The nutrition guide includes personalized macro targets, meal timing recommendations, grocery shopping lists, simple recipes, and guidance on eating out. For Pro and Elite members, we also provide meal prep strategies and ongoing adjustments based on your progress.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Final CTA -->
+        <section class="section cta-section">
+            <div class="cta-container reveal">
+                <h2 class="cta-title">Still Have <span class="text-gradient">Questions?</span></h2>
+                <p class="cta-subtitle">Book a free 15-minute call and let's chat about which program is right for you.</p>
+                <div class="cta-actions">
+                    <a href="contact.html" class="btn btn-primary btn-lg">Book Free Call</a>
+                    <a href="https://www.instagram.com/movestrongmikey" target="_blank" class="btn btn-outline">DM on Instagram</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <div class="footer-logo-icon">MS</div>
+                        <span class="footer-logo-text">MoveStrong</span>
+                    </div>
+                    <p class="footer-desc">Personal training and fitness coaching by Mike Gomez.</p>
+                    <div class="footer-social">
+                        <a href="https://www.instagram.com/movestrongmikey" target="_blank" aria-label="Instagram">IG</a>
+                        <a href="#" aria-label="TikTok">TK</a>
+                        <a href="#" aria-label="YouTube">YT</a>
+                    </div>
+                </div>
+
+                <div class="footer-column">
+                    <h4>Programs</h4>
+                    <ul class="footer-links">
+                        <li><a href="programs.html?tier=starter">Starter</a></li>
+                        <li><a href="programs.html?tier=pro">Pro</a></li>
+                        <li><a href="programs.html?tier=elite">Elite</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-column">
+                    <h4>Tools</h4>
+                    <ul class="footer-links">
+                        <li><a href="analyzer.html">AI Form Analyzer</a></li>
+                        <li><a href="clients.html">Client Portal</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-column">
+                    <h4>Connect</h4>
+                    <ul class="footer-links">
+                        <li><a href="about.html">About</a></li>
+                        <li><a href="contact.html">Contact</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p class="footer-copy">&copy; 2026 MoveStrong. All rights reserved.</p>
+                <p class="footer-telos">Powered by <strong>SUITE</strong></p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile navigation toggle
+        function toggleNav() {
+            const navLinks = document.getElementById('navLinks');
+            const navIcon = document.getElementById('navIcon');
+            navLinks.classList.toggle('open');
+            navIcon.innerHTML = navLinks.classList.contains('open') ? '&times;' : '&#9776;';
+        }
+
+        // Program tabs
+        document.querySelectorAll('.program-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Update tabs
+                document.querySelectorAll('.program-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+
+                // Update content
+                const program = tab.dataset.program;
+                document.querySelectorAll('.program-detail').forEach(d => d.classList.remove('active'));
+                document.getElementById(program).classList.add('active');
+            });
+        });
+
+        // FAQ toggle
+        document.querySelectorAll('.faq-question').forEach(question => {
+            question.addEventListener('click', () => {
+                const item = question.parentElement;
+                item.classList.toggle('open');
+            });
+        });
+
+        // Checkout function
+        async function checkout(productId) {
+            // Product mapping to Stripe price IDs
+            const products = {
+                'starter': { name: 'Starter Package', price: 'price_starter_monthly' },
+                'pro': { name: 'Pro Package', price: 'price_pro_monthly' },
+                'elite': { name: 'Elite Package', price: 'price_elite_monthly' },
+                'workout-plan': { name: '8-Week Workout Plan', price: 'price_workout_plan' },
+                'nutrition-guide': { name: 'Nutrition Guide', price: 'price_nutrition' },
+                'consultation': { name: '1-on-1 Consultation', price: 'price_consultation' },
+                'home-gym': { name: 'Home Gym Guide', price: 'price_home_gym' }
+            };
+
+            const product = products[productId];
+            if (!product) return;
+
+            try {
+                const response = await fetch('/api/create-checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        priceId: product.price,
+                        productName: product.name,
+                        successUrl: window.location.origin + '/movestrong/clients.html?success=true',
+                        cancelUrl: window.location.href
+                    })
+                });
+
+                const { url } = await response.json();
+                if (url) {
+                    window.location.href = url;
+                }
+            } catch (error) {
+                console.error('Checkout error:', error);
+                // Fallback: redirect to contact
+                alert('Checkout is being set up. Please contact us directly to get started!');
+                window.location.href = 'contact.html';
+            }
+        }
+
+        // Check URL params for pre-selected tier
+        document.addEventListener('DOMContentLoaded', function() {
+            const params = new URLSearchParams(window.location.search);
+            const tier = params.get('tier');
+            if (tier) {
+                const tab = document.querySelector(`[data-program="${tier}"]`);
+                if (tab) tab.click();
+            }
+
+            // Hide preloader
+            setTimeout(() => document.body.classList.add('loaded'), 500);
+
+            // Scroll reveal
+            const revealElements = document.querySelectorAll('.reveal');
+            const revealObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) entry.target.classList.add('visible');
+                });
+            }, { threshold: 0.1 });
+            revealElements.forEach(el => revealObserver.observe(el));
+
+            // Nav scroll
+            const nav = document.querySelector('.nav');
+            window.addEventListener('scroll', () => {
+                nav.classList.toggle('scrolled', window.pageYOffset > 100);
+            });
+        });
+    </script>
+</body>
+</html>

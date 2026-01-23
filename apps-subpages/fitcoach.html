@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitCoach - SUITE App Store</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        :root {
+            --accent-primary: #ff6b35;
+            --accent-secondary: #f7931e;
+        }
+
+        .app-detail-page {
+            min-height: 100vh;
+            padding-top: 80px;
+        }
+
+        .app-hero {
+            padding: 60px 20px;
+            text-align: center;
+            background: linear-gradient(180deg, rgba(255, 107, 53, 0.08) 0%, transparent 100%);
+        }
+
+        .app-hero-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .app-icon-large {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 24px;
+            border-radius: 24px;
+            background: linear-gradient(135deg, rgba(255, 107, 53, 0.2), rgba(247, 147, 30, 0.15));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3.5rem;
+        }
+
+        .app-title {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+        }
+
+        .app-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+        }
+
+        .app-actions {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 40px;
+        }
+
+        .btn-install {
+            padding: 16px 32px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-install:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(255, 107, 53, 0.3);
+        }
+
+        .btn-secondary {
+            padding: 16px 32px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+        }
+
+        .app-stats {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            padding: 20px;
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            display: block;
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .app-content {
+            max-width: 900px;
+            margin: 60px auto;
+            padding: 0 20px;
+        }
+
+        .content-section {
+            margin-bottom: 60px;
+        }
+
+        .content-section h2 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+        }
+
+        .content-section p {
+            color: var(--text-secondary);
+            line-height: 1.8;
+            font-size: 1.05rem;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 24px;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.2s ease;
+        }
+
+        .feature-card:hover {
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+        }
+
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 12px;
+        }
+
+        .feature-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .feature-desc {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .feature-credits {
+            display: inline-block;
+            margin-top: 12px;
+            padding: 4px 12px;
+            background: rgba(255, 107, 53, 0.1);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: var(--accent-primary);
+            font-weight: 600;
+        }
+
+        .install-guide {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 32px;
+            margin-top: 24px;
+        }
+
+        .install-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .install-step {
+            display: flex;
+            gap: 16px;
+            align-items: start;
+        }
+
+        .step-number {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .step-desc {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .pricing-table {
+            margin-top: 24px;
+        }
+
+        .pricing-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .pricing-row:last-child {
+            border-bottom: none;
+        }
+
+        .pricing-feature {
+            font-weight: 500;
+        }
+
+        .pricing-cost {
+            color: var(--accent-primary);
+            font-weight: 600;
+        }
+
+        .trainers-section {
+            background: linear-gradient(135deg, rgba(255, 107, 53, 0.05), rgba(247, 147, 30, 0.03));
+            border: 1px solid rgba(255, 107, 53, 0.2);
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .trainers-section h3 {
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+        }
+
+        .trainers-section p {
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .app-title {
+                font-size: 2rem;
+            }
+
+            .app-stats {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <span class="logo-icon">◆</span>
+                Stuart Hollinger
+            </a>
+            <div class="nav-links">
+                <a href="../apps.html" class="active">Apps</a>
+                <a href="../suite.html">$SUITE</a>
+                <a href="../wallet.html" class="nav-wallet">Wallet</a>
+                <a href="../index.html#pricing">Pricing</a>
+                <a href="../index.html#about">About</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="app-detail-page">
+        <!-- Hero -->
+        <section class="app-hero">
+            <div class="app-hero-content">
+                <div class="app-icon-large">💪</div>
+                <h1 class="app-title">FitCoach</h1>
+                <p class="app-subtitle">Your AI-powered personal training companion</p>
+
+                <div class="app-actions">
+                    <button class="btn-install" onclick="window.location.href='/suite-shell.html?app=fitcoach'">
+                        Open App
+                    </button>
+                    <button class="btn-secondary" onclick="window.location.href='../apps.html'">
+                        ← Back to Store
+                    </button>
+                </div>
+
+                <div class="app-stats">
+                    <div class="stat">
+                        <span class="stat-value">Free</span>
+                        <span class="stat-label">Basic Features</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value">5 Credits</span>
+                        <span class="stat-label">AI Analysis</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value">4.7★</span>
+                        <span class="stat-label">Rating</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Content -->
+        <div class="app-content">
+            <!-- About -->
+            <section class="content-section">
+                <h2>About FitCoach</h2>
+                <p>
+                    FitCoach is your complete personal training companion. Track workouts, log your progress,
+                    get AI-powered form analysis, and follow personalized training programs—all in one app.
+                </p>
+                <p style="margin-top: 16px;">
+                    Whether you're a trainer managing clients or an individual chasing gains, FitCoach gives
+                    you the tools to train smarter, track progress, and achieve your fitness goals.
+                </p>
+            </section>
+
+            <!-- Features -->
+            <section class="content-section">
+                <h2>Key Features</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">📝</div>
+                        <div class="feature-title">Workout Logging</div>
+                        <p class="feature-desc">Log sets, reps, and weight for any exercise. Track your sessions and see your workout history.</p>
+                        <span class="feature-credits">Free</span>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📈</div>
+                        <div class="feature-title">Progress Tracking</div>
+                        <p class="feature-desc">Visualize your gains with charts for weight, measurements, and personal records over time.</p>
+                        <span class="feature-credits">Free</span>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🤖</div>
+                        <div class="feature-title">AI Form Analysis</div>
+                        <p class="feature-desc">Upload a video of any exercise and get instant AI feedback on your technique and corrections.</p>
+                        <span class="feature-credits">5 Credits/Analysis</span>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📋</div>
+                        <div class="feature-title">Custom Programs</div>
+                        <p class="feature-desc">Create and follow structured workout programs. Share programs with clients or friends.</p>
+                        <span class="feature-credits">Free</span>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">👥</div>
+                        <div class="feature-title">Client Management</div>
+                        <p class="feature-desc">For trainers: Manage multiple clients, assign workouts, and track their progress.</p>
+                        <span class="feature-credits">Premium</span>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🥗</div>
+                        <div class="feature-title">Nutrition Tracking</div>
+                        <p class="feature-desc">Log meals, track macros, and get insights on your nutrition alongside your training.</p>
+                        <span class="feature-credits">Free</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Pricing -->
+            <section class="content-section">
+                <h2>Pricing</h2>
+                <div class="install-guide">
+                    <div class="pricing-table">
+                        <div class="pricing-row">
+                            <span class="pricing-feature">Workout Logging & History</span>
+                            <span class="pricing-cost">Free</span>
+                        </div>
+                        <div class="pricing-row">
+                            <span class="pricing-feature">Progress Charts & Analytics</span>
+                            <span class="pricing-cost">Free</span>
+                        </div>
+                        <div class="pricing-row">
+                            <span class="pricing-feature">Custom Program Builder</span>
+                            <span class="pricing-cost">Free</span>
+                        </div>
+                        <div class="pricing-row">
+                            <span class="pricing-feature">Nutrition Tracking</span>
+                            <span class="pricing-cost">Free</span>
+                        </div>
+                        <div class="pricing-row">
+                            <span class="pricing-feature">AI Form Analysis</span>
+                            <span class="pricing-cost">5 SUITE Credits</span>
+                        </div>
+                        <div class="pricing-row">
+                            <span class="pricing-feature">Client Management (Trainers)</span>
+                            <span class="pricing-cost">$6.99/mo Premium</span>
+                        </div>
+                        <div class="pricing-row">
+                            <span class="pricing-feature">Unlimited AI Analysis</span>
+                            <span class="pricing-cost">$6.99/mo Premium</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- For Trainers -->
+            <section class="content-section">
+                <div class="trainers-section">
+                    <h3>🏋️ Are You a Personal Trainer?</h3>
+                    <p>
+                        FitCoach includes a complete white-label solution for personal trainers.
+                        Manage clients, create custom programs, and even get your own branded website.
+                    </p>
+                    <button class="btn-install" onclick="window.location.href='/movestrong/'">
+                        See Example: MoveStrong
+                    </button>
+                </div>
+            </section>
+
+            <!-- Install Guide -->
+            <section class="content-section">
+                <h2>How to Use</h2>
+                <div class="install-guide">
+                    <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                        FitCoach is available through SUITE Shell. Access it from any device!
+                    </p>
+                    <div class="install-steps">
+                        <div class="install-step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <div class="step-title">Open SUITE Shell</div>
+                                <p class="step-desc">Launch SUITE Shell from your home screen or browser</p>
+                            </div>
+                        </div>
+                        <div class="install-step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <div class="step-title">Find FitCoach</div>
+                                <p class="step-desc">Navigate to the Health category or search for "FitCoach"</p>
+                            </div>
+                        </div>
+                        <div class="install-step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <div class="step-title">Connect Your Wallet</div>
+                                <p class="step-desc">Link your $SUITE wallet to use premium features and AI analysis</p>
+                            </div>
+                        </div>
+                        <div class="install-step">
+                            <div class="step-number">4</div>
+                            <div class="step-content">
+                                <div class="step-title">Start Training!</div>
+                                <p class="step-desc">Log your first workout and start tracking your fitness journey</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="../script.js"></script>
+</body>
+
+</html>

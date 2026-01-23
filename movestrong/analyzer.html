@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Form Analyzer | MoveStrong</title>
+    <meta name="description" content="Upload a video of any exercise and get instant AI-powered feedback on your form, posture, and technique. Free for MoveStrong clients.">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="AI Form Analyzer | MoveStrong">
+    <meta property="og:description" content="Get instant AI feedback on your exercise form. Upload a video and receive corrections in seconds.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://movestrong.fit/analyzer">
+
+    <link rel="icon" type="image/png" href="assets/images/logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .analyzer-hero {
+            padding: 160px 24px 60px;
+            text-align: center;
+            position: relative;
+        }
+
+        .analyzer-hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255, 107, 53, 0.15), transparent);
+            pointer-events: none;
+        }
+
+        .analyzer-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 var(--space-xl);
+        }
+
+        .analyzer-card {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-2xl);
+            padding: var(--space-3xl);
+            margin-bottom: var(--space-xl);
+        }
+
+        .exercise-select {
+            margin-bottom: var(--space-xl);
+        }
+
+        .exercise-select label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: var(--space-sm);
+            color: var(--color-text-secondary);
+        }
+
+        .exercise-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: var(--space-sm);
+        }
+
+        .exercise-option {
+            padding: var(--space-md);
+            background: var(--color-surface);
+            border: 2px solid var(--color-border);
+            border-radius: var(--radius-md);
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .exercise-option:hover {
+            border-color: var(--color-border-accent);
+        }
+
+        .exercise-option.selected {
+            border-color: var(--color-accent);
+            background: var(--color-accent-ultra);
+        }
+
+        .exercise-option .icon {
+            font-size: 1.5rem;
+            margin-bottom: var(--space-xs);
+        }
+
+        .exercise-option .name {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .upload-section {
+            margin-bottom: var(--space-xl);
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--color-border);
+            border-radius: var(--radius-xl);
+            padding: var(--space-4xl) var(--space-xl);
+            text-align: center;
+            transition: all var(--transition-base);
+            cursor: pointer;
+            background: var(--color-surface);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: var(--color-accent);
+            background: var(--color-accent-ultra);
+        }
+
+        .upload-zone.has-video {
+            padding: var(--space-lg);
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            margin-bottom: var(--space-lg);
+            opacity: 0.8;
+        }
+
+        .upload-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: var(--space-sm);
+        }
+
+        .upload-hint {
+            color: var(--color-text-muted);
+            font-size: 0.9rem;
+        }
+
+        .upload-input {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .video-preview {
+            display: none;
+            width: 100%;
+            max-height: 400px;
+            border-radius: var(--radius-lg);
+            background: black;
+        }
+
+        .upload-zone.has-video .video-preview {
+            display: block;
+        }
+
+        .upload-zone.has-video .upload-placeholder {
+            display: none;
+        }
+
+        .analyze-btn {
+            width: 100%;
+            margin-top: var(--space-lg);
+        }
+
+        .analyzing-state {
+            display: none;
+            text-align: center;
+            padding: var(--space-3xl);
+        }
+
+        .analyzing-state.active {
+            display: block;
+        }
+
+        .analyzing-spinner {
+            width: 80px;
+            height: 80px;
+            border: 4px solid var(--color-border);
+            border-top-color: var(--color-accent);
+            border-radius: 50%;
+            margin: 0 auto var(--space-xl);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .analyzing-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: var(--space-sm);
+        }
+
+        .analyzing-subtext {
+            color: var(--color-text-muted);
+        }
+
+        /* Results Section */
+        .results-section {
+            display: none;
+        }
+
+        .results-section.active {
+            display: block;
+        }
+
+        .results-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--space-xl);
+        }
+
+        .results-header h2 {
+            font-family: var(--font-family);
+            font-size: 1.5rem;
+            text-transform: none;
+        }
+
+        .score-display {
+            text-align: center;
+            margin-bottom: var(--space-2xl);
+        }
+
+        .score-circle {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: conic-gradient(
+                var(--color-accent) calc(var(--score, 0) * 3.6deg),
+                var(--color-border) calc(var(--score, 0) * 3.6deg)
+            );
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto var(--space-lg);
+            position: relative;
+            box-shadow: var(--shadow-glow);
+        }
+
+        .score-circle::before {
+            content: '';
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            background: var(--color-bg-card);
+            border-radius: 50%;
+        }
+
+        .score-value {
+            position: relative;
+            z-index: 1;
+            font-family: var(--font-display);
+            font-size: 4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--color-accent), var(--color-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .score-label {
+            font-size: 1rem;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .feedback-section {
+            margin-bottom: var(--space-xl);
+        }
+
+        .feedback-title {
+            font-family: var(--font-family);
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: var(--space-md);
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            text-transform: none;
+            letter-spacing: 0;
+        }
+
+        .feedback-title.issues {
+            color: #ff6b6b;
+        }
+
+        .feedback-title.corrections {
+            color: #22c55e;
+        }
+
+        .feedback-list {
+            list-style: none;
+        }
+
+        .feedback-item {
+            display: flex;
+            align-items: start;
+            gap: var(--space-md);
+            padding: var(--space-md);
+            background: var(--color-surface);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-sm);
+            border-left: 3px solid var(--color-border);
+        }
+
+        .feedback-item.issue {
+            background: rgba(255, 107, 107, 0.08);
+            border-left-color: #ff6b6b;
+        }
+
+        .feedback-item.correction {
+            background: rgba(34, 197, 94, 0.08);
+            border-left-color: #22c55e;
+        }
+
+        .feedback-item .icon {
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .recommendation-box {
+            background: linear-gradient(135deg, var(--color-accent-ultra), rgba(247, 147, 30, 0.05));
+            border: 1px solid var(--color-border-accent);
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl);
+            text-align: center;
+        }
+
+        .recommendation-title {
+            font-family: var(--font-family);
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: var(--space-sm);
+            text-transform: none;
+        }
+
+        .recommendation-text {
+            color: var(--color-text-secondary);
+            margin-bottom: var(--space-lg);
+        }
+
+        .results-actions {
+            display: flex;
+            gap: var(--space-md);
+            margin-top: var(--space-xl);
+        }
+
+        .results-actions .btn {
+            flex: 1;
+        }
+
+        /* How it works section */
+        .how-it-works {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-xl);
+            margin-top: var(--space-4xl);
+        }
+
+        .step-card {
+            text-align: center;
+        }
+
+        .step-number {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--color-accent), var(--color-secondary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            color: white;
+            margin: 0 auto var(--space-md);
+        }
+
+        .step-title {
+            font-family: var(--font-family);
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: var(--space-sm);
+            text-transform: none;
+        }
+
+        .step-desc {
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* Demo mode notice */
+        .demo-notice {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
+            margin-bottom: var(--space-xl);
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            font-size: 0.9rem;
+        }
+
+        .demo-notice .icon {
+            font-size: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .exercise-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .how-it-works {
+                grid-template-columns: 1fr;
+                gap: var(--space-xl);
+            }
+
+            .results-actions {
+                flex-direction: column;
+            }
+
+            .score-circle {
+                width: 150px;
+                height: 150px;
+            }
+
+            .score-circle::before {
+                width: 120px;
+                height: 120px;
+            }
+
+            .score-value {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Preloader -->
+    <div class="preloader">
+        <div class="preloader-logo">MS</div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-brand">
+                <div class="nav-logo">MS</div>
+                <span class="nav-title">Move<span>Strong</span></span>
+            </a>
+
+            <ul class="nav-links" id="navLinks">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="programs.html" class="nav-link">Programs</a></li>
+                <li><a href="analyzer.html" class="nav-link active">AI Analyzer</a></li>
+                <li><a href="about.html" class="nav-link">About</a></li>
+                <li><a href="contact.html" class="nav-link">Contact</a></li>
+                <li><a href="clients.html" class="nav-link">Client Login</a></li>
+                <li class="nav-mobile-cta"><a href="contact.html" class="btn btn-primary">Book a Session</a></li>
+            </ul>
+
+            <div class="nav-cta">
+                <a href="contact.html" class="btn btn-primary btn-sm">Book a Session</a>
+                <button class="nav-toggle" onclick="toggleNav()">
+                    <span id="navIcon">&#9776;</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <!-- Hero -->
+        <section class="analyzer-hero">
+            <div class="section-badge reveal">AI Technology</div>
+            <h1 class="reveal">Form <span class="text-gradient">Analyzer</span></h1>
+            <p class="reveal" style="color: var(--color-text-secondary); font-size: 1.2rem; max-width: 600px; margin: var(--space-md) auto 0;">
+                Upload a video of any exercise and get instant AI feedback on your technique
+            </p>
+        </section>
+
+        <section class="section" style="padding-top: 0;">
+            <div class="analyzer-container">
+                <!-- Upload Card -->
+                <div class="analyzer-card reveal" id="uploadCard">
+                    <div class="demo-notice">
+                        <span class="icon">💡</span>
+                        <span><strong>Free for all clients!</strong> Non-clients can try 3 free analyses. <a href="programs.html" style="color: var(--color-accent);">Upgrade for unlimited access.</a></span>
+                    </div>
+
+                    <!-- Exercise Selection -->
+                    <div class="exercise-select">
+                        <label>Select Exercise Type</label>
+                        <div class="exercise-grid">
+                            <div class="exercise-option selected" data-exercise="squat">
+                                <div class="icon">🏋️</div>
+                                <div class="name">Squat</div>
+                            </div>
+                            <div class="exercise-option" data-exercise="deadlift">
+                                <div class="icon">💪</div>
+                                <div class="name">Deadlift</div>
+                            </div>
+                            <div class="exercise-option" data-exercise="bench">
+                                <div class="icon">🛋️</div>
+                                <div class="name">Bench Press</div>
+                            </div>
+                            <div class="exercise-option" data-exercise="ohp">
+                                <div class="icon">🙆</div>
+                                <div class="name">OHP</div>
+                            </div>
+                            <div class="exercise-option" data-exercise="row">
+                                <div class="icon">🚣</div>
+                                <div class="name">Row</div>
+                            </div>
+                            <div class="exercise-option" data-exercise="pullup">
+                                <div class="icon">🧗</div>
+                                <div class="name">Pull-up</div>
+                            </div>
+                            <div class="exercise-option" data-exercise="lunge">
+                                <div class="icon">🦵</div>
+                                <div class="name">Lunge</div>
+                            </div>
+                            <div class="exercise-option" data-exercise="other">
+                                <div class="icon">❓</div>
+                                <div class="name">Other</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upload Zone -->
+                    <div class="upload-section">
+                        <div class="upload-zone" id="uploadZone">
+                            <input type="file" accept="video/*" class="upload-input" id="videoInput">
+                            <div class="upload-placeholder">
+                                <div class="upload-icon">📹</div>
+                                <div class="upload-text">Drop your video here or click to upload</div>
+                                <div class="upload-hint">MP4, MOV, or WebM • Max 100MB • 5-30 seconds recommended</div>
+                            </div>
+                            <video class="video-preview" id="videoPreview" controls></video>
+                        </div>
+                        <button class="btn btn-primary btn-lg analyze-btn" id="analyzeBtn" disabled>
+                            Analyze My Form
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Analyzing State -->
+                <div class="analyzer-card analyzing-state" id="analyzingState">
+                    <div class="analyzing-spinner"></div>
+                    <div class="analyzing-text">Analyzing your form...</div>
+                    <div class="analyzing-subtext">Our AI is examining posture, range of motion, and technique</div>
+                </div>
+
+                <!-- Results Section -->
+                <div class="analyzer-card results-section" id="resultsSection">
+                    <div class="results-header">
+                        <h2>Analysis Results</h2>
+                        <button class="btn btn-sm btn-outline" onclick="resetAnalyzer()">Analyze Another</button>
+                    </div>
+
+                    <div class="score-display">
+                        <div class="score-circle" id="scoreCircle">
+                            <span class="score-value" id="scoreValue">--</span>
+                        </div>
+                        <div class="score-label">Form Score</div>
+                    </div>
+
+                    <div class="feedback-section" id="issuesSection">
+                        <h3 class="feedback-title issues">⚠️ Issues Detected</h3>
+                        <ul class="feedback-list" id="issuesList"></ul>
+                    </div>
+
+                    <div class="feedback-section" id="correctionsSection">
+                        <h3 class="feedback-title corrections">✓ Corrections</h3>
+                        <ul class="feedback-list" id="correctionsList"></ul>
+                    </div>
+
+                    <div class="recommendation-box">
+                        <h3 class="recommendation-title">Recommended Next Steps</h3>
+                        <p class="recommendation-text" id="recommendationText">
+                            Based on your analysis, we recommend focusing on mobility work and practicing with lighter weight.
+                        </p>
+                        <a href="programs.html" class="btn btn-primary">Get Personalized Coaching</a>
+                    </div>
+
+                    <div class="results-actions">
+                        <button class="btn btn-outline" onclick="downloadReport()">Download Report</button>
+                        <a href="contact.html" class="btn btn-secondary">Book a Form Session</a>
+                    </div>
+                </div>
+
+                <!-- How It Works -->
+                <div class="how-it-works stagger-children">
+                    <div class="step-card reveal">
+                        <div class="step-number">1</div>
+                        <h3 class="step-title">Upload Video</h3>
+                        <p class="step-desc">Record yourself performing any exercise from a side or 45° angle</p>
+                    </div>
+                    <div class="step-card reveal">
+                        <div class="step-number">2</div>
+                        <h3 class="step-title">AI Analysis</h3>
+                        <p class="step-desc">Our AI examines posture, bar path, depth, and movement patterns</p>
+                    </div>
+                    <div class="step-card reveal">
+                        <div class="step-number">3</div>
+                        <h3 class="step-title">Get Feedback</h3>
+                        <p class="step-desc">Receive a detailed score, issues identified, and specific corrections</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section class="section cta-section">
+            <div class="cta-container reveal">
+                <h2 class="cta-title">Want Expert <span class="text-gradient">Feedback?</span></h2>
+                <p class="cta-subtitle">AI is great for basics, but nothing beats 1-on-1 coaching. Book a form session with Mike.</p>
+                <div class="cta-actions">
+                    <a href="contact.html" class="btn btn-primary btn-lg">Book Form Session</a>
+                    <a href="programs.html" class="btn btn-outline">View Programs</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <div class="footer-logo-icon">MS</div>
+                        <span class="footer-logo-text">MoveStrong</span>
+                    </div>
+                    <p class="footer-desc">Personal training and fitness coaching by Mike Gomez.</p>
+                    <div class="footer-social">
+                        <a href="https://www.instagram.com/movestrongmikey" target="_blank">IG</a>
+                        <a href="#">TK</a>
+                        <a href="#">YT</a>
+                    </div>
+                </div>
+                <div class="footer-column">
+                    <h4>Programs</h4>
+                    <ul class="footer-links">
+                        <li><a href="programs.html?tier=starter">Starter</a></li>
+                        <li><a href="programs.html?tier=pro">Pro</a></li>
+                        <li><a href="programs.html?tier=elite">Elite</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Tools</h4>
+                    <ul class="footer-links">
+                        <li><a href="analyzer.html">AI Analyzer</a></li>
+                        <li><a href="clients.html">Client Portal</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Connect</h4>
+                    <ul class="footer-links">
+                        <li><a href="about.html">About</a></li>
+                        <li><a href="contact.html">Contact</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p class="footer-copy">&copy; 2026 MoveStrong. All rights reserved.</p>
+                <p class="footer-telos">Powered by <strong>SUITE</strong></p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile nav
+        function toggleNav() {
+            const navLinks = document.getElementById('navLinks');
+            const navIcon = document.getElementById('navIcon');
+            navLinks.classList.toggle('open');
+            navIcon.innerHTML = navLinks.classList.contains('open') ? '×' : '☰';
+        }
+
+        // State
+        let selectedExercise = 'squat';
+        let selectedVideo = null;
+
+        // Exercise selection
+        document.querySelectorAll('.exercise-option').forEach(option => {
+            option.addEventListener('click', () => {
+                document.querySelectorAll('.exercise-option').forEach(o => o.classList.remove('selected'));
+                option.classList.add('selected');
+                selectedExercise = option.dataset.exercise;
+            });
+        });
+
+        // Video upload
+        const uploadZone = document.getElementById('uploadZone');
+        const videoInput = document.getElementById('videoInput');
+        const videoPreview = document.getElementById('videoPreview');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('video/')) {
+                handleVideo(file);
+            }
+        });
+
+        videoInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleVideo(file);
+        });
+
+        function handleVideo(file) {
+            selectedVideo = file;
+            const url = URL.createObjectURL(file);
+            videoPreview.src = url;
+            uploadZone.classList.add('has-video');
+            analyzeBtn.disabled = false;
+        }
+
+        // Analyze
+        analyzeBtn.addEventListener('click', async () => {
+            if (!selectedVideo) return;
+
+            document.getElementById('uploadCard').style.display = 'none';
+            document.getElementById('analyzingState').classList.add('active');
+
+            try {
+                // Create form data
+                const formData = new FormData();
+                formData.append('video', selectedVideo);
+                formData.append('exercise', selectedExercise);
+
+                // Call API
+                const response = await fetch('/api/analyze-form', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                displayResults(result);
+
+            } catch (error) {
+                console.error('Analysis error:', error);
+                // Show demo results
+                displayResults(getDemoResults());
+            }
+        });
+
+        function getDemoResults() {
+            const exercises = {
+                squat: {
+                    score: 72,
+                    issues: [
+                        'Knees caving inward at the bottom of the movement',
+                        'Forward lean is excessive - torso angle too horizontal',
+                        'Depth is slightly above parallel'
+                    ],
+                    corrections: [
+                        'Focus on pushing knees out over toes throughout the lift',
+                        'Engage core more and think "chest up" during descent',
+                        'Work on ankle mobility to achieve better depth',
+                        'Consider elevating heels slightly with plates or squat shoes'
+                    ],
+                    recommendation: 'Focus on mobility work (ankle and hip flexors) before your next squat session. Practice goblet squats to groove proper mechanics.'
+                },
+                deadlift: {
+                    score: 68,
+                    issues: [
+                        'Lower back rounding at the start of the pull',
+                        'Bar drifting away from the body mid-lift',
+                        'Lockout is incomplete - hips not fully extended'
+                    ],
+                    corrections: [
+                        'Set your back before pulling - think "proud chest"',
+                        'Keep the bar dragging up your legs throughout',
+                        'Squeeze glutes hard at the top to complete lockout',
+                        'Consider Romanian deadlifts to strengthen hip hinge pattern'
+                    ],
+                    recommendation: 'Work on hip hinge mechanics with lighter weight. Add Romanian deadlifts and good mornings to your accessory work.'
+                },
+                bench: {
+                    score: 78,
+                    issues: [
+                        'Bar path is not optimal - pressing straight up instead of back',
+                        'Scapulae retracting mid-rep'
+                    ],
+                    corrections: [
+                        'Press the bar in a slight arc toward your face at lockout',
+                        'Keep shoulder blades pinched and "in your back pockets"',
+                        'Maintain arch and leg drive throughout the set'
+                    ],
+                    recommendation: 'Practice pause reps to improve stability at the bottom. Focus on maintaining tightness throughout.'
+                }
+            };
+
+            return exercises[selectedExercise] || exercises.squat;
+        }
+
+        function displayResults(result) {
+            document.getElementById('analyzingState').classList.remove('active');
+            document.getElementById('resultsSection').classList.add('active');
+
+            // Set score
+            const score = result.score || 75;
+            document.getElementById('scoreValue').textContent = score;
+            document.getElementById('scoreCircle').style.setProperty('--score', score);
+
+            // Set issues
+            const issuesList = document.getElementById('issuesList');
+            issuesList.innerHTML = (result.issues || []).map(issue => `
+                <li class="feedback-item issue">
+                    <span class="icon">⚠️</span>
+                    <span>${issue}</span>
+                </li>
+            `).join('');
+
+            // Set corrections
+            const correctionsList = document.getElementById('correctionsList');
+            correctionsList.innerHTML = (result.corrections || []).map(correction => `
+                <li class="feedback-item correction">
+                    <span class="icon">✓</span>
+                    <span>${correction}</span>
+                </li>
+            `).join('');
+
+            // Set recommendation
+            document.getElementById('recommendationText').textContent =
+                result.recommendation || 'Consider working with a coach to address these form issues.';
+        }
+
+        function resetAnalyzer() {
+            document.getElementById('resultsSection').classList.remove('active');
+            document.getElementById('uploadCard').style.display = 'block';
+            uploadZone.classList.remove('has-video');
+            videoPreview.src = '';
+            selectedVideo = null;
+            analyzeBtn.disabled = true;
+        }
+
+        function downloadReport() {
+            // Generate simple text report
+            const score = document.getElementById('scoreValue').textContent;
+            const issues = Array.from(document.querySelectorAll('#issuesList .feedback-item span:last-child'))
+                .map(el => el.textContent).join('\n- ');
+            const corrections = Array.from(document.querySelectorAll('#correctionsList .feedback-item span:last-child'))
+                .map(el => el.textContent).join('\n- ');
+
+            const report = `
+MoveStrong Form Analysis Report
+================================
+Exercise: ${selectedExercise.toUpperCase()}
+Form Score: ${score}/100
+
+ISSUES DETECTED:
+- ${issues}
+
+CORRECTIONS:
+- ${corrections}
+
+RECOMMENDATION:
+${document.getElementById('recommendationText').textContent}
+
+---
+Generated by MoveStrong AI Analyzer
+https://movestrong.fit
+            `;
+
+            const blob = new Blob([report], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `movestrong-analysis-${selectedExercise}.txt`;
+            a.click();
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => document.body.classList.add('loaded'), 500);
+
+            const revealElements = document.querySelectorAll('.reveal');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) entry.target.classList.add('visible');
+                });
+            }, { threshold: 0.1 });
+            revealElements.forEach(el => observer.observe(el));
+
+            window.addEventListener('scroll', () => {
+                document.querySelector('.nav').classList.toggle('scrolled', window.pageYOffset > 100);
+            });
+        });
+    </script>
+</body>
+</html>

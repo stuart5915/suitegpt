@@ -2,6 +2,8 @@
 // Provides real Web3 wallet connection via WalletConnect v2
 
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
+import { Platform } from 'react-native';
+// WalletConnect import - Metro config swaps this for a web mock when building for web
 import { useWalletConnectModal, WalletConnectModal } from '@walletconnect/modal-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import WalletModal from '@/components/WalletModal';
@@ -198,7 +200,7 @@ export function WalletConnectProvider({ children }: WalletConnectProviderProps) 
         >
             {children}
 
-            {/* WalletConnect SDK Modal */}
+            {/* WalletConnect SDK Modal - Metro swaps this for a null component on web */}
             <WalletConnectModal
                 projectId={PROJECT_ID}
                 providerMetadata={providerMetadata}

@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Portal | MoveStrong</title>
+    <meta name="description" content="Access your workouts, track progress, and communicate with your trainer through the MoveStrong client portal.">
+
+    <link rel="icon" type="image/png" href="assets/images/logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .portal-hero {
+            padding: 140px 24px 40px;
+            text-align: center;
+        }
+
+        /* Login State */
+        .login-container {
+            max-width: 450px;
+            margin: 0 auto;
+            padding: 0 var(--space-xl);
+        }
+
+        .login-card {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-2xl);
+            padding: var(--space-3xl);
+        }
+
+        .login-card h2 {
+            font-family: var(--font-family);
+            font-size: 1.5rem;
+            text-transform: none;
+            text-align: center;
+            margin-bottom: var(--space-xl);
+        }
+
+        .login-card .form-group {
+            margin-bottom: var(--space-lg);
+        }
+
+        .login-card .form-label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: var(--space-sm);
+            color: var(--color-text-secondary);
+        }
+
+        .login-card .form-input {
+            width: 100%;
+            padding: var(--space-md);
+            background: var(--color-bg-elevated);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            color: var(--color-text);
+            font-size: 1rem;
+        }
+
+        .login-card .form-input:focus {
+            outline: none;
+            border-color: var(--color-accent);
+        }
+
+        .login-btn {
+            width: 100%;
+            margin-top: var(--space-md);
+        }
+
+        .login-footer {
+            text-align: center;
+            margin-top: var(--space-xl);
+            color: var(--color-text-muted);
+            font-size: 0.9rem;
+        }
+
+        .login-footer a {
+            color: var(--color-accent);
+        }
+
+        /* Dashboard State */
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 var(--space-xl);
+            display: none;
+        }
+
+        .dashboard-container.active {
+            display: block;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-2xl);
+        }
+
+        .dashboard-welcome {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .dashboard-welcome span {
+            color: var(--color-accent);
+        }
+
+        .dashboard-tabs {
+            display: flex;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-2xl);
+            overflow-x: auto;
+            padding-bottom: var(--space-sm);
+        }
+
+        .dashboard-tab {
+            padding: var(--space-md) var(--space-xl);
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-full);
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all var(--transition-fast);
+        }
+
+        .dashboard-tab:hover,
+        .dashboard-tab.active {
+            background: var(--color-accent);
+            border-color: var(--color-accent);
+            color: white;
+        }
+
+        .dashboard-content {
+            display: none;
+        }
+
+        .dashboard-content.active {
+            display: block;
+        }
+
+        /* Stats Row */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--space-lg);
+            margin-bottom: var(--space-2xl);
+        }
+
+        .stat-card {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl);
+        }
+
+        .stat-card .icon {
+            font-size: 2rem;
+            margin-bottom: var(--space-md);
+        }
+
+        .stat-card .value {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, var(--color-accent), var(--color-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-card .label {
+            color: var(--color-text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Workout Cards */
+        .workouts-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-lg);
+        }
+
+        .workout-card {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl);
+            transition: all var(--transition-base);
+        }
+
+        .workout-card:hover {
+            border-color: var(--color-border-accent);
+        }
+
+        .workout-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: var(--space-lg);
+        }
+
+        .workout-card-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: var(--space-xs);
+        }
+
+        .workout-card-date {
+            color: var(--color-text-muted);
+            font-size: 0.9rem;
+        }
+
+        .workout-status {
+            padding: var(--space-xs) var(--space-md);
+            border-radius: var(--radius-full);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .workout-status.upcoming {
+            background: var(--color-accent-ultra);
+            color: var(--color-accent);
+        }
+
+        .workout-status.completed {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+        }
+
+        .exercise-list {
+            list-style: none;
+        }
+
+        .exercise-item {
+            display: flex;
+            justify-content: space-between;
+            padding: var(--space-md) 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .exercise-item:last-child {
+            border-bottom: none;
+        }
+
+        .exercise-name {
+            font-weight: 600;
+        }
+
+        .exercise-details {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .workout-card-actions {
+            display: flex;
+            gap: var(--space-md);
+            margin-top: var(--space-lg);
+        }
+
+        /* Progress Section */
+        .progress-chart {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-xl);
+            padding: var(--space-2xl);
+            margin-bottom: var(--space-xl);
+        }
+
+        .progress-chart h3 {
+            font-family: var(--font-family);
+            font-size: 1.2rem;
+            text-transform: none;
+            margin-bottom: var(--space-lg);
+        }
+
+        .chart-placeholder {
+            height: 300px;
+            background: var(--color-surface);
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-text-muted);
+        }
+
+        .log-form {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-xl);
+            padding: var(--space-2xl);
+        }
+
+        .log-form h3 {
+            font-family: var(--font-family);
+            font-size: 1.2rem;
+            text-transform: none;
+            margin-bottom: var(--space-lg);
+        }
+
+        .log-form .form-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-md);
+            margin-bottom: var(--space-lg);
+        }
+
+        .log-form .form-group {
+            margin-bottom: 0;
+        }
+
+        /* Messages */
+        .messages-container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: var(--space-xl);
+            height: 500px;
+        }
+
+        .messages-sidebar {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-xl);
+            padding: var(--space-md);
+            overflow-y: auto;
+        }
+
+        .message-thread {
+            padding: var(--space-md);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .message-thread:hover,
+        .message-thread.active {
+            background: var(--color-accent-ultra);
+        }
+
+        .message-thread-name {
+            font-weight: 600;
+            margin-bottom: var(--space-xs);
+        }
+
+        .message-thread-preview {
+            color: var(--color-text-muted);
+            font-size: 0.85rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .messages-main {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-xl);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .messages-header {
+            padding: var(--space-lg);
+            border-bottom: 1px solid var(--color-border);
+            font-weight: 600;
+        }
+
+        .messages-body {
+            flex: 1;
+            padding: var(--space-lg);
+            overflow-y: auto;
+        }
+
+        .message {
+            max-width: 80%;
+            margin-bottom: var(--space-md);
+        }
+
+        .message.sent {
+            margin-left: auto;
+        }
+
+        .message-bubble {
+            padding: var(--space-md);
+            border-radius: var(--radius-lg);
+            background: var(--color-surface);
+        }
+
+        .message.sent .message-bubble {
+            background: linear-gradient(135deg, var(--color-accent), var(--color-secondary));
+            color: white;
+        }
+
+        .message-time {
+            font-size: 0.75rem;
+            color: var(--color-text-muted);
+            margin-top: var(--space-xs);
+        }
+
+        .messages-input {
+            padding: var(--space-lg);
+            border-top: 1px solid var(--color-border);
+            display: flex;
+            gap: var(--space-md);
+        }
+
+        .messages-input input {
+            flex: 1;
+            padding: var(--space-md);
+            background: var(--color-bg-elevated);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            color: var(--color-text);
+        }
+
+        @media (max-width: 1024px) {
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .messages-container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+
+            .messages-sidebar {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .stats-row {
+                grid-template-columns: 1fr;
+            }
+
+            .log-form .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Preloader -->
+    <div class="preloader">
+        <div class="preloader-logo">MS</div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-brand">
+                <div class="nav-logo">MS</div>
+                <span class="nav-title">Move<span>Strong</span></span>
+            </a>
+
+            <ul class="nav-links" id="navLinks">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="programs.html" class="nav-link">Programs</a></li>
+                <li><a href="analyzer.html" class="nav-link">AI Analyzer</a></li>
+                <li><a href="about.html" class="nav-link">About</a></li>
+                <li><a href="contact.html" class="nav-link">Contact</a></li>
+                <li><a href="clients.html" class="nav-link active">Client Login</a></li>
+                <li class="nav-mobile-cta"><a href="contact.html" class="btn btn-primary">Book a Session</a></li>
+            </ul>
+
+            <div class="nav-cta">
+                <a href="contact.html" class="btn btn-primary btn-sm">Book a Session</a>
+                <button class="nav-toggle" onclick="toggleNav()">
+                    <span id="navIcon">&#9776;</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <section class="portal-hero">
+            <h1 class="reveal">Client <span class="text-gradient">Portal</span></h1>
+        </section>
+
+        <section class="section" style="padding-top: 0;">
+            <!-- Login State -->
+            <div class="login-container" id="loginContainer">
+                <div class="login-card reveal">
+                    <h2>Welcome Back</h2>
+                    <form id="loginForm">
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-input" id="loginEmail" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-input" id="loginPassword" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-lg login-btn">Sign In</button>
+                    </form>
+                    <div class="login-footer">
+                        Not a client yet? <a href="programs.html">View Programs</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard State -->
+            <div class="dashboard-container" id="dashboardContainer">
+                <div class="dashboard-header">
+                    <div class="dashboard-welcome">Welcome back, <span id="userName">Client</span>!</div>
+                    <button class="btn btn-outline btn-sm" onclick="logout()">Sign Out</button>
+                </div>
+
+                <div class="dashboard-tabs">
+                    <button class="dashboard-tab active" data-tab="overview">Overview</button>
+                    <button class="dashboard-tab" data-tab="workouts">My Workouts</button>
+                    <button class="dashboard-tab" data-tab="progress">Progress</button>
+                    <button class="dashboard-tab" data-tab="messages">Messages</button>
+                    <button class="dashboard-tab" data-tab="nutrition">Nutrition</button>
+                </div>
+
+                <!-- Overview Tab -->
+                <div class="dashboard-content active" id="overview">
+                    <div class="stats-row">
+                        <div class="stat-card">
+                            <div class="icon">🏋️</div>
+                            <div class="value">12</div>
+                            <div class="label">Sessions This Month</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="icon">🔥</div>
+                            <div class="value">8</div>
+                            <div class="label">Day Streak</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="icon">📈</div>
+                            <div class="value">+15%</div>
+                            <div class="label">Strength Gains</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="icon">⭐</div>
+                            <div class="value">Pro</div>
+                            <div class="label">Your Plan</div>
+                        </div>
+                    </div>
+
+                    <h3 style="margin-bottom: var(--space-lg); font-family: var(--font-family); text-transform: none;">Upcoming Workouts</h3>
+                    <div class="workouts-list">
+                        <div class="workout-card">
+                            <div class="workout-card-header">
+                                <div>
+                                    <div class="workout-card-title">Push Day - Chest & Shoulders</div>
+                                    <div class="workout-card-date">Tomorrow, Jan 24 @ 6:00 AM</div>
+                                </div>
+                                <span class="workout-status upcoming">Upcoming</span>
+                            </div>
+                            <ul class="exercise-list">
+                                <li class="exercise-item">
+                                    <span class="exercise-name">Bench Press</span>
+                                    <span class="exercise-details">4 × 6-8 reps</span>
+                                </li>
+                                <li class="exercise-item">
+                                    <span class="exercise-name">Incline DB Press</span>
+                                    <span class="exercise-details">3 × 10-12 reps</span>
+                                </li>
+                                <li class="exercise-item">
+                                    <span class="exercise-name">OHP</span>
+                                    <span class="exercise-details">4 × 8 reps</span>
+                                </li>
+                            </ul>
+                            <div class="workout-card-actions">
+                                <button class="btn btn-primary btn-sm">View Full Workout</button>
+                                <a href="analyzer.html" class="btn btn-outline btn-sm">AI Form Check</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Workouts Tab -->
+                <div class="dashboard-content" id="workouts">
+                    <div class="workouts-list">
+                        <div class="workout-card">
+                            <div class="workout-card-header">
+                                <div>
+                                    <div class="workout-card-title">Pull Day - Back & Biceps</div>
+                                    <div class="workout-card-date">Jan 22, 2026</div>
+                                </div>
+                                <span class="workout-status completed">Completed</span>
+                            </div>
+                            <ul class="exercise-list">
+                                <li class="exercise-item">
+                                    <span class="exercise-name">Deadlift</span>
+                                    <span class="exercise-details">4 × 5 @ 315 lbs ✓</span>
+                                </li>
+                                <li class="exercise-item">
+                                    <span class="exercise-name">Barbell Rows</span>
+                                    <span class="exercise-details">4 × 8 @ 185 lbs ✓</span>
+                                </li>
+                                <li class="exercise-item">
+                                    <span class="exercise-name">Pull-ups</span>
+                                    <span class="exercise-details">3 × 10 @ BW ✓</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="workout-card">
+                            <div class="workout-card-header">
+                                <div>
+                                    <div class="workout-card-title">Leg Day - Quads Focus</div>
+                                    <div class="workout-card-date">Jan 20, 2026</div>
+                                </div>
+                                <span class="workout-status completed">Completed</span>
+                            </div>
+                            <ul class="exercise-list">
+                                <li class="exercise-item">
+                                    <span class="exercise-name">Back Squat</span>
+                                    <span class="exercise-details">5 × 5 @ 275 lbs ✓</span>
+                                </li>
+                                <li class="exercise-item">
+                                    <span class="exercise-name">Leg Press</span>
+                                    <span class="exercise-details">4 × 12 @ 450 lbs ✓</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress Tab -->
+                <div class="dashboard-content" id="progress">
+                    <div class="progress-chart">
+                        <h3>Weight Progress</h3>
+                        <div class="chart-placeholder">
+                            📊 Chart visualization would go here<br>
+                            <small>(Integrate with Chart.js in production)</small>
+                        </div>
+                    </div>
+
+                    <div class="log-form">
+                        <h3>Log Today's Progress</h3>
+                        <form>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Weight (lbs)</label>
+                                    <input type="number" class="form-input" placeholder="185">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Body Fat %</label>
+                                    <input type="number" class="form-input" placeholder="15">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Energy (1-10)</label>
+                                    <input type="number" class="form-input" min="1" max="10" placeholder="7">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Log Progress</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Messages Tab -->
+                <div class="dashboard-content" id="messages">
+                    <div class="messages-container">
+                        <div class="messages-sidebar">
+                            <div class="message-thread active">
+                                <div class="message-thread-name">Mike Gomez</div>
+                                <div class="message-thread-preview">Great work on your session today!</div>
+                            </div>
+                        </div>
+                        <div class="messages-main">
+                            <div class="messages-header">Mike Gomez (Your Trainer)</div>
+                            <div class="messages-body">
+                                <div class="message">
+                                    <div class="message-bubble">Hey! How are you feeling after yesterday's leg day?</div>
+                                    <div class="message-time">Yesterday, 3:45 PM</div>
+                                </div>
+                                <div class="message sent">
+                                    <div class="message-bubble">Pretty sore but in a good way! Those pause squats were brutal 😅</div>
+                                    <div class="message-time">Yesterday, 4:12 PM</div>
+                                </div>
+                                <div class="message">
+                                    <div class="message-bubble">Great work! That soreness means you pushed yourself. Make sure to get plenty of protein and rest. See you Friday for push day!</div>
+                                    <div class="message-time">Yesterday, 4:30 PM</div>
+                                </div>
+                            </div>
+                            <div class="messages-input">
+                                <input type="text" placeholder="Type a message...">
+                                <button class="btn btn-primary btn-sm">Send</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nutrition Tab -->
+                <div class="dashboard-content" id="nutrition">
+                    <div class="stats-row" style="margin-bottom: var(--space-xl);">
+                        <div class="stat-card">
+                            <div class="icon">🎯</div>
+                            <div class="value">2,400</div>
+                            <div class="label">Daily Calories</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="icon">🥩</div>
+                            <div class="value">180g</div>
+                            <div class="label">Protein Target</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="icon">🍚</div>
+                            <div class="value">250g</div>
+                            <div class="label">Carbs Target</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="icon">🥑</div>
+                            <div class="value">80g</div>
+                            <div class="label">Fat Target</div>
+                        </div>
+                    </div>
+
+                    <div class="workout-card">
+                        <h3 style="font-family: var(--font-family); text-transform: none; margin-bottom: var(--space-lg);">Your Meal Plan</h3>
+                        <ul class="exercise-list">
+                            <li class="exercise-item">
+                                <span class="exercise-name">Breakfast</span>
+                                <span class="exercise-details">4 eggs, oatmeal, berries (550 cal)</span>
+                            </li>
+                            <li class="exercise-item">
+                                <span class="exercise-name">Lunch</span>
+                                <span class="exercise-details">Chicken breast, rice, vegetables (650 cal)</span>
+                            </li>
+                            <li class="exercise-item">
+                                <span class="exercise-name">Pre-Workout</span>
+                                <span class="exercise-details">Banana, protein shake (350 cal)</span>
+                            </li>
+                            <li class="exercise-item">
+                                <span class="exercise-name">Post-Workout</span>
+                                <span class="exercise-details">Protein shake, rice cakes (300 cal)</span>
+                            </li>
+                            <li class="exercise-item">
+                                <span class="exercise-name">Dinner</span>
+                                <span class="exercise-details">Salmon, sweet potato, salad (550 cal)</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-bottom" style="border-top: none; padding-top: 0;">
+                <p class="footer-copy">&copy; 2026 MoveStrong. All rights reserved.</p>
+                <p class="footer-telos">Powered by <strong>SUITE</strong></p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function toggleNav() {
+            const navLinks = document.getElementById('navLinks');
+            const navIcon = document.getElementById('navIcon');
+            navLinks.classList.toggle('open');
+            navIcon.innerHTML = navLinks.classList.contains('open') ? '×' : '☰';
+        }
+
+        // Check for success param (from Stripe checkout)
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('success') === 'true') {
+            alert('Payment successful! Welcome to MoveStrong. Check your email for login details.');
+        }
+
+        // Demo login
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            // In production, authenticate with backend
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('dashboardContainer').classList.add('active');
+            document.getElementById('userName').textContent = 'Demo User';
+        });
+
+        function logout() {
+            document.getElementById('dashboardContainer').classList.remove('active');
+            document.getElementById('loginContainer').style.display = 'block';
+        }
+
+        // Dashboard tabs
+        document.querySelectorAll('.dashboard-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.dashboard-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+
+                document.querySelectorAll('.dashboard-content').forEach(c => c.classList.remove('active'));
+                document.getElementById(tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => document.body.classList.add('loaded'), 500);
+
+            const revealElements = document.querySelectorAll('.reveal');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) entry.target.classList.add('visible');
+                });
+            }, { threshold: 0.1 });
+            revealElements.forEach(el => observer.observe(el));
+
+            window.addEventListener('scroll', () => {
+                document.querySelector('.nav').classList.toggle('scrolled', window.pageYOffset > 100);
+            });
+        });
+    </script>
+</body>
+</html>
