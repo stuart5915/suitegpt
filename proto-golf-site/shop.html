@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop | Proto Golf</title>
+    <meta name="description" content="Shop precision-milled putters and golf equipment from Proto Golf. Premium quality, made in the USA.">
+
+    <link rel="icon" type="image/png" href="assets/images/logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        /* Shop-specific styles */
+        .shop-header {
+            padding: 120px 20px 60px;
+            background: linear-gradient(135deg, var(--color-bg-light) 0%, var(--color-bg) 100%);
+            text-align: center;
+        }
+
+        .shop-filters {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 30px;
+        }
+
+        .filter-btn {
+            padding: 10px 24px;
+            background: var(--color-white-05);
+            border: 1px solid var(--color-border);
+            border-radius: 100px;
+            color: var(--color-white-70);
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-btn:hover {
+            background: var(--color-white-10);
+        }
+
+        .filter-btn.active {
+            background: var(--color-accent);
+            color: var(--color-bg);
+            border-color: var(--color-accent);
+        }
+
+        .shop-content {
+            padding: 60px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        /* Product Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 5000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal {
+            background: linear-gradient(180deg, var(--color-bg-light) 0%, var(--color-bg) 100%);
+            border-radius: var(--radius-xl);
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: flex-end;
+            padding: 16px;
+        }
+
+        .modal-close {
+            width: 40px;
+            height: 40px;
+            background: var(--color-white-10);
+            border: none;
+            border-radius: 50%;
+            color: var(--color-white);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: var(--color-white-20);
+        }
+
+        .modal-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 0 30px 30px;
+        }
+
+        .modal-image {
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, var(--color-bg-lighter), var(--color-bg-light));
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8rem;
+        }
+
+        .modal-info h2 {
+            font-size: 1.75rem;
+            margin-bottom: 8px;
+        }
+
+        .modal-info .product-brand {
+            margin-bottom: 16px;
+        }
+
+        .modal-price {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--color-accent);
+            margin-bottom: 16px;
+        }
+
+        .modal-desc {
+            color: var(--color-white-70);
+            margin-bottom: 24px;
+            line-height: 1.7;
+        }
+
+        .modal-specs {
+            background: var(--color-white-05);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .modal-specs h4 {
+            font-size: 0.85rem;
+            color: var(--color-accent);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .spec-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .spec-row:last-child {
+            border-bottom: none;
+        }
+
+        .spec-label {
+            color: var(--color-white-50);
+        }
+
+        .spec-value {
+            font-weight: 600;
+        }
+
+        .modal-options {
+            margin-bottom: 24px;
+        }
+
+        .option-group {
+            margin-bottom: 16px;
+        }
+
+        .option-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .option-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .option-btn {
+            padding: 10px 20px;
+            background: var(--color-white-05);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            color: var(--color-white);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .option-btn:hover {
+            background: var(--color-white-10);
+        }
+
+        .option-btn.selected {
+            background: rgba(74, 222, 128, 0.15);
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .modal-actions .btn {
+            flex: 1;
+        }
+
+        @media (max-width: 768px) {
+            .modal-content {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-image {
+                height: 250px;
+            }
+        }
+
+        /* Cart Sidebar */
+        .cart-sidebar {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 400px;
+            max-width: 100%;
+            height: 100vh;
+            background: var(--color-bg);
+            border-left: 1px solid var(--color-border);
+            z-index: 5001;
+            transform: translateX(100%);
+            transition: transform 0.3s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .cart-sidebar.open {
+            transform: translateX(0);
+        }
+
+        .cart-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .cart-header h3 {
+            font-size: 1.25rem;
+        }
+
+        .cart-items {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .cart-item {
+            display: flex;
+            gap: 16px;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .cart-item-image {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--color-bg-light), var(--color-bg-lighter));
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .cart-item-info {
+            flex: 1;
+        }
+
+        .cart-item-name {
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .cart-item-options {
+            font-size: 0.8rem;
+            color: var(--color-white-50);
+            margin-bottom: 8px;
+        }
+
+        .cart-item-price {
+            color: var(--color-accent);
+            font-weight: 700;
+        }
+
+        .cart-item-remove {
+            background: none;
+            border: none;
+            color: var(--color-white-50);
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .cart-item-remove:hover {
+            color: #ef4444;
+        }
+
+        .cart-empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--color-white-50);
+        }
+
+        .cart-footer {
+            padding: 20px;
+            border-top: 1px solid var(--color-border);
+            background: var(--color-bg-light);
+        }
+
+        .cart-total {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .cart-total-label {
+            font-weight: 600;
+        }
+
+        .cart-total-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--color-accent);
+        }
+
+        .cart-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 5000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .cart-backdrop.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* Cart Button (fixed) */
+        .cart-btn-fixed {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 60px;
+            height: 60px;
+            background: var(--color-accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(74, 222, 128, 0.4);
+            z-index: 100;
+            transition: all 0.2s;
+            border: none;
+            color: var(--color-bg);
+        }
+
+        .cart-btn-fixed:hover {
+            transform: scale(1.1);
+        }
+
+        .cart-count {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 24px;
+            height: 24px;
+            background: #ef4444;
+            border-radius: 50%;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        /* Checkout Form */
+        .checkout-form {
+            padding: 20px;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .checkout-form h4 {
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-brand">
+                <div class="nav-logo">P</div>
+                <span class="nav-title">Proto <span>Golf</span></span>
+            </a>
+
+            <ul class="nav-links" id="navLinks">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="shop.html" class="nav-link active">Shop</a></li>
+                <li><a href="analyzer.html" class="nav-link">AI Analyzer</a></li>
+                <li><a href="about.html" class="nav-link">About</a></li>
+                <li><a href="contact.html" class="nav-link">Contact</a></li>
+            </ul>
+
+            <div class="nav-cta">
+                <button class="btn btn-secondary btn-sm" onclick="openCart()">
+                    Cart (<span id="cartCountNav">0</span>)
+                </button>
+                <button class="nav-toggle" onclick="toggleNav()">
+                    <span id="navIcon">&#9776;</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Shop Header -->
+    <header class="shop-header">
+        <h1 class="section-title">Shop Proto Golf</h1>
+        <p class="section-subtitle">Precision-milled putters crafted for performance</p>
+        <div class="shop-filters">
+            <button class="filter-btn active" data-category="all">All Products</button>
+            <button class="filter-btn" data-category="putters">Putters</button>
+            <button class="filter-btn" data-category="drivers">Drivers</button>
+            <button class="filter-btn" data-category="accessories">Accessories</button>
+        </div>
+    </header>
+
+    <!-- Products Grid -->
+    <main class="shop-content">
+        <div class="products-grid" id="productsGrid">
+            <!-- Products rendered by JS -->
+        </div>
+    </main>
+
+    <!-- Product Modal -->
+    <div class="modal-overlay" id="productModal">
+        <div class="modal">
+            <div class="modal-header">
+                <button class="modal-close" onclick="closeProductModal()">&times;</button>
+            </div>
+            <div class="modal-content" id="modalContent">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Cart Sidebar -->
+    <div class="cart-backdrop" id="cartBackdrop" onclick="closeCart()"></div>
+    <aside class="cart-sidebar" id="cartSidebar">
+        <div class="cart-header">
+            <h3>Your Cart</h3>
+            <button class="modal-close" onclick="closeCart()">&times;</button>
+        </div>
+        <div class="cart-items" id="cartItems">
+            <div class="cart-empty">Your cart is empty</div>
+        </div>
+        <div class="cart-footer">
+            <div class="cart-total">
+                <span class="cart-total-label">Total</span>
+                <span class="cart-total-value" id="cartTotal">$0</span>
+            </div>
+            <button class="btn btn-primary" style="width: 100%;" onclick="proceedToCheckout()">
+                Checkout with Stripe
+            </button>
+        </div>
+    </aside>
+
+    <!-- Cart Button -->
+    <button class="cart-btn-fixed" onclick="openCart()">
+        <span>C</span>
+        <span class="cart-count" id="cartCount" style="display: none;">0</span>
+    </button>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-bottom">
+                <p class="footer-copy">&copy; 2026 Proto Golf. All rights reserved.</p>
+                <p class="footer-telos">A <strong>Telos Manufacturing</strong> Brand</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Product catalog
+        const products = {
+            blade: {
+                id: 'blade',
+                name: 'Blade Putter',
+                price: 249,
+                category: 'putters',
+                badge: 'Popular',
+                icon: 'B',
+                desc: 'Classic blade design for players who prefer feel and feedback. Precision milled from 303 stainless steel.',
+                longDesc: 'The Proto Blade is our take on the classic blade putter. Precision CNC-milled from 303 stainless steel, it offers exceptional feel and feedback that skilled players crave. The compact head shape promotes confidence at address and allows for precise aim.',
+                specs: {
+                    'Material': '303 Stainless Steel',
+                    'Head Weight': '350g',
+                    'Loft': '3.5 degrees',
+                    'Lie': '70 degrees',
+                    'Length': '33", 34", 35"'
+                }
+            },
+            mallet: {
+                id: 'mallet',
+                name: 'Mallet Putter',
+                price: 279,
+                category: 'putters',
+                badge: 'Best Seller',
+                icon: 'M',
+                desc: 'High MOI design with advanced alignment technology. Exceptional forgiveness on off-center strikes.',
+                longDesc: 'The Proto Mallet features a high moment of inertia (MOI) design that resists twisting on mishits. Built-in alignment aids help you aim with precision, while the face insert delivers soft yet responsive feedback.',
+                specs: {
+                    'Material': '6061 Aluminum with Steel Face',
+                    'Head Weight': '365g',
+                    'Loft': '3 degrees',
+                    'Lie': '70 degrees',
+                    'Length': '33", 34", 35"'
+                }
+            },
+            tour: {
+                id: 'tour',
+                name: 'Tour Blade',
+                price: 349,
+                category: 'putters',
+                badge: 'Pro',
+                icon: 'T',
+                desc: 'Tour-proven design used by professionals. Carbon steel construction with tungsten weights.',
+                longDesc: 'The Tour Blade is built to tour specifications. Carbon steel construction provides the soft feel pros demand, while strategically placed tungsten weights dial in the perfect balance. This is the putter for serious players.',
+                specs: {
+                    'Material': 'Carbon Steel + Tungsten',
+                    'Head Weight': '360g',
+                    'Loft': '3.5 degrees',
+                    'Lie': '71 degrees',
+                    'Length': '33", 34", 35"'
+                }
+            },
+            classic: {
+                id: 'classic',
+                name: 'Classic Anser',
+                price: 199,
+                category: 'putters',
+                badge: 'Value',
+                icon: 'C',
+                desc: 'Timeless Anser-style head shape. Perfect balance of feel and forgiveness for all skill levels.',
+                longDesc: 'The Classic Anser pays homage to the most successful putter design in golf history. Our version features a cavity-back design for added forgiveness while maintaining the look and feel that made this shape legendary.',
+                specs: {
+                    'Material': '303 Stainless Steel',
+                    'Head Weight': '345g',
+                    'Loft': '3 degrees',
+                    'Lie': '70 degrees',
+                    'Length': '33", 34", 35"'
+                }
+            },
+            proDriver: {
+                id: 'proDriver',
+                name: 'Proto Driver X1',
+                price: 449,
+                category: 'drivers',
+                badge: 'Coming Soon',
+                icon: 'D',
+                desc: 'Maximum forgiveness with adjustable loft and weights. Perfect for players seeking distance and accuracy.',
+                longDesc: 'The Proto Driver X1 combines explosive distance with forgiving performance. Adjustable hosel settings let you dial in your preferred launch angle, while movable weights fine-tune shot shape. Coming soon.',
+                specs: {
+                    'Material': 'Titanium',
+                    'Head Size': '460cc',
+                    'Loft Options': '9, 10.5, 12 degrees',
+                    'Adjustability': 'Hosel + Weights',
+                    'Status': 'Pre-Order'
+                }
+            },
+            headcover: {
+                id: 'headcover',
+                name: 'Proto Headcover',
+                price: 39,
+                category: 'accessories',
+                badge: 'New',
+                icon: 'H',
+                desc: 'Premium leather headcover with magnetic closure. Protects your putter in style.',
+                longDesc: 'Protect your Proto putter with our premium leather headcover. Features a magnetic closure for easy on/off, plush interior lining, and embossed Proto Golf logo.',
+                specs: {
+                    'Material': 'Premium Leather',
+                    'Closure': 'Magnetic',
+                    'Lining': 'Velour',
+                    'Fits': 'Blade & Mallet'
+                }
+            },
+            grip: {
+                id: 'grip',
+                name: 'Proto Tour Grip',
+                price: 29,
+                category: 'accessories',
+                badge: '',
+                icon: 'G',
+                desc: 'Tour-style pistol grip with tacky feel. Available in multiple sizes.',
+                longDesc: 'Our Tour Grip features a slightly tapered pistol shape favored by tour players. The tacky rubber compound ensures a secure hold in all conditions.',
+                specs: {
+                    'Material': 'Rubber',
+                    'Style': 'Pistol',
+                    'Sizes': 'Standard, Midsize, Oversize',
+                    'Weight': '52g'
+                }
+            }
+        };
+
+        let cart = JSON.parse(localStorage.getItem('proto_cart')) || [];
+        let currentCategory = 'all';
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            renderProducts();
+            updateCartUI();
+            setupFilters();
+
+            // Check URL for product param
+            const params = new URLSearchParams(window.location.search);
+            const productId = params.get('product');
+            if (productId && products[productId]) {
+                openProductModal(productId);
+            }
+
+            // Check for Stripe return
+            if (params.get('success') === 'true') {
+                cart = [];
+                saveCart();
+                updateCartUI();
+                showToast('Order confirmed! Thank you for your purchase.');
+            }
+        });
+
+        function renderProducts() {
+            const grid = document.getElementById('productsGrid');
+            const filtered = Object.values(products).filter(p =>
+                currentCategory === 'all' || p.category === currentCategory
+            );
+
+            grid.innerHTML = filtered.map(p => `
+                <div class="product-card" onclick="openProductModal('${p.id}')">
+                    <div class="product-image">
+                        <span>${p.icon}</span>
+                    </div>
+                    <div class="product-info">
+                        <div class="product-brand">Proto Golf</div>
+                        <h3 class="product-name">${p.name}</h3>
+                        <p class="product-desc">${p.desc}</p>
+                        <div class="product-footer">
+                            <span class="product-price">$${p.price}</span>
+                            ${p.badge ? `<span class="product-badge">${p.badge}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function setupFilters() {
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentCategory = btn.dataset.category;
+                    renderProducts();
+                });
+            });
+        }
+
+        function openProductModal(productId) {
+            const product = products[productId];
+            if (!product) return;
+
+            const modal = document.getElementById('productModal');
+            const content = document.getElementById('modalContent');
+
+            content.innerHTML = `
+                <div class="modal-image">
+                    <span>${product.icon}</span>
+                </div>
+                <div class="modal-info">
+                    <div class="product-brand">Proto Golf</div>
+                    <h2>${product.name}</h2>
+                    <div class="modal-price">$${product.price}</div>
+                    <p class="modal-desc">${product.longDesc}</p>
+
+                    <div class="modal-specs">
+                        <h4>Specifications</h4>
+                        ${Object.entries(product.specs).map(([key, val]) => `
+                            <div class="spec-row">
+                                <span class="spec-label">${key}</span>
+                                <span class="spec-value">${val}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    ${product.category === 'putters' ? `
+                        <div class="modal-options">
+                            <div class="option-group">
+                                <span class="option-label">Length</span>
+                                <div class="option-buttons">
+                                    <button class="option-btn" onclick="selectOption(this, 'length')">33"</button>
+                                    <button class="option-btn selected" onclick="selectOption(this, 'length')">34"</button>
+                                    <button class="option-btn" onclick="selectOption(this, 'length')">35"</button>
+                                </div>
+                            </div>
+                            <div class="option-group">
+                                <span class="option-label">Grip</span>
+                                <div class="option-buttons">
+                                    <button class="option-btn selected" onclick="selectOption(this, 'grip')">Standard</button>
+                                    <button class="option-btn" onclick="selectOption(this, 'grip')">Midsize</button>
+                                    <button class="option-btn" onclick="selectOption(this, 'grip')">Oversize</button>
+                                </div>
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <div class="modal-actions">
+                        <button class="btn btn-primary" onclick="addToCart('${product.id}')">
+                            Add to Cart - $${product.price}
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            modal.classList.add('active');
+        }
+
+        function closeProductModal() {
+            document.getElementById('productModal').classList.remove('active');
+        }
+
+        function selectOption(btn, type) {
+            btn.parentElement.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+        }
+
+        function getSelectedOptions() {
+            const lengthBtn = document.querySelector('.option-group:first-child .option-btn.selected');
+            const gripBtn = document.querySelector('.option-group:last-child .option-btn.selected');
+            return {
+                length: lengthBtn ? lengthBtn.textContent : '34"',
+                grip: gripBtn ? gripBtn.textContent : 'Standard'
+            };
+        }
+
+        function addToCart(productId) {
+            const product = products[productId];
+            if (!product) return;
+
+            const options = product.category === 'putters' ? getSelectedOptions() : {};
+
+            cart.push({
+                id: product.id,
+                name: product.name,
+                price: product.price,
+                icon: product.icon,
+                options: options
+            });
+
+            saveCart();
+            updateCartUI();
+            closeProductModal();
+            showToast(`${product.name} added to cart!`);
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            saveCart();
+            updateCartUI();
+        }
+
+        function saveCart() {
+            localStorage.setItem('proto_cart', JSON.stringify(cart));
+        }
+
+        function updateCartUI() {
+            const cartItems = document.getElementById('cartItems');
+            const cartTotal = document.getElementById('cartTotal');
+            const cartCount = document.getElementById('cartCount');
+            const cartCountNav = document.getElementById('cartCountNav');
+
+            if (cart.length === 0) {
+                cartItems.innerHTML = '<div class="cart-empty">Your cart is empty</div>';
+                cartCount.style.display = 'none';
+            } else {
+                cartItems.innerHTML = cart.map((item, index) => `
+                    <div class="cart-item">
+                        <div class="cart-item-image">${item.icon}</div>
+                        <div class="cart-item-info">
+                            <div class="cart-item-name">${item.name}</div>
+                            ${item.options && Object.keys(item.options).length ? `
+                                <div class="cart-item-options">
+                                    ${Object.entries(item.options).map(([k, v]) => `${k}: ${v}`).join(' | ')}
+                                </div>
+                            ` : ''}
+                            <div class="cart-item-price">$${item.price}</div>
+                        </div>
+                        <button class="cart-item-remove" onclick="removeFromCart(${index})">X</button>
+                    </div>
+                `).join('');
+                cartCount.style.display = 'flex';
+                cartCount.textContent = cart.length;
+            }
+
+            const total = cart.reduce((sum, item) => sum + item.price, 0);
+            cartTotal.textContent = '$' + total;
+            cartCountNav.textContent = cart.length;
+        }
+
+        function openCart() {
+            document.getElementById('cartSidebar').classList.add('open');
+            document.getElementById('cartBackdrop').classList.add('open');
+        }
+
+        function closeCart() {
+            document.getElementById('cartSidebar').classList.remove('open');
+            document.getElementById('cartBackdrop').classList.remove('open');
+        }
+
+        async function proceedToCheckout() {
+            if (cart.length === 0) {
+                showToast('Your cart is empty');
+                return;
+            }
+
+            try {
+                showToast('Connecting to Stripe...');
+
+                const response = await fetch('/api/create-checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        items: cart,
+                        success_url: window.location.origin + '/proto-golf-site/shop.html?success=true',
+                        cancel_url: window.location.origin + '/proto-golf-site/shop.html?cancelled=true'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.url) {
+                    window.location.href = data.url;
+                } else {
+                    showToast('Demo mode: Order would be processed via Stripe');
+                }
+            } catch (error) {
+                console.error('Checkout error:', error);
+                showToast('Demo mode: Order would be processed via Stripe');
+            }
+        }
+
+        function showToast(message) {
+            // Remove existing toast
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Mobile nav toggle
+        function toggleNav() {
+            const navLinks = document.getElementById('navLinks');
+            const navIcon = document.getElementById('navIcon');
+            navLinks.classList.toggle('open');
+            navIcon.innerHTML = navLinks.classList.contains('open') ? '&times;' : '&#9776;';
+        }
+
+        // Close modal on escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeProductModal();
+                closeCart();
+            }
+        });
+
+        // Close modal on backdrop click
+        document.getElementById('productModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                closeProductModal();
+            }
+        });
+    </script>
+</body>
+</html>

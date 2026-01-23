@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Proto Golf</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-bg: #0d1f0d;
+            --color-bg-light: #1a3d1a;
+            --color-accent: #4ade80;
+            --color-accent-hover: #22c55e;
+            --color-gold: #d4a745;
+            --color-white: #ffffff;
+            --color-white-70: rgba(255, 255, 255, 0.7);
+            --color-white-50: rgba(255, 255, 255, 0.5);
+            --color-border: rgba(255, 255, 255, 0.1);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: var(--color-bg);
+            color: var(--color-white);
+            min-height: 100vh;
+        }
+
+        /* Login Screen */
+        .login-screen {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .login-logo {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--color-accent), var(--color-accent-hover));
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            margin: 0 auto 24px;
+            font-weight: 800;
+        }
+
+        .login-card h1 {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+
+        .login-card p {
+            color: var(--color-white-50);
+            margin-bottom: 32px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            color: var(--color-white);
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--color-accent);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 28px;
+            border-radius: var(--radius-md);
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: var(--color-accent);
+            color: var(--color-bg);
+        }
+
+        .btn-primary:hover {
+            background: var(--color-accent-hover);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--color-white);
+        }
+
+        .login-error {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            padding: 12px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        /* Dashboard Layout */
+        .dashboard {
+            display: none;
+        }
+
+        .dashboard.active {
+            display: block;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 240px;
+            background: var(--color-bg-light);
+            border-right: 1px solid var(--color-border);
+            padding: 20px;
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 40px;
+        }
+
+        .sidebar-logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--color-accent), var(--color-accent-hover));
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+        }
+
+        .sidebar-logo-text {
+            font-weight: 800;
+        }
+
+        .sidebar-logo-text span {
+            color: var(--color-accent);
+        }
+
+        .sidebar-nav {
+            list-style: none;
+        }
+
+        .sidebar-nav li {
+            margin-bottom: 8px;
+        }
+
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: var(--color-white-70);
+            text-decoration: none;
+            border-radius: var(--radius-sm);
+            transition: all 0.2s;
+        }
+
+        .sidebar-nav a:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--color-white);
+        }
+
+        .sidebar-nav a.active {
+            background: rgba(74, 222, 128, 0.15);
+            color: var(--color-accent);
+        }
+
+        .sidebar-nav-icon {
+            width: 20px;
+            text-align: center;
+        }
+
+        .main-content {
+            margin-left: 240px;
+            padding: 24px;
+            min-height: 100vh;
+        }
+
+        .main-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+        }
+
+        .main-header h1 {
+            font-size: 1.75rem;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 20px;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--color-white-50);
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--color-accent);
+        }
+
+        .stat-change {
+            font-size: 0.85rem;
+            margin-top: 8px;
+        }
+
+        .stat-change.positive {
+            color: var(--color-accent);
+        }
+
+        .stat-change.negative {
+            color: #ef4444;
+        }
+
+        /* Content Sections */
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .section-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        /* Tables */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            text-align: left;
+            padding: 14px 20px;
+            font-size: 0.8rem;
+            color: var(--color-white-50);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .data-table td {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .data-table tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: rgba(74, 222, 128, 0.15);
+            color: var(--color-accent);
+        }
+
+        .badge-warning {
+            background: rgba(251, 191, 36, 0.15);
+            color: #fbbf24;
+        }
+
+        .badge-error {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+        }
+
+        .badge-neutral {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--color-white-70);
+        }
+
+        .stock-input {
+            width: 80px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            color: var(--color-white);
+            font-family: inherit;
+            text-align: center;
+        }
+
+        .stock-input:focus {
+            outline: none;
+            border-color: var(--color-accent);
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Fitting Slip Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 5000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal {
+            background: var(--color-white);
+            color: #1a1a1a;
+            border-radius: var(--radius-lg);
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #e5e5e5;
+        }
+
+        .modal-header h3 {
+            font-size: 1.1rem;
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            background: #f5f5f5;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.25rem;
+        }
+
+        /* Fitting Slip (Printable) */
+        .fitting-slip {
+            padding: 24px;
+        }
+
+        .slip-header {
+            text-align: center;
+            border-bottom: 2px solid #1a1a1a;
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+        }
+
+        .slip-header h2 {
+            font-size: 1.5rem;
+            margin-bottom: 4px;
+        }
+
+        .slip-header p {
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        .slip-section {
+            margin-bottom: 20px;
+        }
+
+        .slip-section h4 {
+            font-size: 0.9rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #e5e5e5;
+            padding-bottom: 8px;
+        }
+
+        .slip-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+        }
+
+        .slip-row .label {
+            color: #666;
+        }
+
+        .slip-products {
+            background: #f5f5f5;
+            padding: 16px;
+            border-radius: 8px;
+        }
+
+        .slip-product {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px dashed #ddd;
+        }
+
+        .slip-product:last-child {
+            border-bottom: none;
+        }
+
+        .slip-notes {
+            border: 1px solid #e5e5e5;
+            padding: 16px;
+            min-height: 80px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .slip-footer {
+            text-align: center;
+            padding-top: 16px;
+            border-top: 2px solid #1a1a1a;
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .modal-actions {
+            padding: 16px 20px;
+            border-top: 1px solid #e5e5e5;
+            display: flex;
+            gap: 12px;
+        }
+
+        .modal-actions .btn {
+            flex: 1;
+        }
+
+        .modal-actions .btn-primary {
+            background: #1a1a1a;
+            color: white;
+        }
+
+        .modal-actions .btn-secondary {
+            background: #e5e5e5;
+            color: #1a1a1a;
+        }
+
+        /* Print Styles */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+
+            .modal, .modal * {
+                visibility: visible;
+            }
+
+            .modal {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                max-width: 100%;
+                box-shadow: none;
+            }
+
+            .modal-header, .modal-actions {
+                display: none !important;
+            }
+
+            .fitting-slip {
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .sidebar {
+                display: none;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-card">
+            <div class="login-logo">P</div>
+            <h1>Proto Golf Admin</h1>
+            <p>Enter your password to continue</p>
+
+            <div class="login-error" id="loginError">Invalid password</div>
+
+            <form onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="loginPassword" placeholder="Enter admin password">
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="dashboard" id="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <div class="sidebar-logo-icon">P</div>
+                <span class="sidebar-logo-text">Proto <span>Admin</span></span>
+            </div>
+
+            <nav>
+                <ul class="sidebar-nav">
+                    <li>
+                        <a href="#" class="active" onclick="showSection('overview')">
+                            <span class="sidebar-nav-icon">O</span>
+                            Overview
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="showSection('inventory')">
+                            <span class="sidebar-nav-icon">I</span>
+                            Inventory
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="showSection('fittings')">
+                            <span class="sidebar-nav-icon">F</span>
+                            Fittings
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="showSection('orders')">
+                            <span class="sidebar-nav-icon">$</span>
+                            Orders
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../index.html" target="_blank">
+                            <span class="sidebar-nav-icon">W</span>
+                            View Site
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="logout()">
+                            <span class="sidebar-nav-icon">X</span>
+                            Logout
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Overview Section -->
+            <div class="content-section active" id="section-overview">
+                <div class="main-header">
+                    <h1>Dashboard Overview</h1>
+                    <div class="header-actions">
+                        <span style="color: var(--color-white-50);">Welcome, Admin</span>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Fittings This Week</div>
+                        <div class="stat-value" id="weeklyFittings">32</div>
+                        <div class="stat-change positive">+8% vs last week</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Revenue This Week</div>
+                        <div class="stat-value">$4,230</div>
+                        <div class="stat-change positive">+12% vs last week</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Orders Pending</div>
+                        <div class="stat-value">5</div>
+                        <div class="stat-change">Awaiting shipment</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Low Stock Items</div>
+                        <div class="stat-value">2</div>
+                        <div class="stat-change negative">Restock needed</div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-header">
+                        <h3 class="section-title">Recent Fittings</h3>
+                        <button class="btn btn-secondary btn-sm" onclick="showSection('fittings')">View All</button>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Customer</th>
+                                <th>Type</th>
+                                <th>Score</th>
+                                <th>Recommendation</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentFittingsTable">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Inventory Section -->
+            <div class="content-section" id="section-inventory">
+                <div class="main-header">
+                    <h1>Inventory Management</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-primary btn-sm" onclick="saveInventory()">Save Changes</button>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-header">
+                        <h3 class="section-title">Product Stock</h3>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>SKU</th>
+                                <th>Price</th>
+                                <th>In Stock</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryTable">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Fittings Section -->
+            <div class="content-section" id="section-fittings">
+                <div class="main-header">
+                    <h1>Fittings Log</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary btn-sm" onclick="exportFittings()">Export CSV</button>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-header">
+                        <h3 class="section-title">All Fittings</h3>
+                        <span style="color: var(--color-white-50);" id="fittingsCount">32 this week</span>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Customer</th>
+                                <th>Type</th>
+                                <th>Overall Score</th>
+                                <th>Top Recommendation</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fittingsTable">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Orders Section -->
+            <div class="content-section" id="section-orders">
+                <div class="main-header">
+                    <h1>Orders</h1>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-header">
+                        <h3 class="section-title">Recent Orders</h3>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Date</th>
+                                <th>Customer</th>
+                                <th>Items</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTable">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Fitting Slip Modal -->
+    <div class="modal-overlay" id="slipModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Fitting Slip</h3>
+                <button class="modal-close" onclick="closeSlipModal()">&times;</button>
+            </div>
+            <div class="fitting-slip" id="fittingSlipContent">
+                <!-- Populated by JS -->
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeSlipModal()">Close</button>
+                <button class="btn btn-primary" onclick="printSlip()">Print Slip</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Demo data
+        const inventory = [
+            { id: 'blade', name: 'Blade Putter', sku: 'PROTO-BLD-01', price: 249, stock: 12 },
+            { id: 'mallet', name: 'Mallet Putter', sku: 'PROTO-MLT-01', price: 279, stock: 8 },
+            { id: 'tour', name: 'Tour Blade', sku: 'PROTO-TBL-01', price: 349, stock: 5 },
+            { id: 'classic', name: 'Classic Anser', sku: 'PROTO-CLS-01', price: 199, stock: 15 },
+            { id: 'headcover', name: 'Proto Headcover', sku: 'PROTO-HC-01', price: 39, stock: 24 },
+            { id: 'grip', name: 'Proto Tour Grip', sku: 'PROTO-GRP-01', price: 29, stock: 3 }
+        ];
+
+        const fittings = [
+            { id: 1, date: '2026-01-23', customer: 'John D.', email: 'john@email.com', type: 'Putting', score: 82, recommendation: 'Mallet Putter', issues: ['Slight decel through impact', 'Eyes behind ball'], recs: ['Practice with metronome', 'Use putting mirror'] },
+            { id: 2, date: '2026-01-23', customer: 'Sarah M.', email: 'sarah@email.com', type: 'Full Swing', score: 75, recommendation: 'Tour Blade', issues: ['Early extension', 'Grip too strong'], recs: ['Maintain spine angle', 'Rotate grip left'] },
+            { id: 3, date: '2026-01-22', customer: 'Mike T.', email: 'mike@email.com', type: 'Putting', score: 88, recommendation: 'Blade Putter', issues: ['Minor alignment issue'], recs: ['Use alignment sticks'] },
+            { id: 4, date: '2026-01-22', customer: 'Emily R.', email: 'emily@email.com', type: 'Full Swing', score: 71, recommendation: 'Classic Anser', issues: ['Weight shift late', 'Over the top'], recs: ['Start weight shift earlier', 'Practice inside-out path'] },
+            { id: 5, date: '2026-01-21', customer: 'David L.', email: 'david@email.com', type: 'Putting', score: 79, recommendation: 'Mallet Putter', issues: ['Inconsistent tempo'], recs: ['Metronome drills'] }
+        ];
+
+        const orders = [
+            { id: 'ORD-1234', date: '2026-01-23', customer: 'John D.', email: 'john@email.com', items: 'Mallet Putter', total: 279, status: 'pending' },
+            { id: 'ORD-1233', date: '2026-01-22', customer: 'Sarah M.', email: 'sarah@email.com', items: 'Tour Blade, Headcover', total: 388, status: 'shipped' },
+            { id: 'ORD-1232', date: '2026-01-21', customer: 'Mike T.', email: 'mike@email.com', items: 'Blade Putter', total: 249, status: 'delivered' },
+            { id: 'ORD-1231', date: '2026-01-20', customer: 'Emily R.', email: 'emily@email.com', items: 'Classic Anser, Grip', total: 228, status: 'delivered' }
+        ];
+
+        // Authentication (simple demo)
+        const ADMIN_PASSWORD = 'proto2026';
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const password = document.getElementById('loginPassword').value;
+
+            if (password === ADMIN_PASSWORD) {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('dashboard').classList.add('active');
+                sessionStorage.setItem('proto_admin_auth', 'true');
+                initDashboard();
+            } else {
+                document.getElementById('loginError').style.display = 'block';
+            }
+        }
+
+        function logout() {
+            sessionStorage.removeItem('proto_admin_auth');
+            document.getElementById('dashboard').classList.remove('active');
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('loginPassword').value = '';
+        }
+
+        // Check auth on load
+        document.addEventListener('DOMContentLoaded', () => {
+            if (sessionStorage.getItem('proto_admin_auth') === 'true') {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('dashboard').classList.add('active');
+                initDashboard();
+            }
+        });
+
+        function initDashboard() {
+            renderInventory();
+            renderFittings();
+            renderOrders();
+            renderRecentFittings();
+        }
+
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+            // Show selected section
+            document.getElementById('section-' + sectionId).classList.add('active');
+            // Update nav
+            document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+        }
+
+        function renderInventory() {
+            const table = document.getElementById('inventoryTable');
+            table.innerHTML = inventory.map(item => {
+                const status = item.stock <= 5 ? 'Low Stock' : item.stock <= 10 ? 'Medium' : 'In Stock';
+                const statusClass = item.stock <= 5 ? 'badge-error' : item.stock <= 10 ? 'badge-warning' : 'badge-success';
+
+                return `
+                    <tr>
+                        <td><strong>${item.name}</strong></td>
+                        <td>${item.sku}</td>
+                        <td>$${item.price}</td>
+                        <td>
+                            <input type="number" class="stock-input" value="${item.stock}" data-id="${item.id}" onchange="updateStock('${item.id}', this.value)">
+                        </td>
+                        <td><span class="badge ${statusClass}">${status}</span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updateStock(id, value) {
+            const item = inventory.find(i => i.id === id);
+            if (item) {
+                item.stock = parseInt(value) || 0;
+            }
+        }
+
+        function saveInventory() {
+            // In production, save to Supabase
+            alert('Inventory saved successfully!');
+        }
+
+        function renderFittings() {
+            const table = document.getElementById('fittingsTable');
+            table.innerHTML = fittings.map(f => `
+                <tr>
+                    <td>${f.date}</td>
+                    <td><strong>${f.customer}</strong><br><span style="color: var(--color-white-50); font-size: 0.85rem;">${f.email}</span></td>
+                    <td><span class="badge ${f.type === 'Putting' ? 'badge-success' : 'badge-neutral'}">${f.type}</span></td>
+                    <td><strong style="color: var(--color-accent);">${f.score}/100</strong></td>
+                    <td>${f.recommendation}</td>
+                    <td>
+                        <button class="btn btn-secondary btn-sm" onclick="openSlipModal(${f.id})">Print Slip</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderRecentFittings() {
+            const table = document.getElementById('recentFittingsTable');
+            table.innerHTML = fittings.slice(0, 3).map(f => `
+                <tr>
+                    <td>${f.date}</td>
+                    <td>${f.customer}</td>
+                    <td><span class="badge ${f.type === 'Putting' ? 'badge-success' : 'badge-neutral'}">${f.type}</span></td>
+                    <td><strong style="color: var(--color-accent);">${f.score}</strong></td>
+                    <td>${f.recommendation}</td>
+                    <td>
+                        <button class="btn btn-secondary btn-sm btn-icon" onclick="openSlipModal(${f.id})">P</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderOrders() {
+            const table = document.getElementById('ordersTable');
+            table.innerHTML = orders.map(o => {
+                const statusClass = o.status === 'pending' ? 'badge-warning' : o.status === 'shipped' ? 'badge-success' : 'badge-neutral';
+
+                return `
+                    <tr>
+                        <td><strong>${o.id}</strong></td>
+                        <td>${o.date}</td>
+                        <td>${o.customer}<br><span style="color: var(--color-white-50); font-size: 0.85rem;">${o.email}</span></td>
+                        <td>${o.items}</td>
+                        <td><strong>$${o.total}</strong></td>
+                        <td><span class="badge ${statusClass}">${o.status}</span></td>
+                        <td>
+                            ${o.status === 'pending' ? `<button class="btn btn-primary btn-sm" onclick="markShipped('${o.id}')">Mark Shipped</button>` : ''}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function markShipped(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (order) {
+                order.status = 'shipped';
+                renderOrders();
+            }
+        }
+
+        function openSlipModal(fittingId) {
+            const fitting = fittings.find(f => f.id === fittingId);
+            if (!fitting) return;
+
+            const product = inventory.find(i => i.name === fitting.recommendation);
+
+            const content = document.getElementById('fittingSlipContent');
+            content.innerHTML = `
+                <div class="slip-header">
+                    <h2>PROTO GOLF FITTING</h2>
+                    <p>A Telos Manufacturing Brand</p>
+                </div>
+
+                <div class="slip-section">
+                    <h4>Customer Information</h4>
+                    <div class="slip-row">
+                        <span class="label">Name:</span>
+                        <span>${fitting.customer}</span>
+                    </div>
+                    <div class="slip-row">
+                        <span class="label">Date:</span>
+                        <span>${fitting.date}</span>
+                    </div>
+                    <div class="slip-row">
+                        <span class="label">Analysis Type:</span>
+                        <span>${fitting.type}</span>
+                    </div>
+                </div>
+
+                <div class="slip-section">
+                    <h4>Swing Analysis</h4>
+                    <div class="slip-row">
+                        <span class="label">Overall Score:</span>
+                        <span><strong>${fitting.score}/100</strong></span>
+                    </div>
+                    <div class="slip-row">
+                        <span class="label">Key Issues:</span>
+                        <span>${fitting.issues.join(', ')}</span>
+                    </div>
+                </div>
+
+                <div class="slip-section">
+                    <h4>Recommendations</h4>
+                    <ul style="margin-left: 20px; margin-bottom: 16px;">
+                        ${fitting.recs.map(r => `<li>${r}</li>`).join('')}
+                    </ul>
+                </div>
+
+                <div class="slip-section">
+                    <h4>Recommended Equipment</h4>
+                    <div class="slip-products">
+                        <div class="slip-product">
+                            <span><strong>${fitting.recommendation}</strong></span>
+                            <span>$${product ? product.price : 'N/A'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="slip-section">
+                    <h4>Notes</h4>
+                    <div class="slip-notes" contenteditable="true">
+                        <!-- Hand-written notes area -->
+                    </div>
+                </div>
+
+                <div class="slip-footer">
+                    Cambridge, MA | protogolf.com | (617) 555-1234
+                </div>
+            `;
+
+            document.getElementById('slipModal').classList.add('active');
+        }
+
+        function closeSlipModal() {
+            document.getElementById('slipModal').classList.remove('active');
+        }
+
+        function printSlip() {
+            window.print();
+        }
+
+        function exportFittings() {
+            // Generate CSV
+            const headers = ['Date', 'Customer', 'Email', 'Type', 'Score', 'Recommendation'];
+            const rows = fittings.map(f => [f.date, f.customer, f.email, f.type, f.score, f.recommendation]);
+            const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+
+            // Download
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'proto-golf-fittings.csv';
+            a.click();
+        }
+    </script>
+</body>
+</html>
