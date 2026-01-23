@@ -27,7 +27,8 @@ const panelComponents: Record<ExtensionSlug, React.LazyExoticComponent<React.Com
     'comment-responder': lazy(() => import('./panels/CommentResponderPanel')),
     'trend-surfer': lazy(() => import('./panels/TrendSurferPanel')),
     'link-in-bio': lazy(() => import('./panels/LinkInBioPanel')),
-    'dm-sequence-builder': lazy(() => import('./panels/DMSequenceBuilderPanel'))
+    'dm-sequence-builder': lazy(() => import('./panels/DMSequenceBuilderPanel')),
+    'article-writer': lazy(() => import('./panels/ArticleWriterPanel'))
 }
 
 export interface PanelContentProps {

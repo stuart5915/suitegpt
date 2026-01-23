@@ -1,16 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
-import { useTelegramAuth } from '@/contexts/TelegramAuthContext'
+import { useExtensionPanel } from '@/contexts/ExtensionPanelContext'
 import {
     EXTENSION_REGISTRY,
     Extension,
-    ExtensionCategory,
-    UserExtension
+    ExtensionCategory
 } from '@/lib/extensions/types'
-import { getUserExtensions, enableExtension, disableExtension } from '@/lib/extensions/api'
 import {
     Loader2,
     Puzzle,
@@ -49,75 +46,16 @@ const CATEGORY_CONFIG: Record<ExtensionCategory, { name: string; icon: React.Rea
 }
 
 export default function ExtensionsPage() {
-    const supabase = createClient()
-    const { user, isLoading: authLoading } = useTelegramAuth()
+    const {
+        enabledExtensions,
+        isExtensionEnabled,
+        toggleExtension,
+        loadingExtensions,
+        togglingExtension
+    } = useExtensionPanel()
 
-    const [loading, setLoading] = useState(true)
-    const [userExtensions, setUserExtensions] = useState<UserExtension[]>([])
     const [filter, setFilter] = useState<ExtensionCategory | 'all'>('all')
     const [search, setSearch] = useState('')
-    const [toggling, setToggling] = useState<string | null>(null)
-
-    useEffect(() => {
-        async function loadData() {
-            if (!user?.id) {
-                setLoading(false)
-                return
-            }
-
-            const extensions = await getUserExtensions(user.id)
-            setUserExtensions(extensions)
-            setLoading(false)
-        }
-
-        if (!authLoading) {
-            loadData()
-        }
-    }, [user, authLoading])
-
-    const isEnabled = (slug: string) => {
-        return userExtensions.some(ue => ue.extension_slug === slug && ue.enabled)
-    }
-
-    const handleToggle = async (ext: Extension) => {
-        if (!user?.id || toggling) return
-
-        setToggling(ext.slug)
-
-        const enabled = isEnabled(ext.slug)
-        let success: boolean
-
-        if (enabled) {
-            success = await disableExtension(user.id, ext.slug)
-        } else {
-            success = await enableExtension(user.id, ext.slug)
-        }
-
-        if (success) {
-            setUserExtensions(prev => {
-                const existing = prev.find(ue => ue.extension_slug === ext.slug)
-                if (existing) {
-                    return prev.map(ue =>
-                        ue.extension_slug === ext.slug
-                            ? { ...ue, enabled: !enabled }
-                            : ue
-                    )
-                } else {
-                    return [...prev, {
-                        user_id: user.id,
-                        extension_slug: ext.slug,
-                        enabled: true,
-                        settings: {},
-                        credits_used_today: 0,
-                        credits_used_month: 0,
-                        last_used_at: null
-                    }]
-                }
-            })
-        }
-
-        setToggling(null)
-    }
 
     const filteredExtensions = EXTENSION_REGISTRY.filter(ext => {
         if (filter !== 'all' && ext.category !== filter) return false
@@ -125,9 +63,9 @@ export default function ExtensionsPage() {
         return true
     })
 
-    const enabledCount = userExtensions.filter(ue => ue.enabled).length
+    const enabledCount = enabledExtensions.filter(ue => ue.enabled).length
 
-    if (loading || authLoading) {
+    if (loadingExtensions) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-[var(--primary)]" />
@@ -153,7 +91,7 @@ export default function ExtensionsPage() {
                     </div>
                 </div>
                 <p className="text-[var(--foreground-muted)] mt-2 max-w-2xl">
-                    Supercharge your content creation with powerful extensions. Each can work standalone or plugged into your Cadence workflow.
+                    Supercharge your content creation with powerful extensions. Enable extensions to add them to your sidebar for quick access.
                 </p>
             </header>
 
@@ -201,7 +139,7 @@ export default function ExtensionsPage() {
             {/* Extensions Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredExtensions.map((ext) => {
-                    const enabled = isEnabled(ext.slug)
+                    const enabled = isExtensionEnabled(ext.slug)
                     const categoryConfig = CATEGORY_CONFIG[ext.category]
 
                     return (
@@ -272,14 +210,14 @@ export default function ExtensionsPage() {
                                 {ext.is_active ? (
                                     <>
                                         <button
-                                            onClick={() => handleToggle(ext)}
-                                            disabled={toggling === ext.slug}
+                                            onClick={() => toggleExtension(ext.slug)}
+                                            disabled={togglingExtension === ext.slug}
                                             className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${enabled
                                                     ? 'bg-green-500/10 text-green-500 border border-green-500/30'
                                                     : 'bg-[var(--primary)] text-white'
                                                 }`}
                                         >
-                                            {toggling === ext.slug ? (
+                                            {togglingExtension === ext.slug ? (
                                                 <Loader2 className="w-4 h-4 animate-spin" />
                                             ) : enabled ? (
                                                 <>

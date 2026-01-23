@@ -137,22 +137,6 @@ export default function ExtensionSlideOver({
                         >
                             <Minus className="w-4 h-4" />
                         </button>
-                        {/* Close Button */}
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation()
-                                onClose()
-                            }}
-                            className="
-                                p-2 rounded-lg
-                                text-[var(--foreground-muted)] hover:text-red-500
-                                hover:bg-[var(--surface-hover)]
-                                transition-colors
-                            "
-                            title="Close"
-                        >
-                            <X className="w-4 h-4" />
-                        </button>
                     </div>
                 </div>
 

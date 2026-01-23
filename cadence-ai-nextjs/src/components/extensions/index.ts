@@ -15,3 +15,4 @@ export { default as CommentResponderPanel } from './panels/CommentResponderPanel
 export { default as TrendSurferPanel } from './panels/TrendSurferPanel'
 export { default as LinkInBioPanel } from './panels/LinkInBioPanel'
 export { default as DMSequenceBuilderPanel } from './panels/DMSequenceBuilderPanel'
+export { default as ArticleWriterPanel } from './panels/ArticleWriterPanel'

@@ -10,12 +10,12 @@ import {
     ChevronRight,
     RefreshCw,
     Calendar,
-    MessageCircle,
-    Instagram,
-    Twitter,
-    Puzzle
+    Puzzle,
+    ChevronDown
 } from 'lucide-react'
 import CreditsDisplay from '@/components/CreditsDisplay'
+import { useExtensionPanel } from '@/contexts/ExtensionPanelContext'
+import { EXTENSION_REGISTRY, getExtension } from '@/lib/extensions/types'
 
 interface SidebarProps {
     children: React.ReactNode
@@ -24,7 +24,6 @@ interface SidebarProps {
 const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/loops', label: 'Content Loops', icon: RefreshCw },
-    { href: '/engagement', label: 'Engagement', icon: MessageCircle },
     { href: '/calendar', label: 'Calendar', icon: Calendar },
     { href: '/extensions', label: 'Extensions', icon: Puzzle },
     { href: '/settings', label: 'Settings', icon: Settings },
@@ -33,6 +32,19 @@ const navItems = [
 export default function DashboardLayout({ children }: SidebarProps) {
     const pathname = usePathname()
     const [collapsed, setCollapsed] = useState(false)
+    const [extensionsExpanded, setExtensionsExpanded] = useState(true)
+
+    const { enabledExtensions, isExtensionEnabled } = useExtensionPanel()
+
+    // Get list of enabled extension slugs
+    const enabledExtensionSlugs = enabledExtensions
+        .filter(ue => ue.enabled)
+        .map(ue => ue.extension_slug)
+
+    // Get full extension data for enabled extensions
+    const enabledExtensionData = enabledExtensionSlugs
+        .map(slug => getExtension(slug))
+        .filter(ext => ext !== undefined)
 
     return (
         <div className="flex min-h-screen bg-[var(--background)]">
@@ -98,6 +110,78 @@ export default function DashboardLayout({ children }: SidebarProps) {
                     })}
                 </nav>
 
+                {/* Enabled Extensions Section */}
+                {!collapsed && enabledExtensionData.length > 0 && (
+                    <div className="px-3 mt-4">
+                        <button
+                            onClick={() => setExtensionsExpanded(!extensionsExpanded)}
+                            className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wider hover:text-[var(--foreground)] transition-colors"
+                        >
+                            <span>My Extensions</span>
+                            <ChevronDown
+                                className={`w-4 h-4 transition-transform duration-200 ${extensionsExpanded ? '' : '-rotate-90'}`}
+                            />
+                        </button>
+
+                        {extensionsExpanded && (
+                            <nav className="flex flex-col gap-1 mt-1">
+                                {enabledExtensionData.map((ext) => {
+                                    if (!ext) return null
+                                    const isActive = pathname === `/extensions/${ext.slug}`
+
+                                    return (
+                                        <Link
+                                            key={ext.slug}
+                                            href={`/extensions/${ext.slug}`}
+                                            className={`
+                                                flex items-center gap-3 px-3 py-2 rounded-lg
+                                                transition-all duration-200
+                                                ${isActive
+                                                    ? 'bg-[var(--primary)]/20 text-[var(--primary)] border border-[var(--primary)]/30'
+                                                    : 'text-[var(--foreground-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)]'
+                                                }
+                                            `}
+                                        >
+                                            <span className="text-lg flex-shrink-0">{ext.icon}</span>
+                                            <span className="font-medium text-sm truncate">{ext.name}</span>
+                                        </Link>
+                                    )
+                                })}
+                            </nav>
+                        )}
+                    </div>
+                )}
+
+                {/* Collapsed Extensions Icons */}
+                {collapsed && enabledExtensionData.length > 0 && (
+                    <div className="px-3 mt-4 border-t border-[var(--surface-border)] pt-4">
+                        <nav className="flex flex-col gap-1">
+                            {enabledExtensionData.map((ext) => {
+                                if (!ext) return null
+                                const isActive = pathname === `/extensions/${ext.slug}`
+
+                                return (
+                                    <Link
+                                        key={ext.slug}
+                                        href={`/extensions/${ext.slug}`}
+                                        className={`
+                                            flex items-center justify-center p-2.5 rounded-lg
+                                            transition-all duration-200
+                                            ${isActive
+                                                ? 'bg-[var(--primary)]/20 text-[var(--primary)]'
+                                                : 'text-[var(--foreground-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)]'
+                                            }
+                                        `}
+                                        title={ext.name}
+                                    >
+                                        <span className="text-lg">{ext.icon}</span>
+                                    </Link>
+                                )
+                            })}
+                        </nav>
+                    </div>
+                )}
+
                 {/* Collapse Button */}
                 <button
                     onClick={() => setCollapsed(!collapsed)}
@@ -124,7 +208,7 @@ export default function DashboardLayout({ children }: SidebarProps) {
             {/* Main Content */}
             <main
                 className={`
-          flex-1 transition-all duration-300 pt-[60px] pb-16
+          flex-1 transition-all duration-300 pt-[60px]
           ${collapsed ? 'ml-16' : 'ml-64'}
         `}
             >

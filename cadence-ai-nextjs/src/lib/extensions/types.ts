@@ -12,6 +12,7 @@ export type ExtensionSlug =
     | 'trend-surfer'
     | 'link-in-bio'
     | 'dm-sequence-builder'
+    | 'article-writer'
 
 export type ExtensionCategory =
     | 'engagement'
@@ -333,6 +334,24 @@ export const EXTENSION_REGISTRY: Extension[] = [
         ],
         is_active: false,
         is_premium: true
+    },
+    {
+        id: 'ext-article-writer',
+        slug: 'article-writer',
+        name: 'Article Writer',
+        description: 'AI-powered article refinement. Paste your draft, refine iteratively with AI.',
+        icon: '✍️',
+        category: 'content',
+        credit_cost: { per_use: 30 },
+        features: [
+            'Iterative AI refinement',
+            'Style preferences (no bullets, short paragraphs, etc.)',
+            'AI expansion suggestions',
+            'Keep your authentic voice',
+            'Publish-ready output'
+        ],
+        is_active: true,
+        is_premium: false
     }
 ]
 

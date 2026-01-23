@@ -10,10 +10,13 @@
  * - Support multiple stacked panels
  * - Pass initial data to extensions
  * - Handle panel completion callbacks
+ * - Track enabled extensions for sidebar display
  */
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react'
-import { ExtensionSlug } from '@/lib/extensions/types'
+import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react'
+import { ExtensionSlug, UserExtension } from '@/lib/extensions/types'
+import { useTelegramAuth } from '@/contexts/TelegramAuthContext'
+import { getUserExtensions, enableExtension, disableExtension } from '@/lib/extensions/api'
 
 export interface ExtensionPanel {
     id: string
@@ -34,6 +37,12 @@ interface ExtensionPanelContextType {
     getPanelBySlug: (slug: ExtensionSlug) => ExtensionPanel | undefined
     isCommandPaletteOpen: boolean
     setCommandPaletteOpen: (open: boolean) => void
+    // Enabled extensions management
+    enabledExtensions: UserExtension[]
+    isExtensionEnabled: (slug: ExtensionSlug) => boolean
+    toggleExtension: (slug: ExtensionSlug) => Promise<boolean>
+    loadingExtensions: boolean
+    togglingExtension: string | null
 }
 
 interface OpenPanelOptions {
@@ -51,6 +60,96 @@ function generatePanelId(): string {
 export function ExtensionPanelProvider({ children }: { children: ReactNode }) {
     const [panels, setPanels] = useState<ExtensionPanel[]>([])
     const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false)
+
+    // Enabled extensions state
+    const [enabledExtensions, setEnabledExtensions] = useState<UserExtension[]>([])
+    const [loadingExtensions, setLoadingExtensions] = useState(true)
+    const [togglingExtension, setTogglingExtension] = useState<string | null>(null)
+
+    const { user, isLoading: authLoading } = useTelegramAuth()
+
+    // Load enabled extensions on mount
+    useEffect(() => {
+        async function loadEnabledExtensions() {
+            if (!user?.id) {
+                setLoadingExtensions(false)
+                return
+            }
+
+            try {
+                const extensions = await getUserExtensions(user.id)
+                setEnabledExtensions(extensions)
+            } catch (error) {
+                console.error('Failed to load enabled extensions:', error)
+            } finally {
+                setLoadingExtensions(false)
+            }
+        }
+
+        if (!authLoading) {
+            loadEnabledExtensions()
+        }
+    }, [user, authLoading])
+
+    // Check if extension is enabled
+    const isExtensionEnabled = useCallback((slug: ExtensionSlug): boolean => {
+        return enabledExtensions.some(ue => ue.extension_slug === slug && ue.enabled)
+    }, [enabledExtensions])
+
+    // Toggle extension enabled state
+    const toggleExtension = useCallback(async (slug: ExtensionSlug): Promise<boolean> => {
+        if (!user?.id) {
+            console.error('Cannot toggle extension: User not logged in')
+            alert('Please log in with Telegram to enable extensions')
+            return false
+        }
+
+        if (togglingExtension) return false
+
+        setTogglingExtension(slug)
+
+        const enabled = isExtensionEnabled(slug)
+        let success: boolean
+
+        try {
+            if (enabled) {
+                success = await disableExtension(user.id, slug)
+            } else {
+                success = await enableExtension(user.id, slug)
+            }
+
+            if (success) {
+                setEnabledExtensions(prev => {
+                    const existing = prev.find(ue => ue.extension_slug === slug)
+                    if (existing) {
+                        return prev.map(ue =>
+                            ue.extension_slug === slug
+                                ? { ...ue, enabled: !enabled }
+                                : ue
+                        )
+                    } else {
+                        return [...prev, {
+                            user_id: user.id,
+                            extension_slug: slug,
+                            enabled: true,
+                            settings: {},
+                            credits_used_today: 0,
+                            credits_used_month: 0,
+                            last_used_at: null
+                        }]
+                    }
+                })
+            }
+        } catch (error) {
+            console.error('Failed to toggle extension:', error)
+            alert('Failed to toggle extension. Please try again.')
+            success = false
+        } finally {
+            setTogglingExtension(null)
+        }
+
+        return success
+    }, [user, togglingExtension, isExtensionEnabled])
 
     // Open a new extension panel
     const openPanel = useCallback((slug: ExtensionSlug, options?: OpenPanelOptions): string => {
@@ -146,7 +245,12 @@ export function ExtensionPanelProvider({ children }: { children: ReactNode }) {
                 bringToFront,
                 getPanelBySlug,
                 isCommandPaletteOpen,
-                setCommandPaletteOpen
+                setCommandPaletteOpen,
+                enabledExtensions,
+                isExtensionEnabled,
+                toggleExtension,
+                loadingExtensions,
+                togglingExtension
             }}
         >
             {children}

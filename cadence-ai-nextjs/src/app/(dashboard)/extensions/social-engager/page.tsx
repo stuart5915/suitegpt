@@ -2,515 +2,1053 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
-import { useTelegramAuth } from '@/contexts/TelegramAuthContext'
-import { getEngagementRules, createEngagementRule, toggleEngagementRule, deleteEngagementRule } from '@/lib/extensions/api'
-import { EngagementRule } from '@/lib/extensions/types'
 import {
-    Loader2,
+    Search,
+    Settings2,
+    TrendingUp,
+    Users,
+    SkipForward,
     MessageCircle,
-    Plus,
-    Trash2,
-    Power,
     Heart,
-    Reply,
     Repeat2,
-    UserPlus,
+    ExternalLink,
+    Clock,
+    Sparkles,
+    Send,
+    X,
+    ChevronDown,
+    AlertCircle,
+    CheckCircle,
+    Loader2,
+    RefreshCw,
+    Target,
     Hash,
     AtSign,
-    Search,
-    ChevronLeft,
-    Play,
-    Pause,
-    Settings,
-    Activity,
-    Target,
-    Zap,
-    Clock,
-    AlertCircle
+    Twitter,
+    Instagram,
+    ChevronLeft
 } from 'lucide-react'
+import InstagramEngagement from '@/components/InstagramEngagement'
 
-const PLATFORM_OPTIONS = [
-    { value: 'x', label: 'X (Twitter)', icon: '𝕏' },
-    { value: 'instagram', label: 'Instagram', icon: '📷' },
-    { value: 'linkedin', label: 'LinkedIn', icon: '💼' }
-]
+// Platform tabs
+type Platform = 'twitter' | 'instagram'
 
-const TYPE_OPTIONS = [
-    { value: 'keyword', label: 'Keyword', icon: <Search className="w-4 h-4" />, desc: 'Engage with posts containing specific keywords' },
-    { value: 'account', label: 'Account', icon: <AtSign className="w-4 h-4" />, desc: 'Engage with posts from specific accounts' },
-    { value: 'hashtag', label: 'Hashtag', icon: <Hash className="w-4 h-4" />, desc: 'Engage with posts using specific hashtags' }
-]
+// Types
+interface EngagementConfig {
+    keywords: string[]
+    hashtags: string[]
+    targetAccounts: string[]
+    minFollowers: number
+    maxFollowers: number
+    minEngagement: number
+    maxAgeHours: number
+}
 
-const ACTION_OPTIONS = [
-    { value: 'like', label: 'Like', icon: <Heart className="w-4 h-4" />, color: 'text-pink-500' },
-    { value: 'reply', label: 'Reply', icon: <Reply className="w-4 h-4" />, color: 'text-blue-500' },
-    { value: 'retweet', label: 'Retweet', icon: <Repeat2 className="w-4 h-4" />, color: 'text-green-500' },
-    { value: 'follow', label: 'Follow', icon: <UserPlus className="w-4 h-4" />, color: 'text-purple-500' }
-]
+interface EngagementStats {
+    totalEngaged: number
+    totalSkipped: number
+    skipRate: number
+}
+
+interface EngagementOpportunity {
+    id: string
+    tweetId: string
+    tweetUrl: string
+    authorHandle: string
+    authorName: string
+    authorFollowers: number
+    authorAvatar?: string
+    content: string
+    postedAt: string
+    likes: number
+    retweets: number
+    replies: number
+    relevanceScore: number
+    engagementPotential: 'high' | 'medium' | 'low'
+    suggestedAngle: string
+    matchedKeywords: string[]
+}
+
+interface ReplySuggestion {
+    id: string
+    text: string
+    approach: string
+    characterCount: number
+}
+
+const SKIP_REASONS = [
+    { value: 'not_relevant', label: 'Not relevant' },
+    { value: 'wrong_audience', label: 'Wrong audience' },
+    { value: 'too_big', label: 'Author too big' },
+    { value: 'too_small', label: 'Author too small' },
+    { value: 'already_crowded', label: 'Too many replies' }
+] as const
+
+const DEFAULT_CONFIG: EngagementConfig = {
+    keywords: [],
+    hashtags: [],
+    targetAccounts: [],
+    minFollowers: 100,
+    maxFollowers: 100000,
+    minEngagement: 5,
+    maxAgeHours: 24
+}
 
 export default function SocialEngagerPage() {
-    const supabase = createClient()
-    const { user, isLoading: authLoading } = useTelegramAuth()
+    // Platform tab state
+    const [activePlatform, setActivePlatform] = useState<Platform>('twitter')
 
-    const [loading, setLoading] = useState(true)
-    const [rules, setRules] = useState<EngagementRule[]>([])
-    const [showNewRule, setShowNewRule] = useState(false)
-    const [saving, setSaving] = useState(false)
-    const [togglingRule, setTogglingRule] = useState<string | null>(null)
+    // State
+    const [config, setConfig] = useState<EngagementConfig>(DEFAULT_CONFIG)
+    const [stats, setStats] = useState<EngagementStats>({ totalEngaged: 0, totalSkipped: 0, skipRate: 0 })
+    const [opportunities, setOpportunities] = useState<EngagementOpportunity[]>([])
 
-    // New rule form state
-    const [newRule, setNewRule] = useState({
-        name: '',
-        platform: 'x',
-        type: 'keyword',
-        target: '',
-        action: 'like',
-        reply_template: '',
-        daily_limit: 50
+    const [isLoadingConfig, setIsLoadingConfig] = useState(true)
+    const [isSavingConfig, setIsSavingConfig] = useState(false)
+    const [isFindingPosts, setIsFindingPosts] = useState(false)
+    const [isSuggesting, setIsSuggesting] = useState(false)
+    const [configDirty, setConfigDirty] = useState(false)
+
+    // Input states for tag-style inputs
+    const [keywordInput, setKeywordInput] = useState('')
+    const [hashtagInput, setHashtagInput] = useState('')
+    const [accountInput, setAccountInput] = useState('')
+
+    // Reply modal state
+    const [replyModal, setReplyModal] = useState<{
+        isOpen: boolean
+        opportunity: EngagementOpportunity | null
+        suggestions: ReplySuggestion[]
+        isLoading: boolean
+        isPosting: boolean
+        customReply: string
+        error?: string
+        success?: string
+    }>({
+        isOpen: false,
+        opportunity: null,
+        suggestions: [],
+        isLoading: false,
+        isPosting: false,
+        customReply: ''
     })
 
+    // Skip dropdown state
+    const [openSkipDropdown, setOpenSkipDropdown] = useState<string | null>(null)
+
+    // Error/success messages
+    const [error, setError] = useState<string | null>(null)
+    const [successMessage, setSuccessMessage] = useState<string | null>(null)
+
+    // Load config on mount
     useEffect(() => {
-        async function loadData() {
-            if (!user?.id) {
-                setLoading(false)
-                return
+        loadConfig()
+    }, [])
+
+    // Auto-clear messages
+    useEffect(() => {
+        if (error || successMessage) {
+            const timer = setTimeout(() => {
+                setError(null)
+                setSuccessMessage(null)
+            }, 5000)
+            return () => clearTimeout(timer)
+        }
+    }, [error, successMessage])
+
+    const loadConfig = async () => {
+        setIsLoadingConfig(true)
+        try {
+            const res = await fetch('/api/engagement/config')
+            if (res.ok) {
+                const data = await res.json()
+                setConfig(data.config)
+                setStats(data.stats)
             }
-
-            const data = await getEngagementRules(user.id)
-            setRules(data)
-            setLoading(false)
+        } catch (err) {
+            console.error('Failed to load config:', err)
+        } finally {
+            setIsLoadingConfig(false)
         }
+    }
 
-        if (!authLoading) {
-            loadData()
+    const saveConfig = async () => {
+        setIsSavingConfig(true)
+        try {
+            const res = await fetch('/api/engagement/config', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config)
+            })
+            if (res.ok) {
+                setConfigDirty(false)
+                setSuccessMessage('Configuration saved')
+            } else {
+                const data = await res.json()
+                setError(data.error || 'Failed to save config')
+            }
+        } catch (err) {
+            setError('Failed to save configuration')
+        } finally {
+            setIsSavingConfig(false)
         }
-    }, [user, authLoading])
+    }
 
-    const handleCreateRule = async () => {
-        if (!user?.id || !newRule.name || !newRule.target) return
+    const suggestFromSettings = async () => {
+        setIsSuggesting(true)
+        setError(null)
+        try {
+            const res = await fetch('/api/engagement/suggest', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            const data = await res.json()
+            if (res.ok && data.success) {
+                const { suggestions } = data
+                // Merge suggestions with existing config (don't overwrite)
+                setConfig(prev => ({
+                    ...prev,
+                    keywords: [...new Set([...prev.keywords, ...suggestions.keywords])],
+                    hashtags: [...new Set([...prev.hashtags, ...suggestions.hashtags])],
+                    targetAccounts: [...new Set([...prev.targetAccounts, ...suggestions.targetAccounts])]
+                }))
+                setConfigDirty(true)
+                if (data.message) {
+                    setSuccessMessage(data.message)
+                } else {
+                    setSuccessMessage('Suggestions added from your settings')
+                }
+            } else {
+                setError(data.error || 'Failed to get suggestions')
+            }
+        } catch (err) {
+            setError('Failed to get suggestions')
+        } finally {
+            setIsSuggesting(false)
+        }
+    }
 
-        setSaving(true)
+    const findPosts = async () => {
+        setIsFindingPosts(true)
+        setError(null)
+        try {
+            const res = await fetch('/api/engagement/find', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            const data = await res.json()
+            if (res.ok && data.success) {
+                setOpportunities(data.opportunities)
+                if (data.opportunities.length === 0) {
+                    setError('No matching posts found. Try adjusting your search criteria.')
+                }
+            } else {
+                if (data.needsConfig) {
+                    setError('Please add keywords, hashtags, or target accounts first')
+                } else {
+                    setError(data.error || 'Failed to find posts')
+                }
+            }
+        } catch (err) {
+            setError('Failed to find posts')
+        } finally {
+            setIsFindingPosts(false)
+        }
+    }
 
-        const rule = await createEngagementRule({
-            user_id: user.id,
-            name: newRule.name,
-            platform: newRule.platform,
-            type: newRule.type,
-            target: newRule.target,
-            action: newRule.action,
-            reply_template: newRule.action === 'reply' ? newRule.reply_template : undefined,
-            daily_limit: newRule.daily_limit
+    const handleSkip = async (opportunity: EngagementOpportunity, reason: string) => {
+        setOpenSkipDropdown(null)
+        try {
+            await fetch('/api/engagement/history', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tweetId: opportunity.tweetId,
+                    action: 'skipped',
+                    skipReason: reason,
+                    authorHandle: opportunity.authorHandle,
+                    authorFollowers: opportunity.authorFollowers,
+                    matchedKeywords: opportunity.matchedKeywords,
+                    contentPreview: opportunity.content
+                })
+            })
+
+            // Remove from list
+            setOpportunities(prev => prev.filter(o => o.id !== opportunity.id))
+
+            // Update stats
+            setStats(prev => ({
+                ...prev,
+                totalSkipped: prev.totalSkipped + 1,
+                skipRate: Math.round(((prev.totalSkipped + 1) / (prev.totalEngaged + prev.totalSkipped + 1)) * 100)
+            }))
+        } catch (err) {
+            console.error('Failed to record skip:', err)
+        }
+    }
+
+    const openReplyModal = async (opportunity: EngagementOpportunity) => {
+        setReplyModal({
+            isOpen: true,
+            opportunity,
+            suggestions: [],
+            isLoading: true,
+            isPosting: false,
+            customReply: ''
         })
 
-        if (rule) {
-            setRules(prev => [rule, ...prev])
-            setNewRule({
-                name: '',
-                platform: 'x',
-                type: 'keyword',
-                target: '',
-                action: 'like',
-                reply_template: '',
-                daily_limit: 50
+        try {
+            const res = await fetch('/api/engagement/reply', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'generate',
+                    tweetContent: opportunity.content,
+                    authorHandle: opportunity.authorHandle,
+                    suggestedAngle: opportunity.suggestedAngle
+                })
             })
-            setShowNewRule(false)
-        }
-
-        setSaving(false)
-    }
-
-    const handleToggleRule = async (rule: EngagementRule) => {
-        setTogglingRule(rule.id)
-        const success = await toggleEngagementRule(rule.id, !rule.is_active)
-        if (success) {
-            setRules(prev =>
-                prev.map(r =>
-                    r.id === rule.id ? { ...r, is_active: !r.is_active } : r
-                )
-            )
-        }
-        setTogglingRule(null)
-    }
-
-    const handleDeleteRule = async (ruleId: string) => {
-        const success = await deleteEngagementRule(ruleId)
-        if (success) {
-            setRules(prev => prev.filter(r => r.id !== ruleId))
+            const data = await res.json()
+            if (res.ok && data.success) {
+                setReplyModal(prev => ({
+                    ...prev,
+                    suggestions: data.suggestions,
+                    isLoading: false
+                }))
+            } else {
+                setReplyModal(prev => ({
+                    ...prev,
+                    error: data.error || 'Failed to generate suggestions',
+                    isLoading: false
+                }))
+            }
+        } catch (err) {
+            setReplyModal(prev => ({
+                ...prev,
+                error: 'Failed to generate suggestions',
+                isLoading: false
+            }))
         }
     }
 
-    const activeRules = rules.filter(r => r.is_active).length
-    const todayActions = rules.reduce((sum, r) => sum + (r.actions_today || 0), 0)
+    const postReply = async (replyText: string) => {
+        if (!replyModal.opportunity) return
 
-    if (loading || authLoading) {
+        setReplyModal(prev => ({ ...prev, isPosting: true, error: undefined }))
+
+        try {
+            const res = await fetch('/api/engagement/reply', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'post',
+                    tweetId: replyModal.opportunity.tweetId,
+                    replyText,
+                    authorHandle: replyModal.opportunity.authorHandle,
+                    authorFollowers: replyModal.opportunity.authorFollowers,
+                    matchedKeywords: replyModal.opportunity.matchedKeywords,
+                    contentPreview: replyModal.opportunity.content
+                })
+            })
+            const data = await res.json()
+            if (res.ok && data.success) {
+                setReplyModal(prev => ({
+                    ...prev,
+                    isPosting: false,
+                    success: 'Reply posted successfully!'
+                }))
+
+                // Remove from opportunities
+                setOpportunities(prev => prev.filter(o => o.id !== replyModal.opportunity?.id))
+
+                // Update stats
+                setStats(prev => ({
+                    ...prev,
+                    totalEngaged: prev.totalEngaged + 1,
+                    skipRate: Math.round((prev.totalSkipped / (prev.totalEngaged + 1 + prev.totalSkipped)) * 100)
+                }))
+
+                // Close modal after delay
+                setTimeout(() => {
+                    setReplyModal(prev => ({ ...prev, isOpen: false }))
+                }, 2000)
+            } else {
+                setReplyModal(prev => ({
+                    ...prev,
+                    isPosting: false,
+                    error: data.error || 'Failed to post reply'
+                }))
+            }
+        } catch (err) {
+            setReplyModal(prev => ({
+                ...prev,
+                isPosting: false,
+                error: 'Failed to post reply'
+            }))
+        }
+    }
+
+    // Tag input handlers
+    const addKeyword = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && keywordInput.trim()) {
+            e.preventDefault()
+            if (!config.keywords.includes(keywordInput.trim())) {
+                setConfig(prev => ({
+                    ...prev,
+                    keywords: [...prev.keywords, keywordInput.trim()]
+                }))
+                setConfigDirty(true)
+            }
+            setKeywordInput('')
+        }
+    }
+
+    const removeKeyword = (keyword: string) => {
+        setConfig(prev => ({
+            ...prev,
+            keywords: prev.keywords.filter(k => k !== keyword)
+        }))
+        setConfigDirty(true)
+    }
+
+    const addHashtag = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && hashtagInput.trim()) {
+            e.preventDefault()
+            let tag = hashtagInput.trim()
+            if (!tag.startsWith('#')) tag = '#' + tag
+            if (!config.hashtags.includes(tag)) {
+                setConfig(prev => ({
+                    ...prev,
+                    hashtags: [...prev.hashtags, tag]
+                }))
+                setConfigDirty(true)
+            }
+            setHashtagInput('')
+        }
+    }
+
+    const removeHashtag = (hashtag: string) => {
+        setConfig(prev => ({
+            ...prev,
+            hashtags: prev.hashtags.filter(h => h !== hashtag)
+        }))
+        setConfigDirty(true)
+    }
+
+    const addAccount = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && accountInput.trim()) {
+            e.preventDefault()
+            let account = accountInput.trim()
+            if (!account.startsWith('@')) account = '@' + account
+            if (!config.targetAccounts.includes(account)) {
+                setConfig(prev => ({
+                    ...prev,
+                    targetAccounts: [...prev.targetAccounts, account]
+                }))
+                setConfigDirty(true)
+            }
+            setAccountInput('')
+        }
+    }
+
+    const removeAccount = (account: string) => {
+        setConfig(prev => ({
+            ...prev,
+            targetAccounts: prev.targetAccounts.filter(a => a !== account)
+        }))
+        setConfigDirty(true)
+    }
+
+    const formatTimeAgo = (dateString: string) => {
+        const date = new Date(dateString)
+        const now = new Date()
+        const diffMs = now.getTime() - date.getTime()
+        const diffMins = Math.floor(diffMs / (1000 * 60))
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+
+        if (diffMins < 60) return `${diffMins}m ago`
+        if (diffHours < 24) return `${diffHours}h ago`
+        return `${Math.floor(diffHours / 24)}d ago`
+    }
+
+    const formatFollowers = (count: number) => {
+        if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`
+        if (count >= 1000) return `${(count / 1000).toFixed(1)}k`
+        return count.toString()
+    }
+
+    if (isLoadingConfig) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-[var(--primary)]" />
+            <div className="min-h-screen bg-[#0a0a0f] p-6 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
             </div>
         )
     }
 
+    const hasSearchCriteria = config.keywords.length > 0 || config.hashtags.length > 0 || config.targetAccounts.length > 0
+
     return (
-        <div className="min-h-screen p-8">
-            {/* Back Link */}
-            <Link
-                href="/extensions"
-                className="inline-flex items-center gap-2 text-[var(--foreground-muted)] hover:text-[var(--foreground)] mb-6 transition-colors"
-            >
-                <ChevronLeft className="w-4 h-4" />
-                Back to Extensions
-            </Link>
-
-            {/* Header */}
-            <header className="mb-8">
-                <div className="flex items-center gap-4 mb-4">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center text-3xl shadow-lg">
-                        💬
-                    </div>
-                    <div>
-                        <h1 className="text-3xl font-bold text-[var(--foreground)]">
-                            Social Engager
-                        </h1>
-                        <p className="text-[var(--foreground-muted)]">
-                            Auto-engage with posts based on keywords, accounts, and hashtags
-                        </p>
-                    </div>
-                </div>
-
-                {/* Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-                    <div className="card p-4">
-                        <div className="flex items-center gap-2 text-[var(--foreground-muted)] mb-1">
-                            <Target className="w-4 h-4" />
-                            <span className="text-sm">Total Rules</span>
-                        </div>
-                        <p className="text-2xl font-bold text-[var(--foreground)]">{rules.length}</p>
-                    </div>
-                    <div className="card p-4">
-                        <div className="flex items-center gap-2 text-[var(--foreground-muted)] mb-1">
-                            <Play className="w-4 h-4" />
-                            <span className="text-sm">Active</span>
-                        </div>
-                        <p className="text-2xl font-bold text-green-500">{activeRules}</p>
-                    </div>
-                    <div className="card p-4">
-                        <div className="flex items-center gap-2 text-[var(--foreground-muted)] mb-1">
-                            <Activity className="w-4 h-4" />
-                            <span className="text-sm">Today's Actions</span>
-                        </div>
-                        <p className="text-2xl font-bold text-[var(--primary)]">{todayActions}</p>
-                    </div>
-                    <div className="card p-4">
-                        <div className="flex items-center gap-2 text-[var(--foreground-muted)] mb-1">
-                            <Zap className="w-4 h-4" />
-                            <span className="text-sm">Credits/Day</span>
-                        </div>
-                        <p className="text-2xl font-bold text-amber-500">100</p>
-                    </div>
-                </div>
-            </header>
-
-            {/* Create New Rule */}
-            {!showNewRule ? (
-                <button
-                    onClick={() => setShowNewRule(true)}
-                    className="btn btn-primary mb-6 flex items-center gap-2"
+        <div className="min-h-screen bg-[#0a0a0f] p-6">
+            <div className="max-w-6xl mx-auto">
+                {/* Back Link */}
+                <Link
+                    href="/extensions"
+                    className="inline-flex items-center gap-2 text-[var(--foreground-muted)] hover:text-[var(--foreground)] mb-6 transition-colors"
                 >
-                    <Plus className="w-4 h-4" />
-                    Create Engagement Rule
-                </button>
-            ) : (
-                <div className="card p-6 mb-6">
-                    <h2 className="text-xl font-bold text-[var(--foreground)] mb-4">
-                        New Engagement Rule
-                    </h2>
+                    <ChevronLeft className="w-4 h-4" />
+                    Back to Extensions
+                </Link>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Rule Name */}
-                        <div>
-                            <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
-                                Rule Name
-                            </label>
-                            <input
-                                type="text"
-                                value={newRule.name}
-                                onChange={(e) => setNewRule(prev => ({ ...prev, name: e.target.value }))}
-                                placeholder="e.g., Tech influencers"
-                                className="w-full px-4 py-2 bg-[var(--surface)] border border-[var(--surface-border)] rounded-lg text-[var(--foreground)] placeholder-[var(--foreground-muted)] focus:border-[var(--primary)] focus:outline-none"
-                            />
+                {/* Header */}
+                <div className="mb-8">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
+                            <Target className="w-5 h-5 text-white" />
                         </div>
-
-                        {/* Platform */}
                         <div>
-                            <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
-                                Platform
-                            </label>
-                            <select
-                                value={newRule.platform}
-                                onChange={(e) => setNewRule(prev => ({ ...prev, platform: e.target.value }))}
-                                className="w-full px-4 py-2 bg-[var(--surface)] border border-[var(--surface-border)] rounded-lg text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none"
-                            >
-                                {PLATFORM_OPTIONS.map(opt => (
-                                    <option key={opt.value} value={opt.value}>
-                                        {opt.icon} {opt.label}
-                                    </option>
-                                ))}
-                            </select>
+                            <h1 className="text-2xl font-bold text-white">Social Engager</h1>
+                            <p className="text-[var(--foreground-muted)]">Find high-quality posts to grow your reach</p>
                         </div>
+                    </div>
 
-                        {/* Target Type */}
-                        <div>
-                            <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
-                                Target Type
-                            </label>
-                            <div className="grid grid-cols-3 gap-2">
-                                {TYPE_OPTIONS.map(opt => (
-                                    <button
-                                        key={opt.value}
-                                        onClick={() => setNewRule(prev => ({ ...prev, type: opt.value }))}
-                                        className={`p-3 rounded-lg border transition-all flex flex-col items-center gap-1 ${newRule.type === opt.value
-                                                ? 'border-[var(--primary)] bg-[var(--primary)]/10'
-                                                : 'border-[var(--surface-border)] hover:border-[var(--primary)]/50'
-                                            }`}
-                                    >
-                                        {opt.icon}
-                                        <span className="text-xs font-medium">{opt.label}</span>
-                                    </button>
-                                ))}
+                    {/* Platform Tabs */}
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setActivePlatform('twitter')}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                                activePlatform === 'twitter'
+                                    ? 'bg-blue-500 text-white'
+                                    : 'bg-[var(--surface)] text-[var(--foreground-muted)] hover:bg-[var(--surface-hover)]'
+                            }`}
+                        >
+                            <Twitter className="w-4 h-4" />
+                            X / Twitter
+                        </button>
+                        <button
+                            onClick={() => setActivePlatform('instagram')}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                                activePlatform === 'instagram'
+                                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                                    : 'bg-[var(--surface)] text-[var(--foreground-muted)] hover:bg-[var(--surface-hover)]'
+                            }`}
+                        >
+                            <Instagram className="w-4 h-4" />
+                            Instagram
+                        </button>
+                    </div>
+                </div>
+
+                {/* Instagram Engagement */}
+                {activePlatform === 'instagram' && <InstagramEngagement />}
+
+                {/* Twitter Engagement - only show when Twitter tab active */}
+                {activePlatform === 'twitter' && (
+                <>
+                {/* Messages */}
+                {error && (
+                    <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center gap-3">
+                        <AlertCircle className="w-5 h-5 text-red-400" />
+                        <span className="text-red-400">{error}</span>
+                    </div>
+                )}
+                {successMessage && (
+                    <div className="mb-6 p-4 bg-green-500/10 border border-green-500/30 rounded-lg flex items-center gap-3">
+                        <CheckCircle className="w-5 h-5 text-green-400" />
+                        <span className="text-green-400">{successMessage}</span>
+                    </div>
+                )}
+
+                {/* Main Layout */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Left Column - Config Panel */}
+                    <div className="lg:col-span-1 space-y-4">
+                        {/* Config Panel */}
+                        <div className="bg-[var(--surface)] rounded-xl border border-[var(--surface-border)] p-4">
+                            <div className="flex items-center gap-2 mb-4">
+                                <Settings2 className="w-4 h-4 text-purple-400" />
+                                <h2 className="font-medium text-white">Search Config</h2>
                             </div>
-                        </div>
 
-                        {/* Target Value */}
-                        <div>
-                            <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
-                                {newRule.type === 'keyword' ? 'Keyword' : newRule.type === 'account' ? 'Account Handle' : 'Hashtag'}
-                            </label>
-                            <input
-                                type="text"
-                                value={newRule.target}
-                                onChange={(e) => setNewRule(prev => ({ ...prev, target: e.target.value }))}
-                                placeholder={
-                                    newRule.type === 'keyword'
-                                        ? 'e.g., AI, startup, tech'
-                                        : newRule.type === 'account'
-                                            ? 'e.g., @elonmusk'
-                                            : 'e.g., #buildinpublic'
-                                }
-                                className="w-full px-4 py-2 bg-[var(--surface)] border border-[var(--surface-border)] rounded-lg text-[var(--foreground)] placeholder-[var(--foreground-muted)] focus:border-[var(--primary)] focus:outline-none"
-                            />
-                        </div>
-
-                        {/* Action */}
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
-                                Action
-                            </label>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                {ACTION_OPTIONS.map(opt => (
-                                    <button
-                                        key={opt.value}
-                                        onClick={() => setNewRule(prev => ({ ...prev, action: opt.value }))}
-                                        className={`p-3 rounded-lg border transition-all flex items-center justify-center gap-2 ${newRule.action === opt.value
-                                                ? 'border-[var(--primary)] bg-[var(--primary)]/10'
-                                                : 'border-[var(--surface-border)] hover:border-[var(--primary)]/50'
-                                            }`}
-                                    >
-                                        <span className={opt.color}>{opt.icon}</span>
-                                        <span className="font-medium">{opt.label}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Reply Template (if action is reply) */}
-                        {newRule.action === 'reply' && (
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
-                                    Reply Template
+                            {/* Keywords */}
+                            <div className="mb-4">
+                                <label className="text-sm text-[var(--foreground-muted)] mb-2 flex items-center gap-1">
+                                    <Search className="w-3 h-3" />
+                                    Keywords
                                 </label>
-                                <textarea
-                                    value={newRule.reply_template}
-                                    onChange={(e) => setNewRule(prev => ({ ...prev, reply_template: e.target.value }))}
-                                    placeholder="Write a template for auto-replies. Use {author} for the post author's name."
-                                    rows={3}
-                                    className="w-full px-4 py-2 bg-[var(--surface)] border border-[var(--surface-border)] rounded-lg text-[var(--foreground)] placeholder-[var(--foreground-muted)] focus:border-[var(--primary)] focus:outline-none resize-none"
+                                <div className="flex flex-wrap gap-2 mb-2">
+                                    {config.keywords.map(keyword => (
+                                        <span
+                                            key={keyword}
+                                            className="px-2 py-1 bg-blue-500/20 text-blue-300 text-sm rounded-lg flex items-center gap-1"
+                                        >
+                                            {keyword}
+                                            <button
+                                                onClick={() => removeKeyword(keyword)}
+                                                className="hover:text-blue-100"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </span>
+                                    ))}
+                                </div>
+                                <input
+                                    type="text"
+                                    value={keywordInput}
+                                    onChange={(e) => setKeywordInput(e.target.value)}
+                                    onKeyDown={addKeyword}
+                                    placeholder="Type and press Enter"
+                                    className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--surface-border)] rounded-lg text-white text-sm placeholder:text-[var(--foreground-muted)]"
                                 />
-                                <p className="text-xs text-[var(--foreground-muted)] mt-1">
-                                    AI will personalize each reply based on the post content
+                            </div>
+
+                            {/* Hashtags */}
+                            <div className="mb-4">
+                                <label className="text-sm text-[var(--foreground-muted)] mb-2 flex items-center gap-1">
+                                    <Hash className="w-3 h-3" />
+                                    Hashtags
+                                </label>
+                                <div className="flex flex-wrap gap-2 mb-2">
+                                    {config.hashtags.map(hashtag => (
+                                        <span
+                                            key={hashtag}
+                                            className="px-2 py-1 bg-purple-500/20 text-purple-300 text-sm rounded-lg flex items-center gap-1"
+                                        >
+                                            {hashtag}
+                                            <button
+                                                onClick={() => removeHashtag(hashtag)}
+                                                className="hover:text-purple-100"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </span>
+                                    ))}
+                                </div>
+                                <input
+                                    type="text"
+                                    value={hashtagInput}
+                                    onChange={(e) => setHashtagInput(e.target.value)}
+                                    onKeyDown={addHashtag}
+                                    placeholder="#buildinpublic"
+                                    className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--surface-border)] rounded-lg text-white text-sm placeholder:text-[var(--foreground-muted)]"
+                                />
+                            </div>
+
+                            {/* Target Accounts */}
+                            <div className="mb-4">
+                                <label className="text-sm text-[var(--foreground-muted)] mb-2 flex items-center gap-1">
+                                    <AtSign className="w-3 h-3" />
+                                    Target Accounts
+                                </label>
+                                <div className="flex flex-wrap gap-2 mb-2">
+                                    {config.targetAccounts.map(account => (
+                                        <span
+                                            key={account}
+                                            className="px-2 py-1 bg-green-500/20 text-green-300 text-sm rounded-lg flex items-center gap-1"
+                                        >
+                                            {account}
+                                            <button
+                                                onClick={() => removeAccount(account)}
+                                                className="hover:text-green-100"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </span>
+                                    ))}
+                                </div>
+                                <input
+                                    type="text"
+                                    value={accountInput}
+                                    onChange={(e) => setAccountInput(e.target.value)}
+                                    onKeyDown={addAccount}
+                                    placeholder="@naval"
+                                    className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--surface-border)] rounded-lg text-white text-sm placeholder:text-[var(--foreground-muted)]"
+                                />
+                            </div>
+
+                            {/* Suggest from Settings Button */}
+                            <button
+                                onClick={suggestFromSettings}
+                                disabled={isSuggesting}
+                                className="w-full py-2 mb-2 bg-[var(--background)] hover:bg-[var(--surface-hover)] border border-[var(--surface-border)] text-[var(--foreground)] rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                            >
+                                {isSuggesting ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <Sparkles className="w-4 h-4 text-yellow-400" />
+                                )}
+                                Suggest from Settings
+                            </button>
+
+                            {/* Save Button */}
+                            {configDirty && (
+                                <button
+                                    onClick={saveConfig}
+                                    disabled={isSavingConfig}
+                                    className="w-full py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                                >
+                                    {isSavingConfig ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <CheckCircle className="w-4 h-4" />
+                                    )}
+                                    Save Config
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Stats Panel */}
+                        <div className="bg-[var(--surface)] rounded-xl border border-[var(--surface-border)] p-4">
+                            <div className="flex items-center gap-2 mb-4">
+                                <TrendingUp className="w-4 h-4 text-green-400" />
+                                <h2 className="font-medium text-white">Stats</h2>
+                            </div>
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm text-[var(--foreground-muted)]">Engaged</span>
+                                    <span className="text-white font-medium">{stats.totalEngaged}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm text-[var(--foreground-muted)]">Skipped</span>
+                                    <span className="text-white font-medium">{stats.totalSkipped}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm text-[var(--foreground-muted)]">Skip Rate</span>
+                                    <span className="text-white font-medium">{stats.skipRate}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right Column - Find Posts & Opportunities */}
+                    <div className="lg:col-span-2 space-y-4">
+                        {/* Find Posts Button */}
+                        <div className="bg-[var(--surface)] rounded-xl border border-[var(--surface-border)] p-6">
+                            <button
+                                onClick={findPosts}
+                                disabled={isFindingPosts || !hasSearchCriteria}
+                                className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-xl flex items-center justify-center gap-3 text-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isFindingPosts ? (
+                                    <>
+                                        <Loader2 className="w-6 h-6 animate-spin" />
+                                        Finding posts...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Search className="w-6 h-6" />
+                                        Find Me Posts
+                                    </>
+                                )}
+                            </button>
+                            {!hasSearchCriteria && (
+                                <p className="text-center text-sm text-[var(--foreground-muted)] mt-3">
+                                    Add keywords, hashtags, or target accounts to search
                                 </p>
+                            )}
+                        </div>
+
+                        {/* Opportunities */}
+                        {opportunities.length > 0 && (
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-medium text-white flex items-center gap-2">
+                                    <Sparkles className="w-5 h-5 text-yellow-400" />
+                                    Opportunities
+                                </h3>
+
+                                {opportunities.map(opportunity => (
+                                    <div
+                                        key={opportunity.id}
+                                        className="bg-[var(--surface)] rounded-xl border border-[var(--surface-border)] p-4"
+                                    >
+                                        {/* Author Info */}
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center flex-shrink-0">
+                                                {opportunity.authorAvatar ? (
+                                                    <img
+                                                        src={opportunity.authorAvatar}
+                                                        alt={opportunity.authorName}
+                                                        className="w-10 h-10 rounded-full"
+                                                    />
+                                                ) : (
+                                                    <span className="text-white font-medium">
+                                                        {opportunity.authorName.charAt(0)}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="font-medium text-white">{opportunity.authorName}</span>
+                                                    <span className="text-[var(--foreground-muted)]">@{opportunity.authorHandle}</span>
+                                                    <span className="text-[var(--foreground-muted)]">·</span>
+                                                    <span className="text-[var(--foreground-muted)] flex items-center gap-1">
+                                                        <Users className="w-3 h-3" />
+                                                        {formatFollowers(opportunity.authorFollowers)}
+                                                    </span>
+                                                    <span className="text-[var(--foreground-muted)]">·</span>
+                                                    <span className="text-[var(--foreground-muted)] flex items-center gap-1">
+                                                        <Clock className="w-3 h-3" />
+                                                        {formatTimeAgo(opportunity.postedAt)}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className={`px-2 py-1 text-xs rounded-full ${
+                                                opportunity.engagementPotential === 'high'
+                                                    ? 'bg-green-500/20 text-green-400'
+                                                    : opportunity.engagementPotential === 'medium'
+                                                        ? 'bg-yellow-500/20 text-yellow-400'
+                                                        : 'bg-gray-500/20 text-gray-400'
+                                            }`}>
+                                                {opportunity.relevanceScore}% match
+                                            </div>
+                                        </div>
+
+                                        {/* Tweet Content */}
+                                        <p className="text-[var(--foreground)] mb-3 whitespace-pre-wrap">
+                                            {opportunity.content}
+                                        </p>
+
+                                        {/* Suggested Angle */}
+                                        <div className="mb-3 p-2 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <Sparkles className="w-4 h-4 text-purple-400" />
+                                                <span className="text-purple-300">{opportunity.suggestedAngle}</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Matched Keywords */}
+                                        {opportunity.matchedKeywords.length > 0 && (
+                                            <div className="flex flex-wrap gap-2 mb-3">
+                                                {opportunity.matchedKeywords.map(keyword => (
+                                                    <span
+                                                        key={keyword}
+                                                        className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-xs rounded"
+                                                    >
+                                                        {keyword}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Engagement Metrics */}
+                                        <div className="flex items-center gap-4 text-sm text-[var(--foreground-muted)] mb-4">
+                                            <span className="flex items-center gap-1">
+                                                <Heart className="w-4 h-4" />
+                                                {opportunity.likes}
+                                            </span>
+                                            <span className="flex items-center gap-1">
+                                                <Repeat2 className="w-4 h-4" />
+                                                {opportunity.retweets}
+                                            </span>
+                                            <span className="flex items-center gap-1">
+                                                <MessageCircle className="w-4 h-4" />
+                                                {opportunity.replies}
+                                            </span>
+                                        </div>
+
+                                        {/* Actions */}
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => openReplyModal(opportunity)}
+                                                className="flex-1 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg flex items-center justify-center gap-2 transition-colors"
+                                            >
+                                                <MessageCircle className="w-4 h-4" />
+                                                Engage
+                                            </button>
+
+                                            {/* Skip Dropdown */}
+                                            <div className="relative">
+                                                <button
+                                                    onClick={() => setOpenSkipDropdown(
+                                                        openSkipDropdown === opportunity.id ? null : opportunity.id
+                                                    )}
+                                                    className="px-4 py-2 bg-[var(--background)] hover:bg-[var(--surface-hover)] border border-[var(--surface-border)] text-[var(--foreground-muted)] rounded-lg flex items-center gap-2 transition-colors"
+                                                >
+                                                    <SkipForward className="w-4 h-4" />
+                                                    Skip
+                                                    <ChevronDown className="w-3 h-3" />
+                                                </button>
+
+                                                {openSkipDropdown === opportunity.id && (
+                                                    <div className="absolute right-0 top-full mt-1 w-48 bg-[var(--surface)] border border-[var(--surface-border)] rounded-lg shadow-xl z-10">
+                                                        {SKIP_REASONS.map(reason => (
+                                                            <button
+                                                                key={reason.value}
+                                                                onClick={() => handleSkip(opportunity, reason.value)}
+                                                                className="w-full px-4 py-2 text-left text-sm text-[var(--foreground)] hover:bg-[var(--surface-hover)] first:rounded-t-lg last:rounded-b-lg"
+                                                            >
+                                                                {reason.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <a
+                                                href={opportunity.tweetUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="px-4 py-2 bg-[var(--background)] hover:bg-[var(--surface-hover)] border border-[var(--surface-border)] text-[var(--foreground-muted)] rounded-lg flex items-center gap-2 transition-colors"
+                                            >
+                                                <ExternalLink className="w-4 h-4" />
+                                            </a>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {/* Load More Button */}
+                                <button
+                                    onClick={findPosts}
+                                    disabled={isFindingPosts}
+                                    className="w-full py-3 bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--surface-border)] text-[var(--foreground-muted)] rounded-xl flex items-center justify-center gap-2 transition-colors"
+                                >
+                                    <RefreshCw className={`w-4 h-4 ${isFindingPosts ? 'animate-spin' : ''}`} />
+                                    Load More Opportunities
+                                </button>
                             </div>
                         )}
 
-                        {/* Daily Limit */}
-                        <div>
-                            <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
-                                Daily Limit
-                            </label>
-                            <input
-                                type="number"
-                                value={newRule.daily_limit}
-                                onChange={(e) => setNewRule(prev => ({ ...prev, daily_limit: parseInt(e.target.value) || 50 }))}
-                                min={1}
-                                max={200}
-                                className="w-full px-4 py-2 bg-[var(--surface)] border border-[var(--surface-border)] rounded-lg text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none"
-                            />
-                            <p className="text-xs text-[var(--foreground-muted)] mt-1">
-                                Max actions per day for this rule (1-200)
+                        {/* Empty State */}
+                        {opportunities.length === 0 && hasSearchCriteria && !isFindingPosts && (
+                            <div className="bg-[var(--surface)] rounded-xl border border-[var(--surface-border)] p-12 text-center">
+                                <Search className="w-12 h-12 text-[var(--foreground-muted)] mx-auto mb-4" />
+                                <h3 className="text-lg font-medium text-white mb-2">Ready to find engagement opportunities</h3>
+                                <p className="text-[var(--foreground-muted)]">
+                                    Click "Find Me Posts" to discover high-quality posts to engage with
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+                </>
+                )}
+            </div>
+
+            {/* Reply Modal */}
+            {replyModal.isOpen && replyModal.opportunity && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-[var(--surface)] rounded-xl border border-[var(--surface-border)] w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                        {/* Modal Header */}
+                        <div className="p-4 border-b border-[var(--surface-border)] flex items-center justify-between">
+                            <h3 className="text-lg font-medium text-white">Reply to @{replyModal.opportunity.authorHandle}</h3>
+                            <button
+                                onClick={() => setReplyModal(prev => ({ ...prev, isOpen: false }))}
+                                className="text-[var(--foreground-muted)] hover:text-white"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Original Tweet */}
+                        <div className="p-4 bg-[var(--background)] border-b border-[var(--surface-border)]">
+                            <p className="text-[var(--foreground)] text-sm">
+                                {replyModal.opportunity.content}
                             </p>
                         </div>
-                    </div>
 
-                    {/* Warning */}
-                    <div className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg mt-4">
-                        <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                        <div className="text-sm text-amber-200">
-                            <p className="font-medium mb-1">Safety Guidelines</p>
-                            <p className="text-amber-200/80">
-                                Keep engagement natural to avoid platform restrictions. Start with low limits and increase gradually. Avoid spammy patterns.
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-3 mt-6">
-                        <button
-                            onClick={handleCreateRule}
-                            disabled={saving || !newRule.name || !newRule.target}
-                            className="btn btn-primary flex items-center gap-2"
-                        >
-                            {saving ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                                <Plus className="w-4 h-4" />
+                        {/* Modal Content */}
+                        <div className="p-4">
+                            {replyModal.error && (
+                                <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+                                    {replyModal.error}
+                                </div>
                             )}
-                            Create Rule
-                        </button>
-                        <button
-                            onClick={() => setShowNewRule(false)}
-                            className="btn bg-[var(--surface)] text-[var(--foreground)]"
-                        >
-                            Cancel
-                        </button>
+
+                            {replyModal.success && (
+                                <div className="mb-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg text-green-400 text-sm flex items-center gap-2">
+                                    <CheckCircle className="w-4 h-4" />
+                                    {replyModal.success}
+                                </div>
+                            )}
+
+                            {replyModal.isLoading ? (
+                                <div className="py-8 flex items-center justify-center gap-3">
+                                    <Loader2 className="w-5 h-5 text-purple-500 animate-spin" />
+                                    <span className="text-[var(--foreground-muted)]">Generating reply suggestions...</span>
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Suggestions */}
+                                    {replyModal.suggestions.length > 0 && (
+                                        <div className="mb-4">
+                                            <h4 className="text-sm font-medium text-white mb-3">Suggested Replies</h4>
+                                            <div className="space-y-2">
+                                                {replyModal.suggestions.map((suggestion) => (
+                                                    <button
+                                                        key={suggestion.id}
+                                                        onClick={() => setReplyModal(prev => ({
+                                                            ...prev,
+                                                            customReply: suggestion.text
+                                                        }))}
+                                                        className={`w-full p-3 text-left rounded-lg border transition-colors ${
+                                                            replyModal.customReply === suggestion.text
+                                                                ? 'border-purple-500 bg-purple-500/10'
+                                                                : 'border-[var(--surface-border)] hover:border-purple-500/50'
+                                                        }`}
+                                                    >
+                                                        <p className="text-[var(--foreground)] text-sm mb-1">
+                                                            {suggestion.text}
+                                                        </p>
+                                                        <p className="text-xs text-[var(--foreground-muted)]">
+                                                            {suggestion.approach} · {suggestion.characterCount} chars
+                                                        </p>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Custom Reply */}
+                                    <div className="mb-4">
+                                        <h4 className="text-sm font-medium text-white mb-2">Your Reply</h4>
+                                        <textarea
+                                            value={replyModal.customReply}
+                                            onChange={(e) => setReplyModal(prev => ({
+                                                ...prev,
+                                                customReply: e.target.value
+                                            }))}
+                                            placeholder="Write your reply..."
+                                            rows={4}
+                                            className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--surface-border)] rounded-lg text-white placeholder:text-[var(--foreground-muted)] resize-none"
+                                        />
+                                        <div className="flex justify-end mt-1">
+                                            <span className={`text-xs ${
+                                                replyModal.customReply.length > 280
+                                                    ? 'text-red-400'
+                                                    : 'text-[var(--foreground-muted)]'
+                                            }`}>
+                                                {replyModal.customReply.length}/280
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Post Button */}
+                                    <button
+                                        onClick={() => postReply(replyModal.customReply)}
+                                        disabled={
+                                            replyModal.isPosting ||
+                                            !replyModal.customReply.trim() ||
+                                            replyModal.customReply.length > 280
+                                        }
+                                        className="w-full py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {replyModal.isPosting ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                Posting...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Send className="w-4 h-4" />
+                                                Post Reply
+                                            </>
+                                        )}
+                                    </button>
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}
-
-            {/* Rules List */}
-            <div className="space-y-4">
-                <h2 className="text-xl font-bold text-[var(--foreground)]">
-                    Your Rules
-                </h2>
-
-                {rules.length === 0 ? (
-                    <div className="card p-12 text-center">
-                        <MessageCircle className="w-12 h-12 mx-auto text-[var(--foreground-muted)] mb-4" />
-                        <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">
-                            No engagement rules yet
-                        </h3>
-                        <p className="text-[var(--foreground-muted)] mb-4">
-                            Create your first rule to start auto-engaging with relevant content
-                        </p>
-                        <button
-                            onClick={() => setShowNewRule(true)}
-                            className="btn btn-primary inline-flex items-center gap-2"
-                        >
-                            <Plus className="w-4 h-4" />
-                            Create Your First Rule
-                        </button>
-                    </div>
-                ) : (
-                    <div className="grid gap-4">
-                        {rules.map((rule) => {
-                            const actionConfig = ACTION_OPTIONS.find(a => a.value === rule.action)
-                            const platformConfig = PLATFORM_OPTIONS.find(p => p.value === rule.platform)
-
-                            return (
-                                <div
-                                    key={rule.id}
-                                    className={`card p-5 transition-all ${!rule.is_active ? 'opacity-60' : ''}`}
-                                >
-                                    <div className="flex items-start justify-between gap-4">
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-3 mb-2">
-                                                <h3 className="font-bold text-lg text-[var(--foreground)]">
-                                                    {rule.name}
-                                                </h3>
-                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${rule.is_active
-                                                        ? 'bg-green-500/10 text-green-500'
-                                                        : 'bg-[var(--surface)] text-[var(--foreground-muted)]'
-                                                    }`}>
-                                                    {rule.is_active ? 'Active' : 'Paused'}
-                                                </span>
-                                            </div>
-
-                                            <div className="flex flex-wrap items-center gap-3 text-sm text-[var(--foreground-muted)]">
-                                                <span className="flex items-center gap-1">
-                                                    {platformConfig?.icon} {platformConfig?.label}
-                                                </span>
-                                                <span>•</span>
-                                                <span className="flex items-center gap-1">
-                                                    {rule.type === 'keyword' && <Search className="w-3 h-3" />}
-                                                    {rule.type === 'account' && <AtSign className="w-3 h-3" />}
-                                                    {rule.type === 'hashtag' && <Hash className="w-3 h-3" />}
-                                                    {rule.target}
-                                                </span>
-                                                <span>•</span>
-                                                <span className={`flex items-center gap-1 ${actionConfig?.color}`}>
-                                                    {actionConfig?.icon}
-                                                    {actionConfig?.label}
-                                                </span>
-                                            </div>
-
-                                            <div className="flex items-center gap-4 mt-3 text-sm">
-                                                <span className="flex items-center gap-1 text-[var(--foreground-muted)]">
-                                                    <Clock className="w-3 h-3" />
-                                                    {rule.actions_today || 0}/{rule.daily_limit} today
-                                                </span>
-                                                <div className="flex-1 h-1.5 bg-[var(--surface)] rounded-full overflow-hidden">
-                                                    <div
-                                                        className="h-full bg-[var(--primary)] rounded-full transition-all"
-                                                        style={{
-                                                            width: `${Math.min(100, ((rule.actions_today || 0) / rule.daily_limit) * 100)}%`
-                                                        }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                onClick={() => handleToggleRule(rule)}
-                                                disabled={togglingRule === rule.id}
-                                                className={`p-2 rounded-lg transition-all ${rule.is_active
-                                                        ? 'bg-green-500/10 text-green-500 hover:bg-green-500/20'
-                                                        : 'bg-[var(--surface)] text-[var(--foreground-muted)] hover:text-[var(--foreground)]'
-                                                    }`}
-                                                title={rule.is_active ? 'Pause rule' : 'Activate rule'}
-                                            >
-                                                {togglingRule === rule.id ? (
-                                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                                ) : rule.is_active ? (
-                                                    <Pause className="w-5 h-5" />
-                                                ) : (
-                                                    <Play className="w-5 h-5" />
-                                                )}
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteRule(rule.id)}
-                                                className="p-2 rounded-lg bg-[var(--surface)] text-[var(--foreground-muted)] hover:text-red-500 hover:bg-red-500/10 transition-all"
-                                                title="Delete rule"
-                                            >
-                                                <Trash2 className="w-5 h-5" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )
-                        })}
-                    </div>
-                )}
-            </div>
         </div>
     )
 }
