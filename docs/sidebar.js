@@ -60,6 +60,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="sidebar-title">Partner</div>
             <a href="/docs/for-businesses/" class="sidebar-link ${isActive('for-businesses.html')}">🏢 For Businesses</a>
             <a href="/docs/for-influencers/" class="sidebar-link ${isActive('for-influencers.html')}">📢 For Influencers</a>
+            <a href="/docs/app-operators/" class="sidebar-link ${isActive('app-operators.html')}">🚀 App Operators</a>
         </div>
     `;
 });
