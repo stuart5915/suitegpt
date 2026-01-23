@@ -1,17 +1,23 @@
 import { NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
-
 export async function POST(request: Request) {
     try {
+        const apiKey = process.env.GEMINI_API_KEY
+
+        if (!apiKey) {
+            console.error('GEMINI_API_KEY is not set')
+            return NextResponse.json({ error: 'API key not configured' }, { status: 500 })
+        }
+
+        const genAI = new GoogleGenerativeAI(apiKey)
         const { content, lastInstruction } = await request.json()
 
         if (!content) {
             return NextResponse.json({ error: 'Content is required' }, { status: 400 })
         }
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
 
         const prompt = `Based on this article and the last refinement instruction, suggest 5 short prompts (max 6 words each) for areas the author could expand on.
 
@@ -51,10 +57,10 @@ Last instruction: ${lastInstruction || 'Initial refinement'}`
         }
 
         return NextResponse.json({ pills: null })
-    } catch (error) {
-        console.error('Generate pills error:', error)
+    } catch (error: any) {
+        console.error('Generate pills error:', error?.message || error)
         return NextResponse.json(
-            { error: 'Failed to generate pills' },
+            { error: error?.message || 'Failed to generate pills' },
             { status: 500 }
         )
     }

@@ -1,17 +1,23 @@
 import { NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
-
 export async function POST(request: Request) {
     try {
+        const apiKey = process.env.GEMINI_API_KEY
+
+        if (!apiKey) {
+            console.error('GEMINI_API_KEY is not set')
+            return NextResponse.json({ error: 'API key not configured' }, { status: 500 })
+        }
+
+        const genAI = new GoogleGenerativeAI(apiKey)
         const { content, instructions, stylePrompts, isFirstPass } = await request.json()
 
         if (!content) {
             return NextResponse.json({ error: 'Content is required' }, { status: 400 })
         }
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
 
         const prompt = `You are a skilled writing assistant helping refine articles.
 
@@ -40,10 +46,10 @@ Output the refined article:`
         const refined = result.response.text()
 
         return NextResponse.json({ refined })
-    } catch (error) {
-        console.error('Article refinement error:', error)
+    } catch (error: any) {
+        console.error('Article refinement error:', error?.message || error)
         return NextResponse.json(
-            { error: 'Failed to refine article' },
+            { error: error?.message || 'Failed to refine article' },
             { status: 500 }
         )
     }
