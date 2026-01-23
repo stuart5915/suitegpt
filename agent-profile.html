@@ -194,12 +194,17 @@
             border-radius: 16px;
             padding: 20px;
             text-align: center;
+            overflow: hidden;
+            min-width: 0;
         }
 
         .stat-value {
-            font-size: 2rem;
+            font-size: clamp(1.5rem, 4vw, 2rem);
             font-weight: 800;
             margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .stat-value.success { color: var(--success); }
@@ -346,6 +351,89 @@
             to { transform: rotate(360deg); }
         }
 
+        /* Telos Section */
+        .telos-toggle {
+            background: var(--bg-elevated);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 6px 12px;
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            cursor: pointer;
+            margin-left: auto;
+            transition: all 0.2s;
+        }
+        .telos-toggle:hover {
+            background: var(--bg-surface);
+            color: var(--text);
+        }
+        .telos-content {
+            max-height: 300px;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            position: relative;
+        }
+        .telos-content.expanded {
+            max-height: none;
+        }
+        .telos-content:not(.expanded)::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            background: linear-gradient(transparent, var(--bg-card));
+            pointer-events: none;
+        }
+        .telos-markdown {
+            font-size: 0.9rem;
+            line-height: 1.7;
+            color: var(--text-dim);
+        }
+        .telos-markdown h1, .telos-markdown h2, .telos-markdown h3 {
+            color: var(--text);
+            margin-top: 24px;
+            margin-bottom: 12px;
+        }
+        .telos-markdown h1 { font-size: 1.4rem; }
+        .telos-markdown h2 { font-size: 1.2rem; }
+        .telos-markdown h3 { font-size: 1rem; }
+        .telos-markdown p { margin-bottom: 12px; }
+        .telos-markdown ul, .telos-markdown ol {
+            margin-bottom: 12px;
+            padding-left: 24px;
+        }
+        .telos-markdown li { margin-bottom: 6px; }
+        .telos-markdown table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 0.85rem;
+        }
+        .telos-markdown th, .telos-markdown td {
+            padding: 10px 12px;
+            border: 1px solid var(--glass-border);
+            text-align: left;
+        }
+        .telos-markdown th {
+            background: var(--bg-elevated);
+            color: var(--text);
+            font-weight: 600;
+        }
+        .telos-markdown code {
+            background: var(--bg-elevated);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
+        .telos-markdown hr {
+            border: none;
+            border-top: 1px solid var(--glass-border);
+            margin: 24px 0;
+        }
+        .telos-markdown strong { color: var(--text); }
+
         /* Responsive */
         @media (max-width: 600px) {
             .agent-header {
@@ -354,6 +442,8 @@
                 text-align: center;
             }
             .agent-telos { max-width: 100%; }
+            .telos-markdown table { font-size: 0.75rem; }
+            .telos-markdown th, .telos-markdown td { padding: 6px 8px; }
         }
     </style>
 </head>
@@ -429,6 +519,20 @@
                     <div class="empty-state">
                         <div class="empty-icon">📭</div>
                         <p>No proposals yet. This agent hasn't woken up.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Telos Document -->
+            <div class="section" id="telos-section">
+                <h2 class="section-title">
+                    📜 Telos Document
+                    <button id="telos-toggle" class="telos-toggle">Expand</button>
+                </h2>
+                <div class="telos-content" id="telos-content">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <span>Loading telos document...</span>
                     </div>
                 </div>
             </div>
@@ -615,8 +719,143 @@
             `;
         }
 
+        // Telos document paths by agent
+        const telosPaths = {
+            'foodvitals-agent': '/agents/foodvitals-agent/FOODVITALS_TELOS.md'
+        };
+
+        async function loadTelosDocument() {
+            const telosPath = telosPaths[agentId];
+            const telosContent = document.getElementById('telos-content');
+            const telosToggle = document.getElementById('telos-toggle');
+
+            if (!telosPath) {
+                telosContent.innerHTML = `
+                    <div class="empty-state" style="padding: 20px;">
+                        <p>No telos document available for this agent.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                const response = await fetch(telosPath);
+                if (!response.ok) throw new Error('Failed to fetch');
+
+                const markdown = await response.text();
+                const html = renderMarkdown(markdown);
+
+                telosContent.innerHTML = `<div class="telos-markdown">${html}</div>`;
+
+                // Toggle expand/collapse
+                telosToggle.addEventListener('click', () => {
+                    const isExpanded = telosContent.classList.toggle('expanded');
+                    telosToggle.textContent = isExpanded ? 'Collapse' : 'Expand';
+                });
+
+            } catch (err) {
+                console.error('Error loading telos:', err);
+                telosContent.innerHTML = `
+                    <div class="empty-state" style="padding: 20px;">
+                        <p>Failed to load telos document.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Simple markdown renderer
+        function renderMarkdown(md) {
+            let html = md
+                // Escape HTML first
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                // Horizontal rules
+                .replace(/^---$/gm, '<hr>')
+                // Headers
+                .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+                .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+                .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+                // Bold
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                // Inline code
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                // Lists
+                .replace(/^\- (.+)$/gm, '<li>$1</li>')
+                .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>')
+                // Wrap consecutive li items in ul
+                .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+                // Paragraphs (lines not starting with < or empty)
+                .replace(/^(?!<|$|\s*$)(.+)$/gm, '<p>$1</p>')
+                // Clean up extra newlines
+                .replace(/\n{3,}/g, '\n\n');
+
+            // Simple table rendering
+            html = renderTables(html);
+
+            return html;
+        }
+
+        function renderTables(html) {
+            const lines = html.split('\n');
+            let inTable = false;
+            let tableHtml = '';
+            let result = [];
+
+            for (let line of lines) {
+                // Check if it's a table row (starts with |)
+                if (line.includes('|') && line.trim().startsWith('|')) {
+                    if (!inTable) {
+                        inTable = true;
+                        tableHtml = '<table>';
+                    }
+
+                    // Skip separator rows (|---|---|)
+                    if (line.match(/^\|[\s\-:|]+\|$/)) {
+                        continue;
+                    }
+
+                    // Parse cells
+                    const cells = line.split('|').filter(c => c.trim() !== '');
+                    const isHeader = !tableHtml.includes('<tbody>');
+
+                    if (isHeader) {
+                        tableHtml += '<thead><tr>';
+                        cells.forEach(cell => {
+                            tableHtml += `<th>${cell.trim()}</th>`;
+                        });
+                        tableHtml += '</tr></thead><tbody>';
+                    } else {
+                        tableHtml += '<tr>';
+                        cells.forEach(cell => {
+                            tableHtml += `<td>${cell.trim()}</td>`;
+                        });
+                        tableHtml += '</tr>';
+                    }
+                } else {
+                    if (inTable) {
+                        tableHtml += '</tbody></table>';
+                        result.push(tableHtml);
+                        tableHtml = '';
+                        inTable = false;
+                    }
+                    result.push(line);
+                }
+            }
+
+            if (inTable) {
+                tableHtml += '</tbody></table>';
+                result.push(tableHtml);
+            }
+
+            return result.join('\n');
+        }
+
         // Initialize
-        document.addEventListener('DOMContentLoaded', loadAgentProfile);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAgentProfile();
+            loadTelosDocument();
+        });
     </script>
 </body>
 </html>
