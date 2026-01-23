@@ -1,23 +1,18 @@
 import { NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
+// Initialize Gemini at module level (matches working routes)
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
+
 export async function POST(request: Request) {
     try {
-        const apiKey = process.env.GEMINI_API_KEY
-
-        if (!apiKey) {
-            console.error('GEMINI_API_KEY is not set')
-            return NextResponse.json({ error: 'API key not configured' }, { status: 500 })
-        }
-
-        const genAI = new GoogleGenerativeAI(apiKey)
         const { content, instructions, stylePrompts, isFirstPass } = await request.json()
 
         if (!content) {
             return NextResponse.json({ error: 'Content is required' }, { status: 400 })
         }
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
 
         const prompt = `You are a skilled writing assistant helping refine articles.
 
