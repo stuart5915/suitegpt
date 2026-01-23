@@ -1929,6 +1929,113 @@
                 max-width: 100%;
             }
         }
+
+        /* Site Footer */
+        .site-footer {
+            background: linear-gradient(180deg, #0a1a0a, #050d05);
+            padding: 60px 20px 100px;
+            margin-top: 40px;
+            border-top: 1px solid rgba(74, 222, 128, 0.1);
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 40px;
+        }
+
+        .footer-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .footer-logo .logo-icon {
+            font-size: 2rem;
+        }
+
+        .footer-tagline {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.9rem;
+        }
+
+        .footer-section h4 {
+            color: #4ade80;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .footer-section a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+        }
+
+        .footer-section a:hover {
+            color: #4ade80;
+        }
+
+        .footer-bottom {
+            max-width: 1200px;
+            margin: 40px auto 0;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-bottom p {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.85rem;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 24px;
+        }
+
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.4);
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+
+        .footer-links a:hover {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        @media (max-width: 768px) {
+            .footer-content {
+                grid-template-columns: 1fr 1fr;
+                gap: 30px;
+            }
+
+            .footer-bottom {
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .footer-content {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1940,6 +2047,7 @@
                 <h1 class="header-title">Proto <span>Golf</span></h1>
             </div>
             <div class="header-actions">
+                <a href="proto-golf-admin.html" class="header-btn" title="Admin Dashboard" style="text-decoration: none;">⚙️</a>
                 <button class="header-btn" onclick="showSection('bag')">🎒</button>
                 <button class="header-btn" onclick="openCart()">
                     🛒
@@ -2470,6 +2578,47 @@
             </button>
         </div>
     </nav>
+
+    <!-- Site Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <div class="footer-logo">
+                    <span class="logo-icon">🏌️</span>
+                    <span class="logo-text">Proto Golf</span>
+                </div>
+                <p class="footer-tagline">AI-Powered Golf Performance</p>
+            </div>
+            <div class="footer-section">
+                <h4>Products</h4>
+                <a href="#" onclick="showSection('shop'); return false;">Putters</a>
+                <a href="#" onclick="showSection('shop'); return false;">Drivers</a>
+                <a href="#" onclick="showSection('shop'); return false;">Irons</a>
+                <a href="#" onclick="showSection('shop'); return false;">Accessories</a>
+            </div>
+            <div class="footer-section">
+                <h4>Features</h4>
+                <a href="#" onclick="showSection('track'); return false;">Swing Analyzer</a>
+                <a href="#" onclick="showSection('courses'); return false;">Course Finder</a>
+                <a href="#" onclick="showSection('learn'); return false;">AI Lessons</a>
+                <a href="#" onclick="startFitting(); return false;">Club Fitting</a>
+            </div>
+            <div class="footer-section">
+                <h4>Company</h4>
+                <a href="#">About Us</a>
+                <a href="#">Contact</a>
+                <a href="#">Careers</a>
+                <a href="proto-golf-admin.html">Admin Dashboard</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 Proto Golf. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Service</a>
+            </div>
+        </div>
+    </footer>
 
     <!-- Product Modal -->
     <div class="modal-overlay" id="productModal" onclick="if(event.target === this) closeProductModal()">
@@ -3248,12 +3397,43 @@
         // Initialize cart badge
         updateCartBadge();
 
-        // Check for successful payment return
+        // Check for Stripe checkout return status
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('success') === 'true') {
+            // Show success modal
             setTimeout(() => {
-                showToast('Payment successful! Thank you for your order.');
+                showSuccessModal();
+            }, 300);
+            // Clear URL params
+            window.history.replaceState({}, '', window.location.pathname);
+        } else if (urlParams.get('cancelled') === 'true') {
+            setTimeout(() => {
+                showToast('Checkout cancelled. Your cart items are still saved.');
             }, 500);
+            // Clear URL params
+            window.history.replaceState({}, '', window.location.pathname);
+        }
+
+        function showSuccessModal() {
+            const modal = document.createElement('div');
+            modal.innerHTML = `
+                <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 6000; display: flex; align-items: center; justify-content: center; padding: 20px;">
+                    <div style="background: linear-gradient(180deg, #1a3d1a, #0d1f0d); border-radius: 24px; padding: 40px; text-align: center; max-width: 400px; animation: fadeIn 0.3s ease;">
+                        <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #4ade80, #22c55e); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; font-size: 2.5rem;">✓</div>
+                        <h2 style="font-size: 1.8rem; margin-bottom: 12px;">Order Confirmed!</h2>
+                        <p style="color: rgba(255,255,255,0.7); margin-bottom: 24px; line-height: 1.6;">Thank you for your purchase! You'll receive a confirmation email shortly with tracking details.</p>
+                        <div style="background: rgba(74, 222, 128, 0.1); border: 1px solid rgba(74, 222, 128, 0.2); border-radius: 12px; padding: 16px; margin-bottom: 24px;">
+                            <div style="font-size: 0.85rem; color: #4ade80; margin-bottom: 4px;">🎉 What's Next</div>
+                            <div style="font-size: 0.95rem;">Your clubs will be shipped within 2-3 business days.</div>
+                        </div>
+                        <button onclick="this.closest('div').parentElement.remove()" style="background: linear-gradient(135deg, #4ade80, #22c55e); color: #0d1f0d; border: none; padding: 14px 32px; border-radius: 100px; font-weight: 700; font-size: 1rem; cursor: pointer; width: 100%;">Continue Browsing</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            // Clear cart since order is complete
+            cart = [];
+            updateCartBadge();
         }
     </script>
 </body>
