@@ -12,14 +12,15 @@
     <style>
         /* Dark theme override for nav on this page */
         .nav-inner {
-            background: rgba(10, 10, 10, 0.95) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(18, 18, 26, 0.95) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            backdrop-filter: blur(20px);
         }
         .nav-logo {
             color: #ffffff !important;
         }
         .nav-links a {
-            color: #9ca3af !important;
+            color: #a1a1aa !important;
         }
         .nav-links a:hover,
         .nav-links a.active {
@@ -29,20 +30,25 @@
             background: #ffffff !important;
         }
         .connect-btn {
-            background: linear-gradient(135deg, #ff9500, #ff6b9d) !important;
+            background: linear-gradient(135deg, #ff8c42, #fbbf24) !important;
         }
 
         :root {
-            --bg: #0a0a0a;
-            --bg-card: #111111;
-            --bg-elevated: #1a1a1a;
-            --text: #ffffff;
-            --text-dim: #888888;
-            --accent: #ff9500;
-            --accent-dim: rgba(255, 149, 0, 0.2);
+            /* Premium Dark Theme */
+            --bg: #0a0a0f;
+            --bg-card: #12121a;
+            --bg-elevated: #1a1a28;
+            --bg-surface: #22222f;
+            --text: #f5f5f7;
+            --text-dim: #a1a1aa;
+            --accent: #ff8c42;
+            --accent-amber: #fbbf24;
+            --accent-dim: rgba(255, 140, 66, 0.2);
             --success: #22c55e;
             --error: #ef4444;
-            --border: rgba(255, 255, 255, 0.1);
+            --border: rgba(255, 255, 255, 0.08);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
         }
 
         * {
@@ -60,16 +66,43 @@
             font-family: 'Inter', sans-serif;
             background: var(--bg);
             color: var(--text);
+            position: relative;
+        }
+
+        /* Ambient background effect */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse 80% 50% at 20% 40%, rgba(255, 140, 66, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse 60% 40% at 80% 60%, rgba(99, 102, 241, 0.05) 0%, transparent 50%),
+                radial-gradient(ellipse 50% 30% at 50% 80%, rgba(251, 191, 36, 0.04) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+            animation: ambientFloat 20s ease-in-out infinite;
+        }
+
+        @keyframes ambientFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(1%, 1%) scale(1.02); }
+            50% { transform: translate(-1%, 2%) scale(1); }
+            75% { transform: translate(1%, -1%) scale(1.01); }
         }
 
         /* Header */
         .factory-header {
             background: var(--bg-card);
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid var(--glass-border);
             padding: 20px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: relative;
+            z-index: 1;
         }
 
         .factory-logo {
@@ -104,18 +137,19 @@
         }
 
         .auth-btn {
-            background: var(--accent);
+            background: linear-gradient(135deg, var(--accent), var(--accent-amber));
             color: #000;
             border: none;
             padding: 10px 20px;
-            border-radius: 8px;
+            border-radius: 10px;
             font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s ease;
         }
 
         .auth-btn:hover {
-            background: #ffaa33;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 140, 66, 0.3);
         }
 
         .user-avatar {
@@ -134,9 +168,10 @@
         .factory-tabs {
             display: flex;
             gap: 4px;
-            background: var(--bg-elevated);
-            padding: 4px;
-            border-radius: 12px;
+            background: var(--bg-surface);
+            padding: 6px;
+            border-radius: 14px;
+            border: 1px solid var(--glass-border);
         }
 
         .factory-tab {
@@ -146,9 +181,9 @@
             color: var(--text-dim);
             font-weight: 600;
             font-size: 0.9rem;
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s ease;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -160,8 +195,9 @@
         }
 
         .factory-tab.active {
-            background: var(--accent);
+            background: linear-gradient(135deg, var(--accent), var(--accent-amber));
             color: #000;
+            box-shadow: 0 4px 12px rgba(255, 140, 66, 0.3);
         }
 
         .factory-tab .tab-icon {
@@ -247,20 +283,21 @@
         }
 
         .notebox-add-btn {
-            background: var(--accent);
+            background: linear-gradient(135deg, var(--accent), var(--accent-amber));
             color: #000;
             border: none;
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
             font-size: 1.2rem;
             font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s ease;
         }
 
         .notebox-add-btn:hover {
-            background: #ffaa33;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 140, 66, 0.3);
         }
 
         .notebox-kanban { display: flex; flex-wrap: wrap; gap: 16px; padding: 20px; overflow-y: auto; flex: 1; align-content: flex-start; }
@@ -272,11 +309,11 @@
 
         .notebox-column { width: 280px; flex-shrink: 0;
             background: var(--bg-elevated);
-            border-radius: 12px;
+            border-radius: 16px;
             padding: 16px;
             display: flex;
             flex-direction: column;
-            
+            border: 1px solid var(--glass-border);
         }
 
         .notebox-column-header {
@@ -308,11 +345,11 @@
 
         .notebox-card {
             background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
             padding: 16px;
             cursor: grab;
-            transition: all 0.2s;
+            transition: all 0.3s ease;
             user-select: none;
             position: relative;
         }
@@ -324,6 +361,7 @@
         .notebox-card:hover {
             border-color: var(--accent);
             transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 140, 66, 0.15);
         }
 
         .notebox-card-delete {
@@ -452,13 +490,14 @@
         .push-dropdown {
             position: fixed;
             background: var(--bg-elevated);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
             z-index: 9999;
             display: none;
             overflow: hidden;
             min-width: 200px;
+            backdrop-filter: blur(20px);
         }
 
         .push-dropdown.active {
@@ -690,7 +729,7 @@
         }
 
         .submit-btn:hover {
-            background: #ffaa33;
+            background: #fbbf24;
             transform: translateY(-1px);
         }
 
@@ -1183,7 +1222,7 @@
         }
 
         .modal-btn.submit:hover {
-            background: #ffaa33;
+            background: #fbbf24;
         }
 
         /* Category badges */
@@ -1203,7 +1242,7 @@
         .category-badge.improvement { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
         .category-badge.docs { background: rgba(107, 114, 128, 0.2); color: #9ca3af; }
         .category-badge.integration { background: rgba(20, 184, 166, 0.2); color: #14b8a6; }
-        .category-badge.tokenomics { background: rgba(255, 149, 0, 0.2); color: #ff9500; }
+        .category-badge.tokenomics { background: rgba(255, 140, 66, 0.2); color: #ff8c42; }
 
         /* Empty state */
         .empty-state {
@@ -1285,7 +1324,7 @@
         }
 
         .founder-badge {
-            background: linear-gradient(135deg, #ff9500, #ff6b00);
+            background: linear-gradient(135deg, #ff8c42, #ff6b00);
             color: #000;
             font-size: 0.65rem;
             padding: 2px 6px;
@@ -1763,10 +1802,13 @@
 
         /* Governance Tabs */
         .governance-tabs-container {
-            background: var(--bg-elevated);
-            border-radius: 16px;
-            padding: 20px;
-            border: 1px solid var(--border);
+            background: var(--glass-bg);
+            border-radius: 20px;
+            padding: 24px;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(20px);
+            position: relative;
+            z-index: 1;
         }
 
         .governance-tabs-header {
@@ -1816,7 +1858,7 @@
         }
 
         .governance-tab.active {
-            background: var(--accent-dim);
+            background: linear-gradient(135deg, rgba(255, 140, 66, 0.2), rgba(251, 191, 36, 0.2));
             border-color: var(--accent);
             color: var(--accent);
         }
@@ -1859,9 +1901,10 @@
 
         .section-column {
             background: var(--bg-elevated);
-            border-radius: 12px;
-            padding: 12px;
+            border-radius: 16px;
+            padding: 16px;
             min-height: 120px;
+            border: 1px solid var(--glass-border);
         }
 
         .section-column-header {
@@ -1880,25 +1923,26 @@
 
         .section-add-btn {
             width: 100%;
-            padding: 8px 12px;
+            padding: 10px 14px;
             margin-bottom: 12px;
-            background: var(--accent);
+            background: linear-gradient(135deg, var(--accent), var(--accent-amber));
             color: #000;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 0.8rem;
             font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s ease;
         }
 
         .section-add-btn:hover {
-            background: #ffaa33;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 140, 66, 0.3);
         }
 
         /* Drag and Drop */
         .section-column.drag-over {
-            background: rgba(255, 149, 0, 0.1);
+            background: rgba(255, 140, 66, 0.1);
             border: 2px dashed var(--accent);
         }
 
@@ -1935,16 +1979,18 @@
 
         .idea-card {
             background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 12px;
-            margin-bottom: 8px;
-            transition: all 0.2s;
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
             position: relative;
         }
 
         .idea-card:hover {
             border-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 140, 66, 0.15);
         }
 
         .card-delete-btn {
@@ -1973,7 +2019,7 @@
         }
 
         .idea-card.building {
-            border-left: 3px solid #ff9500;
+            border-left: 3px solid #ff8c42;
         }
 
         .idea-card.considering {
@@ -2002,9 +2048,9 @@
         }
 
         .proposal-app-tag.new-app-tag {
-            background: linear-gradient(135deg, rgba(255, 149, 0, 0.2), rgba(255, 107, 0, 0.2));
-            color: #ff9500;
-            border-color: rgba(255, 149, 0, 0.4);
+            background: linear-gradient(135deg, rgba(255, 140, 66, 0.2), rgba(251, 191, 36, 0.2));
+            color: #ff8c42;
+            border-color: rgba(255, 140, 66, 0.4);
         }
 
         .idea-card-header {
@@ -3524,7 +3570,7 @@
             improvement: { emoji: '✨', label: 'Improvement', color: '#22c55e' },
             docs: { emoji: '📚', label: 'Docs', color: '#9ca3af' },
             integration: { emoji: '🔗', label: 'Integration', color: '#14b8a6' },
-            tokenomics: { emoji: '💰', label: 'Tokenomics', color: '#ff9500' }
+            tokenomics: { emoji: '💰', label: 'Tokenomics', color: '#ff8c42' }
         };
 
         // Status config
