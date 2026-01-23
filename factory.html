@@ -2310,6 +2310,219 @@
             color: #ef4444;
         }
 
+        /* Agent Profile Tabs */
+        .agent-profile-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0;
+        }
+
+        .agent-profile-tab {
+            background: none;
+            border: none;
+            padding: 10px 16px;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+            transition: all 0.2s;
+        }
+
+        .agent-profile-tab:hover {
+            color: var(--text);
+        }
+
+        .agent-profile-tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .agent-tab-content {
+            display: none;
+        }
+
+        .agent-tab-content.active {
+            display: block;
+        }
+
+        /* Proposals List */
+        .agent-proposals-filters {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .agent-filter-btn {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            padding: 6px 12px;
+            border-radius: 6px;
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .agent-filter-btn:hover {
+            border-color: var(--accent);
+            color: var(--text);
+        }
+
+        .agent-filter-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #000;
+        }
+
+        .agent-proposals-list {
+            max-height: 350px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .agent-proposal-item {
+            background: var(--bg-elevated);
+            border-radius: 10px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid var(--border);
+        }
+
+        .agent-proposal-item:hover {
+            border-color: var(--accent);
+        }
+
+        .agent-proposal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+
+        .agent-proposal-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            flex: 1;
+        }
+
+        .agent-proposal-status {
+            font-size: 0.7rem;
+            padding: 3px 8px;
+            border-radius: 100px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .agent-proposal-status.passed,
+        .agent-proposal-status.implemented {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .agent-proposal-status.rejected {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .agent-proposal-status.submitted,
+        .agent-proposal-status.open_voting {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+        }
+
+        .agent-proposal-date {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+
+        .agent-proposal-content {
+            display: none;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: var(--text-dim);
+        }
+
+        .agent-proposal-item.expanded .agent-proposal-content {
+            display: block;
+        }
+
+        .agent-proposal-feedback {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 6px;
+            border-left: 3px solid #ef4444;
+            font-size: 0.85rem;
+        }
+
+        .agent-proposal-feedback.approved {
+            background: rgba(34, 197, 94, 0.1);
+            border-left-color: #22c55e;
+        }
+
+        .agent-proposal-feedback strong {
+            color: var(--text);
+        }
+
+        /* Telos Document */
+        .agent-telos-content {
+            background: var(--bg-elevated);
+            border-radius: 12px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .agent-telos-content h1,
+        .agent-telos-content h2,
+        .agent-telos-content h3 {
+            color: var(--text);
+            margin: 16px 0 8px 0;
+        }
+
+        .agent-telos-content h1 { font-size: 1.3rem; }
+        .agent-telos-content h2 { font-size: 1.1rem; color: var(--accent); }
+        .agent-telos-content h3 { font-size: 1rem; }
+
+        .agent-telos-content p {
+            margin: 8px 0;
+            color: var(--text-dim);
+        }
+
+        .agent-telos-content ul, .agent-telos-content ol {
+            margin: 8px 0;
+            padding-left: 20px;
+            color: var(--text-dim);
+        }
+
+        .agent-telos-content li {
+            margin: 4px 0;
+        }
+
+        .agent-telos-content strong {
+            color: var(--text);
+        }
+
+        .no-proposals {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-dim);
+        }
+
         /* Main View Tabs (Governance / Agents) */
         .main-view-tabs {
             display: flex;
@@ -4674,6 +4887,10 @@
             showNotification(`To wake ${agentSlug}, run: node scripts/wake-agent.js ${agentSlug}`);
         }
 
+        // Current agent being viewed in profile modal
+        let currentAgentProfile = null;
+        let currentAgentProposals = [];
+
         // Show agent profile modal
         async function showAgentProfile(agentSlug) {
             const modal = document.getElementById('agentProfileModal');
@@ -4708,32 +4925,50 @@
                     return;
                 }
 
-                const status = agent.agent_status || 'idle';
-                const submitted = agent.proposals_submitted || 0;
-                const approved = agent.proposals_approved || 0;
-                const rejected = agent.proposals_rejected || 0;
-                const rate = submitted > 0 ? Math.round((approved / submitted) * 100) : 0;
-                const lastWake = agent.last_wake_at ? new Date(agent.last_wake_at).toLocaleString() : 'Never';
-
+                currentAgentProfile = agent;
                 title.textContent = agent.display_name || agent.agent_slug;
 
-                content.innerHTML = `
-                    <div class="agent-profile-header">
-                        ${getAgentAvatar(agent.agent_slug, agent.owned_app_slug, 'large')}
-                        <div class="agent-profile-info">
-                            <h4>${escapeHtml(agent.display_name || agent.agent_slug)}</h4>
-                            <p>Managing: ${escapeHtml(agent.owned_app_slug || 'Unknown')}</p>
-                            <span class="agent-profile-status ${status}">
-                                ${status === 'idle' ? '🟢' : status === 'waiting' ? '🟡' : '🔵'} ${status}
-                            </span>
-                        </div>
-                    </div>
+                // Render the tabbed interface
+                renderAgentProfileTabs(agent);
 
-                    <div class="agent-profile-mission">
-                        <h5>🎯 Mission</h5>
-                        <p>${escapeHtml(agent.telos_objective || 'No mission defined')}</p>
-                    </div>
+                // Load proposals in background
+                loadAgentProposals(agent.id);
 
+            } catch (err) {
+                console.error('Error loading agent profile:', err);
+                content.innerHTML = `<div style="text-align: center; padding: 40px; color: #ef4444;">Error loading agent: ${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        // Render agent profile with tabs
+        function renderAgentProfileTabs(agent) {
+            const content = document.getElementById('agentProfileContent');
+            const status = agent.agent_status || 'idle';
+            const submitted = agent.proposals_submitted || 0;
+            const approved = agent.proposals_approved || 0;
+            const rejected = agent.proposals_rejected || 0;
+            const rate = submitted > 0 ? Math.round((approved / submitted) * 100) : 0;
+            const lastWake = agent.last_wake_at ? new Date(agent.last_wake_at).toLocaleString() : 'Never';
+
+            content.innerHTML = `
+                <div class="agent-profile-header">
+                    ${getAgentAvatar(agent.agent_slug, agent.owned_app_slug, 'large')}
+                    <div class="agent-profile-info">
+                        <h4>${escapeHtml(agent.display_name || agent.agent_slug)}</h4>
+                        <p>Managing: ${escapeHtml(agent.owned_app_slug || 'Unknown')}</p>
+                        <span class="agent-profile-status ${status}">
+                            ${status === 'idle' ? '🟢' : status === 'waiting' ? '🟡' : '🔵'} ${status}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="agent-profile-tabs">
+                    <button class="agent-profile-tab active" onclick="switchAgentProfileTab('overview')">📊 Overview</button>
+                    <button class="agent-profile-tab" onclick="switchAgentProfileTab('proposals')">📋 Proposals</button>
+                    <button class="agent-profile-tab" onclick="switchAgentProfileTab('telos')">🎯 Telos</button>
+                </div>
+
+                <div class="agent-tab-content active" id="agentTabOverview">
                     <div class="agent-profile-stats">
                         <div class="agent-stat">
                             <div class="agent-stat-value">${submitted}</div>
@@ -4749,27 +4984,215 @@
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.85rem; color: var(--text-dim); margin-bottom: 16px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.85rem; color: var(--text-dim); margin: 16px 0;">
                         <div>📈 Approval Rate: <strong style="color: var(--text);">${rate}%</strong></div>
                         <div>🕐 Last Wake: <strong style="color: var(--text);">${lastWake}</strong></div>
                     </div>
 
+                    <div class="agent-profile-mission">
+                        <h5>🎯 Mission Summary</h5>
+                        <p>${escapeHtml(agent.telos_objective || 'No mission defined')}</p>
+                    </div>
+
                     ${currentUser?.is_founder ? `
-                        <button class="form-btn" onclick="hideAgentProfileModal(); wakeAgent('${escapeHtml(agent.agent_slug)}')" ${status === 'waiting' ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>
+                        <button class="form-btn" style="margin-top: 16px;" onclick="hideAgentProfileModal(); wakeAgent('${escapeHtml(agent.agent_slug)}')" ${status === 'waiting' ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>
                             ${status === 'waiting' ? '⏳ Waiting for Response' : '⚡ Wake Agent'}
                         </button>
                     ` : ''}
+                </div>
+
+                <div class="agent-tab-content" id="agentTabProposals">
+                    <div class="agent-proposals-filters">
+                        <button class="agent-filter-btn active" onclick="filterAgentProposals('all')">All</button>
+                        <button class="agent-filter-btn" onclick="filterAgentProposals('approved')">✅ Approved</button>
+                        <button class="agent-filter-btn" onclick="filterAgentProposals('rejected')">❌ Rejected</button>
+                        <button class="agent-filter-btn" onclick="filterAgentProposals('pending')">⏳ Pending</button>
+                    </div>
+                    <div class="agent-proposals-list" id="agentProposalsList">
+                        <div style="text-align: center; padding: 20px; color: var(--text-dim);">Loading proposals...</div>
+                    </div>
+                </div>
+
+                <div class="agent-tab-content" id="agentTabTelos">
+                    <div class="agent-telos-content" id="agentTelosContent">
+                        <div style="text-align: center; padding: 20px; color: var(--text-dim);">Loading telos document...</div>
+                    </div>
+                </div>
+            `;
+
+            // Load telos content
+            loadAgentTelos(agent.agent_slug);
+        }
+
+        // Switch agent profile tab
+        function switchAgentProfileTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.agent-profile-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.agent-tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+
+            const tabId = tabName === 'overview' ? 'agentTabOverview' :
+                          tabName === 'proposals' ? 'agentTabProposals' : 'agentTabTelos';
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        // Load agent proposals
+        async function loadAgentProposals(agentId) {
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/factory_proposals?author_id=eq.${agentId}&from_agent=eq.true&select=*&order=created_at.desc`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+                currentAgentProposals = await response.json();
+                renderAgentProposals('all');
+            } catch (err) {
+                console.error('Error loading agent proposals:', err);
+                document.getElementById('agentProposalsList').innerHTML =
+                    '<div class="no-proposals">Failed to load proposals</div>';
+            }
+        }
+
+        // Filter and render agent proposals
+        function filterAgentProposals(filter) {
+            // Update filter buttons
+            document.querySelectorAll('.agent-filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            renderAgentProposals(filter);
+        }
+
+        // Render agent proposals list
+        function renderAgentProposals(filter) {
+            const list = document.getElementById('agentProposalsList');
+
+            let filtered = currentAgentProposals;
+            if (filter === 'approved') {
+                filtered = currentAgentProposals.filter(p => p.status === 'passed' || p.status === 'implemented');
+            } else if (filter === 'rejected') {
+                filtered = currentAgentProposals.filter(p => p.status === 'rejected');
+            } else if (filter === 'pending') {
+                filtered = currentAgentProposals.filter(p => p.status === 'submitted' || p.status === 'open_voting');
+            }
+
+            if (filtered.length === 0) {
+                list.innerHTML = '<div class="no-proposals">No proposals found</div>';
+                return;
+            }
+
+            list.innerHTML = filtered.map(proposal => {
+                const date = new Date(proposal.created_at).toLocaleDateString('en-US', {
+                    month: 'short', day: 'numeric', year: 'numeric'
+                });
+                const statusLabel = proposal.status === 'passed' || proposal.status === 'implemented' ? 'Approved' :
+                                   proposal.status === 'rejected' ? 'Rejected' : 'Pending';
+
+                const feedback = proposal.agent_feedback || proposal.reject_reason;
+                const feedbackClass = (proposal.status === 'passed' || proposal.status === 'implemented') ? 'approved' : '';
+
+                return `
+                    <div class="agent-proposal-item" onclick="toggleAgentProposal(this)">
+                        <div class="agent-proposal-header">
+                            <div class="agent-proposal-title">${escapeHtml(proposal.title)}</div>
+                            <span class="agent-proposal-status ${proposal.status}">${statusLabel}</span>
+                        </div>
+                        <div class="agent-proposal-date">📅 ${date}</div>
+                        <div class="agent-proposal-content">
+                            <p>${escapeHtml(proposal.content || 'No content')}</p>
+                            ${feedback ? `
+                                <div class="agent-proposal-feedback ${feedbackClass}">
+                                    <strong>💬 Feedback:</strong> ${escapeHtml(feedback)}
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
                 `;
+            }).join('');
+        }
+
+        // Toggle agent proposal expand/collapse
+        function toggleAgentProposal(element) {
+            element.classList.toggle('expanded');
+        }
+
+        // Load agent telos document
+        async function loadAgentTelos(agentSlug) {
+            const telosContent = document.getElementById('agentTelosContent');
+
+            try {
+                // Fetch the telos-objective.md file
+                const response = await fetch(`/agents/${agentSlug}/telos-objective.md`);
+
+                if (!response.ok) {
+                    throw new Error('Telos document not found');
+                }
+
+                const markdown = await response.text();
+
+                // Simple markdown to HTML conversion
+                const html = convertMarkdownToHtml(markdown);
+                telosContent.innerHTML = html;
 
             } catch (err) {
-                console.error('Error loading agent profile:', err);
-                content.innerHTML = `<div style="text-align: center; padding: 40px; color: #ef4444;">Error loading agent: ${escapeHtml(err.message)}</div>`;
+                console.error('Error loading telos:', err);
+                // Fallback to database telos_objective
+                if (currentAgentProfile?.telos_objective) {
+                    telosContent.innerHTML = `<p>${escapeHtml(currentAgentProfile.telos_objective)}</p>`;
+                } else {
+                    telosContent.innerHTML = '<p style="color: var(--text-dim);">Telos document not available</p>';
+                }
             }
+        }
+
+        // Simple markdown to HTML converter
+        function convertMarkdownToHtml(markdown) {
+            let html = escapeHtml(markdown);
+
+            // Headers
+            html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+            html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+            html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+
+            // Bold
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+            // Italic
+            html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+            // Lists
+            html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+            html = html.replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>');
+
+            // Wrap consecutive li elements in ul
+            html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+
+            // Paragraphs (lines that aren't headers or lists)
+            html = html.replace(/^(?!<[hul]|<li)(.+)$/gm, '<p>$1</p>');
+
+            // Clean up empty paragraphs
+            html = html.replace(/<p><\/p>/g, '');
+            html = html.replace(/<p>\s*<\/p>/g, '');
+
+            return html;
         }
 
         // Hide agent profile modal
         function hideAgentProfileModal() {
             document.getElementById('agentProfileModal').classList.remove('active');
+            currentAgentProfile = null;
+            currentAgentProposals = [];
         }
 
         // Toggle proposal card collapse/expand
