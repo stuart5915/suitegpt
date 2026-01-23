@@ -27,10 +27,89 @@
             font-family: 'Nunito', sans-serif;
         }
 
+        /* Main layout with sidebar */
+        .page-layout {
+            display: flex;
+            min-height: 100vh;
+            padding-top: 70px;
+        }
+
+        /* Left Sidebar - Settings */
+        .settings-sidebar {
+            width: 220px;
+            flex-shrink: 0;
+            padding: 20px 16px;
+            border-right: 1px solid var(--border);
+            background: rgba(10, 10, 15, 0.5);
+            position: sticky;
+            top: 70px;
+            height: calc(100vh - 70px);
+            overflow-y: auto;
+        }
+
+        .settings-sidebar-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .setting-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+
+        .setting-label {
+            font-size: 0.8rem;
+            color: var(--text);
+        }
+
+        .setting-toggle {
+            position: relative;
+            width: 36px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .setting-toggle.active {
+            background: var(--accent);
+        }
+
+        .setting-toggle::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.2s ease;
+        }
+
+        .setting-toggle.active::after {
+            transform: translateX(16px);
+        }
+
+        /* Main content area */
         .app-container {
+            flex: 1;
             max-width: 900px;
             margin: 0 auto;
-            padding: 100px 20px 40px;
+            padding: 30px 20px 40px;
         }
 
         .app-header {
@@ -126,144 +205,6 @@
         .refined-content.loading {
             color: var(--text-dim);
             font-style: italic;
-        }
-
-        /* Refined section with settings */
-        .refined-wrapper {
-            display: flex;
-            gap: 16px;
-            position: relative;
-        }
-
-        .refined-main {
-            flex: 1;
-            min-width: 0;
-        }
-
-        /* Settings Panel */
-        .settings-panel {
-            width: 0;
-            overflow: hidden;
-            transition: width 0.3s ease;
-            flex-shrink: 0;
-        }
-
-        .settings-panel.open {
-            width: 220px;
-        }
-
-        .settings-inner {
-            width: 220px;
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px;
-        }
-
-        .settings-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .settings-title {
-            font-size: 0.85rem;
-            font-weight: 700;
-            color: var(--accent);
-        }
-
-        .settings-close {
-            background: none;
-            border: none;
-            color: var(--text-dim);
-            cursor: pointer;
-            font-size: 1.2rem;
-            padding: 0;
-            line-height: 1;
-        }
-
-        .settings-close:hover {
-            color: var(--text);
-        }
-
-        .setting-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .setting-item:last-child {
-            border-bottom: none;
-        }
-
-        .setting-label {
-            font-size: 0.8rem;
-            color: var(--text);
-        }
-
-        .setting-toggle {
-            position: relative;
-            width: 36px;
-            height: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            cursor: pointer;
-            transition: background 0.2s ease;
-        }
-
-        .setting-toggle.active {
-            background: var(--accent);
-        }
-
-        .setting-toggle::after {
-            content: '';
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            width: 16px;
-            height: 16px;
-            background: white;
-            border-radius: 50%;
-            transition: transform 0.2s ease;
-        }
-
-        .setting-toggle.active::after {
-            transform: translateX(16px);
-        }
-
-        /* Settings toggle button */
-        .settings-toggle-btn {
-            position: absolute;
-            top: 0;
-            right: -12px;
-            width: 24px;
-            height: 24px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            color: var(--text-dim);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.9rem;
-            transition: all 0.2s ease;
-            z-index: 5;
-        }
-
-        .settings-toggle-btn:hover {
-            color: var(--accent);
-            border-color: var(--accent);
-        }
-
-        .settings-toggle-btn.has-active {
-            color: var(--accent);
-            background: rgba(168, 85, 247, 0.1);
         }
 
         /* Expansion Pills */
@@ -464,9 +405,36 @@
         }
 
         /* Responsive */
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
+            .page-layout {
+                flex-direction: column;
+            }
+
+            .settings-sidebar {
+                width: 100%;
+                position: relative;
+                top: 0;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+                padding: 16px;
+            }
+
+            .settings-sidebar .setting-item {
+                display: inline-flex;
+                padding: 8px 12px;
+                margin: 4px;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 8px;
+                border-bottom: none;
+            }
+
+            .settings-sidebar-title {
+                margin-bottom: 12px;
+            }
+
             .app-container {
-                padding: 90px 12px 30px;
+                padding: 20px 12px 30px;
             }
 
             .app-title {
@@ -491,28 +459,6 @@
 
             .action-buttons button {
                 flex: 1;
-            }
-
-            .refined-wrapper {
-                flex-direction: column;
-            }
-
-            .settings-panel {
-                width: 100% !important;
-                order: -1;
-            }
-
-            .settings-panel.open {
-                width: 100% !important;
-            }
-
-            .settings-inner {
-                width: 100%;
-            }
-
-            .settings-toggle-btn {
-                top: -30px;
-                right: 0;
             }
         }
 
@@ -542,98 +488,87 @@
     <nav id="main-nav"></nav>
     <script src="nav-component.js"></script>
 
-    <div class="app-container">
-        <header class="app-header">
-            <h1 class="app-title">Article Writer</h1>
-            <p class="app-subtitle">Paste your draft. Refine with AI. Publish.</p>
-        </header>
-
-        <div class="writer-card">
-            <!-- Original Draft -->
-            <div class="draft-section">
-                <div class="section-label">
-                    <span>Your Draft</span>
-                </div>
-                <textarea
-                    id="draftInput"
-                    class="draft-textarea"
-                    placeholder="Paste your raw idea or draft here... It can be messy, stream-of-consciousness, bullet points - whatever you have."
-                ></textarea>
+    <div class="page-layout">
+        <!-- Settings Sidebar -->
+        <aside class="settings-sidebar">
+            <div class="settings-sidebar-title">Style Preferences</div>
+            <div class="setting-item">
+                <span class="setting-label">No dashes (—)</span>
+                <div class="setting-toggle" data-setting="noDashes" onclick="toggleSetting(this)"></div>
             </div>
-
-            <!-- Title (shown after first refinement) -->
-            <div class="title-section" id="titleSection">
-                <div class="section-label">Article Title</div>
-                <input type="text" id="titleInput" class="title-input" placeholder="Article title...">
+            <div class="setting-item">
+                <span class="setting-label">No bullet points</span>
+                <div class="setting-toggle" data-setting="noBullets" onclick="toggleSetting(this)"></div>
             </div>
+            <div class="setting-item">
+                <span class="setting-label">No subheadings</span>
+                <div class="setting-toggle" data-setting="noSubheadings" onclick="toggleSetting(this)"></div>
+            </div>
+            <div class="setting-item">
+                <span class="setting-label">Short paragraphs</span>
+                <div class="setting-toggle" data-setting="shortParagraphs" onclick="toggleSetting(this)"></div>
+            </div>
+            <div class="setting-item">
+                <span class="setting-label">More casual</span>
+                <div class="setting-toggle" data-setting="moreCasual" onclick="toggleSetting(this)"></div>
+            </div>
+            <div class="setting-item">
+                <span class="setting-label">No rhetorical Q's</span>
+                <div class="setting-toggle" data-setting="noQuestions" onclick="toggleSetting(this)"></div>
+            </div>
+            <div class="setting-item">
+                <span class="setting-label">No emojis</span>
+                <div class="setting-toggle" data-setting="noEmojis" onclick="toggleSetting(this)"></div>
+            </div>
+            <div class="setting-item">
+                <span class="setting-label">Minimal adjectives</span>
+                <div class="setting-toggle" data-setting="minimalAdjectives" onclick="toggleSetting(this)"></div>
+            </div>
+            <div class="setting-item">
+                <span class="setting-label">No "I think/feel"</span>
+                <div class="setting-toggle" data-setting="noHedging" onclick="toggleSetting(this)"></div>
+            </div>
+            <div class="setting-item">
+                <span class="setting-label">Direct statements</span>
+                <div class="setting-toggle" data-setting="directStatements" onclick="toggleSetting(this)"></div>
+            </div>
+        </aside>
 
-            <!-- Refined Article -->
-            <div class="refined-section" id="refinedSection">
-                <div class="section-label">
-                    <span>Refined Article</span>
-                </div>
-                <div class="refined-wrapper">
-                    <div class="refined-main">
-                        <div class="refined-content" id="refinedContent"></div>
-                        <button class="settings-toggle-btn" id="settingsToggleBtn" onclick="toggleSettings()" title="Style Settings">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="3"></circle>
-                                <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"></path>
-                            </svg>
-                        </button>
+        <!-- Main Content -->
+        <div class="app-container">
+            <header class="app-header">
+                <h1 class="app-title">Article Writer</h1>
+                <p class="app-subtitle">Paste your draft. Refine with AI. Publish.</p>
+            </header>
+
+            <div class="writer-card">
+                <!-- Original Draft -->
+                <div class="draft-section">
+                    <div class="section-label">
+                        <span>Your Draft</span>
                     </div>
-                    <div class="settings-panel" id="settingsPanel">
-                        <div class="settings-inner">
-                            <div class="settings-header">
-                                <span class="settings-title">Style Prefs</span>
-                                <button class="settings-close" onclick="toggleSettings()">&times;</button>
-                            </div>
-                            <div class="setting-item">
-                                <span class="setting-label">No dashes (—)</span>
-                                <div class="setting-toggle" data-setting="noDashes" onclick="toggleSetting(this)"></div>
-                            </div>
-                            <div class="setting-item">
-                                <span class="setting-label">No bullet points</span>
-                                <div class="setting-toggle" data-setting="noBullets" onclick="toggleSetting(this)"></div>
-                            </div>
-                            <div class="setting-item">
-                                <span class="setting-label">No subheadings</span>
-                                <div class="setting-toggle" data-setting="noSubheadings" onclick="toggleSetting(this)"></div>
-                            </div>
-                            <div class="setting-item">
-                                <span class="setting-label">Short paragraphs</span>
-                                <div class="setting-toggle" data-setting="shortParagraphs" onclick="toggleSetting(this)"></div>
-                            </div>
-                            <div class="setting-item">
-                                <span class="setting-label">More casual</span>
-                                <div class="setting-toggle" data-setting="moreCasual" onclick="toggleSetting(this)"></div>
-                            </div>
-                            <div class="setting-item">
-                                <span class="setting-label">No rhetorical Q's</span>
-                                <div class="setting-toggle" data-setting="noQuestions" onclick="toggleSetting(this)"></div>
-                            </div>
-                            <div class="setting-item">
-                                <span class="setting-label">No emojis</span>
-                                <div class="setting-toggle" data-setting="noEmojis" onclick="toggleSetting(this)"></div>
-                            </div>
-                            <div class="setting-item">
-                                <span class="setting-label">Minimal adjectives</span>
-                                <div class="setting-toggle" data-setting="minimalAdjectives" onclick="toggleSetting(this)"></div>
-                            </div>
-                            <div class="setting-item">
-                                <span class="setting-label">No "I think/feel"</span>
-                                <div class="setting-toggle" data-setting="noHedging" onclick="toggleSetting(this)"></div>
-                            </div>
-                            <div class="setting-item">
-                                <span class="setting-label">Direct statements</span>
-                                <div class="setting-toggle" data-setting="directStatements" onclick="toggleSetting(this)"></div>
-                            </div>
-                        </div>
-                    </div>
+                    <textarea
+                        id="draftInput"
+                        class="draft-textarea"
+                        placeholder="Paste your raw idea or draft here... It can be messy, stream-of-consciousness, bullet points - whatever you have."
+                    ></textarea>
                 </div>
-            </div>
 
-            <!-- Expansion Pills -->
+                <!-- Title (shown after first refinement) -->
+                <div class="title-section" id="titleSection">
+                    <div class="section-label">Article Title</div>
+                    <input type="text" id="titleInput" class="title-input" placeholder="Article title...">
+                </div>
+
+                <!-- Refined Article -->
+                <div class="refined-section" id="refinedSection">
+                    <div class="section-label">
+                        <span>Refined Article</span>
+                    </div>
+                    <div class="refined-content" id="refinedContent"></div>
+                </div>
+
+                <!-- Expansion Pills -->
             <div class="pills-section" id="pillsSection">
                 <div class="pills-label">Click to add expansion prompts:</div>
                 <div class="pills-container" id="pillsContainer"></div>
@@ -663,6 +598,7 @@
             </div>
         </div>
     </div>
+    </div> <!-- close page-layout -->
 
     <footer class="footer">
         <p>&copy; 2026 SUITE. Anyone Can Build. Everyone Gets Paid.</p>
@@ -695,26 +631,12 @@
             directStatements: { active: false, prompt: 'Make direct, assertive statements. No wishy-washy language.' }
         };
 
-        // Toggle settings panel
-        function toggleSettings() {
-            const panel = document.getElementById('settingsPanel');
-            panel.classList.toggle('open');
-        }
-
         // Toggle individual setting
         function toggleSetting(el) {
             const setting = el.dataset.setting;
             styleSettings[setting].active = !styleSettings[setting].active;
             el.classList.toggle('active');
-            updateSettingsButton();
             saveSettings();
-        }
-
-        // Update the settings button to show if any are active
-        function updateSettingsButton() {
-            const btn = document.getElementById('settingsToggleBtn');
-            const hasActive = Object.values(styleSettings).some(s => s.active);
-            btn.classList.toggle('has-active', hasActive);
         }
 
         // Get active style prompts for AI
@@ -745,7 +667,6 @@
                         if (toggle) toggle.classList.add('active');
                     }
                 }
-                updateSettingsButton();
             } catch (e) {
                 console.error('Failed to load settings:', e);
             }
