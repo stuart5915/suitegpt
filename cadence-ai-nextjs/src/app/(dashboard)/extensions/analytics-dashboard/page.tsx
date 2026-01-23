@@ -60,9 +60,7 @@ const generateMockData = () => {
                 engagement_rate: 2 + Math.random() * 3,
                 impressions: 5000 + Math.floor(Math.random() * 2000),
                 profile_visits: 100 + Math.floor(Math.random() * 50),
-                link_clicks: 20 + Math.floor(Math.random() * 30),
-                metadata: {},
-                created_at: date.toISOString()
+                link_clicks: 20 + Math.floor(Math.random() * 30)
             })
         })
     }

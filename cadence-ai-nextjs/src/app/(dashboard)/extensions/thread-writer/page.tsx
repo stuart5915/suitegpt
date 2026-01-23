@@ -319,7 +319,7 @@ export default function ThreadWriterPage() {
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-2 text-xs text-[var(--foreground-muted)] mt-1">
-                                            <span>{thread.total_tweets} tweets</span>
+                                            <span>{thread.tweets?.length || 0} tweets</span>
                                             <span>•</span>
                                             <span>{new Date(thread.created_at).toLocaleDateString()}</span>
                                         </div>

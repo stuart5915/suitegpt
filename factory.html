@@ -2154,6 +2154,60 @@
             color: var(--text);
         }
 
+        /* Main View Tabs (Governance / Agents) */
+        .main-view-tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--bg-surface);
+            padding: 4px;
+            border-radius: 12px;
+        }
+
+        .main-view-tab {
+            padding: 8px 16px;
+            border: none;
+            background: transparent;
+            color: var(--text-dim);
+            font-weight: 600;
+            font-size: 0.9rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .main-view-tab:hover {
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .main-view-tab.active {
+            background: linear-gradient(135deg, var(--accent), var(--accent-amber));
+            color: #000;
+        }
+
+        .main-tab-count {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+        }
+
+        .main-view-tab.active .main-tab-count {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        /* Main Views */
+        .main-view {
+            display: none;
+        }
+
+        .main-view.active {
+            display: block;
+        }
+
         /* Agents Tab Styles */
         .agents-container {
             padding: 20px;
@@ -3210,10 +3264,16 @@
             <main class="factory-content">
                 <div class="content-header">
                     <div class="governance-title-row">
-                        <h2 style="font-size: 1.3rem; font-weight: 800; margin: 0;">🏛️ Governance</h2>
+                        <div class="main-view-tabs">
+                            <button class="main-view-tab active" data-view="governance" onclick="switchMainView('governance')">🏛️ Governance</button>
+                            <button class="main-view-tab" data-view="agents" onclick="switchMainView('agents')">🤖 Agents <span class="main-tab-count" id="agentsMainCount">0</span></button>
+                        </div>
                         <button class="notebox-connect-btn" onclick="openConnectNoteboxModal()" title="Submit an idea">+</button>
                     </div>
                 </div>
+
+                <!-- Main View: Governance -->
+                <div class="main-view active" id="governanceMainView">
 
                 <!-- Mobile How Voting Works (collapsed) -->
                 <div class="mobile-voting-info collapsed" id="mobileVotingInfo">
@@ -3465,9 +3525,6 @@
                                 <button class="governance-tab" data-tab="social" onclick="switchGovernanceTab('social')">
                                     🔄 Social <span class="tab-count" id="socialTabCount">0</span>
                                 </button>
-                                <button class="governance-tab" data-tab="agents" onclick="switchGovernanceTab('agents')">
-                                    🤖 Agents <span class="tab-count" id="agentsTabCount">0</span>
-                                </button>
                             </div>
                         </div>
 
@@ -3495,17 +3552,21 @@
                                 <!-- Populated by JS -->
                             </div>
                         </div>
+                    </div>
+                </div>
 
-                        <div class="governance-tab-content" id="agentsTabContent">
-                            <div class="agents-container" id="agentsContainer">
-                                <div class="agents-header">
-                                    <p class="agents-description">Autonomous AI agents that propose improvements for SUITE apps. Each agent has a mission and learns from your feedback.</p>
-                                </div>
-                                <div class="agents-grid" id="agentsGrid">
-                                    <!-- Populated by JS -->
-                                    <div class="loading-agents">Loading agents...</div>
-                                </div>
-                            </div>
+                </div><!-- End governanceMainView -->
+
+                <!-- Main View: Agents -->
+                <div class="main-view" id="agentsMainView">
+                    <div class="agents-container" id="agentsContainer">
+                        <div class="agents-header">
+                            <h3 style="margin: 0 0 8px 0; font-weight: 700;">Autonomous AI Agents</h3>
+                            <p class="agents-description">Each agent "owns" a SUITE app and proposes improvements. You approve or reject with feedback - they learn and iterate.</p>
+                        </div>
+                        <div class="agents-grid" id="agentsGrid">
+                            <!-- Populated by JS -->
+                            <div class="loading-agents">Loading agents...</div>
                         </div>
                     </div>
                 </div>
