@@ -977,6 +977,116 @@
 
                     <hr style="border: none; border-top: 1px solid rgba(0,0,0,0.08); margin: 20px 0;">
 
+                    <!-- Cadence AI Control Center -->
+                    <div id="cadenceAIPanel" style="margin-bottom: 24px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                            <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: var(--text-dark);">Cadence AI Control Center</h3>
+                            <button onclick="refreshCadenceConfig()" style="padding: 6px 12px; background: rgba(255,255,255,0.5); border: 1px solid #e5e7eb; border-radius: 8px; cursor: pointer; font-size: 0.8rem;">Refresh</button>
+                        </div>
+
+                        <!-- Stats Grid -->
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px;">
+                            <div style="background: rgba(59, 130, 246, 0.1); border-radius: 10px; padding: 12px; text-align: center;">
+                                <div style="font-size: 1.3rem; font-weight: 800; color: #3b82f6;" id="cadenceActiveLoops">0</div>
+                                <div style="font-size: 0.7rem; color: var(--text-medium);">Active Loops</div>
+                            </div>
+                            <div style="background: rgba(196, 114, 95, 0.1); border-radius: 10px; padding: 12px; text-align: center;">
+                                <div style="font-size: 1.3rem; font-weight: 800; color: var(--accent-terracotta);" id="cadencePostsMonth">0</div>
+                                <div style="font-size: 0.7rem; color: var(--text-medium);">Posts This Month</div>
+                            </div>
+                            <div style="background: rgba(34, 197, 94, 0.1); border-radius: 10px; padding: 12px; text-align: center;">
+                                <div style="font-size: 1.3rem; font-weight: 800; color: #22c55e;" id="cadenceAppsReached">0</div>
+                                <div style="font-size: 0.7rem; color: var(--text-medium);">Apps Promoted</div>
+                            </div>
+                            <div style="background: rgba(168, 85, 247, 0.1); border-radius: 10px; padding: 12px; text-align: center;">
+                                <div style="font-size: 1.3rem; font-weight: 800; color: #a855f7;" id="cadenceLeadsWeek">0</div>
+                                <div style="font-size: 0.7rem; color: var(--text-medium);">Leads This Week</div>
+                            </div>
+                        </div>
+
+                        <!-- Hiring Loop -->
+                        <div style="background: rgba(255,255,255,0.5); border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; padding: 16px; margin-bottom: 12px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 1.2rem;">&#128226;</span>
+                                    <span style="font-weight: 700; color: var(--text-dark);">HIRING LOOP</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span id="hiringLoopStatus" style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; padding: 4px 8px; border-radius: 12px; background: rgba(107, 114, 128, 0.1); color: #6b7280;">
+                                        <span style="width: 6px; height: 6px; border-radius: 50%; background: currentColor;"></span>
+                                        Paused
+                                    </span>
+                                    <button id="hiringLoopToggle" onclick="toggleHiringLoop('hiring')" style="padding: 6px 12px; background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange)); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.8rem;">Start</button>
+                                </div>
+                            </div>
+                            <div style="font-size: 0.85rem; color: var(--text-medium); margin-bottom: 8px;">
+                                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                                    <span>Social Platforms:</span>
+                                    <span id="hiringPlatformsDisplay">X, LinkedIn, Instagram</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                                    <span>Next post:</span>
+                                    <span id="hiringNextPost">Not scheduled</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span>Stats:</span>
+                                    <span id="hiringLoopStats">0 posts → 0 applications</span>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px; margin-top: 12px;">
+                                <button onclick="openEditMessagingModal('hiring')" style="padding: 6px 12px; background: rgba(255,255,255,0.8); border: 1px solid #e5e7eb; border-radius: 6px; font-size: 0.75rem; cursor: pointer;">Edit Messaging</button>
+                                <button onclick="viewLoopPosts('hiring')" style="padding: 6px 12px; background: rgba(255,255,255,0.8); border: 1px solid #e5e7eb; border-radius: 6px; font-size: 0.75rem; cursor: pointer;">View Posts</button>
+                                <button onclick="openCreateJobModal()" style="padding: 6px 12px; background: rgba(255,255,255,0.8); border: 1px solid #e5e7eb; border-radius: 6px; font-size: 0.75rem; cursor: pointer;">Create Job Posting</button>
+                            </div>
+                        </div>
+
+                        <!-- App Marketing Loop -->
+                        <div style="background: rgba(255,255,255,0.5); border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 1.2rem;">&#128241;</span>
+                                    <span style="font-weight: 700; color: var(--text-dark);">APP MARKETING LOOP</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span id="marketingLoopStatus" style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; padding: 4px 8px; border-radius: 12px; background: rgba(107, 114, 128, 0.1); color: #6b7280;">
+                                        <span style="width: 6px; height: 6px; border-radius: 50%; background: currentColor;"></span>
+                                        Paused
+                                    </span>
+                                    <button id="marketingLoopToggle" onclick="toggleHiringLoop('app_marketing')" style="padding: 6px 12px; background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange)); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.8rem;">Start</button>
+                                </div>
+                            </div>
+                            <div style="font-size: 0.85rem; color: var(--text-medium);">
+                                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                                    <span>Platforms:</span>
+                                    <span id="marketingPlatformsDisplay">X, Instagram</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span>Promoting:</span>
+                                    <span>All SUITE Apps (rotating)</span>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px; margin-top: 12px;">
+                                <button onclick="openConfigureMarketingModal()" style="padding: 6px 12px; background: rgba(255,255,255,0.8); border: 1px solid #e5e7eb; border-radius: 6px; font-size: 0.75rem; cursor: pointer;">Configure</button>
+                            </div>
+                        </div>
+
+                        <!-- Job Postings Manager -->
+                        <div style="background: rgba(255,255,255,0.5); border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; padding: 16px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 1.2rem;">&#128203;</span>
+                                    <span style="font-weight: 700; color: var(--text-dark);">JOB POSTINGS</span>
+                                </div>
+                                <button onclick="openCreateJobModal()" style="padding: 6px 12px; background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange)); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.8rem;">+ New Posting</button>
+                            </div>
+                            <div id="jobPostingsList" style="display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow-y: auto;">
+                                <div style="text-align: center; padding: 16px; color: var(--text-light); font-size: 0.85rem;">Loading job postings...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr style="border: none; border-top: 1px solid rgba(0,0,0,0.08); margin: 20px 0;">
+
                     <!-- Redemption Dashboard (always visible for admins) -->
                     <div id="redemptionPanel" style="margin-top: 8px;">
                         <div style="padding-top: 8px;">
@@ -2825,12 +2935,577 @@
             }
         }
 
-        // Load apps when admin section becomes visible
+        // =============================================
+        // CADENCE AI CONTROL CENTER FUNCTIONS
+        // =============================================
+
+        let cadenceHiringConfig = null;
+        let cadenceMarketingConfig = null;
+        let jobPostingsData = [];
+
+        async function loadCadenceConfig() {
+            try {
+                // Load hiring loop config
+                const hiringResponse = await fetch(`${SUPABASE_URL}/rest/v1/cadence_hiring_config?loop_type=eq.hiring&limit=1`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+
+                if (hiringResponse.ok) {
+                    const data = await hiringResponse.json();
+                    cadenceHiringConfig = data[0] || null;
+                }
+
+                // Load marketing loop config
+                const marketingResponse = await fetch(`${SUPABASE_URL}/rest/v1/cadence_hiring_config?loop_type=eq.app_marketing&limit=1`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+
+                if (marketingResponse.ok) {
+                    const data = await marketingResponse.json();
+                    cadenceMarketingConfig = data[0] || null;
+                }
+
+                // Load job postings
+                const postingsResponse = await fetch(`${SUPABASE_URL}/rest/v1/job_board_postings?order=created_at.desc`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+
+                if (postingsResponse.ok) {
+                    jobPostingsData = await postingsResponse.json();
+                }
+
+                updateCadenceUI();
+                loadJobPostings();
+
+            } catch (err) {
+                console.error('Failed to load Cadence config:', err);
+            }
+        }
+
+        function updateCadenceUI() {
+            // Update hiring loop status
+            const hiringStatus = document.getElementById('hiringLoopStatus');
+            const hiringToggle = document.getElementById('hiringLoopToggle');
+
+            if (cadenceHiringConfig?.is_active) {
+                hiringStatus.innerHTML = '<span style="width: 6px; height: 6px; border-radius: 50%; background: currentColor;"></span> Active';
+                hiringStatus.style.background = 'rgba(34, 197, 94, 0.1)';
+                hiringStatus.style.color = '#22c55e';
+                hiringToggle.textContent = 'Stop';
+                hiringToggle.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+            } else {
+                hiringStatus.innerHTML = '<span style="width: 6px; height: 6px; border-radius: 50%; background: currentColor;"></span> Paused';
+                hiringStatus.style.background = 'rgba(107, 114, 128, 0.1)';
+                hiringStatus.style.color = '#6b7280';
+                hiringToggle.textContent = 'Start';
+                hiringToggle.style.background = 'linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange))';
+            }
+
+            // Update hiring platforms display
+            if (cadenceHiringConfig?.platforms) {
+                const platforms = [];
+                if (cadenceHiringConfig.platforms.x) platforms.push('X');
+                if (cadenceHiringConfig.platforms.linkedin) platforms.push('LinkedIn');
+                if (cadenceHiringConfig.platforms.instagram) platforms.push('Instagram');
+                document.getElementById('hiringPlatformsDisplay').textContent = platforms.join(', ') || 'None';
+            }
+
+            // Update hiring stats
+            if (cadenceHiringConfig?.stats) {
+                const stats = cadenceHiringConfig.stats;
+                document.getElementById('hiringLoopStats').textContent =
+                    `${stats.posts_count || 0} posts → ${stats.applications_count || 0} applications`;
+            }
+
+            // Update next post time
+            if (cadenceHiringConfig?.next_post_at) {
+                const nextPost = new Date(cadenceHiringConfig.next_post_at);
+                document.getElementById('hiringNextPost').textContent = nextPost.toLocaleString();
+            } else {
+                document.getElementById('hiringNextPost').textContent = 'Not scheduled';
+            }
+
+            // Update marketing loop status
+            const marketingStatus = document.getElementById('marketingLoopStatus');
+            const marketingToggle = document.getElementById('marketingLoopToggle');
+
+            if (cadenceMarketingConfig?.is_active) {
+                marketingStatus.innerHTML = '<span style="width: 6px; height: 6px; border-radius: 50%; background: currentColor;"></span> Active';
+                marketingStatus.style.background = 'rgba(34, 197, 94, 0.1)';
+                marketingStatus.style.color = '#22c55e';
+                marketingToggle.textContent = 'Stop';
+                marketingToggle.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+            } else {
+                marketingStatus.innerHTML = '<span style="width: 6px; height: 6px; border-radius: 50%; background: currentColor;"></span> Paused';
+                marketingStatus.style.background = 'rgba(107, 114, 128, 0.1)';
+                marketingStatus.style.color = '#6b7280';
+                marketingToggle.textContent = 'Start';
+                marketingToggle.style.background = 'linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange))';
+            }
+
+            // Update marketing platforms display
+            if (cadenceMarketingConfig?.platforms) {
+                const platforms = [];
+                if (cadenceMarketingConfig.platforms.x) platforms.push('X');
+                if (cadenceMarketingConfig.platforms.linkedin) platforms.push('LinkedIn');
+                if (cadenceMarketingConfig.platforms.instagram) platforms.push('Instagram');
+                document.getElementById('marketingPlatformsDisplay').textContent = platforms.join(', ') || 'None';
+            }
+
+            // Update stats counters
+            let activeLoops = 0;
+            if (cadenceHiringConfig?.is_active) activeLoops++;
+            if (cadenceMarketingConfig?.is_active) activeLoops++;
+            document.getElementById('cadenceActiveLoops').textContent = activeLoops;
+
+            const totalPosts = (cadenceHiringConfig?.stats?.posts_count || 0) + (cadenceMarketingConfig?.stats?.posts_count || 0);
+            document.getElementById('cadencePostsMonth').textContent = totalPosts;
+
+            // Calculate leads this week from applications
+            document.getElementById('cadenceLeadsWeek').textContent = cadenceHiringConfig?.stats?.applications_count || 0;
+        }
+
+        async function toggleHiringLoop(loopType) {
+            const config = loopType === 'hiring' ? cadenceHiringConfig : cadenceMarketingConfig;
+            const newStatus = !config?.is_active;
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/cadence_hiring_config?loop_type=eq.${loopType}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify({
+                        is_active: newStatus,
+                        updated_at: new Date().toISOString(),
+                        next_post_at: newStatus ? getNextPostTime() : null
+                    })
+                });
+
+                if (!response.ok) throw new Error('Update failed');
+
+                showToast(`${loopType === 'hiring' ? 'Hiring' : 'Marketing'} loop ${newStatus ? 'started' : 'stopped'}`, 'success');
+                await loadCadenceConfig();
+
+            } catch (err) {
+                console.error('Failed to toggle loop:', err);
+                showToast('Failed to update loop status', 'error');
+            }
+        }
+
+        function getNextPostTime() {
+            const now = new Date();
+            const next = new Date(now);
+            // Schedule for 10 AM next day if past 10 AM, otherwise today
+            if (now.getHours() >= 10) {
+                next.setDate(next.getDate() + 1);
+            }
+            next.setHours(10, 0, 0, 0);
+            return next.toISOString();
+        }
+
+        function loadJobPostings() {
+            const container = document.getElementById('jobPostingsList');
+
+            if (!jobPostingsData || jobPostingsData.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 24px; color: var(--text-light);">
+                        <div style="font-size: 2rem; margin-bottom: 8px;">&#128203;</div>
+                        <div style="font-size: 0.85rem;">No job postings yet</div>
+                        <div style="font-size: 0.75rem; margin-top: 4px;">Create your first job posting to attract operators</div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = jobPostingsData.map(posting => {
+                const statusColors = {
+                    active: { bg: 'rgba(34, 197, 94, 0.1)', text: '#22c55e' },
+                    expired: { bg: 'rgba(251, 191, 36, 0.1)', text: '#f59e0b' },
+                    taken_down: { bg: 'rgba(107, 114, 128, 0.1)', text: '#6b7280' }
+                };
+                const colors = statusColors[posting.status] || statusColors.active;
+
+                return `
+                    <div style="background: rgba(255,255,255,0.6); border-radius: 10px; padding: 14px; border: 1px solid rgba(0,0,0,0.05);">
+                        <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px;">
+                            <div style="font-weight: 600; color: var(--text-dark); font-size: 0.9rem;">${posting.title}</div>
+                            <span style="font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; background: ${colors.bg}; color: ${colors.text}; text-transform: capitalize;">${posting.status}</span>
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-medium); margin-bottom: 8px;">
+                            Platform: <strong>${formatPlatformName(posting.platform)}</strong>
+                            ${posting.applications_count > 0 ? ` | ${posting.applications_count} applications` : ''}
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--text-light); margin-bottom: 10px;">
+                            Posted: ${new Date(posting.posted_at).toLocaleDateString()}
+                            ${posting.platform_url ? ` | <a href="${posting.platform_url}" target="_blank" style="color: var(--accent-terracotta);">View on ${formatPlatformName(posting.platform)}</a>` : ''}
+                        </div>
+                        <div style="display: flex; gap: 6px;">
+                            <button onclick="editJobPosting('${posting.id}')" style="padding: 5px 10px; background: rgba(255,255,255,0.8); border: 1px solid #e5e7eb; border-radius: 6px; font-size: 0.7rem; cursor: pointer;">Edit</button>
+                            <button onclick="refreshJobCopy('${posting.id}')" style="padding: 5px 10px; background: rgba(255,255,255,0.8); border: 1px solid #e5e7eb; border-radius: 6px; font-size: 0.7rem; cursor: pointer;">AI Refresh Copy</button>
+                            <button onclick="toggleJobStatus('${posting.id}', '${posting.status}')" style="padding: 5px 10px; background: ${posting.status === 'active' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.1)'}; border: none; border-radius: 6px; font-size: 0.7rem; cursor: pointer; color: ${posting.status === 'active' ? '#ef4444' : '#22c55e'};">${posting.status === 'active' ? 'Take Down' : 'Reactivate'}</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function formatPlatformName(platform) {
+            const names = {
+                cryptojobslist: 'CryptoJobsList',
+                web3career: 'Web3.career',
+                indeed: 'Indeed',
+                linkedin: 'LinkedIn Jobs',
+                glassdoor: 'Glassdoor',
+                wellfound: 'Wellfound',
+                remote3: 'Remote3'
+            };
+            return names[platform] || platform;
+        }
+
+        async function toggleJobStatus(postingId, currentStatus) {
+            const newStatus = currentStatus === 'active' ? 'taken_down' : 'active';
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/job_board_postings?id=eq.${postingId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        status: newStatus,
+                        updated_at: new Date().toISOString()
+                    })
+                });
+
+                if (!response.ok) throw new Error('Update failed');
+
+                showToast(`Job posting ${newStatus === 'active' ? 'reactivated' : 'taken down'}`, 'success');
+                await loadCadenceConfig();
+
+            } catch (err) {
+                console.error('Failed to update job status:', err);
+                showToast('Failed to update job posting', 'error');
+            }
+        }
+
+        function refreshCadenceConfig() {
+            loadCadenceConfig();
+            showToast('Refreshed', 'success');
+        }
+
+        function openCreateJobModal() {
+            const modal = document.createElement('div');
+            modal.id = 'createJobModal';
+            modal.className = 'modal-overlay';
+            modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+            modal.innerHTML = `
+                <div class="modal" style="max-width: 500px;">
+                    <button class="modal-close" onclick="document.getElementById('createJobModal').remove()">&times;</button>
+                    <h3>Create Job Posting</h3>
+                    <p style="color: var(--text-medium); font-size: 0.85rem; margin-bottom: 16px;">Create a job posting to track on external platforms</p>
+
+                    <div class="modal-input-group">
+                        <label>Job Title</label>
+                        <input type="text" class="modal-input" id="jobTitle" value="App Operator - Remote (90% Revenue Share)" placeholder="e.g., App Operator - Remote">
+                    </div>
+
+                    <div class="modal-input-group">
+                        <label>Platform</label>
+                        <select id="jobPlatform" class="modal-input" style="padding: 12px;">
+                            <option value="cryptojobslist">CryptoJobsList</option>
+                            <option value="web3career">Web3.career</option>
+                            <option value="indeed">Indeed</option>
+                            <option value="linkedin">LinkedIn Jobs</option>
+                            <option value="glassdoor">Glassdoor</option>
+                            <option value="wellfound">Wellfound (AngelList)</option>
+                            <option value="remote3">Remote3</option>
+                        </select>
+                    </div>
+
+                    <div class="modal-input-group">
+                        <label>Platform URL (optional)</label>
+                        <input type="url" class="modal-input" id="jobPlatformUrl" placeholder="https://...">
+                    </div>
+
+                    <div class="modal-input-group">
+                        <label>Description</label>
+                        <textarea class="modal-input" id="jobDescription" rows="6" placeholder="Job description...">${getDefaultJobDescription()}</textarea>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-top: 16px;">
+                        <button onclick="generateJobDescription()" style="flex: 1; padding: 12px; background: rgba(168, 85, 247, 0.1); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 10px; font-weight: 600; cursor: pointer;">
+                            &#10024; AI Generate
+                        </button>
+                        <button onclick="saveJobPosting()" style="flex: 1; padding: 12px; background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange)); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                            Save Posting
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function getDefaultJobDescription() {
+            return `Join SUITE as an App Operator and earn 90% of your app's revenue!
+
+What You'll Do:
+- Take ownership of a real app in our ecosystem
+- Use AI marketing tools (Cadence) to grow your app
+- Earn revenue based on app performance
+- Get support from the SUITE community
+
+What We Offer:
+- 90% revenue share (you keep most of what you earn)
+- Marketing budget included (10,000 credits/month)
+- No coding required - we handle the tech
+- Flexible hours (5-10 hrs/week minimum)
+
+Requirements:
+- Motivation to build something
+- Time to dedicate
+- Willingness to learn
+
+Apply at: getsuite.app/become-operator`;
+        }
+
+        async function generateJobDescription() {
+            showToast('AI generation coming soon!', 'info');
+            // TODO: Connect to Cadence AI for generating job descriptions
+        }
+
+        async function saveJobPosting() {
+            const title = document.getElementById('jobTitle').value.trim();
+            const platform = document.getElementById('jobPlatform').value;
+            const platformUrl = document.getElementById('jobPlatformUrl').value.trim();
+            const description = document.getElementById('jobDescription').value.trim();
+
+            if (!title) {
+                showToast('Please enter a job title', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/job_board_postings`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify({
+                        title,
+                        platform,
+                        platform_url: platformUrl || null,
+                        description,
+                        status: 'active',
+                        posted_at: new Date().toISOString()
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to save');
+
+                showToast('Job posting created!', 'success');
+                document.getElementById('createJobModal').remove();
+                await loadCadenceConfig();
+
+            } catch (err) {
+                console.error('Failed to save job posting:', err);
+                showToast('Failed to save job posting', 'error');
+            }
+        }
+
+        function editJobPosting(postingId) {
+            const posting = jobPostingsData.find(p => p.id === postingId);
+            if (!posting) return;
+
+            const modal = document.createElement('div');
+            modal.id = 'editJobModal';
+            modal.className = 'modal-overlay';
+            modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+            modal.innerHTML = `
+                <div class="modal" style="max-width: 500px;">
+                    <button class="modal-close" onclick="document.getElementById('editJobModal').remove()">&times;</button>
+                    <h3>Edit Job Posting</h3>
+
+                    <div class="modal-input-group">
+                        <label>Job Title</label>
+                        <input type="text" class="modal-input" id="editJobTitle" value="${posting.title}">
+                    </div>
+
+                    <div class="modal-input-group">
+                        <label>Platform URL</label>
+                        <input type="url" class="modal-input" id="editJobPlatformUrl" value="${posting.platform_url || ''}" placeholder="https://...">
+                    </div>
+
+                    <div class="modal-input-group">
+                        <label>Applications Count</label>
+                        <input type="number" class="modal-input" id="editJobApps" value="${posting.applications_count || 0}" min="0">
+                    </div>
+
+                    <div class="modal-input-group">
+                        <label>Description</label>
+                        <textarea class="modal-input" id="editJobDescription" rows="6">${posting.description || ''}</textarea>
+                    </div>
+
+                    <button onclick="updateJobPosting('${postingId}')" style="width: 100%; padding: 14px; background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange)); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; margin-top: 16px;">
+                        Save Changes
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        async function updateJobPosting(postingId) {
+            const title = document.getElementById('editJobTitle').value.trim();
+            const platformUrl = document.getElementById('editJobPlatformUrl').value.trim();
+            const applicationsCount = parseInt(document.getElementById('editJobApps').value) || 0;
+            const description = document.getElementById('editJobDescription').value.trim();
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/job_board_postings?id=eq.${postingId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        title,
+                        platform_url: platformUrl || null,
+                        applications_count: applicationsCount,
+                        description,
+                        updated_at: new Date().toISOString()
+                    })
+                });
+
+                if (!response.ok) throw new Error('Update failed');
+
+                showToast('Job posting updated!', 'success');
+                document.getElementById('editJobModal').remove();
+                await loadCadenceConfig();
+
+            } catch (err) {
+                console.error('Failed to update job posting:', err);
+                showToast('Failed to update job posting', 'error');
+            }
+        }
+
+        async function refreshJobCopy(postingId) {
+            showToast('AI copy refresh coming soon!', 'info');
+            // TODO: Connect to Cadence AI for refreshing job copy
+        }
+
+        function openEditMessagingModal(loopType) {
+            const config = loopType === 'hiring' ? cadenceHiringConfig : cadenceMarketingConfig;
+            const templates = config?.message_templates || [];
+
+            const modal = document.createElement('div');
+            modal.id = 'editMessagingModal';
+            modal.className = 'modal-overlay';
+            modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+            modal.innerHTML = `
+                <div class="modal" style="max-width: 550px;">
+                    <button class="modal-close" onclick="document.getElementById('editMessagingModal').remove()">&times;</button>
+                    <h3>Edit ${loopType === 'hiring' ? 'Hiring' : 'Marketing'} Messages</h3>
+                    <p style="color: var(--text-medium); font-size: 0.85rem; margin-bottom: 16px;">Cadence AI will rotate through these messages when posting</p>
+
+                    <div id="messageTemplatesList" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+                        ${templates.map((msg, i) => `
+                            <div style="position: relative;">
+                                <textarea class="modal-input message-template" rows="3" data-index="${i}">${msg}</textarea>
+                                <button onclick="this.parentElement.remove()" style="position: absolute; top: 8px; right: 8px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: none; border-radius: 4px; width: 24px; height: 24px; cursor: pointer; font-size: 0.8rem;">&times;</button>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <button onclick="addMessageTemplate()" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.5); border: 1px dashed #e5e7eb; border-radius: 8px; font-size: 0.85rem; cursor: pointer; margin-bottom: 16px; color: var(--text-medium);">+ Add Message Template</button>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="document.getElementById('editMessagingModal').remove()" style="flex: 1; padding: 12px; background: rgba(107, 114, 128, 0.1); color: #6b7280; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">Cancel</button>
+                        <button onclick="saveMessageTemplates('${loopType}')" style="flex: 1; padding: 12px; background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-orange)); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">Save Messages</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function addMessageTemplate() {
+            const list = document.getElementById('messageTemplatesList');
+            const newIndex = list.querySelectorAll('textarea').length;
+            const div = document.createElement('div');
+            div.style.position = 'relative';
+            div.innerHTML = `
+                <textarea class="modal-input message-template" rows="3" data-index="${newIndex}" placeholder="Enter message template..."></textarea>
+                <button onclick="this.parentElement.remove()" style="position: absolute; top: 8px; right: 8px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: none; border-radius: 4px; width: 24px; height: 24px; cursor: pointer; font-size: 0.8rem;">&times;</button>
+            `;
+            list.appendChild(div);
+        }
+
+        async function saveMessageTemplates(loopType) {
+            const textareas = document.querySelectorAll('#messageTemplatesList textarea');
+            const templates = Array.from(textareas)
+                .map(ta => ta.value.trim())
+                .filter(msg => msg.length > 0);
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/cadence_hiring_config?loop_type=eq.${loopType}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message_templates: templates,
+                        updated_at: new Date().toISOString()
+                    })
+                });
+
+                if (!response.ok) throw new Error('Update failed');
+
+                showToast('Messages saved!', 'success');
+                document.getElementById('editMessagingModal').remove();
+                await loadCadenceConfig();
+
+            } catch (err) {
+                console.error('Failed to save messages:', err);
+                showToast('Failed to save messages', 'error');
+            }
+        }
+
+        function viewLoopPosts(loopType) {
+            showToast('Post history coming soon!', 'info');
+            // TODO: Show modal with post history from content_loops table
+        }
+
+        function openConfigureMarketingModal() {
+            showToast('Marketing configuration coming soon!', 'info');
+            // TODO: Open modal to configure app marketing loop
+        }
+
+        // Load apps and Cadence config when admin section becomes visible
         const originalLoadProfile = loadProfile;
         loadProfile = async function(wallet, tgUser) {
             await originalLoadProfile(wallet, tgUser);
             if (ADMIN_ADDRESSES.includes(wallet.toLowerCase())) {
                 loadAppsAdmin();
+                loadCadenceConfig();
             }
         };
     </script>
