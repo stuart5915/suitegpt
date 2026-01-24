@@ -156,18 +156,16 @@
 
         /* Hero Section */
         .suitegpt-hero {
-            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 120px 24px 60px;
+            padding: 120px 24px 40px;
             text-align: center;
             transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .suitegpt-hero.chat-active {
-            flex: 0;
             padding: 100px 24px 24px;
             justify-content: flex-start;
         }
@@ -211,14 +209,8 @@
         }
 
         @keyframes fadeInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .hero-title {
@@ -248,19 +240,15 @@
             animation: fadeInUp 0.6s ease 0.2s backwards;
         }
 
-        .suitegpt-hero.chat-active .hero-subtitle {
+        .suitegpt-hero.chat-active .hero-subtitle,
+        .suitegpt-hero.chat-active .browse-section,
+        .suitegpt-hero.chat-active .powered-by {
             display: none;
         }
 
         @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         /* Input Container */
@@ -359,40 +347,177 @@
             height: 20px;
         }
 
-        /* Example Prompts */
-        .example-prompts {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: center;
-            margin-top: 32px;
-            max-width: 680px;
+        /* Browse Section */
+        .browse-section {
+            width: 100%;
+            max-width: 900px;
+            margin-top: 48px;
             animation: fadeInUp 0.6s ease 0.4s backwards;
         }
 
-        .suitegpt-hero.chat-active .example-prompts {
-            display: none;
+        .browse-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
         }
 
-        .example-prompt {
-            padding: 12px 20px;
+        .browse-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .browse-title span {
+            color: var(--text-tertiary);
+            font-weight: 400;
+        }
+
+        /* Category Pills */
+        .category-pills {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .category-pill {
+            padding: 8px 16px;
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
             border-radius: 100px;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: 500;
             color: var(--text-secondary);
             cursor: pointer;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
         }
 
-        .example-prompt:hover {
+        .category-pill:hover {
             background: var(--bg-card-hover);
+            border-color: var(--border-hover);
+        }
+
+        .category-pill.active {
+            background: var(--accent-primary);
             border-color: var(--accent-primary);
-            color: var(--text-primary);
+            color: white;
+        }
+
+        .category-pill .count {
+            margin-left: 6px;
+            opacity: 0.6;
+        }
+
+        /* Use Cases Grid */
+        .use-cases-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .use-case-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .use-case-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .use-case-card:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-hover);
             transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.15);
+        }
+
+        .use-case-card:hover::before {
+            opacity: 1;
+        }
+
+        .use-case-query {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .use-case-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .use-case-app {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .use-case-app-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+
+        .use-case-app-name {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .use-case-helpful {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+        }
+
+        .use-case-helpful svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* Loading skeleton */
+        .use-case-card.skeleton {
+            pointer-events: none;
+        }
+
+        .skeleton-text {
+            background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-card-hover) 50%, var(--bg-card) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 4px;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
         }
 
         /* Powered by badge */
@@ -403,11 +528,6 @@
             margin-top: 48px;
             font-size: 0.8rem;
             color: var(--text-tertiary);
-            animation: fadeInUp 0.6s ease 0.5s backwards;
-        }
-
-        .suitegpt-hero.chat-active .powered-by {
-            display: none;
         }
 
         .powered-by svg {
@@ -444,14 +564,8 @@
         }
 
         @keyframes messageSlide {
-            from {
-                opacity: 0;
-                transform: translateY(16px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .message.user {
@@ -583,23 +697,12 @@
             animation: typingBounce 1.4s infinite;
         }
 
-        .typing-indicator span:nth-child(2) {
-            animation-delay: 0.15s;
-        }
-
-        .typing-indicator span:nth-child(3) {
-            animation-delay: 0.3s;
-        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.15s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.3s; }
 
         @keyframes typingBounce {
-            0%, 60%, 100% {
-                transform: translateY(0);
-                opacity: 0.4;
-            }
-            30% {
-                transform: translateY(-10px);
-                opacity: 1;
-            }
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-10px); opacity: 1; }
         }
 
         /* Feedback Buttons */
@@ -672,9 +775,24 @@
                 border-radius: 12px;
             }
 
-            .example-prompt {
-                padding: 10px 16px;
-                font-size: 0.85rem;
+            .browse-section {
+                margin-top: 32px;
+            }
+
+            .category-pills {
+                justify-content: flex-start;
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                padding-bottom: 8px;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .category-pill {
+                flex-shrink: 0;
+            }
+
+            .use-cases-grid {
+                grid-template-columns: 1fr;
             }
 
             .chat-container {
@@ -699,22 +817,10 @@
         }
 
         /* Scrollbar styling */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--border-subtle);
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--border-hover);
-        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
     </style>
 </head>
 <body>
@@ -756,12 +862,39 @@
                 </div>
             </div>
 
-            <div class="example-prompts" id="examplePrompts">
-                <button class="example-prompt" data-prompt="I want to lose weight but hate tracking calories">Lose weight without calorie counting</button>
-                <button class="example-prompt" data-prompt="Help me build a morning routine">Build a morning routine</button>
-                <button class="example-prompt" data-prompt="I have back pain from sitting all day">Fix my back pain</button>
-                <button class="example-prompt" data-prompt="I want to learn about DeFi and crypto">Learn about DeFi</button>
-                <button class="example-prompt" data-prompt="I need to track my nutrition better">Track my nutrition</button>
+            <!-- Browse Section -->
+            <div class="browse-section" id="browseSection">
+                <div class="browse-header">
+                    <div class="browse-title">Browse use cases <span id="useCaseCount"></span></div>
+                </div>
+
+                <div class="category-pills" id="categoryPills">
+                    <button class="category-pill active" data-category="all">All</button>
+                    <button class="category-pill" data-category="health">Health</button>
+                    <button class="category-pill" data-category="fitness">Fitness</button>
+                    <button class="category-pill" data-category="finance">Finance</button>
+                    <button class="category-pill" data-category="productivity">Productivity</button>
+                    <button class="category-pill" data-category="learning">Learning</button>
+                </div>
+
+                <div class="use-cases-grid" id="useCasesGrid">
+                    <!-- Loading skeletons -->
+                    <div class="use-case-card skeleton">
+                        <div class="skeleton-text" style="height: 20px; width: 90%; margin-bottom: 8px;"></div>
+                        <div class="skeleton-text" style="height: 20px; width: 70%; margin-bottom: 16px;"></div>
+                        <div class="skeleton-text" style="height: 16px; width: 40%;"></div>
+                    </div>
+                    <div class="use-case-card skeleton">
+                        <div class="skeleton-text" style="height: 20px; width: 85%; margin-bottom: 8px;"></div>
+                        <div class="skeleton-text" style="height: 20px; width: 60%; margin-bottom: 16px;"></div>
+                        <div class="skeleton-text" style="height: 16px; width: 45%;"></div>
+                    </div>
+                    <div class="use-case-card skeleton">
+                        <div class="skeleton-text" style="height: 20px; width: 80%; margin-bottom: 8px;"></div>
+                        <div class="skeleton-text" style="height: 20px; width: 65%; margin-bottom: 16px;"></div>
+                        <div class="skeleton-text" style="height: 16px; width: 35%;"></div>
+                    </div>
+                </div>
             </div>
 
             <div class="powered-by">
@@ -780,62 +913,50 @@
 
     <script>
         // SUITE Apps Catalog
-        const SUITE_APPS = [
-            {
-                slug: 'foodvitals',
+        const SUITE_APPS = {
+            'foodvitals': {
                 name: 'FoodVitals',
                 description: 'Weekly meal tracking + AI nutrition insights',
                 icon: '🥗',
                 iconBg: 'linear-gradient(135deg, #22c55e, #16a34a)',
-                keywords: ['nutrition', 'diet', 'calories', 'food', 'meals', 'weight', 'eating', 'healthy', 'track meals', 'lose weight'],
                 url: '/apps-subpages/physio-ai.html'
             },
-            {
-                slug: 'trueform',
+            'trueform': {
                 name: 'TrueForm AI',
                 description: 'AI physiotherapy and exercise guidance',
                 icon: '🏃',
                 iconBg: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
-                keywords: ['back pain', 'posture', 'stretching', 'physical therapy', 'exercise', 'mobility', 'pain', 'sitting', 'desk', 'injury'],
                 url: '/apps-subpages/physio-ai.html'
             },
-            {
-                slug: 'opticrep',
+            'opticrep': {
                 name: 'OpticRep',
                 description: 'AI workout trainer with form analysis',
                 icon: '💪',
                 iconBg: 'linear-gradient(135deg, #f97316, #ea580c)',
-                keywords: ['workout', 'gym', 'fitness', 'exercise', 'training', 'muscle', 'strength', 'form'],
                 url: '/suite-shell.html'
             },
-            {
-                slug: 'cheshbon',
+            'cheshbon': {
                 name: 'Cheshbon',
                 description: 'Financial reflection and tracking app',
                 icon: '💰',
                 iconBg: 'linear-gradient(135deg, #eab308, #ca8a04)',
-                keywords: ['money', 'finance', 'budget', 'spending', 'savings', 'track spending', 'financial'],
                 url: '/suite-shell.html'
             },
-            {
-                slug: 'remcast',
+            'remcast': {
                 name: 'RemCast',
                 description: 'Smart reminder and notification system',
                 icon: '🔔',
                 iconBg: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
-                keywords: ['reminder', 'routine', 'morning', 'habits', 'schedule', 'notification', 'daily'],
                 url: '/suite-shell.html'
             },
-            {
-                slug: 'defi-knowledge',
+            'defi-knowledge': {
                 name: 'DeFi Knowledge',
                 description: 'Learn DeFi concepts and strategies',
                 icon: '📚',
                 iconBg: 'linear-gradient(135deg, #06b6d4, #0891b2)',
-                keywords: ['defi', 'crypto', 'blockchain', 'learn', 'education', 'yield', 'trading'],
                 url: '/suite-shell.html'
             }
-        ];
+        };
 
         // Supabase config
         const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
@@ -847,13 +968,136 @@
         const heroSection = document.getElementById('heroSection');
         const chatContainer = document.getElementById('chatContainer');
         const chatMessages = document.getElementById('chatMessages');
-        const examplePrompts = document.querySelectorAll('.example-prompt');
+        const useCasesGrid = document.getElementById('useCasesGrid');
+        const categoryPills = document.querySelectorAll('.category-pill');
+        const useCaseCount = document.getElementById('useCaseCount');
 
-        // Chat state
+        // State
         let isLoading = false;
         let conversationHistory = [];
+        let useCases = [];
+        let currentCategory = 'all';
 
-        // Enable/disable send button based on input
+        // Load use cases from Supabase
+        async function loadUseCases() {
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/use_cases?is_visible=eq.true&order=helpful_count.desc`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+
+                if (response.ok) {
+                    useCases = await response.json();
+                    renderUseCases();
+                } else {
+                    // Fallback to hardcoded examples if table doesn't exist yet
+                    useCases = getHardcodedUseCases();
+                    renderUseCases();
+                }
+            } catch (error) {
+                console.error('Failed to load use cases:', error);
+                useCases = getHardcodedUseCases();
+                renderUseCases();
+            }
+        }
+
+        // Hardcoded fallback
+        function getHardcodedUseCases() {
+            return [
+                { query: "I want to lose weight but hate tracking calories", response: "FoodVitals takes a different approach...", recommended_app: "foodvitals", category: "health", helpful_count: 42 },
+                { query: "I have back pain from sitting all day", response: "TrueForm AI has guided stretching routines...", recommended_app: "trueform", category: "fitness", helpful_count: 56 },
+                { query: "Help me build a morning routine", response: "RemCast can help you build and stick to one...", recommended_app: "remcast", category: "productivity", helpful_count: 48 },
+                { query: "I want to learn about DeFi and crypto", response: "DeFi Knowledge breaks down concepts...", recommended_app: "defi-knowledge", category: "learning", helpful_count: 45 },
+                { query: "My posture is terrible and I want to fix it", response: "TrueForm AI can assess your movement...", recommended_app: "trueform", category: "fitness", helpful_count: 44 },
+                { query: "I want to get stronger but don't know where to start", response: "OpticRep is your AI workout trainer...", recommended_app: "opticrep", category: "fitness", helpful_count: 41 },
+                { query: "I keep forgetting important tasks", response: "RemCast is designed exactly for this...", recommended_app: "remcast", category: "productivity", helpful_count: 39 },
+                { query: "I need to track my nutrition better", response: "FoodVitals makes nutrition tracking simple...", recommended_app: "foodvitals", category: "health", helpful_count: 38 },
+                { query: "I want to get better with money", response: "Cheshbon is a financial reflection app...", recommended_app: "cheshbon", category: "finance", helpful_count: 37 }
+            ];
+        }
+
+        // Render use cases
+        function renderUseCases() {
+            const filtered = currentCategory === 'all'
+                ? useCases
+                : useCases.filter(uc => uc.category === currentCategory);
+
+            useCaseCount.textContent = `(${filtered.length})`;
+
+            if (filtered.length === 0) {
+                useCasesGrid.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-tertiary);">
+                        No use cases in this category yet.
+                    </div>
+                `;
+                return;
+            }
+
+            useCasesGrid.innerHTML = filtered.map(uc => {
+                const app = SUITE_APPS[uc.recommended_app] || {};
+                return `
+                    <div class="use-case-card" data-query="${encodeURIComponent(uc.query)}" data-response="${encodeURIComponent(uc.response)}" data-app="${uc.recommended_app}">
+                        <div class="use-case-query">"${uc.query}"</div>
+                        <div class="use-case-meta">
+                            <div class="use-case-app">
+                                <div class="use-case-app-icon" style="background: ${app.iconBg || 'var(--bg-card)'}">${app.icon || '📱'}</div>
+                                <span class="use-case-app-name">${app.name || 'SUITE App'}</span>
+                            </div>
+                            <div class="use-case-helpful">
+                                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                                ${uc.helpful_count || 0}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Add click handlers
+            document.querySelectorAll('.use-case-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const query = decodeURIComponent(card.dataset.query);
+                    const response = decodeURIComponent(card.dataset.response);
+                    const app = card.dataset.app;
+
+                    // Simulate sending this query
+                    heroSection.classList.add('chat-active');
+                    chatContainer.classList.add('active');
+                    addMessage(query, 'user');
+                    addMessage(response, 'assistant', app);
+                    conversationHistory.push({ role: 'user', content: query });
+                    conversationHistory.push({ role: 'assistant', content: response });
+
+                    // Increment view count (fire and forget)
+                    incrementViews(card.dataset.query);
+                });
+            });
+        }
+
+        // Category filtering
+        categoryPills.forEach(pill => {
+            pill.addEventListener('click', () => {
+                categoryPills.forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
+                currentCategory = pill.dataset.category;
+                renderUseCases();
+            });
+        });
+
+        // Increment view count
+        async function incrementViews(query) {
+            try {
+                // This would need an edge function to handle safely
+                // For now, just log it
+                console.log('View:', query);
+            } catch (e) {}
+        }
+
+        // Enable/disable send button
         chatInput.addEventListener('input', () => {
             sendBtn.disabled = !chatInput.value.trim() || isLoading;
         });
@@ -866,17 +1110,7 @@
             }
         });
 
-        // Send button click
         sendBtn.addEventListener('click', sendMessage);
-
-        // Example prompt clicks
-        examplePrompts.forEach(btn => {
-            btn.addEventListener('click', () => {
-                chatInput.value = btn.dataset.prompt;
-                sendBtn.disabled = false;
-                sendMessage();
-            });
-        });
 
         // Add message to chat
         function addMessage(content, role, appRecommendation = null) {
@@ -891,28 +1125,22 @@
             contentDiv.className = 'message-content';
             contentDiv.innerHTML = content.replace(/\n/g, '<br>');
 
-            // Add app card if recommended
-            if (appRecommendation) {
-                const app = SUITE_APPS.find(a => a.slug === appRecommendation) ||
-                            SUITE_APPS.find(a => a.name.toLowerCase().includes(appRecommendation.toLowerCase()));
-
-                if (app) {
-                    const appCard = document.createElement('a');
-                    appCard.href = app.url;
-                    appCard.className = 'app-card-inline';
-                    appCard.innerHTML = `
-                        <div class="app-icon-inline" style="background: ${app.iconBg}">${app.icon}</div>
-                        <div class="app-info-inline">
-                            <h4>${app.name}</h4>
-                            <p>${app.description}</p>
-                        </div>
-                        <span class="app-arrow">→</span>
-                    `;
-                    contentDiv.appendChild(appCard);
-                }
+            if (appRecommendation && SUITE_APPS[appRecommendation]) {
+                const app = SUITE_APPS[appRecommendation];
+                const appCard = document.createElement('a');
+                appCard.href = app.url;
+                appCard.className = 'app-card-inline';
+                appCard.innerHTML = `
+                    <div class="app-icon-inline" style="background: ${app.iconBg}">${app.icon}</div>
+                    <div class="app-info-inline">
+                        <h4>${app.name}</h4>
+                        <p>${app.description}</p>
+                    </div>
+                    <span class="app-arrow">→</span>
+                `;
+                contentDiv.appendChild(appCard);
             }
 
-            // Add feedback buttons for assistant messages
             if (role === 'assistant') {
                 const feedbackDiv = document.createElement('div');
                 feedbackDiv.className = 'feedback-buttons';
@@ -924,12 +1152,8 @@
 
                 feedbackDiv.querySelectorAll('.feedback-btn').forEach(btn => {
                     btn.addEventListener('click', () => {
-                        const feedback = btn.dataset.feedback;
-                        feedbackDiv.querySelectorAll('.feedback-btn').forEach(b => {
-                            b.classList.remove('active-good', 'active-bad');
-                        });
-                        btn.classList.add(feedback === 'good' ? 'active-good' : 'active-bad');
-                        console.log('Feedback:', feedback);
+                        feedbackDiv.querySelectorAll('.feedback-btn').forEach(b => b.classList.remove('active-good', 'active-bad'));
+                        btn.classList.add(btn.dataset.feedback === 'good' ? 'active-good' : 'active-bad');
                     });
                 });
             }
@@ -940,7 +1164,6 @@
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
-        // Add typing indicator
         function addTypingIndicator() {
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message assistant';
@@ -952,13 +1175,7 @@
 
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
-            contentDiv.innerHTML = `
-                <div class="typing-indicator">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
-            `;
+            contentDiv.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
 
             messageDiv.appendChild(avatar);
             messageDiv.appendChild(contentDiv);
@@ -967,11 +1184,9 @@
         }
 
         function removeTypingIndicator() {
-            const indicator = document.getElementById('typingIndicator');
-            if (indicator) indicator.remove();
+            document.getElementById('typingIndicator')?.remove();
         }
 
-        // Send message to backend
         async function sendMessage() {
             const message = chatInput.value.trim();
             if (!message || isLoading) return;
@@ -984,7 +1199,6 @@
 
             addMessage(message, 'user');
             conversationHistory.push({ role: 'user', content: message });
-
             addTypingIndicator();
 
             try {
@@ -1002,20 +1216,17 @@
 
                 removeTypingIndicator();
 
-                if (!response.ok) {
-                    throw new Error('Failed to get response');
-                }
+                if (!response.ok) throw new Error('Failed');
 
                 const data = await response.json();
                 addMessage(data.response, 'assistant', data.recommendedApp);
                 conversationHistory.push({ role: 'assistant', content: data.response });
 
             } catch (error) {
-                console.error('Chat error:', error);
                 removeTypingIndicator();
-                const localResponse = getLocalResponse(message);
-                addMessage(localResponse.response, 'assistant', localResponse.recommendedApp);
-                conversationHistory.push({ role: 'assistant', content: localResponse.response });
+                const fallback = getLocalResponse(message);
+                addMessage(fallback.response, 'assistant', fallback.recommendedApp);
+                conversationHistory.push({ role: 'assistant', content: fallback.response });
             }
 
             isLoading = false;
@@ -1023,25 +1234,35 @@
             chatInput.focus();
         }
 
-        // Fallback local response
         function getLocalResponse(message) {
-            const lowerMessage = message.toLowerCase();
+            const keywords = {
+                'foodvitals': ['nutrition', 'diet', 'calories', 'food', 'meals', 'weight', 'eating', 'healthy'],
+                'trueform': ['back pain', 'posture', 'stretching', 'physical therapy', 'mobility', 'pain', 'sitting'],
+                'opticrep': ['workout', 'gym', 'fitness', 'exercise', 'training', 'muscle', 'strength'],
+                'cheshbon': ['money', 'finance', 'budget', 'spending', 'savings', 'financial'],
+                'remcast': ['reminder', 'routine', 'morning', 'habits', 'schedule', 'notification'],
+                'defi-knowledge': ['defi', 'crypto', 'blockchain', 'yield', 'trading']
+            };
 
-            for (const app of SUITE_APPS) {
-                const matchScore = app.keywords.filter(kw => lowerMessage.includes(kw)).length;
-                if (matchScore > 0) {
+            const lower = message.toLowerCase();
+            for (const [app, words] of Object.entries(keywords)) {
+                if (words.some(w => lower.includes(w))) {
+                    const appData = SUITE_APPS[app];
                     return {
-                        response: `I can help with that!\n\n${app.name} is perfect for what you're looking for. ${app.description}.`,
-                        recommendedApp: app.slug
+                        response: `I can help with that!\n\n${appData.name} is perfect for what you're looking for. ${appData.description}.`,
+                        recommendedApp: app
                     };
                 }
             }
 
             return {
-                response: "I don't have a specific tool for that yet, but the SUITE ecosystem is growing! Check out our Apps page to see what's available, or let me know more about what you're trying to accomplish.",
+                response: "I don't have a specific tool for that yet, but the SUITE ecosystem is growing! Check out our Apps page to see what's available.",
                 recommendedApp: null
             };
         }
+
+        // Initialize
+        loadUseCases();
     </script>
 </body>
 </html>
