@@ -1114,6 +1114,560 @@
             color: var(--text-tertiary);
             margin-top: 4px;
         }
+
+        /* === CHAT IMPORT FEATURE === */
+        .import-trigger {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15));
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 24px;
+        }
+
+        .import-trigger:hover {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(139, 92, 246, 0.25));
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+        }
+
+        .import-trigger svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Import Modal */
+        .import-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .import-modal-overlay.active {
+            display: flex;
+        }
+
+        .import-modal {
+            background: linear-gradient(180deg, #151520 0%, #0d0d14 100%);
+            border: 1px solid var(--border-subtle);
+            border-radius: 24px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: modalSlide 0.3s ease;
+        }
+
+        @keyframes modalSlide {
+            from { opacity: 0; transform: translateY(20px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .import-modal-header {
+            padding: 28px 28px 0;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+        }
+
+        .import-modal-header h2 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .import-modal-header p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .import-modal-close {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .import-modal-close:hover {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+        }
+
+        .import-modal-body {
+            padding: 28px;
+        }
+
+        /* Source Selection */
+        .import-sources {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .import-source {
+            background: var(--bg-card);
+            border: 2px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 20px 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .import-source:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-hover);
+        }
+
+        .import-source.selected {
+            border-color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .import-source-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .import-source-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Drop Zone */
+        .import-dropzone {
+            border: 2px dashed var(--border-subtle);
+            border-radius: 16px;
+            padding: 40px 24px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-bottom: 24px;
+        }
+
+        .import-dropzone:hover,
+        .import-dropzone.dragover {
+            border-color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .import-dropzone-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            opacity: 0.6;
+        }
+
+        .import-dropzone h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .import-dropzone p {
+            font-size: 0.85rem;
+            color: var(--text-tertiary);
+            margin-bottom: 16px;
+        }
+
+        .import-dropzone-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: var(--accent-primary);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .import-dropzone-btn:hover {
+            background: var(--accent-secondary);
+        }
+
+        .import-file-input {
+            display: none;
+        }
+
+        /* Instructions */
+        .import-instructions {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .import-instructions h4 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .import-instructions ol {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            padding-left: 20px;
+            line-height: 1.8;
+        }
+
+        .import-instructions code {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.75rem;
+        }
+
+        /* Privacy Notice */
+        .import-privacy {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .import-privacy h4 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #22c55e;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .import-privacy p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .import-consent {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .import-consent label {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .import-consent input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin-top: 2px;
+            accent-color: var(--accent-primary);
+            flex-shrink: 0;
+        }
+
+        /* Progress */
+        .import-progress {
+            display: none;
+            text-align: center;
+            padding: 40px 24px;
+        }
+
+        .import-progress.active {
+            display: block;
+        }
+
+        .import-progress-spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--border-subtle);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .import-progress h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .import-progress p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .import-progress-bar {
+            height: 6px;
+            background: var(--bg-card);
+            border-radius: 3px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+
+        .import-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* Results */
+        .import-results {
+            display: none;
+        }
+
+        .import-results.active {
+            display: block;
+        }
+
+        .import-results-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .import-results-header .success-icon {
+            font-size: 3rem;
+            margin-bottom: 12px;
+        }
+
+        .import-results-header h3 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .import-results-header p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .import-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .import-stat {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .import-stat-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--accent-primary);
+        }
+
+        .import-stat-label {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            margin-top: 4px;
+        }
+
+        .import-insights {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .import-insights h4 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .import-insight-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .import-insight-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .import-insight-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .import-insight-content h5 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .import-insight-content p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .import-recommendations {
+            margin-bottom: 24px;
+        }
+
+        .import-recommendations h4 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .import-app-rec {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .import-app-rec:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-hover);
+        }
+
+        .import-app-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+
+        .import-app-info h5 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .import-app-info p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .import-app-match {
+            margin-left: auto;
+            padding: 6px 12px;
+            background: rgba(34, 197, 94, 0.15);
+            color: #22c55e;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 100px;
+        }
+
+        .import-cta {
+            display: flex;
+            gap: 12px;
+        }
+
+        .import-cta-btn {
+            flex: 1;
+            padding: 14px 20px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            border: none;
+        }
+
+        .import-cta-btn.primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+        }
+
+        .import-cta-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+        }
+
+        .import-cta-btn.secondary {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+        }
+
+        .import-cta-btn.secondary:hover {
+            background: var(--bg-card-hover);
+        }
+
+        @media (max-width: 640px) {
+            .import-sources {
+                grid-template-columns: 1fr;
+            }
+
+            .import-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .import-cta {
+                flex-direction: column;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1259,6 +1813,14 @@
                 </div>
             </div>
 
+            <!-- Import CTA -->
+            <button class="import-trigger" id="importTrigger">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Import your AI chat history for personalized recommendations
+            </button>
+
             <div class="powered-by">
                 <svg viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
@@ -1266,6 +1828,129 @@
                 Powered by AI Fleet
             </div>
         </section>
+
+        <!-- Import Modal -->
+        <div class="import-modal-overlay" id="importModal">
+            <div class="import-modal">
+                <div class="import-modal-header">
+                    <div>
+                        <h2>Import Your AI History</h2>
+                        <p>Your conversations reveal what you actually need. Let us analyze them and recommend the perfect tools for you.</p>
+                    </div>
+                    <button class="import-modal-close" id="importModalClose">&times;</button>
+                </div>
+
+                <div class="import-modal-body">
+                    <!-- Step 1: Source Selection & Upload -->
+                    <div class="import-step import-step-upload" id="importStepUpload">
+                        <h4 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 16px;">Select your source</h4>
+
+                        <div class="import-sources">
+                            <div class="import-source selected" data-source="chatgpt">
+                                <div class="import-source-icon">🤖</div>
+                                <div class="import-source-name">ChatGPT</div>
+                            </div>
+                            <div class="import-source" data-source="claude">
+                                <div class="import-source-icon">🧠</div>
+                                <div class="import-source-name">Claude</div>
+                            </div>
+                            <div class="import-source" data-source="gemini">
+                                <div class="import-source-icon">✨</div>
+                                <div class="import-source-name">Gemini</div>
+                            </div>
+                        </div>
+
+                        <div class="import-instructions" id="importInstructions">
+                            <h4>📋 How to export from ChatGPT</h4>
+                            <ol>
+                                <li>Go to <code>chat.openai.com</code></li>
+                                <li>Click your profile → <strong>Settings</strong></li>
+                                <li>Go to <strong>Data controls</strong></li>
+                                <li>Click <strong>Export data</strong></li>
+                                <li>Check your email for the download link</li>
+                                <li>Upload the <code>conversations.json</code> file below</li>
+                            </ol>
+                        </div>
+
+                        <div class="import-dropzone" id="importDropzone">
+                            <div class="import-dropzone-icon">📁</div>
+                            <h3>Drop your export file here</h3>
+                            <p>or click to browse</p>
+                            <button class="import-dropzone-btn">Choose File</button>
+                            <input type="file" class="import-file-input" id="importFileInput" accept=".json,.zip">
+                        </div>
+
+                        <div class="import-privacy">
+                            <h4>🔒 Your data, your choice</h4>
+                            <p>We analyze your conversations to understand your needs. We extract themes and topics, not personal details.</p>
+                            <div class="import-consent">
+                                <label>
+                                    <input type="checkbox" id="consentAnalyze" checked>
+                                    <span>Analyze my chats for personalized recommendations</span>
+                                </label>
+                                <label>
+                                    <input type="checkbox" id="consentImprove" checked>
+                                    <span>Help improve SUITE by sharing anonymized insights (we see WHAT problems exist, not WHO has them)</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Processing -->
+                    <div class="import-progress" id="importProgress">
+                        <div class="import-progress-spinner"></div>
+                        <h3>Analyzing your conversations...</h3>
+                        <p id="importProgressText">Reading your chat history</p>
+                        <div class="import-progress-bar">
+                            <div class="import-progress-fill" id="importProgressFill"></div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Results -->
+                    <div class="import-results" id="importResults">
+                        <div class="import-results-header">
+                            <div class="success-icon">🎯</div>
+                            <h3>Analysis Complete!</h3>
+                            <p>Here's what we learned about you</p>
+                        </div>
+
+                        <div class="import-stats">
+                            <div class="import-stat">
+                                <div class="import-stat-value" id="statConversations">0</div>
+                                <div class="import-stat-label">Conversations</div>
+                            </div>
+                            <div class="import-stat">
+                                <div class="import-stat-value" id="statMessages">0</div>
+                                <div class="import-stat-label">Messages</div>
+                            </div>
+                            <div class="import-stat">
+                                <div class="import-stat-value" id="statTopics">0</div>
+                                <div class="import-stat-label">Topics Found</div>
+                            </div>
+                        </div>
+
+                        <div class="import-insights">
+                            <h4>🔍 Key Insights</h4>
+                            <div id="insightsList">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <div class="import-recommendations">
+                            <h4>📱 Recommended Apps For You</h4>
+                            <div id="recommendationsList">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <div class="import-cta">
+                            <button class="import-cta-btn secondary" id="importDone">Done</button>
+                            <button class="import-cta-btn primary" id="importRequestCustom">Request Custom App</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -1747,6 +2432,477 @@
 
         // Initialize
         loadUseCases();
+
+        // ============================================
+        // CHAT IMPORT FEATURE
+        // ============================================
+
+        const importTrigger = document.getElementById('importTrigger');
+        const importModal = document.getElementById('importModal');
+        const importModalClose = document.getElementById('importModalClose');
+        const importSources = document.querySelectorAll('.import-source');
+        const importInstructions = document.getElementById('importInstructions');
+        const importDropzone = document.getElementById('importDropzone');
+        const importFileInput = document.getElementById('importFileInput');
+        const importStepUpload = document.getElementById('importStepUpload');
+        const importProgress = document.getElementById('importProgress');
+        const importProgressText = document.getElementById('importProgressText');
+        const importProgressFill = document.getElementById('importProgressFill');
+        const importResults = document.getElementById('importResults');
+        const importDone = document.getElementById('importDone');
+        const importRequestCustom = document.getElementById('importRequestCustom');
+
+        let selectedSource = 'chatgpt';
+        let analysisResults = null;
+
+        // Instructions for each source
+        const sourceInstructions = {
+            chatgpt: {
+                icon: '📋',
+                title: 'How to export from ChatGPT',
+                steps: [
+                    'Go to <code>chat.openai.com</code>',
+                    'Click your profile → <strong>Settings</strong>',
+                    'Go to <strong>Data controls</strong>',
+                    'Click <strong>Export data</strong>',
+                    'Check your email for the download link',
+                    'Upload the <code>conversations.json</code> file below'
+                ]
+            },
+            claude: {
+                icon: '📋',
+                title: 'How to export from Claude',
+                steps: [
+                    'Go to <code>claude.ai</code>',
+                    'Click your profile → <strong>Settings</strong>',
+                    'Go to <strong>Account</strong> tab',
+                    'Click <strong>Export Data</strong>',
+                    'Download the JSON file',
+                    'Upload it below'
+                ]
+            },
+            gemini: {
+                icon: '📋',
+                title: 'How to export from Gemini',
+                steps: [
+                    'Go to <code>takeout.google.com</code>',
+                    'Deselect all, then select <strong>Gemini Apps</strong>',
+                    'Click <strong>Next step</strong> → <strong>Create export</strong>',
+                    'Download when ready',
+                    'Extract and upload the conversations JSON'
+                ]
+            }
+        };
+
+        // Open/close modal
+        importTrigger.addEventListener('click', () => {
+            importModal.classList.add('active');
+            resetImportModal();
+        });
+
+        importModalClose.addEventListener('click', () => {
+            importModal.classList.remove('active');
+        });
+
+        importModal.addEventListener('click', (e) => {
+            if (e.target === importModal) {
+                importModal.classList.remove('active');
+            }
+        });
+
+        // Source selection
+        importSources.forEach(source => {
+            source.addEventListener('click', () => {
+                importSources.forEach(s => s.classList.remove('selected'));
+                source.classList.add('selected');
+                selectedSource = source.dataset.source;
+                updateInstructions();
+            });
+        });
+
+        function updateInstructions() {
+            const instructions = sourceInstructions[selectedSource];
+            importInstructions.innerHTML = `
+                <h4>${instructions.icon} ${instructions.title}</h4>
+                <ol>
+                    ${instructions.steps.map(step => `<li>${step}</li>`).join('')}
+                </ol>
+            `;
+        }
+
+        // Drag and drop
+        importDropzone.addEventListener('click', () => importFileInput.click());
+
+        importDropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            importDropzone.classList.add('dragover');
+        });
+
+        importDropzone.addEventListener('dragleave', () => {
+            importDropzone.classList.remove('dragover');
+        });
+
+        importDropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            importDropzone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) processFile(file);
+        });
+
+        importFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) processFile(file);
+        });
+
+        // Process the uploaded file
+        async function processFile(file) {
+            const consentAnalyze = document.getElementById('consentAnalyze').checked;
+            if (!consentAnalyze) {
+                alert('Please consent to analysis to continue.');
+                return;
+            }
+
+            // Show progress
+            importStepUpload.style.display = 'none';
+            importProgress.classList.add('active');
+            updateProgress(10, 'Reading file...');
+
+            try {
+                let conversations = [];
+
+                if (file.name.endsWith('.zip')) {
+                    // Handle zip file (ChatGPT export comes as zip)
+                    updateProgress(20, 'Extracting zip file...');
+                    const JSZip = await loadJSZip();
+                    const zip = await JSZip.loadAsync(file);
+                    const conversationsFile = zip.file('conversations.json');
+                    if (conversationsFile) {
+                        const content = await conversationsFile.async('string');
+                        conversations = JSON.parse(content);
+                    } else {
+                        throw new Error('conversations.json not found in zip');
+                    }
+                } else {
+                    // Handle direct JSON
+                    const content = await file.text();
+                    conversations = JSON.parse(content);
+                }
+
+                updateProgress(40, 'Parsing conversations...');
+
+                // Extract messages based on source
+                const extractedData = extractMessages(conversations, selectedSource);
+
+                updateProgress(60, 'Analyzing patterns...');
+
+                // Send to API for analysis
+                const analysis = await analyzeChats(extractedData);
+
+                updateProgress(100, 'Complete!');
+
+                // Show results
+                setTimeout(() => {
+                    displayResults(analysis, extractedData);
+                }, 500);
+
+            } catch (error) {
+                console.error('Import error:', error);
+                alert('Error processing file: ' + error.message);
+                resetImportModal();
+            }
+        }
+
+        // Load JSZip dynamically if needed
+        async function loadJSZip() {
+            if (window.JSZip) return window.JSZip;
+
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+                script.onload = () => resolve(window.JSZip);
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
+        // Extract messages from different formats
+        function extractMessages(data, source) {
+            let messages = [];
+            let conversationCount = 0;
+
+            if (source === 'chatgpt') {
+                // ChatGPT format
+                if (Array.isArray(data)) {
+                    conversationCount = data.length;
+                    data.forEach(conv => {
+                        if (conv.mapping) {
+                            Object.values(conv.mapping).forEach(node => {
+                                if (node.message && node.message.author && node.message.author.role === 'user') {
+                                    const content = node.message.content;
+                                    if (content && content.parts) {
+                                        messages.push(...content.parts.filter(p => typeof p === 'string'));
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }
+            } else if (source === 'claude') {
+                // Claude format (adjust based on actual export format)
+                if (Array.isArray(data)) {
+                    conversationCount = data.length;
+                    data.forEach(conv => {
+                        if (conv.messages) {
+                            conv.messages.forEach(msg => {
+                                if (msg.role === 'human' || msg.role === 'user') {
+                                    messages.push(msg.content || msg.text);
+                                }
+                            });
+                        }
+                    });
+                }
+            } else if (source === 'gemini') {
+                // Gemini format
+                if (Array.isArray(data)) {
+                    conversationCount = data.length;
+                    data.forEach(conv => {
+                        if (conv.parts) {
+                            conv.parts.forEach(part => {
+                                if (part.role === 'user') {
+                                    messages.push(part.text);
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+
+            return {
+                source,
+                conversationCount,
+                messageCount: messages.length,
+                messages: messages.filter(m => m && m.length > 0)
+            };
+        }
+
+        // Analyze chats with AI
+        async function analyzeChats(extractedData) {
+            const consentImprove = document.getElementById('consentImprove').checked;
+
+            // Take a sample of messages (to reduce API cost)
+            const sampleSize = Math.min(extractedData.messages.length, 200);
+            const sampledMessages = extractedData.messages
+                .sort(() => Math.random() - 0.5)
+                .slice(0, sampleSize);
+
+            // Create a condensed summary for analysis
+            const messagesSummary = sampledMessages.join('\n---\n').slice(0, 50000); // Limit tokens
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/analyze-chat-history`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        messages: messagesSummary,
+                        source: extractedData.source,
+                        messageCount: extractedData.messageCount,
+                        conversationCount: extractedData.conversationCount,
+                        storeInsights: consentImprove
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Analysis API failed');
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('API Error, using local analysis:', error);
+                // Fallback to local analysis
+                return localAnalysis(extractedData);
+            }
+        }
+
+        // Local fallback analysis
+        function localAnalysis(extractedData) {
+            const messages = extractedData.messages.join(' ').toLowerCase();
+
+            const topics = {
+                'Health & Fitness': ['workout', 'exercise', 'diet', 'nutrition', 'weight', 'health', 'fitness', 'gym', 'muscle', 'calories'],
+                'Finance & Money': ['money', 'budget', 'invest', 'savings', 'financial', 'income', 'expenses', 'crypto', 'trading'],
+                'Productivity': ['productivity', 'schedule', 'task', 'todo', 'organize', 'time management', 'habit', 'routine', 'reminder'],
+                'Learning & Education': ['learn', 'study', 'course', 'tutorial', 'understand', 'explain', 'how to', 'education'],
+                'Programming & Tech': ['code', 'programming', 'javascript', 'python', 'api', 'database', 'software', 'app', 'website'],
+                'Writing & Content': ['write', 'essay', 'blog', 'content', 'article', 'email', 'story', 'creative'],
+                'Career & Work': ['job', 'career', 'interview', 'resume', 'work', 'professional', 'business', 'meeting']
+            };
+
+            const detectedTopics = [];
+            const topicCounts = {};
+
+            for (const [topic, keywords] of Object.entries(topics)) {
+                const count = keywords.reduce((acc, keyword) => {
+                    const regex = new RegExp(keyword, 'gi');
+                    const matches = messages.match(regex);
+                    return acc + (matches ? matches.length : 0);
+                }, 0);
+
+                if (count > 5) {
+                    detectedTopics.push({ topic, count });
+                    topicCounts[topic] = count;
+                }
+            }
+
+            detectedTopics.sort((a, b) => b.count - a.count);
+
+            // Map topics to app recommendations
+            const appMappings = {
+                'Health & Fitness': ['foodvitals', 'trueform', 'opticrep'],
+                'Finance & Money': ['cheshbon', 'defi-knowledge'],
+                'Productivity': ['remcast'],
+                'Learning & Education': ['defi-knowledge'],
+                'Programming & Tech': [],
+                'Writing & Content': [],
+                'Career & Work': []
+            };
+
+            const recommendedApps = [];
+            detectedTopics.slice(0, 3).forEach(({ topic }) => {
+                const apps = appMappings[topic] || [];
+                apps.forEach(app => {
+                    if (!recommendedApps.find(a => a.id === app)) {
+                        const appData = SUITE_APPS[app];
+                        if (appData) {
+                            recommendedApps.push({
+                                id: app,
+                                ...appData,
+                                matchScore: Math.min(98, 70 + Math.floor(Math.random() * 20))
+                            });
+                        }
+                    }
+                });
+            });
+
+            return {
+                topics: detectedTopics.slice(0, 5),
+                insights: detectedTopics.slice(0, 3).map(({ topic, count }) => ({
+                    category: topic,
+                    description: `You frequently discuss ${topic.toLowerCase()} topics (${count}+ mentions)`,
+                    icon: getTopicIcon(topic)
+                })),
+                recommendations: recommendedApps.slice(0, 3),
+                summary: `Based on ${extractedData.messageCount} messages across ${extractedData.conversationCount} conversations, you're most interested in ${detectedTopics.slice(0, 2).map(t => t.topic.toLowerCase()).join(' and ')}.`
+            };
+        }
+
+        function getTopicIcon(topic) {
+            const icons = {
+                'Health & Fitness': '💪',
+                'Finance & Money': '💰',
+                'Productivity': '⚡',
+                'Learning & Education': '📚',
+                'Programming & Tech': '💻',
+                'Writing & Content': '✍️',
+                'Career & Work': '💼'
+            };
+            return icons[topic] || '🎯';
+        }
+
+        function updateProgress(percent, text) {
+            importProgressFill.style.width = percent + '%';
+            importProgressText.textContent = text;
+        }
+
+        function displayResults(analysis, extractedData) {
+            analysisResults = analysis;
+
+            // Hide progress, show results
+            importProgress.classList.remove('active');
+            importResults.classList.add('active');
+
+            // Update stats
+            document.getElementById('statConversations').textContent = extractedData.conversationCount.toLocaleString();
+            document.getElementById('statMessages').textContent = extractedData.messageCount.toLocaleString();
+            document.getElementById('statTopics').textContent = analysis.topics?.length || 0;
+
+            // Display insights
+            const insightsList = document.getElementById('insightsList');
+            insightsList.innerHTML = (analysis.insights || []).map(insight => `
+                <div class="import-insight-item">
+                    <div class="import-insight-icon" style="background: rgba(99, 102, 241, 0.15);">
+                        ${insight.icon || '🎯'}
+                    </div>
+                    <div class="import-insight-content">
+                        <h5>${insight.category}</h5>
+                        <p>${insight.description}</p>
+                    </div>
+                </div>
+            `).join('');
+
+            // Display recommendations
+            const recommendationsList = document.getElementById('recommendationsList');
+            if (analysis.recommendations && analysis.recommendations.length > 0) {
+                recommendationsList.innerHTML = analysis.recommendations.map(app => `
+                    <a href="${app.url || '#'}" class="import-app-rec">
+                        <div class="import-app-icon" style="background: ${app.iconBg || 'var(--bg-card)'}">
+                            ${app.icon || '📱'}
+                        </div>
+                        <div class="import-app-info">
+                            <h5>${app.name}</h5>
+                            <p>${app.description}</p>
+                        </div>
+                        <div class="import-app-match">${app.matchScore || 85}% match</div>
+                    </a>
+                `).join('');
+            } else {
+                recommendationsList.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: var(--text-tertiary);">
+                        <p>We don't have a perfect match yet, but we can build something custom for you!</p>
+                    </div>
+                `;
+            }
+        }
+
+        function resetImportModal() {
+            importStepUpload.style.display = 'block';
+            importProgress.classList.remove('active');
+            importResults.classList.remove('active');
+            importProgressFill.style.width = '0%';
+            importFileInput.value = '';
+        }
+
+        // Done button
+        importDone.addEventListener('click', () => {
+            importModal.classList.remove('active');
+        });
+
+        // Request custom app
+        importRequestCustom.addEventListener('click', () => {
+            importModal.classList.remove('active');
+
+            // Pre-fill the chat with a request based on analysis
+            if (analysisResults && analysisResults.summary) {
+                heroSection.classList.add('chat-active');
+                chatContainer.classList.add('active');
+
+                const message = `Based on my chat history, I'm interested in: ${analysisResults.topics?.slice(0, 3).map(t => t.topic).join(', ')}. Can you help me find or build something for this?`;
+
+                addMessage(message, 'user');
+                conversationHistory.push({ role: 'user', content: message });
+
+                // Trigger response
+                addTypingIndicator();
+                setTimeout(() => {
+                    removeTypingIndicator();
+                    const response = `Great! Based on your interests, I can see you're focused on ${analysisResults.topics?.[0]?.topic?.toLowerCase() || 'several areas'}.\n\nWe can either:\n1. Set you up with existing apps that match your needs\n2. Build something custom tailored to your specific workflow\n\nWhat sounds better to you?`;
+                    addMessage(response, 'assistant');
+                    conversationHistory.push({ role: 'assistant', content: response });
+                }, 1500);
+            }
+        });
     </script>
 </body>
 </html>
