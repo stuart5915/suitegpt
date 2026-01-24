@@ -1,6 +1,25 @@
-# [APP_NAME] Telos
+# [APP_NAME] Telos (Large + Medium)
 
-This document defines what [APP_NAME] is, its mission, and the context you need to make good decisions.
+This document defines your **Large Telos** (ethics, values, ecosystem role) and **Medium Telos** (app strategy, business goals). These rarely change - Large is nearly permanent, Medium updates monthly.
+
+**For your current working objective, see:** `TELOS_SMALL.md`
+
+```
+Telos Hierarchy:
+├── Large Telos (this file) ← Ethics, values, what the app IS
+├── Medium Telos (this file) ← Strategy, priorities, metrics
+└── Small Telos (TELOS_SMALL.md) ← Current 1-5 day objective
+```
+
+---
+
+## About This Document
+
+This document defines what [APP_NAME] is, its mission, and the context you need to make good decisions. Use it to:
+- Understand your app's purpose and values (Large Telos)
+- Know your strategic priorities and success metrics (Medium Telos)
+- Make decisions aligned with the app's identity
+- Propose small telos objectives that advance these goals
 
 ---
 

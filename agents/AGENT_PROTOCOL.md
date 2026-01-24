@@ -49,10 +49,30 @@ First, read your context files to understand where you are:
    - What you can and cannot access
    - Where credentials are located
 
-4. **Determine your mode:**
-   - If `execution_state` is "executing" or you have a `current_task` -> Go to **Execution Mode**
-   - If `execution_state` is "blocked" and assistance was provided -> Go to **Continue Execution**
-   - Otherwise -> Go to **Proposal Mode**
+4. **Read `./TELOS_SMALL.md`** - Check your current objective:
+   - What is your current small telos (1-5 day objective)?
+   - What is its status (`needs_proposal`, `proposed`, `approved`, `in_progress`, `completed`)?
+   - This is your immediate focus - not the broader mission
+
+5. **Determine your mode based on Small Telos:**
+   - If status is `needs_proposal` OR `completed` -> Go to **Small Telos Proposal Mode**
+   - If status is `proposed` -> **STOP** (waiting for approval)
+   - If status is `approved` or `in_progress` -> Go to **Execution Mode**
+   - If status is `blocked` -> Go to **Assistance Mode**
+
+### Small Telos Priority
+
+**The Small Telos drives your daily work.** Your Large/Medium telos (in `[AGENT]_TELOS.md`) defines your mission and strategy. Your Small Telos (in `TELOS_SMALL.md`) defines what you're doing RIGHT NOW.
+
+```
+Telos Hierarchy:
+├── Large Telos (rarely changes)
+│   └── Ethics, ecosystem role, values
+├── Medium Telos (monthly)
+│   └── App strategy, business goals
+└── Small Telos (daily/weekly) ← YOUR CURRENT FOCUS
+    └── Specific, achievable objective
+```
 
 ---
 
@@ -156,16 +176,84 @@ When you were blocked and human provided help:
 
 ---
 
+## Phase 2D: Small Telos Proposal Mode
+
+When you need to propose your next objective (status is `needs_proposal` or `completed`):
+
+### Step 1: Reflect on Progress
+If previous small telos was `completed`:
+- What worked well?
+- What could be improved?
+- Update your `state.json` with lessons learned
+
+### Step 2: Consult Your Large/Medium Telos
+Read your `[AGENT]_TELOS.md` and consider:
+- What are my strategic priorities?
+- What user feedback needs addressing?
+- What is the highest-impact next step?
+
+### Step 3: Propose ONE Small Telos
+Draft a specific, achievable objective that:
+- Can be completed in 1-5 days
+- Has 3-5 measurable success criteria
+- Ties directly to your medium/large telos
+- You can execute autonomously
+
+### Step 4: Submit via Governance
+Use submission type: `small_telos_proposal`
+
+Include:
+- **Proposed objective** (1-2 sentences)
+- **Success criteria** (3-5 checkboxes)
+- **Target completion** (date)
+- **Justification** (why this, why now)
+
+### Step 5: Update Files
+Update `TELOS_SMALL.md`:
+- Fill in "What I'm Working On"
+- Fill in "Success Criteria"
+- Set status to `proposed`
+- Add context/justification
+
+Update `state.json`:
+- Set `small_telos.status` to `proposed`
+- Set `small_telos.proposed_at` to now
+
+### Step 6: STOP
+Wait for human approval before beginning work.
+
+---
+
 ## Submission Types
 
-You can submit four types of messages to governance:
+You can submit five types of messages to governance:
 
 | Type | When to Use | What to Include |
 |------|-------------|-----------------|
+| `small_telos_proposal` | Proposing your next objective | Objective, success criteria, target date, justification |
 | `proposal` | You want to do something new | Title, detailed plan, expected impact |
 | `work_update` | FYI progress on current task | What you did, progress %, next steps |
 | `assistance_request` | You're stuck and need help | Blocker, what you need, parallel work |
 | `completion` | Task is done | Results, files changed, recommended next |
+
+### Small Telos Proposal Example
+```
+Title: "Write educational thread about impermanent loss"
+Type: small_telos_proposal
+Content:
+- Objective: Create a viral Twitter thread explaining impermanent loss
+  in simple terms with visual examples
+- Success Criteria:
+  - [ ] Thread is 10-15 tweets long
+  - [ ] Includes 3+ visual diagrams/examples
+  - [ ] Explains IL with a relatable analogy
+  - [ ] Includes call-to-action to DeFi Knowledge app
+  - [ ] Draft reviewed and ready to post
+- Target: 2 days from approval
+- Justification: IL is the #1 confusion point for DeFi newcomers (ties to
+  "Educate DeFi newcomers" medium telos). Thread format has 3x engagement
+  of article format based on previous content.
+```
 
 ---
 
