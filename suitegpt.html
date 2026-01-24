@@ -2979,11 +2979,13 @@
 
         // Render use cases
         function renderUseCases() {
+            if (!useCasesGrid) return; // Guard against missing element
+
             const filtered = currentIntent === 'all'
                 ? useCases
                 : useCases.filter(uc => uc.intent === currentIntent);
 
-            useCaseCount.textContent = `(${filtered.length})`;
+            if (useCaseCount) useCaseCount.textContent = `(${filtered.length})`;
 
             if (filtered.length === 0) {
                 useCasesGrid.innerHTML = `
@@ -3054,16 +3056,6 @@
                 });
             });
         }
-
-        // Category filtering
-        categoryPills.forEach(pill => {
-            pill.addEventListener('click', () => {
-                categoryPills.forEach(p => p.classList.remove('active'));
-                pill.classList.add('active');
-                currentCategory = pill.dataset.category;
-                renderUseCases();
-            });
-        });
 
         // Increment view count
         async function incrementViews(query) {
