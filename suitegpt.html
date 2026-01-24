@@ -2219,12 +2219,16 @@
                 `;
             }).join('');
 
-            // Add click handlers
+            // Add click handlers - each click starts a fresh chat
             document.querySelectorAll('.use-case-card').forEach(card => {
                 card.addEventListener('click', () => {
                     const query = decodeURIComponent(card.dataset.query);
                     const response = decodeURIComponent(card.dataset.response);
                     const app = card.dataset.app;
+
+                    // Reset chat state for new conversation
+                    chatMessages.innerHTML = '';
+                    conversationHistory = [];
 
                     welcomeState.classList.add('chat-active');
                     chatContainer.classList.add('active');
@@ -2251,11 +2255,15 @@
 
         sendBtn.addEventListener('click', sendMessage);
 
-        // Quick suggestion chips
+        // Quick suggestion chips - each click starts a fresh chat
         document.querySelectorAll('.suggestion-chip').forEach(chip => {
             chip.addEventListener('click', () => {
                 const query = chip.dataset.query;
                 if (query) {
+                    // Reset chat state for new conversation
+                    chatMessages.innerHTML = '';
+                    conversationHistory = [];
+
                     chatInput.value = query;
                     sendMessage();
                 }
