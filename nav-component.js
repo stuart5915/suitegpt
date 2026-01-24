@@ -48,6 +48,7 @@
             <div class="nav-links">
                 <a href="https://suitegpt.app">SuiteGPT</a>
                 <a href="/suite-shell.html">Apps</a>
+                <a href="/factory.html">Dashboard</a>
                 <a href="/profile.html">Profile</a>
             </div>
         </div>
