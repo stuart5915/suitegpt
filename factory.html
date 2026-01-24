@@ -6921,6 +6921,7 @@
             if (proposal.submission_type === 'assistance_request') return 'assistance';
             if (proposal.submission_type === 'work_update') return 'work-update';
             if (proposal.submission_type === 'completion') return 'completion';
+            if (proposal.submission_type === 'small_telos_proposal') return 'small-telos';
             return 'proposal';
         }
 
@@ -7067,16 +7068,18 @@
                         </div>
                     `;
                 }
-            } else if (type === 'proposal') {
+            } else if (type === 'proposal' || type === 'small-telos') {
+                const approveLabel = type === 'small-telos' ? '🎯 Approve Objective' : '✅ Approve';
+                const rejectLabel = type === 'small-telos' ? '↩️ Request Revision' : '❌ Reject';
                 actionsHtml = `
                     <div class="stream-feedback-container">
-                        <input type="text" class="stream-feedback-input" id="feedback-${proposal.id}" placeholder="Add feedback (optional)...">
+                        <input type="text" class="stream-feedback-input" id="feedback-${proposal.id}" placeholder="${type === 'small-telos' ? 'Add guidance for this objective...' : 'Add feedback (optional)...'}">
                     </div>
                     <button class="stream-action-btn approve" onclick="approveStreamProposal('${proposal.id}')">
-                        ✅ Approve
+                        ${approveLabel}
                     </button>
                     <button class="stream-action-btn reject" onclick="rejectStreamProposal('${proposal.id}')">
-                        ❌ Reject
+                        ${rejectLabel}
                     </button>
                 `;
             } else if (type === 'assistance') {
@@ -7127,6 +7130,7 @@
         function formatCardType(type) {
             switch(type) {
                 case 'proposal': return '📝 Proposal';
+                case 'small-telos': return '🎯 Objective';
                 case 'work-update': return '🔧 Progress';
                 case 'assistance': return '🆘 Needs Help';
                 case 'completion': return '✅ Completed';
@@ -7226,15 +7230,36 @@
                     throw new Error('Failed to approve proposal');
                 }
 
-                // Get the proposal to find the agent
-                const proposal = streamCards.find(c => c.id === proposalId);
-                if (proposal?.agent?.agent_slug) {
+                // Get the proposal to find the agent and submission type
+                const card = streamCards.find(c => c.id === proposalId);
+                const isSmallTelos = card?.type === 'small-telos' || card?.proposal?.submission_type === 'small_telos_proposal';
+
+                if (card?.agent?.agent_slug) {
+                    // If this is a small telos approval, update agent's small_telos_status
+                    if (isSmallTelos && card.agent.id) {
+                        await fetch(
+                            `${SUPABASE_URL}/rest/v1/factory_users?id=eq.${card.agent.id}`,
+                            {
+                                method: 'PATCH',
+                                headers: {
+                                    'apikey': SUPABASE_ANON_KEY,
+                                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    small_telos_status: 'approved',
+                                    agent_status: 'idle' // Ready to execute when woken
+                                })
+                            }
+                        );
+                    }
+
                     // Queue an execution wake request
-                    await queueWakeRequest(proposal.agent.agent_slug, 'execution', proposalId);
+                    const wakeType = isSmallTelos ? 'small_telos_execution' : 'execution';
+                    await queueWakeRequest(card.agent.agent_slug, wakeType, proposalId);
                 }
 
                 // Update local state
-                const card = streamCards.find(c => c.id === proposalId);
                 if (card) {
                     card.status = 'passed';
                     card.proposal.status = 'passed';
@@ -7243,7 +7268,9 @@
 
                 renderStreamFeed();
 
-                console.log('[Stream] Approved proposal and queued execution wake:', proposalId);
+                const logMsg = isSmallTelos ? 'small telos and queued execution wake' : 'proposal and queued execution wake';
+                console.log(`[Stream] Approved ${logMsg}:`, proposalId);
+                showNotification(isSmallTelos ? 'Objective approved! Agent will begin work.' : 'Proposal approved!', 'success');
             } catch (err) {
                 console.error('[Stream] Approve error:', err);
                 alert('Failed to approve proposal: ' + err.message);

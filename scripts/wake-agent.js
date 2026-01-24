@@ -195,9 +195,78 @@ function addLearnedPatterns(state, patterns) {
 }
 
 /**
+ * Load agent's TELOS_SMALL.md file and parse status
+ */
+function loadSmallTelosStatus(agentSlug) {
+    const telosPath = path.join(AGENTS_DIR, agentSlug, 'TELOS_SMALL.md');
+
+    if (!fs.existsSync(telosPath)) {
+        return null;
+    }
+
+    const content = fs.readFileSync(telosPath, 'utf-8');
+
+    // Extract status from the Status table in TELOS_SMALL.md
+    const statusMatch = content.match(/\*\*State\*\*\s*\|\s*`(\w+)`/);
+    if (statusMatch) {
+        return statusMatch[1];
+    }
+
+    // Fallback: check state.json
+    return null;
+}
+
+/**
  * Determine agent wake mode based on current state
  */
 async function determineWakeMode(state) {
+    const agentSlug = state.agent_id;
+
+    // First check: Small Telos status (new workflow)
+    const smallTelosStatus = state.small_telos?.status || loadSmallTelosStatus(agentSlug);
+
+    if (smallTelosStatus) {
+        log(`   Small Telos status: ${smallTelosStatus}`, 'dim');
+
+        // Small telos proposed - waiting for approval
+        if (smallTelosStatus === 'proposed') {
+            return {
+                mode: 'waiting',
+                reason: 'small_telos_pending_approval',
+                message: 'Small telos proposal is awaiting approval'
+            };
+        }
+
+        // Small telos needs proposal or completed - propose next objective
+        if (smallTelosStatus === 'needs_proposal' || smallTelosStatus === 'completed') {
+            return {
+                mode: 'small_telos_proposal',
+                reason: smallTelosStatus === 'completed' ? 'objective_completed' : 'no_objective',
+                previousCompleted: smallTelosStatus === 'completed'
+            };
+        }
+
+        // Small telos approved or in_progress - execute
+        if (smallTelosStatus === 'approved' || smallTelosStatus === 'in_progress') {
+            return {
+                mode: 'execute_small_telos',
+                reason: smallTelosStatus === 'approved' ? 'objective_approved' : 'objective_in_progress',
+                objective: state.small_telos?.current || null
+            };
+        }
+
+        // Small telos blocked
+        if (smallTelosStatus === 'blocked') {
+            return {
+                mode: 'still_blocked',
+                reason: 'small_telos_blocked',
+                message: 'Small telos execution is blocked - need human assistance'
+            };
+        }
+    }
+
+    // Fallback to original logic for backward compatibility
+
     // Mode 1: Agent is blocked and waiting for assistance
     if (state.execution_state === 'blocked' && state.current_task) {
         // Find the assistance request
@@ -341,6 +410,24 @@ function updateStateForMode(state, wakeMode) {
             state.current_status = 'working';
             break;
 
+        case 'small_telos_proposal':
+            // Agent needs to propose a small telos
+            state.execution_state = 'idle';
+            state.current_status = 'proposing';
+            // Small telos status stays as needs_proposal - agent will update it
+            break;
+
+        case 'execute_small_telos':
+            // Agent has approved small telos to execute
+            state.execution_state = 'executing';
+            state.current_status = 'working';
+            // Update small_telos status if it was just approved
+            if (state.small_telos && state.small_telos.status === 'approved') {
+                state.small_telos.status = 'in_progress';
+                state.small_telos.started_at = new Date().toISOString();
+            }
+            break;
+
         case 'propose':
             // Ready to propose - handle rejection learning
             if (wakeMode.reason === 'proposal_rejected' && wakeMode.proposal) {
@@ -384,6 +471,64 @@ function buildWakePrompt(wakeMode, state) {
     let prompt = '';
 
     switch (wakeMode.mode) {
+        case 'small_telos_proposal':
+            if (wakeMode.previousCompleted) {
+                prompt = `Wake up. Your previous small telos was COMPLETED! Great work.
+
+Now it's time to propose your NEXT small telos objective.
+
+IMPORTANT: Read these files in order:
+1. ../AGENT_PROTOCOL.md - Section "Phase 2D: Small Telos Proposal Mode"
+2. ./[YOUR_APP]_TELOS.md - Your strategic priorities
+3. ./TELOS_SMALL.md - See suggested objectives
+
+Then propose ONE focused objective (1-5 days) that:
+- Has 3-5 measurable success criteria
+- Ties directly to your medium/large telos
+- You can execute autonomously
+
+Submit a small_telos_proposal with: objective, success criteria, target date, justification.
+
+After submitting, STOP and wait for approval.`;
+            } else {
+                prompt = `Wake up. You need to propose your first small telos objective.
+
+IMPORTANT: Read these files in order:
+1. ../AGENT_PROTOCOL.md - Section "Phase 2D: Small Telos Proposal Mode"
+2. ./[YOUR_APP]_TELOS.md - Your strategic priorities
+3. ./TELOS_SMALL.md - See suggested objectives
+
+Review your app's current metrics and user feedback in your TELOS doc.
+Then propose ONE focused objective (1-5 days) that:
+- Has 3-5 measurable success criteria
+- Addresses a priority from your TELOS
+- You can execute autonomously
+
+Submit a small_telos_proposal with: objective, success criteria, target date, justification.
+
+After submitting, STOP and wait for approval.`;
+            }
+            break;
+
+        case 'execute_small_telos':
+            prompt = `Wake up. Your small telos has been APPROVED!
+
+You are now in EXECUTION MODE. Execute your approved objective.
+
+Check ./TELOS_SMALL.md for:
+- Your objective
+- Success criteria (checkboxes to complete)
+
+Work autonomously until:
+- ALL success criteria checked → Submit completion, mark TELOS_SMALL.md as completed
+- BLOCKED → Submit assistance_request with exactly what you need
+- PROGRESS → Continue working, update progress log in TELOS_SMALL.md
+
+Remember: You are a DOER. Execute the work. Check off success criteria as you complete them.
+
+After submitting any governance message, STOP and wait for response.`;
+            break;
+
         case 'start_execution':
             prompt = `Wake up. Your proposal "${wakeMode.proposal.title}" has been APPROVED!
 
@@ -540,6 +685,26 @@ async function wakeAgent(agentSlug, overrideWakeType = null, overrideProposalId 
                 feedback: proposal.agent_feedback || null
             };
             log('   Override: Starting execution from CLI', 'yellow');
+        } else {
+            wakeMode = await determineWakeMode(state);
+        }
+    } else if (overrideWakeType === 'small_telos_execution' && overrideProposalId) {
+        // Small telos was approved - trigger execution mode
+        const proposal = await getProposal(overrideProposalId);
+        if (proposal && proposal.status === 'passed') {
+            // Update state to reflect approved small telos
+            if (state.small_telos) {
+                state.small_telos.status = 'approved';
+                state.small_telos.approved_at = new Date().toISOString();
+            }
+            wakeMode = {
+                mode: 'execute_small_telos',
+                reason: 'cli_override_small_telos_execution',
+                objective: proposal.title,
+                proposal: proposal,
+                feedback: proposal.agent_feedback || null
+            };
+            log('   Override: Small telos approved, starting execution', 'yellow');
         } else {
             wakeMode = await determineWakeMode(state);
         }

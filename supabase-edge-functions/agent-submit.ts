@@ -16,7 +16,7 @@ const corsHeaders = {
 const VALID_CATEGORIES = ['feature', 'bug', 'app_idea', 'improvement', 'docs', 'integration', 'tokenomics'];
 
 // Valid submission types (v2)
-const VALID_SUBMISSION_TYPES = ['proposal', 'work_update', 'assistance_request', 'completion'];
+const VALID_SUBMISSION_TYPES = ['proposal', 'work_update', 'assistance_request', 'completion', 'small_telos_proposal'];
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
@@ -162,6 +162,15 @@ Deno.serve(async (req) => {
         updateData.execution_state = 'idle';
         break;
 
+      case 'small_telos_proposal':
+        // Small telos proposal - agent waiting for approval
+        updateData.last_proposal_id = proposal.id;
+        updateData.proposals_submitted = (agent.proposals_submitted || 0) + 1;
+        updateData.agent_status = 'waiting';
+        updateData.execution_state = 'idle';
+        updateData.small_telos_status = 'proposed';
+        break;
+
       case 'work_update':
         // Progress update - agent continues executing
         updateData.agent_status = 'working';
@@ -216,6 +225,7 @@ Deno.serve(async (req) => {
     // Build response message based on type
     const responseMessages: Record<string, string> = {
       proposal: 'Proposal submitted successfully. Awaiting governance response.',
+      small_telos_proposal: 'Small telos proposal submitted. Awaiting approval to begin execution.',
       work_update: 'Progress update submitted. Continue working.',
       assistance_request: 'Assistance request submitted. Waiting for human help.',
       completion: 'Task completion submitted. Awaiting confirmation.'
