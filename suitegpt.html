@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuiteGPT | Your Personal App Assistant</title>
+    <meta name="description" content="Tell SuiteGPT what you need, and it will recommend the perfect SUITE app for you.">
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="SuiteGPT | Your Personal App Assistant">
+    <meta property="og:description" content="Better than ChatGPT because it gives you real tools, not just information.">
+    <meta property="og:image" content="https://getsuite.app/assets/images/1200x630-getsuite.jpg">
+    <meta property="og:url" content="https://getsuite.app/suitegpt.html">
+
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/suite-styles.css">
+    <link rel="stylesheet" href="/nav.css">
+    <style>
+        :root {
+            --bg-cream: #FFFBF7;
+            --text-charcoal: #2D3748;
+            --accent-terracotta: #C4725F;
+            --accent-sage: #7D9B8A;
+            --card-bg: rgba(255, 255, 255, 0.95);
+        }
+
+        body {
+            background: var(--bg-cream);
+            min-height: 100vh;
+        }
+
+        /* Hero Section */
+        .suitegpt-hero {
+            min-height: calc(100vh - 80px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 100px 24px 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .suitegpt-hero.chat-active {
+            min-height: auto;
+            padding: 100px 24px 20px;
+        }
+
+        .hero-title {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 800;
+            color: var(--text-charcoal);
+            margin-bottom: 12px;
+        }
+
+        .hero-subtitle {
+            font-size: 1.1rem;
+            color: #6b7280;
+            margin-bottom: 32px;
+            max-width: 500px;
+        }
+
+        .suitegpt-hero.chat-active .hero-subtitle {
+            display: none;
+        }
+
+        /* Input Container */
+        .input-container {
+            width: 100%;
+            max-width: 700px;
+            position: relative;
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            align-items: center;
+            background: var(--card-bg);
+            border: 2px solid rgba(0, 0, 0, 0.08);
+            border-radius: 24px;
+            padding: 8px 8px 8px 24px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+            transition: all 0.2s ease;
+        }
+
+        .chat-input-wrapper:focus-within {
+            border-color: var(--accent-terracotta);
+            box-shadow: 0 4px 24px rgba(196, 114, 95, 0.15);
+        }
+
+        .chat-input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-size: 1.1rem;
+            font-family: inherit;
+            color: var(--text-charcoal);
+            outline: none;
+            padding: 12px 0;
+        }
+
+        .chat-input::placeholder {
+            color: #9ca3af;
+        }
+
+        .send-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 16px;
+            border: none;
+            background: linear-gradient(135deg, var(--accent-terracotta), #D4826F);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .send-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 4px 16px rgba(196, 114, 95, 0.4);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .send-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Example Prompts */
+        .example-prompts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 24px;
+            max-width: 700px;
+        }
+
+        .suitegpt-hero.chat-active .example-prompts {
+            display: none;
+        }
+
+        .example-prompt {
+            padding: 10px 18px;
+            background: white;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 100px;
+            font-size: 0.9rem;
+            color: #6b7280;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .example-prompt:hover {
+            background: var(--accent-terracotta);
+            color: white;
+            border-color: var(--accent-terracotta);
+            transform: translateY(-2px);
+        }
+
+        /* Chat Container */
+        .chat-container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 0 24px 120px;
+            display: none;
+        }
+
+        .chat-container.active {
+            display: block;
+        }
+
+        .chat-messages {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* Chat Messages */
+        .message {
+            display: flex;
+            gap: 12px;
+            max-width: 85%;
+            animation: messageSlide 0.3s ease;
+        }
+
+        @keyframes messageSlide {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .message.user .message-avatar {
+            background: linear-gradient(135deg, var(--accent-terracotta), #D4826F);
+        }
+
+        .message.assistant .message-avatar {
+            background: linear-gradient(135deg, var(--accent-sage), #8DAC9B);
+        }
+
+        .message-content {
+            padding: 14px 18px;
+            border-radius: 18px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, var(--accent-terracotta), #D4826F);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.assistant .message-content {
+            background: white;
+            color: var(--text-charcoal);
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            border-bottom-left-radius: 4px;
+        }
+
+        /* App Cards in Chat */
+        .app-card-inline {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: linear-gradient(135deg, #fef7ed, #fff);
+            border: 1px solid rgba(196, 114, 95, 0.2);
+            border-radius: 16px;
+            padding: 16px;
+            margin-top: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .app-card-inline:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(196, 114, 95, 0.15);
+            border-color: var(--accent-terracotta);
+        }
+
+        .app-icon-inline {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .app-info-inline h4 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 2px;
+            color: var(--text-charcoal);
+        }
+
+        .app-info-inline p {
+            font-size: 0.85rem;
+            color: #6b7280;
+            margin: 0;
+        }
+
+        .app-arrow {
+            margin-left: auto;
+            color: var(--accent-terracotta);
+            font-size: 1.2rem;
+        }
+
+        /* Loading Indicator */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 14px 18px;
+        }
+
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background: #9ca3af;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes bounce {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-8px);
+            }
+        }
+
+        /* Feedback Buttons */
+        .feedback-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .feedback-btn {
+            padding: 6px 12px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.8rem;
+            color: #6b7280;
+            transition: all 0.2s ease;
+        }
+
+        .feedback-btn:hover {
+            background: #f3f4f6;
+        }
+
+        .feedback-btn.active-good {
+            background: rgba(34, 197, 94, 0.1);
+            border-color: rgba(34, 197, 94, 0.3);
+            color: #22c55e;
+        }
+
+        .feedback-btn.active-bad {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 600px) {
+            .suitegpt-hero {
+                padding: 90px 16px 30px;
+            }
+
+            .hero-title {
+                font-size: 1.75rem;
+            }
+
+            .chat-input-wrapper {
+                padding: 6px 6px 6px 16px;
+            }
+
+            .chat-input {
+                font-size: 1rem;
+            }
+
+            .send-btn {
+                width: 42px;
+                height: 42px;
+            }
+
+            .example-prompt {
+                padding: 8px 14px;
+                font-size: 0.85rem;
+            }
+
+            .chat-container {
+                padding: 0 16px 100px;
+            }
+
+            .message {
+                max-width: 90%;
+            }
+        }
+
+        /* Footer adjustments */
+        .footer {
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <nav id="main-nav"></nav>
+    <script src="/nav-component.js"></script>
+
+    <!-- Hero Section with Input -->
+    <section class="suitegpt-hero" id="heroSection">
+        <h1 class="hero-title">What can I help you with?</h1>
+        <p class="hero-subtitle">Tell me what you need, and I'll recommend the right tool for you.</p>
+
+        <div class="input-container">
+            <div class="chat-input-wrapper">
+                <input
+                    type="text"
+                    class="chat-input"
+                    id="chatInput"
+                    placeholder="Ask anything..."
+                    autocomplete="off"
+                >
+                <button class="send-btn" id="sendBtn" disabled>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="example-prompts" id="examplePrompts">
+            <button class="example-prompt" data-prompt="I want to lose weight but hate tracking calories">I want to lose weight but hate tracking calories</button>
+            <button class="example-prompt" data-prompt="Help me build a morning routine">Help me build a morning routine</button>
+            <button class="example-prompt" data-prompt="I have back pain from sitting all day">I have back pain from sitting all day</button>
+            <button class="example-prompt" data-prompt="I want to learn about DeFi">I want to learn about DeFi</button>
+            <button class="example-prompt" data-prompt="I need to track my nutrition">I need to track my nutrition</button>
+        </div>
+    </section>
+
+    <!-- Chat Container -->
+    <div class="chat-container" id="chatContainer">
+        <div class="chat-messages" id="chatMessages"></div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <div class="footer-logo">
+                    <div class="logo-icon">S</div>
+                    SUITE
+                </div>
+                <p>Anyone Can Build. Everyone Gets Paid.</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 SUITE</p>
+        </div>
+    </footer>
+
+    <script>
+        // SUITE Apps Catalog
+        const SUITE_APPS = [
+            {
+                slug: 'foodvitals',
+                name: 'FoodVitals',
+                description: 'Weekly meal tracking + AI nutrition insights',
+                icon: '🥗',
+                iconBg: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                keywords: ['nutrition', 'diet', 'calories', 'food', 'meals', 'weight', 'eating', 'healthy', 'track meals', 'lose weight'],
+                url: '/apps-subpages/physio-ai.html' // Update when foodvitals page exists
+            },
+            {
+                slug: 'trueform',
+                name: 'TrueForm AI',
+                description: 'AI physiotherapy and exercise guidance',
+                icon: '🏃',
+                iconBg: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                keywords: ['back pain', 'posture', 'stretching', 'physical therapy', 'exercise', 'mobility', 'pain', 'sitting', 'desk', 'injury'],
+                url: '/apps-subpages/physio-ai.html'
+            },
+            {
+                slug: 'opticrep',
+                name: 'OpticRep',
+                description: 'AI workout trainer with form analysis',
+                icon: '💪',
+                iconBg: 'linear-gradient(135deg, #f97316, #ea580c)',
+                keywords: ['workout', 'gym', 'fitness', 'exercise', 'training', 'muscle', 'strength', 'form'],
+                url: '/suite-shell.html'
+            },
+            {
+                slug: 'cheshbon',
+                name: 'Cheshbon',
+                description: 'Financial reflection and tracking app',
+                icon: '💰',
+                iconBg: 'linear-gradient(135deg, #eab308, #ca8a04)',
+                keywords: ['money', 'finance', 'budget', 'spending', 'savings', 'track spending', 'financial'],
+                url: '/suite-shell.html'
+            },
+            {
+                slug: 'remcast',
+                name: 'RemCast',
+                description: 'Smart reminder and notification system',
+                icon: '🔔',
+                iconBg: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                keywords: ['reminder', 'routine', 'morning', 'habits', 'schedule', 'notification', 'daily'],
+                url: '/suite-shell.html'
+            },
+            {
+                slug: 'defi-knowledge',
+                name: 'DeFi Knowledge',
+                description: 'Learn DeFi concepts and strategies',
+                icon: '📚',
+                iconBg: 'linear-gradient(135deg, #06b6d4, #0891b2)',
+                keywords: ['defi', 'crypto', 'blockchain', 'learn', 'education', 'yield', 'trading'],
+                url: '/suite-shell.html'
+            }
+        ];
+
+        // Supabase config
+        const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
+
+        // DOM Elements
+        const chatInput = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const heroSection = document.getElementById('heroSection');
+        const chatContainer = document.getElementById('chatContainer');
+        const chatMessages = document.getElementById('chatMessages');
+        const examplePrompts = document.querySelectorAll('.example-prompt');
+
+        // Chat state
+        let isLoading = false;
+        let conversationHistory = [];
+
+        // Enable/disable send button based on input
+        chatInput.addEventListener('input', () => {
+            sendBtn.disabled = !chatInput.value.trim() || isLoading;
+        });
+
+        // Send on Enter
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey && !sendBtn.disabled) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Send button click
+        sendBtn.addEventListener('click', sendMessage);
+
+        // Example prompt clicks
+        examplePrompts.forEach(btn => {
+            btn.addEventListener('click', () => {
+                chatInput.value = btn.dataset.prompt;
+                sendBtn.disabled = false;
+                sendMessage();
+            });
+        });
+
+        // Add message to chat
+        function addMessage(content, role, appRecommendation = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = role === 'user' ? '👤' : '🤖';
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+
+            // Parse content for line breaks
+            contentDiv.innerHTML = content.replace(/\n/g, '<br>');
+
+            // Add app card if recommended
+            if (appRecommendation) {
+                const app = SUITE_APPS.find(a => a.slug === appRecommendation) ||
+                            SUITE_APPS.find(a => a.name.toLowerCase().includes(appRecommendation.toLowerCase()));
+
+                if (app) {
+                    const appCard = document.createElement('a');
+                    appCard.href = app.url;
+                    appCard.className = 'app-card-inline';
+                    appCard.innerHTML = `
+                        <div class="app-icon-inline" style="background: ${app.iconBg}">${app.icon}</div>
+                        <div class="app-info-inline">
+                            <h4>${app.name}</h4>
+                            <p>${app.description}</p>
+                        </div>
+                        <span class="app-arrow">→</span>
+                    `;
+                    contentDiv.appendChild(appCard);
+                }
+            }
+
+            // Add feedback buttons for assistant messages
+            if (role === 'assistant') {
+                const feedbackDiv = document.createElement('div');
+                feedbackDiv.className = 'feedback-buttons';
+                feedbackDiv.innerHTML = `
+                    <button class="feedback-btn" data-feedback="good">👍 Helpful</button>
+                    <button class="feedback-btn" data-feedback="bad">👎 Not helpful</button>
+                `;
+                contentDiv.appendChild(feedbackDiv);
+
+                // Handle feedback clicks
+                feedbackDiv.querySelectorAll('.feedback-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const feedback = btn.dataset.feedback;
+                        feedbackDiv.querySelectorAll('.feedback-btn').forEach(b => {
+                            b.classList.remove('active-good', 'active-bad');
+                        });
+                        btn.classList.add(feedback === 'good' ? 'active-good' : 'active-bad');
+                        // TODO: Send feedback to backend
+                        console.log('Feedback:', feedback);
+                    });
+                });
+            }
+
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(contentDiv);
+            chatMessages.appendChild(messageDiv);
+
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Add typing indicator
+        function addTypingIndicator() {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message assistant';
+            messageDiv.id = 'typingIndicator';
+
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = '🤖';
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.innerHTML = `
+                <div class="typing-indicator">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            `;
+
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(contentDiv);
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            if (indicator) indicator.remove();
+        }
+
+        // Send message to backend
+        async function sendMessage() {
+            const message = chatInput.value.trim();
+            if (!message || isLoading) return;
+
+            // Update UI state
+            isLoading = true;
+            sendBtn.disabled = true;
+            chatInput.value = '';
+            heroSection.classList.add('chat-active');
+            chatContainer.classList.add('active');
+
+            // Add user message
+            addMessage(message, 'user');
+            conversationHistory.push({ role: 'user', content: message });
+
+            // Show typing indicator
+            addTypingIndicator();
+
+            try {
+                // Call edge function
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/suitegpt-chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        history: conversationHistory.slice(-10) // Last 10 messages for context
+                    })
+                });
+
+                removeTypingIndicator();
+
+                if (!response.ok) {
+                    throw new Error('Failed to get response');
+                }
+
+                const data = await response.json();
+
+                // Add assistant message
+                addMessage(data.response, 'assistant', data.recommendedApp);
+                conversationHistory.push({ role: 'assistant', content: data.response });
+
+            } catch (error) {
+                console.error('Chat error:', error);
+                removeTypingIndicator();
+
+                // Fallback: Local matching
+                const localResponse = getLocalResponse(message);
+                addMessage(localResponse.response, 'assistant', localResponse.recommendedApp);
+                conversationHistory.push({ role: 'assistant', content: localResponse.response });
+            }
+
+            isLoading = false;
+            sendBtn.disabled = !chatInput.value.trim();
+            chatInput.focus();
+        }
+
+        // Fallback local response when edge function unavailable
+        function getLocalResponse(message) {
+            const lowerMessage = message.toLowerCase();
+
+            // Find matching app
+            for (const app of SUITE_APPS) {
+                const matchScore = app.keywords.filter(kw => lowerMessage.includes(kw)).length;
+                if (matchScore > 0) {
+                    return {
+                        response: `I can help with that!\n\n${app.name} is perfect for what you're looking for. ${app.description}.`,
+                        recommendedApp: app.slug
+                    };
+                }
+            }
+
+            // No match found
+            return {
+                response: "I don't have a specific tool for that yet, but the SUITE ecosystem is growing! Check out our Apps page to see what's available, or let me know more about what you're trying to accomplish.",
+                recommendedApp: null
+            };
+        }
+    </script>
+</body>
+</html>
