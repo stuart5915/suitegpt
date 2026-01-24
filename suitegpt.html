@@ -34,6 +34,7 @@
 
         :root {
             --bg-dark: #0a0a0f;
+            --bg-sidebar: #111118;
             --bg-card: rgba(255, 255, 255, 0.03);
             --bg-card-hover: rgba(255, 255, 255, 0.06);
             --accent-primary: #6366f1;
@@ -45,6 +46,7 @@
             --text-tertiary: rgba(248, 250, 252, 0.4);
             --border-subtle: rgba(255, 255, 255, 0.08);
             --border-hover: rgba(255, 255, 255, 0.15);
+            --sidebar-width: 260px;
         }
 
         body {
@@ -53,256 +55,264 @@
             color: var(--text-primary);
             min-height: 100vh;
             overflow-x: hidden;
-            /* PWA safe areas */
-            padding-top: env(safe-area-inset-top);
-            padding-bottom: env(safe-area-inset-bottom);
         }
 
-        /* === SHELL STRUCTURE === */
-        .shell-container {
+        /* === MAIN LAYOUT === */
+        .app-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* === LEFT SIDEBAR === */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border-subtle);
             display: flex;
             flex-direction: column;
-            height: 100vh;
-            height: 100dvh; /* Dynamic viewport height for mobile */
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            z-index: 100;
+            transition: transform 0.3s ease;
         }
 
-        .shell-content {
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .sidebar-logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 800;
+            color: white;
+        }
+
+        .sidebar-logo-text {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .sidebar-nav {
             flex: 1;
-            overflow: hidden;
-            position: relative;
+            padding: 16px 12px;
+            overflow-y: auto;
         }
 
-        /* Tab Panels */
-        .tab-panel {
-            position: absolute;
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+
+        .sidebar-section-title {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 0 12px;
+            margin-bottom: 8px;
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-family: inherit;
+        }
+
+        .sidebar-item:hover {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+        }
+
+        .sidebar-item.active {
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--accent-primary);
+        }
+
+        .sidebar-item-icon {
+            font-size: 1.2rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        .sidebar-item-badge {
+            margin-left: auto;
+            background: var(--accent-primary);
+            color: white;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 100px;
+        }
+
+        .sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .sidebar-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 10px;
+            background: var(--bg-card);
+            margin-bottom: 12px;
+        }
+
+        .sidebar-profile-avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .sidebar-profile-info {
+            flex: 1;
+        }
+
+        .sidebar-profile-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .sidebar-profile-status {
+            font-size: 0.7rem;
+            color: var(--text-tertiary);
+        }
+
+        .sidebar-powered-by {
+            text-align: center;
+            padding: 8px;
+        }
+
+        .sidebar-powered-by a {
+            color: var(--text-tertiary);
+            text-decoration: none;
+            font-size: 0.75rem;
+            transition: color 0.2s ease;
+        }
+
+        .sidebar-powered-by a:hover {
+            color: var(--text-secondary);
+        }
+
+        .sidebar-powered-by strong {
+            color: var(--accent-primary);
+        }
+
+        /* === MOBILE SIDEBAR === */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            overflow-y: auto;
-            display: none;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 99;
         }
 
-        .tab-panel.active {
+        .sidebar-overlay.active {
             display: block;
         }
 
-        /* App Container (iframe) */
-        .app-container {
-            width: 100%;
-            height: 100%;
-            background: var(--bg-dark);
-        }
-
-        .app-container iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-
-        .app-placeholder {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            color: var(--text-tertiary);
-            text-align: center;
-            padding: 40px;
-        }
-
-        .app-placeholder-icon {
-            font-size: 4rem;
-            margin-bottom: 16px;
-            opacity: 0.5;
-        }
-
-        .app-placeholder h3 {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: var(--text-secondary);
-        }
-
-        .app-placeholder p {
-            font-size: 0.9rem;
-            max-width: 300px;
-        }
-
-        /* Bottom Navigation */
-        .bottom-nav {
-            display: flex;
-            background: rgba(10, 10, 15, 0.95);
-            backdrop-filter: blur(20px);
-            border-top: 1px solid var(--border-subtle);
-            padding: 8px 0;
-            padding-bottom: max(8px, env(safe-area-inset-bottom));
-            z-index: 100;
-        }
-
-        .nav-item {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            padding: 8px 4px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            background: none;
-            border: none;
-            color: var(--text-tertiary);
-            font-family: inherit;
-        }
-
-        .nav-item:hover {
-            color: var(--text-secondary);
-        }
-
-        .nav-item.active {
-            color: var(--accent-primary);
-        }
-
-        .nav-item-icon {
-            font-size: 1.4rem;
-            line-height: 1;
-        }
-
-        .nav-item-label {
-            font-size: 0.65rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .nav-item-badge {
-            position: absolute;
-            top: 2px;
-            right: 50%;
-            transform: translateX(12px);
-            background: var(--accent-tertiary);
-            color: white;
-            font-size: 0.6rem;
-            font-weight: 700;
-            padding: 2px 5px;
-            border-radius: 100px;
-            min-width: 16px;
-            text-align: center;
-        }
-
-        .nav-item-wrapper {
-            position: relative;
-        }
-
-        /* App Loading State */
-        .app-loading {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            gap: 16px;
-        }
-
-        .app-loading-spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid var(--border-subtle);
-            border-top-color: var(--accent-primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        /* PWA Install Prompt */
-        .pwa-install-prompt {
+        .mobile-header {
             display: none;
-            position: fixed;
-            bottom: 80px;
-            left: 16px;
-            right: 16px;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            border-radius: 16px;
-            padding: 16px 20px;
-            z-index: 200;
-            animation: slideUp 0.3s ease;
-        }
-
-        .pwa-install-prompt.visible {
-            display: block;
-        }
-
-        @keyframes slideUp {
-            from { transform: translateY(100%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        .pwa-install-content {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .pwa-install-icon {
-            font-size: 2rem;
-        }
-
-        .pwa-install-text h4 {
-            font-size: 0.95rem;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-
-        .pwa-install-text p {
-            font-size: 0.8rem;
-            opacity: 0.9;
-        }
-
-        .pwa-install-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 12px;
-        }
-
-        .pwa-install-btn {
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            cursor: pointer;
-            border: none;
-            transition: all 0.2s ease;
-        }
-
-        .pwa-install-btn.primary {
-            background: white;
-            color: var(--accent-primary);
-        }
-
-        .pwa-install-btn.secondary {
-            background: rgba(255,255,255,0.2);
-            color: white;
-        }
-
-        /* Hide main nav in PWA mode */
-        @media (display-mode: standalone) {
-            #main-nav {
-                display: none !important;
-            }
-
-            .shell-content {
-                padding-top: 0;
-            }
-        }
-
-        /* Animated mesh gradient background */
-        .bg-gradient {
             position: fixed;
             top: 0;
             left: 0;
+            right: 0;
+            height: 56px;
+            background: rgba(10, 10, 15, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-subtle);
+            z-index: 50;
+            padding: 0 16px;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .mobile-menu-btn {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1.4rem;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background 0.2s ease;
+        }
+
+        .mobile-menu-btn:hover {
+            background: var(--bg-card);
+        }
+
+        .mobile-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        /* === MAIN CONTENT === */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Background effects */
+        .bg-gradient {
+            position: fixed;
+            top: 0;
+            left: var(--sidebar-width);
             right: 0;
             bottom: 0;
             z-index: 0;
             overflow: hidden;
+            pointer-events: none;
         }
 
         .bg-gradient::before {
@@ -313,207 +323,75 @@
             width: 200%;
             height: 200%;
             background:
-                radial-gradient(ellipse 80% 50% at 20% 40%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
-                radial-gradient(ellipse 60% 40% at 80% 20%, rgba(139, 92, 246, 0.12) 0%, transparent 50%),
-                radial-gradient(ellipse 50% 60% at 40% 80%, rgba(236, 72, 153, 0.1) 0%, transparent 50%),
-                radial-gradient(ellipse 40% 30% at 70% 70%, rgba(34, 211, 238, 0.08) 0%, transparent 50%);
+                radial-gradient(ellipse 80% 50% at 20% 40%, rgba(99, 102, 241, 0.12) 0%, transparent 50%),
+                radial-gradient(ellipse 60% 40% at 80% 20%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse 50% 60% at 40% 80%, rgba(236, 72, 153, 0.08) 0%, transparent 50%);
             animation: gradientShift 20s ease-in-out infinite alternate;
         }
 
         @keyframes gradientShift {
             0% { transform: translate(0, 0) rotate(0deg); }
-            33% { transform: translate(2%, -2%) rotate(1deg); }
-            66% { transform: translate(-1%, 1%) rotate(-0.5deg); }
+            50% { transform: translate(2%, -2%) rotate(1deg); }
             100% { transform: translate(1%, 2%) rotate(0.5deg); }
         }
 
-        /* Subtle grid */
-        .bg-grid {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-image:
-                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-            background-size: 64px 64px;
-            z-index: 1;
-            pointer-events: none;
-        }
-
-        /* Floating orbs */
-        .orb {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(80px);
-            opacity: 0.5;
-            z-index: 0;
-            pointer-events: none;
-        }
-
-        .orb-1 {
-            width: 400px;
-            height: 400px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            top: 10%;
-            right: 10%;
-            animation: float1 25s ease-in-out infinite;
-        }
-
-        .orb-2 {
-            width: 300px;
-            height: 300px;
-            background: linear-gradient(135deg, #ec4899, #f43f5e);
-            bottom: 20%;
-            left: 5%;
-            animation: float2 30s ease-in-out infinite;
-        }
-
-        .orb-3 {
-            width: 250px;
-            height: 250px;
-            background: linear-gradient(135deg, #22d3ee, #06b6d4);
-            top: 60%;
-            right: 20%;
-            animation: float3 20s ease-in-out infinite;
-        }
-
-        @keyframes float1 {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            50% { transform: translate(-30px, 40px) scale(1.1); }
-        }
-
-        @keyframes float2 {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            50% { transform: translate(40px, -30px) scale(0.9); }
-        }
-
-        @keyframes float3 {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            50% { transform: translate(-20px, -40px) scale(1.05); }
-        }
-
-        /* Main content */
-        .main-content {
-            position: relative;
-            z-index: 10;
-            min-height: 100vh;
+        /* Chat Area */
+        .chat-area {
+            flex: 1;
             display: flex;
             flex-direction: column;
+            position: relative;
+            z-index: 10;
         }
 
-        /* Hero Section */
-        .suitegpt-hero {
+        /* Hero/Welcome State */
+        .welcome-state {
+            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 120px 24px 40px;
+            padding: 40px 24px;
             text-align: center;
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.4s ease;
         }
 
-        .suitegpt-hero.chat-active {
-            padding: 100px 24px 24px;
+        .welcome-state.chat-active {
+            padding-top: 20px;
             justify-content: flex-start;
         }
 
-        /* Logo badge */
-        .logo-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 20px 10px 14px;
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 100px;
-            margin-bottom: 32px;
-            backdrop-filter: blur(20px);
-            animation: fadeInDown 0.6s ease;
-        }
-
-        .logo-badge-icon {
-            width: 28px;
-            height: 28px;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-        }
-
-        .logo-badge span {
-            font-weight: 600;
-            font-size: 0.9rem;
-            background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .suitegpt-hero.chat-active .logo-badge {
-            display: none;
-        }
-
-        @keyframes fadeInDown {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .hero-title {
-            font-size: clamp(2.5rem, 6vw, 4rem);
+        .welcome-title {
+            font-size: clamp(2rem, 5vw, 3rem);
             font-weight: 800;
-            letter-spacing: -0.03em;
-            line-height: 1.1;
-            margin-bottom: 16px;
-            background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.8) 50%, #fff 100%);
+            letter-spacing: -0.02em;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.8) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            animation: fadeInUp 0.6s ease 0.1s backwards;
         }
 
-        .suitegpt-hero.chat-active .hero-title {
-            font-size: clamp(1.5rem, 3vw, 2rem);
+        .welcome-state.chat-active .welcome-title {
+            font-size: clamp(1.4rem, 3vw, 1.8rem);
             margin-bottom: 16px;
         }
 
-        .hero-subtitle {
-            font-size: 1.15rem;
+        .welcome-subtitle {
+            font-size: 1.1rem;
             color: var(--text-secondary);
-            margin-bottom: 40px;
+            margin-bottom: 32px;
             max-width: 480px;
-            line-height: 1.6;
-            animation: fadeInUp 0.6s ease 0.2s backwards;
         }
 
-        .suitegpt-hero.chat-active .hero-subtitle,
-        .suitegpt-hero.chat-active .powered-by {
+        .welcome-state.chat-active .welcome-subtitle {
             display: none;
-        }
-
-        .suitegpt-hero.chat-active .help-section {
-            margin-top: 32px;
-        }
-
-        .suitegpt-hero.chat-active .help-section .intent-grid,
-        .suitegpt-hero.chat-active .help-section .community-pulse,
-        .suitegpt-hero.chat-active .help-section .help-section-header {
-            display: none;
-        }
-
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
         }
 
         /* Input Container */
         .input-container {
             width: 100%;
             max-width: 680px;
-            animation: fadeInUp 0.6s ease 0.3s backwards;
         }
 
         .chat-input-wrapper {
@@ -525,31 +403,11 @@
             padding: 8px 8px 8px 24px;
             backdrop-filter: blur(20px);
             transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .chat-input-wrapper::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg,
-                rgba(99, 102, 241, 0.1) 0%,
-                transparent 50%,
-                rgba(236, 72, 153, 0.1) 100%);
-            opacity: 0;
-            transition: opacity 0.3s ease;
         }
 
         .chat-input-wrapper:focus-within {
             border-color: var(--accent-primary);
-            box-shadow:
-                0 0 0 4px rgba(99, 102, 241, 0.1),
-                0 20px 40px -10px rgba(0, 0, 0, 0.3);
-        }
-
-        .chat-input-wrapper:focus-within::before {
-            opacity: 1;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
         }
 
         .chat-input {
@@ -561,8 +419,6 @@
             color: var(--text-primary);
             outline: none;
             padding: 14px 0;
-            position: relative;
-            z-index: 1;
         }
 
         .chat-input::placeholder {
@@ -580,19 +436,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s ease;
             flex-shrink: 0;
-            position: relative;
-            z-index: 1;
         }
 
         .send-btn:hover:not(:disabled) {
             transform: scale(1.05);
             box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
-        }
-
-        .send-btn:active:not(:disabled) {
-            transform: scale(0.98);
         }
 
         .send-btn:disabled {
@@ -605,7 +455,7 @@
             height: 20px;
         }
 
-        /* Quick Suggestion Chips */
+        /* Quick Suggestions */
         .quick-suggestions {
             display: flex;
             flex-wrap: wrap;
@@ -633,242 +483,11 @@
             transform: translateY(-1px);
         }
 
-        .suggestion-chip:active {
-            transform: scale(0.98);
-        }
-
-        /* Import Link */
-        .import-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 16px;
-            padding: 10px 16px;
-            background: transparent;
-            border: 1px dashed var(--border-subtle);
-            border-radius: 8px;
-            color: var(--text-tertiary);
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-family: inherit;
-        }
-
-        .import-link:hover {
-            border-color: var(--accent-primary);
-            color: var(--text-secondary);
-            background: rgba(99, 102, 241, 0.05);
-        }
-
-        /* Suite Link in Footer */
-        .suite-link {
-            color: var(--text-tertiary);
-            text-decoration: none;
-            transition: color 0.2s ease;
-        }
-
-        .suite-link:hover {
-            color: var(--text-secondary);
-        }
-
-        .suite-link strong {
-            color: var(--accent-primary);
-        }
-
-        /* Browse Section */
-        .browse-section {
-            width: 100%;
-            max-width: 900px;
-            margin-top: 48px;
-            animation: fadeInUp 0.6s ease 0.4s backwards;
-        }
-
-        .browse-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-
-        .browse-title {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-        }
-
-        .browse-title span {
-            color: var(--text-tertiary);
-            font-weight: 400;
-        }
-
-        /* Category Pills */
-        .category-pills {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin-bottom: 24px;
-        }
-
-        .category-pill {
-            padding: 8px 16px;
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 100px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .category-pill:hover {
-            background: var(--bg-card-hover);
-            border-color: var(--border-hover);
-        }
-
-        .category-pill.active {
-            background: var(--accent-primary);
-            border-color: var(--accent-primary);
-            color: white;
-        }
-
-        .category-pill .count {
-            margin-left: 6px;
-            opacity: 0.6;
-        }
-
-        /* Use Cases Grid */
-        .use-cases-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 16px;
-        }
-
-        .use-case-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 16px;
-            padding: 20px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .use-case-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .use-case-card:hover {
-            background: var(--bg-card-hover);
-            border-color: var(--border-hover);
-            transform: translateY(-2px);
-        }
-
-        .use-case-card:hover::before {
-            opacity: 1;
-        }
-
-        .use-case-query {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 12px;
-            line-height: 1.4;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .use-case-meta {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .use-case-app {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .use-case-app-icon {
-            width: 24px;
-            height: 24px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8rem;
-        }
-
-        .use-case-app-name {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .use-case-helpful {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 0.75rem;
-            color: var(--text-tertiary);
-        }
-
-        .use-case-helpful svg {
-            width: 14px;
-            height: 14px;
-        }
-
-        /* Loading skeleton */
-        .use-case-card.skeleton {
-            pointer-events: none;
-        }
-
-        .skeleton-text {
-            background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-card-hover) 50%, var(--bg-card) 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
-            border-radius: 4px;
-        }
-
-        @keyframes shimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-
-        /* Powered by badge */
-        .powered-by {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 48px;
-            font-size: 0.8rem;
-            color: var(--text-tertiary);
-        }
-
-        .powered-by svg {
-            width: 16px;
-            height: 16px;
-            opacity: 0.5;
-        }
-
         /* Chat Container */
         .chat-container {
             width: 100%;
             max-width: 680px;
-            margin: 32px auto 0;
+            margin: 0 auto;
             padding: 0 24px 40px;
             display: none;
         }
@@ -877,24 +496,18 @@
             display: block;
         }
 
-        /* When chat is active, add some separation */
-        .suitegpt-hero.chat-active .help-section {
-            border-top: 1px solid var(--border-subtle);
-            padding-top: 32px;
-        }
-
         .chat-messages {
             display: flex;
             flex-direction: column;
             gap: 20px;
         }
 
-        /* Chat Messages */
+        /* Messages */
         .message {
             display: flex;
             gap: 14px;
             max-width: 90%;
-            animation: messageSlide 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: messageSlide 0.4s ease;
         }
 
         @keyframes messageSlide {
@@ -946,7 +559,6 @@
             color: var(--text-primary);
             border: 1px solid var(--border-subtle);
             border-bottom-left-radius: 6px;
-            backdrop-filter: blur(20px);
         }
 
         /* App Cards in Chat */
@@ -969,7 +581,6 @@
             background: rgba(99, 102, 241, 0.12);
             border-color: var(--accent-primary);
             transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.2);
         }
 
         .app-icon-inline {
@@ -987,7 +598,6 @@
             font-size: 1rem;
             font-weight: 700;
             margin-bottom: 3px;
-            color: var(--text-primary);
         }
 
         .app-info-inline p {
@@ -1013,10 +623,9 @@
         .app-card-inline:hover .app-arrow {
             background: var(--accent-primary);
             color: white;
-            transform: translateX(2px);
         }
 
-        /* Loading Indicator */
+        /* Typing Indicator */
         .typing-indicator {
             display: flex;
             gap: 5px;
@@ -1079,7 +688,7 @@
             color: #ef4444;
         }
 
-        /* Quick Action Buttons */
+        /* Quick Actions */
         .quick-actions {
             display: flex;
             flex-wrap: wrap;
@@ -1107,7 +716,6 @@
         .quick-action-btn:hover {
             background: rgba(99, 102, 241, 0.15);
             border-color: var(--accent-primary);
-            transform: translateY(-1px);
         }
 
         .quick-action-btn.primary {
@@ -1116,529 +724,97 @@
             color: white;
         }
 
-        .quick-action-btn.primary:hover {
-            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
-        }
-
-        .quick-action-btn .icon {
-            font-size: 1rem;
-        }
-
-        /* Mobile Adjustments */
-        @media (max-width: 640px) {
-            .suitegpt-hero {
-                padding: 100px 16px 40px;
-            }
-
-            .hero-title {
-                font-size: clamp(2rem, 8vw, 2.5rem);
-            }
-
-            .hero-subtitle {
-                font-size: 1rem;
-            }
-
-            .chat-input-wrapper {
-                padding: 6px 6px 6px 18px;
-                border-radius: 16px;
-            }
-
-            .chat-input {
-                font-size: 1rem;
-                padding: 12px 0;
-            }
-
-            .send-btn {
-                width: 46px;
-                height: 46px;
-                border-radius: 12px;
-            }
-
-            .help-section {
-                margin-top: 32px;
-            }
-
-            .use-cases-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .chat-container {
-                padding: 0 16px 30px;
-            }
-
-            .message {
-                max-width: 95%;
-            }
-
-            .message-content {
-                padding: 14px 16px;
-            }
-
-            .orb {
-                opacity: 0.3;
-            }
-
-            .orb-1 { width: 250px; height: 250px; }
-            .orb-2 { width: 200px; height: 200px; }
-            .orb-3 { display: none; }
-        }
-
-        /* Scrollbar styling */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
-
-        /* === CONCIERGE PATHS SECTION === */
-        .paths-section {
+        /* Use Cases Section */
+        .use-cases-section {
             width: 100%;
             max-width: 900px;
-            margin-top: 48px;
-            animation: fadeInUp 0.6s ease 0.35s backwards;
+            margin: 32px auto 0;
+            padding: 0 24px;
         }
 
-        .paths-header {
-            text-align: center;
-            margin-bottom: 24px;
-        }
-
-        .paths-header h2 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            margin-bottom: 6px;
-        }
-
-        .paths-header p {
-            font-size: 0.9rem;
-            color: var(--text-tertiary);
-        }
-
-        .paths-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
-            margin-bottom: 16px;
-        }
-
-        .path-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 20px;
-            padding: 28px 24px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-            text-align: center;
-        }
-
-        .path-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .path-card[data-path="find"]::before {
-            background: linear-gradient(90deg, #22c55e, #16a34a);
-        }
-
-        .path-card[data-path="change"]::before {
-            background: linear-gradient(90deg, #f59e0b, #d97706);
-        }
-
-        .path-card[data-path="build"]::before {
-            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
-        }
-
-        .path-card:hover {
-            background: var(--bg-card-hover);
-            border-color: var(--border-hover);
-            transform: translateY(-4px);
-            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.4);
-        }
-
-        .path-card:hover::before {
-            opacity: 1;
-        }
-
-        .path-card.selected {
-            border-color: var(--accent-primary);
-            background: rgba(99, 102, 241, 0.08);
-        }
-
-        .path-card.selected::before {
-            opacity: 1;
-        }
-
-        .path-icon {
-            width: 56px;
-            height: 56px;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.6rem;
-            margin: 0 auto 16px;
-            position: relative;
-        }
-
-        .path-card[data-path="find"] .path-icon {
-            background: rgba(34, 197, 94, 0.15);
-        }
-
-        .path-card[data-path="change"] .path-icon {
-            background: rgba(245, 158, 11, 0.15);
-        }
-
-        .path-card[data-path="build"] .path-icon {
-            background: rgba(99, 102, 241, 0.15);
-        }
-
-        .path-card h3 {
-            font-size: 1.05rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 8px;
-        }
-
-        .path-card p {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            line-height: 1.5;
-            margin-bottom: 16px;
-        }
-
-        .path-time {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            padding: 6px 12px;
-            border-radius: 100px;
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text-tertiary);
-        }
-
-        .path-card[data-path="find"] .path-time {
-            color: #22c55e;
-            background: rgba(34, 197, 94, 0.1);
-        }
-
-        .path-card[data-path="change"] .path-time {
-            color: #f59e0b;
-            background: rgba(245, 158, 11, 0.1);
-        }
-
-        .path-card[data-path="build"] .path-time {
-            color: var(--accent-primary);
-            background: rgba(99, 102, 241, 0.1);
-        }
-
-        /* Hide paths when chat is active */
-        .suitegpt-hero.chat-active .paths-section {
-            display: none;
-        }
-
-        @media (max-width: 768px) {
-            .paths-grid {
-                grid-template-columns: 1fr;
-                gap: 12px;
-            }
-
-            .path-card {
-                padding: 20px;
-                display: flex;
-                align-items: center;
-                text-align: left;
-                gap: 16px;
-            }
-
-            .path-icon {
-                margin: 0;
-                width: 48px;
-                height: 48px;
-                flex-shrink: 0;
-            }
-
-            .path-card-content {
-                flex: 1;
-            }
-
-            .path-card h3 {
-                margin-bottom: 4px;
-            }
-
-            .path-card p {
-                margin-bottom: 8px;
-                font-size: 0.8rem;
-            }
-        }
-
-        /* === GOVERNANCE INFO MODAL === */
-        .governance-info {
-            display: none;
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 16px;
-            padding: 20px 24px;
-            margin-top: 16px;
-            backdrop-filter: blur(20px);
-            animation: fadeInUp 0.3s ease;
-        }
-
-        .governance-info.visible {
-            display: block;
-        }
-
-        .governance-info h4 {
-            font-size: 0.95rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .governance-info p {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            line-height: 1.6;
-            margin-bottom: 12px;
-        }
-
-        .governance-flow {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-top: 16px;
-        }
-
-        .governance-step {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 14px;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 10px;
-            font-size: 0.8rem;
-        }
-
-        .governance-step.approved {
-            background: rgba(34, 197, 94, 0.1);
-            color: #22c55e;
-        }
-
-        .governance-step.private {
-            background: rgba(139, 92, 246, 0.1);
-            color: #8b5cf6;
-        }
-
-        .governance-arrow {
-            color: var(--text-tertiary);
-            font-size: 1.2rem;
-        }
-
-        .governance-close {
-            background: none;
-            border: none;
-            color: var(--text-tertiary);
-            cursor: pointer;
-            padding: 4px;
-            margin-left: auto;
-            font-size: 1.2rem;
-            line-height: 1;
-        }
-
-        .governance-close:hover {
-            color: var(--text-secondary);
-        }
-
-        /* === INTENT-BASED UI === */
-        .help-section {
-            width: 100%;
-            max-width: 900px;
-            margin-top: 48px;
-            animation: fadeInUp 0.6s ease 0.4s backwards;
-        }
-
-        .help-section-header {
-            text-align: center;
-            margin-bottom: 28px;
-        }
-
-        .help-section-header h2 {
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 8px;
-        }
-
-        .help-section-header p {
-            font-size: 0.9rem;
-            color: var(--text-tertiary);
-        }
-
-        /* Intent Cards Grid */
-        .intent-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-bottom: 32px;
-        }
-
-        .intent-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 16px;
-            padding: 20px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .intent-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .intent-card:hover {
-            background: var(--bg-card-hover);
-            border-color: var(--border-hover);
-            transform: translateY(-2px);
-        }
-
-        .intent-card:hover::before {
-            opacity: 1;
-        }
-
-        .intent-card.active {
-            border-color: var(--accent-primary);
-            background: rgba(99, 102, 241, 0.08);
-        }
-
-        .intent-card.active::before {
-            opacity: 1;
-        }
-
-        /* Intent card colors */
-        .intent-card[data-intent="problems"]::before { background: linear-gradient(90deg, #f97316, #ea580c); }
-        .intent-card[data-intent="desires"]::before { background: linear-gradient(90deg, #ec4899, #db2777); }
-        .intent-card[data-intent="ideas"]::before { background: linear-gradient(90deg, #eab308, #ca8a04); }
-        .intent-card[data-intent="find"]::before { background: linear-gradient(90deg, #22c55e, #16a34a); }
-        .intent-card[data-intent="change"]::before { background: linear-gradient(90deg, #3b82f6, #2563eb); }
-        .intent-card[data-intent="build"]::before { background: linear-gradient(90deg, #8b5cf6, #7c3aed); }
-
-        .intent-card-icon {
-            font-size: 1.8rem;
-            margin-bottom: 10px;
-        }
-
-        .intent-card-title {
-            font-size: 0.9rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 6px;
-        }
-
-        .intent-card-example {
-            font-size: 0.75rem;
-            color: var(--text-tertiary);
-            font-style: italic;
-        }
-
-        /* Trending/Community Section */
-        .community-pulse {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.08));
-            border: 1px solid rgba(99, 102, 241, 0.2);
-            border-radius: 16px;
-            padding: 16px 20px;
-            margin-bottom: 24px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-
-        .community-pulse-title {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--accent-primary);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .community-pulse-items {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            flex: 1;
-        }
-
-        .pulse-item {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            background: rgba(255, 255, 255, 0.05);
-            padding: 6px 12px;
-            border-radius: 100px;
-        }
-
-        .pulse-item strong {
-            color: var(--text-primary);
-        }
-
-        /* Example Conversations */
-        .examples-section {
-            margin-top: 24px;
-        }
-
-        .examples-header {
+        .use-cases-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             margin-bottom: 16px;
         }
 
-        .examples-title {
+        .use-cases-title {
             font-size: 0.95rem;
             font-weight: 600;
             color: var(--text-secondary);
         }
 
-        .examples-filter {
+        .use-cases-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .use-case-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .use-case-card:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-hover);
+            transform: translateY(-2px);
+        }
+
+        .use-case-query {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .use-case-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .use-case-app {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .use-case-app-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+
+        .use-case-app-name {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .use-case-helpful {
+            display: flex;
+            align-items: center;
+            gap: 4px;
             font-size: 0.75rem;
             color: var(--text-tertiary);
         }
 
-        /* Updated use cases for intent-based display */
-        .browse-section .browse-title {
-            font-size: 1.05rem;
+        .use-case-helpful svg {
+            width: 14px;
+            height: 14px;
         }
 
-        .browse-subtitle {
-            font-size: 0.85rem;
-            color: var(--text-tertiary);
-            margin-top: 4px;
-        }
-
-        /* Intent badge on use case cards */
         .intent-badge {
             display: inline-flex;
             align-items: center;
@@ -1657,52 +833,24 @@
         .intent-badge.change { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
         .intent-badge.build { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
 
-        @media (max-width: 768px) {
-            .intent-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .community-pulse {
-                flex-direction: column;
-                align-items: flex-start;
-            }
+        /* Loading skeleton */
+        .use-case-card.skeleton {
+            pointer-events: none;
         }
 
-        @media (max-width: 480px) {
-            .intent-grid {
-                grid-template-columns: 1fr;
-            }
+        .skeleton-text {
+            background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-card-hover) 50%, var(--bg-card) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 4px;
         }
 
-        /* === CHAT IMPORT FEATURE === */
-        .import-trigger {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 20px;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15));
-            border: 1px solid rgba(99, 102, 241, 0.3);
-            border-radius: 12px;
-            color: var(--text-primary);
-            font-size: 0.9rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 24px;
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
         }
 
-        .import-trigger:hover {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(139, 92, 246, 0.25));
-            border-color: var(--accent-primary);
-            transform: translateY(-2px);
-        }
-
-        .import-trigger svg {
-            width: 18px;
-            height: 18px;
-        }
-
-        /* Import Modal */
+        /* === IMPORT MODAL === */
         .import-modal-overlay {
             display: none;
             position: fixed;
@@ -1782,7 +930,6 @@
             padding: 28px;
         }
 
-        /* Source Selection */
         .import-sources {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -1821,7 +968,37 @@
             color: var(--text-primary);
         }
 
-        /* Drop Zone */
+        .import-instructions {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .import-instructions h4 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .import-instructions ol {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            padding-left: 20px;
+            line-height: 1.8;
+        }
+
+        .import-instructions code {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.75rem;
+        }
+
         .import-dropzone {
             border: 2px dashed var(--border-subtle);
             border-radius: 16px;
@@ -1871,47 +1048,10 @@
             transition: all 0.2s ease;
         }
 
-        .import-dropzone-btn:hover {
-            background: var(--accent-secondary);
-        }
-
         .import-file-input {
             display: none;
         }
 
-        /* Instructions */
-        .import-instructions {
-            background: var(--bg-card);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 24px;
-        }
-
-        .import-instructions h4 {
-            font-size: 0.85rem;
-            font-weight: 600;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .import-instructions ol {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            padding-left: 20px;
-            line-height: 1.8;
-        }
-
-        .import-instructions code {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: monospace;
-            font-size: 0.75rem;
-        }
-
-        /* Privacy Notice */
         .import-privacy {
             background: rgba(34, 197, 94, 0.1);
             border: 1px solid rgba(34, 197, 94, 0.2);
@@ -1960,7 +1100,6 @@
             flex-shrink: 0;
         }
 
-        /* Progress */
         .import-progress {
             display: none;
             text-align: center;
@@ -2012,7 +1151,6 @@
             transition: width 0.3s ease;
         }
 
-        /* Results */
         .import-results {
             display: none;
         }
@@ -2138,6 +1276,8 @@
             margin-bottom: 12px;
             cursor: pointer;
             transition: all 0.2s ease;
+            text-decoration: none;
+            color: inherit;
         }
 
         .import-app-rec:hover {
@@ -2177,44 +1317,6 @@
             border-radius: 100px;
         }
 
-        .import-cta {
-            display: flex;
-            gap: 12px;
-        }
-
-        .import-cta-btn {
-            flex: 1;
-            padding: 14px 20px;
-            border-radius: 12px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-align: center;
-            border: none;
-        }
-
-        .import-cta-btn.primary {
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            color: white;
-        }
-
-        .import-cta-btn.primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
-        }
-
-        .import-cta-btn.secondary {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            color: var(--text-primary);
-        }
-
-        .import-cta-btn.secondary:hover {
-            background: var(--bg-card-hover);
-        }
-
-        /* Unmatched Ideas Section */
         .import-unmatched {
             margin-bottom: 24px;
         }
@@ -2231,12 +1333,6 @@
             border-radius: 12px;
             padding: 16px;
             margin-bottom: 10px;
-            transition: all 0.2s ease;
-        }
-
-        .unmatched-idea:hover {
-            border-color: var(--border-hover);
-            background: var(--bg-card-hover);
         }
 
         .unmatched-idea-text {
@@ -2271,12 +1367,6 @@
             color: white;
             border: none;
             cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .unmatched-idea-request:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
         }
 
         .import-summary-text {
@@ -2290,21 +1380,115 @@
             border-left: 3px solid var(--accent-primary);
         }
 
-        /* Test mode indicator */
-        .test-mode-banner {
-            background: rgba(245, 158, 11, 0.15);
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            color: #f59e0b;
-            padding: 10px 16px;
-            border-radius: 10px;
-            font-size: 0.8rem;
-            margin-bottom: 16px;
+        .import-cta {
             display: flex;
-            align-items: center;
-            gap: 8px;
+            gap: 12px;
         }
 
-        @media (max-width: 640px) {
+        .import-cta-btn {
+            flex: 1;
+            padding: 14px 20px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            border: none;
+        }
+
+        .import-cta-btn.primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+        }
+
+        .import-cta-btn.secondary {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+        }
+
+        /* === RESPONSIVE === */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .sidebar-overlay.active {
+                display: block;
+            }
+
+            .mobile-header {
+                display: flex;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding-top: 56px;
+            }
+
+            .bg-gradient {
+                left: 0;
+            }
+
+            .welcome-state {
+                padding: 20px 16px;
+            }
+
+            .welcome-title {
+                font-size: clamp(1.5rem, 6vw, 2rem);
+            }
+
+            .welcome-subtitle {
+                font-size: 0.95rem;
+                margin-bottom: 24px;
+            }
+
+            .chat-input-wrapper {
+                padding: 6px 6px 6px 18px;
+                border-radius: 16px;
+            }
+
+            .chat-input {
+                font-size: 1rem;
+                padding: 12px 0;
+            }
+
+            .send-btn {
+                width: 46px;
+                height: 46px;
+                border-radius: 12px;
+            }
+
+            .quick-suggestions {
+                gap: 6px;
+            }
+
+            .suggestion-chip {
+                padding: 6px 12px;
+                font-size: 0.8rem;
+            }
+
+            .use-cases-section {
+                padding: 0 16px;
+            }
+
+            .use-cases-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chat-container {
+                padding: 0 16px 30px;
+            }
+
+            .message {
+                max-width: 95%;
+            }
+
             .import-sources {
                 grid-template-columns: 1fr;
             }
@@ -2312,543 +1496,358 @@
             .import-stats {
                 grid-template-columns: 1fr;
             }
-
-            .import-cta {
-                flex-direction: column;
-            }
-
-            .unmatched-idea-meta {
-                flex-direction: column;
-                align-items: flex-start;
-            }
         }
 
-        /* === APPS BROWSER TAB === */
-        .apps-browser {
-            padding: 20px;
-            padding-bottom: 100px;
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+
+        /* PWA Install Prompt */
+        .pwa-install-prompt {
+            display: none;
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 16px;
+            padding: 16px 20px;
+            z-index: 200;
+            max-width: 400px;
+            width: calc(100% - 48px);
+            animation: slideUp 0.3s ease;
         }
 
-        .apps-browser-header {
-            text-align: center;
-            margin-bottom: 24px;
+        .pwa-install-prompt.visible {
+            display: block;
         }
 
-        .apps-browser-header h2 {
-            font-size: 1.5rem;
-            font-weight: 800;
-            margin-bottom: 4px;
+        @keyframes slideUp {
+            from { transform: translateX(-50%) translateY(100%); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
         }
 
-        .apps-browser-header p {
-            color: var(--text-tertiary);
-            font-size: 0.9rem;
-        }
-
-        .apps-browser-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        .pwa-install-content {
+            display: flex;
+            align-items: center;
             gap: 16px;
         }
 
-        .app-browser-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 16px;
-            padding: 20px 16px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
+        .pwa-install-icon {
+            font-size: 2rem;
         }
 
-        .app-browser-card:hover {
-            background: var(--bg-card-hover);
-            border-color: var(--border-hover);
-            transform: translateY(-2px);
-        }
-
-        .app-browser-icon {
-            width: 56px;
-            height: 56px;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.8rem;
-            margin: 0 auto 12px;
-        }
-
-        .app-browser-name {
-            font-weight: 700;
+        .pwa-install-text h4 {
             font-size: 0.95rem;
-            margin-bottom: 4px;
-        }
-
-        .app-browser-desc {
-            font-size: 0.75rem;
-            color: var(--text-tertiary);
-            line-height: 1.4;
-        }
-
-        /* === PROFILE TAB === */
-        .profile-container {
-            padding: 20px;
-            padding-bottom: 100px;
-            max-width: 500px;
-            margin: 0 auto;
-        }
-
-        .profile-header {
-            text-align: center;
-            margin-bottom: 32px;
-        }
-
-        .profile-avatar {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.5rem;
-            margin: 0 auto 16px;
-        }
-
-        .profile-header h2 {
-            font-size: 1.4rem;
-            font-weight: 800;
-            margin-bottom: 4px;
-        }
-
-        .profile-subtitle {
-            color: var(--text-tertiary);
-            font-size: 0.85rem;
-        }
-
-        .profile-section {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 16px;
-        }
-
-        .profile-section h3 {
-            font-size: 1rem;
             font-weight: 700;
-            margin-bottom: 12px;
+            margin-bottom: 4px;
         }
 
-        .profile-empty {
-            color: var(--text-tertiary);
-            font-size: 0.85rem;
+        .pwa-install-text p {
+            font-size: 0.8rem;
+            opacity: 0.9;
         }
 
-        /* === APP HEADER (when app is open) === */
-        .app-header {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
+        .pwa-install-actions {
             display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 16px;
-            background: rgba(10, 10, 15, 0.95);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--border-subtle);
-            z-index: 10;
-        }
-
-        .app-back-btn {
-            display: flex;
-            align-items: center;
             gap: 8px;
-            padding: 8px 12px;
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
+            margin-top: 12px;
+        }
+
+        .pwa-install-btn {
+            padding: 8px 16px;
             border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 0.85rem;
+            font-size: 0.8rem;
+            font-weight: 600;
             cursor: pointer;
+            border: none;
             transition: all 0.2s ease;
         }
 
-        .app-back-btn:hover {
-            background: var(--bg-card-hover);
-            border-color: var(--border-hover);
+        .pwa-install-btn.primary {
+            background: white;
+            color: var(--accent-primary);
         }
 
-        .app-title {
-            font-weight: 700;
-            font-size: 1rem;
+        .pwa-install-btn.secondary {
+            background: rgba(255,255,255,0.2);
+            color: white;
         }
 
-        /* Hide nav bar on desktop, always show on mobile */
-        @media (min-width: 769px) {
-            .bottom-nav {
-                display: none;
-            }
-
-            .shell-container {
-                height: auto;
-                min-height: 100vh;
-            }
-
-            .shell-content {
-                overflow: visible;
-            }
-
-            .tab-panel {
-                position: relative;
-                overflow: visible;
-            }
-
-            .tab-panel:not(#chatPanel) {
-                display: none !important;
-            }
-
-            .tab-panel#chatPanel {
-                display: block !important;
-            }
+        /* Hide main nav in this view */
+        #main-nav {
+            display: none !important;
         }
     </style>
 </head>
 <body>
-    <!-- Shell Container for PWA -->
-    <div class="shell-container">
-        <!-- Background effects (shared across all tabs) -->
-        <div class="bg-gradient"></div>
-        <div class="bg-grid"></div>
-        <div class="orb orb-1"></div>
-        <div class="orb orb-2"></div>
-        <div class="orb orb-3"></div>
-
-        <!-- Shell Content Area -->
-        <div class="shell-content">
-            <!-- Chat Tab (Main) -->
-            <div class="tab-panel active" id="chatPanel">
-                <div class="main-content">
-                    <nav id="main-nav"></nav>
-                    <script src="/nav-component.js"></script>
-
-        <!-- Hero Section with Input -->
-        <section class="suitegpt-hero" id="heroSection">
-            <div class="logo-badge">
-                <div class="logo-badge-icon">S</div>
-                <span>SuiteGPT</span>
-            </div>
-
-            <h1 class="hero-title">What do you need?</h1>
-            <p class="hero-subtitle">Describe your problem, and we'll find or build the solution.</p>
-
-            <div class="input-container">
-                <div class="chat-input-wrapper">
-                    <input
-                        type="text"
-                        class="chat-input"
-                        id="chatInput"
-                        placeholder="I need help with..."
-                        autocomplete="off"
-                    >
-                    <button class="send-btn" id="sendBtn" disabled>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </button>
-                </div>
-
-                <!-- Quick Suggestions -->
-                <div class="quick-suggestions">
-                    <button class="suggestion-chip" data-query="I want to track my fitness">💪 Fitness</button>
-                    <button class="suggestion-chip" data-query="I need help with my finances">💰 Money</button>
-                    <button class="suggestion-chip" data-query="I want to build better habits">⏰ Habits</button>
-                    <button class="suggestion-chip" data-query="I want to learn about DeFi">📚 DeFi</button>
-                    <button class="suggestion-chip" data-query="I have back pain from sitting">🧘 Pain</button>
-                    <button class="suggestion-chip" data-query="I want to eat healthier">🥗 Nutrition</button>
-                </div>
-
-                <!-- Import History Link -->
-                <button class="import-link" id="importTrigger">
-                    📥 Import your ChatGPT/Claude history for personalized recommendations
-                </button>
-            </div>
-
-            <!-- Chat Container -->
-            <div class="chat-container" id="chatContainer">
-                <div class="chat-messages" id="chatMessages"></div>
-            </div>
-
-            <!-- Hidden elements needed by JS -->
-            <div id="pathsSection" style="display:none;"></div>
-            <div id="governanceInfo" style="display:none;"></div>
-            <div id="helpSection" style="display:none;"></div>
-
-                <!-- Example Conversations -->
-                <div class="examples-section">
-                    <div class="examples-header">
-                        <div class="examples-title">Example conversations <span id="useCaseCount"></span></div>
-                        <div class="examples-filter" id="currentFilter">Showing: All</div>
-                    </div>
-
-                    <div class="use-cases-grid" id="useCasesGrid">
-                        <!-- Loading skeletons -->
-                        <div class="use-case-card skeleton">
-                            <div class="skeleton-text" style="height: 20px; width: 90%; margin-bottom: 8px;"></div>
-                            <div class="skeleton-text" style="height: 20px; width: 70%; margin-bottom: 16px;"></div>
-                            <div class="skeleton-text" style="height: 16px; width: 40%;"></div>
-                        </div>
-                        <div class="use-case-card skeleton">
-                            <div class="skeleton-text" style="height: 20px; width: 85%; margin-bottom: 8px;"></div>
-                            <div class="skeleton-text" style="height: 20px; width: 60%; margin-bottom: 16px;"></div>
-                            <div class="skeleton-text" style="height: 16px; width: 45%;"></div>
-                        </div>
-                        <div class="use-case-card skeleton">
-                            <div class="skeleton-text" style="height: 20px; width: 80%; margin-bottom: 8px;"></div>
-                            <div class="skeleton-text" style="height: 20px; width: 65%; margin-bottom: 16px;"></div>
-                            <div class="skeleton-text" style="height: 16px; width: 35%;"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="powered-by">
-                <a href="https://getsuite.app" target="_blank" class="suite-link">
-                    Part of <strong>SUITE</strong>
+    <!-- App Layout -->
+    <div class="app-layout">
+        <!-- Left Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a href="/" class="sidebar-logo">
+                    <div class="sidebar-logo-icon">S</div>
+                    <span class="sidebar-logo-text">SuiteGPT</span>
                 </a>
             </div>
-        </section>
 
-        <!-- Import Modal -->
-        <div class="import-modal-overlay" id="importModal">
-            <div class="import-modal">
-                <div class="import-modal-header">
-                    <div>
-                        <h2>Import Your AI History</h2>
-                        <p>Your conversations reveal what you actually need. Let us analyze them and recommend the perfect tools for you.</p>
-                    </div>
-                    <button class="import-modal-close" id="importModalClose">&times;</button>
+            <nav class="sidebar-nav">
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Navigation</div>
+                    <a href="/suite-shell.html" class="sidebar-item">
+                        <span class="sidebar-item-icon">📱</span>
+                        <span>Browse Apps</span>
+                    </a>
+                    <button class="sidebar-item" id="myRequestsBtn">
+                        <span class="sidebar-item-icon">✨</span>
+                        <span>My Requests</span>
+                        <span class="sidebar-item-badge" style="display: none;">0</span>
+                    </button>
+                    <button class="sidebar-item" id="chatHistoryBtn">
+                        <span class="sidebar-item-icon">📜</span>
+                        <span>Chat History</span>
+                    </button>
+                    <button class="sidebar-item" id="importHistoryBtn">
+                        <span class="sidebar-item-icon">📥</span>
+                        <span>Import History</span>
+                    </button>
                 </div>
+            </nav>
 
-                <div class="import-modal-body">
-                    <!-- Step 1: Source Selection & Upload -->
-                    <div class="import-step import-step-upload" id="importStepUpload">
-                        <h4 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 16px;">Select your source</h4>
+            <div class="sidebar-footer">
+                <div class="sidebar-profile">
+                    <div class="sidebar-profile-avatar">👤</div>
+                    <div class="sidebar-profile-info">
+                        <div class="sidebar-profile-name">Guest</div>
+                        <div class="sidebar-profile-status">Not signed in</div>
+                    </div>
+                </div>
+                <div class="sidebar-powered-by">
+                    <a href="https://getsuite.app" target="_blank">
+                        Powered by <strong>SUITE</strong>
+                    </a>
+                </div>
+            </div>
+        </aside>
 
-                        <div class="import-sources">
-                            <div class="import-source selected" data-source="chatgpt">
-                                <div class="import-source-icon">🤖</div>
-                                <div class="import-source-name">ChatGPT</div>
-                            </div>
-                            <div class="import-source" data-source="claude">
-                                <div class="import-source-icon">🧠</div>
-                                <div class="import-source-name">Claude</div>
-                            </div>
-                            <div class="import-source" data-source="gemini">
-                                <div class="import-source-icon">✨</div>
-                                <div class="import-source-name">Gemini</div>
-                            </div>
-                        </div>
+        <!-- Sidebar Overlay (mobile) -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-                        <div class="import-instructions" id="importInstructions">
-                            <h4>📋 How to export from ChatGPT</h4>
-                            <ol>
-                                <li>Go to <code>chat.openai.com</code></li>
-                                <li>Click your profile → <strong>Settings</strong></li>
-                                <li>Go to <strong>Data controls</strong></li>
-                                <li>Click <strong>Export data</strong></li>
-                                <li>Check your email for the download link</li>
-                                <li>Upload the <code>conversations.json</code> file below</li>
-                            </ol>
-                        </div>
+        <!-- Mobile Header -->
+        <header class="mobile-header">
+            <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+            <span class="mobile-title">SuiteGPT</span>
+        </header>
 
-                        <div class="import-dropzone" id="importDropzone">
-                            <div class="import-dropzone-icon">📁</div>
-                            <h3>Drop your export file here</h3>
-                            <p>or click to browse</p>
-                            <button class="import-dropzone-btn">Choose File</button>
-                            <input type="file" class="import-file-input" id="importFileInput" accept=".json,.zip">
-                        </div>
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Background -->
+            <div class="bg-gradient"></div>
 
-                        <!-- Test mode option -->
-                        <div style="text-align: center; margin-bottom: 16px;">
-                            <button id="loadTestData" style="background: none; border: 1px dashed var(--border-subtle); padding: 10px 20px; border-radius: 8px; color: var(--text-tertiary); font-size: 0.8rem; cursor: pointer; transition: all 0.2s ease;">
-                                🧪 Load sample data to test the flow
+            <!-- Chat Area -->
+            <div class="chat-area">
+                <!-- Welcome State -->
+                <section class="welcome-state" id="welcomeState">
+                    <h1 class="welcome-title">What do you need?</h1>
+                    <p class="welcome-subtitle">Describe your problem, and we'll find or build the solution.</p>
+
+                    <div class="input-container">
+                        <div class="chat-input-wrapper">
+                            <input
+                                type="text"
+                                class="chat-input"
+                                id="chatInput"
+                                placeholder="I need help with..."
+                                autocomplete="off"
+                            >
+                            <button class="send-btn" id="sendBtn" disabled>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
                             </button>
                         </div>
 
-                        <div class="import-privacy">
-                            <h4>🔒 Your data, your choice</h4>
-                            <p>We analyze your conversations to understand your needs. We extract themes and topics, not personal details.</p>
-                            <div class="import-consent">
-                                <label>
-                                    <input type="checkbox" id="consentAnalyze" checked>
-                                    <span>Analyze my chats for personalized recommendations</span>
-                                </label>
-                                <label>
-                                    <input type="checkbox" id="consentImprove" checked>
-                                    <span>Help improve SUITE by sharing anonymized insights (we see WHAT problems exist, not WHO has them)</span>
-                                </label>
-                            </div>
+                        <!-- Quick Suggestions -->
+                        <div class="quick-suggestions">
+                            <button class="suggestion-chip" data-query="I want to track my fitness">Fitness</button>
+                            <button class="suggestion-chip" data-query="I need help with my finances">Money</button>
+                            <button class="suggestion-chip" data-query="I want to build better habits">Habits</button>
+                            <button class="suggestion-chip" data-query="I want to learn about DeFi">DeFi</button>
+                            <button class="suggestion-chip" data-query="I have back pain from sitting">Pain</button>
+                            <button class="suggestion-chip" data-query="I want to eat healthier">Nutrition</button>
                         </div>
                     </div>
 
-                    <!-- Step 2: Processing -->
-                    <div class="import-progress" id="importProgress">
-                        <div class="import-progress-spinner"></div>
-                        <h3>Analyzing your conversations...</h3>
-                        <p id="importProgressText">Reading your chat history</p>
-                        <div class="import-progress-bar">
-                            <div class="import-progress-fill" id="importProgressFill"></div>
+                    <!-- Chat Container -->
+                    <div class="chat-container" id="chatContainer">
+                        <div class="chat-messages" id="chatMessages"></div>
+                    </div>
+
+                    <!-- Use Cases Section -->
+                    <div class="use-cases-section" id="useCasesSection">
+                        <div class="use-cases-header">
+                            <div class="use-cases-title">Example conversations <span id="useCaseCount"></span></div>
+                        </div>
+                        <div class="use-cases-grid" id="useCasesGrid">
+                            <!-- Loading skeletons -->
+                            <div class="use-case-card skeleton">
+                                <div class="skeleton-text" style="height: 20px; width: 90%; margin-bottom: 8px;"></div>
+                                <div class="skeleton-text" style="height: 20px; width: 70%; margin-bottom: 16px;"></div>
+                                <div class="skeleton-text" style="height: 16px; width: 40%;"></div>
+                            </div>
+                            <div class="use-case-card skeleton">
+                                <div class="skeleton-text" style="height: 20px; width: 85%; margin-bottom: 8px;"></div>
+                                <div class="skeleton-text" style="height: 20px; width: 60%; margin-bottom: 16px;"></div>
+                                <div class="skeleton-text" style="height: 16px; width: 45%;"></div>
+                            </div>
+                            <div class="use-case-card skeleton">
+                                <div class="skeleton-text" style="height: 20px; width: 80%; margin-bottom: 8px;"></div>
+                                <div class="skeleton-text" style="height: 20px; width: 65%; margin-bottom: 16px;"></div>
+                                <div class="skeleton-text" style="height: 16px; width: 35%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Import Modal -->
+    <div class="import-modal-overlay" id="importModal">
+        <div class="import-modal">
+            <div class="import-modal-header">
+                <div>
+                    <h2>Import Your AI History</h2>
+                    <p>Your conversations reveal what you actually need. Let us analyze them and recommend the perfect tools for you.</p>
+                </div>
+                <button class="import-modal-close" id="importModalClose">&times;</button>
+            </div>
+
+            <div class="import-modal-body">
+                <!-- Step 1: Source Selection & Upload -->
+                <div class="import-step import-step-upload" id="importStepUpload">
+                    <h4 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 16px;">Select your source</h4>
+
+                    <div class="import-sources">
+                        <div class="import-source selected" data-source="chatgpt">
+                            <div class="import-source-icon">🤖</div>
+                            <div class="import-source-name">ChatGPT</div>
+                        </div>
+                        <div class="import-source" data-source="claude">
+                            <div class="import-source-icon">🧠</div>
+                            <div class="import-source-name">Claude</div>
+                        </div>
+                        <div class="import-source" data-source="gemini">
+                            <div class="import-source-icon">✨</div>
+                            <div class="import-source-name">Gemini</div>
                         </div>
                     </div>
 
-                    <!-- Step 3: Results -->
-                    <div class="import-results" id="importResults">
-                        <div class="import-results-header">
-                            <div class="success-icon">🎯</div>
-                            <h3>Analysis Complete!</h3>
-                            <p>Here's what we learned about you</p>
-                        </div>
+                    <div class="import-instructions" id="importInstructions">
+                        <h4>How to export from ChatGPT</h4>
+                        <ol>
+                            <li>Go to <code>chat.openai.com</code></li>
+                            <li>Click your profile then <strong>Settings</strong></li>
+                            <li>Go to <strong>Data controls</strong></li>
+                            <li>Click <strong>Export data</strong></li>
+                            <li>Check your email for the download link</li>
+                            <li>Upload the <code>conversations.json</code> file below</li>
+                        </ol>
+                    </div>
 
-                        <div class="import-stats">
-                            <div class="import-stat">
-                                <div class="import-stat-value" id="statConversations">0</div>
-                                <div class="import-stat-label">Conversations</div>
-                            </div>
-                            <div class="import-stat">
-                                <div class="import-stat-value" id="statMessages">0</div>
-                                <div class="import-stat-label">Messages</div>
-                            </div>
-                            <div class="import-stat">
-                                <div class="import-stat-value" id="statTopics">0</div>
-                                <div class="import-stat-label">Topics Found</div>
-                            </div>
-                        </div>
+                    <div class="import-dropzone" id="importDropzone">
+                        <div class="import-dropzone-icon">📁</div>
+                        <h3>Drop your export file here</h3>
+                        <p>or click to browse</p>
+                        <button class="import-dropzone-btn">Choose File</button>
+                        <input type="file" class="import-file-input" id="importFileInput" accept=".json,.zip">
+                    </div>
 
-                        <div class="import-insights">
-                            <h4>🔍 Key Insights</h4>
-                            <div id="insightsList">
-                                <!-- Populated dynamically -->
-                            </div>
-                        </div>
+                    <!-- Test mode option -->
+                    <div style="text-align: center; margin-bottom: 16px;">
+                        <button id="loadTestData" style="background: none; border: 1px dashed var(--border-subtle); padding: 10px 20px; border-radius: 8px; color: var(--text-tertiary); font-size: 0.8rem; cursor: pointer; transition: all 0.2s ease;">
+                            Load sample data to test the flow
+                        </button>
+                    </div>
 
-                        <div class="import-recommendations">
-                            <h4>📱 Matched to Existing Apps</h4>
-                            <div id="recommendationsList">
-                                <!-- Populated dynamically -->
-                            </div>
+                    <div class="import-privacy">
+                        <h4>Your data, your choice</h4>
+                        <p>We analyze your conversations to understand your needs. We extract themes and topics, not personal details.</p>
+                        <div class="import-consent">
+                            <label>
+                                <input type="checkbox" id="consentAnalyze" checked>
+                                <span>Analyze my chats for personalized recommendations</span>
+                            </label>
+                            <label>
+                                <input type="checkbox" id="consentImprove" checked>
+                                <span>Help improve SUITE by sharing anonymized insights</span>
+                            </label>
                         </div>
+                    </div>
+                </div>
 
-                        <div class="import-unmatched" id="importUnmatched" style="display: none;">
-                            <h4>💡 App Ideas We Can Build For You</h4>
-                            <p style="font-size: 0.8rem; color: var(--text-tertiary); margin-bottom: 16px;">
-                                These ideas from your chats don't match existing apps. Click to request!
-                            </p>
-                            <div id="unmatchedList">
-                                <!-- Populated dynamically -->
-                            </div>
-                        </div>
+                <!-- Step 2: Processing -->
+                <div class="import-progress" id="importProgress">
+                    <div class="import-progress-spinner"></div>
+                    <h3>Analyzing your conversations...</h3>
+                    <p id="importProgressText">Reading your chat history</p>
+                    <div class="import-progress-bar">
+                        <div class="import-progress-fill" id="importProgressFill"></div>
+                    </div>
+                </div>
 
-                        <div class="import-cta">
-                            <button class="import-cta-btn secondary" id="importDone">Done</button>
-                            <button class="import-cta-btn primary" id="importRequestCustom">Request Custom App</button>
+                <!-- Step 3: Results -->
+                <div class="import-results" id="importResults">
+                    <div class="import-results-header">
+                        <div class="success-icon">🎯</div>
+                        <h3>Analysis Complete!</h3>
+                        <p>Here's what we learned about you</p>
+                    </div>
+
+                    <div class="import-stats">
+                        <div class="import-stat">
+                            <div class="import-stat-value" id="statConversations">0</div>
+                            <div class="import-stat-label">Conversations</div>
                         </div>
+                        <div class="import-stat">
+                            <div class="import-stat-value" id="statMessages">0</div>
+                            <div class="import-stat-label">Messages</div>
+                        </div>
+                        <div class="import-stat">
+                            <div class="import-stat-value" id="statTopics">0</div>
+                            <div class="import-stat-label">Topics Found</div>
+                        </div>
+                    </div>
+
+                    <div class="import-insights">
+                        <h4>Key Insights</h4>
+                        <div id="insightsList"></div>
+                    </div>
+
+                    <div class="import-recommendations">
+                        <h4>Matched to Existing Apps</h4>
+                        <div id="recommendationsList"></div>
+                    </div>
+
+                    <div class="import-unmatched" id="importUnmatched" style="display: none;">
+                        <h4>App Ideas We Can Build For You</h4>
+                        <p style="font-size: 0.8rem; color: var(--text-tertiary); margin-bottom: 16px;">
+                            These ideas from your chats don't match existing apps. Click to request!
+                        </p>
+                        <div id="unmatchedList"></div>
+                    </div>
+
+                    <div class="import-cta">
+                        <button class="import-cta-btn secondary" id="importDone">Done</button>
+                        <button class="import-cta-btn primary" id="importRequestCustom">Request Custom App</button>
                     </div>
                 </div>
             </div>
         </div>
-                </div><!-- Close main-content -->
-            </div><!-- Close chatPanel -->
-
-            <!-- App Tab (Embedded Apps) -->
-            <div class="tab-panel" id="appPanel">
-                <div class="app-container" id="appContainer">
-                    <div class="app-placeholder" id="appPlaceholder">
-                        <div class="app-placeholder-icon">📱</div>
-                        <h3>No App Open</h3>
-                        <p>Chat with SuiteGPT to find an app, or browse the Apps tab to explore.</p>
-                    </div>
-                    <iframe id="appFrame" style="display: none;"></iframe>
-                </div>
-                <div class="app-header" id="appHeader" style="display: none;">
-                    <button class="app-back-btn" id="appBackBtn">
-                        <span>←</span>
-                        <span>Back to Chat</span>
-                    </button>
-                    <div class="app-title" id="appTitle">App Name</div>
-                </div>
-            </div>
-
-            <!-- Apps Browser Tab -->
-            <div class="tab-panel" id="appsPanel">
-                <div class="apps-browser">
-                    <div class="apps-browser-header">
-                        <h2>SUITE Apps</h2>
-                        <p>All apps, one ecosystem</p>
-                    </div>
-                    <div class="apps-browser-grid" id="appsBrowserGrid">
-                        <!-- Populated by JavaScript -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Profile Tab -->
-            <div class="tab-panel" id="profilePanel">
-                <div class="profile-container">
-                    <div class="profile-header">
-                        <div class="profile-avatar">👤</div>
-                        <h2>Your Profile</h2>
-                        <p class="profile-subtitle">Coming Soon</p>
-                    </div>
-                    <div class="profile-section">
-                        <h3>🏆 Your Apps</h3>
-                        <p class="profile-empty">Apps you've requested or built will appear here.</p>
-                    </div>
-                    <div class="profile-section">
-                        <h3>💬 Conversation History</h3>
-                        <p class="profile-empty">Your SuiteGPT conversations will be saved here.</p>
-                    </div>
-                    <div class="profile-section">
-                        <h3>⚙️ Settings</h3>
-                        <p class="profile-empty">Customize your experience (coming soon).</p>
-                    </div>
-                </div>
-            </div>
-
-        </div><!-- Close shell-content -->
-
-        <!-- Bottom Navigation -->
-        <nav class="bottom-nav" id="bottomNav">
-            <button class="nav-item active" data-tab="chatPanel">
-                <div class="nav-item-wrapper">
-                    <span class="nav-item-icon">💬</span>
-                </div>
-                <span class="nav-item-label">Chat</span>
-            </button>
-            <button class="nav-item" data-tab="appPanel">
-                <div class="nav-item-wrapper">
-                    <span class="nav-item-icon">📱</span>
-                    <span class="nav-item-badge" id="appBadge" style="display: none;">1</span>
-                </div>
-                <span class="nav-item-label">App</span>
-            </button>
-            <button class="nav-item" data-tab="appsPanel">
-                <div class="nav-item-wrapper">
-                    <span class="nav-item-icon">🧩</span>
-                </div>
-                <span class="nav-item-label">Apps</span>
-            </button>
-            <button class="nav-item" data-tab="profilePanel">
-                <div class="nav-item-wrapper">
-                    <span class="nav-item-icon">👤</span>
-                </div>
-                <span class="nav-item-label">Profile</span>
-            </button>
-        </nav>
-
-    </div><!-- Close shell-container -->
+    </div>
 
     <script>
         // SUITE Apps Catalog
@@ -2904,53 +1903,57 @@
         // DOM Elements
         const chatInput = document.getElementById('chatInput');
         const sendBtn = document.getElementById('sendBtn');
-        const heroSection = document.getElementById('heroSection');
+        const welcomeState = document.getElementById('welcomeState');
         const chatContainer = document.getElementById('chatContainer');
         const chatMessages = document.getElementById('chatMessages');
         const useCasesGrid = document.getElementById('useCasesGrid');
+        const useCasesSection = document.getElementById('useCasesSection');
         const useCaseCount = document.getElementById('useCaseCount');
-        const pathCards = document.querySelectorAll('.path-card');
-        const governanceInfo = document.getElementById('governanceInfo');
-        const governanceClose = document.getElementById('governanceClose');
-        const intentCards = document.querySelectorAll('.intent-card');
-        const currentFilterEl = document.getElementById('currentFilter');
+
+        // Sidebar Elements
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const importHistoryBtn = document.getElementById('importHistoryBtn');
+        const myRequestsBtn = document.getElementById('myRequestsBtn');
+        const chatHistoryBtn = document.getElementById('chatHistoryBtn');
 
         // State
         let isLoading = false;
         let conversationHistory = [];
         let useCases = [];
         let currentIntent = 'all';
-        let selectedPath = null;
 
-        // Intent card interactions
-        const intentPrompts = {
-            'problems': { placeholder: "What's the problem you're facing?", example: "I can't seem to focus at work..." },
-            'desires': { placeholder: "What do you want to achieve?", example: "I want to become financially free..." },
-            'ideas': { placeholder: "Tell me about your app idea...", example: "What if there was an app that..." },
-            'find': { placeholder: "What kind of app are you looking for?", example: "Show me apps for fitness tracking..." },
-            'change': { placeholder: "What feature would you like added?", example: "Can FoodVitals also track..." },
-            'build': { placeholder: "What would you like to build and monetize?", example: "I want to create an app that..." }
-        };
+        // Mobile sidebar toggle
+        mobileMenuBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            sidebarOverlay.classList.toggle('active');
+        });
 
-        // Intent/path cards removed - simplified UI
-        // These handlers are kept as no-ops for safety
-        if (intentCards.length > 0) {
-            intentCards.forEach(card => {
-                card.addEventListener('click', () => {
-                    const intent = card.dataset.intent;
-                    intentCards.forEach(c => c.classList.remove('active'));
-                    card.classList.add('active');
-                    currentIntent = intent;
-                });
-            });
-        }
+        sidebarOverlay.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+            sidebarOverlay.classList.remove('active');
+        });
 
-        if (governanceClose) {
-            governanceClose.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (governanceInfo) governanceInfo.classList.remove('visible');
-            });
-        }
+        // Sidebar navigation
+        importHistoryBtn.addEventListener('click', () => {
+            document.getElementById('importModal').classList.add('active');
+            resetImportModal();
+            sidebar.classList.remove('open');
+            sidebarOverlay.classList.remove('active');
+        });
+
+        myRequestsBtn.addEventListener('click', () => {
+            alert('My Requests feature coming soon!');
+            sidebar.classList.remove('open');
+            sidebarOverlay.classList.remove('active');
+        });
+
+        chatHistoryBtn.addEventListener('click', () => {
+            alert('Chat History feature coming soon!');
+            sidebar.classList.remove('open');
+            sidebarOverlay.classList.remove('active');
+        });
 
         // Load use cases from Supabase
         async function loadUseCases() {
@@ -2969,7 +1972,6 @@
                     useCases = await response.json();
                     renderUseCases();
                 } else {
-                    // Fallback to hardcoded examples if table doesn't exist yet
                     useCases = getHardcodedUseCases();
                     renderUseCases();
                 }
@@ -2980,40 +1982,21 @@
             }
         }
 
-        // Hardcoded fallback - showcasing different intent types
+        // Hardcoded fallback
         function getHardcodedUseCases() {
             return [
-                // PROBLEMS - "I have a problem"
                 { query: "I can't focus at work anymore", response: "Sounds like you need help managing distractions. RemCast can help with smart focus reminders and routine building.", recommended_app: "remcast", intent: "problems", helpful_count: 58 },
-                { query: "I have back pain from sitting all day", response: "TrueForm AI has guided stretching routines specifically for desk workers. It'll assess your mobility and create a personalized plan.", recommended_app: "trueform", intent: "problems", helpful_count: 56 },
-                { query: "I keep forgetting to take my vitamins", response: "RemCast is perfect for this - set up smart reminders that learn when you're most likely to actually take them.", recommended_app: "remcast", intent: "problems", helpful_count: 42 },
-
-                // DESIRES - "I want to..."
-                { query: "I want to become financially free", response: "That's a powerful goal! Start with Cheshbon to understand your relationship with money. OR you could build finance apps in SUITE and earn from helping others.", recommended_app: "cheshbon", intent: "desires", helpful_count: 89 },
-                { query: "I want to get healthier without obsessing", response: "FoodVitals takes a gentle approach - weekly reflections instead of daily tracking. No calorie counting, just awareness.", recommended_app: "foodvitals", intent: "desires", helpful_count: 67 },
-                { query: "I want to know God more deeply", response: "We don't have a devotional app yet, but we can build one! Prayer journals, Bible reading plans, reflection prompts - tell us what would help.", recommended_app: null, intent: "desires", helpful_count: 45 },
-
-                // IDEAS - "What if there was..."
-                { query: "What if there was an app that tracks pet medications?", response: "We built PetMeds! Tracks doses, sends reminders, logs vet visits. Your idea helped create something thousands now use.", recommended_app: null, intent: "ideas", helpful_count: 78 },
-                { query: "I have an idea for a habit tracker without streaks", response: "Love it! We built exactly this - gentle habit tracking without the guilt of breaking streaks. No pressure, just progress.", recommended_app: "remcast", intent: "ideas", helpful_count: 52 },
-
-                // FIND - "Show me apps for..."
-                { query: "Show me what apps you have for fitness", response: "We've got OpticRep (AI workout trainer with form analysis) and TrueForm AI (physio & stretching). What's your fitness goal?", recommended_app: "opticrep", intent: "find", helpful_count: 61 },
-                { query: "What apps help with money management?", response: "Cheshbon is our financial reflection app - focuses on your relationship with money, not just numbers. DeFi Knowledge teaches crypto/investing.", recommended_app: "cheshbon", intent: "find", helpful_count: 44 },
-
-                // CHANGE - "Can you add..."
-                { query: "Can FoodVitals track water intake too?", response: "Great idea! We reviewed this and added it for everyone. You can now log water alongside your meals.", recommended_app: "foodvitals", intent: "change", helpful_count: 67 },
-                { query: "I wish OpticRep had rest day suggestions", response: "Done! We added smart rest day recommendations based on your workout intensity. Check it out in your dashboard.", recommended_app: "opticrep", intent: "change", helpful_count: 52 },
-
-                // BUILD & EARN - "I want to create..."
-                { query: "How can I make money building apps?", response: "With SUITE, you build apps and earn from every user through our credit system. No coding needed - AI Fleet builds it, you earn from it.", recommended_app: null, intent: "build", helpful_count: 94 },
-                { query: "I want to create a meditation app and monetize it", response: "Perfect! Describe your vision and AI Fleet will build it. You'll earn credits every time someone uses your app.", recommended_app: null, intent: "build", helpful_count: 73 }
+                { query: "I have back pain from sitting all day", response: "TrueForm AI has guided stretching routines specifically for desk workers.", recommended_app: "trueform", intent: "problems", helpful_count: 56 },
+                { query: "I want to become financially free", response: "That's a powerful goal! Start with Cheshbon to understand your relationship with money.", recommended_app: "cheshbon", intent: "desires", helpful_count: 89 },
+                { query: "I want to get healthier without obsessing", response: "FoodVitals takes a gentle approach - weekly reflections instead of daily tracking.", recommended_app: "foodvitals", intent: "desires", helpful_count: 67 },
+                { query: "Show me what apps you have for fitness", response: "We've got OpticRep (AI workout trainer) and TrueForm AI (physio & stretching).", recommended_app: "opticrep", intent: "find", helpful_count: 61 },
+                { query: "How can I make money building apps?", response: "With SUITE, you build apps and earn from every user through our credit system.", recommended_app: null, intent: "build", helpful_count: 94 }
             ];
         }
 
         // Render use cases
         function renderUseCases() {
-            if (!useCasesGrid) return; // Guard against missing element
+            if (!useCasesGrid) return;
 
             const filtered = currentIntent === 'all'
                 ? useCases
@@ -3021,16 +2004,6 @@
 
             if (useCaseCount) useCaseCount.textContent = `(${filtered.length})`;
 
-            if (filtered.length === 0) {
-                useCasesGrid.innerHTML = `
-                    <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-tertiary);">
-                        No examples for this intent yet. Try asking something!
-                    </div>
-                `;
-                return;
-            }
-
-            // Intent styling
             const intentStyles = {
                 'problems': { icon: '🔧', label: 'Problem', class: 'problem' },
                 'desires': { icon: '💫', label: 'Desire', class: 'desire' },
@@ -3077,27 +2050,14 @@
                     const response = decodeURIComponent(card.dataset.response);
                     const app = card.dataset.app;
 
-                    // Simulate sending this query
-                    heroSection.classList.add('chat-active');
+                    welcomeState.classList.add('chat-active');
                     chatContainer.classList.add('active');
                     addMessage(query, 'user');
                     addMessage(response, 'assistant', app);
                     conversationHistory.push({ role: 'user', content: query });
                     conversationHistory.push({ role: 'assistant', content: response });
-
-                    // Increment view count (fire and forget)
-                    incrementViews(card.dataset.query);
                 });
             });
-        }
-
-        // Increment view count
-        async function incrementViews(query) {
-            try {
-                // This would need an edge function to handle safely
-                // For now, just log it
-                console.log('View:', query);
-            } catch (e) {}
         }
 
         // Enable/disable send button
@@ -3154,37 +2114,26 @@
                 `;
                 contentDiv.appendChild(appCard);
 
-                // Add quick action buttons for app recommendations
                 const quickActionsDiv = document.createElement('div');
                 quickActionsDiv.className = 'quick-actions';
                 quickActionsDiv.innerHTML = `
                     <button class="quick-action-btn" data-action="use-case" data-app="${appRecommendation}">
                         <span class="icon">🎯</span>
-                        How does this help my specific case?
-                    </button>
-                    <button class="quick-action-btn" data-action="capabilities" data-app="${appRecommendation}">
-                        <span class="icon">✨</span>
-                        What else can it do?
+                        How does this help?
                     </button>
                     <button class="quick-action-btn primary" data-action="open" data-app="${appRecommendation}" data-url="${app.url}">
                         <span class="icon">🚀</span>
                         Open ${app.name}
                     </button>
-                    <button class="quick-action-btn" data-action="request-change" data-app="${appRecommendation}">
-                        <span class="icon">✏️</span>
-                        Request a feature
-                    </button>
                 `;
                 contentDiv.appendChild(quickActionsDiv);
 
-                // Add click handlers for quick actions
                 quickActionsDiv.querySelectorAll('.quick-action-btn').forEach(btn => {
                     btn.addEventListener('click', () => handleQuickAction(btn.dataset.action, btn.dataset.app, btn.dataset.url, userQuery));
                 });
             }
 
             if (role === 'assistant' && !appRecommendation) {
-                // Only show feedback buttons if no app recommendation (which has quick actions)
                 const feedbackDiv = document.createElement('div');
                 feedbackDiv.className = 'feedback-buttons';
                 feedbackDiv.innerHTML = `
@@ -3214,7 +2163,6 @@
 
             switch (action) {
                 case 'use-case':
-                    // Ask for more specific help
                     const useCaseQuery = `Tell me specifically how ${app.name} can help with my situation`;
                     addMessage(useCaseQuery, 'user');
                     conversationHistory.push({ role: 'user', content: useCaseQuery });
@@ -3228,142 +2176,23 @@
                     }, 1200);
                     break;
 
-                case 'capabilities':
-                    // Show full capabilities
-                    const capQuery = `What are all the features of ${app.name}?`;
-                    addMessage(capQuery, 'user');
-                    conversationHistory.push({ role: 'user', content: capQuery });
-                    addTypingIndicator();
-
-                    setTimeout(() => {
-                        removeTypingIndicator();
-                        const response = getCapabilitiesResponse(app);
-                        addMessage(response, 'assistant');
-                        conversationHistory.push({ role: 'assistant', content: response });
-                    }, 1200);
-                    break;
-
                 case 'open':
-                    // Open the app - in shell on mobile, navigate on desktop
-                    if (window.innerWidth < 769 && typeof openAppInShell === 'function') {
-                        openAppInShell(appId);
-                    } else {
-                        window.location.href = url;
-                    }
-                    break;
-
-                case 'request-change':
-                    // Start a change request
-                    const changeQuery = `I'd like to request a feature for ${app.name}`;
-                    addMessage(changeQuery, 'user');
-                    conversationHistory.push({ role: 'user', content: changeQuery });
-                    addTypingIndicator();
-
-                    setTimeout(() => {
-                        removeTypingIndicator();
-                        const response = `Great! I'd love to hear your idea for ${app.name}.\n\n` +
-                            `What feature would you like us to add? Be as specific as you can - describe:\n` +
-                            `• What it should do\n` +
-                            `• When/how you'd use it\n` +
-                            `• Any examples of how it works elsewhere\n\n` +
-                            `Once you describe it, we'll review and either add it for everyone or create a private version just for you.`;
-                        addMessage(response, 'assistant');
-                        conversationHistory.push({ role: 'assistant', content: response });
-                    }, 1200);
+                    window.location.href = url;
                     break;
             }
         }
 
-        // Generate use-case specific response
         function getUseCaseResponse(app, originalQuery) {
             const responses = {
-                'foodvitals': `Here's how FoodVitals specifically helps you:\n\n` +
-                    `1. **Weekly Check-ins, Not Daily Logging** - Instead of obsessing over every meal, you do a quick weekly reflection. Less pressure, more sustainable.\n\n` +
-                    `2. **AI-Powered Insights** - It analyzes your patterns and gives personalized suggestions. Not generic advice, but specific to YOUR habits.\n\n` +
-                    `3. **No Calorie Counting** - Focus on how food makes you feel, not numbers. Track energy levels, mood, and satisfaction.\n\n` +
-                    `4. **Smart Reminders** - Gentle nudges at meal times, not annoying notifications.\n\n` +
-                    `Want to try it? Or have questions about a specific feature?`,
-
-                'trueform': `Here's how TrueForm AI specifically helps you:\n\n` +
-                    `1. **AI Posture Assessment** - Use your camera to analyze your posture and identify problem areas.\n\n` +
-                    `2. **Personalized Stretching Routines** - Based on YOUR specific issues (desk work, back pain, etc.), not generic exercises.\n\n` +
-                    `3. **Form Correction in Real-Time** - The AI watches you do exercises and tells you when you're doing it wrong.\n\n` +
-                    `4. **Progress Tracking** - See how your mobility improves over time with measurable metrics.\n\n` +
-                    `Ready to start? Or want to know more about any feature?`,
-
-                'opticrep': `Here's how OpticRep specifically helps you:\n\n` +
-                    `1. **AI Rep Counter** - Automatically counts your reps using your camera. No more losing count.\n\n` +
-                    `2. **Form Analysis** - Real-time feedback on your exercise form to prevent injury and maximize gains.\n\n` +
-                    `3. **Workout Programs** - AI-generated programs based on your goals (strength, hypertrophy, endurance).\n\n` +
-                    `4. **Rest Timer Intelligence** - Suggests rest periods based on exercise intensity and your fatigue level.\n\n` +
-                    `Want to start your first workout? Or explore more features?`,
-
-                'cheshbon': `Here's how Cheshbon specifically helps you:\n\n` +
-                    `1. **Reflection, Not Restriction** - Weekly prompts ask how you FEEL about your spending, not just track numbers.\n\n` +
-                    `2. **Pattern Recognition** - Identifies emotional spending triggers without judgment.\n\n` +
-                    `3. **Values Alignment** - Helps you see if your spending matches what you actually care about.\n\n` +
-                    `4. **No Bank Linking Required** - Manual reflection is more mindful than automated tracking.\n\n` +
-                    `Ready to start your financial reflection journey?`,
-
-                'remcast': `Here's how RemCast specifically helps you:\n\n` +
-                    `1. **Smart Reminders** - Learns when you're most likely to act on reminders, not just arbitrary times.\n\n` +
-                    `2. **Gentle Habit Building** - No streaks or guilt. Just consistent, kind nudges.\n\n` +
-                    `3. **Context-Aware** - Knows not to remind you during meetings or late at night.\n\n` +
-                    `4. **Routine Builder** - Chain habits together into morning/evening routines.\n\n` +
-                    `Ready to build better habits? Or want to explore specific features?`,
-
-                'defi-knowledge': `Here's how DeFi Knowledge specifically helps you:\n\n` +
-                    `1. **Structured Learning Path** - From basics to advanced, no jumping around.\n\n` +
-                    `2. **No Shill, Just Education** - We teach concepts, not promote specific protocols.\n\n` +
-                    `3. **Interactive Simulations** - Practice strategies without risking real money.\n\n` +
-                    `4. **Jargon Decoder** - Built-in glossary that explains terms in plain English.\n\n` +
-                    `Ready to start learning? Or curious about a specific topic?`
+                'foodvitals': `Here's how FoodVitals specifically helps you:\n\n1. **Weekly Check-ins, Not Daily Logging** - Less pressure, more sustainable.\n\n2. **AI-Powered Insights** - Personalized suggestions based on YOUR habits.\n\n3. **No Calorie Counting** - Focus on how food makes you feel.\n\nWant to try it?`,
+                'trueform': `Here's how TrueForm AI specifically helps you:\n\n1. **AI Posture Assessment** - Use your camera to analyze your posture.\n\n2. **Personalized Stretching Routines** - Based on YOUR specific issues.\n\n3. **Form Correction in Real-Time** - The AI watches and corrects you.\n\nReady to start?`,
+                'opticrep': `Here's how OpticRep specifically helps you:\n\n1. **AI Rep Counter** - Automatically counts your reps using your camera.\n\n2. **Form Analysis** - Real-time feedback on your exercise form.\n\n3. **Workout Programs** - AI-generated programs based on your goals.\n\nWant to start your first workout?`,
+                'cheshbon': `Here's how Cheshbon specifically helps you:\n\n1. **Reflection, Not Restriction** - Weekly prompts about how you FEEL about spending.\n\n2. **Pattern Recognition** - Identifies emotional spending triggers.\n\n3. **Values Alignment** - See if your spending matches what you care about.\n\nReady to start?`,
+                'remcast': `Here's how RemCast specifically helps you:\n\n1. **Smart Reminders** - Learns when you're most likely to act.\n\n2. **Gentle Habit Building** - No streaks or guilt.\n\n3. **Routine Builder** - Chain habits together.\n\nReady to build better habits?`,
+                'defi-knowledge': `Here's how DeFi Knowledge specifically helps you:\n\n1. **Structured Learning Path** - From basics to advanced.\n\n2. **No Shill, Just Education** - We teach concepts, not promote protocols.\n\n3. **Interactive Simulations** - Practice without risking real money.\n\nReady to start learning?`
             };
 
-            return responses[app.id] || `${app.name} is designed to help with exactly what you described. Let me know if you want to dive deeper into any specific feature!`;
-        }
-
-        // Generate capabilities response
-        function getCapabilitiesResponse(app) {
-            const capabilities = {
-                'foodvitals': `**FoodVitals - Full Capabilities:**\n\n` +
-                    `📊 **Tracking**\n• Weekly meal reflections\n• Energy & mood logging\n• Water intake (coming soon)\n\n` +
-                    `🤖 **AI Features**\n• Personalized nutrition insights\n• Pattern detection\n• Smart suggestions\n\n` +
-                    `📱 **Experience**\n• Clean, pressure-free interface\n• Photo meal logging\n• Progress charts\n\n` +
-                    `🔔 **Reminders**\n• Gentle meal-time nudges\n• Weekly check-in prompts`,
-
-                'trueform': `**TrueForm AI - Full Capabilities:**\n\n` +
-                    `📷 **Assessment**\n• AI posture analysis\n• Mobility screening\n• Movement pattern detection\n\n` +
-                    `🏋️ **Exercise**\n• Guided stretching routines\n• Strength exercises\n• Real-time form correction\n\n` +
-                    `📈 **Progress**\n• Flexibility tracking\n• Pain level monitoring\n• Before/after comparisons\n\n` +
-                    `⚡ **Smart Features**\n• Desk worker programs\n• Custom routine builder\n• Video demonstrations`,
-
-                'opticrep': `**OpticRep - Full Capabilities:**\n\n` +
-                    `📷 **Vision AI**\n• Automatic rep counting\n• Form analysis & correction\n• Exercise recognition\n\n` +
-                    `💪 **Workouts**\n• AI-generated programs\n• Progressive overload tracking\n• Exercise library\n\n` +
-                    `📊 **Analytics**\n• Volume tracking\n• Strength progression\n• Workout history\n\n` +
-                    `⏱️ **Smart Features**\n• Rest timer optimization\n• Fatigue detection\n• PR celebrations`,
-
-                'cheshbon': `**Cheshbon - Full Capabilities:**\n\n` +
-                    `🪞 **Reflection**\n• Weekly money check-ins\n• Spending feeling journal\n• Values alignment scores\n\n` +
-                    `📊 **Insights**\n• Emotional spending patterns\n• Category breakdowns\n• Monthly summaries\n\n` +
-                    `🎯 **Goals**\n• Value-based goal setting\n• Progress visualization\n• Milestone celebrations\n\n` +
-                    `🔒 **Privacy**\n• No bank linking required\n• Local data option\n• Export anytime`,
-
-                'remcast': `**RemCast - Full Capabilities:**\n\n` +
-                    `🔔 **Reminders**\n• Smart timing optimization\n• Location-based triggers\n• Recurring schedules\n\n` +
-                    `📋 **Habits**\n• Routine builder\n• Habit stacking\n• Flexible scheduling\n\n` +
-                    `📈 **Tracking**\n• Completion rates (no streaks!)\n• Best times analysis\n• Weekly summaries\n\n` +
-                    `⚡ **Smart Features**\n• Do-not-disturb awareness\n• Calendar integration\n• Snooze intelligence`,
-
-                'defi-knowledge': `**DeFi Knowledge - Full Capabilities:**\n\n` +
-                    `📚 **Learning**\n• Structured courses\n• Interactive lessons\n• Quizzes & tests\n\n` +
-                    `🎮 **Practice**\n• Risk-free simulations\n• Strategy sandbox\n• Portfolio games\n\n` +
-                    `📖 **Reference**\n• Jargon glossary\n• Protocol comparisons\n• Risk explanations\n\n` +
-                    `🔄 **Updates**\n• Market context\n• New protocol coverage\n• Trend analysis`
-            };
-
-            return capabilities[app.id] || `${app.name} has many features designed to help you. What specific capability are you most interested in?`;
+            return responses[app.id] || `${app.name} is designed to help with exactly what you described. Let me know if you want to dive deeper!`;
         }
 
         function addTypingIndicator() {
@@ -3393,13 +2222,12 @@
             const message = chatInput.value.trim();
             if (!message || isLoading) return;
 
-            // Store the user's query for context in quick actions
             const userQuery = message;
 
             isLoading = true;
             sendBtn.disabled = true;
             chatInput.value = '';
-            heroSection.classList.add('chat-active');
+            welcomeState.classList.add('chat-active');
             chatContainer.classList.add('active');
 
             addMessage(message, 'user');
@@ -3450,20 +2278,8 @@
             };
 
             const lower = message.toLowerCase();
-
-            // Check if this is a change request
-            const isChangeRequest = lower.includes('add') || lower.includes('change') ||
-                                   lower.includes('feature') || lower.includes('update') ||
-                                   lower.includes('modify') || lower.includes('can you make') ||
-                                   selectedPath === 'change';
-
-            // Check if this is a build request
-            const isBuildRequest = lower.includes('build') || lower.includes('create') ||
-                                  lower.includes('make me') || lower.includes('i need an app') ||
-                                  lower.includes('new app') || selectedPath === 'build';
-
-            // Find matching app
             let matchedApp = null;
+
             for (const [app, words] of Object.entries(keywords)) {
                 if (words.some(w => lower.includes(w))) {
                     matchedApp = app;
@@ -3471,60 +2287,16 @@
                 }
             }
 
-            // Response based on intent
-            if (isChangeRequest && matchedApp) {
-                const appData = SUITE_APPS[matchedApp];
-                return {
-                    response: `Great idea for ${appData.name}!\n\nHere's how this works:\n\n` +
-                             `1. We'll review your request\n` +
-                             `2. If it fits the app's purpose, we'll add it for everyone\n` +
-                             `3. If not, we can build a private version just for you\n\n` +
-                             `Either way, you'll have what you need within ~12 hours.\n\n` +
-                             `Want to submit this request?`,
-                    recommendedApp: matchedApp
-                };
-            }
-
-            if (isChangeRequest && !matchedApp) {
-                return {
-                    response: `I'd love to help with that change!\n\n` +
-                             `Which app would you like to modify? Or if you're not sure, ` +
-                             `just describe what you're trying to accomplish and I'll point you in the right direction.`,
-                    recommendedApp: null
-                };
-            }
-
-            if (isBuildRequest) {
-                return {
-                    response: `I can help you build something custom!\n\n` +
-                             `AI Fleet can create apps tailored to your exact needs. ` +
-                             `Depending on complexity, this usually takes 1-12 hours.\n\n` +
-                             `Tell me more about what you need:\n` +
-                             `• What problem are you trying to solve?\n` +
-                             `• Any specific features in mind?\n` +
-                             `• Will this be just for you, or for others too?`,
-                    recommendedApp: null
-                };
-            }
-
-            // Standard app recommendation
             if (matchedApp) {
                 const appData = SUITE_APPS[matchedApp];
                 return {
-                    response: `${appData.name} is perfect for this!\n\n${appData.description}.\n\n` +
-                             `💡 Pro tip: If you want any feature added to this app, just ask! ` +
-                             `Changes are usually live within 12 hours.`,
+                    response: `${appData.name} is perfect for this!\n\n${appData.description}.`,
                     recommendedApp: matchedApp
                 };
             }
 
-            // No match - offer to build
             return {
-                response: `We don't have an app for that yet, but we can build one!\n\n` +
-                         `AI Fleet creates custom apps in 1-12 hours. Just describe:\n` +
-                         `• What problem you're solving\n` +
-                         `• Key features you need\n\n` +
-                         `Want me to start a request?`,
+                response: `We don't have an app for that yet, but we can build one!\n\nAI Fleet creates custom apps in 1-12 hours. Just describe:\n• What problem you're solving\n• Key features you need\n\nWant me to start a request?`,
                 recommendedApp: null
             };
         }
@@ -3536,7 +2308,6 @@
         // CHAT IMPORT FEATURE
         // ============================================
 
-        const importTrigger = document.getElementById('importTrigger');
         const importModal = document.getElementById('importModal');
         const importModalClose = document.getElementById('importModalClose');
         const importSources = document.querySelectorAll('.import-source');
@@ -3554,7 +2325,6 @@
         let selectedSource = 'chatgpt';
         let analysisResults = null;
 
-        // Instructions for each source
         const sourceInstructions = {
             chatgpt: {
                 icon: '📋',
@@ -3593,12 +2363,6 @@
             }
         };
 
-        // Open/close modal
-        importTrigger.addEventListener('click', () => {
-            importModal.classList.add('active');
-            resetImportModal();
-        });
-
         importModalClose.addEventListener('click', () => {
             importModal.classList.remove('active');
         });
@@ -3609,7 +2373,6 @@
             }
         });
 
-        // Source selection
         importSources.forEach(source => {
             source.addEventListener('click', () => {
                 importSources.forEach(s => s.classList.remove('selected'));
@@ -3629,7 +2392,6 @@
             `;
         }
 
-        // Drag and drop
         importDropzone.addEventListener('click', () => importFileInput.click());
 
         importDropzone.addEventListener('dragover', (e) => {
@@ -3653,7 +2415,6 @@
             if (file) processFile(file);
         });
 
-        // Rate limiting check
         let isTestMode = false;
 
         function checkRateLimit() {
@@ -3679,45 +2440,41 @@
             }
         }
 
-        // Load test data
         const loadTestDataBtn = document.getElementById('loadTestData');
         loadTestDataBtn.addEventListener('click', async () => {
             isTestMode = true;
-            loadTestDataBtn.textContent = '⏳ Loading test data...';
+            loadTestDataBtn.textContent = 'Loading test data...';
 
             try {
                 const response = await fetch('/test-data/sample-chatgpt-export.json');
                 if (!response.ok) throw new Error('Could not load test data');
 
                 const testData = await response.json();
-
-                // Create a fake file from the test data
                 const blob = new Blob([JSON.stringify(testData)], { type: 'application/json' });
                 const fakeFile = new File([blob], 'test-conversations.json', { type: 'application/json' });
 
-                // Process it
                 processFile(fakeFile);
             } catch (error) {
                 console.error('Error loading test data:', error);
                 alert('Could not load test data. Try uploading your own file.');
-                loadTestDataBtn.textContent = '🧪 Load sample data to test the flow';
+                loadTestDataBtn.textContent = 'Load sample data to test the flow';
             }
         });
 
-        // Reset test mode on modal close
-        const originalResetImportModal = resetImportModal;
-        resetImportModal = function() {
-            originalResetImportModal();
+        function resetImportModal() {
+            importStepUpload.style.display = 'block';
+            importProgress.classList.remove('active');
+            importResults.classList.remove('active');
+            importProgressFill.style.width = '0%';
+            importFileInput.value = '';
             isTestMode = false;
-            loadTestDataBtn.textContent = '🧪 Load sample data to test the flow';
-        };
+            loadTestDataBtn.textContent = 'Load sample data to test the flow';
+        }
 
-        // Process the uploaded file
         async function processFile(file) {
-            // Check rate limit
             const rateCheck = checkRateLimit();
             if (!rateCheck.allowed) {
-                alert(`You can only import once per day. Please try again in ${rateCheck.hoursLeft} hours.\n\nThis helps us manage costs while keeping the service free.`);
+                alert(`You can only import once per day. Please try again in ${rateCheck.hoursLeft} hours.`);
                 return;
             }
 
@@ -3727,7 +2484,6 @@
                 return;
             }
 
-            // Show progress
             importStepUpload.style.display = 'none';
             importProgress.classList.add('active');
             updateProgress(10, 'Reading file...');
@@ -3736,7 +2492,6 @@
                 let conversations = [];
 
                 if (file.name.endsWith('.zip')) {
-                    // Handle zip file (ChatGPT export comes as zip)
                     updateProgress(20, 'Extracting zip file...');
                     const JSZip = await loadJSZip();
                     const zip = await JSZip.loadAsync(file);
@@ -3748,27 +2503,22 @@
                         throw new Error('conversations.json not found in zip');
                     }
                 } else {
-                    // Handle direct JSON
                     const content = await file.text();
                     conversations = JSON.parse(content);
                 }
 
                 updateProgress(40, 'Parsing conversations...');
 
-                // Extract messages based on source
                 const extractedData = extractMessages(conversations, selectedSource);
 
                 updateProgress(60, 'Analyzing patterns...');
 
-                // Send to API for analysis
                 const analysis = await analyzeChats(extractedData);
 
                 updateProgress(100, 'Complete!');
 
-                // Set rate limit timestamp
                 setRateLimitTimestamp();
 
-                // Show results
                 setTimeout(() => {
                     displayResults(analysis, extractedData);
                 }, 500);
@@ -3780,7 +2530,6 @@
             }
         }
 
-        // Load JSZip dynamically if needed
         async function loadJSZip() {
             if (window.JSZip) return window.JSZip;
 
@@ -3793,13 +2542,11 @@
             });
         }
 
-        // Extract messages from different formats
         function extractMessages(data, source) {
             let messages = [];
             let conversationCount = 0;
 
             if (source === 'chatgpt') {
-                // ChatGPT format
                 if (Array.isArray(data)) {
                     conversationCount = data.length;
                     data.forEach(conv => {
@@ -3816,7 +2563,6 @@
                     });
                 }
             } else if (source === 'claude') {
-                // Claude format (adjust based on actual export format)
                 if (Array.isArray(data)) {
                     conversationCount = data.length;
                     data.forEach(conv => {
@@ -3830,7 +2576,6 @@
                     });
                 }
             } else if (source === 'gemini') {
-                // Gemini format
                 if (Array.isArray(data)) {
                     conversationCount = data.length;
                     data.forEach(conv => {
@@ -3853,18 +2598,15 @@
             };
         }
 
-        // Analyze chats with AI
         async function analyzeChats(extractedData) {
             const consentImprove = document.getElementById('consentImprove').checked;
 
-            // Take a sample of messages (to reduce API cost)
             const sampleSize = Math.min(extractedData.messages.length, 200);
             const sampledMessages = extractedData.messages
                 .sort(() => Math.random() - 0.5)
                 .slice(0, sampleSize);
 
-            // Create a condensed summary for analysis
-            const messagesSummary = sampledMessages.join('\n---\n').slice(0, 50000); // Limit tokens
+            const messagesSummary = sampledMessages.join('\n---\n').slice(0, 50000);
 
             try {
                 const response = await fetch(`${SUPABASE_URL}/functions/v1/analyze-chat-history`, {
@@ -3889,26 +2631,18 @@
                 return await response.json();
             } catch (error) {
                 console.error('API Error, using local analysis:', error);
-                // Fallback to local analysis
                 return localAnalysis(extractedData);
             }
         }
 
-        // Local fallback analysis - enhanced to extract app ideas
         function localAnalysis(extractedData) {
             const messages = extractedData.messages;
             const allText = messages.join(' ').toLowerCase();
 
-            // Topic detection
             const topics = {
-                'Health & Fitness': ['workout', 'exercise', 'diet', 'nutrition', 'weight', 'health', 'fitness', 'gym', 'muscle', 'calories', 'sleep', 'water', 'hydration'],
-                'Finance & Money': ['money', 'budget', 'invest', 'savings', 'financial', 'income', 'expenses', 'crypto', 'trading', 'subscription', 'spending'],
-                'Productivity': ['productivity', 'schedule', 'task', 'todo', 'organize', 'time management', 'habit', 'routine', 'reminder', 'focus', 'distraction', 'project'],
-                'Learning & Education': ['learn', 'study', 'course', 'tutorial', 'understand', 'explain', 'how to', 'education', 'reading', 'book', 'language'],
-                'Programming & Tech': ['code', 'programming', 'javascript', 'python', 'api', 'database', 'software', 'app', 'website'],
-                'Writing & Content': ['write', 'essay', 'blog', 'content', 'article', 'email', 'story', 'creative', 'journal'],
-                'Career & Work': ['job', 'career', 'interview', 'resume', 'work', 'professional', 'business', 'meeting'],
-                'Lifestyle': ['cooking', 'wardrobe', 'clothes', 'outfit', 'social', 'introvert', 'pet', 'dog', 'cat', 'travel']
+                'Health & Fitness': ['workout', 'exercise', 'diet', 'nutrition', 'weight', 'health', 'fitness', 'gym'],
+                'Finance & Money': ['money', 'budget', 'invest', 'savings', 'financial', 'income', 'expenses', 'crypto'],
+                'Productivity': ['productivity', 'schedule', 'task', 'todo', 'organize', 'habit', 'routine', 'reminder']
             };
 
             const detectedTopics = [];
@@ -3924,152 +2658,33 @@
             }
             detectedTopics.sort((a, b) => b.count - a.count);
 
-            // Extract app ideas - look for specific patterns
-            const appIdeaPatterns = [
-                /i need an? app that ([^.!?]+)/gi,
-                /i wish there was an? app ([^.!?]+)/gi,
-                /i want an? app that ([^.!?]+)/gi,
-                /i need something that ([^.!?]+)/gi,
-                /i want something that ([^.!?]+)/gi,
-                /an app that ([^.!?]+) would be/gi,
-                /would be (cool|great|amazing|awesome) if ([^.!?]+)/gi,
-                /i keep forgetting ([^.!?]+)/gi,
-                /i can't ([^.!?]+)/gi,
-                /i hate ([^.!?]+)/gi,
-                /i struggle with ([^.!?]+)/gi,
-                /help me ([^.!?]+)/gi,
-                /track my ([^.!?]+)/gi,
-                /remind me ([^.!?]+)/gi
-            ];
-
-            const extractedIdeas = [];
-            const seenIdeas = new Set();
-
-            messages.forEach(msg => {
-                appIdeaPatterns.forEach(pattern => {
-                    const matches = msg.matchAll(pattern);
-                    for (const match of matches) {
-                        const idea = match[1] || match[2];
-                        if (idea && idea.length > 10 && idea.length < 200) {
-                            const normalized = idea.toLowerCase().trim();
-                            if (!seenIdeas.has(normalized)) {
-                                seenIdeas.add(normalized);
-                                extractedIdeas.push({
-                                    text: idea.trim(),
-                                    fullMessage: msg,
-                                    category: categorizeIdea(idea)
-                                });
-                            }
-                        }
-                    }
-                });
-            });
-
-            // Map topics to app recommendations
-            const appMappings = {
-                'Health & Fitness': ['foodvitals', 'trueform', 'opticrep'],
-                'Finance & Money': ['cheshbon', 'defi-knowledge'],
-                'Productivity': ['remcast'],
-                'Learning & Education': ['defi-knowledge'],
-                'Programming & Tech': [],
-                'Writing & Content': [],
-                'Career & Work': [],
-                'Lifestyle': []
-            };
-
-            const recommendedApps = [];
-            const matchedIdeas = [];
-            const unmatchedIdeas = [];
-
-            // Try to match ideas to existing apps
-            extractedIdeas.forEach(idea => {
-                const ideaLower = idea.text.toLowerCase();
-                let matched = false;
-
-                // Check for specific app matches
-                if (ideaLower.includes('nutrition') || ideaLower.includes('meal') || ideaLower.includes('food') || ideaLower.includes('diet') || ideaLower.includes('calorie')) {
-                    if (!recommendedApps.find(a => a.id === 'foodvitals')) {
-                        recommendedApps.push({ id: 'foodvitals', ...SUITE_APPS['foodvitals'], matchScore: 90, matchedIdea: idea.text });
-                    }
-                    matchedIdeas.push({ ...idea, matchedApp: 'FoodVitals' });
-                    matched = true;
-                }
-                if (ideaLower.includes('workout') || ideaLower.includes('exercise') || ideaLower.includes('gym') || ideaLower.includes('strength')) {
-                    if (!recommendedApps.find(a => a.id === 'opticrep')) {
-                        recommendedApps.push({ id: 'opticrep', ...SUITE_APPS['opticrep'], matchScore: 88, matchedIdea: idea.text });
-                    }
-                    matchedIdeas.push({ ...idea, matchedApp: 'OpticRep' });
-                    matched = true;
-                }
-                if (ideaLower.includes('back pain') || ideaLower.includes('posture') || ideaLower.includes('stretch') || ideaLower.includes('physio')) {
-                    if (!recommendedApps.find(a => a.id === 'trueform')) {
-                        recommendedApps.push({ id: 'trueform', ...SUITE_APPS['trueform'], matchScore: 92, matchedIdea: idea.text });
-                    }
-                    matchedIdeas.push({ ...idea, matchedApp: 'TrueForm AI' });
-                    matched = true;
-                }
-                if (ideaLower.includes('budget') || ideaLower.includes('money') || ideaLower.includes('spending') || ideaLower.includes('financial')) {
-                    if (!recommendedApps.find(a => a.id === 'cheshbon')) {
-                        recommendedApps.push({ id: 'cheshbon', ...SUITE_APPS['cheshbon'], matchScore: 85, matchedIdea: idea.text });
-                    }
-                    matchedIdeas.push({ ...idea, matchedApp: 'Cheshbon' });
-                    matched = true;
-                }
-                if (ideaLower.includes('reminder') || ideaLower.includes('habit') || ideaLower.includes('routine') || ideaLower.includes('schedule')) {
-                    if (!recommendedApps.find(a => a.id === 'remcast')) {
-                        recommendedApps.push({ id: 'remcast', ...SUITE_APPS['remcast'], matchScore: 82, matchedIdea: idea.text });
-                    }
-                    matchedIdeas.push({ ...idea, matchedApp: 'RemCast' });
-                    matched = true;
-                }
-                if (ideaLower.includes('defi') || ideaLower.includes('crypto') || ideaLower.includes('yield') || ideaLower.includes('blockchain')) {
-                    if (!recommendedApps.find(a => a.id === 'defi-knowledge')) {
-                        recommendedApps.push({ id: 'defi-knowledge', ...SUITE_APPS['defi-knowledge'], matchScore: 91, matchedIdea: idea.text });
-                    }
-                    matchedIdeas.push({ ...idea, matchedApp: 'DeFi Knowledge' });
-                    matched = true;
-                }
-
-                if (!matched) {
-                    unmatchedIdeas.push(idea);
-                }
-            });
+            const recommendations = [];
+            if (allText.includes('fitness') || allText.includes('workout') || allText.includes('exercise')) {
+                recommendations.push({ id: 'opticrep', ...SUITE_APPS['opticrep'], matchScore: 88 });
+            }
+            if (allText.includes('nutrition') || allText.includes('food') || allText.includes('diet')) {
+                recommendations.push({ id: 'foodvitals', ...SUITE_APPS['foodvitals'], matchScore: 90 });
+            }
+            if (allText.includes('money') || allText.includes('budget') || allText.includes('financial')) {
+                recommendations.push({ id: 'cheshbon', ...SUITE_APPS['cheshbon'], matchScore: 85 });
+            }
+            if (allText.includes('habit') || allText.includes('reminder') || allText.includes('routine')) {
+                recommendations.push({ id: 'remcast', ...SUITE_APPS['remcast'], matchScore: 82 });
+            }
 
             return {
                 topics: detectedTopics.slice(0, 5),
                 insights: detectedTopics.slice(0, 3).map(({ topic, count }) => ({
                     category: topic,
                     description: `You frequently discuss ${topic.toLowerCase()} topics (${count}+ mentions)`,
-                    icon: getTopicIcon(topic)
+                    icon: topic.includes('Health') ? '💪' : topic.includes('Finance') ? '💰' : '⚡'
                 })),
-                recommendations: recommendedApps.slice(0, 4),
-                extractedIdeas: extractedIdeas.slice(0, 20),
-                matchedIdeas: matchedIdeas.slice(0, 10),
-                unmatchedIdeas: unmatchedIdeas.slice(0, 10),
-                summary: `Based on ${extractedData.messageCount} messages, we found ${extractedIdeas.length} potential app ideas. ${matchedIdeas.length} match existing SUITE apps, and ${unmatchedIdeas.length} could be custom built for you.`
+                recommendations: recommendations.slice(0, 4),
+                extractedIdeas: [],
+                matchedIdeas: [],
+                unmatchedIdeas: [],
+                summary: `Based on ${extractedData.messageCount} messages, we found ${detectedTopics.length} main topics of interest.`
             };
-        }
-
-        function categorizeIdea(idea) {
-            const lower = idea.toLowerCase();
-            if (lower.includes('workout') || lower.includes('fitness') || lower.includes('health') || lower.includes('nutrition')) return 'Health & Fitness';
-            if (lower.includes('money') || lower.includes('budget') || lower.includes('financial')) return 'Finance';
-            if (lower.includes('habit') || lower.includes('remind') || lower.includes('schedule') || lower.includes('task')) return 'Productivity';
-            if (lower.includes('learn') || lower.includes('study') || lower.includes('read')) return 'Learning';
-            return 'Other';
-        }
-
-        function getTopicIcon(topic) {
-            const icons = {
-                'Health & Fitness': '💪',
-                'Finance & Money': '💰',
-                'Productivity': '⚡',
-                'Learning & Education': '📚',
-                'Programming & Tech': '💻',
-                'Writing & Content': '✍️',
-                'Career & Work': '💼'
-            };
-            return icons[topic] || '🎯';
         }
 
         function updateProgress(percent, text) {
@@ -4080,19 +2695,13 @@
         function displayResults(analysis, extractedData) {
             analysisResults = analysis;
 
-            // Hide progress, show results
             importProgress.classList.remove('active');
             importResults.classList.add('active');
 
-            // Update stats
             document.getElementById('statConversations').textContent = extractedData.conversationCount.toLocaleString();
             document.getElementById('statMessages').textContent = extractedData.messageCount.toLocaleString();
-            document.getElementById('statTopics').textContent = (analysis.extractedIdeas?.length || analysis.topics?.length || 0);
+            document.getElementById('statTopics').textContent = (analysis.topics?.length || 0);
 
-            // Update third stat label to show ideas count
-            document.querySelector('#statTopics').nextElementSibling.textContent = 'App Ideas Found';
-
-            // Display summary
             const insightsList = document.getElementById('insightsList');
             let insightsHtml = '';
 
@@ -4114,7 +2723,6 @@
 
             insightsList.innerHTML = insightsHtml;
 
-            // Display matched recommendations
             const recommendationsList = document.getElementById('recommendationsList');
             if (analysis.recommendations && analysis.recommendations.length > 0) {
                 recommendationsList.innerHTML = analysis.recommendations.map(app => `
@@ -4124,7 +2732,7 @@
                         </div>
                         <div class="import-app-info">
                             <h5>${app.name}</h5>
-                            <p>${app.matchedIdea ? `"${app.matchedIdea.slice(0, 60)}${app.matchedIdea.length > 60 ? '...' : ''}"` : app.description}</p>
+                            <p>${app.description}</p>
                         </div>
                         <div class="import-app-match">${app.matchScore || 85}% match</div>
                     </a>
@@ -4137,13 +2745,12 @@
                 `;
             }
 
-            // Display unmatched ideas
             const unmatchedSection = document.getElementById('importUnmatched');
             const unmatchedList = document.getElementById('unmatchedList');
 
             if (analysis.unmatchedIdeas && analysis.unmatchedIdeas.length > 0) {
                 unmatchedSection.style.display = 'block';
-                unmatchedList.innerHTML = analysis.unmatchedIdeas.map((idea, index) => `
+                unmatchedList.innerHTML = analysis.unmatchedIdeas.map((idea) => `
                     <div class="unmatched-idea">
                         <div class="unmatched-idea-text">"${idea.text}"</div>
                         <div class="unmatched-idea-meta">
@@ -4155,7 +2762,6 @@
                     </div>
                 `).join('');
 
-                // Add click handlers for request buttons
                 unmatchedList.querySelectorAll('.unmatched-idea-request').forEach(btn => {
                     btn.addEventListener('click', () => {
                         const idea = decodeURIComponent(btn.dataset.idea);
@@ -4167,12 +2773,10 @@
             }
         }
 
-        // Handle requesting an app from an extracted idea
         function requestAppIdea(idea) {
             importModal.classList.remove('active');
 
-            // Pre-fill the chat with the request
-            heroSection.classList.add('chat-active');
+            welcomeState.classList.add('chat-active');
             chatContainer.classList.add('active');
 
             const message = `I'd like to request an app that: ${idea}`;
@@ -4180,7 +2784,6 @@
             addMessage(message, 'user');
             conversationHistory.push({ role: 'user', content: message });
 
-            // Trigger response
             addTypingIndicator();
             setTimeout(() => {
                 removeTypingIndicator();
@@ -4189,34 +2792,21 @@
                     `1. We'll review your request\n` +
                     `2. AI Fleet will design and build the app\n` +
                     `3. You'll have it within 1-12 hours\n\n` +
-                    `Want to submit this request? If so, tell me:\n` +
-                    `• Any specific features you'd want?\n` +
-                    `• Should this be private (just for you) or public?`;
+                    `Want to submit this request?`;
                 addMessage(response, 'assistant');
                 conversationHistory.push({ role: 'assistant', content: response });
             }, 1500);
         }
 
-        function resetImportModal() {
-            importStepUpload.style.display = 'block';
-            importProgress.classList.remove('active');
-            importResults.classList.remove('active');
-            importProgressFill.style.width = '0%';
-            importFileInput.value = '';
-        }
-
-        // Done button
         importDone.addEventListener('click', () => {
             importModal.classList.remove('active');
         });
 
-        // Request custom app
         importRequestCustom.addEventListener('click', () => {
             importModal.classList.remove('active');
 
-            // Pre-fill the chat with a request based on analysis
             if (analysisResults && analysisResults.summary) {
-                heroSection.classList.add('chat-active');
+                welcomeState.classList.add('chat-active');
                 chatContainer.classList.add('active');
 
                 const message = `Based on my chat history, I'm interested in: ${analysisResults.topics?.slice(0, 3).map(t => t.topic).join(', ')}. Can you help me find or build something for this?`;
@@ -4224,7 +2814,6 @@
                 addMessage(message, 'user');
                 conversationHistory.push({ role: 'user', content: message });
 
-                // Trigger response
                 addTypingIndicator();
                 setTimeout(() => {
                     removeTypingIndicator();
@@ -4234,126 +2823,6 @@
                 }, 1500);
             }
         });
-
-        // ============================================
-        // SHELL NAVIGATION & APP LOADING
-        // ============================================
-
-        const bottomNav = document.getElementById('bottomNav');
-        const tabPanels = document.querySelectorAll('.tab-panel');
-        const navItems = document.querySelectorAll('.nav-item');
-        const appFrame = document.getElementById('appFrame');
-        const appPlaceholder = document.getElementById('appPlaceholder');
-        const appHeader = document.getElementById('appHeader');
-        const appTitle = document.getElementById('appTitle');
-        const appBackBtn = document.getElementById('appBackBtn');
-        const appBadge = document.getElementById('appBadge');
-        const appsBrowserGrid = document.getElementById('appsBrowserGrid');
-
-        let currentApp = null;
-
-        // Tab switching
-        navItems.forEach(item => {
-            item.addEventListener('click', () => {
-                const tabId = item.dataset.tab;
-                switchTab(tabId);
-            });
-        });
-
-        function switchTab(tabId) {
-            // Update nav items
-            navItems.forEach(item => {
-                item.classList.toggle('active', item.dataset.tab === tabId);
-            });
-
-            // Update panels
-            tabPanels.forEach(panel => {
-                panel.classList.toggle('active', panel.id === tabId);
-            });
-        }
-
-        // Populate apps browser grid
-        function populateAppsBrowser() {
-            if (!appsBrowserGrid) return;
-
-            appsBrowserGrid.innerHTML = Object.entries(SUITE_APPS).map(([id, app]) => `
-                <div class="app-browser-card" data-app-id="${id}">
-                    <div class="app-browser-icon" style="background: ${app.iconBg}">${app.icon}</div>
-                    <div class="app-browser-name">${app.name}</div>
-                    <div class="app-browser-desc">${app.description}</div>
-                </div>
-            `).join('');
-
-            // Add click handlers
-            appsBrowserGrid.querySelectorAll('.app-browser-card').forEach(card => {
-                card.addEventListener('click', () => {
-                    const appId = card.dataset.appId;
-                    openAppInShell(appId);
-                });
-            });
-        }
-
-        // Open app in the shell iframe
-        function openAppInShell(appId) {
-            const app = SUITE_APPS[appId];
-            if (!app) return;
-
-            currentApp = { id: appId, ...app };
-
-            // Show iframe, hide placeholder
-            appPlaceholder.style.display = 'none';
-            appFrame.style.display = 'block';
-            appFrame.src = app.url;
-
-            // Update header
-            appTitle.textContent = app.name;
-            appHeader.style.display = 'flex';
-
-            // Show badge on app tab
-            appBadge.style.display = 'block';
-            appBadge.textContent = '●';
-
-            // Switch to app tab
-            switchTab('appPanel');
-        }
-
-        // Back button in app view
-        if (appBackBtn) {
-            appBackBtn.addEventListener('click', () => {
-                switchTab('chatPanel');
-            });
-        }
-
-        // Initialize apps browser
-        populateAppsBrowser();
-
-        // Override app card links to open in shell (mobile) or new tab (desktop)
-        function interceptAppLinks() {
-            document.addEventListener('click', (e) => {
-                const appCard = e.target.closest('.app-card-inline');
-                if (!appCard) return;
-
-                // Only intercept on mobile
-                if (window.innerWidth >= 769) return;
-
-                e.preventDefault();
-
-                // Find the app ID from the card link
-                const href = appCard.href;
-                if (!href) return;
-
-                // Match URL to app
-                const matchedApp = Object.entries(SUITE_APPS).find(([id, app]) => app.url === href);
-                if (matchedApp) {
-                    openAppInShell(matchedApp[0]);
-                } else {
-                    // Open external links normally
-                    window.open(href, '_blank');
-                }
-            });
-        }
-
-        interceptAppLinks();
 
         // ============================================
         // PWA SERVICE WORKER REGISTRATION
@@ -4371,28 +2840,23 @@
             });
         }
 
-        // PWA Install Prompt handling
         let deferredPrompt = null;
 
         window.addEventListener('beforeinstallprompt', (e) => {
-            // Prevent Chrome 67+ from automatically showing the prompt
             e.preventDefault();
             deferredPrompt = e;
 
-            // Show custom install UI after a delay (don't interrupt immediately)
             setTimeout(() => {
                 showInstallPrompt();
-            }, 30000); // Show after 30 seconds of use
+            }, 30000);
         });
 
         function showInstallPrompt() {
             if (!deferredPrompt) return;
 
-            // Check if already shown this session
             if (sessionStorage.getItem('pwa-prompt-shown')) return;
             sessionStorage.setItem('pwa-prompt-shown', 'true');
 
-            // Create install prompt UI
             const promptDiv = document.createElement('div');
             promptDiv.className = 'pwa-install-prompt visible';
             promptDiv.innerHTML = `
@@ -4422,7 +2886,6 @@
                 promptDiv.remove();
             });
         }
-
     </script>
 </body>
 </html>
