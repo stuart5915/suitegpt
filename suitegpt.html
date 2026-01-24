@@ -605,6 +605,38 @@
             height: 20px;
         }
 
+        /* Quick Suggestion Chips */
+        .quick-suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 16px;
+            justify-content: center;
+        }
+
+        .suggestion-chip {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-subtle);
+            border-radius: 100px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .suggestion-chip:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--border-hover);
+            color: var(--text-primary);
+            transform: translateY(-1px);
+        }
+
+        .suggestion-chip:active {
+            transform: scale(0.98);
+        }
+
         /* Browse Section */
         .browse-section {
             width: 100%;
@@ -2471,7 +2503,7 @@
             </div>
 
             <h1 class="hero-title">What do you need?</h1>
-            <p class="hero-subtitle">Tell us what you need. We'll find it, change it, or build it for you.</p>
+            <p class="hero-subtitle">Describe your problem, and we'll find or build the solution.</p>
 
             <div class="input-container">
                 <div class="chat-input-wrapper">
@@ -2479,7 +2511,7 @@
                         type="text"
                         class="chat-input"
                         id="chatInput"
-                        placeholder="Describe your problem or goal..."
+                        placeholder="I need help with..."
                         autocomplete="off"
                     >
                     <button class="send-btn" id="sendBtn" disabled>
@@ -2488,126 +2520,27 @@
                         </svg>
                     </button>
                 </div>
-            </div>
 
-            <!-- Three Paths Section -->
-            <div class="paths-section" id="pathsSection">
-                <div class="paths-header">
-                    <h2>Here's what we can do for you</h2>
-                </div>
-
-                <div class="paths-grid">
-                    <div class="path-card" data-path="find">
-                        <div class="path-icon">📱</div>
-                        <div class="path-card-content">
-                            <h3>Find an App</h3>
-                            <p>Browse ready-made tools built for real problems</p>
-                            <span class="path-time">⚡ Ready now</span>
-                        </div>
-                    </div>
-
-                    <div class="path-card" data-path="change">
-                        <div class="path-icon">✏️</div>
-                        <div class="path-card-content">
-                            <h3>Request a Change</h3>
-                            <p>Want something added or tweaked? Just ask.</p>
-                            <span class="path-time">⏱️ ~12 hours</span>
-                            <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-top: 8px;">Click to learn how it works →</div>
-                        </div>
-                    </div>
-
-                    <div class="path-card" data-path="build">
-                        <div class="path-icon">🔨</div>
-                        <div class="path-card-content">
-                            <h3>Request New App</h3>
-                            <p>Don't see what you need? We'll build it.</p>
-                            <span class="path-time">⏱️ 1-12 hours</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Governance Info (hidden by default, shown on "change" click) -->
-                <div class="governance-info" id="governanceInfo">
-                    <h4>
-                        <span>🏛️ How changes work</span>
-                        <button class="governance-close" id="governanceClose">&times;</button>
-                    </h4>
-                    <p>When you request a change to an existing app, here's what happens:</p>
-                    <div class="governance-flow">
-                        <div class="governance-step">📝 You submit request</div>
-                        <span class="governance-arrow">→</span>
-                        <div class="governance-step">🔍 We review it</div>
-                        <span class="governance-arrow">→</span>
-                        <div class="governance-step approved">✅ Approved = Added for everyone</div>
-                    </div>
-                    <div class="governance-flow" style="margin-top: 8px;">
-                        <div class="governance-step" style="opacity: 0; pointer-events: none;">📝 Placeholder</div>
-                        <span class="governance-arrow" style="opacity: 0;">→</span>
-                        <div class="governance-step" style="opacity: 0; pointer-events: none;">🔍 Placeholder</div>
-                        <span class="governance-arrow">→</span>
-                        <div class="governance-step private">🔒 Not approved = Private app just for you</div>
-                    </div>
-                    <p style="margin-top: 16px; margin-bottom: 0; color: var(--text-tertiary);">Either way, you get what you need.</p>
+                <!-- Quick Suggestions -->
+                <div class="quick-suggestions">
+                    <button class="suggestion-chip" data-query="I want to track my fitness">💪 Fitness</button>
+                    <button class="suggestion-chip" data-query="I need help with my finances">💰 Money</button>
+                    <button class="suggestion-chip" data-query="I want to build better habits">⏰ Habits</button>
+                    <button class="suggestion-chip" data-query="I want to learn about DeFi">📚 DeFi</button>
+                    <button class="suggestion-chip" data-query="I have back pain from sitting">🧘 Pain</button>
+                    <button class="suggestion-chip" data-query="I want to eat healthier">🥗 Nutrition</button>
                 </div>
             </div>
 
-            <!-- Chat Container (appears between input and browse) -->
+            <!-- Chat Container -->
             <div class="chat-container" id="chatContainer">
                 <div class="chat-messages" id="chatMessages"></div>
             </div>
 
-            <!-- Help Section - Intent Based -->
-            <div class="help-section" id="helpSection">
-                <div class="help-section-header">
-                    <h2>How can I help today?</h2>
-                    <p>Tell me what's on your mind - problems, desires, ideas, or questions</p>
-                </div>
-
-                <!-- Intent Cards -->
-                <div class="intent-grid" id="intentGrid">
-                    <div class="intent-card" data-intent="problems">
-                        <div class="intent-card-icon">🔧</div>
-                        <div class="intent-card-title">I have a PROBLEM</div>
-                        <div class="intent-card-example">"I can't focus" "I keep forgetting"</div>
-                    </div>
-                    <div class="intent-card" data-intent="desires">
-                        <div class="intent-card-icon">💫</div>
-                        <div class="intent-card-title">I have a DESIRE</div>
-                        <div class="intent-card-example">"I want to be healthier"</div>
-                    </div>
-                    <div class="intent-card" data-intent="ideas">
-                        <div class="intent-card-icon">💡</div>
-                        <div class="intent-card-title">I have an IDEA</div>
-                        <div class="intent-card-example">"What if there was an app..."</div>
-                    </div>
-                    <div class="intent-card" data-intent="find">
-                        <div class="intent-card-icon">📱</div>
-                        <div class="intent-card-title">FIND me an app</div>
-                        <div class="intent-card-example">"Show me fitness apps"</div>
-                    </div>
-                    <div class="intent-card" data-intent="change">
-                        <div class="intent-card-icon">✏️</div>
-                        <div class="intent-card-title">CHANGE an app</div>
-                        <div class="intent-card-example">"Add this feature to..."</div>
-                    </div>
-                    <div class="intent-card" data-intent="build">
-                        <div class="intent-card-icon">💰</div>
-                        <div class="intent-card-title">BUILD & EARN</div>
-                        <div class="intent-card-example">"I want to create and monetize"</div>
-                    </div>
-                </div>
-
-                <!-- Community Pulse -->
-                <div class="community-pulse">
-                    <div class="community-pulse-title">
-                        <span>🔥</span> Trending this week
-                    </div>
-                    <div class="community-pulse-items">
-                        <span class="pulse-item"><strong>47</strong> people want a meditation app</span>
-                        <span class="pulse-item"><strong>32</strong> requested habit tracking</span>
-                        <span class="pulse-item"><strong>28</strong> asked about financial freedom</span>
-                    </div>
-                </div>
+            <!-- Hidden elements needed by JS -->
+            <div id="pathsSection" style="display:none;"></div>
+            <div id="governanceInfo" style="display:none;"></div>
+            <div id="helpSection" style="display:none;"></div>
 
                 <!-- Example Conversations -->
                 <div class="examples-section">
@@ -2965,70 +2898,25 @@
             'build': { placeholder: "What would you like to build and monetize?", example: "I want to create an app that..." }
         };
 
-        intentCards.forEach(card => {
-            card.addEventListener('click', () => {
-                const intent = card.dataset.intent;
-
-                // Toggle selection
-                intentCards.forEach(c => c.classList.remove('active'));
-                card.classList.add('active');
-                currentIntent = intent;
-
-                // Update placeholder and focus
-                const promptInfo = intentPrompts[intent];
-                if (promptInfo) {
-                    chatInput.placeholder = promptInfo.placeholder;
-                    chatInput.focus();
-                }
-
-                // Filter examples
-                renderUseCases();
-
-                // Update filter label
-                const intentLabels = {
-                    'problems': 'Problems', 'desires': 'Desires', 'ideas': 'Ideas',
-                    'find': 'Find Apps', 'change': 'Change Requests', 'build': 'Build & Earn'
-                };
-                currentFilterEl.textContent = `Showing: ${intentLabels[intent] || 'All'}`;
+        // Intent/path cards removed - simplified UI
+        // These handlers are kept as no-ops for safety
+        if (intentCards.length > 0) {
+            intentCards.forEach(card => {
+                card.addEventListener('click', () => {
+                    const intent = card.dataset.intent;
+                    intentCards.forEach(c => c.classList.remove('active'));
+                    card.classList.add('active');
+                    currentIntent = intent;
+                });
             });
-        });
+        }
 
-        // Path card interactions (for the 3 main paths at top)
-        pathCards.forEach(card => {
-            card.addEventListener('click', () => {
-                const path = card.dataset.path;
-
-                // Toggle selection
-                pathCards.forEach(c => c.classList.remove('selected'));
-                card.classList.add('selected');
-                selectedPath = path;
-
-                // Show governance info for "change" path
-                if (path === 'change') {
-                    governanceInfo.classList.add('visible');
-                } else {
-                    governanceInfo.classList.remove('visible');
-                }
-
-                // Update placeholder and focus
-                if (path === 'find') {
-                    chatInput.placeholder = "What problem are you trying to solve?";
-                    chatInput.focus();
-                } else if (path === 'change') {
-                    chatInput.placeholder = "Which app and what would you like changed?";
-                    chatInput.focus();
-                } else if (path === 'build') {
-                    chatInput.placeholder = "Describe the app you need...";
-                    chatInput.focus();
-                }
+        if (governanceClose) {
+            governanceClose.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (governanceInfo) governanceInfo.classList.remove('visible');
             });
-        });
-
-        // Close governance info
-        governanceClose.addEventListener('click', (e) => {
-            e.stopPropagation();
-            governanceInfo.classList.remove('visible');
-        });
+        }
 
         // Load use cases from Supabase
         async function loadUseCases() {
@@ -3200,6 +3088,17 @@
         });
 
         sendBtn.addEventListener('click', sendMessage);
+
+        // Quick suggestion chips
+        document.querySelectorAll('.suggestion-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                const query = chip.dataset.query;
+                if (query) {
+                    chatInput.value = query;
+                    sendMessage();
+                }
+            });
+        });
 
         // Add message to chat
         function addMessage(content, role, appRecommendation = null, userQuery = null) {
