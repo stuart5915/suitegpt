@@ -754,6 +754,51 @@
             color: #ef4444;
         }
 
+        /* Quick Action Buttons */
+        .quick-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .quick-action-btn {
+            padding: 10px 16px;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 12px;
+            background: rgba(99, 102, 241, 0.08);
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .quick-action-btn:hover {
+            background: rgba(99, 102, 241, 0.15);
+            border-color: var(--accent-primary);
+            transform: translateY(-1px);
+        }
+
+        .quick-action-btn.primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border: none;
+            color: white;
+        }
+
+        .quick-action-btn.primary:hover {
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+        }
+
+        .quick-action-btn .icon {
+            font-size: 1rem;
+        }
+
         /* Mobile Adjustments */
         @media (max-width: 640px) {
             .suitegpt-hero {
@@ -2331,7 +2376,7 @@
         sendBtn.addEventListener('click', sendMessage);
 
         // Add message to chat
-        function addMessage(content, role, appRecommendation = null) {
+        function addMessage(content, role, appRecommendation = null, userQuery = null) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${role}`;
 
@@ -2357,9 +2402,38 @@
                     <span class="app-arrow">→</span>
                 `;
                 contentDiv.appendChild(appCard);
+
+                // Add quick action buttons for app recommendations
+                const quickActionsDiv = document.createElement('div');
+                quickActionsDiv.className = 'quick-actions';
+                quickActionsDiv.innerHTML = `
+                    <button class="quick-action-btn" data-action="use-case" data-app="${appRecommendation}">
+                        <span class="icon">🎯</span>
+                        How does this help my specific case?
+                    </button>
+                    <button class="quick-action-btn" data-action="capabilities" data-app="${appRecommendation}">
+                        <span class="icon">✨</span>
+                        What else can it do?
+                    </button>
+                    <button class="quick-action-btn primary" data-action="open" data-app="${appRecommendation}" data-url="${app.url}">
+                        <span class="icon">🚀</span>
+                        Open ${app.name}
+                    </button>
+                    <button class="quick-action-btn" data-action="request-change" data-app="${appRecommendation}">
+                        <span class="icon">✏️</span>
+                        Request a feature
+                    </button>
+                `;
+                contentDiv.appendChild(quickActionsDiv);
+
+                // Add click handlers for quick actions
+                quickActionsDiv.querySelectorAll('.quick-action-btn').forEach(btn => {
+                    btn.addEventListener('click', () => handleQuickAction(btn.dataset.action, btn.dataset.app, btn.dataset.url, userQuery));
+                });
             }
 
-            if (role === 'assistant') {
+            if (role === 'assistant' && !appRecommendation) {
+                // Only show feedback buttons if no app recommendation (which has quick actions)
                 const feedbackDiv = document.createElement('div');
                 feedbackDiv.className = 'feedback-buttons';
                 feedbackDiv.innerHTML = `
@@ -2380,6 +2454,161 @@
             messageDiv.appendChild(contentDiv);
             chatMessages.appendChild(messageDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Handle quick action button clicks
+        function handleQuickAction(action, appId, url, originalQuery) {
+            const app = SUITE_APPS[appId];
+            if (!app) return;
+
+            switch (action) {
+                case 'use-case':
+                    // Ask for more specific help
+                    const useCaseQuery = `Tell me specifically how ${app.name} can help with my situation`;
+                    addMessage(useCaseQuery, 'user');
+                    conversationHistory.push({ role: 'user', content: useCaseQuery });
+                    addTypingIndicator();
+
+                    setTimeout(() => {
+                        removeTypingIndicator();
+                        const response = getUseCaseResponse(app, originalQuery);
+                        addMessage(response, 'assistant');
+                        conversationHistory.push({ role: 'assistant', content: response });
+                    }, 1200);
+                    break;
+
+                case 'capabilities':
+                    // Show full capabilities
+                    const capQuery = `What are all the features of ${app.name}?`;
+                    addMessage(capQuery, 'user');
+                    conversationHistory.push({ role: 'user', content: capQuery });
+                    addTypingIndicator();
+
+                    setTimeout(() => {
+                        removeTypingIndicator();
+                        const response = getCapabilitiesResponse(app);
+                        addMessage(response, 'assistant');
+                        conversationHistory.push({ role: 'assistant', content: response });
+                    }, 1200);
+                    break;
+
+                case 'open':
+                    // Open the app
+                    window.location.href = url;
+                    break;
+
+                case 'request-change':
+                    // Start a change request
+                    const changeQuery = `I'd like to request a feature for ${app.name}`;
+                    addMessage(changeQuery, 'user');
+                    conversationHistory.push({ role: 'user', content: changeQuery });
+                    addTypingIndicator();
+
+                    setTimeout(() => {
+                        removeTypingIndicator();
+                        const response = `Great! I'd love to hear your idea for ${app.name}.\n\n` +
+                            `What feature would you like us to add? Be as specific as you can - describe:\n` +
+                            `• What it should do\n` +
+                            `• When/how you'd use it\n` +
+                            `• Any examples of how it works elsewhere\n\n` +
+                            `Once you describe it, we'll review and either add it for everyone or create a private version just for you.`;
+                        addMessage(response, 'assistant');
+                        conversationHistory.push({ role: 'assistant', content: response });
+                    }, 1200);
+                    break;
+            }
+        }
+
+        // Generate use-case specific response
+        function getUseCaseResponse(app, originalQuery) {
+            const responses = {
+                'foodvitals': `Here's how FoodVitals specifically helps you:\n\n` +
+                    `1. **Weekly Check-ins, Not Daily Logging** - Instead of obsessing over every meal, you do a quick weekly reflection. Less pressure, more sustainable.\n\n` +
+                    `2. **AI-Powered Insights** - It analyzes your patterns and gives personalized suggestions. Not generic advice, but specific to YOUR habits.\n\n` +
+                    `3. **No Calorie Counting** - Focus on how food makes you feel, not numbers. Track energy levels, mood, and satisfaction.\n\n` +
+                    `4. **Smart Reminders** - Gentle nudges at meal times, not annoying notifications.\n\n` +
+                    `Want to try it? Or have questions about a specific feature?`,
+
+                'trueform': `Here's how TrueForm AI specifically helps you:\n\n` +
+                    `1. **AI Posture Assessment** - Use your camera to analyze your posture and identify problem areas.\n\n` +
+                    `2. **Personalized Stretching Routines** - Based on YOUR specific issues (desk work, back pain, etc.), not generic exercises.\n\n` +
+                    `3. **Form Correction in Real-Time** - The AI watches you do exercises and tells you when you're doing it wrong.\n\n` +
+                    `4. **Progress Tracking** - See how your mobility improves over time with measurable metrics.\n\n` +
+                    `Ready to start? Or want to know more about any feature?`,
+
+                'opticrep': `Here's how OpticRep specifically helps you:\n\n` +
+                    `1. **AI Rep Counter** - Automatically counts your reps using your camera. No more losing count.\n\n` +
+                    `2. **Form Analysis** - Real-time feedback on your exercise form to prevent injury and maximize gains.\n\n` +
+                    `3. **Workout Programs** - AI-generated programs based on your goals (strength, hypertrophy, endurance).\n\n` +
+                    `4. **Rest Timer Intelligence** - Suggests rest periods based on exercise intensity and your fatigue level.\n\n` +
+                    `Want to start your first workout? Or explore more features?`,
+
+                'cheshbon': `Here's how Cheshbon specifically helps you:\n\n` +
+                    `1. **Reflection, Not Restriction** - Weekly prompts ask how you FEEL about your spending, not just track numbers.\n\n` +
+                    `2. **Pattern Recognition** - Identifies emotional spending triggers without judgment.\n\n` +
+                    `3. **Values Alignment** - Helps you see if your spending matches what you actually care about.\n\n` +
+                    `4. **No Bank Linking Required** - Manual reflection is more mindful than automated tracking.\n\n` +
+                    `Ready to start your financial reflection journey?`,
+
+                'remcast': `Here's how RemCast specifically helps you:\n\n` +
+                    `1. **Smart Reminders** - Learns when you're most likely to act on reminders, not just arbitrary times.\n\n` +
+                    `2. **Gentle Habit Building** - No streaks or guilt. Just consistent, kind nudges.\n\n` +
+                    `3. **Context-Aware** - Knows not to remind you during meetings or late at night.\n\n` +
+                    `4. **Routine Builder** - Chain habits together into morning/evening routines.\n\n` +
+                    `Ready to build better habits? Or want to explore specific features?`,
+
+                'defi-knowledge': `Here's how DeFi Knowledge specifically helps you:\n\n` +
+                    `1. **Structured Learning Path** - From basics to advanced, no jumping around.\n\n` +
+                    `2. **No Shill, Just Education** - We teach concepts, not promote specific protocols.\n\n` +
+                    `3. **Interactive Simulations** - Practice strategies without risking real money.\n\n` +
+                    `4. **Jargon Decoder** - Built-in glossary that explains terms in plain English.\n\n` +
+                    `Ready to start learning? Or curious about a specific topic?`
+            };
+
+            return responses[app.id] || `${app.name} is designed to help with exactly what you described. Let me know if you want to dive deeper into any specific feature!`;
+        }
+
+        // Generate capabilities response
+        function getCapabilitiesResponse(app) {
+            const capabilities = {
+                'foodvitals': `**FoodVitals - Full Capabilities:**\n\n` +
+                    `📊 **Tracking**\n• Weekly meal reflections\n• Energy & mood logging\n• Water intake (coming soon)\n\n` +
+                    `🤖 **AI Features**\n• Personalized nutrition insights\n• Pattern detection\n• Smart suggestions\n\n` +
+                    `📱 **Experience**\n• Clean, pressure-free interface\n• Photo meal logging\n• Progress charts\n\n` +
+                    `🔔 **Reminders**\n• Gentle meal-time nudges\n• Weekly check-in prompts`,
+
+                'trueform': `**TrueForm AI - Full Capabilities:**\n\n` +
+                    `📷 **Assessment**\n• AI posture analysis\n• Mobility screening\n• Movement pattern detection\n\n` +
+                    `🏋️ **Exercise**\n• Guided stretching routines\n• Strength exercises\n• Real-time form correction\n\n` +
+                    `📈 **Progress**\n• Flexibility tracking\n• Pain level monitoring\n• Before/after comparisons\n\n` +
+                    `⚡ **Smart Features**\n• Desk worker programs\n• Custom routine builder\n• Video demonstrations`,
+
+                'opticrep': `**OpticRep - Full Capabilities:**\n\n` +
+                    `📷 **Vision AI**\n• Automatic rep counting\n• Form analysis & correction\n• Exercise recognition\n\n` +
+                    `💪 **Workouts**\n• AI-generated programs\n• Progressive overload tracking\n• Exercise library\n\n` +
+                    `📊 **Analytics**\n• Volume tracking\n• Strength progression\n• Workout history\n\n` +
+                    `⏱️ **Smart Features**\n• Rest timer optimization\n• Fatigue detection\n• PR celebrations`,
+
+                'cheshbon': `**Cheshbon - Full Capabilities:**\n\n` +
+                    `🪞 **Reflection**\n• Weekly money check-ins\n• Spending feeling journal\n• Values alignment scores\n\n` +
+                    `📊 **Insights**\n• Emotional spending patterns\n• Category breakdowns\n• Monthly summaries\n\n` +
+                    `🎯 **Goals**\n• Value-based goal setting\n• Progress visualization\n• Milestone celebrations\n\n` +
+                    `🔒 **Privacy**\n• No bank linking required\n• Local data option\n• Export anytime`,
+
+                'remcast': `**RemCast - Full Capabilities:**\n\n` +
+                    `🔔 **Reminders**\n• Smart timing optimization\n• Location-based triggers\n• Recurring schedules\n\n` +
+                    `📋 **Habits**\n• Routine builder\n• Habit stacking\n• Flexible scheduling\n\n` +
+                    `📈 **Tracking**\n• Completion rates (no streaks!)\n• Best times analysis\n• Weekly summaries\n\n` +
+                    `⚡ **Smart Features**\n• Do-not-disturb awareness\n• Calendar integration\n• Snooze intelligence`,
+
+                'defi-knowledge': `**DeFi Knowledge - Full Capabilities:**\n\n` +
+                    `📚 **Learning**\n• Structured courses\n• Interactive lessons\n• Quizzes & tests\n\n` +
+                    `🎮 **Practice**\n• Risk-free simulations\n• Strategy sandbox\n• Portfolio games\n\n` +
+                    `📖 **Reference**\n• Jargon glossary\n• Protocol comparisons\n• Risk explanations\n\n` +
+                    `🔄 **Updates**\n• Market context\n• New protocol coverage\n• Trend analysis`
+            };
+
+            return capabilities[app.id] || `${app.name} has many features designed to help you. What specific capability are you most interested in?`;
         }
 
         function addTypingIndicator() {
@@ -2409,6 +2638,9 @@
             const message = chatInput.value.trim();
             if (!message || isLoading) return;
 
+            // Store the user's query for context in quick actions
+            const userQuery = message;
+
             isLoading = true;
             sendBtn.disabled = true;
             chatInput.value = '';
@@ -2437,13 +2669,13 @@
                 if (!response.ok) throw new Error('Failed');
 
                 const data = await response.json();
-                addMessage(data.response, 'assistant', data.recommendedApp);
+                addMessage(data.response, 'assistant', data.recommendedApp, userQuery);
                 conversationHistory.push({ role: 'assistant', content: data.response });
 
             } catch (error) {
                 removeTypingIndicator();
                 const fallback = getLocalResponse(message);
-                addMessage(fallback.response, 'assistant', fallback.recommendedApp);
+                addMessage(fallback.response, 'assistant', fallback.recommendedApp, userQuery);
                 conversationHistory.push({ role: 'assistant', content: fallback.response });
             }
 
