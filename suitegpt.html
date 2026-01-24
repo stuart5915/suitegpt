@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SuiteGPT | Your Personal App Assistant</title>
-    <meta name="description" content="Tell SuiteGPT what you need, and it will recommend the perfect SUITE app for you.">
+    <title>SuiteGPT | Your Personal App Concierge</title>
+    <meta name="description" content="Tell us what you need. We'll find it, change it, or build it for you. Real apps, not just answers.">
     <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
 
     <!-- Open Graph -->
-    <meta property="og:title" content="SuiteGPT | Your Personal App Assistant">
-    <meta property="og:description" content="Better than ChatGPT because it gives you real tools, not just information.">
+    <meta property="og:title" content="SuiteGPT | Your Personal App Concierge">
+    <meta property="og:description" content="Tell us what you need. We'll find it, change it, or build it for you.">
     <meta property="og:image" content="https://getsuite.app/assets/images/1200x630-getsuite.jpg">
     <meta property="og:url" content="https://getsuite.app/suitegpt.html">
 
@@ -830,6 +830,290 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+
+        /* === CONCIERGE PATHS SECTION === */
+        .paths-section {
+            width: 100%;
+            max-width: 900px;
+            margin-top: 48px;
+            animation: fadeInUp 0.6s ease 0.35s backwards;
+        }
+
+        .paths-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .paths-header h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .paths-header p {
+            font-size: 0.9rem;
+            color: var(--text-tertiary);
+        }
+
+        .paths-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .path-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            padding: 28px 24px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .path-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .path-card[data-path="find"]::before {
+            background: linear-gradient(90deg, #22c55e, #16a34a);
+        }
+
+        .path-card[data-path="change"]::before {
+            background: linear-gradient(90deg, #f59e0b, #d97706);
+        }
+
+        .path-card[data-path="build"]::before {
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+        }
+
+        .path-card:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-hover);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.4);
+        }
+
+        .path-card:hover::before {
+            opacity: 1;
+        }
+
+        .path-card.selected {
+            border-color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.08);
+        }
+
+        .path-card.selected::before {
+            opacity: 1;
+        }
+
+        .path-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            margin: 0 auto 16px;
+            position: relative;
+        }
+
+        .path-card[data-path="find"] .path-icon {
+            background: rgba(34, 197, 94, 0.15);
+        }
+
+        .path-card[data-path="change"] .path-icon {
+            background: rgba(245, 158, 11, 0.15);
+        }
+
+        .path-card[data-path="build"] .path-icon {
+            background: rgba(99, 102, 241, 0.15);
+        }
+
+        .path-card h3 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .path-card p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        .path-time {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 100px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-tertiary);
+        }
+
+        .path-card[data-path="find"] .path-time {
+            color: #22c55e;
+            background: rgba(34, 197, 94, 0.1);
+        }
+
+        .path-card[data-path="change"] .path-time {
+            color: #f59e0b;
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .path-card[data-path="build"] .path-time {
+            color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        /* Hide paths when chat is active */
+        .suitegpt-hero.chat-active .paths-section {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .paths-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .path-card {
+                padding: 20px;
+                display: flex;
+                align-items: center;
+                text-align: left;
+                gap: 16px;
+            }
+
+            .path-icon {
+                margin: 0;
+                width: 48px;
+                height: 48px;
+                flex-shrink: 0;
+            }
+
+            .path-card-content {
+                flex: 1;
+            }
+
+            .path-card h3 {
+                margin-bottom: 4px;
+            }
+
+            .path-card p {
+                margin-bottom: 8px;
+                font-size: 0.8rem;
+            }
+        }
+
+        /* === GOVERNANCE INFO MODAL === */
+        .governance-info {
+            display: none;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-top: 16px;
+            backdrop-filter: blur(20px);
+            animation: fadeInUp 0.3s ease;
+        }
+
+        .governance-info.visible {
+            display: block;
+        }
+
+        .governance-info h4 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .governance-info p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+
+        .governance-flow {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+
+        .governance-step {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            font-size: 0.8rem;
+        }
+
+        .governance-step.approved {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+        }
+
+        .governance-step.private {
+            background: rgba(139, 92, 246, 0.1);
+            color: #8b5cf6;
+        }
+
+        .governance-arrow {
+            color: var(--text-tertiary);
+            font-size: 1.2rem;
+        }
+
+        .governance-close {
+            background: none;
+            border: none;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            padding: 4px;
+            margin-left: auto;
+            font-size: 1.2rem;
+            line-height: 1;
+        }
+
+        .governance-close:hover {
+            color: var(--text-secondary);
+        }
+
+        /* === UPDATED USE CASES === */
+        .browse-section .browse-title {
+            font-size: 1.05rem;
+        }
+
+        .browse-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-tertiary);
+            margin-top: 4px;
+        }
     </style>
 </head>
 <body>
@@ -851,8 +1135,8 @@
                 <span>SuiteGPT</span>
             </div>
 
-            <h1 class="hero-title">What can I help you with?</h1>
-            <p class="hero-subtitle">Tell me what you need, and I'll find the perfect tool for you. Real apps, not just answers.</p>
+            <h1 class="hero-title">What do you need?</h1>
+            <p class="hero-subtitle">Tell us what you need. We'll find it, change it, or build it for you.</p>
 
             <div class="input-container">
                 <div class="chat-input-wrapper">
@@ -860,7 +1144,7 @@
                         type="text"
                         class="chat-input"
                         id="chatInput"
-                        placeholder="Ask anything..."
+                        placeholder="Describe your problem or goal..."
                         autocomplete="off"
                     >
                     <button class="send-btn" id="sendBtn" disabled>
@@ -868,6 +1152,67 @@
                             <path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </button>
+                </div>
+            </div>
+
+            <!-- Three Paths Section -->
+            <div class="paths-section" id="pathsSection">
+                <div class="paths-header">
+                    <h2>Here's what we can do for you</h2>
+                </div>
+
+                <div class="paths-grid">
+                    <div class="path-card" data-path="find">
+                        <div class="path-icon">📱</div>
+                        <div class="path-card-content">
+                            <h3>Find an App</h3>
+                            <p>Browse ready-made tools built for real problems</p>
+                            <span class="path-time">⚡ Ready now</span>
+                        </div>
+                    </div>
+
+                    <div class="path-card" data-path="change">
+                        <div class="path-icon">✏️</div>
+                        <div class="path-card-content">
+                            <h3>Request a Change</h3>
+                            <p>Want something added or tweaked? Just ask.</p>
+                            <span class="path-time">⏱️ ~12 hours</span>
+                            <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-top: 8px;">Click to learn how it works →</div>
+                        </div>
+                    </div>
+
+                    <div class="path-card" data-path="build">
+                        <div class="path-icon">🔨</div>
+                        <div class="path-card-content">
+                            <h3>Request New App</h3>
+                            <p>Don't see what you need? We'll build it.</p>
+                            <span class="path-time">⏱️ 1-12 hours</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Governance Info (hidden by default, shown on "change" click) -->
+                <div class="governance-info" id="governanceInfo">
+                    <h4>
+                        <span>🏛️ How changes work</span>
+                        <button class="governance-close" id="governanceClose">&times;</button>
+                    </h4>
+                    <p>When you request a change to an existing app, here's what happens:</p>
+                    <div class="governance-flow">
+                        <div class="governance-step">📝 You submit request</div>
+                        <span class="governance-arrow">→</span>
+                        <div class="governance-step">🔍 We review it</div>
+                        <span class="governance-arrow">→</span>
+                        <div class="governance-step approved">✅ Approved = Added for everyone</div>
+                    </div>
+                    <div class="governance-flow" style="margin-top: 8px;">
+                        <div class="governance-step" style="opacity: 0; pointer-events: none;">📝 Placeholder</div>
+                        <span class="governance-arrow" style="opacity: 0;">→</span>
+                        <div class="governance-step" style="opacity: 0; pointer-events: none;">🔍 Placeholder</div>
+                        <span class="governance-arrow">→</span>
+                        <div class="governance-step private">🔒 Not approved = Private app just for you</div>
+                    </div>
+                    <p style="margin-top: 16px; margin-bottom: 0; color: var(--text-tertiary);">Either way, you get what you need.</p>
                 </div>
             </div>
 
@@ -879,7 +1224,10 @@
             <!-- Browse Section -->
             <div class="browse-section" id="browseSection">
                 <div class="browse-header">
-                    <div class="browse-title">Browse use cases <span id="useCaseCount"></span></div>
+                    <div>
+                        <div class="browse-title">What people are asking <span id="useCaseCount"></span></div>
+                        <div class="browse-subtitle">Click any to see how we helped</div>
+                    </div>
                 </div>
 
                 <div class="category-pills" id="categoryPills">
@@ -915,7 +1263,7 @@
                 <svg viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
                 </svg>
-                Powered by SUITE ecosystem
+                Powered by AI Fleet
             </div>
         </section>
     </div>
@@ -980,12 +1328,53 @@
         const useCasesGrid = document.getElementById('useCasesGrid');
         const categoryPills = document.querySelectorAll('.category-pill');
         const useCaseCount = document.getElementById('useCaseCount');
+        const pathCards = document.querySelectorAll('.path-card');
+        const governanceInfo = document.getElementById('governanceInfo');
+        const governanceClose = document.getElementById('governanceClose');
 
         // State
         let isLoading = false;
         let conversationHistory = [];
         let useCases = [];
         let currentCategory = 'all';
+        let selectedPath = null;
+
+        // Path card interactions
+        pathCards.forEach(card => {
+            card.addEventListener('click', () => {
+                const path = card.dataset.path;
+
+                // Toggle selection
+                pathCards.forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                selectedPath = path;
+
+                // Show governance info for "change" path
+                if (path === 'change') {
+                    governanceInfo.classList.add('visible');
+                } else {
+                    governanceInfo.classList.remove('visible');
+                }
+
+                // Update placeholder and focus
+                if (path === 'find') {
+                    chatInput.placeholder = "What problem are you trying to solve?";
+                    chatInput.focus();
+                } else if (path === 'change') {
+                    chatInput.placeholder = "Which app and what would you like changed?";
+                    chatInput.focus();
+                } else if (path === 'build') {
+                    chatInput.placeholder = "Describe the app you need...";
+                    chatInput.focus();
+                }
+            });
+        });
+
+        // Close governance info
+        governanceClose.addEventListener('click', (e) => {
+            e.stopPropagation();
+            governanceInfo.classList.remove('visible');
+        });
 
         // Load use cases from Supabase
         async function loadUseCases() {
@@ -1015,18 +1404,25 @@
             }
         }
 
-        // Hardcoded fallback
+        // Hardcoded fallback - showcasing different request types
         function getHardcodedUseCases() {
             return [
-                { query: "I want to lose weight but hate tracking calories", response: "FoodVitals takes a different approach...", recommended_app: "foodvitals", category: "health", helpful_count: 42 },
-                { query: "I have back pain from sitting all day", response: "TrueForm AI has guided stretching routines...", recommended_app: "trueform", category: "fitness", helpful_count: 56 },
-                { query: "Help me build a morning routine", response: "RemCast can help you build and stick to one...", recommended_app: "remcast", category: "productivity", helpful_count: 48 },
-                { query: "I want to learn about DeFi and crypto", response: "DeFi Knowledge breaks down concepts...", recommended_app: "defi-knowledge", category: "learning", helpful_count: 45 },
-                { query: "My posture is terrible and I want to fix it", response: "TrueForm AI can assess your movement...", recommended_app: "trueform", category: "fitness", helpful_count: 44 },
-                { query: "I want to get stronger but don't know where to start", response: "OpticRep is your AI workout trainer...", recommended_app: "opticrep", category: "fitness", helpful_count: 41 },
-                { query: "I keep forgetting important tasks", response: "RemCast is designed exactly for this...", recommended_app: "remcast", category: "productivity", helpful_count: 39 },
-                { query: "I need to track my nutrition better", response: "FoodVitals makes nutrition tracking simple...", recommended_app: "foodvitals", category: "health", helpful_count: 38 },
-                { query: "I want to get better with money", response: "Cheshbon is a financial reflection app...", recommended_app: "cheshbon", category: "finance", helpful_count: 37 }
+                // Find app requests
+                { query: "I want to lose weight but hate tracking calories", response: "FoodVitals takes a different approach - weekly check-ins instead of daily logging. It uses AI to give you insights without the obsessive tracking.", recommended_app: "foodvitals", category: "health", helpful_count: 42, type: "find" },
+                { query: "I have back pain from sitting all day", response: "TrueForm AI has guided stretching routines specifically for desk workers. It'll assess your mobility and create a personalized plan.", recommended_app: "trueform", category: "fitness", helpful_count: 56, type: "find" },
+                { query: "I want to learn about DeFi and crypto", response: "DeFi Knowledge breaks down complex concepts into digestible lessons. Start with the basics and work up to advanced strategies.", recommended_app: "defi-knowledge", category: "learning", helpful_count: 45, type: "find" },
+
+                // Change requests
+                { query: "Can FoodVitals track water intake too?", response: "Great idea! We reviewed this and added it to FoodVitals for everyone. You can now log water alongside your meals.", recommended_app: "foodvitals", category: "health", helpful_count: 67, type: "change" },
+                { query: "I wish OpticRep had rest day suggestions", response: "Done! We added smart rest day recommendations based on your workout intensity. Check it out in your dashboard.", recommended_app: "opticrep", category: "fitness", helpful_count: 52, type: "change" },
+
+                // Build requests
+                { query: "I need an app to track my dog's medications", response: "We built PetMeds for this user - tracks doses, sends reminders, and logs vet visits. Now available for everyone!", recommended_app: null, category: "productivity", helpful_count: 38, type: "build" },
+                { query: "Can you make a habit tracker that's not annoying?", response: "We built a minimal habit tracker that only notifies you once daily with a gentle summary. No streaks, no guilt.", recommended_app: "remcast", category: "productivity", helpful_count: 44, type: "build" },
+
+                // More find requests
+                { query: "I want to get stronger but don't know where to start", response: "OpticRep is your AI workout trainer - it watches your form, counts reps, and builds programs based on your goals.", recommended_app: "opticrep", category: "fitness", helpful_count: 41, type: "find" },
+                { query: "I want to get better with money", response: "Cheshbon helps you reflect on spending patterns without judgment. Weekly prompts help you understand your relationship with money.", recommended_app: "cheshbon", category: "finance", helpful_count: 37, type: "find" }
             ];
         }
 
@@ -1049,13 +1445,29 @@
 
             useCasesGrid.innerHTML = filtered.map(uc => {
                 const app = SUITE_APPS[uc.recommended_app] || {};
+                const typeLabels = {
+                    'find': { icon: '📱', label: 'Found app', color: 'rgba(34, 197, 94, 0.15)', textColor: '#22c55e' },
+                    'change': { icon: '✏️', label: 'Added feature', color: 'rgba(245, 158, 11, 0.15)', textColor: '#f59e0b' },
+                    'build': { icon: '🔨', label: 'Built custom', color: 'rgba(99, 102, 241, 0.15)', textColor: '#6366f1' }
+                };
+                const typeInfo = typeLabels[uc.type] || typeLabels['find'];
+
                 return `
-                    <div class="use-case-card" data-query="${encodeURIComponent(uc.query)}" data-response="${encodeURIComponent(uc.response)}" data-app="${uc.recommended_app}">
+                    <div class="use-case-card" data-query="${encodeURIComponent(uc.query)}" data-response="${encodeURIComponent(uc.response)}" data-app="${uc.recommended_app || ''}">
+                        <div class="use-case-type" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.7rem; font-weight: 600; padding: 4px 10px; border-radius: 100px; background: ${typeInfo.color}; color: ${typeInfo.textColor}; margin-bottom: 12px;">
+                            <span>${typeInfo.icon}</span>
+                            <span>${typeInfo.label}</span>
+                        </div>
                         <div class="use-case-query">"${uc.query}"</div>
                         <div class="use-case-meta">
                             <div class="use-case-app">
-                                <div class="use-case-app-icon" style="background: ${app.iconBg || 'var(--bg-card)'}">${app.icon || '📱'}</div>
-                                <span class="use-case-app-name">${app.name || 'SUITE App'}</span>
+                                ${uc.recommended_app ? `
+                                    <div class="use-case-app-icon" style="background: ${app.iconBg || 'var(--bg-card)'}">${app.icon || '📱'}</div>
+                                    <span class="use-case-app-name">${app.name || 'Custom App'}</span>
+                                ` : `
+                                    <div class="use-case-app-icon" style="background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))">✨</div>
+                                    <span class="use-case-app-name">Custom Built</span>
+                                `}
                             </div>
                             <div class="use-case-helpful">
                                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
@@ -1254,18 +1666,81 @@
             };
 
             const lower = message.toLowerCase();
+
+            // Check if this is a change request
+            const isChangeRequest = lower.includes('add') || lower.includes('change') ||
+                                   lower.includes('feature') || lower.includes('update') ||
+                                   lower.includes('modify') || lower.includes('can you make') ||
+                                   selectedPath === 'change';
+
+            // Check if this is a build request
+            const isBuildRequest = lower.includes('build') || lower.includes('create') ||
+                                  lower.includes('make me') || lower.includes('i need an app') ||
+                                  lower.includes('new app') || selectedPath === 'build';
+
+            // Find matching app
+            let matchedApp = null;
             for (const [app, words] of Object.entries(keywords)) {
                 if (words.some(w => lower.includes(w))) {
-                    const appData = SUITE_APPS[app];
-                    return {
-                        response: `I can help with that!\n\n${appData.name} is perfect for what you're looking for. ${appData.description}.`,
-                        recommendedApp: app
-                    };
+                    matchedApp = app;
+                    break;
                 }
             }
 
+            // Response based on intent
+            if (isChangeRequest && matchedApp) {
+                const appData = SUITE_APPS[matchedApp];
+                return {
+                    response: `Great idea for ${appData.name}!\n\nHere's how this works:\n\n` +
+                             `1. We'll review your request\n` +
+                             `2. If it fits the app's purpose, we'll add it for everyone\n` +
+                             `3. If not, we can build a private version just for you\n\n` +
+                             `Either way, you'll have what you need within ~12 hours.\n\n` +
+                             `Want to submit this request?`,
+                    recommendedApp: matchedApp
+                };
+            }
+
+            if (isChangeRequest && !matchedApp) {
+                return {
+                    response: `I'd love to help with that change!\n\n` +
+                             `Which app would you like to modify? Or if you're not sure, ` +
+                             `just describe what you're trying to accomplish and I'll point you in the right direction.`,
+                    recommendedApp: null
+                };
+            }
+
+            if (isBuildRequest) {
+                return {
+                    response: `I can help you build something custom!\n\n` +
+                             `AI Fleet can create apps tailored to your exact needs. ` +
+                             `Depending on complexity, this usually takes 1-12 hours.\n\n` +
+                             `Tell me more about what you need:\n` +
+                             `• What problem are you trying to solve?\n` +
+                             `• Any specific features in mind?\n` +
+                             `• Will this be just for you, or for others too?`,
+                    recommendedApp: null
+                };
+            }
+
+            // Standard app recommendation
+            if (matchedApp) {
+                const appData = SUITE_APPS[matchedApp];
+                return {
+                    response: `${appData.name} is perfect for this!\n\n${appData.description}.\n\n` +
+                             `💡 Pro tip: If you want any feature added to this app, just ask! ` +
+                             `Changes are usually live within 12 hours.`,
+                    recommendedApp: matchedApp
+                };
+            }
+
+            // No match - offer to build
             return {
-                response: "I don't have a specific tool for that yet, but the SUITE ecosystem is growing! Check out our Apps page to see what's available.",
+                response: `We don't have an app for that yet, but we can build one!\n\n` +
+                         `AI Fleet creates custom apps in 1-12 hours. Just describe:\n` +
+                         `• What problem you're solving\n` +
+                         `• Key features you need\n\n` +
+                         `Want me to start a request?`,
                 recommendedApp: null
             };
         }
