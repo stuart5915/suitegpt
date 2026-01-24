@@ -38,6 +38,11 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
 
         <div class="sidebar-section">
+            <div class="sidebar-title">SuiteGPT Guide</div>
+            <a href="/docs/suitegpt-guide/" class="sidebar-link ${isActive('suitegpt-guide.html')}">🎯 Use Cases by Role</a>
+        </div>
+
+        <div class="sidebar-section">
             <div class="sidebar-title">Treasury</div>
             <a href="/docs/vault/" class="sidebar-link ${isActive('vault.html')}">🏦 Reward Pool</a>
         </div>

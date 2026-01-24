@@ -48,9 +48,41 @@
             <div class="nav-links">
                 <a href="https://suitegpt.app">SuiteGPT</a>
                 <a href="/suite-shell.html">Apps</a>
+                <a href="/docs/">Docs</a>
                 <a href="/factory.html">Dashboard</a>
                 <a href="/profile.html">Profile</a>
             </div>
+            <div class="nav-actions">
+                <button class="connect-btn" id="navConnectBtn" onclick="openNavConnectModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    Sign Up
+                </button>
+                <div class="auth-display" id="navAuthDisplay" style="display: none;">
+                    <a href="/profile.html" class="auth-credits">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                        <span id="navCreditsDisplay">0</span>
+                    </a>
+                    <div class="auth-identity" onclick="openNavProfileMenu()">
+                        <span id="navAuthIdentityText">...</span>
+                    </div>
+                </div>
+            </div>
+            <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+        <div class="mobile-menu" id="mobileMenu">
+            <a href="https://suitegpt.app">SuiteGPT</a>
+            <a href="/suite-shell.html">Apps</a>
+            <a href="/docs/">Docs</a>
+            <a href="/factory.html">Dashboard</a>
+            <a href="/profile.html">Profile</a>
+            <button class="mobile-connect-btn" id="mobileConnectBtn" onclick="openNavConnectModal()">Sign Up / Connect</button>
         </div>
     `;
 
@@ -386,9 +418,10 @@
 })();
 
 function toggleMobileMenu() {
-    document.querySelector('.mobile-menu-btn').classList.toggle('active');
-    document.querySelector('.nav-links').classList.toggle('mobile-open');
-    document.querySelector('.nav-actions')?.classList.toggle('mobile-open');
+    const menuBtn = document.querySelector('.mobile-menu-btn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    menuBtn.classList.toggle('active');
+    mobileMenu.classList.toggle('active');
 }
 
 // Modal functions

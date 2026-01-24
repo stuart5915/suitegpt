@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuiteGPT Use Cases Guide | SUITE Docs</title>
+    <meta name="description" content="Find the perfect SUITE app for your situation. Use cases organized by role - entrepreneur, student, parent, remote worker, creative, and more.">
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/suite-styles.css">
+    <link rel="stylesheet" href="/nav.css">
+    <link rel="stylesheet" href="/docs/docs.css">
+    <style>
+        /* Persona Selector Grid */
+        .persona-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+            margin: 24px 0;
+        }
+
+        .persona-card {
+            background: var(--bg-elevated);
+            border: 2px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 20px 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .persona-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent-warm);
+            box-shadow: 0 12px 32px rgba(255, 140, 66, 0.2);
+        }
+
+        .persona-card.active {
+            background: linear-gradient(135deg, rgba(255, 140, 66, 0.15), rgba(255, 107, 107, 0.15));
+            border-color: var(--accent-warm);
+            box-shadow: 0 8px 24px rgba(255, 140, 66, 0.25);
+        }
+
+        .persona-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .persona-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        /* Persona Content Sections */
+        .persona-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .persona-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .persona-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+            padding: 20px 24px;
+            background: linear-gradient(135deg, var(--accent-warm), var(--accent-coral));
+            border-radius: 16px;
+        }
+
+        .persona-header-icon {
+            font-size: 3rem;
+        }
+
+        .persona-header-text h2 {
+            margin: 0 0 4px 0;
+            color: white;
+            font-size: 1.5rem;
+            border: none;
+            padding: 0;
+        }
+
+        .persona-header-tagline {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        /* Challenges Section */
+        .challenges-section {
+            background: var(--bg-elevated);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .challenges-section h3 {
+            margin: 0 0 16px 0;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+        }
+
+        .challenges-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .challenge-tag {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 10px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .challenge-tag::before {
+            content: '!';
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            background: rgba(239, 68, 68, 0.2);
+            border-radius: 50%;
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: #ef4444;
+        }
+
+        /* Apps Section */
+        .apps-section h3 {
+            margin: 0 0 16px 0;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+        }
+
+        .app-recommendation {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 16px 20px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .app-recommendation:hover {
+            border-color: var(--accent-warm);
+            transform: translateX(4px);
+        }
+
+        .app-emoji {
+            font-size: 2rem;
+            flex-shrink: 0;
+        }
+
+        .app-info {
+            flex: 1;
+        }
+
+        .app-name {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .app-desc {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Prompts Section */
+        .prompts-section {
+            background: rgba(139, 92, 246, 0.08);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 24px;
+        }
+
+        .prompts-section h3 {
+            margin: 0 0 16px 0;
+            color: var(--accent-purple);
+            font-size: 1.1rem;
+        }
+
+        .prompt-example {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 18px;
+            background: var(--bg-deep);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .prompt-example::before {
+            content: '"';
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--accent-purple);
+            line-height: 1;
+        }
+
+        /* CTA */
+        .try-suitegpt-cta {
+            background: linear-gradient(135deg, var(--accent-warm), var(--accent-coral));
+            border-radius: 16px;
+            padding: 24px 32px;
+            margin-top: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .try-suitegpt-cta h3 {
+            margin: 0;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .try-suitegpt-cta p {
+            margin: 4px 0 0 0;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.95rem;
+        }
+
+        .try-suitegpt-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 28px;
+            background: white;
+            color: var(--bg-deep);
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1rem;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .try-suitegpt-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        @media (max-width: 600px) {
+            .persona-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .persona-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .try-suitegpt-cta {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav id="main-nav"></nav>
+    <script src="/nav-component.js"></script>
+    <div class="canvas-container">
+        <div class="docs-container">
+            <aside class="docs-sidebar"></aside>
+            <script src="/docs/sidebar.js"></script>
+            <main class="docs-content">
+                <h1>SuiteGPT Use Cases Guide</h1>
+                <p class="subtitle">Find the perfect app for your situation. Click your role below to see personalized recommendations.</p>
+
+                <div class="highlight-box highlight-box--warm">
+                    <h4>What is SuiteGPT?</h4>
+                    <p style="margin-bottom: 0;">SuiteGPT is your personal app concierge. Tell it what you're dealing with, and it recommends the right SUITE apps - then helps you use them effectively.</p>
+                </div>
+
+                <h2>Who Are You?</h2>
+                <p>Select your role to see apps and prompts tailored for you:</p>
+
+                <div class="persona-grid">
+                    <div class="persona-card active" data-persona="entrepreneur">
+                        <div class="persona-icon">🚀</div>
+                        <div class="persona-name">Entrepreneur</div>
+                    </div>
+                    <div class="persona-card" data-persona="student">
+                        <div class="persona-icon">📚</div>
+                        <div class="persona-name">Student</div>
+                    </div>
+                    <div class="persona-card" data-persona="parent">
+                        <div class="persona-icon">👨‍👩‍👧</div>
+                        <div class="persona-name">Parent</div>
+                    </div>
+                    <div class="persona-card" data-persona="remote">
+                        <div class="persona-icon">💻</div>
+                        <div class="persona-name">Remote Worker</div>
+                    </div>
+                    <div class="persona-card" data-persona="creative">
+                        <div class="persona-icon">🎨</div>
+                        <div class="persona-name">Creative</div>
+                    </div>
+                    <div class="persona-card" data-persona="fitness">
+                        <div class="persona-icon">💪</div>
+                        <div class="persona-name">Fitness Enthusiast</div>
+                    </div>
+                    <div class="persona-card" data-persona="budget">
+                        <div class="persona-icon">💰</div>
+                        <div class="persona-name">Budget-Conscious</div>
+                    </div>
+                </div>
+
+                <!-- Entrepreneur Section -->
+                <div class="persona-content active" id="persona-entrepreneur">
+                    <div class="persona-header">
+                        <div class="persona-header-icon">🚀</div>
+                        <div class="persona-header-text">
+                            <h2>Entrepreneur</h2>
+                            <div class="persona-header-tagline">Build smarter, not harder</div>
+                        </div>
+                    </div>
+
+                    <div class="challenges-section">
+                        <h3>Your Challenges</h3>
+                        <div class="challenges-list">
+                            <div class="challenge-tag">Too many ideas, can't decide</div>
+                            <div class="challenge-tag">Burnout from overwork</div>
+                            <div class="challenge-tag">Budget tracking chaos</div>
+                            <div class="challenge-tag">No work-life balance</div>
+                            <div class="challenge-tag">Decision fatigue</div>
+                        </div>
+                    </div>
+
+                    <div class="apps-section">
+                        <h3>Your Apps</h3>
+                        <div class="app-recommendation">
+                            <div class="app-emoji">🎯</div>
+                            <div class="app-info">
+                                <div class="app-name">QuickDecide</div>
+                                <div class="app-desc">Stop overthinking business decisions. Get AI-powered frameworks to evaluate options and move forward with confidence.</div>
+                            </div>
+                        </div>
+                        <div class="app-recommendation">
+                            <div class="app-emoji">🧘</div>
+                            <div class="app-info">
+                                <div class="app-name">FocusFlow</div>
+                                <div class="app-desc">Deep work sessions with Pomodoro timing. Block distractions and get into flow state for your most important work.</div>
+                            </div>
+                        </div>
+                        <div class="app-recommendation">
+                            <div class="app-emoji">💵</div>
+                            <div class="app-info">
+                                <div class="app-name">QuickBudget</div>
+                                <div class="app-desc">Track startup expenses without spreadsheet nightmares. See where money goes and plan cash runway.</div>
+                            </div>
+                        </div>
+                        <div class="app-recommendation">
+                            <div class="app-emoji">📈</div>
+                            <div class="app-info">
+                                <div class="app-name">HabitStack</div>
+                                <div class="app-desc">Build the daily habits that separate successful founders from the rest. Stack routines that compound over time.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompts-section">
+                        <h3>Try These Prompts in SuiteGPT</h3>
+                        <div class="prompt-example">I have 3 business ideas and can't decide which to pursue</div>
+                        <div class="prompt-example">I'm working 14 hour days and burning out</div>
+                        <div class="prompt-example">I need to track my startup expenses but hate spreadsheets</div>
+                        <div class="prompt-example">How do I build better morning habits as a founder?</div>
+                        <div class="prompt-example">I keep getting distracted during my most productive hours</div>
+                    </div>
+                </div>
+
+                <!-- Student Section -->
+                <div class="persona-content" id="persona-student">
+                    <div class="persona-header">
+                        <div class="persona-header-icon">📚</div>
+                        <div class="persona-header-text">
+                            <h2>Student</h2>
+                            <div class="persona-header-tagline">Study smarter, stress less</div>
+                        </div>
+                    </div>
+
+                    <div class="challenges-section">
+                        <h3>Your Challenges</h3>
+                        <div class="challenges-list">
+                            <div class="challenge-tag">Exam stress</div>
+                            <div class="challenge-tag">Can't focus while studying</div>
+                            <div class="challenge-tag">Never finish books</div>
+                            <div class="challenge-tag">Broke all the time</div>
+                            <div class="challenge-tag">Procrastination</div>
+                        </div>
+                    </div>
+
+                    <div class="apps-section">
+                        <h3>Your Apps</h3>
+                        <div class="app-recommendation">
+                            <div class="app-emoji">🧠</div>
+                            <div class="app-info">
+                                <div class="app-name">FlashMind</div>
+                                <div class="app-desc">AI-powered flashcards that adapt to what you need to learn. Spaced repetition optimized for your memory patterns.</div>
+                            </div>
+                        </div>
+                        <div class="app-recommendation">
+                            <div class="app-emoji">🧘</div>
+                            <div class="app-info">
+                                <div class="app-name">FocusFlow</div>
+                                <div class="app-desc">Block distractions and study in focused bursts. Perfect for exam cramming or paper writing.</div>
+                            </div>
+                        </div>
+                        <div class="app-recommendation">
+                            <div class="app-emoji">📖</div>
+                            <div class="app-info">
+                                <div class="app-name">BookShelf</div>
+                                <div class="app-desc">Track your reading goals and actually finish books. Get recommendations based on your courses and interests.</div>
+                            </div>
+                        </div>
+                        <div class="app-recommendation">
+                            <div class="app-emoji">💵</div>
+                            <div class="app-info">
+                                <div class="app-name">QuickBudget</div>
+                                <div class="app-desc">Track every dollar when you're living on a student budget. Know exactly where your money goes.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompts-section">
+                        <h3>Try These Prompts in SuiteGPT</h3>
+                        <div class="prompt-example">I have finals next week and haven't started studying</div>
+                        <div class="prompt-example">I can't focus when I try to study at home</div>
+                        <div class="prompt-example">I want to read more books but never finish them</div>
+                        <div class="prompt-example">I'm broke and need to track my spending</div>
+                        <div class="prompt-example">How can I stop procrastinating on my assignments?</div>
+                    </div>
+                </div>
+
+                <!-- Parent Section -->
+                <div class="persona-content" id="persona-parent">
+                    <div class="persona-header">
+                        <div class="persona-header-icon">👨‍👩‍👧</div>
+                        <div class="persona-header-text">
+                            <h2>Parent</h2>
+                            <div class="persona-header-tagline">Master the chaos of family life</div>
+                        </div>
+                    </div>
+
+                    <div class="challenges-section">
+                        <h3>Your Challenges</h3>
+                        <div class="challenges-list">
+                            <div class="challenge-tag">What's for dinner?</div>
+                            <div class="challenge-tag">Pet care management</div>
+                            <div class="challenge-tag">Gift ideas for everyone</div>
+                            <div class="challenge-tag">House always messy</div>
+                            <div class="challenge-tag">No time for yourself</div>
+                        </div>
+                    </div>
+
+                    <div class="apps-section">
+                        <h3>Your Apps</h3>
+                        <div class="app-recommendation">
+                            <div class="app-emoji">🍽️</div>
+                            <div class="app-info">
+                                <div class="app-name">MealPrep</div>
+                                <div class="app-desc">Weekly meal planning made easy. Get recipes, grocery lists, and prep schedules the whole family will enjoy.</div>
+                            </div>
+                        </div>
+                        <div class="app-recommendation">
+                            <div class="app-emoji">🐾</div>
+                            <div class="app-info">
+                                <div class="app-name">PetCare</div>
+                                <div class="app-desc">Track vet appointments, medications, and feeding schedules for all your furry family members.</div>
+                            </div>
+                        </div>
+                        <div class="app-recommendation">
+                            <div class="app-emoji">🎁</div>
+                            <div class="app-info">
+                                <div class="app-name">GiftGuru</div>
+                                <div class="app-desc">Never forget a birthday again. Get personalized gift ideas for kids, family, and friends based on their interests.</div>
+                            </div>
+                        </div>
+                        <div class="app-recommendation">
+                            <div class="app-emoji">🧹</div>
+                            <div class="app-info">
+                                <div class="app-name">CleanHome</div>
+                                <div class="app-desc">Assign chores, track cleaning schedules, and keep the house under control without nagging.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompts-section">
+                        <h3>Try These Prompts in SuiteGPT</h3>
+                        <div class="prompt-example">I never know what to cook for dinner</div>
+                        <div class="prompt-example">I keep forgetting my kid's medication schedule</div>
+                        <div class="prompt-example">I need gift ideas for my daughter's birthday</div>
+                        <div class="prompt-example">My house is always messy and I can't keep up</div>
+                        <div class="prompt-example">How do I get my kids to help with chores?</div>
+                    </div>
+                </div>
+
+                <!-- Remote Worker Section -->
+                <div class="persona-content" id="persona-remote">
+                    <div class="persona-header">
+                        <div class="persona-header-icon">💻</div>
+                        <div class="persona-header-text">
+                            <h2>Remote Worker</h2>
+                            <div class="persona-header-tagline">Work from anywhere, thrive everywhere</div>
+                        </div>
+                    </div>
+
+                    <div class="challenges-section">
+                        <h3>Your Challenges</h3>
+                        <div class="challenges-list">
+                            <div class="challenge-tag">Back pain from sitting</div>
+                            <div class="challenge-tag">Can't focus at home</div>
+                            <div class="challenge-tag">Feeling isolated</div>
+                            <div class="challenge-tag">No routine anymore</div>
+                            <div class="challenge-tag">Work-life boundaries blur</div>
+                        </div>
+                    </div>
+
+                    <div class="apps-section">
+                        <h3>Your Apps</h3>
+                        <div class="app-recommendation">
+                            <div class="app-emoji">🧘‍♂️</div>
+                            <div class="app-info">
+                                <div class="app-name">StretchTimer</div>
+                                <div class="app-desc">Gentle reminders to stretch and move throughout the day. Prevent desk pain before it starts.</div>
+                            </div>
+                        </div>
+                        <div class="app-recommendation">
+                            <div class="app-emoji">🧘</div>
+                            <div class="app-info">
+                                <div class="app-name">FocusFlow</div>
+                                <div class="app-desc">Create deep work sessions even with home distractions. Build a productive rhythm that works remotely.</div>
+                            </div>
+                        </div>
+                        <div class="app-recommendation">
+                            <div class="app-emoji">📈</div>
+                            <div class="app-info">
+                                <div class="app-name">HabitStack</div>
+                                <div class="app-desc">Build a remote work routine that keeps you healthy and productive. Morning rituals to end-of-day wind-downs.</div>
+                            </div>
+                        </div>
+                        <div class="app-recommendation">
+                            <div class="app-emoji">📊</div>
+                            <div class="app-info">
+                                <div class="app-name">MoodLog</div>
+                                <div class="app-desc">Track your mental health patterns. Catch isolation or burnout early and understand what affects your mood.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompts-section">
+                        <h3>Try These Prompts in SuiteGPT</h3>
+                        <div class="prompt-example">My back hurts from sitting all day</div>
+                        <div class="prompt-example">I can't focus working from home</div>
+                        <div class="prompt-example">I feel isolated and my mood is all over the place</div>
+                        <div class="prompt-example">I have no routine anymore working remotely</div>
+                        <div class="prompt-example">How do I separate work from personal life at home?</div>
+                    </div>
+                </div>
+
+                <!-- Creative Section -->
+                <div class="persona-content" id="persona-creative">
+                    <div class="persona-header">
+                        <div class="persona-header-icon">🎨</div>
+                        <div class="persona-header-text">
+                            <h2>Creative</h2>
+                            <div class="persona-header-tagline">Turn inspiration into action</div>
+                        </div>
+                    </div>
+
+                    <div class="challenges-section">
+                        <h3>Your Challenges</h3>
+                        <div class="challenges-list">
+                            <div class="challenge-tag">Too many project ideas</div>
+                            <div class="challenge-tag">Never finish projects</div>
+                            <div class="challenge-tag">Skill learning overload</div>
+                            <div class="challenge-tag">Creative energy fluctuates</div>
+                            <div class="challenge-tag">Need more inspiration</div>
+                        </div>
+                    </div>
+
+                    <div class="apps-section">
+                        <h3>Your Apps</h3>
+                        <div class="app-recommendation">
+                            <div class="app-emoji">🎯</div>
+                            <div class="app-info">
+                                <div class="app-name">QuickDecide</div>
+                                <div class="app-desc">Choose which creative project to focus on. Stop juggling ideas and commit to one direction.</div>
+                            </div>
+                        </div>
+                        <div class="app-recommendation">
+                            <div class="app-emoji">🌳</div>
+                            <div class="app-info">
+                                <div class="app-name">SkillTree</div>
+                                <div class="app-desc">Map out the skills you want to learn and track progress. Structured growth for creatives.</div>
+                            </div>
+                        </div>
+                        <div class="app-recommendation">
+                            <div class="app-emoji">📖</div>
+                            <div class="app-info">
+                                <div class="app-name">BookShelf</div>
+                                <div class="app-desc">Read more books for creative inspiration. Track what you've read and get recommendations in your niche.</div>
+                            </div>
+                        </div>
+                        <div class="app-recommendation">
+                            <div class="app-emoji">📊</div>
+                            <div class="app-info">
+                                <div class="app-name">MoodLog</div>
+                                <div class="app-desc">Understand your creative energy patterns. Find when you're most creative and protect that time.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompts-section">
+                        <h3>Try These Prompts in SuiteGPT</h3>
+                        <div class="prompt-example">I have too many project ideas and can't pick one</div>
+                        <div class="prompt-example">I want to learn a new skill but don't know where to start</div>
+                        <div class="prompt-example">I need to read more for inspiration</div>
+                        <div class="prompt-example">My creative energy fluctuates wildly</div>
+                        <div class="prompt-example">How do I actually finish my creative projects?</div>
+                    </div>
+                </div>
+
+                <!-- Fitness Section -->
+                <div class="persona-content" id="persona-fitness">
+                    <div class="persona-header">
+                        <div class="persona-header-icon">💪</div>
+                        <div class="persona-header-text">
+                            <h2>Fitness Enthusiast</h2>
+                            <div class="persona-header-tagline">Optimize your health journey</div>
+                        </div>
+                    </div>
+
+                    <div class="challenges-section">
+                        <h3>Your Challenges</h3>
+                        <div class="challenges-list">
+                            <div class="challenge-tag">Not drinking enough water</div>
+                            <div class="challenge-tag">Poor sleep quality</div>
+                            <div class="challenge-tag">Inconsistent step count</div>
+                            <div class="challenge-tag">Meal prep is hard</div>
+                            <div class="challenge-tag">Tracking everything</div>
+                        </div>
+                    </div>
+
+                    <div class="apps-section">
+                        <h3>Your Apps</h3>
+                        <div class="app-recommendation">
+                            <div class="app-emoji">💧</div>
+                            <div class="app-info">
+                                <div class="app-name">HydroTrack</div>
+                                <div class="app-desc">Never forget to drink water. Smart reminders based on your activity level and goals.</div>
+                            </div>
+                        </div>
+                        <div class="app-recommendation">
+                            <div class="app-emoji">😴</div>
+                            <div class="app-info">
+                                <div class="app-name">SleepWell</div>
+                                <div class="app-desc">Optimize your sleep for better recovery and performance. Track patterns and get improvement tips.</div>
+                            </div>
+                        </div>
+                        <div class="app-recommendation">
+                            <div class="app-emoji">👟</div>
+                            <div class="app-info">
+                                <div class="app-name">StepGoal</div>
+                                <div class="app-desc">Hit 10,000 steps every day. Gamified tracking with streaks and challenges to keep you moving.</div>
+                            </div>
+                        </div>
+                        <div class="app-recommendation">
+                            <div class="app-emoji">🍽️</div>
+                            <div class="app-info">
+                                <div class="app-name">MealPrep</div>
+                                <div class="app-desc">High-protein, macro-friendly meal plans. Prep once, eat healthy all week.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompts-section">
+                        <h3>Try These Prompts in SuiteGPT</h3>
+                        <div class="prompt-example">I never drink enough water</div>
+                        <div class="prompt-example">I'm not sleeping well and it's affecting my workouts</div>
+                        <div class="prompt-example">I want to hit 10,000 steps every day</div>
+                        <div class="prompt-example">I need help with meal prep for my fitness goals</div>
+                        <div class="prompt-example">How do I stay consistent with my fitness routine?</div>
+                    </div>
+                </div>
+
+                <!-- Budget-Conscious Section -->
+                <div class="persona-content" id="persona-budget">
+                    <div class="persona-header">
+                        <div class="persona-header-icon">💰</div>
+                        <div class="persona-header-text">
+                            <h2>Budget-Conscious</h2>
+                            <div class="persona-header-tagline">Every dollar, intentionally spent</div>
+                        </div>
+                    </div>
+
+                    <div class="challenges-section">
+                        <h3>Your Challenges</h3>
+                        <div class="challenges-list">
+                            <div class="challenge-tag">Money disappears mysteriously</div>
+                            <div class="challenge-tag">Food waste from bad planning</div>
+                            <div class="challenge-tag">Overspending on gifts</div>
+                            <div class="challenge-tag">Impulse purchases</div>
+                            <div class="challenge-tag">Forgetting items when packing</div>
+                        </div>
+                    </div>
+
+                    <div class="apps-section">
+                        <h3>Your Apps</h3>
+                        <div class="app-recommendation">
+                            <div class="app-emoji">💵</div>
+                            <div class="app-info">
+                                <div class="app-name">QuickBudget</div>
+                                <div class="app-desc">See exactly where every dollar goes. Simple tracking that shows your spending patterns.</div>
+                            </div>
+                        </div>
+                        <div class="app-recommendation">
+                            <div class="app-emoji">🍽️</div>
+                            <div class="app-info">
+                                <div class="app-name">MealPrep</div>
+                                <div class="app-desc">Plan meals around sales and what you have. Stop throwing away food and money.</div>
+                            </div>
+                        </div>
+                        <div class="app-recommendation">
+                            <div class="app-emoji">🎁</div>
+                            <div class="app-info">
+                                <div class="app-name">GiftGuru</div>
+                                <div class="app-desc">Thoughtful gift ideas at any price point. Set budgets and find meaningful gifts without overspending.</div>
+                            </div>
+                        </div>
+                        <div class="app-recommendation">
+                            <div class="app-emoji">🧳</div>
+                            <div class="app-info">
+                                <div class="app-name">PackLight</div>
+                                <div class="app-desc">Never forget essentials when traveling. Stop buying duplicates because you left something at home.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompts-section">
+                        <h3>Try These Prompts in SuiteGPT</h3>
+                        <div class="prompt-example">Where does all my money go?</div>
+                        <div class="prompt-example">I need cheap meal ideas for the week</div>
+                        <div class="prompt-example">I always overspend on gifts</div>
+                        <div class="prompt-example">I forget things when packing and have to buy them</div>
+                        <div class="prompt-example">How do I stop impulse buying?</div>
+                    </div>
+                </div>
+
+                <div class="try-suitegpt-cta">
+                    <div>
+                        <h3>Ready to find your perfect apps?</h3>
+                        <p>Tell SuiteGPT what you're dealing with and get personalized recommendations.</p>
+                    </div>
+                    <a href="https://suitegpt.app" class="try-suitegpt-btn">
+                        Try SuiteGPT Now
+                        <span>→</span>
+                    </a>
+                </div>
+
+                <p class="subtitle" style="font-size: 0.85rem; margin-top: 32px;"><em>Last updated: January 2026</em></p>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Persona tab switching
+        document.querySelectorAll('.persona-card').forEach(card => {
+            card.addEventListener('click', function() {
+                // Remove active from all cards
+                document.querySelectorAll('.persona-card').forEach(c => c.classList.remove('active'));
+                // Add active to clicked card
+                this.classList.add('active');
+
+                // Hide all persona content
+                document.querySelectorAll('.persona-content').forEach(content => content.classList.remove('active'));
+                // Show selected persona content
+                const personaId = 'persona-' + this.dataset.persona;
+                document.getElementById(personaId).classList.add('active');
+            });
+        });
+    </script>
+</body>
+
+</html>

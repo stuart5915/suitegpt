@@ -474,6 +474,7 @@
     border: none;
     cursor: pointer;
     padding: 8px;
+    z-index: 10;
 }
 
 .mobile-menu-btn span {
@@ -481,6 +482,76 @@
     height: 2px;
     background: var(--nav-text-charcoal);
     border-radius: 2px;
+    transition: all 0.3s ease;
+}
+
+.mobile-menu-btn.active span:nth-child(1) {
+    transform: rotate(45deg) translate(5px, 5px);
+}
+
+.mobile-menu-btn.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.mobile-menu-btn.active span:nth-child(3) {
+    transform: rotate(-45deg) translate(5px, -5px);
+}
+
+/* ============================================
+   Mobile Dropdown Menu
+   ============================================ */
+.mobile-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--nav-bg-cream);
+    border-radius: 0 0 24px 24px;
+    padding: 16px 24px 24px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.mobile-menu.active {
+    display: flex;
+}
+
+.mobile-menu a {
+    font-family: 'Nunito', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 12px 16px;
+    color: var(--nav-text-charcoal);
+    text-decoration: none;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+}
+
+.mobile-menu a:hover {
+    background: var(--nav-accent-terracotta);
+    color: white;
+}
+
+.mobile-connect-btn {
+    margin-top: 8px;
+    padding: 14px 20px;
+    background: var(--nav-accent-terracotta);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mobile-connect-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(196, 114, 95, 0.3);
 }
 
 /* ============================================
@@ -495,52 +566,14 @@
         overflow-x: hidden;
     }
 
+    /* Hide nav links on mobile - use hamburger menu instead */
     .nav-links {
-        display: flex;
-        gap: 2px;
-        margin-right: 0;
+        display: none !important;
     }
 
-    .nav-links a {
-        padding: 8px 12px;
-        font-size: 0.85rem;
-    }
-
-    /* Keep credits button visible on mobile in top bar */
+    /* Hide desktop nav-actions on mobile */
     .nav-actions {
-        display: flex !important;
-        position: static;
-        margin-left: auto;
-        margin-right: 8px;
-        flex-shrink: 0;
-    }
-
-    .nav-credits-btn {
-        font-size: 0.75rem;
-        padding: 6px 10px;
-        gap: 4px;
-        white-space: nowrap;
-    }
-
-    .nav-credits-btn svg {
-        width: 14px;
-        height: 14px;
-    }
-
-    /* Mobile Connect Button */
-    .nav-actions .connect-btn {
-        padding: 6px 12px;
-        font-size: 0.8rem;
-    }
-
-    .nav-actions .auth-display {
-        gap: 6px;
-    }
-
-    .nav-actions .auth-credits,
-    .nav-actions .auth-identity {
-        padding: 5px 10px;
-        font-size: 0.75rem;
+        display: none !important;
     }
 
     .nav-logo {
@@ -554,13 +587,14 @@
         height: 28px;
     }
 
-    /* Keep hamburger hidden - always show nav links */
+    /* Show hamburger menu button on mobile */
     .mobile-menu-btn {
-        display: none !important;
+        display: flex !important;
+        margin-left: auto;
     }
 
     .nav-inner {
-        padding: 8px 12px;
+        padding: 10px 16px;
         position: relative;
         display: flex;
         align-items: center;
@@ -568,31 +602,13 @@
         width: 100%;
         max-width: 100%;
     }
-
-    /* Always show nav links on mobile */
-    .nav-links {
-        display: flex !important;
-        gap: 4px;
-    }
 }
 
 /* Small phones (375-480px) */
 @media (max-width: 480px) {
-    .nav-links a {
-        padding: 6px 10px;
-        font-size: 0.8rem;
-    }
-
-    .nav-dropdown-trigger {
-        padding: 6px 10px;
-        font-size: 0.8rem;
-    }
-
-    .nav-actions .auth-credits,
-    .nav-actions .auth-identity {
-        padding: 4px 8px;
-        font-size: 0.7rem;
-        min-height: 32px;
+    .mobile-menu a {
+        padding: 10px 14px;
+        font-size: 0.95rem;
     }
 }
 
@@ -603,7 +619,7 @@
     }
 
     .nav-inner {
-        padding: 6px 8px;
+        padding: 8px 12px;
         gap: 4px;
     }
 
@@ -616,54 +632,12 @@
         width: 24px;
         height: 24px;
     }
-
-    .nav-links {
-        gap: 1px;
-    }
-
-    .nav-links a {
-        padding: 5px 8px;
-        font-size: 0.75rem;
-    }
-
-    .nav-dropdown-trigger {
-        padding: 5px 8px;
-        font-size: 0.75rem;
-    }
-
-    .nav-credits-btn {
-        font-size: 0.7rem;
-        padding: 5px 8px;
-        min-height: 32px;
-    }
-
-    .nav-credits-btn svg {
-        width: 12px;
-        height: 12px;
-    }
-
-    /* Hide "Vault" text on very small screens, just show icon */
-    .nav-credits-btn span {
-        display: none;
-    }
-
-    .nav-actions .connect-btn {
-        padding: 5px 10px;
-        font-size: 0.75rem;
-        min-height: 32px;
-    }
-
-    .nav-actions .auth-credits,
-    .nav-actions .auth-identity {
-        padding: 4px 6px;
-        font-size: 0.65rem;
-    }
 }
 
 /* Extra small screens (320px) */
 @media (max-width: 340px) {
     .nav-inner {
-        padding: 5px 6px;
+        padding: 6px 10px;
     }
 
     .nav-logo {
@@ -673,20 +647,6 @@
     .nav-logo-img {
         width: 22px;
         height: 22px;
-    }
-
-    .nav-links a {
-        padding: 4px 6px;
-        font-size: 0.7rem;
-    }
-
-    .nav-dropdown-trigger {
-        padding: 4px 6px;
-        font-size: 0.7rem;
-    }
-
-    .nav-dropdown-trigger::after {
-        font-size: 0.6rem;
     }
 
     .mobile-menu-btn {
