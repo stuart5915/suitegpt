@@ -46,7 +46,7 @@
                 SUITE
             </a>
             <div class="nav-links">
-                <a href="/suitegpt.html">SuiteGPT</a>
+                <a href="https://suitegpt.app">SuiteGPT</a>
                 <a href="/suite-shell.html">Apps</a>
                 <a href="/profile.html">Profile</a>
             </div>
