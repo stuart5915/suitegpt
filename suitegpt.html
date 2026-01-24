@@ -1655,6 +1655,96 @@
             background: var(--bg-card-hover);
         }
 
+        /* Unmatched Ideas Section */
+        .import-unmatched {
+            margin-bottom: 24px;
+        }
+
+        .import-unmatched h4 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .unmatched-idea {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .unmatched-idea:hover {
+            border-color: var(--border-hover);
+            background: var(--bg-card-hover);
+        }
+
+        .unmatched-idea-text {
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .unmatched-idea-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .unmatched-idea-category {
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 100px;
+            background: rgba(139, 92, 246, 0.15);
+            color: #8b5cf6;
+        }
+
+        .unmatched-idea-request {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .unmatched-idea-request:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .import-summary-text {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-top: 8px;
+            padding: 12px 16px;
+            background: rgba(99, 102, 241, 0.08);
+            border-radius: 10px;
+            border-left: 3px solid var(--accent-primary);
+        }
+
+        /* Test mode indicator */
+        .test-mode-banner {
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #f59e0b;
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         @media (max-width: 640px) {
             .import-sources {
                 grid-template-columns: 1fr;
@@ -1666,6 +1756,11 @@
 
             .import-cta {
                 flex-direction: column;
+            }
+
+            .unmatched-idea-meta {
+                flex-direction: column;
+                align-items: flex-start;
             }
         }
     </style>
@@ -1880,6 +1975,13 @@
                             <input type="file" class="import-file-input" id="importFileInput" accept=".json,.zip">
                         </div>
 
+                        <!-- Test mode option -->
+                        <div style="text-align: center; margin-bottom: 16px;">
+                            <button id="loadTestData" style="background: none; border: 1px dashed var(--border-subtle); padding: 10px 20px; border-radius: 8px; color: var(--text-tertiary); font-size: 0.8rem; cursor: pointer; transition: all 0.2s ease;">
+                                🧪 Load sample data to test the flow
+                            </button>
+                        </div>
+
                         <div class="import-privacy">
                             <h4>🔒 Your data, your choice</h4>
                             <p>We analyze your conversations to understand your needs. We extract themes and topics, not personal details.</p>
@@ -1937,8 +2039,18 @@
                         </div>
 
                         <div class="import-recommendations">
-                            <h4>📱 Recommended Apps For You</h4>
+                            <h4>📱 Matched to Existing Apps</h4>
                             <div id="recommendationsList">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <div class="import-unmatched" id="importUnmatched" style="display: none;">
+                            <h4>💡 App Ideas We Can Build For You</h4>
+                            <p style="font-size: 0.8rem; color: var(--text-tertiary); margin-bottom: 16px;">
+                                These ideas from your chats don't match existing apps. Click to request!
+                            </p>
+                            <div id="unmatchedList">
                                 <!-- Populated dynamically -->
                             </div>
                         </div>
@@ -2554,8 +2666,74 @@
             if (file) processFile(file);
         });
 
+        // Rate limiting check
+        let isTestMode = false;
+
+        function checkRateLimit() {
+            if (isTestMode) return { allowed: true };
+
+            const lastImport = localStorage.getItem('suitegpt_last_import');
+            if (lastImport) {
+                const lastTime = new Date(lastImport);
+                const now = new Date();
+                const hoursSince = (now - lastTime) / (1000 * 60 * 60);
+
+                if (hoursSince < 24) {
+                    const hoursLeft = Math.ceil(24 - hoursSince);
+                    return { allowed: false, hoursLeft };
+                }
+            }
+            return { allowed: true };
+        }
+
+        function setRateLimitTimestamp() {
+            if (!isTestMode) {
+                localStorage.setItem('suitegpt_last_import', new Date().toISOString());
+            }
+        }
+
+        // Load test data
+        const loadTestDataBtn = document.getElementById('loadTestData');
+        loadTestDataBtn.addEventListener('click', async () => {
+            isTestMode = true;
+            loadTestDataBtn.textContent = '⏳ Loading test data...';
+
+            try {
+                const response = await fetch('/test-data/sample-chatgpt-export.json');
+                if (!response.ok) throw new Error('Could not load test data');
+
+                const testData = await response.json();
+
+                // Create a fake file from the test data
+                const blob = new Blob([JSON.stringify(testData)], { type: 'application/json' });
+                const fakeFile = new File([blob], 'test-conversations.json', { type: 'application/json' });
+
+                // Process it
+                processFile(fakeFile);
+            } catch (error) {
+                console.error('Error loading test data:', error);
+                alert('Could not load test data. Try uploading your own file.');
+                loadTestDataBtn.textContent = '🧪 Load sample data to test the flow';
+            }
+        });
+
+        // Reset test mode on modal close
+        const originalResetImportModal = resetImportModal;
+        resetImportModal = function() {
+            originalResetImportModal();
+            isTestMode = false;
+            loadTestDataBtn.textContent = '🧪 Load sample data to test the flow';
+        };
+
         // Process the uploaded file
         async function processFile(file) {
+            // Check rate limit
+            const rateCheck = checkRateLimit();
+            if (!rateCheck.allowed) {
+                alert(`You can only import once per day. Please try again in ${rateCheck.hoursLeft} hours.\n\nThis helps us manage costs while keeping the service free.`);
+                return;
+            }
+
             const consentAnalyze = document.getElementById('consentAnalyze').checked;
             if (!consentAnalyze) {
                 alert('Please consent to analysis to continue.');
@@ -2599,6 +2777,9 @@
                 const analysis = await analyzeChats(extractedData);
 
                 updateProgress(100, 'Complete!');
+
+                // Set rate limit timestamp
+                setRateLimitTimestamp();
 
                 // Show results
                 setTimeout(() => {
@@ -2726,37 +2907,76 @@
             }
         }
 
-        // Local fallback analysis
+        // Local fallback analysis - enhanced to extract app ideas
         function localAnalysis(extractedData) {
-            const messages = extractedData.messages.join(' ').toLowerCase();
+            const messages = extractedData.messages;
+            const allText = messages.join(' ').toLowerCase();
 
+            // Topic detection
             const topics = {
-                'Health & Fitness': ['workout', 'exercise', 'diet', 'nutrition', 'weight', 'health', 'fitness', 'gym', 'muscle', 'calories'],
-                'Finance & Money': ['money', 'budget', 'invest', 'savings', 'financial', 'income', 'expenses', 'crypto', 'trading'],
-                'Productivity': ['productivity', 'schedule', 'task', 'todo', 'organize', 'time management', 'habit', 'routine', 'reminder'],
-                'Learning & Education': ['learn', 'study', 'course', 'tutorial', 'understand', 'explain', 'how to', 'education'],
+                'Health & Fitness': ['workout', 'exercise', 'diet', 'nutrition', 'weight', 'health', 'fitness', 'gym', 'muscle', 'calories', 'sleep', 'water', 'hydration'],
+                'Finance & Money': ['money', 'budget', 'invest', 'savings', 'financial', 'income', 'expenses', 'crypto', 'trading', 'subscription', 'spending'],
+                'Productivity': ['productivity', 'schedule', 'task', 'todo', 'organize', 'time management', 'habit', 'routine', 'reminder', 'focus', 'distraction', 'project'],
+                'Learning & Education': ['learn', 'study', 'course', 'tutorial', 'understand', 'explain', 'how to', 'education', 'reading', 'book', 'language'],
                 'Programming & Tech': ['code', 'programming', 'javascript', 'python', 'api', 'database', 'software', 'app', 'website'],
-                'Writing & Content': ['write', 'essay', 'blog', 'content', 'article', 'email', 'story', 'creative'],
-                'Career & Work': ['job', 'career', 'interview', 'resume', 'work', 'professional', 'business', 'meeting']
+                'Writing & Content': ['write', 'essay', 'blog', 'content', 'article', 'email', 'story', 'creative', 'journal'],
+                'Career & Work': ['job', 'career', 'interview', 'resume', 'work', 'professional', 'business', 'meeting'],
+                'Lifestyle': ['cooking', 'wardrobe', 'clothes', 'outfit', 'social', 'introvert', 'pet', 'dog', 'cat', 'travel']
             };
 
             const detectedTopics = [];
-            const topicCounts = {};
-
             for (const [topic, keywords] of Object.entries(topics)) {
                 const count = keywords.reduce((acc, keyword) => {
                     const regex = new RegExp(keyword, 'gi');
-                    const matches = messages.match(regex);
+                    const matches = allText.match(regex);
                     return acc + (matches ? matches.length : 0);
                 }, 0);
-
-                if (count > 5) {
+                if (count > 2) {
                     detectedTopics.push({ topic, count });
-                    topicCounts[topic] = count;
                 }
             }
-
             detectedTopics.sort((a, b) => b.count - a.count);
+
+            // Extract app ideas - look for specific patterns
+            const appIdeaPatterns = [
+                /i need an? app that ([^.!?]+)/gi,
+                /i wish there was an? app ([^.!?]+)/gi,
+                /i want an? app that ([^.!?]+)/gi,
+                /i need something that ([^.!?]+)/gi,
+                /i want something that ([^.!?]+)/gi,
+                /an app that ([^.!?]+) would be/gi,
+                /would be (cool|great|amazing|awesome) if ([^.!?]+)/gi,
+                /i keep forgetting ([^.!?]+)/gi,
+                /i can't ([^.!?]+)/gi,
+                /i hate ([^.!?]+)/gi,
+                /i struggle with ([^.!?]+)/gi,
+                /help me ([^.!?]+)/gi,
+                /track my ([^.!?]+)/gi,
+                /remind me ([^.!?]+)/gi
+            ];
+
+            const extractedIdeas = [];
+            const seenIdeas = new Set();
+
+            messages.forEach(msg => {
+                appIdeaPatterns.forEach(pattern => {
+                    const matches = msg.matchAll(pattern);
+                    for (const match of matches) {
+                        const idea = match[1] || match[2];
+                        if (idea && idea.length > 10 && idea.length < 200) {
+                            const normalized = idea.toLowerCase().trim();
+                            if (!seenIdeas.has(normalized)) {
+                                seenIdeas.add(normalized);
+                                extractedIdeas.push({
+                                    text: idea.trim(),
+                                    fullMessage: msg,
+                                    category: categorizeIdea(idea)
+                                });
+                            }
+                        }
+                    }
+                });
+            });
 
             // Map topics to app recommendations
             const appMappings = {
@@ -2766,24 +2986,66 @@
                 'Learning & Education': ['defi-knowledge'],
                 'Programming & Tech': [],
                 'Writing & Content': [],
-                'Career & Work': []
+                'Career & Work': [],
+                'Lifestyle': []
             };
 
             const recommendedApps = [];
-            detectedTopics.slice(0, 3).forEach(({ topic }) => {
-                const apps = appMappings[topic] || [];
-                apps.forEach(app => {
-                    if (!recommendedApps.find(a => a.id === app)) {
-                        const appData = SUITE_APPS[app];
-                        if (appData) {
-                            recommendedApps.push({
-                                id: app,
-                                ...appData,
-                                matchScore: Math.min(98, 70 + Math.floor(Math.random() * 20))
-                            });
-                        }
+            const matchedIdeas = [];
+            const unmatchedIdeas = [];
+
+            // Try to match ideas to existing apps
+            extractedIdeas.forEach(idea => {
+                const ideaLower = idea.text.toLowerCase();
+                let matched = false;
+
+                // Check for specific app matches
+                if (ideaLower.includes('nutrition') || ideaLower.includes('meal') || ideaLower.includes('food') || ideaLower.includes('diet') || ideaLower.includes('calorie')) {
+                    if (!recommendedApps.find(a => a.id === 'foodvitals')) {
+                        recommendedApps.push({ id: 'foodvitals', ...SUITE_APPS['foodvitals'], matchScore: 90, matchedIdea: idea.text });
                     }
-                });
+                    matchedIdeas.push({ ...idea, matchedApp: 'FoodVitals' });
+                    matched = true;
+                }
+                if (ideaLower.includes('workout') || ideaLower.includes('exercise') || ideaLower.includes('gym') || ideaLower.includes('strength')) {
+                    if (!recommendedApps.find(a => a.id === 'opticrep')) {
+                        recommendedApps.push({ id: 'opticrep', ...SUITE_APPS['opticrep'], matchScore: 88, matchedIdea: idea.text });
+                    }
+                    matchedIdeas.push({ ...idea, matchedApp: 'OpticRep' });
+                    matched = true;
+                }
+                if (ideaLower.includes('back pain') || ideaLower.includes('posture') || ideaLower.includes('stretch') || ideaLower.includes('physio')) {
+                    if (!recommendedApps.find(a => a.id === 'trueform')) {
+                        recommendedApps.push({ id: 'trueform', ...SUITE_APPS['trueform'], matchScore: 92, matchedIdea: idea.text });
+                    }
+                    matchedIdeas.push({ ...idea, matchedApp: 'TrueForm AI' });
+                    matched = true;
+                }
+                if (ideaLower.includes('budget') || ideaLower.includes('money') || ideaLower.includes('spending') || ideaLower.includes('financial')) {
+                    if (!recommendedApps.find(a => a.id === 'cheshbon')) {
+                        recommendedApps.push({ id: 'cheshbon', ...SUITE_APPS['cheshbon'], matchScore: 85, matchedIdea: idea.text });
+                    }
+                    matchedIdeas.push({ ...idea, matchedApp: 'Cheshbon' });
+                    matched = true;
+                }
+                if (ideaLower.includes('reminder') || ideaLower.includes('habit') || ideaLower.includes('routine') || ideaLower.includes('schedule')) {
+                    if (!recommendedApps.find(a => a.id === 'remcast')) {
+                        recommendedApps.push({ id: 'remcast', ...SUITE_APPS['remcast'], matchScore: 82, matchedIdea: idea.text });
+                    }
+                    matchedIdeas.push({ ...idea, matchedApp: 'RemCast' });
+                    matched = true;
+                }
+                if (ideaLower.includes('defi') || ideaLower.includes('crypto') || ideaLower.includes('yield') || ideaLower.includes('blockchain')) {
+                    if (!recommendedApps.find(a => a.id === 'defi-knowledge')) {
+                        recommendedApps.push({ id: 'defi-knowledge', ...SUITE_APPS['defi-knowledge'], matchScore: 91, matchedIdea: idea.text });
+                    }
+                    matchedIdeas.push({ ...idea, matchedApp: 'DeFi Knowledge' });
+                    matched = true;
+                }
+
+                if (!matched) {
+                    unmatchedIdeas.push(idea);
+                }
             });
 
             return {
@@ -2793,9 +3055,21 @@
                     description: `You frequently discuss ${topic.toLowerCase()} topics (${count}+ mentions)`,
                     icon: getTopicIcon(topic)
                 })),
-                recommendations: recommendedApps.slice(0, 3),
-                summary: `Based on ${extractedData.messageCount} messages across ${extractedData.conversationCount} conversations, you're most interested in ${detectedTopics.slice(0, 2).map(t => t.topic.toLowerCase()).join(' and ')}.`
+                recommendations: recommendedApps.slice(0, 4),
+                extractedIdeas: extractedIdeas.slice(0, 20),
+                matchedIdeas: matchedIdeas.slice(0, 10),
+                unmatchedIdeas: unmatchedIdeas.slice(0, 10),
+                summary: `Based on ${extractedData.messageCount} messages, we found ${extractedIdeas.length} potential app ideas. ${matchedIdeas.length} match existing SUITE apps, and ${unmatchedIdeas.length} could be custom built for you.`
             };
+        }
+
+        function categorizeIdea(idea) {
+            const lower = idea.toLowerCase();
+            if (lower.includes('workout') || lower.includes('fitness') || lower.includes('health') || lower.includes('nutrition')) return 'Health & Fitness';
+            if (lower.includes('money') || lower.includes('budget') || lower.includes('financial')) return 'Finance';
+            if (lower.includes('habit') || lower.includes('remind') || lower.includes('schedule') || lower.includes('task')) return 'Productivity';
+            if (lower.includes('learn') || lower.includes('study') || lower.includes('read')) return 'Learning';
+            return 'Other';
         }
 
         function getTopicIcon(topic) {
@@ -2826,11 +3100,20 @@
             // Update stats
             document.getElementById('statConversations').textContent = extractedData.conversationCount.toLocaleString();
             document.getElementById('statMessages').textContent = extractedData.messageCount.toLocaleString();
-            document.getElementById('statTopics').textContent = analysis.topics?.length || 0;
+            document.getElementById('statTopics').textContent = (analysis.extractedIdeas?.length || analysis.topics?.length || 0);
 
-            // Display insights
+            // Update third stat label to show ideas count
+            document.querySelector('#statTopics').nextElementSibling.textContent = 'App Ideas Found';
+
+            // Display summary
             const insightsList = document.getElementById('insightsList');
-            insightsList.innerHTML = (analysis.insights || []).map(insight => `
+            let insightsHtml = '';
+
+            if (analysis.summary) {
+                insightsHtml += `<div class="import-summary-text">${analysis.summary}</div>`;
+            }
+
+            insightsHtml += (analysis.insights || []).map(insight => `
                 <div class="import-insight-item">
                     <div class="import-insight-icon" style="background: rgba(99, 102, 241, 0.15);">
                         ${insight.icon || '🎯'}
@@ -2842,7 +3125,9 @@
                 </div>
             `).join('');
 
-            // Display recommendations
+            insightsList.innerHTML = insightsHtml;
+
+            // Display matched recommendations
             const recommendationsList = document.getElementById('recommendationsList');
             if (analysis.recommendations && analysis.recommendations.length > 0) {
                 recommendationsList.innerHTML = analysis.recommendations.map(app => `
@@ -2852,7 +3137,7 @@
                         </div>
                         <div class="import-app-info">
                             <h5>${app.name}</h5>
-                            <p>${app.description}</p>
+                            <p>${app.matchedIdea ? `"${app.matchedIdea.slice(0, 60)}${app.matchedIdea.length > 60 ? '...' : ''}"` : app.description}</p>
                         </div>
                         <div class="import-app-match">${app.matchScore || 85}% match</div>
                     </a>
@@ -2860,10 +3145,69 @@
             } else {
                 recommendationsList.innerHTML = `
                     <div style="text-align: center; padding: 20px; color: var(--text-tertiary);">
-                        <p>We don't have a perfect match yet, but we can build something custom for you!</p>
+                        <p>No exact matches found, but we can build something custom!</p>
                     </div>
                 `;
             }
+
+            // Display unmatched ideas
+            const unmatchedSection = document.getElementById('importUnmatched');
+            const unmatchedList = document.getElementById('unmatchedList');
+
+            if (analysis.unmatchedIdeas && analysis.unmatchedIdeas.length > 0) {
+                unmatchedSection.style.display = 'block';
+                unmatchedList.innerHTML = analysis.unmatchedIdeas.map((idea, index) => `
+                    <div class="unmatched-idea">
+                        <div class="unmatched-idea-text">"${idea.text}"</div>
+                        <div class="unmatched-idea-meta">
+                            <span class="unmatched-idea-category">${idea.category}</span>
+                            <button class="unmatched-idea-request" data-idea="${encodeURIComponent(idea.text)}">
+                                Request This App →
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+
+                // Add click handlers for request buttons
+                unmatchedList.querySelectorAll('.unmatched-idea-request').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const idea = decodeURIComponent(btn.dataset.idea);
+                        requestAppIdea(idea);
+                    });
+                });
+            } else {
+                unmatchedSection.style.display = 'none';
+            }
+        }
+
+        // Handle requesting an app from an extracted idea
+        function requestAppIdea(idea) {
+            importModal.classList.remove('active');
+
+            // Pre-fill the chat with the request
+            heroSection.classList.add('chat-active');
+            chatContainer.classList.add('active');
+
+            const message = `I'd like to request an app that: ${idea}`;
+
+            addMessage(message, 'user');
+            conversationHistory.push({ role: 'user', content: message });
+
+            // Trigger response
+            addTypingIndicator();
+            setTimeout(() => {
+                removeTypingIndicator();
+                const response = `Great idea! We can build this for you.\n\n` +
+                    `Here's how it works:\n` +
+                    `1. We'll review your request\n` +
+                    `2. AI Fleet will design and build the app\n` +
+                    `3. You'll have it within 1-12 hours\n\n` +
+                    `Want to submit this request? If so, tell me:\n` +
+                    `• Any specific features you'd want?\n` +
+                    `• Should this be private (just for you) or public?`;
+                addMessage(response, 'assistant');
+                conversationHistory.push({ role: 'assistant', content: response });
+            }, 1500);
         }
 
         function resetImportModal() {
