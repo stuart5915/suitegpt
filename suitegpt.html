@@ -245,8 +245,14 @@
             display: none;
         }
 
-        .suitegpt-hero.chat-active .browse-section {
+        .suitegpt-hero.chat-active .help-section {
             margin-top: 32px;
+        }
+
+        .suitegpt-hero.chat-active .help-section .intent-grid,
+        .suitegpt-hero.chat-active .help-section .community-pulse,
+        .suitegpt-hero.chat-active .help-section .help-section-header {
+            display: none;
         }
 
         @keyframes fadeInUp {
@@ -553,7 +559,7 @@
         }
 
         /* When chat is active, add some separation */
-        .suitegpt-hero.chat-active .browse-section {
+        .suitegpt-hero.chat-active .help-section {
             border-top: 1px solid var(--border-subtle);
             padding-top: 32px;
         }
@@ -829,20 +835,8 @@
                 border-radius: 12px;
             }
 
-            .browse-section {
+            .help-section {
                 margin-top: 32px;
-            }
-
-            .category-pills {
-                justify-content: flex-start;
-                overflow-x: auto;
-                flex-wrap: nowrap;
-                padding-bottom: 8px;
-                -webkit-overflow-scrolling: touch;
-            }
-
-            .category-pill {
-                flex-shrink: 0;
             }
 
             .use-cases-grid {
@@ -1149,7 +1143,172 @@
             color: var(--text-secondary);
         }
 
-        /* === UPDATED USE CASES === */
+        /* === INTENT-BASED UI === */
+        .help-section {
+            width: 100%;
+            max-width: 900px;
+            margin-top: 48px;
+            animation: fadeInUp 0.6s ease 0.4s backwards;
+        }
+
+        .help-section-header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .help-section-header h2 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .help-section-header p {
+            font-size: 0.9rem;
+            color: var(--text-tertiary);
+        }
+
+        /* Intent Cards Grid */
+        .intent-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+
+        .intent-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .intent-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .intent-card:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-hover);
+            transform: translateY(-2px);
+        }
+
+        .intent-card:hover::before {
+            opacity: 1;
+        }
+
+        .intent-card.active {
+            border-color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.08);
+        }
+
+        .intent-card.active::before {
+            opacity: 1;
+        }
+
+        /* Intent card colors */
+        .intent-card[data-intent="problems"]::before { background: linear-gradient(90deg, #f97316, #ea580c); }
+        .intent-card[data-intent="desires"]::before { background: linear-gradient(90deg, #ec4899, #db2777); }
+        .intent-card[data-intent="ideas"]::before { background: linear-gradient(90deg, #eab308, #ca8a04); }
+        .intent-card[data-intent="find"]::before { background: linear-gradient(90deg, #22c55e, #16a34a); }
+        .intent-card[data-intent="change"]::before { background: linear-gradient(90deg, #3b82f6, #2563eb); }
+        .intent-card[data-intent="build"]::before { background: linear-gradient(90deg, #8b5cf6, #7c3aed); }
+
+        .intent-card-icon {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+
+        .intent-card-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+
+        .intent-card-example {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            font-style: italic;
+        }
+
+        /* Trending/Community Section */
+        .community-pulse {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.08));
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .community-pulse-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--accent-primary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .community-pulse-items {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+
+        .pulse-item {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            background: rgba(255, 255, 255, 0.05);
+            padding: 6px 12px;
+            border-radius: 100px;
+        }
+
+        .pulse-item strong {
+            color: var(--text-primary);
+        }
+
+        /* Example Conversations */
+        .examples-section {
+            margin-top: 24px;
+        }
+
+        .examples-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .examples-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .examples-filter {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+        }
+
+        /* Updated use cases for intent-based display */
         .browse-section .browse-title {
             font-size: 1.05rem;
         }
@@ -1158,6 +1317,42 @@
             font-size: 0.85rem;
             color: var(--text-tertiary);
             margin-top: 4px;
+        }
+
+        /* Intent badge on use case cards */
+        .intent-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 100px;
+            margin-bottom: 10px;
+        }
+
+        .intent-badge.problem { background: rgba(249, 115, 22, 0.15); color: #f97316; }
+        .intent-badge.desire { background: rgba(236, 72, 153, 0.15); color: #ec4899; }
+        .intent-badge.idea { background: rgba(234, 179, 8, 0.15); color: #eab308; }
+        .intent-badge.find { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+        .intent-badge.change { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+        .intent-badge.build { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
+
+        @media (max-width: 768px) {
+            .intent-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .community-pulse {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .intent-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         /* === CHAT IMPORT FEATURE === */
@@ -1915,40 +2110,83 @@
                 <div class="chat-messages" id="chatMessages"></div>
             </div>
 
-            <!-- Browse Section -->
-            <div class="browse-section" id="browseSection">
-                <div class="browse-header">
-                    <div>
-                        <div class="browse-title">What people are asking <span id="useCaseCount"></span></div>
-                        <div class="browse-subtitle">Click any to see how we helped</div>
+            <!-- Help Section - Intent Based -->
+            <div class="help-section" id="helpSection">
+                <div class="help-section-header">
+                    <h2>How can I help today?</h2>
+                    <p>Tell me what's on your mind - problems, desires, ideas, or questions</p>
+                </div>
+
+                <!-- Intent Cards -->
+                <div class="intent-grid" id="intentGrid">
+                    <div class="intent-card" data-intent="problems">
+                        <div class="intent-card-icon">🔧</div>
+                        <div class="intent-card-title">I have a PROBLEM</div>
+                        <div class="intent-card-example">"I can't focus" "I keep forgetting"</div>
+                    </div>
+                    <div class="intent-card" data-intent="desires">
+                        <div class="intent-card-icon">💫</div>
+                        <div class="intent-card-title">I have a DESIRE</div>
+                        <div class="intent-card-example">"I want to be healthier"</div>
+                    </div>
+                    <div class="intent-card" data-intent="ideas">
+                        <div class="intent-card-icon">💡</div>
+                        <div class="intent-card-title">I have an IDEA</div>
+                        <div class="intent-card-example">"What if there was an app..."</div>
+                    </div>
+                    <div class="intent-card" data-intent="find">
+                        <div class="intent-card-icon">📱</div>
+                        <div class="intent-card-title">FIND me an app</div>
+                        <div class="intent-card-example">"Show me fitness apps"</div>
+                    </div>
+                    <div class="intent-card" data-intent="change">
+                        <div class="intent-card-icon">✏️</div>
+                        <div class="intent-card-title">CHANGE an app</div>
+                        <div class="intent-card-example">"Add this feature to..."</div>
+                    </div>
+                    <div class="intent-card" data-intent="build">
+                        <div class="intent-card-icon">💰</div>
+                        <div class="intent-card-title">BUILD & EARN</div>
+                        <div class="intent-card-example">"I want to create and monetize"</div>
                     </div>
                 </div>
 
-                <div class="category-pills" id="categoryPills">
-                    <button class="category-pill active" data-category="all">All</button>
-                    <button class="category-pill" data-category="health">Health</button>
-                    <button class="category-pill" data-category="fitness">Fitness</button>
-                    <button class="category-pill" data-category="finance">Finance</button>
-                    <button class="category-pill" data-category="productivity">Productivity</button>
-                    <button class="category-pill" data-category="learning">Learning</button>
+                <!-- Community Pulse -->
+                <div class="community-pulse">
+                    <div class="community-pulse-title">
+                        <span>🔥</span> Trending this week
+                    </div>
+                    <div class="community-pulse-items">
+                        <span class="pulse-item"><strong>47</strong> people want a meditation app</span>
+                        <span class="pulse-item"><strong>32</strong> requested habit tracking</span>
+                        <span class="pulse-item"><strong>28</strong> asked about financial freedom</span>
+                    </div>
                 </div>
 
-                <div class="use-cases-grid" id="useCasesGrid">
-                    <!-- Loading skeletons -->
-                    <div class="use-case-card skeleton">
-                        <div class="skeleton-text" style="height: 20px; width: 90%; margin-bottom: 8px;"></div>
-                        <div class="skeleton-text" style="height: 20px; width: 70%; margin-bottom: 16px;"></div>
-                        <div class="skeleton-text" style="height: 16px; width: 40%;"></div>
+                <!-- Example Conversations -->
+                <div class="examples-section">
+                    <div class="examples-header">
+                        <div class="examples-title">Example conversations <span id="useCaseCount"></span></div>
+                        <div class="examples-filter" id="currentFilter">Showing: All</div>
                     </div>
-                    <div class="use-case-card skeleton">
-                        <div class="skeleton-text" style="height: 20px; width: 85%; margin-bottom: 8px;"></div>
-                        <div class="skeleton-text" style="height: 20px; width: 60%; margin-bottom: 16px;"></div>
-                        <div class="skeleton-text" style="height: 16px; width: 45%;"></div>
-                    </div>
-                    <div class="use-case-card skeleton">
-                        <div class="skeleton-text" style="height: 20px; width: 80%; margin-bottom: 8px;"></div>
-                        <div class="skeleton-text" style="height: 20px; width: 65%; margin-bottom: 16px;"></div>
-                        <div class="skeleton-text" style="height: 16px; width: 35%;"></div>
+
+                    <div class="use-cases-grid" id="useCasesGrid">
+                        <!-- Loading skeletons -->
+                        <div class="use-case-card skeleton">
+                            <div class="skeleton-text" style="height: 20px; width: 90%; margin-bottom: 8px;"></div>
+                            <div class="skeleton-text" style="height: 20px; width: 70%; margin-bottom: 16px;"></div>
+                            <div class="skeleton-text" style="height: 16px; width: 40%;"></div>
+                        </div>
+                        <div class="use-case-card skeleton">
+                            <div class="skeleton-text" style="height: 20px; width: 85%; margin-bottom: 8px;"></div>
+                            <div class="skeleton-text" style="height: 20px; width: 60%; margin-bottom: 16px;"></div>
+                            <div class="skeleton-text" style="height: 16px; width: 45%;"></div>
+                        </div>
+                        <div class="use-case-card skeleton">
+                            <div class="skeleton-text" style="height: 20px; width: 80%; margin-bottom: 8px;"></div>
+                            <div class="skeleton-text" style="height: 20px; width: 65%; margin-bottom: 16px;"></div>
+                            <div class="skeleton-text" style="height: 16px; width: 35%;"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2168,20 +2406,59 @@
         const chatContainer = document.getElementById('chatContainer');
         const chatMessages = document.getElementById('chatMessages');
         const useCasesGrid = document.getElementById('useCasesGrid');
-        const categoryPills = document.querySelectorAll('.category-pill');
         const useCaseCount = document.getElementById('useCaseCount');
         const pathCards = document.querySelectorAll('.path-card');
         const governanceInfo = document.getElementById('governanceInfo');
         const governanceClose = document.getElementById('governanceClose');
+        const intentCards = document.querySelectorAll('.intent-card');
+        const currentFilterEl = document.getElementById('currentFilter');
 
         // State
         let isLoading = false;
         let conversationHistory = [];
         let useCases = [];
-        let currentCategory = 'all';
+        let currentIntent = 'all';
         let selectedPath = null;
 
-        // Path card interactions
+        // Intent card interactions
+        const intentPrompts = {
+            'problems': { placeholder: "What's the problem you're facing?", example: "I can't seem to focus at work..." },
+            'desires': { placeholder: "What do you want to achieve?", example: "I want to become financially free..." },
+            'ideas': { placeholder: "Tell me about your app idea...", example: "What if there was an app that..." },
+            'find': { placeholder: "What kind of app are you looking for?", example: "Show me apps for fitness tracking..." },
+            'change': { placeholder: "What feature would you like added?", example: "Can FoodVitals also track..." },
+            'build': { placeholder: "What would you like to build and monetize?", example: "I want to create an app that..." }
+        };
+
+        intentCards.forEach(card => {
+            card.addEventListener('click', () => {
+                const intent = card.dataset.intent;
+
+                // Toggle selection
+                intentCards.forEach(c => c.classList.remove('active'));
+                card.classList.add('active');
+                currentIntent = intent;
+
+                // Update placeholder and focus
+                const promptInfo = intentPrompts[intent];
+                if (promptInfo) {
+                    chatInput.placeholder = promptInfo.placeholder;
+                    chatInput.focus();
+                }
+
+                // Filter examples
+                renderUseCases();
+
+                // Update filter label
+                const intentLabels = {
+                    'problems': 'Problems', 'desires': 'Desires', 'ideas': 'Ideas',
+                    'find': 'Find Apps', 'change': 'Change Requests', 'build': 'Build & Earn'
+                };
+                currentFilterEl.textContent = `Showing: ${intentLabels[intent] || 'All'}`;
+            });
+        });
+
+        // Path card interactions (for the 3 main paths at top)
         pathCards.forEach(card => {
             card.addEventListener('click', () => {
                 const path = card.dataset.path;
@@ -2246,60 +2523,74 @@
             }
         }
 
-        // Hardcoded fallback - showcasing different request types
+        // Hardcoded fallback - showcasing different intent types
         function getHardcodedUseCases() {
             return [
-                // Find app requests
-                { query: "I want to lose weight but hate tracking calories", response: "FoodVitals takes a different approach - weekly check-ins instead of daily logging. It uses AI to give you insights without the obsessive tracking.", recommended_app: "foodvitals", category: "health", helpful_count: 42, type: "find" },
-                { query: "I have back pain from sitting all day", response: "TrueForm AI has guided stretching routines specifically for desk workers. It'll assess your mobility and create a personalized plan.", recommended_app: "trueform", category: "fitness", helpful_count: 56, type: "find" },
-                { query: "I want to learn about DeFi and crypto", response: "DeFi Knowledge breaks down complex concepts into digestible lessons. Start with the basics and work up to advanced strategies.", recommended_app: "defi-knowledge", category: "learning", helpful_count: 45, type: "find" },
+                // PROBLEMS - "I have a problem"
+                { query: "I can't focus at work anymore", response: "Sounds like you need help managing distractions. RemCast can help with smart focus reminders and routine building.", recommended_app: "remcast", intent: "problems", helpful_count: 58 },
+                { query: "I have back pain from sitting all day", response: "TrueForm AI has guided stretching routines specifically for desk workers. It'll assess your mobility and create a personalized plan.", recommended_app: "trueform", intent: "problems", helpful_count: 56 },
+                { query: "I keep forgetting to take my vitamins", response: "RemCast is perfect for this - set up smart reminders that learn when you're most likely to actually take them.", recommended_app: "remcast", intent: "problems", helpful_count: 42 },
 
-                // Change requests
-                { query: "Can FoodVitals track water intake too?", response: "Great idea! We reviewed this and added it to FoodVitals for everyone. You can now log water alongside your meals.", recommended_app: "foodvitals", category: "health", helpful_count: 67, type: "change" },
-                { query: "I wish OpticRep had rest day suggestions", response: "Done! We added smart rest day recommendations based on your workout intensity. Check it out in your dashboard.", recommended_app: "opticrep", category: "fitness", helpful_count: 52, type: "change" },
+                // DESIRES - "I want to..."
+                { query: "I want to become financially free", response: "That's a powerful goal! Start with Cheshbon to understand your relationship with money. OR you could build finance apps in SUITE and earn from helping others.", recommended_app: "cheshbon", intent: "desires", helpful_count: 89 },
+                { query: "I want to get healthier without obsessing", response: "FoodVitals takes a gentle approach - weekly reflections instead of daily tracking. No calorie counting, just awareness.", recommended_app: "foodvitals", intent: "desires", helpful_count: 67 },
+                { query: "I want to know God more deeply", response: "We don't have a devotional app yet, but we can build one! Prayer journals, Bible reading plans, reflection prompts - tell us what would help.", recommended_app: null, intent: "desires", helpful_count: 45 },
 
-                // Build requests
-                { query: "I need an app to track my dog's medications", response: "We built PetMeds for this user - tracks doses, sends reminders, and logs vet visits. Now available for everyone!", recommended_app: null, category: "productivity", helpful_count: 38, type: "build" },
-                { query: "Can you make a habit tracker that's not annoying?", response: "We built a minimal habit tracker that only notifies you once daily with a gentle summary. No streaks, no guilt.", recommended_app: "remcast", category: "productivity", helpful_count: 44, type: "build" },
+                // IDEAS - "What if there was..."
+                { query: "What if there was an app that tracks pet medications?", response: "We built PetMeds! Tracks doses, sends reminders, logs vet visits. Your idea helped create something thousands now use.", recommended_app: null, intent: "ideas", helpful_count: 78 },
+                { query: "I have an idea for a habit tracker without streaks", response: "Love it! We built exactly this - gentle habit tracking without the guilt of breaking streaks. No pressure, just progress.", recommended_app: "remcast", intent: "ideas", helpful_count: 52 },
 
-                // More find requests
-                { query: "I want to get stronger but don't know where to start", response: "OpticRep is your AI workout trainer - it watches your form, counts reps, and builds programs based on your goals.", recommended_app: "opticrep", category: "fitness", helpful_count: 41, type: "find" },
-                { query: "I want to get better with money", response: "Cheshbon helps you reflect on spending patterns without judgment. Weekly prompts help you understand your relationship with money.", recommended_app: "cheshbon", category: "finance", helpful_count: 37, type: "find" }
+                // FIND - "Show me apps for..."
+                { query: "Show me what apps you have for fitness", response: "We've got OpticRep (AI workout trainer with form analysis) and TrueForm AI (physio & stretching). What's your fitness goal?", recommended_app: "opticrep", intent: "find", helpful_count: 61 },
+                { query: "What apps help with money management?", response: "Cheshbon is our financial reflection app - focuses on your relationship with money, not just numbers. DeFi Knowledge teaches crypto/investing.", recommended_app: "cheshbon", intent: "find", helpful_count: 44 },
+
+                // CHANGE - "Can you add..."
+                { query: "Can FoodVitals track water intake too?", response: "Great idea! We reviewed this and added it for everyone. You can now log water alongside your meals.", recommended_app: "foodvitals", intent: "change", helpful_count: 67 },
+                { query: "I wish OpticRep had rest day suggestions", response: "Done! We added smart rest day recommendations based on your workout intensity. Check it out in your dashboard.", recommended_app: "opticrep", intent: "change", helpful_count: 52 },
+
+                // BUILD & EARN - "I want to create..."
+                { query: "How can I make money building apps?", response: "With SUITE, you build apps and earn from every user through our credit system. No coding needed - AI Fleet builds it, you earn from it.", recommended_app: null, intent: "build", helpful_count: 94 },
+                { query: "I want to create a meditation app and monetize it", response: "Perfect! Describe your vision and AI Fleet will build it. You'll earn credits every time someone uses your app.", recommended_app: null, intent: "build", helpful_count: 73 }
             ];
         }
 
         // Render use cases
         function renderUseCases() {
-            const filtered = currentCategory === 'all'
+            const filtered = currentIntent === 'all'
                 ? useCases
-                : useCases.filter(uc => uc.category === currentCategory);
+                : useCases.filter(uc => uc.intent === currentIntent);
 
             useCaseCount.textContent = `(${filtered.length})`;
 
             if (filtered.length === 0) {
                 useCasesGrid.innerHTML = `
                     <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-tertiary);">
-                        No use cases in this category yet.
+                        No examples for this intent yet. Try asking something!
                     </div>
                 `;
                 return;
             }
 
+            // Intent styling
+            const intentStyles = {
+                'problems': { icon: '🔧', label: 'Problem', class: 'problem' },
+                'desires': { icon: '💫', label: 'Desire', class: 'desire' },
+                'ideas': { icon: '💡', label: 'Idea', class: 'idea' },
+                'find': { icon: '📱', label: 'Find', class: 'find' },
+                'change': { icon: '✏️', label: 'Change', class: 'change' },
+                'build': { icon: '💰', label: 'Build', class: 'build' }
+            };
+
             useCasesGrid.innerHTML = filtered.map(uc => {
                 const app = SUITE_APPS[uc.recommended_app] || {};
-                const typeLabels = {
-                    'find': { icon: '📱', label: 'Found app', color: 'rgba(34, 197, 94, 0.15)', textColor: '#22c55e' },
-                    'change': { icon: '✏️', label: 'Added feature', color: 'rgba(245, 158, 11, 0.15)', textColor: '#f59e0b' },
-                    'build': { icon: '🔨', label: 'Built custom', color: 'rgba(99, 102, 241, 0.15)', textColor: '#6366f1' }
-                };
-                const typeInfo = typeLabels[uc.type] || typeLabels['find'];
+                const intentInfo = intentStyles[uc.intent] || intentStyles['find'];
 
                 return `
                     <div class="use-case-card" data-query="${encodeURIComponent(uc.query)}" data-response="${encodeURIComponent(uc.response)}" data-app="${uc.recommended_app || ''}">
-                        <div class="use-case-type" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.7rem; font-weight: 600; padding: 4px 10px; border-radius: 100px; background: ${typeInfo.color}; color: ${typeInfo.textColor}; margin-bottom: 12px;">
-                            <span>${typeInfo.icon}</span>
-                            <span>${typeInfo.label}</span>
-                        </div>
+                        <span class="intent-badge ${intentInfo.class}">
+                            <span>${intentInfo.icon}</span>
+                            <span>${intentInfo.label}</span>
+                        </span>
                         <div class="use-case-query">"${uc.query}"</div>
                         <div class="use-case-meta">
                             <div class="use-case-app">
@@ -2308,7 +2599,7 @@
                                     <span class="use-case-app-name">${app.name || 'Custom App'}</span>
                                 ` : `
                                     <div class="use-case-app-icon" style="background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))">✨</div>
-                                    <span class="use-case-app-name">Custom Built</span>
+                                    <span class="use-case-app-name">Custom / Build & Earn</span>
                                 `}
                             </div>
                             <div class="use-case-helpful">
