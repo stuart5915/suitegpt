@@ -2221,16 +2221,31 @@
         // Telegram login
         function loginWithTelegram() {
             const botId = '8341049569'; // SUITEHubBot
+            const botUsername = 'SUITEHubBot';
             closeConnectModal();
 
-            // Load Telegram widget script if needed
-            if (!window.Telegram || !window.Telegram.Login) {
-                const script = document.createElement('script');
-                script.src = 'https://telegram.org/js/telegram-widget.js?22';
-                script.onload = () => openTelegramAuth(botId);
-                document.head.appendChild(script);
+            // Check if mobile
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+            if (isMobile) {
+                // On mobile: Open Telegram app directly to bot
+                // User can tap the Menu button in bot to login via web app
+                window.location.href = `tg://resolve?domain=${botUsername}&start=login`;
+
+                // Fallback to t.me link if tg:// doesn't work
+                setTimeout(() => {
+                    window.location.href = `https://t.me/${botUsername}?start=login`;
+                }, 500);
             } else {
-                openTelegramAuth(botId);
+                // On desktop: Use standard widget
+                if (!window.Telegram || !window.Telegram.Login) {
+                    const script = document.createElement('script');
+                    script.src = 'https://telegram.org/js/telegram-widget.js?22';
+                    script.onload = () => openTelegramAuth(botId);
+                    document.head.appendChild(script);
+                } else {
+                    openTelegramAuth(botId);
+                }
             }
         }
 
