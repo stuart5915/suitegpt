@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickDecide | SUITE</title>
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/nav.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: rgba(255,255,255,0.05);
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --text: #f8fafc;
+            --text-dim: rgba(248,250,252,0.6);
+            --success: #22c55e;
+            --warning: #eab308;
+            --error: #ef4444;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 80px 20px 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .subtitle {
+            color: var(--text-dim);
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+        .btn-secondary {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.875rem;
+            width: auto;
+        }
+        .btn-icon {
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .btn-icon:hover {
+            background: var(--bg-card);
+            color: var(--text);
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mode-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .mode-tab {
+            flex: 1;
+            padding: 12px 8px;
+            border-radius: 12px;
+            border: 2px solid rgba(255,255,255,0.1);
+            background: transparent;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .mode-tab:hover {
+            border-color: rgba(255,255,255,0.2);
+        }
+        .mode-tab.active {
+            border-color: var(--accent);
+            color: var(--text);
+            background: rgba(99, 102, 241, 0.1);
+        }
+        .mode-icon {
+            font-size: 1.25rem;
+        }
+
+        /* Random Picker */
+        .option-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .option-item.winner {
+            border-color: var(--success);
+            background: rgba(34, 197, 94, 0.1);
+        }
+        .option-item.spinning {
+            border-color: var(--accent);
+            background: rgba(99, 102, 241, 0.1);
+        }
+        .option-number {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.875rem;
+            flex-shrink: 0;
+        }
+        .option-text {
+            flex: 1;
+            font-weight: 600;
+        }
+
+        .add-option-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .add-option-row input {
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 10px 12px;
+            color: var(--text);
+            font-size: 0.875rem;
+        }
+        .add-option-row input::placeholder {
+            color: var(--text-dim);
+        }
+
+        .result-display {
+            text-align: center;
+            padding: 2rem;
+            display: none;
+        }
+        .result-display.show {
+            display: block;
+        }
+        .result-emoji {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+        }
+        .result-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--success);
+        }
+
+        /* Coin Flip */
+        .coin-container {
+            text-align: center;
+            padding: 2rem 0;
+        }
+        .coin {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.1s;
+        }
+        .coin.flipping {
+            animation: coinFlip 0.6s ease-out;
+        }
+        @keyframes coinFlip {
+            0% { transform: rotateY(0deg); }
+            100% { transform: rotateY(1800deg); }
+        }
+        .coin-face {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            position: absolute;
+            backface-visibility: hidden;
+        }
+        .coin-heads {
+            background: linear-gradient(135deg, #ffd700, #ffb800);
+            box-shadow: 0 4px 20px rgba(255, 215, 0, 0.3);
+        }
+        .coin-tails {
+            background: linear-gradient(135deg, #c0c0c0, #a0a0a0);
+            transform: rotateY(180deg);
+            box-shadow: 0 4px 20px rgba(192, 192, 192, 0.3);
+        }
+        .coin-result {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-top: 1rem;
+            min-height: 2rem;
+        }
+
+        .coin-labels {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+        .coin-label-input {
+            text-align: center;
+        }
+        .coin-label-input label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-bottom: 0.25rem;
+        }
+        .coin-label-input input {
+            width: 100px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 8px;
+            color: var(--text);
+            font-size: 0.875rem;
+            text-align: center;
+        }
+
+        /* Pro/Con */
+        .procon-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        .procon-col {
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            padding: 1rem;
+        }
+        .procon-title {
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            text-align: center;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .procon-title.pros { color: var(--success); }
+        .procon-title.cons { color: var(--error); }
+
+        .procon-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            min-height: 100px;
+        }
+        .procon-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            font-size: 0.875rem;
+        }
+        .procon-add {
+            display: flex;
+            gap: 0.25rem;
+            margin-top: 0.75rem;
+        }
+        .procon-add input {
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 8px;
+            color: var(--text);
+            font-size: 0.75rem;
+        }
+        .procon-add button {
+            padding: 8px 12px;
+        }
+
+        .procon-score {
+            text-align: center;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+        }
+        .score-label {
+            font-size: 0.875rem;
+            color: var(--text-dim);
+        }
+        .score-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .score-value.positive { color: var(--success); }
+        .score-value.negative { color: var(--error); }
+        .score-value.neutral { color: var(--warning); }
+
+        /* History */
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+        }
+        .history-question {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        .history-answer {
+            font-size: 0.875rem;
+            color: var(--success);
+        }
+        .history-date {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-dim);
+        }
+
+        .lucky-btn {
+            background: linear-gradient(135deg, var(--accent), #a855f7);
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <nav id="main-nav"></nav>
+    <script src="/nav-component.js"></script>
+
+    <div class="container">
+        <h1>🎲 QuickDecide</h1>
+        <p class="subtitle">Make decisions easier</p>
+
+        <div class="mode-tabs">
+            <button class="mode-tab active" data-mode="picker">
+                <span class="mode-icon">🎰</span>
+                <span>Picker</span>
+            </button>
+            <button class="mode-tab" data-mode="coin">
+                <span class="mode-icon">🪙</span>
+                <span>Coin</span>
+            </button>
+            <button class="mode-tab" data-mode="procon">
+                <span class="mode-icon">⚖️</span>
+                <span>Pro/Con</span>
+            </button>
+        </div>
+
+        <!-- Random Picker Mode -->
+        <div class="card mode-content" id="pickerMode">
+            <div class="section-title">Add Options (2-4)</div>
+
+            <div class="add-option-row">
+                <input type="text" id="newOption" placeholder="Enter an option...">
+                <button class="btn btn-small" onclick="addOption()">+</button>
+            </div>
+
+            <div class="option-list" id="optionList">
+                <div class="empty-state">Add at least 2 options</div>
+            </div>
+
+            <div class="result-display" id="pickerResult">
+                <div class="result-emoji">🎉</div>
+                <div class="result-text" id="pickerResultText">Option A</div>
+            </div>
+
+            <button class="btn" id="pickBtn" onclick="pickRandom()" disabled>🎲 Pick Random</button>
+            <button class="btn btn-secondary lucky-btn" onclick="feelingLucky()">🍀 Feeling Lucky</button>
+        </div>
+
+        <!-- Coin Flip Mode -->
+        <div class="card mode-content" id="coinMode" style="display: none;">
+            <div class="coin-container">
+                <div class="coin" id="coin">
+                    <div class="coin-face coin-heads">👑</div>
+                    <div class="coin-face coin-tails">🦅</div>
+                </div>
+                <div class="coin-result" id="coinResult"></div>
+            </div>
+
+            <div class="coin-labels">
+                <div class="coin-label-input">
+                    <label>Heads</label>
+                    <input type="text" id="headsLabel" placeholder="Option A" value="Yes">
+                </div>
+                <div class="coin-label-input">
+                    <label>Tails</label>
+                    <input type="text" id="tailsLabel" placeholder="Option B" value="No">
+                </div>
+            </div>
+
+            <button class="btn" style="margin-top: 1.5rem;" onclick="flipCoin()">🪙 Flip Coin</button>
+        </div>
+
+        <!-- Pro/Con Mode -->
+        <div class="card mode-content" id="proconMode" style="display: none;">
+            <div class="section-title">
+                <span>Weighing a Decision</span>
+                <button class="btn-icon" onclick="resetProCon()">🔄</button>
+            </div>
+
+            <div class="procon-container">
+                <div class="procon-col">
+                    <div class="procon-title pros">✓ Pros</div>
+                    <div class="procon-list" id="prosList"></div>
+                    <div class="procon-add">
+                        <input type="text" id="newPro" placeholder="Add pro...">
+                        <button class="btn btn-small" onclick="addPro()">+</button>
+                    </div>
+                </div>
+                <div class="procon-col">
+                    <div class="procon-title cons">✕ Cons</div>
+                    <div class="procon-list" id="consList"></div>
+                    <div class="procon-add">
+                        <input type="text" id="newCon" placeholder="Add con...">
+                        <button class="btn btn-small" onclick="addCon()">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="procon-score" id="proconScore" style="display: none;">
+                <div class="score-label">Balance Score</div>
+                <div class="score-value" id="scoreValue">+2</div>
+                <div class="score-label" id="scoreAdvice">Leaning towards YES</div>
+            </div>
+        </div>
+
+        <!-- History -->
+        <div class="card">
+            <div class="section-title">
+                <span>📜 Decision History</span>
+                <button class="btn-icon" onclick="clearHistory()">🗑️</button>
+            </div>
+            <div class="history-list" id="historyList">
+                <div class="empty-state">No decisions yet</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let options = [];
+        let pros = [];
+        let cons = [];
+        let history = JSON.parse(localStorage.getItem('quickdecide_history') || '[]');
+        let activeMode = 'picker';
+
+        function saveHistory() {
+            localStorage.setItem('quickdecide_history', JSON.stringify(history));
+        }
+
+        // Mode switching
+        document.querySelectorAll('.mode-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                activeMode = tab.dataset.mode;
+
+                document.querySelectorAll('.mode-content').forEach(c => c.style.display = 'none');
+                document.getElementById(`${activeMode}Mode`).style.display = 'block';
+            });
+        });
+
+        // Random Picker
+        function addOption() {
+            if (options.length >= 4) return alert('Maximum 4 options');
+
+            const input = document.getElementById('newOption');
+            const text = input.value.trim();
+            if (!text) return;
+
+            options.push(text);
+            input.value = '';
+            renderOptions();
+        }
+
+        function removeOption(index) {
+            options.splice(index, 1);
+            renderOptions();
+        }
+
+        function renderOptions() {
+            const list = document.getElementById('optionList');
+            const btn = document.getElementById('pickBtn');
+
+            if (options.length === 0) {
+                list.innerHTML = '<div class="empty-state">Add at least 2 options</div>';
+                btn.disabled = true;
+                return;
+            }
+
+            btn.disabled = options.length < 2;
+
+            list.innerHTML = options.map((opt, i) => `
+                <div class="option-item" id="option-${i}">
+                    <div class="option-number">${i + 1}</div>
+                    <div class="option-text">${opt}</div>
+                    <button class="btn-icon" onclick="removeOption(${i})">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function pickRandom() {
+            if (options.length < 2) return;
+
+            // Hide result during animation
+            document.getElementById('pickerResult').classList.remove('show');
+
+            // Clear previous states
+            document.querySelectorAll('.option-item').forEach(el => {
+                el.classList.remove('winner', 'spinning');
+            });
+
+            // Spinning animation
+            let spins = 0;
+            const totalSpins = 15 + Math.floor(Math.random() * 10);
+            const spinInterval = setInterval(() => {
+                document.querySelectorAll('.option-item').forEach(el => {
+                    el.classList.remove('spinning');
+                });
+
+                const currentIndex = spins % options.length;
+                document.getElementById(`option-${currentIndex}`).classList.add('spinning');
+
+                spins++;
+
+                if (spins >= totalSpins) {
+                    clearInterval(spinInterval);
+
+                    // Pick winner
+                    const winnerIndex = Math.floor(Math.random() * options.length);
+                    document.querySelectorAll('.option-item').forEach(el => {
+                        el.classList.remove('spinning');
+                    });
+                    document.getElementById(`option-${winnerIndex}`).classList.add('winner');
+
+                    // Show result
+                    document.getElementById('pickerResultText').textContent = options[winnerIndex];
+                    document.getElementById('pickerResult').classList.add('show');
+
+                    // Add to history
+                    history.unshift({
+                        type: 'picker',
+                        question: `Pick from: ${options.join(', ')}`,
+                        answer: options[winnerIndex],
+                        timestamp: Date.now()
+                    });
+                    saveHistory();
+                    renderHistory();
+                }
+            }, 100);
+        }
+
+        function feelingLucky() {
+            const luckyOptions = [
+                "Go for it!", "Wait and see", "Ask a friend",
+                "Trust your gut", "Sleep on it", "Why not?",
+                "Take the risk!", "Play it safe", "Follow your heart"
+            ];
+
+            const answer = luckyOptions[Math.floor(Math.random() * luckyOptions.length)];
+            document.getElementById('pickerResultText').textContent = answer;
+            document.getElementById('pickerResult').classList.add('show');
+
+            history.unshift({
+                type: 'lucky',
+                question: 'Feeling Lucky',
+                answer: answer,
+                timestamp: Date.now()
+            });
+            saveHistory();
+            renderHistory();
+        }
+
+        // Coin Flip
+        function flipCoin() {
+            const coin = document.getElementById('coin');
+            const result = document.getElementById('coinResult');
+
+            result.textContent = '';
+            coin.classList.remove('flipping');
+
+            // Force reflow
+            void coin.offsetWidth;
+
+            coin.classList.add('flipping');
+
+            setTimeout(() => {
+                coin.classList.remove('flipping');
+
+                const isHeads = Math.random() < 0.5;
+                const headsLabel = document.getElementById('headsLabel').value || 'Heads';
+                const tailsLabel = document.getElementById('tailsLabel').value || 'Tails';
+
+                const answer = isHeads ? headsLabel : tailsLabel;
+                result.textContent = `${isHeads ? '👑' : '🦅'} ${answer}!`;
+
+                history.unshift({
+                    type: 'coin',
+                    question: `${headsLabel} or ${tailsLabel}?`,
+                    answer: answer,
+                    timestamp: Date.now()
+                });
+                saveHistory();
+                renderHistory();
+            }, 600);
+        }
+
+        // Pro/Con
+        function addPro() {
+            const input = document.getElementById('newPro');
+            const text = input.value.trim();
+            if (!text) return;
+
+            pros.push(text);
+            input.value = '';
+            renderProCon();
+        }
+
+        function addCon() {
+            const input = document.getElementById('newCon');
+            const text = input.value.trim();
+            if (!text) return;
+
+            cons.push(text);
+            input.value = '';
+            renderProCon();
+        }
+
+        function removePro(index) {
+            pros.splice(index, 1);
+            renderProCon();
+        }
+
+        function removeCon(index) {
+            cons.splice(index, 1);
+            renderProCon();
+        }
+
+        function renderProCon() {
+            const prosList = document.getElementById('prosList');
+            const consList = document.getElementById('consList');
+            const scoreDiv = document.getElementById('proconScore');
+
+            prosList.innerHTML = pros.length === 0 ? '' : pros.map((p, i) => `
+                <div class="procon-item">
+                    <span style="color: var(--success);">✓</span>
+                    <span style="flex: 1;">${p}</span>
+                    <button class="btn-icon" style="padding: 4px;" onclick="removePro(${i})">✕</button>
+                </div>
+            `).join('');
+
+            consList.innerHTML = cons.length === 0 ? '' : cons.map((c, i) => `
+                <div class="procon-item">
+                    <span style="color: var(--error);">✕</span>
+                    <span style="flex: 1;">${c}</span>
+                    <button class="btn-icon" style="padding: 4px;" onclick="removeCon(${i})">✕</button>
+                </div>
+            `).join('');
+
+            // Show score
+            if (pros.length > 0 || cons.length > 0) {
+                scoreDiv.style.display = 'block';
+                const score = pros.length - cons.length;
+                const scoreEl = document.getElementById('scoreValue');
+                const adviceEl = document.getElementById('scoreAdvice');
+
+                scoreEl.textContent = score > 0 ? `+${score}` : score;
+                scoreEl.className = 'score-value ' + (score > 0 ? 'positive' : score < 0 ? 'negative' : 'neutral');
+
+                if (score > 1) adviceEl.textContent = 'Strong lean towards YES';
+                else if (score > 0) adviceEl.textContent = 'Slightly leaning YES';
+                else if (score < -1) adviceEl.textContent = 'Strong lean towards NO';
+                else if (score < 0) adviceEl.textContent = 'Slightly leaning NO';
+                else adviceEl.textContent = 'Perfectly balanced';
+            } else {
+                scoreDiv.style.display = 'none';
+            }
+        }
+
+        function resetProCon() {
+            pros = [];
+            cons = [];
+            renderProCon();
+        }
+
+        // History
+        function renderHistory() {
+            const list = document.getElementById('historyList');
+
+            if (history.length === 0) {
+                list.innerHTML = '<div class="empty-state">No decisions yet</div>';
+                return;
+            }
+
+            list.innerHTML = history.slice(0, 10).map(h => {
+                const icons = { picker: '🎰', coin: '🪙', lucky: '🍀' };
+                return `
+                    <div class="history-item">
+                        <div>
+                            <div class="history-question">${icons[h.type]} ${h.question}</div>
+                            <div class="history-answer">→ ${h.answer}</div>
+                        </div>
+                        <div class="history-date">${new Date(h.timestamp).toLocaleDateString()}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function clearHistory() {
+            if (!confirm('Clear all decision history?')) return;
+            history = [];
+            saveHistory();
+            renderHistory();
+        }
+
+        // Enter key handlers
+        document.getElementById('newOption').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addOption();
+        });
+        document.getElementById('newPro').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addPro();
+        });
+        document.getElementById('newCon').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addCon();
+        });
+
+        // Initial render
+        renderOptions();
+        renderHistory();
+    </script>
+</body>
+</html>

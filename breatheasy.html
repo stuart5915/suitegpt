@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BreathEasy | SUITE</title>
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/nav.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: rgba(255,255,255,0.05);
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --text: #f8fafc;
+            --text-dim: rgba(248,250,252,0.6);
+            --success: #22c55e;
+            --warning: #eab308;
+            --error: #ef4444;
+            --calm: #8b5cf6;
+            --calm-glow: rgba(139, 92, 246, 0.4);
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 80px 20px 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .subtitle {
+            color: var(--text-dim);
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .btn-secondary {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .breath-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 350px;
+            position: relative;
+        }
+        .breath-circle {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, var(--calm), var(--accent));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 4s ease-in-out, box-shadow 4s ease-in-out;
+            box-shadow: 0 0 60px var(--calm-glow);
+        }
+        .breath-circle.inhale {
+            transform: scale(1.4);
+            box-shadow: 0 0 100px var(--calm-glow);
+        }
+        .breath-circle.hold {
+            transform: scale(1.4);
+            box-shadow: 0 0 100px var(--calm-glow);
+        }
+        .breath-circle.exhale {
+            transform: scale(1);
+            box-shadow: 0 0 40px var(--calm-glow);
+        }
+        .breath-instruction {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        .breath-timer {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-top: 1.5rem;
+            color: var(--calm);
+        }
+        .session-timer {
+            font-size: 1rem;
+            color: var(--text-dim);
+            margin-top: 0.5rem;
+        }
+        .exercise-selector {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .exercise-btn {
+            padding: 0.75rem 1rem;
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+        }
+        .exercise-btn:hover {
+            border-color: var(--accent);
+        }
+        .exercise-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+        .duration-selector {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+        .duration-btn {
+            padding: 0.5rem 1rem;
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+        .duration-btn.active {
+            background: rgba(139, 92, 246, 0.2);
+            border-color: var(--calm);
+            color: var(--calm);
+        }
+        .controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1.5rem;
+        }
+        .controls .btn {
+            min-width: 120px;
+        }
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--calm);
+        }
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+        .exercise-info {
+            text-align: left;
+            padding: 1rem;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+        .exercise-info h4 {
+            margin-bottom: 0.5rem;
+            color: var(--calm);
+        }
+        .exercise-info p {
+            font-size: 0.875rem;
+            color: var(--text-dim);
+        }
+        .sound-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            color: var(--text-dim);
+            font-size: 0.875rem;
+        }
+        .sound-toggle input {
+            accent-color: var(--calm);
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+        .breathing .breath-instruction {
+            animation: pulse 1s infinite;
+        }
+    </style>
+</head>
+<body>
+    <nav id="main-nav"></nav>
+    <script src="/nav-component.js"></script>
+
+    <div class="container">
+        <h1>BreathEasy</h1>
+        <p class="subtitle">Calm your mind with guided breathing</p>
+
+        <div class="card" id="setupCard">
+            <h3 style="margin-bottom: 1rem;">Choose Exercise</h3>
+            <div class="exercise-selector">
+                <button class="exercise-btn active" data-exercise="478" onclick="selectExercise('478')">
+                    4-7-8 Relaxing
+                </button>
+                <button class="exercise-btn" data-exercise="box" onclick="selectExercise('box')">
+                    Box Breathing
+                </button>
+                <button class="exercise-btn" data-exercise="simple" onclick="selectExercise('simple')">
+                    Simple Calm
+                </button>
+            </div>
+
+            <h3 style="margin-bottom: 1rem;">Duration</h3>
+            <div class="duration-selector">
+                <button class="duration-btn" data-duration="60" onclick="selectDuration(60)">1 min</button>
+                <button class="duration-btn active" data-duration="180" onclick="selectDuration(180)">3 min</button>
+                <button class="duration-btn" data-duration="300" onclick="selectDuration(300)">5 min</button>
+            </div>
+
+            <button class="btn" onclick="startSession()" style="width: 100%;">
+                Start Breathing
+            </button>
+
+            <div class="exercise-info" id="exerciseInfo">
+                <h4>4-7-8 Breathing</h4>
+                <p>Inhale for 4 seconds, hold for 7 seconds, exhale for 8 seconds. Great for reducing anxiety and helping you fall asleep.</p>
+            </div>
+        </div>
+
+        <div class="card" id="sessionCard" style="display: none;">
+            <div class="breath-container" id="breathContainer">
+                <div class="breath-circle" id="breathCircle">
+                    <span class="breath-instruction" id="breathInstruction">Ready</span>
+                </div>
+                <div class="breath-timer" id="breathTimer">0</div>
+                <div class="session-timer" id="sessionTimer">0:00 remaining</div>
+            </div>
+
+            <div class="controls">
+                <button class="btn btn-secondary" onclick="stopSession()">Stop</button>
+                <button class="btn" id="pauseBtn" onclick="togglePause()">Pause</button>
+            </div>
+
+            <div class="sound-toggle">
+                <input type="checkbox" id="soundToggle" checked>
+                <label for="soundToggle">Sound cues</label>
+            </div>
+        </div>
+
+        <div class="stat-grid">
+            <div class="stat-item">
+                <div class="stat-value" id="sessionsToday">0</div>
+                <div class="stat-label">Today</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalMinutes">0</div>
+                <div class="stat-label">Total Min</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="streak">0</div>
+                <div class="stat-label">Day Streak</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const exercises = {
+            '478': {
+                name: '4-7-8 Breathing',
+                description: 'Inhale for 4 seconds, hold for 7 seconds, exhale for 8 seconds. Great for reducing anxiety and helping you fall asleep.',
+                phases: [
+                    { name: 'Inhale', duration: 4, class: 'inhale' },
+                    { name: 'Hold', duration: 7, class: 'hold' },
+                    { name: 'Exhale', duration: 8, class: 'exhale' }
+                ]
+            },
+            'box': {
+                name: 'Box Breathing',
+                description: 'Equal parts inhale, hold, exhale, hold. Used by Navy SEALs for focus and calm under pressure.',
+                phases: [
+                    { name: 'Inhale', duration: 4, class: 'inhale' },
+                    { name: 'Hold', duration: 4, class: 'hold' },
+                    { name: 'Exhale', duration: 4, class: 'exhale' },
+                    { name: 'Hold', duration: 4, class: 'hold' }
+                ]
+            },
+            'simple': {
+                name: 'Simple Calm',
+                description: 'Basic deep breathing with equal inhale and exhale. Perfect for beginners or quick stress relief.',
+                phases: [
+                    { name: 'Inhale', duration: 4, class: 'inhale' },
+                    { name: 'Exhale', duration: 4, class: 'exhale' }
+                ]
+            }
+        };
+
+        let currentExercise = '478';
+        let sessionDuration = 180;
+        let isRunning = false;
+        let isPaused = false;
+        let sessionTimer = null;
+        let phaseTimer = null;
+        let remainingTime = 0;
+        let currentPhaseIndex = 0;
+        let currentPhaseTime = 0;
+
+        let audioContext = null;
+
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playTone(frequency, duration) {
+            if (!document.getElementById('soundToggle').checked) return;
+            if (!audioContext) initAudio();
+
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = frequency;
+            oscillator.type = 'sine';
+
+            gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.1);
+            gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + duration);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+
+        function getData() {
+            return JSON.parse(localStorage.getItem('breatheasy') || '{"sessions":[],"totalMinutes":0}');
+        }
+
+        function saveData(data) {
+            localStorage.setItem('breatheasy', JSON.stringify(data));
+        }
+
+        function selectExercise(exercise) {
+            currentExercise = exercise;
+            document.querySelectorAll('.exercise-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.exercise === exercise);
+            });
+
+            const info = exercises[exercise];
+            document.getElementById('exerciseInfo').innerHTML = `
+                <h4>${info.name}</h4>
+                <p>${info.description}</p>
+            `;
+        }
+
+        function selectDuration(duration) {
+            sessionDuration = duration;
+            document.querySelectorAll('.duration-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.duration) === duration);
+            });
+        }
+
+        function startSession() {
+            initAudio();
+            isRunning = true;
+            isPaused = false;
+            remainingTime = sessionDuration;
+            currentPhaseIndex = 0;
+
+            document.getElementById('setupCard').style.display = 'none';
+            document.getElementById('sessionCard').style.display = 'block';
+            document.getElementById('pauseBtn').textContent = 'Pause';
+
+            runPhase();
+            startSessionTimer();
+        }
+
+        function runPhase() {
+            if (!isRunning || isPaused) return;
+
+            const exercise = exercises[currentExercise];
+            const phase = exercise.phases[currentPhaseIndex];
+
+            const circle = document.getElementById('breathCircle');
+            const instruction = document.getElementById('breathInstruction');
+            const timer = document.getElementById('breathTimer');
+
+            circle.className = 'breath-circle ' + phase.class;
+            instruction.textContent = phase.name;
+            currentPhaseTime = phase.duration;
+
+            playTone(phase.class === 'inhale' ? 440 : phase.class === 'exhale' ? 330 : 380, 0.2);
+
+            document.getElementById('breathContainer').classList.add('breathing');
+
+            const countdown = () => {
+                if (!isRunning || isPaused) return;
+
+                timer.textContent = currentPhaseTime;
+
+                if (currentPhaseTime > 0) {
+                    currentPhaseTime--;
+                    phaseTimer = setTimeout(countdown, 1000);
+                } else {
+                    currentPhaseIndex = (currentPhaseIndex + 1) % exercise.phases.length;
+                    runPhase();
+                }
+            };
+
+            countdown();
+        }
+
+        function startSessionTimer() {
+            const updateTimer = () => {
+                if (!isRunning) return;
+
+                if (!isPaused) {
+                    remainingTime--;
+                    const mins = Math.floor(remainingTime / 60);
+                    const secs = remainingTime % 60;
+                    document.getElementById('sessionTimer').textContent =
+                        `${mins}:${secs.toString().padStart(2, '0')} remaining`;
+
+                    if (remainingTime <= 0) {
+                        endSession();
+                        return;
+                    }
+                }
+
+                sessionTimer = setTimeout(updateTimer, 1000);
+            };
+
+            updateTimer();
+        }
+
+        function togglePause() {
+            isPaused = !isPaused;
+            document.getElementById('pauseBtn').textContent = isPaused ? 'Resume' : 'Pause';
+
+            if (!isPaused) {
+                runPhase();
+            } else {
+                clearTimeout(phaseTimer);
+                document.getElementById('breathContainer').classList.remove('breathing');
+            }
+        }
+
+        function stopSession() {
+            isRunning = false;
+            clearTimeout(sessionTimer);
+            clearTimeout(phaseTimer);
+
+            document.getElementById('setupCard').style.display = 'block';
+            document.getElementById('sessionCard').style.display = 'none';
+            document.getElementById('breathContainer').classList.remove('breathing');
+        }
+
+        function endSession() {
+            const duration = sessionDuration - remainingTime;
+            const minutes = Math.round(duration / 60);
+
+            const data = getData();
+            data.sessions.push({
+                date: new Date().toISOString(),
+                exercise: currentExercise,
+                duration: duration
+            });
+            data.totalMinutes = (data.totalMinutes || 0) + minutes;
+            saveData(data);
+
+            stopSession();
+            updateStats();
+
+            playTone(523, 0.5);
+            setTimeout(() => playTone(659, 0.5), 200);
+            setTimeout(() => playTone(784, 0.8), 400);
+
+            alert(`Great job! You completed a ${minutes} minute breathing session.`);
+        }
+
+        function updateStats() {
+            const data = getData();
+            const today = new Date().toISOString().split('T')[0];
+
+            const sessionsToday = data.sessions.filter(s =>
+                s.date.startsWith(today)
+            ).length;
+
+            document.getElementById('sessionsToday').textContent = sessionsToday;
+            document.getElementById('totalMinutes').textContent = data.totalMinutes || 0;
+
+            const streak = calculateStreak(data);
+            document.getElementById('streak').textContent = streak;
+        }
+
+        function calculateStreak(data) {
+            let streak = 0;
+            const today = new Date();
+
+            for (let i = 0; i < 365; i++) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                const dateStr = date.toISOString().split('T')[0];
+
+                const hasSession = data.sessions.some(s => s.date.startsWith(dateStr));
+
+                if (hasSession) {
+                    streak++;
+                } else if (i > 0) {
+                    break;
+                }
+            }
+            return streak;
+        }
+
+        updateStats();
+    </script>
+</body>
+</html>

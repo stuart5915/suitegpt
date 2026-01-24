@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GiftGuru | SUITE</title>
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/nav.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: rgba(255,255,255,0.05);
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --text: #f8fafc;
+            --text-dim: rgba(248,250,252,0.6);
+            --success: #22c55e;
+            --warning: #eab308;
+            --error: #ef4444;
+            --pink: #ec4899;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 80px 20px 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .subtitle {
+            color: var(--text-dim);
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+        .btn-secondary {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.875rem;
+            width: auto;
+        }
+        .btn-icon {
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .btn-icon:hover {
+            background: var(--bg-card);
+            color: var(--text);
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .upcoming-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .upcoming-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            border-left: 3px solid var(--pink);
+        }
+        .upcoming-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .upcoming-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+        .upcoming-name {
+            font-weight: 600;
+        }
+        .upcoming-date {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+        .upcoming-days {
+            font-weight: 700;
+            color: var(--pink);
+        }
+
+        .people-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 1rem;
+        }
+        .person-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 1.25rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .person-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        .person-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 0 auto 0.75rem;
+        }
+        .person-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        .person-meta {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+        .add-person-card {
+            border: 2px dashed rgba(255,255,255,0.2);
+            background: transparent;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 130px;
+        }
+        .add-person-card:hover {
+            border-color: var(--accent);
+        }
+        .add-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .person-detail-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .detail-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .detail-info h2 {
+            font-size: 1.25rem;
+            margin-bottom: 0.25rem;
+        }
+        .detail-meta {
+            font-size: 0.875rem;
+            color: var(--text-dim);
+        }
+
+        .budget-display {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            margin-bottom: 1rem;
+        }
+        .budget-label {
+            font-size: 0.875rem;
+            color: var(--text-dim);
+        }
+        .budget-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--success);
+        }
+        .budget-spent {
+            color: var(--warning);
+        }
+
+        .gift-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .gift-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+        }
+        .gift-status {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            flex-shrink: 0;
+        }
+        .gift-status.idea { background: rgba(99, 102, 241, 0.2); color: var(--accent); }
+        .gift-status.bought { background: rgba(234, 179, 8, 0.2); color: var(--warning); }
+        .gift-status.wrapped { background: rgba(236, 72, 153, 0.2); color: var(--pink); }
+        .gift-status.given { background: rgba(34, 197, 94, 0.2); color: var(--success); }
+        .gift-info {
+            flex: 1;
+        }
+        .gift-name {
+            font-weight: 600;
+        }
+        .gift-price {
+            font-size: 0.875rem;
+            color: var(--text-dim);
+        }
+        .gift-actions {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .status-selector {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+        .status-btn {
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: transparent;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+        }
+        .status-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .interests-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .interest-tag {
+            padding: 6px 12px;
+            background: rgba(99, 102, 241, 0.2);
+            border-radius: 20px;
+            font-size: 0.875rem;
+            color: var(--accent);
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .history-item:last-child {
+            border-bottom: none;
+        }
+        .history-gift {
+            font-weight: 600;
+        }
+        .history-date {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: var(--bg-dark);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .form-input {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 12px;
+            color: var(--text);
+            font-size: 1rem;
+        }
+        .form-input::placeholder {
+            color: var(--text-dim);
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-dim);
+        }
+
+        #personDetailView { display: none; }
+    </style>
+</head>
+<body>
+    <nav id="main-nav"></nav>
+    <script src="/nav-component.js"></script>
+
+    <div class="container">
+        <h1>🎁 GiftGuru</h1>
+        <p class="subtitle">Never forget a gift again</p>
+
+        <div id="mainView">
+            <div class="card" id="upcomingCard" style="display: none;">
+                <div class="section-title">🎂 Upcoming Birthdays</div>
+                <div class="upcoming-list" id="upcomingList"></div>
+            </div>
+
+            <div class="card">
+                <div class="section-title">
+                    <span>👥 People</span>
+                </div>
+                <div class="people-grid" id="peopleGrid">
+                    <div class="person-card add-person-card" onclick="showAddPersonModal()">
+                        <span class="add-icon">+</span>
+                        <span>Add Person</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="personDetailView">
+            <button class="btn btn-secondary" style="margin-bottom: 1rem;" onclick="backToMain()">← Back</button>
+
+            <div class="card">
+                <div class="person-detail-header">
+                    <div class="detail-avatar" id="detailAvatar">M</div>
+                    <div class="detail-info">
+                        <h2 id="detailName">Mom</h2>
+                        <div class="detail-meta" id="detailMeta">Birthday: Dec 15 • Size: M</div>
+                    </div>
+                </div>
+
+                <div class="budget-display">
+                    <div>
+                        <div class="budget-label">Budget</div>
+                        <div class="budget-value" id="detailBudget">$100</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div class="budget-label">Spent</div>
+                        <div class="budget-value budget-spent" id="detailSpent">$0</div>
+                    </div>
+                </div>
+
+                <div class="section-title">Interests</div>
+                <div class="interests-list" id="interestsList">
+                    <span class="interest-tag">Gardening</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="section-title">
+                    <span>🎁 Gift Ideas</span>
+                    <button class="btn btn-small" onclick="showAddGiftModal()">+ Add</button>
+                </div>
+                <div class="gift-list" id="giftList">
+                    <div class="empty-state">No gift ideas yet</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="section-title">📜 Gift History</div>
+                <div id="giftHistory">
+                    <div class="empty-state">No gifts given yet</div>
+                </div>
+            </div>
+
+            <button class="btn btn-secondary" style="color: var(--error);" onclick="deletePerson()">Delete Person</button>
+        </div>
+    </div>
+
+    <!-- Add Person Modal -->
+    <div class="modal" id="addPersonModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">Add Person</span>
+                <button class="btn-icon" onclick="closeModal('addPersonModal')">✕</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Name</label>
+                <input type="text" class="form-input" id="personName" placeholder="e.g., Mom">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Birthday</label>
+                    <input type="date" class="form-input" id="personBirthday">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Budget</label>
+                    <input type="number" class="form-input" id="personBudget" placeholder="100">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Clothing Size (optional)</label>
+                <input type="text" class="form-input" id="personSize" placeholder="e.g., M, L, XL">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Interests (comma separated)</label>
+                <input type="text" class="form-input" id="personInterests" placeholder="e.g., gardening, cooking, books">
+            </div>
+            <button class="btn" onclick="addPerson()">Add Person</button>
+        </div>
+    </div>
+
+    <!-- Add Gift Modal -->
+    <div class="modal" id="addGiftModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">Add Gift Idea</span>
+                <button class="btn-icon" onclick="closeModal('addGiftModal')">✕</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Gift Name</label>
+                <input type="text" class="form-input" id="giftName" placeholder="e.g., Cookbook">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Price (optional)</label>
+                <input type="number" class="form-input" id="giftPrice" placeholder="25">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Status</label>
+                <div class="status-selector">
+                    <button class="status-btn active" data-status="idea">💡 Idea</button>
+                    <button class="status-btn" data-status="bought">🛒 Bought</button>
+                    <button class="status-btn" data-status="wrapped">🎀 Wrapped</button>
+                    <button class="status-btn" data-status="given">✓ Given</button>
+                </div>
+            </div>
+            <button class="btn" onclick="addGift()">Add Gift</button>
+        </div>
+    </div>
+
+    <script>
+        let people = JSON.parse(localStorage.getItem('giftguru_people') || '[]');
+        let selectedPersonId = null;
+
+        function savePeople() {
+            localStorage.setItem('giftguru_people', JSON.stringify(people));
+        }
+
+        function showAddPersonModal() {
+            document.getElementById('addPersonModal').classList.add('active');
+        }
+
+        function showAddGiftModal() {
+            document.getElementById('addGiftModal').classList.add('active');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        function addPerson() {
+            const name = document.getElementById('personName').value.trim();
+            const birthday = document.getElementById('personBirthday').value;
+            const budget = parseInt(document.getElementById('personBudget').value) || 0;
+            const size = document.getElementById('personSize').value.trim();
+            const interests = document.getElementById('personInterests').value
+                .split(',')
+                .map(i => i.trim())
+                .filter(i => i);
+
+            if (!name) return alert('Please enter a name');
+
+            const person = {
+                id: Date.now().toString(),
+                name,
+                birthday: birthday || null,
+                budget,
+                size,
+                interests,
+                gifts: [],
+                history: []
+            };
+
+            people.push(person);
+            savePeople();
+            closeModal('addPersonModal');
+
+            // Clear form
+            document.getElementById('personName').value = '';
+            document.getElementById('personBirthday').value = '';
+            document.getElementById('personBudget').value = '';
+            document.getElementById('personSize').value = '';
+            document.getElementById('personInterests').value = '';
+
+            renderPeopleGrid();
+            renderUpcoming();
+        }
+
+        function selectPerson(id) {
+            selectedPersonId = id;
+            document.getElementById('mainView').style.display = 'none';
+            document.getElementById('personDetailView').style.display = 'block';
+            renderPersonDetail();
+        }
+
+        function backToMain() {
+            document.getElementById('mainView').style.display = 'block';
+            document.getElementById('personDetailView').style.display = 'none';
+            selectedPersonId = null;
+        }
+
+        function getCurrentPerson() {
+            return people.find(p => p.id === selectedPersonId);
+        }
+
+        function deletePerson() {
+            if (!confirm('Delete this person and all their gifts?')) return;
+            people = people.filter(p => p.id !== selectedPersonId);
+            savePeople();
+            backToMain();
+            renderPeopleGrid();
+            renderUpcoming();
+        }
+
+        function addGift() {
+            const person = getCurrentPerson();
+            if (!person) return;
+
+            const name = document.getElementById('giftName').value.trim();
+            const price = parseFloat(document.getElementById('giftPrice').value) || 0;
+            const statusBtn = document.querySelector('.status-btn.active');
+            const status = statusBtn ? statusBtn.dataset.status : 'idea';
+
+            if (!name) return alert('Please enter a gift name');
+
+            person.gifts.push({
+                id: Date.now(),
+                name,
+                price,
+                status,
+                addedAt: Date.now()
+            });
+
+            savePeople();
+            closeModal('addGiftModal');
+
+            document.getElementById('giftName').value = '';
+            document.getElementById('giftPrice').value = '';
+
+            renderPersonDetail();
+        }
+
+        function updateGiftStatus(giftId, newStatus) {
+            const person = getCurrentPerson();
+            if (!person) return;
+
+            const gift = person.gifts.find(g => g.id === giftId);
+            if (!gift) return;
+
+            const oldStatus = gift.status;
+            gift.status = newStatus;
+
+            // If marked as given, move to history
+            if (newStatus === 'given' && oldStatus !== 'given') {
+                person.history.unshift({
+                    name: gift.name,
+                    price: gift.price,
+                    givenAt: Date.now()
+                });
+            }
+
+            savePeople();
+            renderPersonDetail();
+        }
+
+        function deleteGift(giftId) {
+            const person = getCurrentPerson();
+            if (!person) return;
+
+            person.gifts = person.gifts.filter(g => g.id !== giftId);
+            savePeople();
+            renderPersonDetail();
+        }
+
+        function getDaysUntilBirthday(birthdayStr) {
+            if (!birthdayStr) return Infinity;
+
+            const today = new Date();
+            const birthday = new Date(birthdayStr);
+            birthday.setFullYear(today.getFullYear());
+
+            if (birthday < today) {
+                birthday.setFullYear(today.getFullYear() + 1);
+            }
+
+            const diff = birthday - today;
+            return Math.ceil(diff / (1000 * 60 * 60 * 24));
+        }
+
+        function formatBirthday(birthdayStr) {
+            if (!birthdayStr) return '';
+            const date = new Date(birthdayStr);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        function renderUpcoming() {
+            const upcoming = people
+                .filter(p => p.birthday)
+                .map(p => ({ ...p, daysUntil: getDaysUntilBirthday(p.birthday) }))
+                .filter(p => p.daysUntil <= 30)
+                .sort((a, b) => a.daysUntil - b.daysUntil);
+
+            const card = document.getElementById('upcomingCard');
+            const list = document.getElementById('upcomingList');
+
+            if (upcoming.length === 0) {
+                card.style.display = 'none';
+                return;
+            }
+
+            card.style.display = 'block';
+            list.innerHTML = upcoming.map(p => `
+                <div class="upcoming-item" onclick="selectPerson('${p.id}')">
+                    <div class="upcoming-info">
+                        <div class="upcoming-avatar">${p.name.charAt(0).toUpperCase()}</div>
+                        <div>
+                            <div class="upcoming-name">${p.name}</div>
+                            <div class="upcoming-date">${formatBirthday(p.birthday)}</div>
+                        </div>
+                    </div>
+                    <div class="upcoming-days">${p.daysUntil === 0 ? 'Today!' : `${p.daysUntil}d`}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderPeopleGrid() {
+            const grid = document.getElementById('peopleGrid');
+            grid.innerHTML = people.map(p => {
+                const giftCount = p.gifts.filter(g => g.status !== 'given').length;
+                return `
+                    <div class="person-card" onclick="selectPerson('${p.id}')">
+                        <div class="person-avatar">${p.name.charAt(0).toUpperCase()}</div>
+                        <div class="person-name">${p.name}</div>
+                        <div class="person-meta">${giftCount} gift ideas</div>
+                    </div>
+                `;
+            }).join('') + `
+                <div class="person-card add-person-card" onclick="showAddPersonModal()">
+                    <span class="add-icon">+</span>
+                    <span>Add Person</span>
+                </div>
+            `;
+        }
+
+        function renderPersonDetail() {
+            const person = getCurrentPerson();
+            if (!person) return;
+
+            document.getElementById('detailAvatar').textContent = person.name.charAt(0).toUpperCase();
+            document.getElementById('detailName').textContent = person.name;
+
+            let meta = [];
+            if (person.birthday) meta.push(`Birthday: ${formatBirthday(person.birthday)}`);
+            if (person.size) meta.push(`Size: ${person.size}`);
+            document.getElementById('detailMeta').textContent = meta.join(' • ') || 'No details';
+
+            document.getElementById('detailBudget').textContent = `$${person.budget || 0}`;
+
+            const spent = person.gifts
+                .filter(g => g.status !== 'idea')
+                .reduce((sum, g) => sum + (g.price || 0), 0);
+            document.getElementById('detailSpent').textContent = `$${spent}`;
+
+            // Interests
+            const interestsList = document.getElementById('interestsList');
+            if (person.interests.length === 0) {
+                interestsList.innerHTML = '<span class="interest-tag">No interests added</span>';
+            } else {
+                interestsList.innerHTML = person.interests
+                    .map(i => `<span class="interest-tag">${i}</span>`)
+                    .join('');
+            }
+
+            // Gifts
+            const giftList = document.getElementById('giftList');
+            const activeGifts = person.gifts.filter(g => g.status !== 'given');
+
+            if (activeGifts.length === 0) {
+                giftList.innerHTML = '<div class="empty-state">No gift ideas yet</div>';
+            } else {
+                const statusIcons = { idea: '💡', bought: '🛒', wrapped: '🎀', given: '✓' };
+                const nextStatus = { idea: 'bought', bought: 'wrapped', wrapped: 'given' };
+
+                giftList.innerHTML = activeGifts.map(g => `
+                    <div class="gift-item">
+                        <div class="gift-status ${g.status}">${statusIcons[g.status]}</div>
+                        <div class="gift-info">
+                            <div class="gift-name">${g.name}</div>
+                            ${g.price ? `<div class="gift-price">$${g.price}</div>` : ''}
+                        </div>
+                        <div class="gift-actions">
+                            ${nextStatus[g.status] ? `<button class="btn-icon" onclick="updateGiftStatus(${g.id}, '${nextStatus[g.status]}')" title="Mark as ${nextStatus[g.status]}">→</button>` : ''}
+                            <button class="btn-icon" onclick="deleteGift(${g.id})">✕</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // History
+            const historyDiv = document.getElementById('giftHistory');
+            if (person.history.length === 0) {
+                historyDiv.innerHTML = '<div class="empty-state">No gifts given yet</div>';
+            } else {
+                historyDiv.innerHTML = person.history.map(h => `
+                    <div class="history-item">
+                        <div>
+                            <div class="history-gift">${h.name}</div>
+                            ${h.price ? `<span style="font-size: 0.75rem; color: var(--text-dim);">$${h.price}</span>` : ''}
+                        </div>
+                        <div class="history-date">${new Date(h.givenAt).toLocaleDateString()}</div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Status selector
+        document.querySelectorAll('.status-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+
+        // Close modals on background click
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.classList.remove('active');
+            });
+        });
+
+        // Initial render
+        renderPeopleGrid();
+        renderUpcoming();
+    </script>
+</body>
+</html>

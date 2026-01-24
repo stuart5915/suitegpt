@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PetCare | SUITE</title>
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/nav.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: rgba(255,255,255,0.05);
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --text: #f8fafc;
+            --text-dim: rgba(248,250,252,0.6);
+            --success: #22c55e;
+            --warning: #eab308;
+            --error: #ef4444;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 80px 20px 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .subtitle {
+            color: var(--text-dim);
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+        .btn-secondary {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.875rem;
+            width: auto;
+        }
+        .btn-icon {
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .btn-icon:hover {
+            background: var(--bg-card);
+            color: var(--text);
+        }
+
+        .pet-list {
+            display: flex;
+            gap: 0.75rem;
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .pet-card {
+            flex: 0 0 auto;
+            width: 100px;
+            text-align: center;
+            padding: 1rem;
+            background: var(--bg-card);
+            border: 2px solid transparent;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .pet-card:hover {
+            border-color: rgba(255,255,255,0.2);
+        }
+        .pet-card.active {
+            border-color: var(--accent);
+            background: rgba(99, 102, 241, 0.1);
+        }
+        .pet-avatar {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .pet-name {
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+        .add-pet-card {
+            border: 2px dashed rgba(255,255,255,0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .add-pet-card:hover {
+            border-color: var(--accent);
+        }
+
+        .pet-profile {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .profile-avatar {
+            font-size: 4rem;
+            margin-bottom: 0.5rem;
+        }
+        .profile-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .profile-info {
+            color: var(--text-dim);
+            font-size: 0.875rem;
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .log-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        .log-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text);
+        }
+        .log-btn:hover {
+            border-color: var(--accent);
+            background: rgba(99, 102, 241, 0.1);
+        }
+        .log-btn-icon {
+            font-size: 1.5rem;
+        }
+        .log-btn-text {
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+        .log-btn-last {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+
+        .log-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .log-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+        }
+        .log-item-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .log-item-type {
+            font-weight: 600;
+        }
+        .log-item-time {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+        .log-item-note {
+            font-size: 0.875rem;
+            color: var(--text-dim);
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .form-input {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 12px;
+            color: var(--text);
+            font-size: 1rem;
+        }
+        .form-input::placeholder {
+            color: var(--text-dim);
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .pet-type-select {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .pet-type-btn {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: transparent;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+        .pet-type-btn.selected {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: var(--bg-dark);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .reminder-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            margin-bottom: 0.5rem;
+        }
+        .reminder-active {
+            border-left: 3px solid var(--warning);
+        }
+        .reminder-text {
+            font-weight: 600;
+        }
+        .reminder-schedule {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-dim);
+        }
+
+        .health-note {
+            padding: 1rem;
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            margin-bottom: 0.5rem;
+        }
+        .health-note-date {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-bottom: 0.25rem;
+        }
+
+        textarea.form-input {
+            min-height: 100px;
+            resize: vertical;
+        }
+    </style>
+</head>
+<body>
+    <nav id="main-nav"></nav>
+    <script src="/nav-component.js"></script>
+
+    <div class="container">
+        <h1>🐾 PetCare</h1>
+        <p class="subtitle">Track your furry friends</p>
+
+        <div class="pet-list" id="petList">
+            <div class="pet-card add-pet-card" onclick="showAddPetModal()">
+                <div class="pet-avatar">+</div>
+                <div class="pet-name">Add Pet</div>
+            </div>
+        </div>
+
+        <div id="noPetSelected" class="card">
+            <div class="empty-state">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">🐕</div>
+                <p>Add a pet to get started!</p>
+            </div>
+        </div>
+
+        <div id="petContent" style="display: none;">
+            <div class="card">
+                <div class="pet-profile">
+                    <div class="profile-avatar" id="profileAvatar">🐕</div>
+                    <div class="profile-name" id="profileName">Buddy</div>
+                    <div class="profile-info" id="profileInfo">Dog • Born Jan 15, 2020</div>
+                </div>
+
+                <div class="log-grid">
+                    <button class="log-btn" onclick="logActivity('feeding')">
+                        <span class="log-btn-icon">🍽️</span>
+                        <span class="log-btn-text">Feeding</span>
+                        <span class="log-btn-last" id="lastFeeding">-</span>
+                    </button>
+                    <button class="log-btn" onclick="logActivity('walk')">
+                        <span class="log-btn-icon">🦮</span>
+                        <span class="log-btn-text">Walk</span>
+                        <span class="log-btn-last" id="lastWalk">-</span>
+                    </button>
+                    <button class="log-btn" onclick="showVetModal()">
+                        <span class="log-btn-icon">🏥</span>
+                        <span class="log-btn-text">Vet Visit</span>
+                        <span class="log-btn-last" id="lastVet">-</span>
+                    </button>
+                    <button class="log-btn" onclick="showMedModal()">
+                        <span class="log-btn-icon">💊</span>
+                        <span class="log-btn-text">Medication</span>
+                        <span class="log-btn-last" id="lastMed">-</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="section-title">
+                    <span>📋 Recent Activity</span>
+                </div>
+                <div class="log-list" id="activityLog">
+                    <div class="empty-state">No activity logged yet</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="section-title">
+                    <span>🔔 Reminders</span>
+                    <button class="btn btn-small btn-secondary" onclick="showReminderModal()">+ Add</button>
+                </div>
+                <div id="reminderList">
+                    <div class="empty-state">No reminders set</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="section-title">
+                    <span>📝 Health Notes</span>
+                    <button class="btn btn-small btn-secondary" onclick="showHealthNoteModal()">+ Add</button>
+                </div>
+                <div id="healthNotes">
+                    <div class="empty-state">No health notes</div>
+                </div>
+            </div>
+
+            <button class="btn btn-secondary" style="margin-top: 1rem; color: var(--error);" onclick="deletePet()">Delete Pet</button>
+        </div>
+    </div>
+
+    <!-- Add Pet Modal -->
+    <div class="modal" id="addPetModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">Add New Pet</span>
+                <button class="btn-icon" onclick="closeModal('addPetModal')">✕</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Pet Type</label>
+                <div class="pet-type-select" id="petTypeSelect">
+                    <button class="pet-type-btn selected" data-type="🐕" data-name="Dog">🐕 Dog</button>
+                    <button class="pet-type-btn" data-type="🐈" data-name="Cat">🐈 Cat</button>
+                    <button class="pet-type-btn" data-type="🐦" data-name="Bird">🐦 Bird</button>
+                    <button class="pet-type-btn" data-type="🐰" data-name="Rabbit">🐰 Rabbit</button>
+                    <button class="pet-type-btn" data-type="🐹" data-name="Hamster">🐹 Hamster</button>
+                    <button class="pet-type-btn" data-type="🐠" data-name="Fish">🐠 Fish</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Name</label>
+                <input type="text" class="form-input" id="petName" placeholder="Your pet's name">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Birthday (optional)</label>
+                <input type="date" class="form-input" id="petBirthday">
+            </div>
+            <button class="btn" onclick="addPet()">Add Pet</button>
+        </div>
+    </div>
+
+    <!-- Vet Visit Modal -->
+    <div class="modal" id="vetModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">Log Vet Visit</span>
+                <button class="btn-icon" onclick="closeModal('vetModal')">✕</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Note (optional)</label>
+                <input type="text" class="form-input" id="vetNote" placeholder="Checkup, vaccination, etc.">
+            </div>
+            <button class="btn" onclick="logVet()">Log Visit</button>
+        </div>
+    </div>
+
+    <!-- Medication Modal -->
+    <div class="modal" id="medModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">Log Medication</span>
+                <button class="btn-icon" onclick="closeModal('medModal')">✕</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Medication Name</label>
+                <input type="text" class="form-input" id="medName" placeholder="e.g., Heartgard">
+            </div>
+            <button class="btn" onclick="logMed()">Log Medication</button>
+        </div>
+    </div>
+
+    <!-- Reminder Modal -->
+    <div class="modal" id="reminderModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">Add Reminder</span>
+                <button class="btn-icon" onclick="closeModal('reminderModal')">✕</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Task</label>
+                <input type="text" class="form-input" id="reminderTask" placeholder="e.g., Flea medication">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Frequency</label>
+                <select class="form-input" id="reminderFreq">
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                </select>
+            </div>
+            <button class="btn" onclick="addReminder()">Add Reminder</button>
+        </div>
+    </div>
+
+    <!-- Health Note Modal -->
+    <div class="modal" id="healthNoteModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">Add Health Note</span>
+                <button class="btn-icon" onclick="closeModal('healthNoteModal')">✕</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Note</label>
+                <textarea class="form-input" id="healthNoteText" placeholder="Weight, symptoms, observations..."></textarea>
+            </div>
+            <button class="btn" onclick="addHealthNote()">Save Note</button>
+        </div>
+    </div>
+
+    <script>
+        let pets = JSON.parse(localStorage.getItem('petcare_pets') || '[]');
+        let selectedPetId = localStorage.getItem('petcare_selected') || null;
+
+        function savePets() {
+            localStorage.setItem('petcare_pets', JSON.stringify(pets));
+        }
+
+        function showAddPetModal() {
+            document.getElementById('addPetModal').classList.add('active');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        function addPet() {
+            const typeBtn = document.querySelector('.pet-type-btn.selected');
+            const name = document.getElementById('petName').value.trim();
+            const birthday = document.getElementById('petBirthday').value;
+
+            if (!name) return alert('Please enter a name');
+
+            const pet = {
+                id: Date.now().toString(),
+                name,
+                type: typeBtn.dataset.name,
+                emoji: typeBtn.dataset.type,
+                birthday: birthday || null,
+                logs: [],
+                reminders: [],
+                healthNotes: []
+            };
+
+            pets.push(pet);
+            savePets();
+            selectPet(pet.id);
+            closeModal('addPetModal');
+            document.getElementById('petName').value = '';
+            renderPetList();
+        }
+
+        function selectPet(id) {
+            selectedPetId = id;
+            localStorage.setItem('petcare_selected', id);
+            renderPetList();
+            renderPetContent();
+        }
+
+        function deletePet() {
+            if (!confirm('Delete this pet?')) return;
+            pets = pets.filter(p => p.id !== selectedPetId);
+            savePets();
+            selectedPetId = pets.length > 0 ? pets[0].id : null;
+            localStorage.setItem('petcare_selected', selectedPetId);
+            renderPetList();
+            renderPetContent();
+        }
+
+        function getCurrentPet() {
+            return pets.find(p => p.id === selectedPetId);
+        }
+
+        function logActivity(type) {
+            const pet = getCurrentPet();
+            if (!pet) return;
+
+            pet.logs.unshift({
+                type,
+                timestamp: Date.now(),
+                note: ''
+            });
+            savePets();
+            renderPetContent();
+        }
+
+        function showVetModal() {
+            document.getElementById('vetModal').classList.add('active');
+        }
+
+        function logVet() {
+            const pet = getCurrentPet();
+            if (!pet) return;
+
+            const note = document.getElementById('vetNote').value.trim();
+            pet.logs.unshift({
+                type: 'vet',
+                timestamp: Date.now(),
+                note
+            });
+            savePets();
+            closeModal('vetModal');
+            document.getElementById('vetNote').value = '';
+            renderPetContent();
+        }
+
+        function showMedModal() {
+            document.getElementById('medModal').classList.add('active');
+        }
+
+        function logMed() {
+            const pet = getCurrentPet();
+            if (!pet) return;
+
+            const name = document.getElementById('medName').value.trim();
+            if (!name) return;
+
+            pet.logs.unshift({
+                type: 'medication',
+                timestamp: Date.now(),
+                note: name
+            });
+            savePets();
+            closeModal('medModal');
+            document.getElementById('medName').value = '';
+            renderPetContent();
+        }
+
+        function showReminderModal() {
+            document.getElementById('reminderModal').classList.add('active');
+        }
+
+        function addReminder() {
+            const pet = getCurrentPet();
+            if (!pet) return;
+
+            const task = document.getElementById('reminderTask').value.trim();
+            const freq = document.getElementById('reminderFreq').value;
+            if (!task) return;
+
+            pet.reminders.push({ task, frequency: freq, id: Date.now() });
+            savePets();
+            closeModal('reminderModal');
+            document.getElementById('reminderTask').value = '';
+            renderPetContent();
+        }
+
+        function removeReminder(id) {
+            const pet = getCurrentPet();
+            if (!pet) return;
+            pet.reminders = pet.reminders.filter(r => r.id !== id);
+            savePets();
+            renderPetContent();
+        }
+
+        function showHealthNoteModal() {
+            document.getElementById('healthNoteModal').classList.add('active');
+        }
+
+        function addHealthNote() {
+            const pet = getCurrentPet();
+            if (!pet) return;
+
+            const text = document.getElementById('healthNoteText').value.trim();
+            if (!text) return;
+
+            pet.healthNotes.unshift({ text, timestamp: Date.now() });
+            savePets();
+            closeModal('healthNoteModal');
+            document.getElementById('healthNoteText').value = '';
+            renderPetContent();
+        }
+
+        function getTimeAgo(timestamp) {
+            const diff = Date.now() - timestamp;
+            const mins = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+
+            if (mins < 60) return `${mins}m ago`;
+            if (hours < 24) return `${hours}h ago`;
+            return `${days}d ago`;
+        }
+
+        function getLastLog(type) {
+            const pet = getCurrentPet();
+            if (!pet) return '-';
+            const log = pet.logs.find(l => l.type === type);
+            return log ? getTimeAgo(log.timestamp) : '-';
+        }
+
+        function renderPetList() {
+            const list = document.getElementById('petList');
+            list.innerHTML = pets.map(pet => `
+                <div class="pet-card ${pet.id === selectedPetId ? 'active' : ''}" onclick="selectPet('${pet.id}')">
+                    <div class="pet-avatar">${pet.emoji}</div>
+                    <div class="pet-name">${pet.name}</div>
+                </div>
+            `).join('') + `
+                <div class="pet-card add-pet-card" onclick="showAddPetModal()">
+                    <div class="pet-avatar">+</div>
+                    <div class="pet-name">Add Pet</div>
+                </div>
+            `;
+        }
+
+        function renderPetContent() {
+            const pet = getCurrentPet();
+
+            if (!pet) {
+                document.getElementById('noPetSelected').style.display = 'block';
+                document.getElementById('petContent').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('noPetSelected').style.display = 'none';
+            document.getElementById('petContent').style.display = 'block';
+
+            document.getElementById('profileAvatar').textContent = pet.emoji;
+            document.getElementById('profileName').textContent = pet.name;
+
+            let info = pet.type;
+            if (pet.birthday) {
+                const bd = new Date(pet.birthday);
+                info += ` • Born ${bd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+            }
+            document.getElementById('profileInfo').textContent = info;
+
+            document.getElementById('lastFeeding').textContent = getLastLog('feeding');
+            document.getElementById('lastWalk').textContent = getLastLog('walk');
+            document.getElementById('lastVet').textContent = getLastLog('vet');
+            document.getElementById('lastMed').textContent = getLastLog('medication');
+
+            // Activity log
+            const activityLog = document.getElementById('activityLog');
+            if (pet.logs.length === 0) {
+                activityLog.innerHTML = '<div class="empty-state">No activity logged yet</div>';
+            } else {
+                const icons = { feeding: '🍽️', walk: '🦮', vet: '🏥', medication: '💊' };
+                activityLog.innerHTML = pet.logs.slice(0, 10).map(log => `
+                    <div class="log-item">
+                        <div class="log-item-left">
+                            <span>${icons[log.type] || '📝'}</span>
+                            <div>
+                                <div class="log-item-type">${log.type.charAt(0).toUpperCase() + log.type.slice(1)}</div>
+                                ${log.note ? `<div class="log-item-note">${log.note}</div>` : ''}
+                            </div>
+                        </div>
+                        <span class="log-item-time">${getTimeAgo(log.timestamp)}</span>
+                    </div>
+                `).join('');
+            }
+
+            // Reminders
+            const reminderList = document.getElementById('reminderList');
+            if (pet.reminders.length === 0) {
+                reminderList.innerHTML = '<div class="empty-state">No reminders set</div>';
+            } else {
+                reminderList.innerHTML = pet.reminders.map(r => `
+                    <div class="reminder-item">
+                        <div>
+                            <div class="reminder-text">${r.task}</div>
+                            <div class="reminder-schedule">${r.frequency}</div>
+                        </div>
+                        <button class="btn-icon" onclick="removeReminder(${r.id})">✕</button>
+                    </div>
+                `).join('');
+            }
+
+            // Health notes
+            const healthNotes = document.getElementById('healthNotes');
+            if (pet.healthNotes.length === 0) {
+                healthNotes.innerHTML = '<div class="empty-state">No health notes</div>';
+            } else {
+                healthNotes.innerHTML = pet.healthNotes.map(n => `
+                    <div class="health-note">
+                        <div class="health-note-date">${new Date(n.timestamp).toLocaleDateString()}</div>
+                        <div>${n.text}</div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Pet type selection
+        document.querySelectorAll('.pet-type-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.pet-type-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+            });
+        });
+
+        // Close modals on background click
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.classList.remove('active');
+            });
+        });
+
+        // Initial render
+        renderPetList();
+        if (pets.length > 0 && !selectedPetId) {
+            selectedPetId = pets[0].id;
+        }
+        renderPetContent();
+    </script>
+</body>
+</html>

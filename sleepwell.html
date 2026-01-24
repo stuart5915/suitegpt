@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SleepWell | SUITE</title>
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/nav.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: rgba(255,255,255,0.05);
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --text: #f8fafc;
+            --text-dim: rgba(248,250,252,0.6);
+            --success: #22c55e;
+            --warning: #eab308;
+            --error: #ef4444;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 80px 20px 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+        .subtitle {
+            color: var(--text-dim);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .btn-secondary {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-dim);
+            font-size: 0.875rem;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 1rem;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .quality-selector {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .quality-btn {
+            flex: 1;
+            padding: 0.75rem 0.5rem;
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1.25rem;
+        }
+        .quality-btn:hover {
+            border-color: var(--accent);
+        }
+        .quality-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+        .quality-btn span {
+            display: block;
+            font-size: 0.625rem;
+            margin-top: 0.25rem;
+        }
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+        .chart-container {
+            height: 150px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 4px;
+            padding: 1rem 0;
+        }
+        .chart-bar {
+            flex: 1;
+            background: var(--accent);
+            border-radius: 4px 4px 0 0;
+            transition: height 0.3s ease;
+            position: relative;
+            min-height: 4px;
+        }
+        .chart-bar:hover::after {
+            content: attr(data-hours) 'h';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-dark);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+        }
+        .chart-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .history-item:last-child {
+            border-bottom: none;
+        }
+        .history-date {
+            font-weight: 600;
+        }
+        .history-hours {
+            color: var(--accent);
+            font-weight: 700;
+        }
+        .history-quality {
+            font-size: 1.25rem;
+        }
+        .tip-card {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+        .tip-card h3 {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .moon-icon {
+            font-size: 2rem;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .tab {
+            flex: 1;
+            padding: 0.75rem;
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: var(--text-dim);
+            cursor: pointer;
+            text-align: center;
+            font-size: 0.875rem;
+        }
+        .tab.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+    <nav id="main-nav"></nav>
+    <script src="/nav-component.js"></script>
+
+    <div class="container">
+        <h1>SleepWell</h1>
+        <p class="subtitle">Track your sleep, wake up refreshed</p>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('log')">Log Sleep</button>
+            <button class="tab" onclick="showTab('stats')">Statistics</button>
+        </div>
+
+        <div id="logTab">
+            <div class="card">
+                <div class="moon-icon">🌙</div>
+                <div class="form-group">
+                    <label>Bedtime</label>
+                    <input type="time" id="bedtime" value="22:00">
+                </div>
+                <div class="form-group">
+                    <label>Wake time</label>
+                    <input type="time" id="waketime" value="06:00">
+                </div>
+                <div class="form-group">
+                    <label>Sleep Quality</label>
+                    <div class="quality-selector">
+                        <button class="quality-btn" data-quality="1" onclick="setQuality(1)">😫<span>Awful</span></button>
+                        <button class="quality-btn" data-quality="2" onclick="setQuality(2)">😕<span>Poor</span></button>
+                        <button class="quality-btn" data-quality="3" onclick="setQuality(3)">😐<span>Okay</span></button>
+                        <button class="quality-btn" data-quality="4" onclick="setQuality(4)">😊<span>Good</span></button>
+                        <button class="quality-btn active" data-quality="5" onclick="setQuality(5)">😴<span>Great</span></button>
+                    </div>
+                </div>
+                <button class="btn" onclick="logSleep()">Log Sleep</button>
+            </div>
+
+            <div class="card tip-card" id="tipCard">
+                <h3>💡 Sleep Tip</h3>
+                <p id="sleepTip">Keep a consistent sleep schedule, even on weekends.</p>
+            </div>
+        </div>
+
+        <div id="statsTab" style="display: none;">
+            <div class="stat-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="avgHours">0h</div>
+                    <div class="stat-label">Avg Sleep</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="avgQuality">0</div>
+                    <div class="stat-label">Avg Quality</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalNights">0</div>
+                    <div class="stat-label">Nights</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1rem; font-size: 1rem;">This Week</h3>
+                <div class="chart-container" id="weekChart"></div>
+                <div class="chart-labels">
+                    <span>Mon</span>
+                    <span>Tue</span>
+                    <span>Wed</span>
+                    <span>Thu</span>
+                    <span>Fri</span>
+                    <span>Sat</span>
+                    <span>Sun</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1rem; font-size: 1rem;">Recent Logs</h3>
+                <div id="historyList">
+                    <p style="color: var(--text-dim); text-align: center;">No sleep logged yet</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedQuality = 5;
+
+        const tips = [
+            "Keep a consistent sleep schedule, even on weekends.",
+            "Avoid screens for at least 30 minutes before bed.",
+            "Keep your bedroom cool (65-68°F / 18-20°C).",
+            "Limit caffeine after 2pm for better sleep.",
+            "Try a relaxing bedtime routine like reading.",
+            "Exercise regularly, but not too close to bedtime.",
+            "Keep your bedroom dark with blackout curtains.",
+            "Avoid large meals within 3 hours of bedtime.",
+            "Try white noise or calming sounds to fall asleep.",
+            "If you can't sleep after 20 min, get up and relax."
+        ];
+
+        function getData() {
+            return JSON.parse(localStorage.getItem('sleepwell') || '{"logs":[]}');
+        }
+
+        function saveData(data) {
+            localStorage.setItem('sleepwell', JSON.stringify(data));
+        }
+
+        function setQuality(q) {
+            selectedQuality = q;
+            document.querySelectorAll('.quality-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.quality) === q);
+            });
+        }
+
+        function calculateHours(bedtime, waketime) {
+            const [bedH, bedM] = bedtime.split(':').map(Number);
+            const [wakeH, wakeM] = waketime.split(':').map(Number);
+
+            let bedMinutes = bedH * 60 + bedM;
+            let wakeMinutes = wakeH * 60 + wakeM;
+
+            if (wakeMinutes < bedMinutes) {
+                wakeMinutes += 24 * 60;
+            }
+
+            return (wakeMinutes - bedMinutes) / 60;
+        }
+
+        function logSleep() {
+            const bedtime = document.getElementById('bedtime').value;
+            const waketime = document.getElementById('waketime').value;
+            const hours = calculateHours(bedtime, waketime);
+
+            const data = getData();
+            data.logs.unshift({
+                date: new Date().toISOString().split('T')[0],
+                bedtime,
+                waketime,
+                hours: Math.round(hours * 10) / 10,
+                quality: selectedQuality
+            });
+
+            if (data.logs.length > 30) data.logs.pop();
+
+            saveData(data);
+            updateUI();
+            showRandomTip();
+
+            alert(`Logged ${hours.toFixed(1)} hours of sleep!`);
+        }
+
+        function showTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.tab[onclick="showTab('${tab}')"]`).classList.add('active');
+
+            document.getElementById('logTab').style.display = tab === 'log' ? 'block' : 'none';
+            document.getElementById('statsTab').style.display = tab === 'stats' ? 'block' : 'none';
+        }
+
+        function updateUI() {
+            const data = getData();
+            const logs = data.logs;
+
+            if (logs.length === 0) return;
+
+            const avgHours = logs.reduce((sum, l) => sum + l.hours, 0) / logs.length;
+            const avgQuality = logs.reduce((sum, l) => sum + l.quality, 0) / logs.length;
+
+            document.getElementById('avgHours').textContent = avgHours.toFixed(1) + 'h';
+            document.getElementById('avgQuality').textContent = avgQuality.toFixed(1);
+            document.getElementById('totalNights').textContent = logs.length;
+
+            updateChart(logs);
+            updateHistory(logs);
+        }
+
+        function updateChart(logs) {
+            const chart = document.getElementById('weekChart');
+            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            const today = new Date();
+            const weekData = [];
+
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                const dateStr = date.toISOString().split('T')[0];
+                const log = logs.find(l => l.date === dateStr);
+                weekData.push(log ? log.hours : 0);
+            }
+
+            const maxHours = Math.max(...weekData, 8);
+
+            chart.innerHTML = weekData.map((hours, i) => `
+                <div class="chart-bar"
+                     style="height: ${(hours / maxHours) * 100}%"
+                     data-hours="${hours}"></div>
+            `).join('');
+        }
+
+        function updateHistory(logs) {
+            const container = document.getElementById('historyList');
+            if (logs.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-dim); text-align: center;">No sleep logged yet</p>';
+                return;
+            }
+
+            const qualityEmojis = ['😫', '😕', '😐', '😊', '😴'];
+
+            container.innerHTML = logs.slice(0, 7).map(log => {
+                const date = new Date(log.date);
+                const dayName = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                return `
+                    <div class="history-item">
+                        <span class="history-date">${dayName}</span>
+                        <span class="history-hours">${log.hours}h</span>
+                        <span class="history-quality">${qualityEmojis[log.quality - 1]}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function showRandomTip() {
+            const tip = tips[Math.floor(Math.random() * tips.length)];
+            document.getElementById('sleepTip').textContent = tip;
+        }
+
+        updateUI();
+        showRandomTip();
+    </script>
+</body>
+</html>

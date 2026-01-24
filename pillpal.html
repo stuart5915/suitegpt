@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PillPal | SUITE</title>
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/nav.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: rgba(255,255,255,0.05);
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --text: #f8fafc;
+            --text-dim: rgba(248,250,252,0.6);
+            --success: #22c55e;
+            --warning: #eab308;
+            --error: #ef4444;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 80px 20px 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+        .subtitle {
+            color: var(--text-dim);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .btn-secondary {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.875rem;
+            width: auto;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-dim);
+            font-size: 0.875rem;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 1rem;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .form-group select option {
+            background: var(--bg-dark);
+        }
+        .pill-list {
+            margin-top: 1rem;
+        }
+        .pill-item {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .pill-item.taken {
+            border-color: var(--success);
+            background: rgba(34, 197, 94, 0.1);
+        }
+        .pill-icon {
+            font-size: 2rem;
+            width: 50px;
+            text-align: center;
+        }
+        .pill-info {
+            flex: 1;
+        }
+        .pill-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        .pill-schedule {
+            font-size: 0.875rem;
+            color: var(--text-dim);
+        }
+        .pill-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .take-btn {
+            background: var(--success);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .take-btn:hover {
+            transform: scale(1.05);
+        }
+        .take-btn.taken {
+            background: rgba(255,255,255,0.1);
+            color: var(--success);
+        }
+        .delete-btn {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-dim);
+            padding: 0.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+        .reminder-text {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            text-align: center;
+            font-size: 0.875rem;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: var(--bg-dark);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            max-width: 400px;
+            width: 100%;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        .progress-bar {
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--success);
+            transition: width 0.3s;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-dim);
+        }
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <nav id="main-nav"></nav>
+    <script src="/nav-component.js"></script>
+
+    <div class="container">
+        <h1>PillPal</h1>
+        <p class="subtitle">Never miss a dose</p>
+
+        <div class="stat-grid">
+            <div class="stat-item">
+                <div class="stat-value" id="takenToday">0/0</div>
+                <div class="stat-label">Today</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="streak">0</div>
+                <div class="stat-label">Day Streak</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="adherence">0%</div>
+                <div class="stat-label">Adherence</div>
+            </div>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+
+        <button class="btn" onclick="openModal()">+ Add Medication</button>
+
+        <div class="pill-list" id="pillList">
+            <div class="empty-state">
+                <div class="empty-state-icon">💊</div>
+                <p>No medications added yet</p>
+                <p style="font-size: 0.875rem; margin-top: 0.5rem;">Tap the button above to add your first medication</p>
+            </div>
+        </div>
+
+        <div class="reminder-text" id="reminderText">
+            Set up your medications and never miss a dose!
+        </div>
+    </div>
+
+    <div class="modal" id="addModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 style="font-size: 1.25rem;">Add Medication</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="addForm">
+                <div class="form-group">
+                    <label>Medication Name</label>
+                    <input type="text" id="medName" placeholder="e.g., Vitamin D" required>
+                </div>
+                <div class="form-group">
+                    <label>Dosage</label>
+                    <input type="text" id="medDosage" placeholder="e.g., 1000 IU">
+                </div>
+                <div class="form-group">
+                    <label>Frequency</label>
+                    <select id="medFrequency">
+                        <option value="daily">Once daily</option>
+                        <option value="twice">Twice daily</option>
+                        <option value="three">Three times daily</option>
+                        <option value="weekly">Once weekly</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Time(s)</label>
+                    <input type="time" id="medTime1" value="08:00">
+                    <input type="time" id="medTime2" value="20:00" style="margin-top: 0.5rem; display: none;">
+                    <input type="time" id="medTime3" value="14:00" style="margin-top: 0.5rem; display: none;">
+                </div>
+                <div class="form-group">
+                    <label>Icon</label>
+                    <select id="medIcon">
+                        <option value="💊">💊 Pill</option>
+                        <option value="💉">💉 Injection</option>
+                        <option value="🧴">🧴 Liquid</option>
+                        <option value="🌿">🌿 Supplement</option>
+                        <option value="💧">💧 Drops</option>
+                        <option value="🩹">🩹 Patch</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn">Add Medication</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function getTodayKey() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        function getData() {
+            return JSON.parse(localStorage.getItem('pillpal') || '{"medications":[],"history":{}}');
+        }
+
+        function saveData(data) {
+            localStorage.setItem('pillpal', JSON.stringify(data));
+        }
+
+        document.getElementById('medFrequency').addEventListener('change', function() {
+            const freq = this.value;
+            document.getElementById('medTime2').style.display =
+                (freq === 'twice' || freq === 'three') ? 'block' : 'none';
+            document.getElementById('medTime3').style.display =
+                freq === 'three' ? 'block' : 'none';
+        });
+
+        document.getElementById('addForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const data = getData();
+            const freq = document.getElementById('medFrequency').value;
+            const times = [document.getElementById('medTime1').value];
+
+            if (freq === 'twice' || freq === 'three') {
+                times.push(document.getElementById('medTime2').value);
+            }
+            if (freq === 'three') {
+                times.push(document.getElementById('medTime3').value);
+            }
+
+            const med = {
+                id: Date.now().toString(),
+                name: document.getElementById('medName').value,
+                dosage: document.getElementById('medDosage').value,
+                frequency: freq,
+                times: times,
+                icon: document.getElementById('medIcon').value,
+                createdAt: new Date().toISOString()
+            };
+
+            data.medications.push(med);
+            saveData(data);
+
+            closeModal();
+            this.reset();
+            updateUI();
+        });
+
+        function openModal() {
+            document.getElementById('addModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('addModal').classList.remove('active');
+        }
+
+        function getTodayDoses(data) {
+            const today = getTodayKey();
+            const doses = [];
+
+            data.medications.forEach(med => {
+                med.times.forEach((time, idx) => {
+                    const doseId = `${med.id}-${idx}`;
+                    const taken = data.history[today]?.includes(doseId) || false;
+                    doses.push({
+                        ...med,
+                        doseId,
+                        time,
+                        taken
+                    });
+                });
+            });
+
+            return doses.sort((a, b) => a.time.localeCompare(b.time));
+        }
+
+        function takeDose(doseId) {
+            const data = getData();
+            const today = getTodayKey();
+
+            if (!data.history[today]) {
+                data.history[today] = [];
+            }
+
+            if (!data.history[today].includes(doseId)) {
+                data.history[today].push(doseId);
+            }
+
+            saveData(data);
+            updateUI();
+        }
+
+        function untakeDose(doseId) {
+            const data = getData();
+            const today = getTodayKey();
+
+            if (data.history[today]) {
+                data.history[today] = data.history[today].filter(id => id !== doseId);
+            }
+
+            saveData(data);
+            updateUI();
+        }
+
+        function deleteMed(medId) {
+            if (!confirm('Delete this medication?')) return;
+
+            const data = getData();
+            data.medications = data.medications.filter(m => m.id !== medId);
+            saveData(data);
+            updateUI();
+        }
+
+        function updateUI() {
+            const data = getData();
+            const doses = getTodayDoses(data);
+            const taken = doses.filter(d => d.taken).length;
+            const total = doses.length;
+
+            document.getElementById('takenToday').textContent = `${taken}/${total}`;
+            document.getElementById('progressFill').style.width =
+                total > 0 ? `${(taken / total) * 100}%` : '0%';
+
+            const streak = calculateStreak(data);
+            document.getElementById('streak').textContent = streak;
+
+            const adherence = calculateAdherence(data);
+            document.getElementById('adherence').textContent = adherence + '%';
+
+            renderPillList(doses, data);
+            updateReminderText(doses);
+        }
+
+        function calculateStreak(data) {
+            let streak = 0;
+            const today = new Date();
+
+            for (let i = 0; i < 365; i++) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                const key = date.toISOString().split('T')[0];
+
+                const expectedDoses = data.medications.reduce((sum, m) => sum + m.times.length, 0);
+                const takenDoses = data.history[key]?.length || 0;
+
+                if (expectedDoses > 0 && takenDoses >= expectedDoses) {
+                    streak++;
+                } else if (i > 0) {
+                    break;
+                }
+            }
+            return streak;
+        }
+
+        function calculateAdherence(data) {
+            const days = Object.keys(data.history).slice(-30);
+            if (days.length === 0 || data.medications.length === 0) return 0;
+
+            let totalExpected = 0;
+            let totalTaken = 0;
+
+            days.forEach(day => {
+                const expectedDoses = data.medications.reduce((sum, m) => sum + m.times.length, 0);
+                const takenDoses = data.history[day]?.length || 0;
+                totalExpected += expectedDoses;
+                totalTaken += Math.min(takenDoses, expectedDoses);
+            });
+
+            return totalExpected > 0 ? Math.round((totalTaken / totalExpected) * 100) : 0;
+        }
+
+        function renderPillList(doses, data) {
+            const container = document.getElementById('pillList');
+
+            if (data.medications.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💊</div>
+                        <p>No medications added yet</p>
+                        <p style="font-size: 0.875rem; margin-top: 0.5rem;">Tap the button above to add your first medication</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const groupedByMed = {};
+            doses.forEach(dose => {
+                if (!groupedByMed[dose.id]) {
+                    groupedByMed[dose.id] = [];
+                }
+                groupedByMed[dose.id].push(dose);
+            });
+
+            container.innerHTML = Object.values(groupedByMed).map(medDoses => {
+                const med = medDoses[0];
+                const allTaken = medDoses.every(d => d.taken);
+
+                return `
+                    <div class="pill-item ${allTaken ? 'taken' : ''}">
+                        <div class="pill-icon">${med.icon}</div>
+                        <div class="pill-info">
+                            <div class="pill-name">${med.name}</div>
+                            <div class="pill-schedule">${med.dosage} • ${medDoses.map(d => d.time).join(', ')}</div>
+                        </div>
+                        <div class="pill-actions">
+                            ${medDoses.map(dose => `
+                                <button class="take-btn ${dose.taken ? 'taken' : ''}"
+                                        onclick="${dose.taken ? `untakeDose('${dose.doseId}')` : `takeDose('${dose.doseId}')`}">
+                                    ${dose.taken ? '✓' : dose.time}
+                                </button>
+                            `).join('')}
+                            <button class="delete-btn" onclick="deleteMed('${med.id}')">🗑</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateReminderText(doses) {
+            const now = new Date();
+            const currentTime = now.getHours() * 60 + now.getMinutes();
+
+            const upcoming = doses
+                .filter(d => !d.taken)
+                .find(d => {
+                    const [h, m] = d.time.split(':').map(Number);
+                    return h * 60 + m >= currentTime;
+                });
+
+            const reminderEl = document.getElementById('reminderText');
+
+            if (doses.length === 0) {
+                reminderEl.textContent = 'Set up your medications and never miss a dose!';
+            } else if (upcoming) {
+                reminderEl.innerHTML = `⏰ Next: <strong>${upcoming.name}</strong> at ${upcoming.time}`;
+            } else if (doses.every(d => d.taken)) {
+                reminderEl.textContent = '🎉 All done for today! Great job!';
+            } else {
+                const missed = doses.filter(d => !d.taken);
+                reminderEl.innerHTML = `⚠️ ${missed.length} dose(s) still pending today`;
+            }
+        }
+
+        document.getElementById('addModal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+
+        updateUI();
+        setInterval(updateUI, 60000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PackLight | SUITE</title>
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/nav.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: rgba(255,255,255,0.05);
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --text: #f8fafc;
+            --text-dim: rgba(248,250,252,0.6);
+            --success: #22c55e;
+            --warning: #eab308;
+            --error: #ef4444;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 80px 20px 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .subtitle {
+            color: var(--text-dim);
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+        .btn-secondary {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.875rem;
+            width: auto;
+        }
+        .btn-icon {
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .btn-icon:hover {
+            background: var(--bg-card);
+            color: var(--text);
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .trip-type-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        .trip-type-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1.25rem;
+            background: var(--bg-card);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text);
+        }
+        .trip-type-btn:hover {
+            border-color: rgba(255,255,255,0.2);
+        }
+        .trip-type-btn.selected {
+            border-color: var(--accent);
+            background: rgba(99, 102, 241, 0.1);
+        }
+        .trip-type-icon {
+            font-size: 2rem;
+        }
+        .trip-type-name {
+            font-weight: 600;
+        }
+
+        .duration-selector {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .duration-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text);
+            font-size: 1.25rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .duration-btn:hover {
+            border-color: var(--accent);
+        }
+        .duration-display {
+            text-align: center;
+            min-width: 100px;
+        }
+        .duration-value {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        .duration-label {
+            color: var(--text-dim);
+            font-size: 0.875rem;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--success);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        .progress-text {
+            font-size: 0.875rem;
+            color: var(--text-dim);
+            text-align: center;
+        }
+
+        .checklist {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .checklist-category {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--accent);
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        .checklist-category:first-child {
+            margin-top: 0;
+        }
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .checklist-item:hover {
+            background: rgba(255,255,255,0.05);
+        }
+        .checklist-item.checked {
+            opacity: 0.5;
+        }
+        .checklist-item.checked .checklist-text {
+            text-decoration: line-through;
+        }
+        .checkbox {
+            width: 24px;
+            height: 24px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .checklist-item.checked .checkbox {
+            background: var(--success);
+            border-color: var(--success);
+        }
+        .checkbox-icon {
+            color: white;
+            font-size: 0.875rem;
+            opacity: 0;
+        }
+        .checklist-item.checked .checkbox-icon {
+            opacity: 1;
+        }
+        .checklist-text {
+            flex: 1;
+        }
+
+        .add-item-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .add-item-row input {
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 10px 12px;
+            color: var(--text);
+            font-size: 0.875rem;
+        }
+        .add-item-row input::placeholder {
+            color: var(--text-dim);
+        }
+
+        .template-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .template-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .template-item:hover {
+            background: rgba(255,255,255,0.05);
+        }
+        .template-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .template-icon {
+            font-size: 1.5rem;
+        }
+        .template-name {
+            font-weight: 600;
+        }
+        .template-count {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-dim);
+        }
+
+        .actions-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .actions-row .btn {
+            flex: 1;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: var(--bg-dark);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 400px;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .form-input {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 12px;
+            color: var(--text);
+            font-size: 1rem;
+        }
+
+        #listView { display: none; }
+    </style>
+</head>
+<body>
+    <nav id="main-nav"></nav>
+    <script src="/nav-component.js"></script>
+
+    <div class="container">
+        <h1>🎒 PackLight</h1>
+        <p class="subtitle">Never forget anything again</p>
+
+        <div id="generatorView">
+            <div class="card">
+                <div class="section-title">Trip Type</div>
+                <div class="trip-type-grid" id="tripTypeGrid">
+                    <button class="trip-type-btn selected" data-type="beach">
+                        <span class="trip-type-icon">🏖️</span>
+                        <span class="trip-type-name">Beach</span>
+                    </button>
+                    <button class="trip-type-btn" data-type="business">
+                        <span class="trip-type-icon">💼</span>
+                        <span class="trip-type-name">Business</span>
+                    </button>
+                    <button class="trip-type-btn" data-type="winter">
+                        <span class="trip-type-icon">❄️</span>
+                        <span class="trip-type-name">Winter</span>
+                    </button>
+                    <button class="trip-type-btn" data-type="camping">
+                        <span class="trip-type-icon">🏕️</span>
+                        <span class="trip-type-name">Camping</span>
+                    </button>
+                </div>
+
+                <div class="section-title">Duration</div>
+                <div class="duration-selector">
+                    <button class="duration-btn" onclick="changeDuration(-1)">−</button>
+                    <div class="duration-display">
+                        <div class="duration-value" id="durationValue">3</div>
+                        <div class="duration-label">days</div>
+                    </div>
+                    <button class="duration-btn" onclick="changeDuration(1)">+</button>
+                </div>
+
+                <button class="btn" onclick="generateList()">📝 Generate Packing List</button>
+            </div>
+
+            <div class="card">
+                <div class="section-title">
+                    <span>📋 Saved Templates</span>
+                </div>
+                <div class="template-list" id="templateList">
+                    <div class="empty-state">No saved templates yet</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="listView">
+            <div class="card">
+                <div class="section-title">
+                    <span id="listTitle">Beach Trip - 3 days</span>
+                    <button class="btn-icon" onclick="backToGenerator()">✕</button>
+                </div>
+
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                </div>
+                <div class="progress-text" id="progressText">0 of 0 packed</div>
+            </div>
+
+            <div class="card">
+                <div class="checklist" id="checklist"></div>
+
+                <div class="add-item-row">
+                    <input type="text" id="customItem" placeholder="Add custom item...">
+                    <button class="btn btn-small" onclick="addCustomItem()">+</button>
+                </div>
+            </div>
+
+            <div class="actions-row">
+                <button class="btn btn-secondary" onclick="showSaveModal()">💾 Save Template</button>
+                <button class="btn btn-secondary" onclick="shareList()">📤 Share</button>
+            </div>
+
+            <button class="btn" style="margin-top: 0.5rem;" onclick="resetList()">🔄 Reset All</button>
+        </div>
+    </div>
+
+    <!-- Save Template Modal -->
+    <div class="modal" id="saveModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">Save Template</span>
+                <button class="btn-icon" onclick="closeModal()">✕</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Template Name</label>
+                <input type="text" class="form-input" id="templateName" placeholder="e.g., Weekend Beach Trip">
+            </div>
+            <button class="btn" onclick="saveTemplate()">Save</button>
+        </div>
+    </div>
+
+    <script>
+        const packingLists = {
+            beach: {
+                icon: '🏖️',
+                essentials: ['Passport/ID', 'Phone charger', 'Wallet', 'Sunglasses', 'Medications'],
+                clothing: ['Swimsuit', 'Flip flops', 'Beach cover-up', 'Shorts', 'T-shirts', 'Sundress', 'Light jacket'],
+                toiletries: ['Sunscreen SPF 30+', 'Aloe vera gel', 'Lip balm with SPF', 'Shampoo', 'Toothbrush', 'Deodorant'],
+                accessories: ['Beach towel', 'Beach bag', 'Hat', 'Book/Kindle', 'Waterproof phone case'],
+                extras: ['Snorkeling gear', 'Cooler', 'Umbrella', 'Sand toys']
+            },
+            business: {
+                icon: '💼',
+                essentials: ['Passport/ID', 'Laptop + charger', 'Phone charger', 'Wallet', 'Business cards'],
+                clothing: ['Suits/Blazers', 'Dress shirts', 'Dress pants', 'Ties', 'Dress shoes', 'Belt', 'Casual outfit'],
+                toiletries: ['Toothbrush', 'Deodorant', 'Cologne/Perfume', 'Hair products', 'Razor'],
+                accessories: ['Watch', 'Portfolio/Notebook', 'Pen', 'Umbrella'],
+                tech: ['Laptop bag', 'Portable charger', 'Adapters', 'Headphones']
+            },
+            winter: {
+                icon: '❄️',
+                essentials: ['Passport/ID', 'Phone charger', 'Wallet', 'Medications'],
+                clothing: ['Winter coat', 'Sweaters', 'Thermal underwear', 'Warm pants', 'Waterproof boots', 'Warm socks', 'Pajamas'],
+                accessories: ['Gloves', 'Scarf', 'Beanie', 'Earmuffs', 'Hand warmers'],
+                toiletries: ['Moisturizer', 'Lip balm', 'Toothbrush', 'Shampoo', 'Deodorant'],
+                extras: ['Ski goggles', 'Ski pants', 'Neck gaiter']
+            },
+            camping: {
+                icon: '🏕️',
+                essentials: ['ID', 'Phone + charger', 'Flashlight', 'First aid kit', 'Pocket knife'],
+                shelter: ['Tent', 'Sleeping bag', 'Sleeping pad', 'Pillow', 'Tarp'],
+                clothing: ['Hiking boots', 'Moisture-wicking shirts', 'Hiking pants', 'Rain jacket', 'Warm layers', 'Extra socks'],
+                cooking: ['Camp stove', 'Fuel', 'Pots/pans', 'Utensils', 'Cooler', 'Water bottles', 'Snacks'],
+                hygiene: ['Biodegradable soap', 'Toothbrush', 'Toilet paper', 'Hand sanitizer', 'Bug spray'],
+                extras: ['Rope', 'Duct tape', 'Maps', 'Compass', 'Camera']
+            }
+        };
+
+        let selectedType = 'beach';
+        let duration = 3;
+        let currentList = [];
+        let checkedItems = new Set();
+        let templates = JSON.parse(localStorage.getItem('packlight_templates') || '[]');
+
+        function changeDuration(delta) {
+            duration = Math.max(1, Math.min(30, duration + delta));
+            document.getElementById('durationValue').textContent = duration;
+        }
+
+        function generateList() {
+            const listData = packingLists[selectedType];
+            currentList = [];
+            checkedItems = new Set();
+
+            // Flatten all categories into a list with category headers
+            Object.entries(listData).forEach(([category, items]) => {
+                if (category === 'icon') return;
+                currentList.push({ type: 'category', name: category.charAt(0).toUpperCase() + category.slice(1) });
+                items.forEach(item => {
+                    currentList.push({ type: 'item', text: item, id: `${category}-${item}` });
+                });
+            });
+
+            // Add quantity suggestions based on duration
+            if (duration > 3) {
+                const clothingIdx = currentList.findIndex(i => i.name === 'Clothing');
+                if (clothingIdx !== -1) {
+                    currentList.splice(clothingIdx + 1, 0, {
+                        type: 'item',
+                        text: `Extra underwear (${Math.min(duration, 7)} pairs)`,
+                        id: 'extra-underwear'
+                    });
+                }
+            }
+
+            showListView();
+        }
+
+        function showListView() {
+            document.getElementById('generatorView').style.display = 'none';
+            document.getElementById('listView').style.display = 'block';
+
+            const icons = { beach: '🏖️', business: '💼', winter: '❄️', camping: '🏕️' };
+            document.getElementById('listTitle').textContent = `${icons[selectedType]} ${selectedType.charAt(0).toUpperCase() + selectedType.slice(1)} - ${duration} days`;
+
+            renderChecklist();
+        }
+
+        function backToGenerator() {
+            document.getElementById('generatorView').style.display = 'block';
+            document.getElementById('listView').style.display = 'none';
+        }
+
+        function renderChecklist() {
+            const checklist = document.getElementById('checklist');
+            checklist.innerHTML = currentList.map((item, index) => {
+                if (item.type === 'category') {
+                    return `<div class="checklist-category">${item.name}</div>`;
+                }
+                const checked = checkedItems.has(item.id);
+                return `
+                    <div class="checklist-item ${checked ? 'checked' : ''}" onclick="toggleItem('${item.id}')">
+                        <div class="checkbox">
+                            <span class="checkbox-icon">✓</span>
+                        </div>
+                        <span class="checklist-text">${item.text}</span>
+                    </div>
+                `;
+            }).join('');
+
+            updateProgress();
+        }
+
+        function toggleItem(id) {
+            if (checkedItems.has(id)) {
+                checkedItems.delete(id);
+            } else {
+                checkedItems.add(id);
+            }
+            renderChecklist();
+        }
+
+        function updateProgress() {
+            const totalItems = currentList.filter(i => i.type === 'item').length;
+            const packedItems = checkedItems.size;
+            const percentage = totalItems > 0 ? (packedItems / totalItems) * 100 : 0;
+
+            document.getElementById('progressFill').style.width = `${percentage}%`;
+            document.getElementById('progressText').textContent = `${packedItems} of ${totalItems} packed`;
+        }
+
+        function addCustomItem() {
+            const input = document.getElementById('customItem');
+            const text = input.value.trim();
+            if (!text) return;
+
+            currentList.push({ type: 'item', text, id: `custom-${Date.now()}` });
+            input.value = '';
+            renderChecklist();
+        }
+
+        function resetList() {
+            checkedItems = new Set();
+            renderChecklist();
+        }
+
+        function showSaveModal() {
+            document.getElementById('saveModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('saveModal').classList.remove('active');
+        }
+
+        function saveTemplate() {
+            const name = document.getElementById('templateName').value.trim();
+            if (!name) return;
+
+            templates.push({
+                id: Date.now(),
+                name,
+                type: selectedType,
+                duration,
+                items: currentList.filter(i => i.type === 'item'),
+                icon: packingLists[selectedType].icon
+            });
+
+            localStorage.setItem('packlight_templates', JSON.stringify(templates));
+            closeModal();
+            document.getElementById('templateName').value = '';
+            renderTemplates();
+        }
+
+        function loadTemplate(id) {
+            const template = templates.find(t => t.id === id);
+            if (!template) return;
+
+            selectedType = template.type;
+            duration = template.duration;
+            currentList = [
+                { type: 'category', name: 'Items' },
+                ...template.items
+            ];
+            checkedItems = new Set();
+
+            showListView();
+        }
+
+        function deleteTemplate(id, e) {
+            e.stopPropagation();
+            templates = templates.filter(t => t.id !== id);
+            localStorage.setItem('packlight_templates', JSON.stringify(templates));
+            renderTemplates();
+        }
+
+        function shareList() {
+            const items = currentList
+                .filter(i => i.type === 'item')
+                .map(i => `${checkedItems.has(i.id) ? '✓' : '☐'} ${i.text}`)
+                .join('\n');
+
+            const text = `Packing List for ${selectedType} trip (${duration} days):\n\n${items}`;
+
+            if (navigator.share) {
+                navigator.share({ title: 'Packing List', text });
+            } else {
+                navigator.clipboard.writeText(text);
+                alert('List copied to clipboard!');
+            }
+        }
+
+        function renderTemplates() {
+            const list = document.getElementById('templateList');
+            if (templates.length === 0) {
+                list.innerHTML = '<div class="empty-state">No saved templates yet</div>';
+                return;
+            }
+
+            list.innerHTML = templates.map(t => `
+                <div class="template-item" onclick="loadTemplate(${t.id})">
+                    <div class="template-info">
+                        <span class="template-icon">${t.icon}</span>
+                        <div>
+                            <div class="template-name">${t.name}</div>
+                            <div class="template-count">${t.items.length} items • ${t.duration} days</div>
+                        </div>
+                    </div>
+                    <button class="btn-icon" onclick="deleteTemplate(${t.id}, event)">✕</button>
+                </div>
+            `).join('');
+        }
+
+        // Trip type selection
+        document.querySelectorAll('.trip-type-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.trip-type-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                selectedType = btn.dataset.type;
+            });
+        });
+
+        // Modal close on background click
+        document.getElementById('saveModal').addEventListener('click', (e) => {
+            if (e.target.id === 'saveModal') closeModal();
+        });
+
+        // Enter key for custom item
+        document.getElementById('customItem').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addCustomItem();
+        });
+
+        // Initial render
+        renderTemplates();
+    </script>
+</body>
+</html>

@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BookShelf | SUITE</title>
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/nav.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: rgba(255,255,255,0.05);
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --text: #f8fafc;
+            --text-dim: rgba(248,250,252,0.6);
+            --success: #22c55e;
+            --warning: #eab308;
+            --error: #ef4444;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 80px 20px 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+        .subtitle {
+            color: var(--text-dim);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .btn-secondary {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .btn-full {
+            width: 100%;
+        }
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.875rem;
+        }
+
+        /* Stats */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        .stat-item {
+            text-align: center;
+            padding: 1rem 0.5rem;
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        .stat-label {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            margin-top: 0.25rem;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .tab {
+            flex: 1;
+            padding: 10px;
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .tab.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+        .tab-count {
+            display: block;
+            font-size: 1.1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        /* Book Grid */
+        .book-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+        .book-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .book-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        .book-cover {
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            position: relative;
+        }
+        .book-progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: rgba(0,0,0,0.3);
+        }
+        .book-progress-fill {
+            height: 100%;
+            background: var(--success);
+            transition: width 0.3s;
+        }
+        .book-info {
+            padding: 0.75rem;
+        }
+        .book-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .book-author {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .book-rating {
+            margin-top: 0.25rem;
+            font-size: 0.75rem;
+            color: var(--warning);
+        }
+
+        /* Form */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            color: var(--text-dim);
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 12px;
+            color: var(--text);
+            font-size: 1rem;
+            font-family: inherit;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .form-group select option {
+            background: var(--bg-dark);
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal {
+            background: var(--bg-dark);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 400px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* Book Detail */
+        .book-detail-cover {
+            height: 150px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        .book-detail-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        .book-detail-author {
+            color: var(--text-dim);
+            margin-bottom: 1rem;
+        }
+        .progress-section {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+        .progress-bar {
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.75rem;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--success);
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+        .progress-input {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .progress-input input {
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: var(--text);
+            font-size: 1rem;
+            width: 80px;
+        }
+        .progress-input input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        /* Rating */
+        .rating-section {
+            margin-bottom: 1rem;
+        }
+        .rating-label {
+            font-size: 0.875rem;
+            color: var(--text-dim);
+            margin-bottom: 0.5rem;
+        }
+        .star-rating {
+            display: flex;
+            gap: 0.25rem;
+        }
+        .star {
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: rgba(255,255,255,0.2);
+            transition: color 0.2s;
+        }
+        .star.filled {
+            color: var(--warning);
+        }
+        .star:hover {
+            color: var(--warning);
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 0.75rem;
+        }
+        .btn-row .btn {
+            flex: 1;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-dim);
+            padding: 3rem 1rem;
+            grid-column: 1 / -1;
+        }
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Color Picker */
+        .color-picker {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .color-option {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .color-option.selected {
+            border-color: white;
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <nav id="main-nav"></nav>
+    <script src="/nav-component.js"></script>
+
+    <div class="container">
+        <h1>BookShelf</h1>
+        <p class="subtitle">Track Your Reading Journey</p>
+
+        <div class="stat-grid">
+            <div class="stat-item">
+                <div class="stat-value" id="totalBooks">0</div>
+                <div class="stat-label">Total Books</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="booksThisMonth">0</div>
+                <div class="stat-label">This Month</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="pagesRead">0</div>
+                <div class="stat-label">Pages Read</div>
+            </div>
+        </div>
+
+        <button class="btn btn-full" id="addBookBtn" style="margin-bottom: 1.5rem;">+ Add Book</button>
+
+        <div class="tabs">
+            <div class="tab active" data-status="reading">
+                <span class="tab-count" id="readingCount">0</span>
+                Reading
+            </div>
+            <div class="tab" data-status="want">
+                <span class="tab-count" id="wantCount">0</span>
+                Want to Read
+            </div>
+            <div class="tab" data-status="finished">
+                <span class="tab-count" id="finishedCount">0</span>
+                Finished
+            </div>
+        </div>
+
+        <div class="book-grid" id="bookGrid">
+            <div class="empty-state">
+                <div class="empty-state-icon">📚</div>
+                <div>No books yet. Add one to start tracking!</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Book Modal -->
+    <div class="modal-overlay" id="addModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">Add Book</div>
+                <button class="modal-close" id="closeAddModal">×</button>
+            </div>
+            <div class="form-group">
+                <label>Title</label>
+                <input type="text" id="bookTitle" placeholder="Book title">
+            </div>
+            <div class="form-group">
+                <label>Author</label>
+                <input type="text" id="bookAuthor" placeholder="Author name">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Total Pages</label>
+                    <input type="number" id="bookPages" placeholder="300" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="bookStatus">
+                        <option value="want">Want to Read</option>
+                        <option value="reading">Reading</option>
+                        <option value="finished">Finished</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Cover Color</label>
+                <div class="color-picker" id="colorPicker"></div>
+            </div>
+            <button class="btn btn-full" id="saveBookBtn">Save Book</button>
+        </div>
+    </div>
+
+    <!-- Book Detail Modal -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">Book Details</div>
+                <button class="modal-close" id="closeDetailModal">×</button>
+            </div>
+            <div class="book-detail-cover" id="detailCover">📖</div>
+            <div class="book-detail-title" id="detailTitle">Book Title</div>
+            <div class="book-detail-author" id="detailAuthor">Author Name</div>
+
+            <div class="progress-section">
+                <div class="progress-header">
+                    <span>Progress</span>
+                    <span id="progressText">0 / 300 pages</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                </div>
+                <div class="progress-input">
+                    <span style="color: var(--text-dim); font-size: 0.875rem;">Current page:</span>
+                    <input type="number" id="currentPageInput" min="0">
+                    <button class="btn btn-small" id="updatePageBtn">Update</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Status</label>
+                <select id="detailStatus">
+                    <option value="want">Want to Read</option>
+                    <option value="reading">Reading</option>
+                    <option value="finished">Finished</option>
+                </select>
+            </div>
+
+            <div class="rating-section" id="ratingSection">
+                <div class="rating-label">Your Rating</div>
+                <div class="star-rating" id="starRating">
+                    <span class="star" data-rating="1">★</span>
+                    <span class="star" data-rating="2">★</span>
+                    <span class="star" data-rating="3">★</span>
+                    <span class="star" data-rating="4">★</span>
+                    <span class="star" data-rating="5">★</span>
+                </div>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn btn-secondary" id="deleteBookBtn">Delete</button>
+                <button class="btn" id="saveDetailBtn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const coverColors = [
+            '#6366f1', '#8b5cf6', '#ec4899', '#f97316', '#eab308',
+            '#22c55e', '#14b8a6', '#3b82f6', '#ef4444', '#64748b'
+        ];
+
+        let state = {
+            books: [],
+            currentTab: 'reading',
+            selectedBookId: null,
+            selectedColor: coverColors[0]
+        };
+
+        // Load state
+        function loadState() {
+            const saved = localStorage.getItem('bookshelf_state');
+            if (saved) {
+                state = { ...state, ...JSON.parse(saved) };
+            }
+            renderColorPicker();
+            updateStats();
+            updateTabs();
+            renderBooks();
+        }
+
+        // Save state
+        function saveState() {
+            localStorage.setItem('bookshelf_state', JSON.stringify({
+                books: state.books
+            }));
+        }
+
+        // Render color picker
+        function renderColorPicker() {
+            const picker = document.getElementById('colorPicker');
+            picker.innerHTML = coverColors.map(color => `
+                <div class="color-option ${color === state.selectedColor ? 'selected' : ''}"
+                     style="background: ${color}" data-color="${color}"></div>
+            `).join('');
+        }
+
+        // Update stats
+        function updateStats() {
+            const total = state.books.length;
+            const now = new Date();
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+            const thisMonth = state.books.filter(b =>
+                b.status === 'finished' && new Date(b.finishedAt) >= monthStart
+            ).length;
+
+            const pagesRead = state.books.reduce((sum, b) => sum + (b.currentPage || 0), 0);
+
+            document.getElementById('totalBooks').textContent = total;
+            document.getElementById('booksThisMonth').textContent = thisMonth;
+            document.getElementById('pagesRead').textContent = pagesRead;
+        }
+
+        // Update tabs
+        function updateTabs() {
+            const counts = {
+                reading: state.books.filter(b => b.status === 'reading').length,
+                want: state.books.filter(b => b.status === 'want').length,
+                finished: state.books.filter(b => b.status === 'finished').length
+            };
+
+            document.getElementById('readingCount').textContent = counts.reading;
+            document.getElementById('wantCount').textContent = counts.want;
+            document.getElementById('finishedCount').textContent = counts.finished;
+        }
+
+        // Render books
+        function renderBooks() {
+            const grid = document.getElementById('bookGrid');
+            const filtered = state.books.filter(b => b.status === state.currentTab);
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📚</div>
+                        <div>No books in this category</div>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(book => {
+                const progress = book.totalPages > 0 ? (book.currentPage / book.totalPages) * 100 : 0;
+                const stars = book.rating ? '★'.repeat(book.rating) : '';
+
+                return `
+                    <div class="book-card" data-id="${book.id}">
+                        <div class="book-cover" style="background: ${book.color}">
+                            📖
+                            ${book.status === 'reading' ? `
+                                <div class="book-progress-bar">
+                                    <div class="book-progress-fill" style="width: ${progress}%"></div>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="book-info">
+                            <div class="book-title">${book.title}</div>
+                            <div class="book-author">${book.author}</div>
+                            ${stars ? `<div class="book-rating">${stars}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Show add modal
+        function showAddModal() {
+            document.getElementById('bookTitle').value = '';
+            document.getElementById('bookAuthor').value = '';
+            document.getElementById('bookPages').value = '';
+            document.getElementById('bookStatus').value = 'want';
+            state.selectedColor = coverColors[0];
+            renderColorPicker();
+            document.getElementById('addModal').classList.add('active');
+        }
+
+        // Hide add modal
+        function hideAddModal() {
+            document.getElementById('addModal').classList.remove('active');
+        }
+
+        // Show detail modal
+        function showDetailModal(bookId) {
+            const book = state.books.find(b => b.id === bookId);
+            if (!book) return;
+
+            state.selectedBookId = bookId;
+
+            document.getElementById('detailCover').style.background = book.color;
+            document.getElementById('detailTitle').textContent = book.title;
+            document.getElementById('detailAuthor').textContent = book.author;
+            document.getElementById('detailStatus').value = book.status;
+            document.getElementById('currentPageInput').value = book.currentPage || 0;
+            document.getElementById('currentPageInput').max = book.totalPages;
+
+            const progress = book.totalPages > 0 ? (book.currentPage / book.totalPages) * 100 : 0;
+            document.getElementById('progressText').textContent = `${book.currentPage || 0} / ${book.totalPages} pages`;
+            document.getElementById('progressFill').style.width = `${progress}%`;
+
+            // Update star rating
+            const stars = document.querySelectorAll('#starRating .star');
+            stars.forEach((star, i) => {
+                star.classList.toggle('filled', i < (book.rating || 0));
+            });
+
+            // Show/hide rating based on status
+            document.getElementById('ratingSection').style.display =
+                book.status === 'finished' ? 'block' : 'none';
+
+            document.getElementById('detailModal').classList.add('active');
+        }
+
+        // Hide detail modal
+        function hideDetailModal() {
+            document.getElementById('detailModal').classList.remove('active');
+            state.selectedBookId = null;
+        }
+
+        // Save book
+        function saveBook() {
+            const title = document.getElementById('bookTitle').value.trim();
+            const author = document.getElementById('bookAuthor').value.trim();
+            const totalPages = parseInt(document.getElementById('bookPages').value) || 0;
+            const status = document.getElementById('bookStatus').value;
+
+            if (!title) return;
+
+            const book = {
+                id: Date.now().toString(),
+                title,
+                author,
+                totalPages,
+                currentPage: status === 'finished' ? totalPages : 0,
+                status,
+                color: state.selectedColor,
+                rating: 0,
+                createdAt: new Date().toISOString(),
+                finishedAt: status === 'finished' ? new Date().toISOString() : null
+            };
+
+            state.books.push(book);
+            saveState();
+            updateStats();
+            updateTabs();
+            renderBooks();
+            hideAddModal();
+        }
+
+        // Update book from detail modal
+        function updateBook() {
+            const book = state.books.find(b => b.id === state.selectedBookId);
+            if (!book) return;
+
+            const newStatus = document.getElementById('detailStatus').value;
+            const wasFinished = book.status === 'finished';
+            const isNowFinished = newStatus === 'finished';
+
+            book.status = newStatus;
+
+            if (isNowFinished && !wasFinished) {
+                book.currentPage = book.totalPages;
+                book.finishedAt = new Date().toISOString();
+            }
+
+            saveState();
+            updateStats();
+            updateTabs();
+            renderBooks();
+            hideDetailModal();
+        }
+
+        // Update page progress
+        function updatePage() {
+            const book = state.books.find(b => b.id === state.selectedBookId);
+            if (!book) return;
+
+            const newPage = parseInt(document.getElementById('currentPageInput').value) || 0;
+            book.currentPage = Math.min(Math.max(0, newPage), book.totalPages);
+
+            // Auto-finish if reached end
+            if (book.currentPage >= book.totalPages && book.status === 'reading') {
+                book.status = 'finished';
+                book.finishedAt = new Date().toISOString();
+                document.getElementById('detailStatus').value = 'finished';
+                document.getElementById('ratingSection').style.display = 'block';
+            }
+
+            const progress = book.totalPages > 0 ? (book.currentPage / book.totalPages) * 100 : 0;
+            document.getElementById('progressText').textContent = `${book.currentPage} / ${book.totalPages} pages`;
+            document.getElementById('progressFill').style.width = `${progress}%`;
+
+            saveState();
+        }
+
+        // Delete book
+        function deleteBook() {
+            if (!confirm('Delete this book?')) return;
+
+            state.books = state.books.filter(b => b.id !== state.selectedBookId);
+            saveState();
+            updateStats();
+            updateTabs();
+            renderBooks();
+            hideDetailModal();
+        }
+
+        // Event listeners
+        document.getElementById('addBookBtn').addEventListener('click', showAddModal);
+        document.getElementById('closeAddModal').addEventListener('click', hideAddModal);
+        document.getElementById('saveBookBtn').addEventListener('click', saveBook);
+
+        document.getElementById('colorPicker').addEventListener('click', (e) => {
+            if (e.target.classList.contains('color-option')) {
+                state.selectedColor = e.target.dataset.color;
+                renderColorPicker();
+            }
+        });
+
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                state.currentTab = tab.dataset.status;
+                renderBooks();
+            });
+        });
+
+        document.getElementById('bookGrid').addEventListener('click', (e) => {
+            const card = e.target.closest('.book-card');
+            if (card) {
+                showDetailModal(card.dataset.id);
+            }
+        });
+
+        document.getElementById('closeDetailModal').addEventListener('click', hideDetailModal);
+        document.getElementById('saveDetailBtn').addEventListener('click', updateBook);
+        document.getElementById('updatePageBtn').addEventListener('click', updatePage);
+        document.getElementById('deleteBookBtn').addEventListener('click', deleteBook);
+
+        document.getElementById('detailStatus').addEventListener('change', (e) => {
+            document.getElementById('ratingSection').style.display =
+                e.target.value === 'finished' ? 'block' : 'none';
+        });
+
+        document.getElementById('starRating').addEventListener('click', (e) => {
+            if (e.target.classList.contains('star')) {
+                const rating = parseInt(e.target.dataset.rating);
+                const book = state.books.find(b => b.id === state.selectedBookId);
+                if (book) {
+                    book.rating = rating;
+                    saveState();
+
+                    const stars = document.querySelectorAll('#starRating .star');
+                    stars.forEach((star, i) => {
+                        star.classList.toggle('filled', i < rating);
+                    });
+                }
+            }
+        });
+
+        // Close modals on overlay click
+        document.getElementById('addModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('addModal')) hideAddModal();
+        });
+        document.getElementById('detailModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('detailModal')) hideDetailModal();
+        });
+
+        // Initialize
+        loadState();
+    </script>
+</body>
+</html>

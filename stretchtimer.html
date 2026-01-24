@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StretchTimer | SUITE</title>
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/nav.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: rgba(255,255,255,0.05);
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --text: #f8fafc;
+            --text-dim: rgba(248,250,252,0.6);
+            --success: #22c55e;
+            --warning: #eab308;
+            --error: #ef4444;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 80px 20px 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+        .subtitle {
+            color: var(--text-dim);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .btn-secondary {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .btn-success {
+            background: var(--success);
+        }
+        .timer-display {
+            text-align: center;
+            padding: 2rem 0;
+        }
+        .timer-circle {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 1.5rem;
+            position: relative;
+        }
+        .timer-circle svg {
+            transform: rotate(-90deg);
+        }
+        .timer-circle circle {
+            fill: none;
+            stroke-width: 8;
+        }
+        .timer-circle .bg {
+            stroke: rgba(255,255,255,0.1);
+        }
+        .timer-circle .progress {
+            stroke: var(--accent);
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s linear;
+        }
+        .timer-circle.warning .progress {
+            stroke: var(--warning);
+        }
+        .timer-circle.alert .progress {
+            stroke: var(--error);
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .timer-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        .timer-minutes {
+            font-size: 3rem;
+            font-weight: 700;
+        }
+        .timer-label {
+            font-size: 0.875rem;
+            color: var(--text-dim);
+        }
+        .interval-selector {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+        .interval-btn {
+            padding: 0.75rem 1.25rem;
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: var(--text);
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+        .interval-btn:hover {
+            border-color: var(--accent);
+        }
+        .interval-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+        .controls {
+            display: flex;
+            gap: 0.75rem;
+        }
+        .controls .btn {
+            flex: 1;
+        }
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+        .stretch-card {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            text-align: center;
+            display: none;
+        }
+        .stretch-card.active {
+            display: block;
+        }
+        .stretch-emoji {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        .stretch-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .stretch-instruction {
+            color: var(--text-dim);
+            font-size: 0.875rem;
+            margin-bottom: 1.5rem;
+        }
+        .stretch-timer {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 1rem;
+        }
+        .sound-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            color: var(--text-dim);
+            font-size: 0.875rem;
+        }
+        .sound-toggle input {
+            accent-color: var(--accent);
+        }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .history-item:last-child {
+            border-bottom: none;
+        }
+        .history-time {
+            color: var(--text-dim);
+            font-size: 0.875rem;
+        }
+        .history-stretch {
+            font-size: 1.25rem;
+        }
+    </style>
+</head>
+<body>
+    <nav id="main-nav"></nav>
+    <script src="/nav-component.js"></script>
+
+    <div class="container">
+        <h1>StretchTimer</h1>
+        <p class="subtitle">Take breaks, stay healthy at your desk</p>
+
+        <div class="stat-grid">
+            <div class="stat-item">
+                <div class="stat-value" id="breaksToday">0</div>
+                <div class="stat-label">Breaks Today</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="streak">0</div>
+                <div class="stat-label">Day Streak</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalBreaks">0</div>
+                <div class="stat-label">Total Breaks</div>
+            </div>
+        </div>
+
+        <div class="card" id="timerCard">
+            <h3 style="text-align: center; margin-bottom: 1rem; font-size: 0.875rem; color: var(--text-dim);">Set Break Interval</h3>
+            <div class="interval-selector">
+                <button class="interval-btn" data-interval="30" onclick="setInterval(30)">30 min</button>
+                <button class="interval-btn active" data-interval="45" onclick="setInterval(45)">45 min</button>
+                <button class="interval-btn" data-interval="60" onclick="setInterval(60)">60 min</button>
+            </div>
+
+            <div class="timer-display">
+                <div class="timer-circle" id="timerCircle">
+                    <svg width="200" height="200">
+                        <circle class="bg" cx="100" cy="100" r="92"></circle>
+                        <circle class="progress" cx="100" cy="100" r="92"
+                                stroke-dasharray="578"
+                                stroke-dashoffset="0"
+                                id="progressCircle"></circle>
+                    </svg>
+                    <div class="timer-text">
+                        <div class="timer-minutes" id="timerMinutes">45:00</div>
+                        <div class="timer-label" id="timerLabel">until break</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn btn-secondary" id="stopBtn" onclick="stopTimer()" style="display: none;">Stop</button>
+                <button class="btn" id="startBtn" onclick="startTimer()">Start Timer</button>
+            </div>
+
+            <div class="sound-toggle">
+                <input type="checkbox" id="soundToggle" checked>
+                <label for="soundToggle">Sound alert when break time</label>
+            </div>
+        </div>
+
+        <div class="card stretch-card" id="stretchCard">
+            <div class="stretch-emoji" id="stretchEmoji">🙆</div>
+            <div class="stretch-name" id="stretchName">Neck Rolls</div>
+            <div class="stretch-instruction" id="stretchInstruction">Slowly roll your head in circles, 5 times each direction.</div>
+            <div class="stretch-timer" id="stretchTimer">30</div>
+            <div class="controls">
+                <button class="btn btn-secondary" onclick="skipStretch()">Skip</button>
+                <button class="btn btn-success" onclick="completeStretch()">Done!</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-bottom: 1rem; font-size: 1rem;">Today's Breaks</h3>
+            <div id="historyList">
+                <p style="color: var(--text-dim); text-align: center; font-size: 0.875rem;">No breaks taken yet today</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const stretches = [
+            { emoji: '🙆', name: 'Neck Rolls', instruction: 'Slowly roll your head in circles, 5 times each direction.', duration: 30 },
+            { emoji: '🙋', name: 'Shoulder Shrugs', instruction: 'Raise shoulders to ears, hold 3 seconds, release. Repeat 10 times.', duration: 30 },
+            { emoji: '🧘', name: 'Seated Twist', instruction: 'Twist your torso left, hold 15 seconds. Then twist right.', duration: 30 },
+            { emoji: '💪', name: 'Wrist Circles', instruction: 'Rotate wrists slowly, 10 times each direction.', duration: 20 },
+            { emoji: '👀', name: 'Eye Rest', instruction: 'Close eyes, look up/down/left/right behind closed lids. Then focus on something far away.', duration: 30 },
+            { emoji: '🤸', name: 'Standing Stretch', instruction: 'Stand up, reach arms overhead, lean left then right.', duration: 30 },
+            { emoji: '🦵', name: 'Leg Extensions', instruction: 'While seated, extend one leg straight, hold 10 seconds. Switch legs.', duration: 30 },
+            { emoji: '🫁', name: 'Deep Breathing', instruction: 'Take 5 deep breaths: inhale 4 counts, hold 4, exhale 4.', duration: 30 },
+            { emoji: '✊', name: 'Hand Stretches', instruction: 'Spread fingers wide, hold 5 seconds. Make fists, hold 5 seconds. Repeat 5 times.', duration: 25 },
+            { emoji: '🚶', name: 'Quick Walk', instruction: 'Stand up and walk around for 30 seconds. Get some water!', duration: 30 }
+        ];
+
+        let intervalMinutes = 45;
+        let remainingSeconds = 0;
+        let timerInterval = null;
+        let isRunning = false;
+        let currentStretch = null;
+        let stretchTimerInterval = null;
+        let stretchSeconds = 0;
+        let audioContext = null;
+
+        function getTodayKey() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        function getData() {
+            return JSON.parse(localStorage.getItem('stretchtimer') || '{"breaks":[],"totalBreaks":0}');
+        }
+
+        function saveData(data) {
+            localStorage.setItem('stretchtimer', JSON.stringify(data));
+        }
+
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playAlert() {
+            if (!document.getElementById('soundToggle').checked) return;
+            if (!audioContext) initAudio();
+
+            const frequencies = [523, 659, 784];
+            frequencies.forEach((freq, i) => {
+                setTimeout(() => {
+                    const osc = audioContext.createOscillator();
+                    const gain = audioContext.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioContext.destination);
+                    osc.frequency.value = freq;
+                    osc.type = 'sine';
+                    gain.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                    osc.start(audioContext.currentTime);
+                    osc.stop(audioContext.currentTime + 0.3);
+                }, i * 150);
+            });
+        }
+
+        function setInterval(minutes) {
+            intervalMinutes = minutes;
+            document.querySelectorAll('.interval-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.interval) === minutes);
+            });
+            if (!isRunning) {
+                updateTimerDisplay(minutes * 60);
+            }
+        }
+
+        function startTimer() {
+            initAudio();
+            isRunning = true;
+            remainingSeconds = intervalMinutes * 60;
+
+            document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('stopBtn').style.display = 'block';
+
+            timerInterval = window.setInterval(() => {
+                remainingSeconds--;
+                updateTimerDisplay(remainingSeconds);
+
+                if (remainingSeconds <= 0) {
+                    triggerBreak();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            isRunning = false;
+            clearInterval(timerInterval);
+
+            document.getElementById('startBtn').style.display = 'block';
+            document.getElementById('stopBtn').style.display = 'none';
+            document.getElementById('timerCircle').className = 'timer-circle';
+
+            updateTimerDisplay(intervalMinutes * 60);
+        }
+
+        function updateTimerDisplay(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            document.getElementById('timerMinutes').textContent =
+                `${mins}:${secs.toString().padStart(2, '0')}`;
+
+            const total = intervalMinutes * 60;
+            const progress = (total - seconds) / total;
+            const circumference = 578;
+            const offset = progress * circumference;
+            document.getElementById('progressCircle').style.strokeDashoffset = offset;
+
+            const circle = document.getElementById('timerCircle');
+            if (seconds <= 60) {
+                circle.className = 'timer-circle alert';
+            } else if (seconds <= 300) {
+                circle.className = 'timer-circle warning';
+            } else {
+                circle.className = 'timer-circle';
+            }
+        }
+
+        function triggerBreak() {
+            clearInterval(timerInterval);
+            playAlert();
+
+            currentStretch = stretches[Math.floor(Math.random() * stretches.length)];
+            stretchSeconds = currentStretch.duration;
+
+            document.getElementById('stretchEmoji').textContent = currentStretch.emoji;
+            document.getElementById('stretchName').textContent = currentStretch.name;
+            document.getElementById('stretchInstruction').textContent = currentStretch.instruction;
+            document.getElementById('stretchTimer').textContent = stretchSeconds;
+
+            document.getElementById('timerCard').style.display = 'none';
+            document.getElementById('stretchCard').classList.add('active');
+
+            stretchTimerInterval = window.setInterval(() => {
+                stretchSeconds--;
+                document.getElementById('stretchTimer').textContent = stretchSeconds;
+                if (stretchSeconds <= 0) {
+                    completeStretch();
+                }
+            }, 1000);
+        }
+
+        function completeStretch() {
+            clearInterval(stretchTimerInterval);
+
+            const data = getData();
+            data.breaks.push({
+                date: new Date().toISOString(),
+                stretch: currentStretch.name,
+                emoji: currentStretch.emoji
+            });
+            data.totalBreaks = (data.totalBreaks || 0) + 1;
+            saveData(data);
+
+            document.getElementById('stretchCard').classList.remove('active');
+            document.getElementById('timerCard').style.display = 'block';
+
+            updateStats();
+            startTimer();
+        }
+
+        function skipStretch() {
+            clearInterval(stretchTimerInterval);
+            document.getElementById('stretchCard').classList.remove('active');
+            document.getElementById('timerCard').style.display = 'block';
+            startTimer();
+        }
+
+        function updateStats() {
+            const data = getData();
+            const today = getTodayKey();
+
+            const todayBreaks = data.breaks.filter(b => b.date.startsWith(today));
+            document.getElementById('breaksToday').textContent = todayBreaks.length;
+            document.getElementById('totalBreaks').textContent = data.totalBreaks || 0;
+
+            const streak = calculateStreak(data);
+            document.getElementById('streak').textContent = streak;
+
+            updateHistory(todayBreaks);
+        }
+
+        function calculateStreak(data) {
+            let streak = 0;
+            const today = new Date();
+
+            for (let i = 0; i < 365; i++) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                const dateStr = date.toISOString().split('T')[0];
+
+                const hasBreaks = data.breaks.some(b => b.date.startsWith(dateStr));
+
+                if (hasBreaks) {
+                    streak++;
+                } else if (i > 0) {
+                    break;
+                }
+            }
+            return streak;
+        }
+
+        function updateHistory(breaks) {
+            const container = document.getElementById('historyList');
+
+            if (breaks.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-dim); text-align: center; font-size: 0.875rem;">No breaks taken yet today</p>';
+                return;
+            }
+
+            container.innerHTML = breaks.slice().reverse().map(b => {
+                const time = new Date(b.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                return `
+                    <div class="history-item">
+                        <span class="history-stretch">${b.emoji}</span>
+                        <span>${b.stretch}</span>
+                        <span class="history-time">${time}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        updateTimerDisplay(intervalMinutes * 60);
+        updateStats();
+    </script>
+</body>
+</html>

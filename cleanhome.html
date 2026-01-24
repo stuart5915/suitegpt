@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CleanHome | SUITE</title>
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/nav.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: rgba(255,255,255,0.05);
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --text: #f8fafc;
+            --text-dim: rgba(248,250,252,0.6);
+            --success: #22c55e;
+            --warning: #eab308;
+            --error: #ef4444;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 80px 20px 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+        .subtitle {
+            color: var(--text-dim);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .btn-secondary {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .btn-full {
+            width: 100%;
+        }
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.875rem;
+        }
+
+        /* Stats */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        .stat-item {
+            text-align: center;
+            padding: 1rem 0.5rem;
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .stat-value.good { color: var(--success); }
+        .stat-value.warning { color: var(--warning); }
+        .stat-value.bad { color: var(--error); }
+        .stat-label {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            margin-top: 0.25rem;
+        }
+
+        /* Filters */
+        .filters {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            padding: 8px 16px;
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            color: var(--text-dim);
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .filter-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+        .filter-btn.overdue {
+            position: relative;
+        }
+        .filter-btn .badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--error);
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+        }
+
+        /* Task List */
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .task-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            padding: 1rem;
+            transition: all 0.2s;
+        }
+        .task-card.overdue {
+            border-color: var(--error);
+            background: rgba(239, 68, 68, 0.1);
+        }
+        .task-card.due-soon {
+            border-color: var(--warning);
+        }
+        .task-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+        .task-checkbox {
+            width: 28px;
+            height: 28px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .task-checkbox:hover {
+            border-color: var(--success);
+        }
+        .task-checkbox.checked {
+            background: var(--success);
+            border-color: var(--success);
+        }
+        .task-checkbox.checked::after {
+            content: '✓';
+            color: white;
+            font-size: 0.875rem;
+            font-weight: bold;
+        }
+        .task-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .task-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        .task-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+        .task-frequency {
+            background: rgba(255,255,255,0.1);
+            padding: 2px 8px;
+            border-radius: 6px;
+        }
+        .task-room {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .task-due {
+            margin-left: auto;
+        }
+        .task-due.overdue {
+            color: var(--error);
+        }
+        .task-due.today {
+            color: var(--warning);
+        }
+        .task-icon {
+            font-size: 1.25rem;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            flex-shrink: 0;
+        }
+        .task-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-left: auto;
+        }
+        .task-delete {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            padding: 0.5rem;
+            opacity: 0.5;
+        }
+        .task-delete:hover {
+            opacity: 1;
+            color: var(--error);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal {
+            background: var(--bg-dark);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 400px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* Form */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            color: var(--text-dim);
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 12px;
+            color: var(--text);
+            font-size: 1rem;
+            font-family: inherit;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .form-group select option {
+            background: var(--bg-dark);
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        /* Suggested Tasks */
+        .suggested-section {
+            margin-top: 1.5rem;
+        }
+        .section-title {
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        .suggested-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .suggested-chip {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 8px 14px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .suggested-chip:hover {
+            border-color: var(--accent);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-dim);
+            padding: 3rem 1rem;
+        }
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <nav id="main-nav"></nav>
+    <script src="/nav-component.js"></script>
+
+    <div class="container">
+        <h1>CleanHome</h1>
+        <p class="subtitle">Cleaning Schedule Tracker</p>
+
+        <div class="stat-grid">
+            <div class="stat-item">
+                <div class="stat-value good" id="doneToday">0</div>
+                <div class="stat-label">Done Today</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value warning" id="dueSoon">0</div>
+                <div class="stat-label">Due Soon</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value bad" id="overdueCount">0</div>
+                <div class="stat-label">Overdue</div>
+            </div>
+        </div>
+
+        <button class="btn btn-full" id="addTaskBtn" style="margin-bottom: 1rem;">+ Add Cleaning Task</button>
+
+        <div class="filters">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn overdue" data-filter="overdue">
+                Overdue
+                <span class="badge" id="overdueBadge" style="display: none;">0</span>
+            </button>
+            <button class="filter-btn" data-filter="today">Today</button>
+            <button class="filter-btn" data-filter="weekly">Weekly</button>
+        </div>
+
+        <div class="task-list" id="taskList">
+            <div class="empty-state">
+                <div class="empty-state-icon">🧹</div>
+                <div>No cleaning tasks yet</div>
+            </div>
+        </div>
+
+        <div class="suggested-section">
+            <div class="section-title">Suggested Tasks</div>
+            <div class="suggested-list" id="suggestedList"></div>
+        </div>
+    </div>
+
+    <!-- Add Task Modal -->
+    <div class="modal-overlay" id="addModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">Add Cleaning Task</div>
+                <button class="modal-close" id="closeModal">×</button>
+            </div>
+            <div class="form-group">
+                <label>Task Name</label>
+                <input type="text" id="taskNameInput" placeholder="e.g., Vacuum living room">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Room</label>
+                    <select id="taskRoomInput">
+                        <option value="kitchen">🍳 Kitchen</option>
+                        <option value="bathroom">🚿 Bathroom</option>
+                        <option value="bedroom">🛏️ Bedroom</option>
+                        <option value="living">🛋️ Living Room</option>
+                        <option value="office">💻 Office</option>
+                        <option value="laundry">👕 Laundry</option>
+                        <option value="outdoor">🌳 Outdoor</option>
+                        <option value="other">📦 Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Frequency</label>
+                    <select id="taskFrequencyInput">
+                        <option value="daily">Daily</option>
+                        <option value="weekly" selected>Weekly</option>
+                        <option value="biweekly">Every 2 weeks</option>
+                        <option value="monthly">Monthly</option>
+                    </select>
+                </div>
+            </div>
+            <button class="btn btn-full" id="saveTaskBtn">Add Task</button>
+        </div>
+    </div>
+
+    <script>
+        const roomIcons = {
+            kitchen: '🍳',
+            bathroom: '🚿',
+            bedroom: '🛏️',
+            living: '🛋️',
+            office: '💻',
+            laundry: '👕',
+            outdoor: '🌳',
+            other: '📦'
+        };
+
+        const roomNames = {
+            kitchen: 'Kitchen',
+            bathroom: 'Bathroom',
+            bedroom: 'Bedroom',
+            living: 'Living Room',
+            office: 'Office',
+            laundry: 'Laundry',
+            outdoor: 'Outdoor',
+            other: 'Other'
+        };
+
+        const frequencyDays = {
+            daily: 1,
+            weekly: 7,
+            biweekly: 14,
+            monthly: 30
+        };
+
+        const suggestedTasks = [
+            { name: 'Vacuum floors', room: 'living', frequency: 'weekly' },
+            { name: 'Clean toilet', room: 'bathroom', frequency: 'weekly' },
+            { name: 'Wipe counters', room: 'kitchen', frequency: 'daily' },
+            { name: 'Change bed sheets', room: 'bedroom', frequency: 'weekly' },
+            { name: 'Take out trash', room: 'kitchen', frequency: 'daily' },
+            { name: 'Mop floors', room: 'kitchen', frequency: 'weekly' },
+            { name: 'Clean mirrors', room: 'bathroom', frequency: 'weekly' },
+            { name: 'Dust surfaces', room: 'living', frequency: 'weekly' },
+            { name: 'Do laundry', room: 'laundry', frequency: 'weekly' },
+            { name: 'Clean shower', room: 'bathroom', frequency: 'weekly' },
+            { name: 'Organize desk', room: 'office', frequency: 'weekly' },
+            { name: 'Water plants', room: 'outdoor', frequency: 'weekly' }
+        ];
+
+        let state = {
+            tasks: [],
+            currentFilter: 'all'
+        };
+
+        // Load state
+        function loadState() {
+            const saved = localStorage.getItem('cleanhome_state');
+            if (saved) {
+                state.tasks = JSON.parse(saved).tasks || [];
+            }
+            updateStats();
+            renderTasks();
+            renderSuggested();
+        }
+
+        // Save state
+        function saveState() {
+            localStorage.setItem('cleanhome_state', JSON.stringify({
+                tasks: state.tasks
+            }));
+        }
+
+        // Calculate due date
+        function getDueDate(task) {
+            if (!task.lastDone) {
+                return new Date(task.createdAt);
+            }
+            const lastDone = new Date(task.lastDone);
+            const days = frequencyDays[task.frequency];
+            return new Date(lastDone.getTime() + days * 24 * 60 * 60 * 1000);
+        }
+
+        // Get days until due
+        function getDaysUntilDue(task) {
+            const due = getDueDate(task);
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+            due.setHours(0, 0, 0, 0);
+            return Math.floor((due - now) / (24 * 60 * 60 * 1000));
+        }
+
+        // Format due text
+        function formatDueText(days) {
+            if (days < 0) return `${Math.abs(days)}d overdue`;
+            if (days === 0) return 'Today';
+            if (days === 1) return 'Tomorrow';
+            return `In ${days} days`;
+        }
+
+        // Update stats
+        function updateStats() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            let doneToday = 0;
+            let dueSoon = 0;
+            let overdue = 0;
+
+            state.tasks.forEach(task => {
+                const days = getDaysUntilDue(task);
+                if (days < 0) overdue++;
+                else if (days <= 2) dueSoon++;
+
+                if (task.lastDone) {
+                    const lastDone = new Date(task.lastDone);
+                    lastDone.setHours(0, 0, 0, 0);
+                    if (lastDone.getTime() === today.getTime()) {
+                        doneToday++;
+                    }
+                }
+            });
+
+            document.getElementById('doneToday').textContent = doneToday;
+            document.getElementById('dueSoon').textContent = dueSoon;
+            document.getElementById('overdueCount').textContent = overdue;
+
+            const badge = document.getElementById('overdueBadge');
+            if (overdue > 0) {
+                badge.textContent = overdue;
+                badge.style.display = 'block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        // Filter tasks
+        function filterTasks() {
+            let filtered = [...state.tasks];
+
+            switch (state.currentFilter) {
+                case 'overdue':
+                    filtered = filtered.filter(t => getDaysUntilDue(t) < 0);
+                    break;
+                case 'today':
+                    filtered = filtered.filter(t => getDaysUntilDue(t) <= 0);
+                    break;
+                case 'weekly':
+                    filtered = filtered.filter(t => t.frequency === 'weekly');
+                    break;
+            }
+
+            // Sort by due date
+            filtered.sort((a, b) => getDaysUntilDue(a) - getDaysUntilDue(b));
+
+            return filtered;
+        }
+
+        // Render tasks
+        function renderTasks() {
+            const list = document.getElementById('taskList');
+            const filtered = filterTasks();
+
+            if (filtered.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">✨</div>
+                        <div>${state.currentFilter === 'all' ? 'No cleaning tasks yet' : 'No tasks in this category'}</div>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = filtered.map(task => {
+                const days = getDaysUntilDue(task);
+                const isOverdue = days < 0;
+                const isDueSoon = days <= 2 && days >= 0;
+                const dueClass = isOverdue ? 'overdue' : (days === 0 ? 'today' : '');
+                const cardClass = isOverdue ? 'overdue' : (isDueSoon ? 'due-soon' : '');
+
+                return `
+                    <div class="task-card ${cardClass}" data-id="${task.id}">
+                        <div class="task-header">
+                            <div class="task-checkbox" data-id="${task.id}"></div>
+                            <div class="task-icon">${roomIcons[task.room]}</div>
+                            <div class="task-info">
+                                <div class="task-name">${task.name}</div>
+                                <div class="task-meta">
+                                    <span class="task-frequency">${task.frequency}</span>
+                                    <span class="task-room">${roomNames[task.room]}</span>
+                                    <span class="task-due ${dueClass}">${formatDueText(days)}</span>
+                                </div>
+                            </div>
+                            <button class="task-delete" data-id="${task.id}">✕</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Render suggested tasks
+        function renderSuggested() {
+            const list = document.getElementById('suggestedList');
+            const existingNames = state.tasks.map(t => t.name.toLowerCase());
+
+            const available = suggestedTasks.filter(s =>
+                !existingNames.includes(s.name.toLowerCase())
+            );
+
+            if (available.length === 0) {
+                list.innerHTML = '<span style="color: var(--text-dim); font-size: 0.875rem;">All suggested tasks added!</span>';
+                return;
+            }
+
+            list.innerHTML = available.slice(0, 6).map((task, i) => `
+                <div class="suggested-chip" data-index="${i}">${roomIcons[task.room]} ${task.name}</div>
+            `).join('');
+        }
+
+        // Add task
+        function addTask(name, room, frequency) {
+            if (!name) return;
+
+            const task = {
+                id: Date.now().toString(),
+                name,
+                room,
+                frequency,
+                lastDone: null,
+                createdAt: new Date().toISOString()
+            };
+
+            state.tasks.push(task);
+            saveState();
+            updateStats();
+            renderTasks();
+            renderSuggested();
+        }
+
+        // Mark task done
+        function markDone(taskId) {
+            const task = state.tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            task.lastDone = new Date().toISOString();
+            saveState();
+            updateStats();
+            renderTasks();
+        }
+
+        // Delete task
+        function deleteTask(taskId) {
+            state.tasks = state.tasks.filter(t => t.id !== taskId);
+            saveState();
+            updateStats();
+            renderTasks();
+            renderSuggested();
+        }
+
+        // Show modal
+        function showModal() {
+            document.getElementById('taskNameInput').value = '';
+            document.getElementById('taskRoomInput').value = 'kitchen';
+            document.getElementById('taskFrequencyInput').value = 'weekly';
+            document.getElementById('addModal').classList.add('active');
+        }
+
+        // Hide modal
+        function hideModal() {
+            document.getElementById('addModal').classList.remove('active');
+        }
+
+        // Event listeners
+        document.getElementById('addTaskBtn').addEventListener('click', showModal);
+        document.getElementById('closeModal').addEventListener('click', hideModal);
+
+        document.getElementById('saveTaskBtn').addEventListener('click', () => {
+            const name = document.getElementById('taskNameInput').value.trim();
+            const room = document.getElementById('taskRoomInput').value;
+            const frequency = document.getElementById('taskFrequencyInput').value;
+            addTask(name, room, frequency);
+            hideModal();
+        });
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.currentFilter = btn.dataset.filter;
+                renderTasks();
+            });
+        });
+
+        document.getElementById('taskList').addEventListener('click', (e) => {
+            if (e.target.classList.contains('task-checkbox')) {
+                markDone(e.target.dataset.id);
+            }
+            if (e.target.classList.contains('task-delete')) {
+                deleteTask(e.target.dataset.id);
+            }
+        });
+
+        document.getElementById('suggestedList').addEventListener('click', (e) => {
+            if (e.target.classList.contains('suggested-chip')) {
+                const existingNames = state.tasks.map(t => t.name.toLowerCase());
+                const available = suggestedTasks.filter(s =>
+                    !existingNames.includes(s.name.toLowerCase())
+                );
+                const task = available[parseInt(e.target.dataset.index)];
+                if (task) {
+                    addTask(task.name, task.room, task.frequency);
+                }
+            }
+        });
+
+        // Close modal on overlay click
+        document.getElementById('addModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('addModal')) hideModal();
+        });
+
+        // Initialize
+        loadState();
+    </script>
+</body>
+</html>

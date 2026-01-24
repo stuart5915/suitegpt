@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HydroTrack | SUITE</title>
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/nav.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: rgba(255,255,255,0.05);
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --text: #f8fafc;
+            --text-dim: rgba(248,250,252,0.6);
+            --success: #22c55e;
+            --warning: #eab308;
+            --error: #ef4444;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 80px 20px 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+        .subtitle {
+            color: var(--text-dim);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .btn-secondary {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .progress-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 2rem 0;
+        }
+        .progress-ring {
+            position: relative;
+            width: 200px;
+            height: 200px;
+        }
+        .progress-ring svg {
+            transform: rotate(-90deg);
+        }
+        .progress-ring circle {
+            fill: none;
+            stroke-width: 12;
+        }
+        .progress-ring .bg {
+            stroke: rgba(255,255,255,0.1);
+        }
+        .progress-ring .progress {
+            stroke: var(--accent);
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.5s ease;
+        }
+        .progress-ring.complete .progress {
+            stroke: var(--success);
+        }
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        .progress-text .count {
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+        .progress-text .goal {
+            font-size: 1rem;
+            color: var(--text-dim);
+        }
+        .water-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        .add-btn {
+            width: 100%;
+            padding: 1.25rem;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .quick-btns {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .quick-btns .btn {
+            flex: 1;
+            padding: 0.75rem;
+            font-size: 0.875rem;
+        }
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-dim);
+        }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .history-item:last-child {
+            border-bottom: none;
+        }
+        .history-time {
+            color: var(--text-dim);
+            font-size: 0.875rem;
+        }
+        .reset-btn {
+            background: transparent;
+            color: var(--text-dim);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+            margin-top: 1rem;
+        }
+        .celebration {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 5rem;
+            animation: celebrate 1s ease-out forwards;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        @keyframes celebrate {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(0); }
+            50% { transform: translate(-50%, -50%) scale(1.2); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <nav id="main-nav"></nav>
+    <script src="/nav-component.js"></script>
+
+    <div class="container">
+        <h1>HydroTrack</h1>
+        <p class="subtitle">Stay hydrated, stay healthy</p>
+
+        <div class="progress-container">
+            <div class="progress-ring" id="progressRing">
+                <svg width="200" height="200">
+                    <circle class="bg" cx="100" cy="100" r="88"></circle>
+                    <circle class="progress" cx="100" cy="100" r="88"
+                            stroke-dasharray="553"
+                            stroke-dashoffset="553"
+                            id="progressCircle"></circle>
+                </svg>
+                <div class="progress-text">
+                    <div class="count" id="glassCount">0</div>
+                    <div class="goal">of 8 glasses</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <button class="btn add-btn" onclick="addWater(250)">
+                <span>Add Glass (250ml)</span>
+            </button>
+            <div class="quick-btns">
+                <button class="btn btn-secondary" onclick="addWater(500)">Bottle (500ml)</button>
+                <button class="btn btn-secondary" onclick="addWater(100)">Sip (100ml)</button>
+            </div>
+        </div>
+
+        <div class="stat-grid">
+            <div class="stat-item">
+                <div class="stat-value" id="totalMl">0ml</div>
+                <div class="stat-label">Today</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="streak">0</div>
+                <div class="stat-label">Day Streak</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="avgIntake">0ml</div>
+                <div class="stat-label">Daily Avg</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="remaining">2000ml</div>
+                <div class="stat-label">Remaining</div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 1rem;">
+            <h3 style="margin-bottom: 1rem; font-size: 1rem;">Today's Log</h3>
+            <div id="historyList">
+                <p style="color: var(--text-dim); text-align: center;">No water logged yet</p>
+            </div>
+            <button class="btn reset-btn" onclick="resetDay()">Reset Today</button>
+        </div>
+    </div>
+
+    <script>
+        const GOAL_ML = 2000;
+        const GLASS_ML = 250;
+
+        function getTodayKey() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        function getData() {
+            const data = JSON.parse(localStorage.getItem('hydrotrack') || '{}');
+            if (!data.history) data.history = {};
+            return data;
+        }
+
+        function saveData(data) {
+            localStorage.setItem('hydrotrack', JSON.stringify(data));
+        }
+
+        function getTodayData() {
+            const data = getData();
+            const today = getTodayKey();
+            if (!data.history[today]) {
+                data.history[today] = { total: 0, logs: [] };
+            }
+            return data.history[today];
+        }
+
+        function addWater(ml) {
+            const data = getData();
+            const today = getTodayKey();
+            if (!data.history[today]) {
+                data.history[today] = { total: 0, logs: [] };
+            }
+
+            data.history[today].total += ml;
+            data.history[today].logs.push({
+                amount: ml,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            });
+
+            saveData(data);
+            updateUI();
+
+            if (data.history[today].total >= GOAL_ML && data.history[today].total - ml < GOAL_ML) {
+                celebrate();
+            }
+        }
+
+        function updateUI() {
+            const data = getData();
+            const todayData = getTodayData();
+            const total = todayData.total;
+            const glasses = Math.floor(total / GLASS_ML);
+
+            document.getElementById('glassCount').textContent = glasses;
+            document.getElementById('totalMl').textContent = total + 'ml';
+            document.getElementById('remaining').textContent = Math.max(0, GOAL_ML - total) + 'ml';
+
+            const progress = Math.min(total / GOAL_ML, 1);
+            const circumference = 553;
+            const offset = circumference - (progress * circumference);
+            document.getElementById('progressCircle').style.strokeDashoffset = offset;
+
+            const ring = document.getElementById('progressRing');
+            if (total >= GOAL_ML) {
+                ring.classList.add('complete');
+            } else {
+                ring.classList.remove('complete');
+            }
+
+            const streak = calculateStreak(data);
+            document.getElementById('streak').textContent = streak;
+
+            const avg = calculateAverage(data);
+            document.getElementById('avgIntake').textContent = avg + 'ml';
+
+            updateHistory(todayData.logs);
+
+            saveData(data);
+        }
+
+        function calculateStreak(data) {
+            let streak = 0;
+            const today = new Date();
+
+            for (let i = 0; i < 365; i++) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                const key = date.toISOString().split('T')[0];
+
+                if (data.history[key] && data.history[key].total >= GOAL_ML) {
+                    streak++;
+                } else if (i > 0) {
+                    break;
+                }
+            }
+            return streak;
+        }
+
+        function calculateAverage(data) {
+            const days = Object.values(data.history);
+            if (days.length === 0) return 0;
+            const sum = days.reduce((acc, day) => acc + day.total, 0);
+            return Math.round(sum / days.length);
+        }
+
+        function updateHistory(logs) {
+            const container = document.getElementById('historyList');
+            if (logs.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-dim); text-align: center;">No water logged yet</p>';
+                return;
+            }
+
+            container.innerHTML = logs.slice().reverse().map(log => `
+                <div class="history-item">
+                    <span>+${log.amount}ml</span>
+                    <span class="history-time">${log.time}</span>
+                </div>
+            `).join('');
+        }
+
+        function resetDay() {
+            if (confirm('Reset today\'s water intake?')) {
+                const data = getData();
+                const today = getTodayKey();
+                data.history[today] = { total: 0, logs: [] };
+                saveData(data);
+                updateUI();
+            }
+        }
+
+        function celebrate() {
+            const el = document.createElement('div');
+            el.className = 'celebration';
+            el.textContent = '🎉';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        function checkMidnightReset() {
+            const lastCheck = localStorage.getItem('hydrotrack_lastCheck');
+            const today = getTodayKey();
+            if (lastCheck !== today) {
+                localStorage.setItem('hydrotrack_lastCheck', today);
+                updateUI();
+            }
+        }
+
+        updateUI();
+        setInterval(checkMidnightReset, 60000);
+    </script>
+</body>
+</html>

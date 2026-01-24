@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlashMind | SUITE</title>
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/nav.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: rgba(255,255,255,0.05);
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --text: #f8fafc;
+            --text-dim: rgba(248,250,252,0.6);
+            --success: #22c55e;
+            --warning: #eab308;
+            --error: #ef4444;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 80px 20px 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+        .subtitle {
+            color: var(--text-dim);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .btn-secondary {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .btn-success {
+            background: var(--success);
+        }
+        .btn-warning {
+            background: var(--warning);
+            color: #000;
+        }
+        .btn-full {
+            width: 100%;
+        }
+
+        /* Views */
+        .view {
+            display: none;
+        }
+        .view.active {
+            display: block;
+        }
+
+        /* Deck List */
+        .deck-grid {
+            display: grid;
+            gap: 1rem;
+        }
+        .deck-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 1.25rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .deck-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        .deck-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+        .deck-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        .deck-count {
+            font-size: 0.875rem;
+            color: var(--text-dim);
+        }
+        .deck-progress {
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+        .deck-progress-fill {
+            height: 100%;
+            background: var(--success);
+            border-radius: 3px;
+            transition: width 0.3s;
+        }
+        .deck-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+        .deck-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+        .deck-actions .btn {
+            flex: 1;
+            padding: 8px 12px;
+            font-size: 0.875rem;
+        }
+
+        /* Form */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            color: var(--text-dim);
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 12px;
+            color: var(--text);
+            font-size: 1rem;
+            font-family: inherit;
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        /* Flashcard */
+        .flashcard-container {
+            perspective: 1000px;
+            margin-bottom: 1.5rem;
+        }
+        .flashcard {
+            position: relative;
+            width: 100%;
+            height: 250px;
+            cursor: pointer;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+        }
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+        .flashcard-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            text-align: center;
+            font-size: 1.25rem;
+            line-height: 1.5;
+        }
+        .flashcard-front {
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+        }
+        .flashcard-back {
+            background: linear-gradient(135deg, var(--success), #10b981);
+            transform: rotateY(180deg);
+        }
+        .flashcard-hint {
+            position: absolute;
+            bottom: 1rem;
+            left: 0;
+            right: 0;
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.7);
+        }
+
+        /* Study Controls */
+        .study-controls {
+            display: flex;
+            gap: 1rem;
+        }
+        .study-controls .btn {
+            flex: 1;
+        }
+        .study-progress {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .study-progress-text {
+            font-size: 0.875rem;
+            color: var(--text-dim);
+            margin-bottom: 0.5rem;
+        }
+        .study-progress-bar {
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .study-progress-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 3px;
+            transition: width 0.3s;
+        }
+
+        /* Card List */
+        .card-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .card-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .card-item:last-child {
+            border-bottom: none;
+        }
+        .card-content {
+            flex: 1;
+        }
+        .card-front-text {
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+        .card-back-text {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+        .card-status {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 6px;
+            margin-left: 0.5rem;
+        }
+        .card-status.know {
+            background: var(--success);
+            color: white;
+        }
+        .card-status.review {
+            background: var(--warning);
+            color: black;
+        }
+        .card-delete {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            padding: 0.5rem;
+            margin-left: 0.5rem;
+            opacity: 0.5;
+        }
+        .card-delete:hover {
+            opacity: 1;
+            color: var(--error);
+        }
+
+        /* Header */
+        .view-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .back-btn {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            margin-right: 0.5rem;
+            margin-left: -0.5rem;
+        }
+        .view-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-dim);
+            padding: 3rem 1rem;
+        }
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        .stat-item {
+            text-align: center;
+            padding: 0.75rem;
+            background: var(--bg-card);
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        .stat-label {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+        .btn-row .btn {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <nav id="main-nav"></nav>
+    <script src="/nav-component.js"></script>
+
+    <div class="container">
+        <!-- Deck List View -->
+        <div class="view active" id="deckListView">
+            <h1>FlashMind</h1>
+            <p class="subtitle">Learn with Flashcards</p>
+
+            <button class="btn btn-full" id="createDeckBtn" style="margin-bottom: 1.5rem;">+ Create New Deck</button>
+
+            <div class="deck-grid" id="deckGrid">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📚</div>
+                    <div>No decks yet. Create one to start learning!</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create/Edit Deck View -->
+        <div class="view" id="createDeckView">
+            <div class="view-header">
+                <button class="back-btn" id="backToDecks">←</button>
+                <div class="view-title" id="createDeckTitle">Create Deck</div>
+            </div>
+
+            <div class="card">
+                <div class="form-group">
+                    <label>Deck Name</label>
+                    <input type="text" id="deckNameInput" placeholder="e.g., Spanish Vocabulary">
+                </div>
+                <button class="btn btn-full" id="saveDeckBtn">Save Deck</button>
+            </div>
+        </div>
+
+        <!-- Deck Detail View -->
+        <div class="view" id="deckDetailView">
+            <div class="view-header">
+                <button class="back-btn" id="backFromDetail">←</button>
+                <div class="view-title" id="deckDetailTitle">Deck</div>
+            </div>
+
+            <div class="stat-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalCards">0</div>
+                    <div class="stat-label">Total Cards</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="knownCards">0</div>
+                    <div class="stat-label">Known</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="reviewCards">0</div>
+                    <div class="stat-label">To Review</div>
+                </div>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn btn-success" id="studyDeckBtn">Study</button>
+                <button class="btn btn-secondary" id="addCardBtn">+ Add Card</button>
+            </div>
+
+            <div class="card" style="margin-top: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <div style="font-weight: 600;">Cards</div>
+                    <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.75rem;" id="deleteDeckBtn">Delete Deck</button>
+                </div>
+                <div class="card-list" id="cardList">
+                    <div class="empty-state" style="padding: 1.5rem;">No cards yet</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Card View -->
+        <div class="view" id="addCardView">
+            <div class="view-header">
+                <button class="back-btn" id="backFromAddCard">←</button>
+                <div class="view-title">Add Card</div>
+            </div>
+
+            <div class="card">
+                <div class="form-group">
+                    <label>Front (Question)</label>
+                    <textarea id="cardFrontInput" placeholder="What do you want to remember?"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Back (Answer)</label>
+                    <textarea id="cardBackInput" placeholder="The answer or definition"></textarea>
+                </div>
+                <button class="btn btn-full" id="saveCardBtn">Save Card</button>
+            </div>
+        </div>
+
+        <!-- Study View -->
+        <div class="view" id="studyView">
+            <div class="view-header">
+                <button class="back-btn" id="backFromStudy">←</button>
+                <div class="view-title" id="studyTitle">Study</div>
+            </div>
+
+            <div class="study-progress">
+                <div class="study-progress-text" id="studyProgressText">Card 1 of 10</div>
+                <div class="study-progress-bar">
+                    <div class="study-progress-fill" id="studyProgressFill" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="flashcard-container">
+                <div class="flashcard" id="flashcard">
+                    <div class="flashcard-face flashcard-front">
+                        <div id="flashcardFront">Question</div>
+                        <div class="flashcard-hint">Tap to flip</div>
+                    </div>
+                    <div class="flashcard-face flashcard-back">
+                        <div id="flashcardBack">Answer</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="study-controls">
+                <button class="btn btn-warning" id="reviewBtn">Review Again</button>
+                <button class="btn btn-success" id="knowBtn">Got It!</button>
+            </div>
+
+            <div class="empty-state" id="studyComplete" style="display: none;">
+                <div class="empty-state-icon">🎉</div>
+                <div style="margin-bottom: 1rem;">Session Complete!</div>
+                <button class="btn" id="studyAgainBtn">Study Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let state = {
+            decks: [],
+            currentDeckId: null
+        };
+
+        let studyState = {
+            cards: [],
+            currentIndex: 0,
+            isFlipped: false
+        };
+
+        // DOM Elements
+        const views = {
+            deckList: document.getElementById('deckListView'),
+            createDeck: document.getElementById('createDeckView'),
+            deckDetail: document.getElementById('deckDetailView'),
+            addCard: document.getElementById('addCardView'),
+            study: document.getElementById('studyView')
+        };
+
+        // Load state
+        function loadState() {
+            const saved = localStorage.getItem('flashmind_state');
+            if (saved) {
+                state = JSON.parse(saved);
+            }
+            renderDeckList();
+        }
+
+        // Save state
+        function saveState() {
+            localStorage.setItem('flashmind_state', JSON.stringify(state));
+        }
+
+        // Show view
+        function showView(viewName) {
+            Object.values(views).forEach(v => v.classList.remove('active'));
+            views[viewName].classList.add('active');
+        }
+
+        // Render deck list
+        function renderDeckList() {
+            const grid = document.getElementById('deckGrid');
+            if (state.decks.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📚</div>
+                        <div>No decks yet. Create one to start learning!</div>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = state.decks.map(deck => {
+                const total = deck.cards.length;
+                const known = deck.cards.filter(c => c.status === 'know').length;
+                const review = deck.cards.filter(c => c.status === 'review').length;
+                const progress = total > 0 ? (known / total) * 100 : 0;
+
+                return `
+                    <div class="deck-card" data-id="${deck.id}">
+                        <div class="deck-header">
+                            <div class="deck-name">${deck.name}</div>
+                            <div class="deck-count">${total} cards</div>
+                        </div>
+                        <div class="deck-progress">
+                            <div class="deck-progress-fill" style="width: ${progress}%"></div>
+                        </div>
+                        <div class="deck-stats">
+                            <span>${known} known</span>
+                            <span>${review} to review</span>
+                            <span>${Math.round(progress)}% mastered</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Get current deck
+        function getCurrentDeck() {
+            return state.decks.find(d => d.id === state.currentDeckId);
+        }
+
+        // Render deck detail
+        function renderDeckDetail() {
+            const deck = getCurrentDeck();
+            if (!deck) return;
+
+            document.getElementById('deckDetailTitle').textContent = deck.name;
+
+            const total = deck.cards.length;
+            const known = deck.cards.filter(c => c.status === 'know').length;
+            const review = deck.cards.filter(c => c.status === 'review').length;
+
+            document.getElementById('totalCards').textContent = total;
+            document.getElementById('knownCards').textContent = known;
+            document.getElementById('reviewCards').textContent = review + (total - known - review);
+
+            const cardList = document.getElementById('cardList');
+            if (deck.cards.length === 0) {
+                cardList.innerHTML = '<div class="empty-state" style="padding: 1.5rem;">No cards yet</div>';
+                return;
+            }
+
+            cardList.innerHTML = deck.cards.map(card => `
+                <div class="card-item">
+                    <div class="card-content">
+                        <div class="card-front-text">${card.front}</div>
+                        <div class="card-back-text">${card.back}</div>
+                    </div>
+                    <span class="card-status ${card.status || 'new'}">${card.status === 'know' ? 'Know' : card.status === 'review' ? 'Review' : 'New'}</span>
+                    <button class="card-delete" data-id="${card.id}">✕</button>
+                </div>
+            `).join('');
+        }
+
+        // Start study session
+        function startStudy() {
+            const deck = getCurrentDeck();
+            if (!deck || deck.cards.length === 0) return;
+
+            // Prioritize review cards (spaced repetition)
+            const reviewCards = deck.cards.filter(c => c.status === 'review');
+            const newCards = deck.cards.filter(c => !c.status || c.status === 'new');
+            const knownCards = deck.cards.filter(c => c.status === 'know');
+
+            // Study order: review first, then new, then known (shuffled)
+            studyState.cards = [...shuffle(reviewCards), ...shuffle(newCards), ...shuffle(knownCards)];
+            studyState.currentIndex = 0;
+            studyState.isFlipped = false;
+
+            document.getElementById('studyTitle').textContent = deck.name;
+            document.getElementById('studyComplete').style.display = 'none';
+            document.querySelector('.flashcard-container').style.display = 'block';
+            document.querySelector('.study-controls').style.display = 'flex';
+
+            showStudyCard();
+            showView('study');
+        }
+
+        // Shuffle array
+        function shuffle(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // Show current study card
+        function showStudyCard() {
+            if (studyState.currentIndex >= studyState.cards.length) {
+                // Study complete
+                document.getElementById('studyComplete').style.display = 'block';
+                document.querySelector('.flashcard-container').style.display = 'none';
+                document.querySelector('.study-controls').style.display = 'none';
+                return;
+            }
+
+            const card = studyState.cards[studyState.currentIndex];
+            document.getElementById('flashcardFront').textContent = card.front;
+            document.getElementById('flashcardBack').textContent = card.back;
+
+            // Reset flip state
+            document.getElementById('flashcard').classList.remove('flipped');
+            studyState.isFlipped = false;
+
+            // Update progress
+            const progress = ((studyState.currentIndex) / studyState.cards.length) * 100;
+            document.getElementById('studyProgressText').textContent = `Card ${studyState.currentIndex + 1} of ${studyState.cards.length}`;
+            document.getElementById('studyProgressFill').style.width = `${progress}%`;
+        }
+
+        // Mark card
+        function markCard(status) {
+            const card = studyState.cards[studyState.currentIndex];
+            const deck = getCurrentDeck();
+            const deckCard = deck.cards.find(c => c.id === card.id);
+            if (deckCard) {
+                deckCard.status = status;
+                saveState();
+            }
+
+            studyState.currentIndex++;
+            showStudyCard();
+        }
+
+        // Event listeners
+        document.getElementById('createDeckBtn').addEventListener('click', () => {
+            document.getElementById('deckNameInput').value = '';
+            document.getElementById('createDeckTitle').textContent = 'Create Deck';
+            showView('createDeck');
+        });
+
+        document.getElementById('backToDecks').addEventListener('click', () => {
+            showView('deckList');
+        });
+
+        document.getElementById('saveDeckBtn').addEventListener('click', () => {
+            const name = document.getElementById('deckNameInput').value.trim();
+            if (!name) return;
+
+            const deck = {
+                id: Date.now().toString(),
+                name,
+                cards: [],
+                createdAt: new Date().toISOString()
+            };
+
+            state.decks.push(deck);
+            saveState();
+            renderDeckList();
+            showView('deckList');
+        });
+
+        document.getElementById('deckGrid').addEventListener('click', (e) => {
+            const deckCard = e.target.closest('.deck-card');
+            if (deckCard) {
+                state.currentDeckId = deckCard.dataset.id;
+                renderDeckDetail();
+                showView('deckDetail');
+            }
+        });
+
+        document.getElementById('backFromDetail').addEventListener('click', () => {
+            renderDeckList();
+            showView('deckList');
+        });
+
+        document.getElementById('addCardBtn').addEventListener('click', () => {
+            document.getElementById('cardFrontInput').value = '';
+            document.getElementById('cardBackInput').value = '';
+            showView('addCard');
+        });
+
+        document.getElementById('backFromAddCard').addEventListener('click', () => {
+            renderDeckDetail();
+            showView('deckDetail');
+        });
+
+        document.getElementById('saveCardBtn').addEventListener('click', () => {
+            const front = document.getElementById('cardFrontInput').value.trim();
+            const back = document.getElementById('cardBackInput').value.trim();
+            if (!front || !back) return;
+
+            const deck = getCurrentDeck();
+            if (!deck) return;
+
+            deck.cards.push({
+                id: Date.now().toString(),
+                front,
+                back,
+                status: 'new',
+                createdAt: new Date().toISOString()
+            });
+
+            saveState();
+            document.getElementById('cardFrontInput').value = '';
+            document.getElementById('cardBackInput').value = '';
+            document.getElementById('cardFrontInput').focus();
+        });
+
+        document.getElementById('cardList').addEventListener('click', (e) => {
+            if (e.target.classList.contains('card-delete')) {
+                const cardId = e.target.dataset.id;
+                const deck = getCurrentDeck();
+                deck.cards = deck.cards.filter(c => c.id !== cardId);
+                saveState();
+                renderDeckDetail();
+            }
+        });
+
+        document.getElementById('deleteDeckBtn').addEventListener('click', () => {
+            if (confirm('Delete this deck and all its cards?')) {
+                state.decks = state.decks.filter(d => d.id !== state.currentDeckId);
+                state.currentDeckId = null;
+                saveState();
+                renderDeckList();
+                showView('deckList');
+            }
+        });
+
+        document.getElementById('studyDeckBtn').addEventListener('click', startStudy);
+
+        document.getElementById('backFromStudy').addEventListener('click', () => {
+            renderDeckDetail();
+            showView('deckDetail');
+        });
+
+        document.getElementById('flashcard').addEventListener('click', () => {
+            document.getElementById('flashcard').classList.toggle('flipped');
+            studyState.isFlipped = !studyState.isFlipped;
+        });
+
+        document.getElementById('reviewBtn').addEventListener('click', () => markCard('review'));
+        document.getElementById('knowBtn').addEventListener('click', () => markCard('know'));
+
+        document.getElementById('studyAgainBtn').addEventListener('click', startStudy);
+
+        // Initialize
+        loadState();
+    </script>
+</body>
+</html>

@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkillTree | SUITE</title>
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/nav.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: rgba(255,255,255,0.05);
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --text: #f8fafc;
+            --text-dim: rgba(248,250,252,0.6);
+            --success: #22c55e;
+            --warning: #eab308;
+            --error: #ef4444;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 80px 20px 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+        .subtitle {
+            color: var(--text-dim);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .btn-secondary {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .btn-full {
+            width: 100%;
+        }
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.875rem;
+        }
+
+        /* Stats */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        .stat-item {
+            text-align: center;
+            padding: 1rem 0.5rem;
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        .stat-label {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            margin-top: 0.25rem;
+        }
+
+        /* Skill List */
+        .skill-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .skill-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+        .skill-card.completed {
+            border-color: var(--success);
+        }
+        .skill-header {
+            padding: 1rem 1.25rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .skill-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+        .skill-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .skill-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        .skill-meta {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            display: flex;
+            gap: 0.75rem;
+        }
+        .skill-progress-ring {
+            width: 36px;
+            height: 36px;
+            flex-shrink: 0;
+        }
+        .skill-progress-ring svg {
+            transform: rotate(-90deg);
+        }
+        .skill-progress-ring .bg {
+            fill: none;
+            stroke: rgba(255,255,255,0.1);
+            stroke-width: 3;
+        }
+        .skill-progress-ring .progress {
+            fill: none;
+            stroke: var(--accent);
+            stroke-width: 3;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.3s;
+        }
+        .skill-progress-ring.completed .progress {
+            stroke: var(--success);
+        }
+        .skill-progress-text {
+            font-size: 0.65rem;
+            font-weight: 600;
+        }
+
+        .skill-content {
+            display: none;
+            padding: 0 1.25rem 1rem;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+        .skill-card.expanded .skill-content {
+            display: block;
+        }
+
+        /* Milestones */
+        .milestone-list {
+            padding-top: 1rem;
+        }
+        .milestone-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .milestone-item:last-child {
+            border-bottom: none;
+        }
+        .milestone-checkbox {
+            width: 22px;
+            height: 22px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+            margin-top: 2px;
+        }
+        .milestone-checkbox.checked {
+            background: var(--success);
+            border-color: var(--success);
+        }
+        .milestone-checkbox.checked::after {
+            content: '✓';
+            color: white;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        .milestone-text {
+            flex: 1;
+            font-size: 0.9rem;
+        }
+        .milestone-text.completed {
+            color: var(--text-dim);
+            text-decoration: line-through;
+        }
+        .milestone-delete {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            padding: 0.25rem;
+            opacity: 0.5;
+            font-size: 0.875rem;
+        }
+        .milestone-delete:hover {
+            opacity: 1;
+            color: var(--error);
+        }
+
+        .add-milestone {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+        .add-milestone input {
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: var(--text);
+            font-size: 0.875rem;
+            font-family: inherit;
+        }
+        .add-milestone input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .skill-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+        .skill-actions .btn {
+            flex: 1;
+        }
+
+        /* Form */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            color: var(--text-dim);
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+        .form-group input {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 12px;
+            color: var(--text);
+            font-size: 1rem;
+            font-family: inherit;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal {
+            background: var(--bg-dark);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 400px;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* Icon Picker */
+        .icon-picker {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .icon-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: var(--bg-card);
+            border: 2px solid transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .icon-option.selected {
+            border-color: var(--accent);
+            background: rgba(99, 102, 241, 0.2);
+        }
+
+        /* Color Picker */
+        .color-picker {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 0.75rem;
+        }
+        .color-option {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .color-option.selected {
+            border-color: white;
+            transform: scale(1.1);
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-dim);
+            padding: 3rem 1rem;
+        }
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Celebration */
+        .celebration {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            background: rgba(0,0,0,0.9);
+        }
+        .celebration.active {
+            display: flex;
+        }
+        .celebration-content {
+            text-align: center;
+            animation: celebrationPop 0.5s ease-out;
+        }
+        .celebration-emoji {
+            font-size: 5rem;
+            margin-bottom: 1rem;
+        }
+        .celebration-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .celebration-subtext {
+            color: var(--text-dim);
+            margin-bottom: 1.5rem;
+        }
+        @keyframes celebrationPop {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Time Tracking */
+        .time-tracker {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            margin-top: 0.75rem;
+        }
+        .time-tracker-label {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+        .time-tracker-value {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .time-tracker-btn {
+            margin-left: auto;
+            background: var(--accent);
+            border: none;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .time-tracker-btn.active {
+            background: var(--error);
+        }
+    </style>
+</head>
+<body>
+    <nav id="main-nav"></nav>
+    <script src="/nav-component.js"></script>
+
+    <div class="container">
+        <h1>SkillTree</h1>
+        <p class="subtitle">Track Your Learning Progress</p>
+
+        <div class="stat-grid">
+            <div class="stat-item">
+                <div class="stat-value" id="totalSkills">0</div>
+                <div class="stat-label">Skills</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="completedSkills">0</div>
+                <div class="stat-label">Completed</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalTime">0h</div>
+                <div class="stat-label">Time Spent</div>
+            </div>
+        </div>
+
+        <button class="btn btn-full" id="addSkillBtn" style="margin-bottom: 1.5rem;">+ Add Skill</button>
+
+        <div class="skill-list" id="skillList">
+            <div class="empty-state">
+                <div class="empty-state-icon">🌱</div>
+                <div>No skills yet. Start your learning journey!</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Skill Modal -->
+    <div class="modal-overlay" id="addModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">Add Skill</div>
+                <button class="modal-close" id="closeModal">×</button>
+            </div>
+            <div class="form-group">
+                <label>Skill Name</label>
+                <input type="text" id="skillNameInput" placeholder="e.g., Guitar, Python, Drawing">
+            </div>
+            <div class="form-group">
+                <label>Icon</label>
+                <div class="icon-picker" id="iconPicker"></div>
+            </div>
+            <div class="form-group">
+                <label>Color</label>
+                <div class="color-picker" id="colorPicker"></div>
+            </div>
+            <button class="btn btn-full" id="saveSkillBtn">Add Skill</button>
+        </div>
+    </div>
+
+    <!-- Celebration -->
+    <div class="celebration" id="celebration">
+        <div class="celebration-content">
+            <div class="celebration-emoji">🎉</div>
+            <div class="celebration-text">Skill Mastered!</div>
+            <div class="celebration-subtext" id="celebrationSkill">Guitar</div>
+            <button class="btn" id="closeCelebration">Awesome!</button>
+        </div>
+    </div>
+
+    <script>
+        const icons = ['🎸', '💻', '🎨', '📚', '🏋️', '🎹', '📷', '✍️', '🧘', '🔧', '🎯', '🌐'];
+        const colors = ['#6366f1', '#8b5cf6', '#ec4899', '#f97316', '#eab308', '#22c55e', '#14b8a6', '#3b82f6'];
+
+        let state = {
+            skills: [],
+            selectedIcon: icons[0],
+            selectedColor: colors[0],
+            activeTimers: {} // skillId -> startTime
+        };
+
+        // Load state
+        function loadState() {
+            const saved = localStorage.getItem('skilltree_state');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                state.skills = parsed.skills || [];
+            }
+            renderIconPicker();
+            renderColorPicker();
+            updateStats();
+            renderSkills();
+        }
+
+        // Save state
+        function saveState() {
+            localStorage.setItem('skilltree_state', JSON.stringify({
+                skills: state.skills
+            }));
+        }
+
+        // Render icon picker
+        function renderIconPicker() {
+            document.getElementById('iconPicker').innerHTML = icons.map(icon => `
+                <div class="icon-option ${icon === state.selectedIcon ? 'selected' : ''}" data-icon="${icon}">${icon}</div>
+            `).join('');
+        }
+
+        // Render color picker
+        function renderColorPicker() {
+            document.getElementById('colorPicker').innerHTML = colors.map(color => `
+                <div class="color-option ${color === state.selectedColor ? 'selected' : ''}"
+                     style="background: ${color}" data-color="${color}"></div>
+            `).join('');
+        }
+
+        // Update stats
+        function updateStats() {
+            const total = state.skills.length;
+            const completed = state.skills.filter(s => {
+                const done = s.milestones.filter(m => m.completed).length;
+                return s.milestones.length > 0 && done === s.milestones.length;
+            }).length;
+            const totalMinutes = state.skills.reduce((sum, s) => sum + (s.timeSpent || 0), 0);
+            const hours = Math.floor(totalMinutes / 60);
+            const mins = totalMinutes % 60;
+
+            document.getElementById('totalSkills').textContent = total;
+            document.getElementById('completedSkills').textContent = completed;
+            document.getElementById('totalTime').textContent = hours > 0 ? `${hours}h` : `${mins}m`;
+        }
+
+        // Render skills
+        function renderSkills() {
+            const list = document.getElementById('skillList');
+
+            if (state.skills.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🌱</div>
+                        <div>No skills yet. Start your learning journey!</div>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = state.skills.map(skill => {
+                const total = skill.milestones.length;
+                const done = skill.milestones.filter(m => m.completed).length;
+                const progress = total > 0 ? (done / total) * 100 : 0;
+                const isCompleted = total > 0 && done === total;
+                const circumference = 2 * Math.PI * 14;
+                const offset = circumference - (progress / 100) * circumference;
+
+                const hours = Math.floor((skill.timeSpent || 0) / 60);
+                const mins = (skill.timeSpent || 0) % 60;
+                const timeStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+
+                const isTracking = state.activeTimers[skill.id];
+
+                return `
+                    <div class="skill-card ${isCompleted ? 'completed' : ''}" data-id="${skill.id}">
+                        <div class="skill-header">
+                            <div class="skill-icon" style="background: ${skill.color}20">${skill.icon}</div>
+                            <div class="skill-info">
+                                <div class="skill-name">${skill.name}</div>
+                                <div class="skill-meta">
+                                    <span>${done}/${total} milestones</span>
+                                    <span>⏱️ ${timeStr}</span>
+                                </div>
+                            </div>
+                            <div class="skill-progress-ring ${isCompleted ? 'completed' : ''}">
+                                <svg viewBox="0 0 36 36">
+                                    <circle class="bg" cx="18" cy="18" r="14"></circle>
+                                    <circle class="progress" cx="18" cy="18" r="14"
+                                            style="stroke-dasharray: ${circumference}; stroke-dashoffset: ${offset}"></circle>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="skill-content">
+                            <div class="milestone-list">
+                                ${skill.milestones.map(m => `
+                                    <div class="milestone-item" data-mid="${m.id}">
+                                        <div class="milestone-checkbox ${m.completed ? 'checked' : ''}"></div>
+                                        <div class="milestone-text ${m.completed ? 'completed' : ''}">${m.text}</div>
+                                        <button class="milestone-delete">✕</button>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div class="add-milestone">
+                                <input type="text" placeholder="Add milestone..." class="milestone-input">
+                                <button class="btn btn-small">Add</button>
+                            </div>
+                            <div class="time-tracker">
+                                <span class="time-tracker-label">Time tracking:</span>
+                                <span class="time-tracker-value">${timeStr}</span>
+                                <button class="time-tracker-btn ${isTracking ? 'active' : ''}" data-skill="${skill.id}">
+                                    ${isTracking ? 'Stop' : 'Start'}
+                                </button>
+                            </div>
+                            <div class="skill-actions">
+                                <button class="btn btn-secondary btn-small delete-skill">Delete Skill</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Toggle skill expansion
+        function toggleSkill(skillId) {
+            const card = document.querySelector(`.skill-card[data-id="${skillId}"]`);
+            card.classList.toggle('expanded');
+        }
+
+        // Add skill
+        function addSkill() {
+            const name = document.getElementById('skillNameInput').value.trim();
+            if (!name) return;
+
+            const skill = {
+                id: Date.now().toString(),
+                name,
+                icon: state.selectedIcon,
+                color: state.selectedColor,
+                milestones: [],
+                timeSpent: 0,
+                createdAt: new Date().toISOString()
+            };
+
+            state.skills.push(skill);
+            saveState();
+            updateStats();
+            renderSkills();
+            hideModal();
+        }
+
+        // Add milestone
+        function addMilestone(skillId, text) {
+            const skill = state.skills.find(s => s.id === skillId);
+            if (!skill || !text) return;
+
+            skill.milestones.push({
+                id: Date.now().toString(),
+                text,
+                completed: false
+            });
+
+            saveState();
+            renderSkills();
+        }
+
+        // Toggle milestone
+        function toggleMilestone(skillId, milestoneId) {
+            const skill = state.skills.find(s => s.id === skillId);
+            if (!skill) return;
+
+            const milestone = skill.milestones.find(m => m.id === milestoneId);
+            if (!milestone) return;
+
+            milestone.completed = !milestone.completed;
+            saveState();
+
+            // Check if skill is now complete
+            const allDone = skill.milestones.length > 0 &&
+                           skill.milestones.every(m => m.completed);
+
+            if (allDone && milestone.completed) {
+                showCelebration(skill.name);
+            }
+
+            updateStats();
+            renderSkills();
+        }
+
+        // Delete milestone
+        function deleteMilestone(skillId, milestoneId) {
+            const skill = state.skills.find(s => s.id === skillId);
+            if (!skill) return;
+
+            skill.milestones = skill.milestones.filter(m => m.id !== milestoneId);
+            saveState();
+            updateStats();
+            renderSkills();
+        }
+
+        // Delete skill
+        function deleteSkill(skillId) {
+            if (!confirm('Delete this skill and all its milestones?')) return;
+
+            // Stop any active timer
+            if (state.activeTimers[skillId]) {
+                delete state.activeTimers[skillId];
+            }
+
+            state.skills = state.skills.filter(s => s.id !== skillId);
+            saveState();
+            updateStats();
+            renderSkills();
+        }
+
+        // Toggle time tracking
+        function toggleTimer(skillId) {
+            if (state.activeTimers[skillId]) {
+                // Stop timer
+                const startTime = state.activeTimers[skillId];
+                const elapsed = Math.floor((Date.now() - startTime) / 60000); // minutes
+                const skill = state.skills.find(s => s.id === skillId);
+                if (skill) {
+                    skill.timeSpent = (skill.timeSpent || 0) + elapsed;
+                    saveState();
+                }
+                delete state.activeTimers[skillId];
+            } else {
+                // Start timer
+                state.activeTimers[skillId] = Date.now();
+            }
+            updateStats();
+            renderSkills();
+        }
+
+        // Show celebration
+        function showCelebration(skillName) {
+            document.getElementById('celebrationSkill').textContent = skillName;
+            document.getElementById('celebration').classList.add('active');
+        }
+
+        // Hide celebration
+        function hideCelebration() {
+            document.getElementById('celebration').classList.remove('active');
+        }
+
+        // Show modal
+        function showModal() {
+            document.getElementById('skillNameInput').value = '';
+            state.selectedIcon = icons[0];
+            state.selectedColor = colors[0];
+            renderIconPicker();
+            renderColorPicker();
+            document.getElementById('addModal').classList.add('active');
+        }
+
+        // Hide modal
+        function hideModal() {
+            document.getElementById('addModal').classList.remove('active');
+        }
+
+        // Event listeners
+        document.getElementById('addSkillBtn').addEventListener('click', showModal);
+        document.getElementById('closeModal').addEventListener('click', hideModal);
+        document.getElementById('saveSkillBtn').addEventListener('click', addSkill);
+        document.getElementById('closeCelebration').addEventListener('click', hideCelebration);
+
+        document.getElementById('iconPicker').addEventListener('click', (e) => {
+            if (e.target.classList.contains('icon-option')) {
+                state.selectedIcon = e.target.dataset.icon;
+                renderIconPicker();
+            }
+        });
+
+        document.getElementById('colorPicker').addEventListener('click', (e) => {
+            if (e.target.classList.contains('color-option')) {
+                state.selectedColor = e.target.dataset.color;
+                renderColorPicker();
+            }
+        });
+
+        document.getElementById('skillList').addEventListener('click', (e) => {
+            const skillCard = e.target.closest('.skill-card');
+            if (!skillCard) return;
+
+            const skillId = skillCard.dataset.id;
+
+            // Header click - toggle expansion
+            if (e.target.closest('.skill-header')) {
+                toggleSkill(skillId);
+                return;
+            }
+
+            // Milestone checkbox
+            if (e.target.classList.contains('milestone-checkbox')) {
+                const milestoneItem = e.target.closest('.milestone-item');
+                toggleMilestone(skillId, milestoneItem.dataset.mid);
+                return;
+            }
+
+            // Milestone delete
+            if (e.target.classList.contains('milestone-delete')) {
+                const milestoneItem = e.target.closest('.milestone-item');
+                deleteMilestone(skillId, milestoneItem.dataset.mid);
+                return;
+            }
+
+            // Add milestone button
+            if (e.target.closest('.add-milestone .btn')) {
+                const input = skillCard.querySelector('.milestone-input');
+                addMilestone(skillId, input.value.trim());
+                input.value = '';
+                return;
+            }
+
+            // Timer button
+            if (e.target.classList.contains('time-tracker-btn')) {
+                toggleTimer(e.target.dataset.skill);
+                return;
+            }
+
+            // Delete skill
+            if (e.target.classList.contains('delete-skill')) {
+                deleteSkill(skillId);
+                return;
+            }
+        });
+
+        // Enter key for milestone input
+        document.getElementById('skillList').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && e.target.classList.contains('milestone-input')) {
+                const skillCard = e.target.closest('.skill-card');
+                addMilestone(skillCard.dataset.id, e.target.value.trim());
+                e.target.value = '';
+            }
+        });
+
+        // Close modal on overlay click
+        document.getElementById('addModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('addModal')) hideModal();
+        });
+
+        // Initialize
+        loadState();
+    </script>
+</body>
+</html>

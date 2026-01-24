@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DateNight | SUITE</title>
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/nav.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: rgba(255,255,255,0.05);
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --text: #f8fafc;
+            --text-dim: rgba(248,250,252,0.6);
+            --success: #22c55e;
+            --warning: #eab308;
+            --error: #ef4444;
+            --romantic: #ec4899;
+            --adventure: #f97316;
+            --budget: #22c55e;
+            --home: #8b5cf6;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 80px 20px 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .subtitle {
+            color: var(--text-dim);
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .btn-secondary {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .btn-icon {
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .btn-icon:hover {
+            background: var(--bg-card);
+            color: var(--text);
+        }
+        .category-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .tab {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: transparent;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .tab:hover {
+            border-color: rgba(255,255,255,0.2);
+        }
+        .tab.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+        .tab[data-category="romantic"].active { background: var(--romantic); border-color: var(--romantic); }
+        .tab[data-category="adventure"].active { background: var(--adventure); border-color: var(--adventure); }
+        .tab[data-category="budget"].active { background: var(--budget); border-color: var(--budget); }
+        .tab[data-category="home"].active { background: var(--home); border-color: var(--home); }
+
+        .idea-display {
+            text-align: center;
+            padding: 2rem;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .idea-emoji {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        .idea-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            line-height: 1.3;
+        }
+        .idea-category {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-bottom: 1rem;
+        }
+        .idea-category.romantic { background: var(--romantic); }
+        .idea-category.adventure { background: var(--adventure); }
+        .idea-category.budget { background: var(--budget); }
+        .idea-category.home { background: var(--home); }
+
+        .idea-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .shuffle-btn {
+            font-size: 1.25rem;
+            animation: none;
+        }
+        .shuffle-btn.shuffling {
+            animation: shake 0.5s ease-in-out;
+        }
+        @keyframes shake {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-15deg); }
+            75% { transform: rotate(15deg); }
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .idea-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .idea-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+        }
+        .idea-item-content {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .idea-item-emoji {
+            font-size: 1.5rem;
+        }
+        .idea-item-text {
+            font-weight: 600;
+        }
+        .idea-item-cat {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+
+        .custom-input {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .custom-input input, .custom-input select {
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 12px;
+            color: var(--text);
+            font-size: 1rem;
+        }
+        .custom-input input::placeholder {
+            color: var(--text-dim);
+        }
+        .custom-input select {
+            max-width: 120px;
+        }
+        .custom-input button {
+            padding: 12px 20px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-dim);
+        }
+
+        .history-date {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <nav id="main-nav"></nav>
+    <script src="/nav-component.js"></script>
+
+    <div class="container">
+        <h1>💕 DateNight</h1>
+        <p class="subtitle">Never run out of date ideas</p>
+
+        <div class="category-tabs">
+            <button class="tab active" data-category="all">All</button>
+            <button class="tab" data-category="romantic">💗 Romantic</button>
+            <button class="tab" data-category="adventure">🎯 Adventure</button>
+            <button class="tab" data-category="budget">💰 Budget</button>
+            <button class="tab" data-category="home">🏠 Home</button>
+        </div>
+
+        <div class="card">
+            <div class="idea-display" id="ideaDisplay">
+                <div class="idea-emoji">💕</div>
+                <div class="idea-text">Tap shuffle for a date idea!</div>
+            </div>
+            <button class="btn shuffle-btn" id="shuffleBtn" onclick="shuffle()">
+                🎲 Shuffle
+            </button>
+            <div class="idea-actions" id="ideaActions" style="display: none;">
+                <button class="btn btn-secondary" onclick="saveFavorite()">❤️ Save</button>
+                <button class="btn btn-secondary" onclick="markDone()">✓ We Did This</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="section-title">
+                <span>Add Your Own Idea</span>
+            </div>
+            <div class="custom-input">
+                <input type="text" id="customIdea" placeholder="Your date idea...">
+                <select id="customCategory">
+                    <option value="romantic">💗 Romantic</option>
+                    <option value="adventure">🎯 Adventure</option>
+                    <option value="budget">💰 Budget</option>
+                    <option value="home">🏠 Home</option>
+                </select>
+            </div>
+            <button class="btn btn-secondary" style="margin-top: 0.75rem;" onclick="addCustomIdea()">+ Add Idea</button>
+        </div>
+
+        <div class="card">
+            <div class="section-title">
+                <span>❤️ Favorites</span>
+                <span id="favCount">0</span>
+            </div>
+            <div class="idea-list" id="favoritesList">
+                <div class="empty-state">No favorites yet</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="section-title">
+                <span>✓ Date History</span>
+                <span id="historyCount">0</span>
+            </div>
+            <div class="idea-list" id="historyList">
+                <div class="empty-state">No dates completed yet</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const defaultIdeas = [
+            { text: "Sunset picnic at a scenic spot", emoji: "🌅", category: "romantic" },
+            { text: "Cook a fancy dinner together", emoji: "👨‍🍳", category: "romantic" },
+            { text: "Stargazing with blankets", emoji: "⭐", category: "romantic" },
+            { text: "Couples massage at home", emoji: "💆", category: "romantic" },
+            { text: "Recreate your first date", emoji: "💕", category: "romantic" },
+            { text: "Candlelit bubble bath", emoji: "🛁", category: "romantic" },
+            { text: "Slow dance in the living room", emoji: "💃", category: "romantic" },
+            { text: "Write love letters to each other", emoji: "💌", category: "romantic" },
+
+            { text: "Go hiking to a new trail", emoji: "🥾", category: "adventure" },
+            { text: "Try rock climbing", emoji: "🧗", category: "adventure" },
+            { text: "Take a spontaneous road trip", emoji: "🚗", category: "adventure" },
+            { text: "Go kayaking or paddleboarding", emoji: "🛶", category: "adventure" },
+            { text: "Visit an escape room", emoji: "🔐", category: "adventure" },
+            { text: "Try a new restaurant cuisine", emoji: "🍽️", category: "adventure" },
+            { text: "Go to a concert or live show", emoji: "🎵", category: "adventure" },
+            { text: "Take a dance class together", emoji: "🕺", category: "adventure" },
+
+            { text: "Movie marathon at home", emoji: "🎬", category: "budget" },
+            { text: "Free museum day visit", emoji: "🏛️", category: "budget" },
+            { text: "Pack lunch and explore a park", emoji: "🧺", category: "budget" },
+            { text: "Bake cookies together", emoji: "🍪", category: "budget" },
+            { text: "Window shopping downtown", emoji: "🛍️", category: "budget" },
+            { text: "Volunteer together", emoji: "🤝", category: "budget" },
+            { text: "Beach day with snacks", emoji: "🏖️", category: "budget" },
+            { text: "Photography walk around town", emoji: "📸", category: "budget" },
+
+            { text: "Build a blanket fort", emoji: "🏰", category: "home" },
+            { text: "Game night with snacks", emoji: "🎮", category: "home" },
+            { text: "DIY spa night", emoji: "🧖", category: "home" },
+            { text: "Cook a new recipe together", emoji: "🥘", category: "home" },
+            { text: "Wine and paint night", emoji: "🎨", category: "home" },
+            { text: "Build a puzzle together", emoji: "🧩", category: "home" },
+            { text: "Have a breakfast-in-bed day", emoji: "🥞", category: "home" },
+            { text: "Create a scrapbook together", emoji: "📖", category: "home" }
+        ];
+
+        let currentIdea = null;
+        let activeCategory = 'all';
+        let customIdeas = JSON.parse(localStorage.getItem('datenight_custom') || '[]');
+        let favorites = JSON.parse(localStorage.getItem('datenight_favorites') || '[]');
+        let history = JSON.parse(localStorage.getItem('datenight_history') || '[]');
+
+        function getAllIdeas() {
+            return [...defaultIdeas, ...customIdeas];
+        }
+
+        function getFilteredIdeas() {
+            const all = getAllIdeas();
+            if (activeCategory === 'all') return all;
+            return all.filter(i => i.category === activeCategory);
+        }
+
+        function shuffle() {
+            const btn = document.getElementById('shuffleBtn');
+            btn.classList.add('shuffling');
+            setTimeout(() => btn.classList.remove('shuffling'), 500);
+
+            const ideas = getFilteredIdeas();
+            if (ideas.length === 0) {
+                document.getElementById('ideaDisplay').innerHTML = `
+                    <div class="idea-emoji">😅</div>
+                    <div class="idea-text">No ideas in this category!</div>
+                `;
+                document.getElementById('ideaActions').style.display = 'none';
+                return;
+            }
+
+            currentIdea = ideas[Math.floor(Math.random() * ideas.length)];
+
+            document.getElementById('ideaDisplay').innerHTML = `
+                <span class="idea-category ${currentIdea.category}">${currentIdea.category}</span>
+                <div class="idea-emoji">${currentIdea.emoji}</div>
+                <div class="idea-text">${currentIdea.text}</div>
+            `;
+            document.getElementById('ideaActions').style.display = 'flex';
+        }
+
+        function saveFavorite() {
+            if (!currentIdea) return;
+            const exists = favorites.some(f => f.text === currentIdea.text);
+            if (!exists) {
+                favorites.unshift({ ...currentIdea, addedAt: Date.now() });
+                localStorage.setItem('datenight_favorites', JSON.stringify(favorites));
+                renderFavorites();
+            }
+        }
+
+        function markDone() {
+            if (!currentIdea) return;
+            history.unshift({ ...currentIdea, doneAt: Date.now() });
+            localStorage.setItem('datenight_history', JSON.stringify(history));
+            renderHistory();
+            shuffle();
+        }
+
+        function removeFavorite(index) {
+            favorites.splice(index, 1);
+            localStorage.setItem('datenight_favorites', JSON.stringify(favorites));
+            renderFavorites();
+        }
+
+        function addCustomIdea() {
+            const text = document.getElementById('customIdea').value.trim();
+            const category = document.getElementById('customCategory').value;
+            if (!text) return;
+
+            customIdeas.push({ text, emoji: "💡", category, custom: true });
+            localStorage.setItem('datenight_custom', JSON.stringify(customIdeas));
+            document.getElementById('customIdea').value = '';
+        }
+
+        function renderFavorites() {
+            const list = document.getElementById('favoritesList');
+            document.getElementById('favCount').textContent = favorites.length;
+
+            if (favorites.length === 0) {
+                list.innerHTML = '<div class="empty-state">No favorites yet</div>';
+                return;
+            }
+
+            list.innerHTML = favorites.map((idea, i) => `
+                <div class="idea-item">
+                    <div class="idea-item-content">
+                        <span class="idea-item-emoji">${idea.emoji}</span>
+                        <div>
+                            <div class="idea-item-text">${idea.text}</div>
+                            <div class="idea-item-cat">${idea.category}</div>
+                        </div>
+                    </div>
+                    <button class="btn-icon" onclick="removeFavorite(${i})">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('historyList');
+            document.getElementById('historyCount').textContent = history.length;
+
+            if (history.length === 0) {
+                list.innerHTML = '<div class="empty-state">No dates completed yet</div>';
+                return;
+            }
+
+            list.innerHTML = history.slice(0, 10).map(idea => `
+                <div class="idea-item">
+                    <div class="idea-item-content">
+                        <span class="idea-item-emoji">${idea.emoji}</span>
+                        <div>
+                            <div class="idea-item-text">${idea.text}</div>
+                            <div class="history-date">${new Date(idea.doneAt).toLocaleDateString()}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                activeCategory = tab.dataset.category;
+            });
+        });
+
+        // Initial render
+        renderFavorites();
+        renderHistory();
+    </script>
+</body>
+</html>

@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoodLog | SUITE</title>
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/nav.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: rgba(255,255,255,0.05);
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --text: #f8fafc;
+            --text-dim: rgba(248,250,252,0.6);
+            --success: #22c55e;
+            --warning: #eab308;
+            --error: #ef4444;
+            --mood-great: #22c55e;
+            --mood-good: #84cc16;
+            --mood-okay: #eab308;
+            --mood-bad: #f97316;
+            --mood-terrible: #ef4444;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 80px 20px 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+        .subtitle {
+            color: var(--text-dim);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .mood-selector {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+        .mood-btn {
+            flex: 1;
+            padding: 1rem 0.5rem;
+            background: var(--bg-card);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            margin: 0 0.25rem;
+        }
+        .mood-btn:hover {
+            transform: translateY(-2px);
+        }
+        .mood-btn.active {
+            transform: translateY(-4px);
+        }
+        .mood-btn[data-mood="great"].active { border-color: var(--mood-great); background: rgba(34,197,94,0.2); }
+        .mood-btn[data-mood="good"].active { border-color: var(--mood-good); background: rgba(132,204,22,0.2); }
+        .mood-btn[data-mood="okay"].active { border-color: var(--mood-okay); background: rgba(234,179,8,0.2); }
+        .mood-btn[data-mood="bad"].active { border-color: var(--mood-bad); background: rgba(249,115,22,0.2); }
+        .mood-btn[data-mood="terrible"].active { border-color: var(--mood-terrible); background: rgba(239,68,68,0.2); }
+        .mood-emoji {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+        .mood-label {
+            font-size: 0.625rem;
+            color: var(--text-dim);
+        }
+        .note-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 1rem;
+            resize: none;
+            font-family: inherit;
+            margin-bottom: 1rem;
+        }
+        .note-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .gratitude-prompt {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .gratitude-prompt label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-dim);
+            font-size: 0.875rem;
+            cursor: pointer;
+        }
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .calendar-header h3 {
+            font-size: 1rem;
+        }
+        .calendar-nav {
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+        .calendar-day-label {
+            text-align: center;
+            font-size: 0.625rem;
+            color: var(--text-dim);
+            padding: 0.25rem;
+        }
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            background: rgba(255,255,255,0.02);
+        }
+        .calendar-day.empty {
+            background: transparent;
+        }
+        .calendar-day.today {
+            border: 1px solid var(--accent);
+        }
+        .calendar-day .mood-dot {
+            font-size: 1.25rem;
+        }
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .stat-mood {
+            text-align: center;
+            padding: 0.5rem;
+            background: var(--bg-card);
+            border-radius: 8px;
+        }
+        .stat-mood-emoji {
+            font-size: 1.25rem;
+        }
+        .stat-mood-count {
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        .weekly-pattern {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            height: 80px;
+            padding: 0.5rem 0;
+        }
+        .pattern-day {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .pattern-bar {
+            width: 100%;
+            max-width: 30px;
+            border-radius: 4px;
+            transition: height 0.3s;
+        }
+        .pattern-label {
+            font-size: 0.625rem;
+            color: var(--text-dim);
+        }
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .tab {
+            flex: 1;
+            padding: 0.75rem;
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: var(--text-dim);
+            cursor: pointer;
+            text-align: center;
+            font-size: 0.875rem;
+        }
+        .tab.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+    <nav id="main-nav"></nav>
+    <script src="/nav-component.js"></script>
+
+    <div class="container">
+        <h1>MoodLog</h1>
+        <p class="subtitle">Track your emotions, understand yourself</p>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('log')">Log Mood</button>
+            <button class="tab" onclick="showTab('calendar')">Calendar</button>
+            <button class="tab" onclick="showTab('insights')">Insights</button>
+        </div>
+
+        <div id="logTab">
+            <div class="card">
+                <p style="text-align: center; margin-bottom: 1rem; color: var(--text-dim);">How are you feeling?</p>
+                <div class="mood-selector">
+                    <button class="mood-btn" data-mood="great" onclick="selectMood('great')">
+                        <span class="mood-emoji">😄</span>
+                        <span class="mood-label">Great</span>
+                    </button>
+                    <button class="mood-btn" data-mood="good" onclick="selectMood('good')">
+                        <span class="mood-emoji">🙂</span>
+                        <span class="mood-label">Good</span>
+                    </button>
+                    <button class="mood-btn" data-mood="okay" onclick="selectMood('okay')">
+                        <span class="mood-emoji">😐</span>
+                        <span class="mood-label">Okay</span>
+                    </button>
+                    <button class="mood-btn" data-mood="bad" onclick="selectMood('bad')">
+                        <span class="mood-emoji">😕</span>
+                        <span class="mood-label">Bad</span>
+                    </button>
+                    <button class="mood-btn" data-mood="terrible" onclick="selectMood('terrible')">
+                        <span class="mood-emoji">😢</span>
+                        <span class="mood-label">Terrible</span>
+                    </button>
+                </div>
+
+                <textarea class="note-input" id="noteInput" rows="3" placeholder="Add a note (optional)..."></textarea>
+
+                <div class="gratitude-prompt">
+                    <label>
+                        <input type="checkbox" id="gratitudeCheck">
+                        Add gratitude: What's one good thing today?
+                    </label>
+                    <textarea class="note-input" id="gratitudeInput" rows="2"
+                              placeholder="I'm grateful for..."
+                              style="display: none; margin-top: 0.75rem; margin-bottom: 0;"></textarea>
+                </div>
+
+                <button class="btn" onclick="logMood()">Log Mood</button>
+            </div>
+        </div>
+
+        <div id="calendarTab" style="display: none;">
+            <div class="card">
+                <div class="calendar-header">
+                    <button class="calendar-nav" onclick="changeMonth(-1)">‹</button>
+                    <h3 id="calendarTitle">January 2026</h3>
+                    <button class="calendar-nav" onclick="changeMonth(1)">›</button>
+                </div>
+                <div class="calendar">
+                    <div class="calendar-day-label">S</div>
+                    <div class="calendar-day-label">M</div>
+                    <div class="calendar-day-label">T</div>
+                    <div class="calendar-day-label">W</div>
+                    <div class="calendar-day-label">T</div>
+                    <div class="calendar-day-label">F</div>
+                    <div class="calendar-day-label">S</div>
+                    <div id="calendarDays"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="insightsTab" style="display: none;">
+            <div class="card">
+                <h3 style="margin-bottom: 1rem; font-size: 1rem;">Mood Distribution</h3>
+                <div class="stat-grid" id="moodStats">
+                    <div class="stat-mood"><span class="stat-mood-emoji">😄</span><div class="stat-mood-count">0</div></div>
+                    <div class="stat-mood"><span class="stat-mood-emoji">🙂</span><div class="stat-mood-count">0</div></div>
+                    <div class="stat-mood"><span class="stat-mood-emoji">😐</span><div class="stat-mood-count">0</div></div>
+                    <div class="stat-mood"><span class="stat-mood-emoji">😕</span><div class="stat-mood-count">0</div></div>
+                    <div class="stat-mood"><span class="stat-mood-emoji">😢</span><div class="stat-mood-count">0</div></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1rem; font-size: 1rem;">Weekly Pattern</h3>
+                <div class="weekly-pattern" id="weeklyPattern"></div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 0.5rem; font-size: 1rem;">Current Streak</h3>
+                <p style="font-size: 2rem; font-weight: 700; color: var(--accent);" id="streak">0 days</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedMood = null;
+        let currentMonth = new Date();
+
+        const moodEmojis = {
+            great: '😄',
+            good: '🙂',
+            okay: '😐',
+            bad: '😕',
+            terrible: '😢'
+        };
+
+        const moodColors = {
+            great: '#22c55e',
+            good: '#84cc16',
+            okay: '#eab308',
+            bad: '#f97316',
+            terrible: '#ef4444'
+        };
+
+        const moodValues = {
+            great: 5,
+            good: 4,
+            okay: 3,
+            bad: 2,
+            terrible: 1
+        };
+
+        function getData() {
+            return JSON.parse(localStorage.getItem('moodlog') || '{"logs":[]}');
+        }
+
+        function saveData(data) {
+            localStorage.setItem('moodlog', JSON.stringify(data));
+        }
+
+        function selectMood(mood) {
+            selectedMood = mood;
+            document.querySelectorAll('.mood-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mood === mood);
+            });
+        }
+
+        document.getElementById('gratitudeCheck').addEventListener('change', function() {
+            document.getElementById('gratitudeInput').style.display = this.checked ? 'block' : 'none';
+        });
+
+        function logMood() {
+            if (!selectedMood) {
+                alert('Please select a mood!');
+                return;
+            }
+
+            const data = getData();
+            const entry = {
+                date: new Date().toISOString(),
+                mood: selectedMood,
+                note: document.getElementById('noteInput').value,
+                gratitude: document.getElementById('gratitudeCheck').checked
+                    ? document.getElementById('gratitudeInput').value
+                    : null
+            };
+
+            data.logs.unshift(entry);
+            saveData(data);
+
+            document.getElementById('noteInput').value = '';
+            document.getElementById('gratitudeInput').value = '';
+            document.getElementById('gratitudeCheck').checked = false;
+            document.getElementById('gratitudeInput').style.display = 'none';
+            selectedMood = null;
+            document.querySelectorAll('.mood-btn').forEach(btn => btn.classList.remove('active'));
+
+            updateUI();
+            alert('Mood logged! 🎉');
+        }
+
+        function showTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.tab[onclick="showTab('${tab}')"]`).classList.add('active');
+
+            document.getElementById('logTab').style.display = tab === 'log' ? 'block' : 'none';
+            document.getElementById('calendarTab').style.display = tab === 'calendar' ? 'block' : 'none';
+            document.getElementById('insightsTab').style.display = tab === 'insights' ? 'block' : 'none';
+
+            if (tab === 'calendar') renderCalendar();
+            if (tab === 'insights') updateInsights();
+        }
+
+        function changeMonth(delta) {
+            currentMonth.setMonth(currentMonth.getMonth() + delta);
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const data = getData();
+            const year = currentMonth.getFullYear();
+            const month = currentMonth.getMonth();
+
+            document.getElementById('calendarTitle').textContent =
+                currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const today = new Date();
+
+            let html = '';
+
+            for (let i = 0; i < firstDay; i++) {
+                html += '<div class="calendar-day empty"></div>';
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayLogs = data.logs.filter(l => l.date.startsWith(dateStr));
+                const isToday = today.getFullYear() === year &&
+                               today.getMonth() === month &&
+                               today.getDate() === day;
+
+                let content = day;
+                if (dayLogs.length > 0) {
+                    const lastMood = dayLogs[0].mood;
+                    content = `<span class="mood-dot">${moodEmojis[lastMood]}</span>`;
+                }
+
+                html += `<div class="calendar-day ${isToday ? 'today' : ''}">${content}</div>`;
+            }
+
+            document.getElementById('calendarDays').outerHTML =
+                `<div id="calendarDays" style="display: contents;">${html}</div>`;
+        }
+
+        function updateInsights() {
+            const data = getData();
+            const logs = data.logs;
+
+            const moodCounts = { great: 0, good: 0, okay: 0, bad: 0, terrible: 0 };
+            logs.forEach(l => moodCounts[l.mood]++);
+
+            const statsContainer = document.getElementById('moodStats');
+            const moods = ['great', 'good', 'okay', 'bad', 'terrible'];
+            statsContainer.innerHTML = moods.map(mood => `
+                <div class="stat-mood">
+                    <span class="stat-mood-emoji">${moodEmojis[mood]}</span>
+                    <div class="stat-mood-count">${moodCounts[mood]}</div>
+                </div>
+            `).join('');
+
+            updateWeeklyPattern(logs);
+            updateStreak(logs);
+        }
+
+        function updateWeeklyPattern(logs) {
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const dayAverages = days.map((_, i) => {
+                const dayLogs = logs.filter(l => new Date(l.date).getDay() === i);
+                if (dayLogs.length === 0) return 0;
+                const sum = dayLogs.reduce((acc, l) => acc + moodValues[l.mood], 0);
+                return sum / dayLogs.length;
+            });
+
+            const container = document.getElementById('weeklyPattern');
+            container.innerHTML = days.map((day, i) => {
+                const height = dayAverages[i] ? (dayAverages[i] / 5) * 60 : 4;
+                const color = dayAverages[i] >= 4 ? moodColors.good
+                            : dayAverages[i] >= 3 ? moodColors.okay
+                            : dayAverages[i] >= 2 ? moodColors.bad
+                            : 'rgba(255,255,255,0.1)';
+                return `
+                    <div class="pattern-day">
+                        <div class="pattern-bar" style="height: ${height}px; background: ${color};"></div>
+                        <span class="pattern-label">${day.charAt(0)}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateStreak(logs) {
+            let streak = 0;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            for (let i = 0; i < 365; i++) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                const dateStr = date.toISOString().split('T')[0];
+                const hasLog = logs.some(l => l.date.startsWith(dateStr));
+
+                if (hasLog) {
+                    streak++;
+                } else if (i > 0) {
+                    break;
+                }
+            }
+
+            document.getElementById('streak').textContent = streak + ' day' + (streak !== 1 ? 's' : '');
+        }
+
+        function updateUI() {
+            renderCalendar();
+            updateInsights();
+        }
+
+        updateUI();
+    </script>
+</body>
+</html>
