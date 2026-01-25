@@ -1,24 +1,56 @@
+import { ImageResponse } from '@vercel/og'
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import {
+    PLATFORM_DIMENSIONS,
+    TEMPLATES,
+    selectTemplate,
+    extractHeadline,
+    extractSubheadline,
+} from '@/lib/image-templates'
 
-// Platform-specific aspect ratios and dimensions
-const PLATFORM_DIMENSIONS: Record<string, { width: number; height: number; aspectRatio: string }> = {
-    instagram: { width: 1080, height: 1080, aspectRatio: '1:1' },
-    tiktok: { width: 1080, height: 1920, aspectRatio: '9:16' },
-    x: { width: 1200, height: 675, aspectRatio: '16:9' },
-    linkedin: { width: 1200, height: 628, aspectRatio: '1.91:1' },
-}
+export const runtime = 'edge'
+
+// Supabase config for edge runtime (direct fetch)
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 interface GenerateImageRequest {
     postId: string
     platform: string
     content: string
+    templateId?: string  // Optional: force a specific template
+}
+
+// Pattern SVG generators
+function generateDotsPattern(color: string): string {
+    return `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='2' cy='2' r='1' fill='${encodeURIComponent(color)}' fill-opacity='0.15'/%3E%3C/svg%3E")`
+}
+
+function generateGridPattern(color: string): string {
+    return `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h40v40H0z' fill='none' stroke='${encodeURIComponent(color)}' stroke-opacity='0.1' stroke-width='1'/%3E%3C/svg%3E")`
+}
+
+function generateWavesPattern(color: string): string {
+    return `url("data:image/svg+xml,%3Csvg width='100' height='20' viewBox='0 0 100 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 10 Q 25 0, 50 10 T 100 10' fill='none' stroke='${encodeURIComponent(color)}' stroke-opacity='0.1' stroke-width='2'/%3E%3C/svg%3E")`
+}
+
+function getPatternStyle(pattern: string | undefined, color: string): string {
+    switch (pattern) {
+        case 'dots':
+            return generateDotsPattern(color)
+        case 'grid':
+            return generateGridPattern(color)
+        case 'waves':
+            return generateWavesPattern(color)
+        default:
+            return 'none'
+    }
 }
 
 export async function POST(req: NextRequest) {
     try {
         const body: GenerateImageRequest = await req.json()
-        const { postId, platform, content } = body
+        const { postId, platform, content, templateId } = body
 
         if (!postId || !platform || !content) {
             return NextResponse.json(
@@ -27,139 +59,226 @@ export async function POST(req: NextRequest) {
             )
         }
 
-        const dimensions = PLATFORM_DIMENSIONS[platform] || PLATFORM_DIMENSIONS.x
-        const geminiApiKey = process.env.GEMINI_API_KEY
+        // Get dimensions for platform
+        const dimensions = PLATFORM_DIMENSIONS[platform as keyof typeof PLATFORM_DIMENSIONS]
+            || PLATFORM_DIMENSIONS.x
 
-        if (!geminiApiKey) {
-            return NextResponse.json(
-                { error: 'GEMINI_API_KEY not configured' },
-                { status: 500 }
-            )
-        }
+        // Select template (either forced or auto-selected)
+        const template = templateId
+            ? TEMPLATES.find(t => t.id === templateId) || selectTemplate(content)
+            : selectTemplate(content)
 
-        // Extract key themes from the post content for the image prompt
-        const contentPreview = content.substring(0, 500)
+        // Extract text for the image
+        const headline = extractHeadline(content, platform === 'x' ? 50 : 60)
+        const subheadline = extractSubheadline(content, platform === 'x' ? 80 : 100)
 
-        // Create an image prompt based on the post content
-        const imagePrompt = `Create a professional, eye-catching social media graphic for ${platform}.
-The image should be modern, clean, and visually striking.
-Theme/context from the post: "${contentPreview}"
+        // Generate the image using @vercel/og
+        const imageResponse = new ImageResponse(
+            (
+                <div
+                    style={{
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: template.background,
+                        backgroundImage: getPatternStyle(template.pattern, template.accentColor),
+                        backgroundSize: template.pattern === 'waves' ? '100px 20px' : '20px 20px',
+                        padding: '60px',
+                        position: 'relative',
+                    }}
+                >
+                    {/* Decorative accent shapes */}
+                    <div
+                        style={{
+                            position: 'absolute',
+                            top: '-100px',
+                            right: '-100px',
+                            width: '400px',
+                            height: '400px',
+                            borderRadius: '50%',
+                            background: template.accentColor,
+                            opacity: 0.1,
+                        }}
+                    />
+                    <div
+                        style={{
+                            position: 'absolute',
+                            bottom: '-150px',
+                            left: '-150px',
+                            width: '500px',
+                            height: '500px',
+                            borderRadius: '50%',
+                            background: template.accentColor,
+                            opacity: 0.08,
+                        }}
+                    />
 
-Style guidelines:
-- Use bold, vibrant colors with good contrast
-- Include abstract tech/digital elements if relevant
-- No text in the image (the post text will be added separately)
-- Professional and polished look suitable for a tech/AI product
-- Aspect ratio: ${dimensions.aspectRatio}
-- Modern gradient backgrounds work well
-- Subtle geometric patterns or shapes are good`
+                    {/* Content container */}
+                    <div
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: template.style === 'centered' ? 'center' : 'flex-start',
+                            justifyContent: 'center',
+                            textAlign: template.style === 'centered' ? 'center' : 'left',
+                            maxWidth: '90%',
+                            zIndex: 1,
+                        }}
+                    >
+                        {/* Logo / Brand */}
+                        <div
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                marginBottom: '30px',
+                            }}
+                        >
+                            <div
+                                style={{
+                                    width: '48px',
+                                    height: '48px',
+                                    borderRadius: '12px',
+                                    background: 'rgba(255,255,255,0.2)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '24px',
+                                }}
+                            >
+                                🚀
+                            </div>
+                            <span
+                                style={{
+                                    fontSize: '24px',
+                                    fontWeight: 700,
+                                    color: template.textColor,
+                                    letterSpacing: '-0.02em',
+                                }}
+                            >
+                                SuiteGPT
+                            </span>
+                        </div>
 
-        // Call Gemini's Imagen 3 API for image generation
-        const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${geminiApiKey}`,
+                        {/* Headline */}
+                        <h1
+                            style={{
+                                fontSize: platform === 'tiktok' ? '64px' : platform === 'instagram' ? '56px' : '48px',
+                                fontWeight: 800,
+                                color: template.textColor,
+                                lineHeight: 1.1,
+                                margin: 0,
+                                marginBottom: '20px',
+                                letterSpacing: '-0.03em',
+                                maxWidth: '100%',
+                            }}
+                        >
+                            {headline}
+                        </h1>
+
+                        {/* Subheadline */}
+                        <p
+                            style={{
+                                fontSize: platform === 'tiktok' ? '28px' : '24px',
+                                color: template.secondaryTextColor,
+                                lineHeight: 1.4,
+                                margin: 0,
+                                maxWidth: '90%',
+                            }}
+                        >
+                            {subheadline}
+                        </p>
+
+                        {/* Accent line */}
+                        <div
+                            style={{
+                                width: '80px',
+                                height: '4px',
+                                background: template.accentColor,
+                                borderRadius: '2px',
+                                marginTop: '30px',
+                            }}
+                        />
+
+                        {/* Tagline */}
+                        <p
+                            style={{
+                                fontSize: '18px',
+                                color: template.secondaryTextColor,
+                                marginTop: '20px',
+                                opacity: 0.8,
+                            }}
+                        >
+                            suitegpt.app • Real apps, not answers.
+                        </p>
+                    </div>
+                </div>
+            ),
             {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    instances: [{ prompt: imagePrompt }],
-                    parameters: {
-                        sampleCount: 1,
-                        aspectRatio: dimensions.aspectRatio,
-                        safetyFilterLevel: 'block_few',
-                        personGeneration: 'dont_allow',
-                    }
-                })
+                width: dimensions.width,
+                height: dimensions.height,
             }
         )
 
-        if (!response.ok) {
-            const errorText = await response.text()
-            console.error('Gemini API error:', response.status, errorText)
+        // Convert to buffer for storage
+        const imageBuffer = await imageResponse.arrayBuffer()
+        const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)))
 
-            // Fallback: Generate a placeholder image URL
-            // Using a gradient placeholder service
-            const fallbackUrl = await generateFallbackImage(platform, dimensions)
-
-            if (fallbackUrl) {
-                // Update the post with the fallback image
-                const supabase = await createClient()
-                await supabase
-                    .from('scheduled_posts')
-                    .update({ images: [fallbackUrl] })
-                    .eq('id', postId)
-
-                return NextResponse.json({
-                    success: true,
-                    imageUrl: fallbackUrl,
-                    note: 'Used fallback image generation'
-                })
-            }
-
-            return NextResponse.json(
-                { error: 'Image generation failed', details: errorText },
-                { status: 500 }
-            )
-        }
-
-        const data = await response.json()
-
-        // Extract the generated image (base64 encoded)
-        const generatedImage = data.predictions?.[0]?.bytesBase64Encoded
-
-        if (!generatedImage) {
-            console.error('No image in response:', data)
-            return NextResponse.json(
-                { error: 'No image generated' },
-                { status: 500 }
-            )
-        }
-
-        // Upload to Supabase Storage
-        const supabase = await createClient()
+        // Try to upload to Supabase storage via REST API
         const fileName = `post-images/${postId}-${Date.now()}.png`
-        const imageBuffer = Buffer.from(generatedImage, 'base64')
+        let imageUrl: string
 
-        const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('content')
-            .upload(fileName, imageBuffer, {
-                contentType: 'image/png',
-                upsert: true
-            })
+        try {
+            const uploadResponse = await fetch(
+                `${SUPABASE_URL}/storage/v1/object/content/${fileName}`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+                        'Content-Type': 'image/png',
+                        'x-upsert': 'true'
+                    },
+                    body: imageBuffer
+                }
+            )
 
-        if (uploadError) {
+            if (uploadResponse.ok) {
+                // Get public URL
+                imageUrl = `${SUPABASE_URL}/storage/v1/object/public/content/${fileName}`
+            } else {
+                console.error('Storage upload failed:', await uploadResponse.text())
+                // Fallback to data URL
+                imageUrl = `data:image/png;base64,${base64Image}`
+            }
+        } catch (uploadError) {
             console.error('Storage upload error:', uploadError)
-            // Try to use a data URL as fallback
-            const dataUrl = `data:image/png;base64,${generatedImage}`
-
-            // Update the post with data URL (not ideal but works)
-            await supabase
-                .from('scheduled_posts')
-                .update({ images: [dataUrl] })
-                .eq('id', postId)
-
-            return NextResponse.json({
-                success: true,
-                imageUrl: dataUrl,
-                note: 'Stored as data URL (storage upload failed)'
-            })
+            // Fallback to data URL
+            imageUrl = `data:image/png;base64,${base64Image}`
         }
 
-        // Get public URL
-        const { data: { publicUrl } } = supabase.storage
-            .from('content')
-            .getPublicUrl(fileName)
-
-        // Update the post with the image URL
-        await supabase
-            .from('scheduled_posts')
-            .update({ images: [publicUrl] })
-            .eq('id', postId)
+        // Update the post with the image URL via REST API
+        await fetch(
+            `${SUPABASE_URL}/rest/v1/scheduled_posts?id=eq.${postId}`,
+            {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+                    'apikey': SUPABASE_SERVICE_KEY,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=minimal'
+                },
+                body: JSON.stringify({ images: [imageUrl] })
+            }
+        )
 
         return NextResponse.json({
             success: true,
-            imageUrl: publicUrl
+            imageUrl,
+            template: template.id,
+            templateName: template.name
         })
 
     } catch (error) {
@@ -171,45 +290,89 @@ Style guidelines:
     }
 }
 
-// Fallback image generation using a placeholder service
-async function generateFallbackImage(
-    platform: string,
-    dimensions: { width: number; height: number }
-): Promise<string | null> {
-    // Use placeholder.com or similar service for a gradient background
-    // This creates a simple colored placeholder
-    const colors = [
-        '8B5CF6', // Purple
-        '3B82F6', // Blue
-        '10B981', // Green
-        'F59E0B', // Orange
-        'EC4899', // Pink
-    ]
-    const randomColor = colors[Math.floor(Math.random() * colors.length)]
+// GET endpoint for previewing templates
+export async function GET(req: NextRequest) {
+    const searchParams = req.nextUrl.searchParams
+    const templateId = searchParams.get('template') || 'launch'
+    const platform = searchParams.get('platform') || 'instagram'
+    const text = searchParams.get('text') || 'Your headline here'
 
-    // Create a simple placeholder URL
-    // Using placehold.co which supports custom colors and sizes
-    const placeholderUrl = `https://placehold.co/${dimensions.width}x${dimensions.height}/${randomColor}/ffffff?text=SuiteGPT`
+    const dimensions = PLATFORM_DIMENSIONS[platform as keyof typeof PLATFORM_DIMENSIONS]
+        || PLATFORM_DIMENSIONS.instagram
 
-    return placeholderUrl
-}
+    const template = TEMPLATES.find(t => t.id === templateId) || TEMPLATES[0]
 
-// GET endpoint for API documentation
-export async function GET() {
-    return NextResponse.json({
-        endpoint: '/api/generate-image',
-        method: 'POST',
-        description: 'Generate an AI image for a social media post',
-        requiredFields: {
-            postId: 'The ID of the scheduled post',
-            platform: 'The target platform (x, linkedin, instagram, tiktok)',
-            content: 'The post content to base the image on'
-        },
-        dimensions: PLATFORM_DIMENSIONS,
-        example: {
-            postId: 'abc123',
-            platform: 'instagram',
-            content: 'Your post content here...'
+    // Return a preview image
+    return new ImageResponse(
+        (
+            <div
+                style={{
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: template.background,
+                    padding: '60px',
+                }}
+            >
+                <div
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        marginBottom: '30px',
+                    }}
+                >
+                    <div
+                        style={{
+                            width: '48px',
+                            height: '48px',
+                            borderRadius: '12px',
+                            background: 'rgba(255,255,255,0.2)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '24px',
+                        }}
+                    >
+                        🚀
+                    </div>
+                    <span
+                        style={{
+                            fontSize: '24px',
+                            fontWeight: 700,
+                            color: template.textColor,
+                        }}
+                    >
+                        SuiteGPT
+                    </span>
+                </div>
+                <h1
+                    style={{
+                        fontSize: '48px',
+                        fontWeight: 800,
+                        color: template.textColor,
+                        textAlign: 'center',
+                    }}
+                >
+                    {text}
+                </h1>
+                <p
+                    style={{
+                        fontSize: '20px',
+                        color: template.secondaryTextColor,
+                        marginTop: '20px',
+                    }}
+                >
+                    suitegpt.app • Real apps, not answers.
+                </p>
+            </div>
+        ),
+        {
+            width: dimensions.width,
+            height: dimensions.height,
         }
-    })
+    )
 }
