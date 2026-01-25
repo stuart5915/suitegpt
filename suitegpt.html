@@ -537,6 +537,74 @@
             transform: none;
         }
 
+        /* Linked Accounts Section */
+        .linked-accounts-section {
+            padding: 12px;
+        }
+
+        .linked-accounts-header {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .linked-account {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .linked-account-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .linked-account-status .checkmark {
+            color: #10b981;
+            font-size: 0.9rem;
+        }
+
+        .linked-account-value {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            max-width: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .link-account-btn {
+            width: 100%;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px dashed var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 6px;
+        }
+
+        .link-account-btn:hover {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .link-account-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         /* Withdrawal Modal */
         .withdrawal-modal-overlay {
             position: fixed;
@@ -4172,6 +4240,14 @@
                         <button class="withdrawal-btn" onclick="openWithdrawalModal()">Request Withdrawal</button>
                     </div>
                     <div class="profile-dropdown-divider"></div>
+                    <!-- Linked Accounts Section -->
+                    <div class="linked-accounts-section" id="linkedAccountsSection">
+                        <div class="linked-accounts-header">Linked Accounts</div>
+                        <div id="linkedAccountsList">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+                    <div class="profile-dropdown-divider"></div>
                     <button class="profile-dropdown-item" onclick="openSettings()">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="3"/>
@@ -5527,52 +5603,277 @@
                 updateCreditsDisplay(0);
             }
 
+            // Update linked accounts display in dropdown
+            renderLinkedAccounts();
+
             return isLoggedIn;
         }
 
-        // Fetch user credits from Supabase
+        // Fetch user credits from Supabase (suite_credits table with unified auth)
         async function fetchUserCredits(userId, authType) {
             try {
-                // Query the users table for credits based on auth type
-                let queryParam;
-                switch (authType) {
-                    case 'telegram':
-                        queryParam = `telegram_id=eq.${userId}`;
-                        break;
-                    case 'wallet':
-                        queryParam = `wallet_address=eq.${userId}`;
-                        break;
-                    case 'email':
-                        queryParam = `email=eq.${encodeURIComponent(userId)}`;
-                        break;
-                    default:
-                        queryParam = `wallet_address=eq.${userId}`;
-                }
-                const response = await fetch(
-                    `${SUPABASE_URL}/rest/v1/users?${queryParam}&select=credits`,
-                    {
-                        headers: {
-                            'apikey': SUPABASE_ANON_KEY,
-                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-                        }
-                    }
-                );
+                let credits = 0;
 
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data && data.length > 0 && typeof data[0].credits === 'number') {
-                        updateCreditsDisplay(data[0].credits);
-                    } else {
-                        // User not found or no credits - default to 0
-                        updateCreditsDisplay(0);
+                if (authType === 'wallet') {
+                    // Direct query by wallet address
+                    const response = await fetch(
+                        `${SUPABASE_URL}/rest/v1/suite_credits?wallet_address=eq.${userId.toLowerCase()}&select=balance`,
+                        {
+                            headers: {
+                                'apikey': SUPABASE_ANON_KEY,
+                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                            }
+                        }
+                    );
+                    if (response.ok) {
+                        const data = await response.json();
+                        credits = data[0]?.balance || 0;
                     }
-                } else {
-                    updateCreditsDisplay(0);
+                } else if (authType === 'telegram') {
+                    // Use RPC function for telegram lookup
+                    const response = await fetch(
+                        `${SUPABASE_URL}/rest/v1/rpc/get_credits_by_telegram`,
+                        {
+                            method: 'POST',
+                            headers: {
+                                'apikey': SUPABASE_ANON_KEY,
+                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ tg_id: String(userId) })
+                        }
+                    );
+                    if (response.ok) {
+                        const data = await response.json();
+                        credits = data[0]?.balance || 0;
+                    }
+                } else if (authType === 'email') {
+                    // Use RPC to get or create credits for email user
+                    const supabaseUser = await checkSupabaseSession();
+                    const response = await fetch(
+                        `${SUPABASE_URL}/rest/v1/rpc/get_or_create_credits_by_email`,
+                        {
+                            method: 'POST',
+                            headers: {
+                                'apikey': SUPABASE_ANON_KEY,
+                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                p_email: userId,
+                                p_supabase_id: supabaseUser?.id || null
+                            })
+                        }
+                    );
+                    if (response.ok) {
+                        const data = await response.json();
+                        credits = data[0]?.balance || 0;
+                    }
+
+                    // Auto-link: If wallet exists locally, try to link email to it
+                    const wallet = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWalletAddress');
+                    if (wallet && supabaseUser) {
+                        await autoLinkEmailToWallet(wallet, userId, supabaseUser.id);
+                    }
                 }
+
+                updateCreditsDisplay(credits);
             } catch (error) {
                 console.error('Error fetching credits:', error);
                 updateCreditsDisplay(0);
             }
+        }
+
+        // Auto-link email to wallet when both are present
+        async function autoLinkEmailToWallet(walletAddress, email, supabaseId) {
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/rpc/link_email_to_wallet`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            p_wallet_address: walletAddress,
+                            p_email: email,
+                            p_supabase_id: supabaseId
+                        })
+                    }
+                );
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        console.log('[Auth] Auto-linked email to wallet:', result.merged ? `merged ${result.merged_credits} credits` : 'linked');
+                    } else {
+                        console.log('[Auth] Could not auto-link email to wallet:', result.error);
+                    }
+                }
+            } catch (error) {
+                console.error('[Auth] Error auto-linking email:', error);
+            }
+        }
+
+        // Render linked accounts in the profile dropdown
+        async function renderLinkedAccounts() {
+            const container = document.getElementById('linkedAccountsList');
+            if (!container) return;
+
+            const wallet = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWalletAddress');
+            const telegramUserStr = localStorage.getItem('telegram_user');
+            let telegramUser = null;
+            if (telegramUserStr) {
+                try {
+                    telegramUser = JSON.parse(telegramUserStr);
+                } catch (e) {}
+            }
+            const supabaseUser = await checkSupabaseSession();
+
+            let html = '';
+
+            // Wallet status
+            if (wallet) {
+                const shortWallet = wallet.slice(0, 6) + '...' + wallet.slice(-4);
+                html += `
+                    <div class="linked-account">
+                        <span class="linked-account-status"><span class="checkmark">&#10003;</span> Wallet</span>
+                        <span class="linked-account-value">${shortWallet}</span>
+                    </div>
+                `;
+            } else if (supabaseUser || telegramUser) {
+                html += `<button class="link-account-btn" onclick="connectWalletToLink()">+ Connect Wallet</button>`;
+            }
+
+            // Google/Email status
+            if (supabaseUser) {
+                const displayEmail = supabaseUser.email?.length > 20
+                    ? supabaseUser.email.slice(0, 17) + '...'
+                    : supabaseUser.email;
+                html += `
+                    <div class="linked-account">
+                        <span class="linked-account-status"><span class="checkmark">&#10003;</span> Google</span>
+                        <span class="linked-account-value">${displayEmail}</span>
+                    </div>
+                `;
+            } else if (wallet || telegramUser) {
+                html += `<button class="link-account-btn" onclick="linkGoogleAccount()">+ Link Google</button>`;
+            }
+
+            // Telegram status
+            if (telegramUser) {
+                const tgDisplay = telegramUser.username ? `@${telegramUser.username}` : telegramUser.first_name;
+                html += `
+                    <div class="linked-account">
+                        <span class="linked-account-status"><span class="checkmark">&#10003;</span> Telegram</span>
+                        <span class="linked-account-value">${tgDisplay}</span>
+                    </div>
+                `;
+            } else if (wallet) {
+                html += `<button class="link-account-btn" onclick="linkTelegramAccount()">+ Link Telegram</button>`;
+            }
+
+            // Show section only when logged in
+            const section = document.getElementById('linkedAccountsSection');
+            if (section) {
+                section.style.display = (wallet || supabaseUser || telegramUser) ? 'block' : 'none';
+            }
+
+            container.innerHTML = html || '<div class="linked-account" style="color:var(--text-tertiary)">No accounts linked</div>';
+        }
+
+        // Link Google account to existing wallet/telegram
+        async function linkGoogleAccount() {
+            if (!supabaseClient) {
+                alert('Auth system not ready. Please refresh the page.');
+                return;
+            }
+
+            // Trigger Google OAuth - auto-linking happens in auth state change handler
+            const { data, error } = await supabaseClient.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo: window.location.href }
+            });
+
+            if (error) {
+                console.error('[Auth] Google OAuth error:', error);
+                alert('Failed to start Google sign-in: ' + error.message);
+            }
+        }
+
+        // Connect wallet for linking (when user has email but no wallet)
+        async function connectWalletToLink() {
+            if (typeof window.ethereum === 'undefined') {
+                alert('Please install MetaMask or another Web3 wallet to connect!');
+                window.open('https://metamask.io/download/', '_blank');
+                return;
+            }
+
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                const walletAddress = accounts[0];
+
+                // Store wallet
+                localStorage.setItem('connectedWallet', walletAddress);
+
+                // Try to link wallet to email credits
+                const supabaseUser = await checkSupabaseSession();
+                if (supabaseUser) {
+                    const response = await fetch(
+                        `${SUPABASE_URL}/rest/v1/rpc/link_wallet_to_email`,
+                        {
+                            method: 'POST',
+                            headers: {
+                                'apikey': SUPABASE_ANON_KEY,
+                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                p_wallet_address: walletAddress,
+                                p_email: supabaseUser.email
+                            })
+                        }
+                    );
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result.success) {
+                            console.log('[Auth] Linked wallet to email account');
+                            alert('Wallet linked successfully! You can now withdraw credits.');
+                        } else {
+                            console.warn('[Auth] Could not link wallet:', result.error);
+                            if (result.error?.includes('already has credits')) {
+                                alert('This wallet already has credits associated with it. Contact support to merge accounts.');
+                            }
+                        }
+                    }
+                }
+
+                // Refresh UI
+                checkAuthState();
+                renderLinkedAccounts();
+
+            } catch (error) {
+                console.error('[Auth] Wallet connection error:', error);
+                if (error.code === 4001) {
+                    alert('Connection cancelled');
+                } else {
+                    alert('Failed to connect wallet: ' + error.message);
+                }
+            }
+        }
+
+        // Link Telegram account (redirects to bot)
+        function linkTelegramAccount() {
+            const wallet = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWalletAddress');
+            if (!wallet) {
+                alert('Please connect a wallet first');
+                return;
+            }
+            // Open Telegram bot with wallet for verification
+            window.open(`https://t.me/SUITEEcosystemBot?start=link_${wallet}`, '_blank');
+            alert('Opening Telegram bot. Complete the verification there, then refresh this page.');
         }
 
         // Credits state (must be declared before updateCreditsDisplay)
@@ -6671,7 +6972,7 @@
             }
 
             // Listen for auth state changes (handles OAuth redirect)
-            supabaseClient.auth.onAuthStateChange((event, session) => {
+            supabaseClient.auth.onAuthStateChange(async (event, session) => {
                 console.log('[Auth] Supabase event:', event, session ? 'has session' : 'no session');
                 if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') && session) {
                     console.log('[Auth] User authenticated:', session.user?.email);
@@ -6680,6 +6981,13 @@
                     if (modal && modal.classList.contains('active')) {
                         closeConnectModal();
                     }
+
+                    // Auto-link: If user has wallet, link this email to it
+                    const wallet = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWalletAddress');
+                    if (wallet && session.user?.email) {
+                        await autoLinkEmailToWallet(wallet, session.user.email, session.user.id);
+                    }
+
                     // Update auth state
                     checkAuthState();
                 } else if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !session)) {
