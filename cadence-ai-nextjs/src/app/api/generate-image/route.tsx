@@ -204,25 +204,35 @@ export async function POST(req: NextRequest) {
         // Generate AI background image with Gemini (with novelty tracking)
         let aiBackgroundImage: string | null = null
         let promptUsed = ''
+        let geminiError: Error | null = null
+
         try {
+            console.log('[generate-image] Starting Gemini image generation...')
             const result = await generateGeminiImage(content, platform, postId)
             aiBackgroundImage = result.imageUrl
             promptUsed = result.promptUsed
-        } catch (geminiError) {
-            console.error('[generate-image] Gemini failed, using template background only:', geminiError)
+            console.log('[generate-image] Gemini result - imageUrl length:', aiBackgroundImage?.length || 0)
+        } catch (err) {
+            geminiError = err instanceof Error ? err : new Error(String(err))
+            console.error('[generate-image] Gemini failed:', geminiError.message)
         }
 
         // Validate AI background is a proper data URL
         const hasAiBackground = aiBackgroundImage !== null &&
+            typeof aiBackgroundImage === 'string' &&
             aiBackgroundImage.startsWith('data:image/') &&
             aiBackgroundImage.length > 100
 
-        console.log('[generate-image] AI background:', hasAiBackground ? 'valid' : 'none/invalid', 'Template:', template.id)
-        console.log('[generate-image] Template background CSS:', template.background)
-        console.log('[generate-image] Dimensions:', dimensions)
+        console.log('[generate-image] hasAiBackground:', hasAiBackground)
+        console.log('[generate-image] aiBackgroundImage type:', typeof aiBackgroundImage)
+        console.log('[generate-image] Template:', template.id, 'Background:', template.background?.substring(0, 50))
+        console.log('[generate-image] Dimensions:', JSON.stringify(dimensions))
 
         // Generate the image using next/og with AI background
-        const imageResponse = new ImageResponse(
+        console.log('[generate-image] Creating ImageResponse...')
+        let imageResponse
+        try {
+            imageResponse = new ImageResponse(
             (
                 <div
                     style={{
@@ -370,6 +380,10 @@ export async function POST(req: NextRequest) {
                 height: dimensions.height,
             }
         )
+        } catch (imgError) {
+            console.error('[generate-image] ImageResponse creation failed:', imgError)
+            throw new Error(`ImageResponse failed: ${imgError instanceof Error ? imgError.message : String(imgError)}`)
+        }
 
         // Convert to buffer for storage
         console.log('[generate-image] Converting ImageResponse to buffer...')
