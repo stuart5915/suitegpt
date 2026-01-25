@@ -4323,6 +4323,75 @@
 
     <script>
         // ========================
+        // GLOBAL VIEW FUNCTIONS (must be at top for onclick handlers)
+        // ========================
+
+        function openCreate() {
+            const welcomeState = document.getElementById('welcomeState');
+            const appsView = document.getElementById('appsView');
+            const createView = document.getElementById('createView');
+            const earningsView = document.getElementById('earningsView');
+
+            if (welcomeState) welcomeState.style.display = 'none';
+            if (appsView) appsView.style.display = 'none';
+            if (earningsView) earningsView.style.display = 'none';
+            if (createView) createView.style.display = 'block';
+        }
+
+        function openEarnings() {
+            const welcomeState = document.getElementById('welcomeState');
+            const appsView = document.getElementById('appsView');
+            const createView = document.getElementById('createView');
+            const earningsView = document.getElementById('earningsView');
+
+            if (welcomeState) welcomeState.style.display = 'none';
+            if (appsView) appsView.style.display = 'none';
+            if (createView) createView.style.display = 'none';
+            if (earningsView) earningsView.style.display = 'flex';
+        }
+
+        function closeCreateView() {
+            const welcomeState = document.getElementById('welcomeState');
+            const createView = document.getElementById('createView');
+
+            if (welcomeState) welcomeState.style.display = '';
+            if (createView) createView.style.display = 'none';
+        }
+
+        function closeEarningsView() {
+            const welcomeState = document.getElementById('welcomeState');
+            const earningsView = document.getElementById('earningsView');
+
+            if (welcomeState) welcomeState.style.display = '';
+            if (earningsView) earningsView.style.display = 'none';
+        }
+
+        function startCreate(type) {
+            const premiumTypes = ['saas', 'internal-tool', 'automation', 'mobile-app', 'api', 'enterprise'];
+            const isLoggedIn = !!(localStorage.getItem('connectedWallet') || localStorage.getItem('telegram_user'));
+
+            if (premiumTypes.includes(type)) {
+                if (!isLoggedIn) {
+                    openConnectModal();
+                    return;
+                }
+            }
+
+            window.location.href = `/factory.html?create=${type}`;
+        }
+
+        function enrollCreator() {
+            const isLoggedIn = !!(localStorage.getItem('connectedWallet') || localStorage.getItem('telegram_user'));
+
+            if (!isLoggedIn) {
+                openConnectModal();
+                return;
+            }
+
+            alert('Enrollment request submitted! We will review your application and get back to you soon.');
+        }
+
+        // ========================
         // AUTH STATE MANAGEMENT
         // ========================
 
@@ -5062,77 +5131,6 @@
             closeProfileDropdown();
             // TODO: Open settings panel
             alert('Settings coming soon!');
-        }
-
-        function openCreate() {
-            // Show inline create view
-            const welcomeState = document.getElementById('welcomeState');
-            const appsView = document.getElementById('appsView');
-            const createView = document.getElementById('createView');
-
-            if (welcomeState) welcomeState.style.display = 'none';
-            if (appsView) appsView.style.display = 'none';
-            if (createView) createView.style.display = 'block';
-        }
-
-        function closeCreateView() {
-            const welcomeState = document.getElementById('welcomeState');
-            const createView = document.getElementById('createView');
-
-            if (welcomeState) welcomeState.style.display = '';
-            if (createView) createView.style.display = 'none';
-        }
-
-        function startCreate(type) {
-            const premiumTypes = ['saas', 'internal-tool', 'automation', 'mobile-app', 'api', 'enterprise'];
-            const isLoggedIn = !!(localStorage.getItem('connectedWallet') || localStorage.getItem('telegram_user'));
-
-            // Check if premium type requires login/upgrade
-            if (premiumTypes.includes(type)) {
-                if (!isLoggedIn) {
-                    openConnectModal();
-                    return;
-                }
-                // TODO: Check subscription level
-            }
-
-            // Navigate to factory with type parameter
-            window.location.href = `/factory.html?create=${type}`;
-        }
-
-        // ========================
-        // CREATOR EARNINGS VIEW
-        // ========================
-        function openEarnings() {
-            const welcomeState = document.getElementById('welcomeState');
-            const appsView = document.getElementById('appsView');
-            const createView = document.getElementById('createView');
-            const earningsView = document.getElementById('earningsView');
-
-            if (welcomeState) welcomeState.style.display = 'none';
-            if (appsView) appsView.style.display = 'none';
-            if (createView) createView.style.display = 'none';
-            if (earningsView) earningsView.style.display = 'flex';
-        }
-
-        function closeEarningsView() {
-            const welcomeState = document.getElementById('welcomeState');
-            const earningsView = document.getElementById('earningsView');
-
-            if (welcomeState) welcomeState.style.display = '';
-            if (earningsView) earningsView.style.display = 'none';
-        }
-
-        function enrollCreator() {
-            const isLoggedIn = !!(localStorage.getItem('connectedWallet') || localStorage.getItem('telegram_user'));
-
-            if (!isLoggedIn) {
-                openConnectModal();
-                return;
-            }
-
-            // TODO: Process enrollment
-            alert('Enrollment request submitted! We will review your application and get back to you soon.');
         }
 
         function logout() {
@@ -6342,8 +6340,6 @@
                     });
             });
         }
-
-        let deferredPrompt = null;
 
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
