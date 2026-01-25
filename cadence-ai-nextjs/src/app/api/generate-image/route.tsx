@@ -201,34 +201,13 @@ export async function POST(req: NextRequest) {
         console.log('[generate-image] Headline:', headline)
         console.log('[generate-image] Subheadline:', subheadline)
 
-        // Generate AI background image with Gemini (with novelty tracking)
-        let aiBackgroundImage: string | null = null
-        let promptUsed = ''
+        // TEMPORARILY DISABLED: Generate AI background image with Gemini (with novelty tracking)
+        // Skipping Gemini to test base template works
+        const aiBackgroundImage: string | null = null
+        const promptUsed = ''
+        const hasAiBackground = false
 
-        try {
-            console.log('[generate-image] Starting Gemini image generation...')
-            const result = await generateGeminiImage(content, platform, postId)
-            if (result.imageUrl && result.imageUrl.startsWith('data:image/')) {
-                aiBackgroundImage = result.imageUrl
-                promptUsed = result.promptUsed
-                console.log('[generate-image] Gemini success - imageUrl length:', aiBackgroundImage.length)
-            } else {
-                console.log('[generate-image] Gemini returned no valid image')
-            }
-        } catch (err) {
-            console.error('[generate-image] Gemini error:', err instanceof Error ? err.message : String(err))
-            // Continue without AI background - this is not fatal
-        }
-
-        // Strict validation - only use AI background if it's definitely valid
-        const hasAiBackground = Boolean(
-            aiBackgroundImage &&
-            typeof aiBackgroundImage === 'string' &&
-            aiBackgroundImage.startsWith('data:image/') &&
-            aiBackgroundImage.length > 1000
-        )
-
-        console.log('[generate-image] Using AI background:', hasAiBackground)
+        console.log('[generate-image] Gemini DISABLED for debugging - using template only')
         console.log('[generate-image] Template:', template.id)
 
         // Generate the image using next/og with AI background
