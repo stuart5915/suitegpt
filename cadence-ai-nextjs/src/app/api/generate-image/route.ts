@@ -46,11 +46,14 @@ function getPatternStyle(pattern: string | undefined, color: string): string {
 }
 
 export async function POST(req: NextRequest) {
+    console.log('[generate-image] API called')
     try {
         const body: GenerateImageRequest = await req.json()
         const { postId, platform, content, templateId } = body
+        console.log('[generate-image] Request:', { postId, platform, contentLength: content?.length, templateId })
 
         if (!postId || !platform || !content) {
+            console.log('[generate-image] Missing fields')
             return NextResponse.json(
                 { error: 'Missing required fields: postId, platform, content' },
                 { status: 400 }
@@ -65,10 +68,13 @@ export async function POST(req: NextRequest) {
         const template = templateId
             ? TEMPLATES.find(t => t.id === templateId) || selectTemplate(content)
             : selectTemplate(content)
+        console.log('[generate-image] Selected template:', template.id, template.name)
 
         // Extract text for the image
         const headline = extractHeadline(content, platform === 'x' ? 50 : 60)
         const subheadline = extractSubheadline(content, platform === 'x' ? 80 : 100)
+        console.log('[generate-image] Headline:', headline)
+        console.log('[generate-image] Subheadline:', subheadline)
 
         // Generate the image using @vercel/og
         const imageResponse = new ImageResponse(
@@ -222,11 +228,14 @@ export async function POST(req: NextRequest) {
         )
 
         // Convert to buffer for storage
+        console.log('[generate-image] Converting ImageResponse to buffer...')
         const imageBuffer = await imageResponse.arrayBuffer()
+        console.log('[generate-image] Buffer size:', imageBuffer.byteLength)
         const base64Image = Buffer.from(imageBuffer).toString('base64')
 
         // Try to upload to Supabase storage via REST API
         const fileName = `post-images/${postId}-${Date.now()}.png`
+        console.log('[generate-image] Uploading to:', fileName)
         let imageUrl: string
 
         try {
