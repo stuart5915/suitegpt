@@ -6630,8 +6630,8 @@
 
             // Listen for auth state changes (handles OAuth redirect)
             supabaseClient.auth.onAuthStateChange((event, session) => {
-                console.log('Supabase auth event:', event);
-                if (event === 'SIGNED_IN' && session) {
+                console.log('Supabase auth event:', event, session ? 'has session' : 'no session');
+                if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
                     // Close modal if open
                     const modal = document.getElementById('connectModalOverlay');
                     if (modal && modal.classList.contains('active')) {
@@ -6639,7 +6639,7 @@
                     }
                     // Update auth state
                     checkAuthState();
-                } else if (event === 'SIGNED_OUT') {
+                } else if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !session)) {
                     // Don't trigger logout if user is logged in via Telegram or wallet
                     const hasTelegram = localStorage.getItem('telegram_user');
                     const hasWallet = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWalletAddress');
