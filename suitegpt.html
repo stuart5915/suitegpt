@@ -88,32 +88,100 @@
         .sidebar-header {
             padding: 20px;
             border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
         .sidebar-logo {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             text-decoration: none;
             color: var(--text-primary);
         }
 
         .sidebar-logo-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            font-weight: 800;
-            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            object-fit: contain;
         }
 
         .sidebar-logo-text {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 700;
+        }
+
+        .sidebar-close-btn {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-close-btn:hover {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+            border-color: var(--border-hover);
+        }
+
+        .sidebar-close-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Sidebar collapsed state */
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .main-content.sidebar-collapsed {
+            margin-left: 0;
+        }
+
+        .bg-gradient.sidebar-collapsed {
+            left: 0;
+        }
+
+        /* Show sidebar toggle when collapsed */
+        .sidebar-open-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-sidebar);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            color: var(--text-primary);
+            cursor: pointer;
+            z-index: 200;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-open-btn:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-hover);
+        }
+
+        .sidebar-open-btn.visible {
+            display: flex;
+        }
+
+        .sidebar-open-btn svg {
+            width: 20px;
+            height: 20px;
         }
 
         .sidebar-nav {
@@ -1851,15 +1919,27 @@
         </div>
     </header>
 
+    <!-- Sidebar Open Button (shown when sidebar collapsed) -->
+    <button class="sidebar-open-btn" id="sidebarOpenBtn" onclick="openSidebar()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12h18M3 6h18M3 18h18" stroke-linecap="round"/>
+        </svg>
+    </button>
+
     <!-- App Layout -->
     <div class="app-layout">
         <!-- Left Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <a href="/" class="sidebar-logo">
-                    <div class="sidebar-logo-icon">S</div>
+                    <img src="/assets/suite-logo-new.png" alt="SUITE" class="sidebar-logo-icon">
                     <span class="sidebar-logo-text">SuiteGPT</span>
                 </a>
+                <button class="sidebar-close-btn" onclick="closeSidebar()" title="Close sidebar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
             </div>
 
             <nav class="sidebar-nav">
@@ -2218,6 +2298,28 @@
         // Close connect modal
         function closeConnectModal() {
             document.getElementById('connectModalOverlay').classList.remove('active');
+        }
+
+        // Sidebar toggle functions
+        function closeSidebar() {
+            document.getElementById('sidebar').classList.add('collapsed');
+            document.querySelector('.main-content').classList.add('sidebar-collapsed');
+            document.querySelector('.bg-gradient').classList.add('sidebar-collapsed');
+            document.getElementById('sidebarOpenBtn').classList.add('visible');
+            localStorage.setItem('suitegpt_sidebar_collapsed', 'true');
+        }
+
+        function openSidebar() {
+            document.getElementById('sidebar').classList.remove('collapsed');
+            document.querySelector('.main-content').classList.remove('sidebar-collapsed');
+            document.querySelector('.bg-gradient').classList.remove('sidebar-collapsed');
+            document.getElementById('sidebarOpenBtn').classList.remove('visible');
+            localStorage.setItem('suitegpt_sidebar_collapsed', 'false');
+        }
+
+        // Restore sidebar state on load
+        if (localStorage.getItem('suitegpt_sidebar_collapsed') === 'true') {
+            closeSidebar();
         }
 
         // Connect wallet
