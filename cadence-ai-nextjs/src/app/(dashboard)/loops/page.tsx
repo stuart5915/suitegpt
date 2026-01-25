@@ -10,6 +10,7 @@ import {
     Pause,
     Settings,
     ChevronRight,
+    ChevronDown,
     Loader2,
     RefreshCw,
     Trash2,
@@ -34,7 +35,9 @@ import {
     Image,
     Users,
     Layers,
-    FileText
+    FileText,
+    Search,
+    ClipboardPaste
 } from 'lucide-react'
 import { Project, Audience, ContentVariant } from '@/lib/supabase/types'
 import { useTelegramAuth } from '@/contexts/TelegramAuthContext'
@@ -228,6 +231,84 @@ function LoopsPageContent() {
     // Claude Code session prompt modal
     const [showClaudeCodePrompt, setShowClaudeCodePrompt] = useState(false)
     const [promptCopied, setPromptCopied] = useState(false)
+    const [weeklyTheme, setWeeklyTheme] = useState('')
+    const [researchFindings, setResearchFindings] = useState('')
+    const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+        research: true,
+        findings: false,
+        theme: true,
+        prompt: false
+    })
+
+    const toggleSection = (section: string) => {
+        setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))
+    }
+
+    // Build the final prompt with research and theme
+    const buildFinalPrompt = () => {
+        return `# SuiteGPT Weekly Content Generation Session
+
+## Context
+You are helping generate a week's worth of social media content for SuiteGPT (suitegpt.app).
+
+### What is SuiteGPT?
+- **Tagline**: "Your Personal App Concierge"
+- **Value Prop**: "Tell us what you need. We'll find it, change it, or build it for you. Real apps, not just answers."
+- **Key Differentiator**: Unlike ChatGPT which gives instructions, SuiteGPT gives you working apps
+- **URL**: https://suitegpt.app
+
+### Target Audiences
+1. **Non-Technical Builders** - Entrepreneurs with ideas but no coding skills
+2. **Frustrated ChatGPT Users** - People tired of getting answers they can't use
+3. **Small Business Owners** - Need custom tools without dev team costs
+4. **Creators** - Need workflow tools that don't exist yet
+5. **Students** - Need study tools and project helpers
+
+### Brand Voice
+- Confident but not arrogant
+- Simple, clear language (no jargon)
+- Focus on outcomes, not features
+- Slightly provocative/challenging to status quo
+
+### Content Pillars
+1. **"Real Apps, Not Answers"** - The core differentiator
+2. **Use Cases** - Specific examples of what people build
+3. **Comparison/Contrast** - SuiteGPT vs ChatGPT moments
+4. **Social Proof** - What users are building/saying
+
+${researchFindings ? `## Research & Context for This Week
+The following research was gathered from AI deep research tools (Google, Grok, Perplexity, etc.):
+
+${researchFindings}
+
+---` : ''}
+
+## This Week's Theme/Focus
+${weeklyTheme || '[NOT SET - Please enter a theme above]'}
+
+## Your Task
+Generate content for the week based on the theme and research above.
+
+### Output Format
+For each piece of content, provide:
+- Platform (X, LinkedIn, Instagram, TikTok)
+- The content (properly formatted for platform)
+- Suggested post date/time
+- Any image suggestions (optional)
+
+### Weekly Output Target
+- 7 tweets (1/day)
+- 3 LinkedIn posts
+- 2 Instagram posts (with caption)
+- 2 TikTok video scripts (optional)
+
+---
+
+When content is finalized, push it to Cadence AI calendar using:
+POST /api/content/bulk-schedule
+
+Generate the content now.`
+    }
 
     // Global brand settings from Settings page
     const [brandSettings, setBrandSettings] = useState<BrandSettings | null>(null)
@@ -1851,9 +1932,9 @@ function LoopsPageContent() {
                                         🤖
                                     </div>
                                     <div>
-                                        <h2 className="text-xl font-bold text-[var(--foreground)]">Start Claude Code Session</h2>
+                                        <h2 className="text-xl font-bold text-[var(--foreground)]">SuiteGPT Weekly Content</h2>
                                         <p className="text-sm text-[var(--foreground-muted)]">
-                                            Copy this prompt and paste it into Claude Code
+                                            Gather research, set theme, generate content
                                         </p>
                                     </div>
                                 </div>
@@ -1861,6 +1942,8 @@ function LoopsPageContent() {
                                     onClick={() => {
                                         setShowClaudeCodePrompt(false)
                                         setPromptCopied(false)
+                                        setWeeklyTheme('')
+                                        setResearchFindings('')
                                     }}
                                     className="p-2 hover:bg-[var(--surface-hover)] rounded-lg"
                                 >
@@ -1870,139 +1953,215 @@ function LoopsPageContent() {
                         </div>
 
                         <div className="p-6 space-y-4">
+                            {/* Step indicator */}
                             <div className="flex items-center gap-2 text-sm text-emerald-400 bg-emerald-500/10 px-4 py-2 rounded-lg">
                                 <Sparkles className="w-4 h-4" />
-                                <span>This workflow generates a full week of content in one session</span>
+                                <span>Complete the sections below, then copy the final prompt</span>
                             </div>
 
-                            <div className="relative">
-                                <pre className="bg-[var(--background)] p-4 rounded-xl text-sm text-[var(--foreground-muted)] overflow-x-auto whitespace-pre-wrap font-mono border border-[var(--surface-border)]">
-{`# SuiteGPT Weekly Content Generation Session
+                            {/* Section 1: Research Prompts */}
+                            <div className="border border-[var(--surface-border)] rounded-xl overflow-hidden">
+                                <button
+                                    onClick={() => toggleSection('research')}
+                                    className="w-full p-4 flex items-center justify-between bg-[var(--background)] hover:bg-[var(--surface-hover)] transition-colors"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <Search className="w-5 h-5 text-blue-400" />
+                                        <div className="text-left">
+                                            <div className="font-semibold text-[var(--foreground)]">1. Gather Research</div>
+                                            <div className="text-xs text-[var(--foreground-muted)]">Use AI deep research tools</div>
+                                        </div>
+                                    </div>
+                                    {expandedSections.research ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                                </button>
+                                {expandedSections.research && (
+                                    <div className="p-4 border-t border-[var(--surface-border)] space-y-3">
+                                        <p className="text-sm text-[var(--foreground-muted)]">
+                                            Copy these prompts into Google AI, Grok, or Perplexity to gather fresh data:
+                                        </p>
+                                        <div className="space-y-2">
+                                            <div className="bg-[var(--background)] p-3 rounded-lg border border-[var(--surface-border)]">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <span className="text-xs font-medium text-blue-400">Trending Topics</span>
+                                                    <button
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText("What are the top trending topics and conversations in the AI app building, no-code, and solopreneur space this week? Include any viral posts, new tool launches, or debates happening on X/Twitter and LinkedIn.")
+                                                        }}
+                                                        className="text-xs text-[var(--foreground-muted)] hover:text-[var(--foreground)] flex items-center gap-1"
+                                                    >
+                                                        <Copy className="w-3 h-3" /> Copy
+                                                    </button>
+                                                </div>
+                                                <p className="text-xs text-[var(--foreground-muted)]">
+                                                    "What are the top trending topics and conversations in the AI app building, no-code, and solopreneur space this week?"
+                                                </p>
+                                            </div>
+                                            <div className="bg-[var(--background)] p-3 rounded-lg border border-[var(--surface-border)]">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <span className="text-xs font-medium text-purple-400">Competitor Watch</span>
+                                                    <button
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText("What are ChatGPT, Claude, Bolt, Lovable, and Replit shipping or announcing this week? What are people saying about them on social media?")
+                                                        }}
+                                                        className="text-xs text-[var(--foreground-muted)] hover:text-[var(--foreground)] flex items-center gap-1"
+                                                    >
+                                                        <Copy className="w-3 h-3" /> Copy
+                                                    </button>
+                                                </div>
+                                                <p className="text-xs text-[var(--foreground-muted)]">
+                                                    "What are ChatGPT, Claude, Bolt, Lovable, and Replit shipping this week? What are people saying about them?"
+                                                </p>
+                                            </div>
+                                            <div className="bg-[var(--background)] p-3 rounded-lg border border-[var(--surface-border)]">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <span className="text-xs font-medium text-emerald-400">Viral Formats</span>
+                                                    <button
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText("What content formats and hooks are going viral on X/Twitter and LinkedIn in the tech/AI space right now? Give me examples of high-performing posts.")
+                                                        }}
+                                                        className="text-xs text-[var(--foreground-muted)] hover:text-[var(--foreground)] flex items-center gap-1"
+                                                    >
+                                                        <Copy className="w-3 h-3" /> Copy
+                                                    </button>
+                                                </div>
+                                                <p className="text-xs text-[var(--foreground-muted)]">
+                                                    "What content formats and hooks are going viral on X/Twitter and LinkedIn in the tech/AI space right now?"
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
 
-## Context
-You are helping generate a week's worth of social media content for SuiteGPT (suitegpt.app).
+                            {/* Section 2: Paste Research Findings */}
+                            <div className="border border-[var(--surface-border)] rounded-xl overflow-hidden">
+                                <button
+                                    onClick={() => toggleSection('findings')}
+                                    className="w-full p-4 flex items-center justify-between bg-[var(--background)] hover:bg-[var(--surface-hover)] transition-colors"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <ClipboardPaste className="w-5 h-5 text-purple-400" />
+                                        <div className="text-left">
+                                            <div className="font-semibold text-[var(--foreground)]">2. Paste Research Findings</div>
+                                            <div className="text-xs text-[var(--foreground-muted)]">
+                                                {researchFindings ? `${researchFindings.length} characters` : 'Optional but recommended'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {expandedSections.findings ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                                </button>
+                                {expandedSections.findings && (
+                                    <div className="p-4 border-t border-[var(--surface-border)]">
+                                        <textarea
+                                            value={researchFindings}
+                                            onChange={(e) => setResearchFindings(e.target.value)}
+                                            placeholder="Paste all your research findings here... trending topics, competitor news, viral formats, etc."
+                                            className="w-full h-40 px-4 py-3 bg-[var(--background)] border border-[var(--surface-border)] rounded-lg text-[var(--foreground)] text-sm resize-none"
+                                        />
+                                    </div>
+                                )}
+                            </div>
 
-### What is SuiteGPT?
-- **Tagline**: "Your Personal App Concierge"
-- **Value Prop**: "Tell us what you need. We'll find it, change it, or build it for you. Real apps, not just answers."
-- **Key Differentiator**: Unlike ChatGPT which gives instructions, SuiteGPT gives you working apps
-- **URL**: https://suitegpt.app
+                            {/* Section 3: Weekly Theme */}
+                            <div className="border border-[var(--surface-border)] rounded-xl overflow-hidden">
+                                <button
+                                    onClick={() => toggleSection('theme')}
+                                    className="w-full p-4 flex items-center justify-between bg-[var(--background)] hover:bg-[var(--surface-hover)] transition-colors"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <Sparkles className="w-5 h-5 text-amber-400" />
+                                        <div className="text-left">
+                                            <div className="font-semibold text-[var(--foreground)]">3. This Week's Theme</div>
+                                            <div className="text-xs text-[var(--foreground-muted)]">
+                                                {weeklyTheme ? `"${weeklyTheme.substring(0, 30)}${weeklyTheme.length > 30 ? '...' : ''}"` : 'Required'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {expandedSections.theme ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                                </button>
+                                {expandedSections.theme && (
+                                    <div className="p-4 border-t border-[var(--surface-border)]">
+                                        <input
+                                            type="text"
+                                            value={weeklyTheme}
+                                            onChange={(e) => setWeeklyTheme(e.target.value)}
+                                            placeholder="e.g., 'Real Apps vs ChatGPT Answers' or 'Student Use Cases'"
+                                            className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--surface-border)] rounded-lg text-[var(--foreground)]"
+                                        />
+                                        <p className="text-xs text-[var(--foreground-muted)] mt-2">
+                                            This will be the main focus for all content this week
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
 
-### Target Audiences
-1. **Non-Technical Builders** - Entrepreneurs with ideas but no coding skills
-2. **Frustrated ChatGPT Users** - People tired of getting answers they can't use
-3. **Small Business Owners** - Need custom tools without dev team costs
-4. **Creators** - Need workflow tools that don't exist yet
-5. **Students** - Need study tools and project helpers
+                            {/* Section 4: Final Prompt */}
+                            <div className="border border-emerald-500/50 rounded-xl overflow-hidden">
+                                <button
+                                    onClick={() => toggleSection('prompt')}
+                                    className="w-full p-4 flex items-center justify-between bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <FileText className="w-5 h-5 text-emerald-400" />
+                                        <div className="text-left">
+                                            <div className="font-semibold text-emerald-400">4. Final Prompt</div>
+                                            <div className="text-xs text-emerald-400/70">Ready to copy to Claude Code</div>
+                                        </div>
+                                    </div>
+                                    {expandedSections.prompt ? <ChevronDown className="w-5 h-5 text-emerald-400" /> : <ChevronRight className="w-5 h-5 text-emerald-400" />}
+                                </button>
+                                {expandedSections.prompt && (
+                                    <div className="p-4 border-t border-emerald-500/30">
+                                        <pre className="bg-[var(--background)] p-4 rounded-lg text-xs text-[var(--foreground-muted)] overflow-x-auto whitespace-pre-wrap font-mono max-h-60 overflow-y-auto border border-[var(--surface-border)]">
+                                            {buildFinalPrompt()}
+                                        </pre>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
 
-### Brand Voice
-- Confident but not arrogant
-- Simple, clear language (no jargon)
-- Focus on outcomes, not features
-- Slightly provocative/challenging to status quo
-
-### Content Pillars
-1. **"Real Apps, Not Answers"** - The core differentiator
-2. **Use Cases** - Specific examples of what people build
-3. **Comparison/Contrast** - SuiteGPT vs ChatGPT moments
-4. **Social Proof** - What users are building/saying
-
-## Your Task
-Generate content for the week based on my theme/focus below.
-
-### Output Format
-For each piece of content, provide:
-- Platform (X, LinkedIn, Instagram, TikTok)
-- The content (properly formatted for platform)
-- Suggested post date/time
-- Any image suggestions (optional)
-
-### Weekly Output Target
-- 7 tweets (1/day)
-- 3 LinkedIn posts
-- 2 Instagram posts (with caption)
-- 2 TikTok video scripts (optional)
-
-## This Week's Focus
-[TELL ME YOUR THEME OR FOCUS FOR THIS WEEK]
-
----
-
-When content is finalized, push it to Cadence AI calendar using:
-POST /api/content/bulk-schedule
-
-Ready? Tell me this week's theme or focus.`}
-                                </pre>
-
+                        <div className="p-6 border-t border-[var(--surface-border)] flex items-center justify-between gap-3">
+                            <div className="text-sm text-[var(--foreground-muted)]">
+                                {weeklyTheme ? (
+                                    <span className="text-emerald-400">✓ Ready to generate</span>
+                                ) : (
+                                    <span className="text-amber-400">⚠ Enter a weekly theme</span>
+                                )}
+                            </div>
+                            <div className="flex gap-3">
                                 <button
                                     onClick={() => {
-                                        const prompt = document.querySelector('pre')?.textContent || ''
-                                        navigator.clipboard.writeText(prompt)
+                                        setShowClaudeCodePrompt(false)
+                                        setPromptCopied(false)
+                                        setWeeklyTheme('')
+                                        setResearchFindings('')
+                                    }}
+                                    className="btn btn-secondary"
+                                >
+                                    Close
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(buildFinalPrompt())
                                         setPromptCopied(true)
                                         setTimeout(() => setPromptCopied(false), 2000)
                                     }}
-                                    className="absolute top-3 right-3 flex items-center gap-2 px-3 py-1.5 bg-[var(--surface)] hover:bg-[var(--surface-hover)] rounded-lg text-sm font-medium transition-colors"
+                                    disabled={!weeklyTheme}
+                                    className="btn btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {promptCopied ? (
                                         <>
-                                            <Check className="w-4 h-4 text-emerald-400" />
-                                            <span className="text-emerald-400">Copied!</span>
+                                            <Check className="w-4 h-4" />
+                                            Copied!
                                         </>
                                     ) : (
                                         <>
                                             <Copy className="w-4 h-4" />
-                                            <span>Copy</span>
+                                            Copy Final Prompt
                                         </>
                                     )}
                                 </button>
                             </div>
-
-                            <div className="bg-[var(--background)] p-4 rounded-xl border border-[var(--surface-border)]">
-                                <h4 className="font-semibold text-[var(--foreground)] mb-2 flex items-center gap-2">
-                                    <FileText className="w-4 h-4 text-emerald-400" />
-                                    How to Use
-                                </h4>
-                                <ol className="text-sm text-[var(--foreground-muted)] space-y-2 list-decimal list-inside">
-                                    <li>Copy the prompt above</li>
-                                    <li>Open Claude Code in your terminal</li>
-                                    <li>Paste the prompt and add your weekly theme</li>
-                                    <li>Review and refine the generated content</li>
-                                    <li>Claude will push approved content to your calendar</li>
-                                </ol>
-                            </div>
-                        </div>
-
-                        <div className="p-6 border-t border-[var(--surface-border)] flex justify-end gap-3">
-                            <button
-                                onClick={() => {
-                                    setShowClaudeCodePrompt(false)
-                                    setPromptCopied(false)
-                                }}
-                                className="btn btn-secondary"
-                            >
-                                Close
-                            </button>
-                            <button
-                                onClick={() => {
-                                    const prompt = document.querySelector('pre')?.textContent || ''
-                                    navigator.clipboard.writeText(prompt)
-                                    setPromptCopied(true)
-                                    setTimeout(() => setPromptCopied(false), 2000)
-                                }}
-                                className="btn btn-primary flex items-center gap-2"
-                            >
-                                {promptCopied ? (
-                                    <>
-                                        <Check className="w-4 h-4" />
-                                        Copied!
-                                    </>
-                                ) : (
-                                    <>
-                                        <Copy className="w-4 h-4" />
-                                        Copy Prompt
-                                    </>
-                                )}
-                            </button>
                         </div>
                     </div>
                 </div>
