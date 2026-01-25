@@ -384,10 +384,10 @@ For each piece of content, provide:
 - Any image suggestions (optional)
 
 ### Weekly Output Target
-- 7 tweets (1/day)
-- 3 LinkedIn posts
-- 2 Instagram posts (with caption)
-- 2 TikTok video scripts (optional)
+- 21 tweets (3/day)
+- 7 LinkedIn posts (1/day)
+- 7 Instagram posts with captions (1/day)
+- 7 TikTok video scripts (1/day)
 
 ---
 
