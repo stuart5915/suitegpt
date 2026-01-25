@@ -5884,8 +5884,10 @@
 
         // Load use cases - show hardcoded immediately, update from Supabase if available
         async function loadUseCases() {
+            console.log('loadUseCases called');
             // Show hardcoded data immediately so users don't wait
             useCases = getHardcodedUseCases();
+            console.log('Got hardcoded use cases:', useCases.length);
             renderUseCases();
 
             // Then try to fetch from Supabase with a timeout
@@ -5956,11 +5958,19 @@
 
         // Render use cases
         function renderUseCases() {
-            if (!useCasesGrid) return;
+            console.log('renderUseCases called, useCasesGrid:', useCasesGrid);
+            console.log('useCases array:', useCases);
+
+            if (!useCasesGrid) {
+                console.error('useCasesGrid not found!');
+                return;
+            }
 
             const filtered = currentIntent === 'all'
                 ? useCases
                 : useCases.filter(uc => uc.intent === currentIntent);
+
+            console.log('Rendering', filtered.length, 'use cases');
 
             if (useCaseCount) useCaseCount.textContent = `(${filtered.length})`;
 
