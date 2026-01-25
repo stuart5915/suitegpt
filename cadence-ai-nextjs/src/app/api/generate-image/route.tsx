@@ -147,12 +147,15 @@ ${platform === 'tiktok' ? 'Vertical orientation.' : platform === 'instagram' ? '
 
         // Extract image from response
         const response = result.response
+        console.log('[generate-image] Gemini response candidates:', response.candidates?.length || 0)
+        console.log('[generate-image] Gemini response parts:', response.candidates?.[0]?.content?.parts?.length || 0)
+
         const imagePart = response.candidates?.[0]?.content?.parts?.find(
             (part: any) => part.inlineData?.mimeType?.startsWith('image/')
         )
 
         if (imagePart?.inlineData?.data) {
-            console.log('[generate-image] Gemini image generated successfully')
+            console.log('[generate-image] Gemini image generated successfully, size:', imagePart.inlineData.data.length)
 
             // Store just the content summary for future novelty tracking (not the full prompt)
             await storeImagePrompt(postId, contentSummary, [])
@@ -163,10 +166,13 @@ ${platform === 'tiktok' ? 'Vertical orientation.' : platform === 'instagram' ? '
             }
         }
 
-        console.log('[generate-image] No image in Gemini response')
+        // Log what we got instead
+        const textPart = response.candidates?.[0]?.content?.parts?.find((part: any) => part.text)
+        console.log('[generate-image] No image in Gemini response. Text response:', textPart?.text?.substring(0, 200) || 'none')
+
         return { imageUrl: null, promptUsed: imagePrompt }
     } catch (error) {
-        console.error('[generate-image] Gemini image generation failed:', error)
+        console.error('[generate-image] Gemini image generation failed:', error instanceof Error ? error.message : error)
         return { imageUrl: null, promptUsed: '' }
     }
 }
