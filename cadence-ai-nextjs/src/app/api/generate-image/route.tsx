@@ -97,6 +97,9 @@ async function generateGeminiImage(
     platform: string,
     postId: string
 ): Promise<{ imageUrl: string | null; promptUsed: string }> {
+    // Create a clean content summary for storage (not the full prompt with novelty instructions)
+    const contentSummary = content.substring(0, 200).replace(/[\n\r]+/g, ' ').trim()
+
     try {
         console.log('[generate-image] Generating Gemini AI image with novelty tracking...')
 
@@ -104,30 +107,30 @@ async function generateGeminiImage(
         const recentPrompts = await fetchRecentPrompts(15)
         console.log(`[generate-image] Found ${recentPrompts.length} recent prompts to avoid`)
 
-        // Build the novelty avoidance section
+        // Build the novelty avoidance section from recent content summaries
         let noveltySection = ''
         if (recentPrompts.length > 0) {
             const recentSummaries = recentPrompts
-                .map(p => `- ${p.prompt_used.substring(0, 150)}...`)
+                .map(p => `- ${p.prompt_used.replace(/[\n\r]+/g, ' ').substring(0, 100)}`)
                 .join('\n')
             noveltySection = `
-CRITICAL - BE NOVEL AND DIFFERENT! Here are recent images we've created. DO NOT repeat these styles, colors, or themes:
+IMPORTANT - Create something DIFFERENT from these recent images:
 ${recentSummaries}
 
-Choose a COMPLETELY DIFFERENT visual approach - different colors, different shapes, different mood, different concept.
+Use different colors, shapes, mood, and visual concept than the above.
 `
         }
 
         // Create the prompt for image generation
-        const imagePrompt = `Create a visually striking social media background for: "${content.substring(0, 200)}".
+        const imagePrompt = `Create a visually striking social media background for: "${contentSummary}".
 ${noveltySection}
 Requirements:
 - NO text in the image
-- Works as a background with text overlay
+- Works as background with text overlay
 - Professional, modern aesthetic
-- Make it visually interesting but not too busy - leave space for text
-- Surprise us with something fresh and unexpected
-${platform === 'tiktok' ? 'Vertical orientation, portrait mode.' : platform === 'instagram' ? 'Square format.' : 'Landscape, wide format.'}`
+- Visually interesting but not too busy
+- Surprise us with something fresh
+${platform === 'tiktok' ? 'Vertical orientation.' : platform === 'instagram' ? 'Square format.' : 'Landscape format.'}`
 
         const model = genAI.getGenerativeModel({
             model: 'gemini-2.0-flash-exp',
@@ -150,8 +153,8 @@ ${platform === 'tiktok' ? 'Vertical orientation, portrait mode.' : platform === 
         if (imagePart?.inlineData?.data) {
             console.log('[generate-image] Gemini image generated successfully')
 
-            // Store the prompt for future novelty tracking
-            await storeImagePrompt(postId, imagePrompt, [])
+            // Store just the content summary for future novelty tracking (not the full prompt)
+            await storeImagePrompt(postId, contentSummary, [])
 
             return {
                 imageUrl: `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`,
