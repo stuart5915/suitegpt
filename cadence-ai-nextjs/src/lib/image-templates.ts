@@ -48,7 +48,7 @@ export const TEMPLATES: TemplateConfig[] = [
     {
         id: 'pain-point',
         name: 'Pain Point / Problem',
-        keywords: ['problem', 'pain', 'frustrat', 'broken', 'fail', 'error', 'bug', 'crash', 'spent', 'wasted', 'tired', '$500', '$1000', 'expensive'],
+        keywords: ['problem', 'pain', 'frustrat', 'broken', 'fail', 'error', 'bug', 'crash', 'wasted', 'tired', '$500', '$1000', 'expensive'],
         background: 'linear-gradient(135deg, #18181b 0%, #27272a 50%, #3f3f46 100%)',
         accentColor: '#ef4444',
         textColor: '#ffffff',
