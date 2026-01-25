@@ -802,15 +802,28 @@ function CalendarPageContent() {
                                 const platformName = PLATFORM_NAMES[post.platform] || post.platform
                                 const hasImage = post.images && post.images.length > 0
                                 const isGeneratingImage = generatingImageFor === post.id
+                                // Format scheduled time
+                                const scheduledTime = post.scheduled_for
+                                    ? new Date(post.scheduled_for).toLocaleTimeString('en-US', {
+                                        hour: 'numeric',
+                                        minute: '2-digit',
+                                        hour12: true
+                                    })
+                                    : null
                                 return (
                                     <div key={post.id} className="p-3 rounded-lg bg-[var(--surface)] border border-[var(--surface-border)]">
-                                        {/* Header with platform and status */}
+                                        {/* Header with platform, time, and status */}
                                         <div className="flex items-center gap-2 mb-2">
                                             <div className="flex items-center gap-1.5 px-2 py-1 bg-[var(--background)] rounded-md">
                                                 <PlatformIcon platform={post.platform} size={14} />
                                                 <span className="text-xs font-medium text-[var(--foreground)]">{platformName}</span>
                                             </div>
-                                            <span className="text-xs text-[var(--foreground-muted)]">{post.content_type}</span>
+                                            {scheduledTime && (
+                                                <div className="flex items-center gap-1 px-2 py-1 bg-blue-500/10 rounded-md">
+                                                    <Clock className="w-3 h-3 text-blue-400" />
+                                                    <span className="text-xs font-medium text-blue-400">{scheduledTime}</span>
+                                                </div>
+                                            )}
                                             <span className={`text-xs px-2 py-0.5 rounded-full ml-auto ${statusStyle.bg} ${statusStyle.text}`}>
                                                 {statusStyle.label}
                                             </span>
