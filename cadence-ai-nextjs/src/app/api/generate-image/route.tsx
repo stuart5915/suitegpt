@@ -8,6 +8,7 @@ import {
     extractHeadline,
     extractSubheadline,
 } from '@/lib/image-templates'
+import { SUITEGPT_LOGO_BASE64 } from '@/lib/logo-base64'
 
 // Supabase config
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -278,7 +279,7 @@ export async function POST(req: NextRequest) {
                             }}
                         >
                             <img
-                                src={`${req.nextUrl.origin}/suitegpt-logo-small.png`}
+                                src={SUITEGPT_LOGO_BASE64}
                                 width={48}
                                 height={48}
                                 style={{
@@ -481,7 +482,7 @@ export async function GET(req: NextRequest) {
                     }}
                 >
                     <img
-                        src={`${req.nextUrl.origin}/suitegpt-logo-small.png`}
+                        src={SUITEGPT_LOGO_BASE64}
                         width={48}
                         height={48}
                         style={{
