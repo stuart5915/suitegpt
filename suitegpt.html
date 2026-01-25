@@ -5276,27 +5276,12 @@
             }
 
             try {
-                // Use explicit redirect URL
-                const redirectUrl = 'https://suitegpt.app/';
-                console.log('[Auth] Starting Google OAuth, redirectTo:', redirectUrl);
-
                 const { data, error } = await supabaseClient.auth.signInWithOAuth({
                     provider: 'google',
                     options: {
-                        redirectTo: redirectUrl,
-                        skipBrowserRedirect: true,  // Don't auto-redirect, let us see the URL
-                        queryParams: {
-                            prompt: 'select_account',
-                            access_type: 'offline'
-                        }
+                        redirectTo: window.location.origin + '/'
                     }
                 });
-
-                if (data?.url) {
-                    console.log('[Auth] OAuth URL generated:', data.url);
-                    // Now manually redirect
-                    window.location.href = data.url;
-                }
 
                 if (error) {
                     console.error('Google login error:', error);
@@ -6672,16 +6657,9 @@
 
         // Initialize Supabase client for Auth (config declared at top of script)
         if (window.supabase) {
-            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-                auth: {
-                    autoRefreshToken: true,
-                    persistSession: true,
-                    detectSessionInUrl: true,
-                    flowType: 'implicit',  // Changed from pkce - simpler, tokens in URL hash
-                    storage: window.localStorage
-                }
-            });
-            console.log('[Auth] Supabase client created with implicit flow');
+            // Use minimal config - let Supabase handle defaults
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log('[Auth] Supabase client created (default config)');
 
             // Check for OAuth callback in URL (code parameter)
             const urlParams = new URLSearchParams(window.location.search);
