@@ -218,6 +218,8 @@ export async function POST(req: NextRequest) {
             aiBackgroundImage.length > 100
 
         console.log('[generate-image] AI background:', hasAiBackground ? 'valid' : 'none/invalid', 'Template:', template.id)
+        console.log('[generate-image] Template background CSS:', template.background)
+        console.log('[generate-image] Dimensions:', dimensions)
 
         // Generate the image using next/og with AI background
         const imageResponse = new ImageResponse(
@@ -432,9 +434,22 @@ export async function POST(req: NextRequest) {
         })
 
     } catch (error) {
-        console.error('Error generating image:', error)
+        console.error('[generate-image] FULL ERROR:', error)
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        console.error('[generate-image] Error message:', errorMessage)
+        console.error('[generate-image] Error stack:', error instanceof Error ? error.stack : 'no stack')
+
+        // Return detailed error for debugging
         return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Failed to generate image' },
+            {
+                error: errorMessage,
+                debug: {
+                    postId,
+                    platform,
+                    contentLength: content?.length,
+                    templateId
+                }
+            },
             { status: 500 }
         )
     }
