@@ -234,9 +234,28 @@
         }
 
         .sidebar-item-icon {
-            font-size: 1.2rem;
-            width: 24px;
-            text-align: center;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .sidebar-item-icon svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .sidebar-item.new-chat-btn {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            margin-bottom: 8px;
+        }
+
+        .sidebar-item.new-chat-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
         }
 
         .sidebar-item-badge {
@@ -272,7 +291,12 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1rem;
+            color: white;
+        }
+
+        .sidebar-profile-avatar svg {
+            width: 20px;
+            height: 20px;
         }
 
         .sidebar-profile-info {
@@ -912,8 +936,21 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.6rem;
             flex-shrink: 0;
+            overflow: hidden;
+            color: white;
+        }
+
+        .app-icon-inline img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 14px;
+        }
+
+        .app-icon-inline svg {
+            width: 28px;
+            height: 28px;
         }
 
         .app-info-inline h4 {
@@ -1115,7 +1152,20 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.8rem;
+            overflow: hidden;
+            color: white;
+        }
+
+        .use-case-app-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 6px;
+        }
+
+        .use-case-app-icon svg {
+            width: 14px;
+            height: 14px;
         }
 
         .use-case-app-name {
@@ -1860,7 +1910,14 @@
         }
 
         .pwa-install-icon {
-            font-size: 2rem;
+            width: 32px;
+            height: 32px;
+            color: var(--accent-primary);
+        }
+
+        .pwa-install-icon svg {
+            width: 100%;
+            height: 100%;
         }
 
         .pwa-install-text h4 {
@@ -1944,22 +2001,68 @@
 
             <nav class="sidebar-nav">
                 <div class="sidebar-section">
-                    <div class="sidebar-section-title">Navigation</div>
+                    <button class="sidebar-item new-chat-btn" id="newChatBtn" onclick="startNewChat()">
+                        <span class="sidebar-item-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14M5 12h14" stroke-linecap="round"/>
+                            </svg>
+                        </span>
+                        <span>New Chat</span>
+                    </button>
+                    <button class="sidebar-item" id="searchChatsBtn" onclick="toggleChatSearch()">
+                        <span class="sidebar-item-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"/>
+                                <path d="M21 21l-4.35-4.35" stroke-linecap="round"/>
+                            </svg>
+                        </span>
+                        <span>Search Chats</span>
+                    </button>
                     <a href="/suite-shell.html" class="sidebar-item">
-                        <span class="sidebar-item-icon">📱</span>
-                        <span>Browse Apps</span>
+                        <span class="sidebar-item-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="7" height="7" rx="1"/>
+                                <rect x="14" y="3" width="7" height="7" rx="1"/>
+                                <rect x="3" y="14" width="7" height="7" rx="1"/>
+                                <rect x="14" y="14" width="7" height="7" rx="1"/>
+                            </svg>
+                        </span>
+                        <span>Apps</span>
                     </a>
+                    <a href="/factory.html" class="sidebar-item">
+                        <span class="sidebar-item-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </span>
+                        <span>Your Apps/Projects</span>
+                    </a>
+                </div>
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">History</div>
+                    <button class="sidebar-item" id="chatHistoryBtn">
+                        <span class="sidebar-item-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </span>
+                        <span>Chat History</span>
+                    </button>
                     <button class="sidebar-item" id="myRequestsBtn">
-                        <span class="sidebar-item-icon">✨</span>
+                        <span class="sidebar-item-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </span>
                         <span>My Requests</span>
                         <span class="sidebar-item-badge" style="display: none;">0</span>
                     </button>
-                    <button class="sidebar-item" id="chatHistoryBtn">
-                        <span class="sidebar-item-icon">📜</span>
-                        <span>Chat History</span>
-                    </button>
                     <button class="sidebar-item" id="importHistoryBtn">
-                        <span class="sidebar-item-icon">📥</span>
+                        <span class="sidebar-item-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </span>
                         <span>Import History</span>
                     </button>
                 </div>
@@ -1967,7 +2070,12 @@
 
             <div class="sidebar-footer">
                 <div class="sidebar-profile">
-                    <div class="sidebar-profile-avatar">👤</div>
+                    <div class="sidebar-profile-avatar">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                    </div>
                     <div class="sidebar-profile-info">
                         <div class="sidebar-profile-name">Guest</div>
                         <div class="sidebar-profile-status">Not signed in</div>
@@ -2083,15 +2191,28 @@
 
                     <div class="import-sources">
                         <div class="import-source selected" data-source="chatgpt">
-                            <div class="import-source-icon">🤖</div>
+                            <div class="import-source-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
                             <div class="import-source-name">ChatGPT</div>
                         </div>
                         <div class="import-source" data-source="claude">
-                            <div class="import-source-icon">🧠</div>
+                            <div class="import-source-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M12 16v-4M12 8h.01" stroke-linecap="round"/>
+                                </svg>
+                            </div>
                             <div class="import-source-name">Claude</div>
                         </div>
                         <div class="import-source" data-source="gemini">
-                            <div class="import-source-icon">✨</div>
+                            <div class="import-source-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
                             <div class="import-source-name">Gemini</div>
                         </div>
                     </div>
@@ -2152,7 +2273,12 @@
                 <!-- Step 3: Results -->
                 <div class="import-results" id="importResults">
                     <div class="import-results-header">
-                        <div class="success-icon">🎯</div>
+                        <div class="success-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke-linecap="round"/>
+                                <polyline points="22 4 12 14.01 9 11.01" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
                         <h3>Analysis Complete!</h3>
                         <p>Here's what we learned about you</p>
                     </div>
@@ -2283,6 +2409,54 @@
             }
 
             return isLoggedIn;
+        }
+
+        // Start a new chat
+        function startNewChat() {
+            const chatMessages = document.getElementById('chatMessages');
+            const chatInput = document.getElementById('chatInput');
+            const welcomeState = document.getElementById('welcomeState');
+            const useCasesSection = document.getElementById('useCasesSection');
+
+            // Clear chat
+            if (chatMessages) chatMessages.innerHTML = '';
+
+            // Reset conversation history
+            if (typeof conversationHistory !== 'undefined') {
+                conversationHistory = [];
+            }
+
+            // Reset UI to welcome state
+            if (welcomeState) {
+                welcomeState.classList.remove('chat-active');
+            }
+            if (useCasesSection) {
+                useCasesSection.style.display = 'block';
+            }
+            if (chatInput) {
+                chatInput.value = '';
+                chatInput.focus();
+            }
+
+            // Close mobile sidebar if open
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            const sidebar = document.getElementById('sidebar');
+            if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+            if (sidebar) sidebar.classList.remove('mobile-open');
+        }
+
+        // Toggle chat search (placeholder for future implementation)
+        function toggleChatSearch() {
+            // For now, focus the chat input and show a search hint
+            const chatInput = document.getElementById('chatInput');
+            if (chatInput) {
+                chatInput.placeholder = 'Search your chats...';
+                chatInput.focus();
+                // Reset placeholder after a delay
+                setTimeout(() => {
+                    chatInput.placeholder = 'I need help with...';
+                }, 3000);
+            }
         }
 
         // Open login modal
@@ -2430,42 +2604,42 @@
             'foodvitals': {
                 name: 'FoodVitals',
                 description: 'Weekly meal tracking + AI nutrition insights',
-                icon: '🥗',
+                iconUrl: '/assets/icons/foodvitals-icon.jpg',
                 iconBg: 'linear-gradient(135deg, #22c55e, #16a34a)',
                 url: '/suite-shell.html?app=foodvitals'
             },
             'trueform': {
                 name: 'TrueForm AI',
                 description: 'AI physiotherapy and exercise guidance',
-                icon: '🏃',
+                iconUrl: '/assets/icons/trueform-icon.jpg',
                 iconBg: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
                 url: '/suite-shell.html?app=trueform'
             },
             'opticrep': {
                 name: 'OpticRep',
                 description: 'AI workout trainer with form analysis',
-                icon: '💪',
+                iconUrl: '/assets/icons/opticrep-icon.jpg',
                 iconBg: 'linear-gradient(135deg, #f97316, #ea580c)',
                 url: '/suite-shell.html?app=opticrep'
             },
             'cheshbon': {
                 name: 'Cheshbon',
                 description: 'Financial reflection and tracking app',
-                icon: '💰',
+                iconUrl: '/assets/icons/cheshbon-icon.jpg',
                 iconBg: 'linear-gradient(135deg, #eab308, #ca8a04)',
                 url: '/suite-shell.html?app=cheshbon'
             },
             'remcast': {
                 name: 'RemCast',
                 description: 'Smart reminder and notification system',
-                icon: '🔔',
+                iconUrl: '/assets/icons/remcast-icon.jpg',
                 iconBg: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
                 url: '/suite-shell.html?app=remcast'
             },
             'defi-knowledge': {
                 name: 'DeFi Knowledge',
                 description: 'Learn DeFi concepts and strategies',
-                icon: '📚',
+                iconUrl: '/assets/icons/defiknowledge-icon.png',
                 iconBg: 'linear-gradient(135deg, #06b6d4, #0891b2)',
                 url: '/suite-shell.html?app=defiknowledge'
             },
@@ -2746,12 +2920,12 @@
             if (useCaseCount) useCaseCount.textContent = `(${filtered.length})`;
 
             const intentStyles = {
-                'problems': { icon: '🔧', label: 'Problem', class: 'problem' },
-                'desires': { icon: '💫', label: 'Desire', class: 'desire' },
-                'ideas': { icon: '💡', label: 'Idea', class: 'idea' },
-                'find': { icon: '📱', label: 'Find', class: 'find' },
-                'change': { icon: '✏️', label: 'Change', class: 'change' },
-                'build': { icon: '💰', label: 'Build', class: 'build' }
+                'problems': { icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>', label: 'Problem', class: 'problem' },
+                'desires': { icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>', label: 'Desire', class: 'desire' },
+                'ideas': { icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>', label: 'Idea', class: 'idea' },
+                'find': { icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>', label: 'Find', class: 'find' },
+                'change': { icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>', label: 'Change', class: 'change' },
+                'build': { icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>', label: 'Build', class: 'build' }
             };
 
             useCasesGrid.innerHTML = filtered.map(uc => {
@@ -2768,10 +2942,10 @@
                         <div class="use-case-meta">
                             <div class="use-case-app">
                                 ${uc.recommended_app ? `
-                                    <div class="use-case-app-icon" style="background: ${app.iconBg || 'var(--bg-card)'}">${app.icon || '📱'}</div>
+                                    <div class="use-case-app-icon" style="background: ${app.iconBg || 'var(--bg-card)'}">${app.iconUrl ? `<img src="${app.iconUrl}" alt="${app.name}">` : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>'}</div>
                                     <span class="use-case-app-name">${app.name || 'Custom App'}</span>
                                 ` : `
-                                    <div class="use-case-app-icon" style="background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))">✨</div>
+                                    <div class="use-case-app-icon" style="background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
                                     <span class="use-case-app-name">Custom / Build & Earn</span>
                                 `}
                             </div>
@@ -2842,7 +3016,9 @@
 
             const avatar = document.createElement('div');
             avatar.className = 'message-avatar';
-            avatar.textContent = role === 'user' ? '👤' : '✨';
+            avatar.innerHTML = role === 'user'
+                ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
+                : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
 
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
@@ -2854,12 +3030,12 @@
                 appCard.href = app.url;
                 appCard.className = 'app-card-inline';
                 appCard.innerHTML = `
-                    <div class="app-icon-inline" style="background: ${app.iconBg}">${app.icon}</div>
+                    <div class="app-icon-inline" style="background: ${app.iconBg}">${app.iconUrl ? `<img src="${app.iconUrl}" alt="${app.name}">` : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>'}</div>
                     <div class="app-info-inline">
                         <h4>${app.name}</h4>
                         <p>${app.description}</p>
                     </div>
-                    <span class="app-arrow">→</span>
+                    <span class="app-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
                 `;
                 contentDiv.appendChild(appCard);
 
@@ -2867,11 +3043,11 @@
                 quickActionsDiv.className = 'quick-actions';
                 quickActionsDiv.innerHTML = `
                     <button class="quick-action-btn" data-action="use-case" data-app="${appRecommendation}">
-                        <span class="icon">🎯</span>
+                        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
                         How does this help?
                     </button>
                     <button class="quick-action-btn primary" data-action="open" data-app="${appRecommendation}" data-url="${app.url}">
-                        <span class="icon">🚀</span>
+                        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
                         Open ${app.name}
                     </button>
                 `;
@@ -2974,7 +3150,7 @@
 
             const avatar = document.createElement('div');
             avatar.className = 'message-avatar';
-            avatar.textContent = '✨';
+            avatar.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
 
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
@@ -3696,7 +3872,12 @@
             promptDiv.className = 'pwa-install-prompt visible';
             promptDiv.innerHTML = `
                 <div class="pwa-install-content">
-                    <div class="pwa-install-icon">📱</div>
+                    <div class="pwa-install-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                            <line x1="12" y1="18" x2="12.01" y2="18"/>
+                        </svg>
+                    </div>
                     <div class="pwa-install-text">
                         <h4>Add SuiteGPT to Home Screen</h4>
                         <p>Quick access to your app concierge anytime</p>
