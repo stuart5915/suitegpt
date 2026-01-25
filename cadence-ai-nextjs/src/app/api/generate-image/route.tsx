@@ -202,9 +202,22 @@ export async function POST(req: NextRequest) {
         console.log('[generate-image] Subheadline:', subheadline)
 
         // Generate AI background image with Gemini (with novelty tracking)
-        const { imageUrl: aiBackgroundImage, promptUsed } = await generateGeminiImage(content, platform, postId)
-        const hasAiBackground = !!aiBackgroundImage
-        console.log('[generate-image] AI background generated:', hasAiBackground, 'Prompt length:', promptUsed.length)
+        let aiBackgroundImage: string | null = null
+        let promptUsed = ''
+        try {
+            const result = await generateGeminiImage(content, platform, postId)
+            aiBackgroundImage = result.imageUrl
+            promptUsed = result.promptUsed
+        } catch (geminiError) {
+            console.error('[generate-image] Gemini failed, using template background only:', geminiError)
+        }
+
+        // Validate AI background is a proper data URL
+        const hasAiBackground = aiBackgroundImage !== null &&
+            aiBackgroundImage.startsWith('data:image/') &&
+            aiBackgroundImage.length > 100
+
+        console.log('[generate-image] AI background:', hasAiBackground ? 'valid' : 'none/invalid', 'Template:', template.id)
 
         // Generate the image using next/og with AI background
         const imageResponse = new ImageResponse(
@@ -222,7 +235,7 @@ export async function POST(req: NextRequest) {
                     }}
                 >
                     {/* AI Generated Background Image */}
-                    {hasAiBackground && (
+                    {hasAiBackground && aiBackgroundImage && (
                         <img
                             src={aiBackgroundImage}
                             style={{
