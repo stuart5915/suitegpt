@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <!-- Clean up URL on suitegpt.app -->
+    <!-- iOS zoom fix -->
     <script>
-        if (window.location.hostname.includes('suitegpt.app') && window.location.pathname !== '/') {
-            history.replaceState(null, '', '/');
+        // Capture OAuth hash IMMEDIATELY before anything can strip it
+        const _oauthHash = window.location.hash;
+        if (_oauthHash) {
+            console.log('[Auth EARLY] Hash detected on page load:', _oauthHash);
         }
+
         // iOS zoom fix - reset on load
         window.addEventListener('load', function() {
             setTimeout(function() {
