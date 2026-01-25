@@ -11,6 +11,7 @@ export async function middleware(request: NextRequest) {
 
     // Internal API routes that can be called server-to-server
     const internalApiRoutes = [
+        '/api/generate-image', // Template-based image generation
         '/api/generate-dev-update-image',
         '/api/generate-fleet-image',
         '/api/generate-post',
