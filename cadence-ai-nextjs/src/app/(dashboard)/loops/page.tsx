@@ -1987,8 +1987,8 @@ Generate the content now.`
 
             {/* Claude Code Session Prompt Modal */}
             {showClaudeCodePrompt && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-[var(--surface)] rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-auto">
+                <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 pt-20 overflow-y-auto">
+                    <div className="bg-[var(--surface)] rounded-2xl max-w-3xl w-full mb-8">
                         <div className="p-6 border-b border-[var(--surface-border)]">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
