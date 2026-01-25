@@ -204,35 +204,36 @@ export async function POST(req: NextRequest) {
         // Generate AI background image with Gemini (with novelty tracking)
         let aiBackgroundImage: string | null = null
         let promptUsed = ''
-        let geminiError: Error | null = null
 
         try {
             console.log('[generate-image] Starting Gemini image generation...')
             const result = await generateGeminiImage(content, platform, postId)
-            aiBackgroundImage = result.imageUrl
-            promptUsed = result.promptUsed
-            console.log('[generate-image] Gemini result - imageUrl length:', aiBackgroundImage?.length || 0)
+            if (result.imageUrl && result.imageUrl.startsWith('data:image/')) {
+                aiBackgroundImage = result.imageUrl
+                promptUsed = result.promptUsed
+                console.log('[generate-image] Gemini success - imageUrl length:', aiBackgroundImage.length)
+            } else {
+                console.log('[generate-image] Gemini returned no valid image')
+            }
         } catch (err) {
-            geminiError = err instanceof Error ? err : new Error(String(err))
-            console.error('[generate-image] Gemini failed:', geminiError.message)
+            console.error('[generate-image] Gemini error:', err instanceof Error ? err.message : String(err))
+            // Continue without AI background - this is not fatal
         }
 
-        // Validate AI background is a proper data URL
-        const hasAiBackground = aiBackgroundImage !== null &&
+        // Strict validation - only use AI background if it's definitely valid
+        const hasAiBackground = Boolean(
+            aiBackgroundImage &&
             typeof aiBackgroundImage === 'string' &&
             aiBackgroundImage.startsWith('data:image/') &&
-            aiBackgroundImage.length > 100
+            aiBackgroundImage.length > 1000
+        )
 
-        console.log('[generate-image] hasAiBackground:', hasAiBackground)
-        console.log('[generate-image] aiBackgroundImage type:', typeof aiBackgroundImage)
-        console.log('[generate-image] Template:', template.id, 'Background:', template.background?.substring(0, 50))
-        console.log('[generate-image] Dimensions:', JSON.stringify(dimensions))
+        console.log('[generate-image] Using AI background:', hasAiBackground)
+        console.log('[generate-image] Template:', template.id)
 
         // Generate the image using next/og with AI background
         console.log('[generate-image] Creating ImageResponse...')
-        let imageResponse
-        try {
-            imageResponse = new ImageResponse(
+        const imageResponse = new ImageResponse(
             (
                 <div
                     style={{
@@ -246,10 +247,10 @@ export async function POST(req: NextRequest) {
                         background: template.background,
                     }}
                 >
-                    {/* AI Generated Background Image */}
-                    {hasAiBackground && aiBackgroundImage && (
+                    {/* AI Generated Background Image - only render if we have valid data */}
+                    {hasAiBackground ? (
                         <img
-                            src={aiBackgroundImage}
+                            src={aiBackgroundImage as string}
                             style={{
                                 position: 'absolute',
                                 top: 0,
@@ -259,7 +260,7 @@ export async function POST(req: NextRequest) {
                                 objectFit: 'cover',
                             }}
                         />
-                    )}
+                    ) : null}
 
                     {/* Dark overlay for text readability */}
                     <div
@@ -380,10 +381,6 @@ export async function POST(req: NextRequest) {
                 height: dimensions.height,
             }
         )
-        } catch (imgError) {
-            console.error('[generate-image] ImageResponse creation failed:', imgError)
-            throw new Error(`ImageResponse failed: ${imgError instanceof Error ? imgError.message : String(imgError)}`)
-        }
 
         // Convert to buffer for storage
         console.log('[generate-image] Converting ImageResponse to buffer...')
