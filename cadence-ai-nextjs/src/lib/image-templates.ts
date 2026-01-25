@@ -53,7 +53,6 @@ export const TEMPLATES: TemplateConfig[] = [
         accentColor: '#ef4444',
         textColor: '#ffffff',
         secondaryTextColor: 'rgba(255,255,255,0.6)',
-        pattern: 'none',
         style: 'bold'
     },
     {
