@@ -37,7 +37,8 @@ import {
     Layers,
     FileText,
     Search,
-    ClipboardPaste
+    ClipboardPaste,
+    History
 } from 'lucide-react'
 import { Project, Audience, ContentVariant } from '@/lib/supabase/types'
 import { useTelegramAuth } from '@/contexts/TelegramAuthContext'
@@ -233,18 +234,45 @@ function LoopsPageContent() {
     const [promptCopied, setPromptCopied] = useState(false)
     const [weeklyTheme, setWeeklyTheme] = useState('')
     const [researchFindings, setResearchFindings] = useState('')
+    const [contentHistory, setContentHistory] = useState<string>('')
+    const [contentHistoryLoading, setContentHistoryLoading] = useState(false)
+    const [contentHistoryCount, setContentHistoryCount] = useState(0)
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+        history: false,
         research: true,
         findings: false,
         theme: true,
         prompt: false
     })
 
+    // Fetch content history when modal opens
+    useEffect(() => {
+        if (showClaudeCodePrompt) {
+            fetchContentHistory()
+        }
+    }, [showClaudeCodePrompt])
+
+    const fetchContentHistory = async () => {
+        setContentHistoryLoading(true)
+        try {
+            const response = await fetch('/api/content/history?days=30')
+            const data = await response.json()
+            if (data.success) {
+                setContentHistory(data.formattedForPrompt || '')
+                setContentHistoryCount(data.count || 0)
+            }
+        } catch (error) {
+            console.error('Failed to fetch content history:', error)
+        } finally {
+            setContentHistoryLoading(false)
+        }
+    }
+
     const toggleSection = (section: string) => {
         setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))
     }
 
-    // Build the final prompt with research and theme
+    // Build the final prompt with research, theme, and history
     const buildFinalPrompt = () => {
         return `# SuiteGPT Weekly Content Generation Session
 
@@ -276,6 +304,13 @@ You are helping generate a week's worth of social media content for SuiteGPT (su
 3. **Comparison/Contrast** - SuiteGPT vs ChatGPT moments
 4. **Social Proof** - What users are building/saying
 
+${contentHistory ? `## IMPORTANT: Recent Content (Last 30 Days) - DO NOT REPEAT
+The following content was already posted. Create NEW, FRESH content that does not repeat these themes, hooks, or examples:
+
+${contentHistory}
+
+---` : ''}
+
 ${researchFindings ? `## Research & Context for This Week
 The following research was gathered from AI deep research tools (Google, Grok, Perplexity, etc.):
 
@@ -287,7 +322,7 @@ ${researchFindings}
 ${weeklyTheme || '[NOT SET - Please enter a theme above]'}
 
 ## Your Task
-Generate content for the week based on the theme and research above.
+Generate content for the week based on the theme and research above. AVOID repeating any content from the "Recent Content" section above.
 
 ### Output Format
 For each piece of content, provide:
@@ -1957,6 +1992,55 @@ Generate the content now.`
                             <div className="flex items-center gap-2 text-sm text-emerald-400 bg-emerald-500/10 px-4 py-2 rounded-lg">
                                 <Sparkles className="w-4 h-4" />
                                 <span>Complete the sections below, then copy the final prompt</span>
+                            </div>
+
+                            {/* Section 0: Content History (auto-loaded) */}
+                            <div className="border border-[var(--surface-border)] rounded-xl overflow-hidden">
+                                <button
+                                    onClick={() => toggleSection('history')}
+                                    className="w-full p-4 flex items-center justify-between bg-[var(--background)] hover:bg-[var(--surface-hover)] transition-colors"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <History className="w-5 h-5 text-orange-400" />
+                                        <div className="text-left">
+                                            <div className="font-semibold text-[var(--foreground)]">Recent Content (Last 30 Days)</div>
+                                            <div className="text-xs text-[var(--foreground-muted)]">
+                                                {contentHistoryLoading ? 'Loading...' : `${contentHistoryCount} posts found - auto-included in prompt`}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        {contentHistoryCount > 0 && (
+                                            <span className="px-2 py-0.5 text-xs bg-orange-500/20 text-orange-400 rounded-full">
+                                                {contentHistoryCount}
+                                            </span>
+                                        )}
+                                        {expandedSections.history ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                                    </div>
+                                </button>
+                                {expandedSections.history && (
+                                    <div className="p-4 border-t border-[var(--surface-border)]">
+                                        {contentHistoryLoading ? (
+                                            <div className="flex items-center gap-2 text-sm text-[var(--foreground-muted)]">
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                Loading recent content...
+                                            </div>
+                                        ) : contentHistory ? (
+                                            <div className="space-y-2">
+                                                <p className="text-xs text-[var(--foreground-muted)]">
+                                                    This content will be included in the prompt so Claude avoids repetition:
+                                                </p>
+                                                <pre className="bg-[var(--background)] p-3 rounded-lg text-xs text-[var(--foreground-muted)] overflow-x-auto whitespace-pre-wrap font-mono max-h-40 overflow-y-auto border border-[var(--surface-border)]">
+                                                    {contentHistory}
+                                                </pre>
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-[var(--foreground-muted)]">
+                                                No recent content found. This is your first batch!
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             {/* Section 1: Research Prompts */}
