@@ -23,20 +23,110 @@ interface GenerateImageRequest {
     templateId?: string  // Optional: force a specific template
 }
 
+interface RecentPrompt {
+    prompt_used: string
+    visual_themes: string[] | null
+}
+
+/**
+ * Fetch recent image generation prompts to ensure novelty
+ */
+async function fetchRecentPrompts(limit: number = 15): Promise<RecentPrompt[]> {
+    try {
+        const response = await fetch(
+            `${SUPABASE_URL}/rest/v1/image_prompts?select=prompt_used,visual_themes&order=created_at.desc&limit=${limit}`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+                    'apikey': SUPABASE_SERVICE_KEY,
+                }
+            }
+        )
+
+        if (!response.ok) {
+            console.log('[generate-image] Could not fetch recent prompts:', response.status)
+            return []
+        }
+
+        return await response.json()
+    } catch (error) {
+        console.log('[generate-image] Error fetching recent prompts:', error)
+        return []
+    }
+}
+
+/**
+ * Store the prompt used for image generation
+ */
+async function storeImagePrompt(postId: string, promptUsed: string, visualThemes: string[] = []): Promise<void> {
+    try {
+        const response = await fetch(
+            `${SUPABASE_URL}/rest/v1/image_prompts`,
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+                    'apikey': SUPABASE_SERVICE_KEY,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=minimal'
+                },
+                body: JSON.stringify({
+                    post_id: postId,
+                    prompt_used: promptUsed,
+                    visual_themes: visualThemes
+                })
+            }
+        )
+
+        if (!response.ok) {
+            console.log('[generate-image] Could not store prompt:', response.status)
+        } else {
+            console.log('[generate-image] Prompt stored for novelty tracking')
+        }
+    } catch (error) {
+        console.log('[generate-image] Error storing prompt:', error)
+    }
+}
+
 /**
  * Generate an AI image with Gemini based on post content
+ * Returns both the image data URL and the prompt used (for novelty tracking)
  */
-async function generateGeminiImage(content: string, platform: string): Promise<string | null> {
+async function generateGeminiImage(
+    content: string,
+    platform: string,
+    postId: string
+): Promise<{ imageUrl: string | null; promptUsed: string }> {
     try {
-        console.log('[generate-image] Generating Gemini AI image...')
+        console.log('[generate-image] Generating Gemini AI image with novelty tracking...')
 
-        // Create a prompt for image generation based on post content
-        const imagePrompt = `Create a visually striking, professional social media background image that represents this concept: "${content.substring(0, 200)}".
-Style: Modern, tech-forward, clean aesthetic with subtle gradients.
-DO NOT include any text in the image.
-The image should work well as a background with text overlay.
-Make it visually interesting but not too busy - leave space for text.
-Use a color palette that works with purple/magenta accents.
+        // Fetch recent prompts to ensure this image is different
+        const recentPrompts = await fetchRecentPrompts(15)
+        console.log(`[generate-image] Found ${recentPrompts.length} recent prompts to avoid`)
+
+        // Build the novelty avoidance section
+        let noveltySection = ''
+        if (recentPrompts.length > 0) {
+            const recentSummaries = recentPrompts
+                .map(p => `- ${p.prompt_used.substring(0, 150)}...`)
+                .join('\n')
+            noveltySection = `
+CRITICAL - BE NOVEL AND DIFFERENT! Here are recent images we've created. DO NOT repeat these styles, colors, or themes:
+${recentSummaries}
+
+Choose a COMPLETELY DIFFERENT visual approach - different colors, different shapes, different mood, different concept.
+`
+        }
+
+        // Create the prompt for image generation
+        const imagePrompt = `Create a visually striking social media background for: "${content.substring(0, 200)}".
+${noveltySection}
+Requirements:
+- NO text in the image
+- Works as a background with text overlay
+- Professional, modern aesthetic
+- Make it visually interesting but not too busy - leave space for text
+- Surprise us with something fresh and unexpected
 ${platform === 'tiktok' ? 'Vertical orientation, portrait mode.' : platform === 'instagram' ? 'Square format.' : 'Landscape, wide format.'}`
 
         const model = genAI.getGenerativeModel({
@@ -59,14 +149,21 @@ ${platform === 'tiktok' ? 'Vertical orientation, portrait mode.' : platform === 
 
         if (imagePart?.inlineData?.data) {
             console.log('[generate-image] Gemini image generated successfully')
-            return `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`
+
+            // Store the prompt for future novelty tracking
+            await storeImagePrompt(postId, imagePrompt, [])
+
+            return {
+                imageUrl: `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`,
+                promptUsed: imagePrompt
+            }
         }
 
         console.log('[generate-image] No image in Gemini response')
-        return null
+        return { imageUrl: null, promptUsed: imagePrompt }
     } catch (error) {
         console.error('[generate-image] Gemini image generation failed:', error)
-        return null
+        return { imageUrl: null, promptUsed: '' }
     }
 }
 
@@ -101,9 +198,10 @@ export async function POST(req: NextRequest) {
         console.log('[generate-image] Headline:', headline)
         console.log('[generate-image] Subheadline:', subheadline)
 
-        // Generate AI background image with Gemini
-        const aiBackgroundImage = await generateGeminiImage(content, platform)
+        // Generate AI background image with Gemini (with novelty tracking)
+        const { imageUrl: aiBackgroundImage, promptUsed } = await generateGeminiImage(content, platform, postId)
         const hasAiBackground = !!aiBackgroundImage
+        console.log('[generate-image] AI background generated:', hasAiBackground, 'Prompt length:', promptUsed.length)
 
         // Generate the image using next/og with AI background
         const imageResponse = new ImageResponse(
