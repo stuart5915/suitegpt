@@ -24,88 +24,15 @@ interface GenerateImageRequest {
     templateId?: string  // Optional: force a specific template
 }
 
-interface RecentPrompt {
-    prompt_used: string
-    visual_themes: string[] | null
-}
-
-/**
- * Fetch recent image generation prompts to ensure novelty
- */
-async function fetchRecentPrompts(limit: number = 15): Promise<RecentPrompt[]> {
-    try {
-        const response = await fetch(
-            `${SUPABASE_URL}/rest/v1/image_prompts?select=prompt_used,visual_themes&order=created_at.desc&limit=${limit}`,
-            {
-                headers: {
-                    'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-                    'apikey': SUPABASE_SERVICE_KEY,
-                }
-            }
-        )
-
-        if (!response.ok) {
-            console.log('[generate-image] Could not fetch recent prompts:', response.status)
-            return []
-        }
-
-        return await response.json()
-    } catch (error) {
-        console.log('[generate-image] Error fetching recent prompts:', error)
-        return []
-    }
-}
-
-/**
- * Store the prompt used for image generation
- */
-async function storeImagePrompt(postId: string, promptUsed: string, visualThemes: string[] = []): Promise<void> {
-    try {
-        const response = await fetch(
-            `${SUPABASE_URL}/rest/v1/image_prompts`,
-            {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-                    'apikey': SUPABASE_SERVICE_KEY,
-                    'Content-Type': 'application/json',
-                    'Prefer': 'return=minimal'
-                },
-                body: JSON.stringify({
-                    post_id: postId,
-                    prompt_used: promptUsed,
-                    visual_themes: visualThemes
-                })
-            }
-        )
-
-        if (!response.ok) {
-            console.log('[generate-image] Could not store prompt:', response.status)
-        } else {
-            console.log('[generate-image] Prompt stored for novelty tracking')
-        }
-    } catch (error) {
-        console.log('[generate-image] Error storing prompt:', error)
-    }
-}
-
 /**
  * Generate an AI image with Gemini based on post content
- * Returns both the image data URL and the prompt used (for novelty tracking)
  */
-async function generateGeminiImage(
-    content: string,
-    platform: string,
-    postId: string
-): Promise<{ imageUrl: string | null; promptUsed: string }> {
-    // Create a clean content summary for storage (not the full prompt with novelty instructions)
-    const contentSummary = content.substring(0, 200).replace(/[\n\r]+/g, ' ').trim()
-
+async function generateGeminiImage(content: string, platform: string): Promise<string | null> {
     try {
         console.log('[generate-image] Generating Gemini AI image...')
 
-        // Create the prompt for image generation
-        const imagePrompt = `Create a visually striking, professional social media background image that represents this concept: "${contentSummary}".
+        // Create a prompt for image generation based on post content
+        const imagePrompt = `Create a visually striking, professional social media background image that represents this concept: "${content.substring(0, 200)}".
 Style: Modern, tech-forward, clean aesthetic with subtle gradients.
 DO NOT include any text in the image.
 The image should work well as a background with text overlay.
@@ -127,33 +54,20 @@ ${platform === 'tiktok' ? 'Vertical orientation, portrait mode.' : platform === 
 
         // Extract image from response
         const response = result.response
-        console.log('[generate-image] Gemini response candidates:', response.candidates?.length || 0)
-        console.log('[generate-image] Gemini response parts:', response.candidates?.[0]?.content?.parts?.length || 0)
-
         const imagePart = response.candidates?.[0]?.content?.parts?.find(
             (part: any) => part.inlineData?.mimeType?.startsWith('image/')
         )
 
         if (imagePart?.inlineData?.data) {
-            console.log('[generate-image] Gemini image generated successfully, size:', imagePart.inlineData.data.length)
-
-            // Store just the content summary for future novelty tracking (not the full prompt)
-            await storeImagePrompt(postId, contentSummary, [])
-
-            return {
-                imageUrl: `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`,
-                promptUsed: imagePrompt
-            }
+            console.log('[generate-image] Gemini image generated successfully')
+            return `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`
         }
 
-        // Log what we got instead
-        const textPart = response.candidates?.[0]?.content?.parts?.find((part: any) => part.text)
-        console.log('[generate-image] No image in Gemini response. Text response:', textPart?.text?.substring(0, 200) || 'none')
-
-        return { imageUrl: null, promptUsed: imagePrompt }
+        console.log('[generate-image] No image in Gemini response')
+        return null
     } catch (error) {
-        console.error('[generate-image] Gemini image generation failed:', error instanceof Error ? error.message : error)
-        return { imageUrl: null, promptUsed: '' }
+        console.error('[generate-image] Gemini image generation failed:', error)
+        return null
     }
 }
 
@@ -193,26 +107,11 @@ export async function POST(req: NextRequest) {
         console.log('[generate-image] Headline:', headline)
         console.log('[generate-image] Subheadline:', subheadline)
 
-        // Generate AI background image with Gemini (with novelty tracking)
-        let aiBackgroundImage: string | null = null
-
-        try {
-            const result = await generateGeminiImage(content, platform, postId)
-            if (result.imageUrl && result.imageUrl.startsWith('data:image/')) {
-                aiBackgroundImage = result.imageUrl
-            }
-        } catch (err) {
-            console.error('[generate-image] Gemini error:', err)
-        }
-
-        const hasAiBackground = Boolean(
-            aiBackgroundImage &&
-            aiBackgroundImage.startsWith('data:image/') &&
-            aiBackgroundImage.length > 1000
-        )
+        // Generate AI background image with Gemini
+        const aiBackgroundImage = await generateGeminiImage(content, platform)
+        const hasAiBackground = !!aiBackgroundImage
 
         // Generate the image using next/og with AI background
-        console.log('[generate-image] Creating ImageResponse...')
         const imageResponse = new ImageResponse(
             (
                 <div
@@ -227,10 +126,10 @@ export async function POST(req: NextRequest) {
                         background: template.background,
                     }}
                 >
-                    {/* AI Generated Background Image - only render if we have valid data */}
-                    {hasAiBackground ? (
+                    {/* AI Generated Background Image */}
+                    {hasAiBackground && (
                         <img
-                            src={aiBackgroundImage as string}
+                            src={aiBackgroundImage}
                             style={{
                                 position: 'absolute',
                                 top: 0,
@@ -240,7 +139,7 @@ export async function POST(req: NextRequest) {
                                 objectFit: 'cover',
                             }}
                         />
-                    ) : null}
+                    )}
 
                     {/* Dark overlay for text readability */}
                     <div
@@ -425,22 +324,9 @@ export async function POST(req: NextRequest) {
         })
 
     } catch (error) {
-        console.error('[generate-image] FULL ERROR:', error)
-        const errorMessage = error instanceof Error ? error.message : String(error)
-        console.error('[generate-image] Error message:', errorMessage)
-        console.error('[generate-image] Error stack:', error instanceof Error ? error.stack : 'no stack')
-
-        // Return detailed error for debugging
+        console.error('Error generating image:', error)
         return NextResponse.json(
-            {
-                error: errorMessage,
-                debug: {
-                    postId,
-                    platform,
-                    contentLength: content?.length,
-                    templateId
-                }
-            },
+            { error: error instanceof Error ? error.message : 'Failed to generate image' },
             { status: 500 }
         )
     }
@@ -527,6 +413,3 @@ export async function GET(req: NextRequest) {
         }
     )
 }
-
-// Build: v4
-// Build 1769373864
