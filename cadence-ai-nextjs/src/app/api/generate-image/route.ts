@@ -8,9 +8,7 @@ import {
     extractSubheadline,
 } from '@/lib/image-templates'
 
-export const runtime = 'edge'
-
-// Supabase config for edge runtime (direct fetch)
+// Supabase config
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
@@ -225,7 +223,7 @@ export async function POST(req: NextRequest) {
 
         // Convert to buffer for storage
         const imageBuffer = await imageResponse.arrayBuffer()
-        const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)))
+        const base64Image = Buffer.from(imageBuffer).toString('base64')
 
         // Try to upload to Supabase storage via REST API
         const fileName = `post-images/${postId}-${Date.now()}.png`
