@@ -141,20 +141,15 @@ export async function POST(req: NextRequest) {
                                 marginBottom: '30px',
                             }}
                         >
-                            <div
+                            <img
+                                src={`${req.nextUrl.origin}/suitegpt-logo.png`}
+                                width={48}
+                                height={48}
                                 style={{
                                     width: '48px',
                                     height: '48px',
-                                    borderRadius: '12px',
-                                    background: 'rgba(255,255,255,0.2)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '24px',
                                 }}
-                            >
-                                🚀
-                            </div>
+                            />
                             <span
                                 style={{
                                     fontSize: '24px',
@@ -332,20 +327,15 @@ export async function GET(req: NextRequest) {
                         marginBottom: '30px',
                     }}
                 >
-                    <div
+                    <img
+                        src={`${req.nextUrl.origin}/suitegpt-logo.png`}
+                        width={48}
+                        height={48}
                         style={{
                             width: '48px',
                             height: '48px',
-                            borderRadius: '12px',
-                            background: 'rgba(255,255,255,0.2)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '24px',
                         }}
-                    >
-                        🚀
-                    </div>
+                    />
                     <span
                         style={{
                             fontSize: '24px',
