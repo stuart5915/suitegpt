@@ -17,7 +17,8 @@ import {
     Edit3,
     Clock,
     Zap,
-    GitCommit
+    GitCommit,
+    ImagePlus
 } from 'lucide-react'
 import { Project, PLATFORM_CONFIG } from '@/lib/supabase/types'
 import { PlatformIcon, PLATFORM_NAMES } from '@/components/ui/PlatformIcon'
@@ -112,6 +113,44 @@ function CalendarPageContent() {
 
     // Automation configs for placeholders
     const [automationConfigs, setAutomationConfigs] = useState<AutomationConfig[]>([])
+
+    // Image generation state
+    const [generatingImageFor, setGeneratingImageFor] = useState<string | null>(null)
+
+    // Generate image for a post using AI
+    const generateImageForPost = async (post: ScheduledPost) => {
+        setGeneratingImageFor(post.id)
+        try {
+            const response = await fetch('/api/generate-image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    postId: post.id,
+                    platform: post.platform,
+                    content: post.post_text
+                })
+            })
+            const data = await response.json()
+            if (data.success && data.imageUrl) {
+                // Update local state with new image
+                setQueuePosts(prev => prev.map(p =>
+                    p.id === post.id ? { ...p, images: [data.imageUrl] } : p
+                ))
+                // Also update editing post if open
+                if (editingPost?.id === post.id) {
+                    setEditingPost(prev => prev ? { ...prev, images: [data.imageUrl] } : null)
+                }
+            } else {
+                console.error('Image generation failed:', data.error)
+                alert('Failed to generate image: ' + (data.error || 'Unknown error'))
+            }
+        } catch (err) {
+            console.error('Failed to generate image:', err)
+            alert('Failed to generate image. Please try again.')
+        } finally {
+            setGeneratingImageFor(null)
+        }
+    }
 
     // Request delete confirmation
     const requestDelete = (postId: string, title: string, e?: React.MouseEvent) => {
@@ -760,18 +799,39 @@ function CalendarPageContent() {
                             {/* Queue Posts */}
                             {calendarDays.find(d => d.date === expandedDay)?.queuePosts.map(post => {
                                 const statusStyle = STATUS_COLORS[post.status] || STATUS_COLORS.draft
+                                const platformName = PLATFORM_NAMES[post.platform] || post.platform
+                                const hasImage = post.images && post.images.length > 0
+                                const isGeneratingImage = generatingImageFor === post.id
                                 return (
                                     <div key={post.id} className="p-3 rounded-lg bg-[var(--surface)] border border-[var(--surface-border)]">
+                                        {/* Header with platform and status */}
                                         <div className="flex items-center gap-2 mb-2">
-                                            <span className="text-lg">📝</span>
-                                            <span className="text-sm font-medium text-[var(--foreground)]">Queue Post</span>
+                                            <div className="flex items-center gap-1.5 px-2 py-1 bg-[var(--background)] rounded-md">
+                                                <PlatformIcon platform={post.platform} size={14} />
+                                                <span className="text-xs font-medium text-[var(--foreground)]">{platformName}</span>
+                                            </div>
                                             <span className="text-xs text-[var(--foreground-muted)]">{post.content_type}</span>
                                             <span className={`text-xs px-2 py-0.5 rounded-full ml-auto ${statusStyle.bg} ${statusStyle.text}`}>
                                                 {statusStyle.label}
                                             </span>
                                         </div>
+
+                                        {/* Image preview if available */}
+                                        {hasImage && (
+                                            <div className="mb-3 rounded-lg overflow-hidden border border-[var(--surface-border)]">
+                                                <img
+                                                    src={post.images[0]}
+                                                    alt="Post image"
+                                                    className="w-full h-32 object-cover"
+                                                />
+                                            </div>
+                                        )}
+
+                                        {/* Post content */}
                                         <p className="text-sm text-[var(--foreground)] line-clamp-3 mb-3">{post.post_text}</p>
-                                        <div className="flex items-center gap-2">
+
+                                        {/* Action buttons */}
+                                        <div className="flex items-center gap-2 flex-wrap">
                                             {!['approved', 'posted', 'scheduled'].includes(post.status) && (
                                                 <button
                                                     onClick={() => approveQueuePost(post.id)}
@@ -781,6 +841,23 @@ function CalendarPageContent() {
                                                     Approve
                                                 </button>
                                             )}
+                                            <button
+                                                onClick={() => generateImageForPost(post)}
+                                                disabled={isGeneratingImage}
+                                                className="flex items-center gap-1 px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs hover:bg-purple-500/30 disabled:opacity-50"
+                                            >
+                                                {isGeneratingImage ? (
+                                                    <>
+                                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                                        Generating...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <ImagePlus className="w-3 h-3" />
+                                                        {hasImage ? 'New Image' : 'Generate Image'}
+                                                    </>
+                                                )}
+                                            </button>
                                             <button
                                                 onClick={() => openEditModal(post)}
                                                 className="flex items-center gap-1 px-2 py-1 bg-[var(--surface-hover)] text-[var(--foreground-muted)] rounded text-xs hover:bg-[var(--surface-border)]"
@@ -913,11 +990,18 @@ function CalendarPageContent() {
             {/* Edit Queue Post Modal */}
             {editingPost && (
                 <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4" onClick={() => setEditingPost(null)}>
-                    <div className="bg-[var(--background)] rounded-xl max-w-lg w-full overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+                    <div className="bg-[var(--background)] rounded-xl max-w-lg w-full overflow-hidden shadow-2xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
                         <div className="p-4 border-b border-[var(--surface-border)] flex items-center justify-between">
                             <div>
                                 <h3 className="text-lg font-semibold text-[var(--foreground)]">Edit Post</h3>
                                 <div className="flex items-center gap-2 mt-1">
+                                    {/* Platform badge */}
+                                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-[var(--surface)] rounded-md">
+                                        <PlatformIcon platform={editingPost.platform} size={12} />
+                                        <span className="text-xs font-medium text-[var(--foreground)]">
+                                            {PLATFORM_NAMES[editingPost.platform] || editingPost.platform}
+                                        </span>
+                                    </div>
                                     {(() => {
                                         const statusStyle = STATUS_COLORS[editingPost.status] || STATUS_COLORS.draft
                                         return (
@@ -934,13 +1018,32 @@ function CalendarPageContent() {
                             </button>
                         </div>
 
-                        <div className="p-4 space-y-4">
-                            {/* Image Preview */}
-                            {editingPost.images && editingPost.images.length > 0 && (
-                                <div>
-                                    <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
-                                        Attached Image
+                        <div className="p-4 space-y-4 overflow-y-auto">
+                            {/* Image Section */}
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="block text-sm font-medium text-[var(--foreground)]">
+                                        Post Image
                                     </label>
+                                    <button
+                                        onClick={() => generateImageForPost(editingPost)}
+                                        disabled={generatingImageFor === editingPost.id}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/20 text-purple-400 rounded-lg text-xs font-medium hover:bg-purple-500/30 disabled:opacity-50"
+                                    >
+                                        {generatingImageFor === editingPost.id ? (
+                                            <>
+                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                                Generating...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <ImagePlus className="w-3 h-3" />
+                                                {editingPost.images?.length ? 'Regenerate' : 'Generate'} Image
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                                {editingPost.images && editingPost.images.length > 0 ? (
                                     <div className="rounded-lg overflow-hidden border border-[var(--surface-border)]">
                                         <img
                                             src={editingPost.images[0]}
@@ -948,8 +1051,18 @@ function CalendarPageContent() {
                                             className="w-full h-auto"
                                         />
                                     </div>
-                                </div>
-                            )}
+                                ) : (
+                                    <div className="rounded-lg border-2 border-dashed border-[var(--surface-border)] p-8 text-center">
+                                        <ImagePlus className="w-8 h-8 mx-auto text-[var(--foreground-muted)] mb-2" />
+                                        <p className="text-sm text-[var(--foreground-muted)]">
+                                            No image attached. Click "Generate Image" to create one.
+                                        </p>
+                                        <p className="text-xs text-[var(--foreground-muted)] mt-1">
+                                            Images will be sized for {PLATFORM_NAMES[editingPost.platform] || editingPost.platform}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
 
                             {/* Post Text */}
                             <div>
