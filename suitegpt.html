@@ -1205,6 +1205,174 @@
             }
         }
 
+        /* === INLINE APPS VIEW === */
+        .apps-view {
+            flex: 1;
+            padding: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .apps-view-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .apps-view-back {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .apps-view-back:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-primary);
+        }
+
+        .apps-view-back svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .apps-view-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .apps-view-search {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 20px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            margin-bottom: 32px;
+            transition: border-color 0.2s;
+        }
+
+        .apps-view-search:focus-within {
+            border-color: var(--accent-primary);
+        }
+
+        .apps-view-search svg {
+            width: 20px;
+            height: 20px;
+            color: var(--text-tertiary);
+            flex-shrink: 0;
+        }
+
+        .apps-view-search input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .apps-view-search input::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .apps-view-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .apps-view-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 20px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .apps-view-item:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.05);
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.15);
+        }
+
+        .apps-view-item-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        .apps-view-item-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .apps-view-item-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 1rem;
+            margin-bottom: 6px;
+            text-align: center;
+        }
+
+        .apps-view-item-desc {
+            font-size: 0.8rem;
+            color: var(--text-tertiary);
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 768px) {
+            .apps-view {
+                padding: 20px;
+            }
+
+            .apps-view-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .apps-view-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 12px;
+            }
+
+            .apps-view-item {
+                padding: 16px 12px;
+            }
+
+            .apps-view-item-icon {
+                width: 52px;
+                height: 52px;
+            }
+        }
+
         /* === MAIN CONTENT === */
         .main-content {
             flex: 1;
@@ -3064,6 +3232,29 @@
                         </div>
                     </div>
                 </section>
+
+                <!-- Inline Apps View -->
+                <section class="apps-view" id="appsView" style="display: none;">
+                    <div class="apps-view-header">
+                        <button class="apps-view-back" onclick="closeAppsView()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M19 12H5M12 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Back to Chat
+                        </button>
+                        <h2 class="apps-view-title">All Apps</h2>
+                    </div>
+                    <div class="apps-view-search">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="M21 21l-4.35-4.35"/>
+                        </svg>
+                        <input type="text" id="appsViewSearch" placeholder="Search apps..." oninput="filterAppsInline(this.value)">
+                    </div>
+                    <div class="apps-view-grid" id="appsViewGrid">
+                        <!-- Apps will be populated by JavaScript -->
+                    </div>
+                </section>
             </div>
         </main>
     </div>
@@ -3868,14 +4059,20 @@
         // APPS PANEL FUNCTIONALITY
         // ========================
         function openAppsPanel() {
-            const overlay = document.getElementById('appsPanelOverlay');
-            const grid = document.getElementById('appsPanelGrid');
+            // Show inline apps view instead of modal
+            const welcomeState = document.getElementById('welcomeState');
+            const appsView = document.getElementById('appsView');
+            const grid = document.getElementById('appsViewGrid');
+
+            // Hide welcome state, show apps view
+            if (welcomeState) welcomeState.style.display = 'none';
+            if (appsView) appsView.style.display = 'block';
 
             // Populate apps grid
             grid.innerHTML = '';
             Object.entries(SUITE_APPS).forEach(([key, app]) => {
                 const item = document.createElement('div');
-                item.className = 'apps-panel-item';
+                item.className = 'apps-view-item';
                 item.dataset.name = app.name.toLowerCase();
                 item.dataset.desc = app.description.toLowerCase();
                 item.onclick = () => launchApp(app.url, app.name);
@@ -3885,29 +4082,36 @@
                     : app.icon || '📱';
 
                 item.innerHTML = `
-                    <div class="apps-panel-item-icon" style="background: ${app.iconBg}">
+                    <div class="apps-view-item-icon" style="background: ${app.iconBg}">
                         ${iconHtml}
                     </div>
-                    <div class="apps-panel-item-name">${app.name}</div>
-                    <div class="apps-panel-item-desc">${app.description}</div>
+                    <div class="apps-view-item-name">${app.name}</div>
+                    <div class="apps-view-item-desc">${app.description}</div>
                 `;
                 grid.appendChild(item);
             });
 
-            overlay.classList.add('active');
-            document.body.style.overflow = 'hidden';
-
             // Focus search input
             setTimeout(() => {
-                document.getElementById('appsPanelSearch').focus();
+                const searchInput = document.getElementById('appsViewSearch');
+                if (searchInput) searchInput.focus();
             }, 100);
         }
 
+        function closeAppsView() {
+            const welcomeState = document.getElementById('welcomeState');
+            const appsView = document.getElementById('appsView');
+            const searchInput = document.getElementById('appsViewSearch');
+
+            // Show welcome state, hide apps view
+            if (welcomeState) welcomeState.style.display = '';
+            if (appsView) appsView.style.display = 'none';
+            if (searchInput) searchInput.value = '';
+        }
+
         function closeAppsPanel() {
-            const overlay = document.getElementById('appsPanelOverlay');
-            overlay.classList.remove('active');
-            document.body.style.overflow = '';
-            document.getElementById('appsPanelSearch').value = '';
+            // Keep for backwards compatibility
+            closeAppsView();
         }
 
         function filterApps(query) {
@@ -3922,8 +4126,20 @@
             });
         }
 
+        function filterAppsInline(query) {
+            const items = document.querySelectorAll('.apps-view-item');
+            const lower = query.toLowerCase();
+
+            items.forEach(item => {
+                const name = item.dataset.name;
+                const desc = item.dataset.desc;
+                const matches = name.includes(lower) || desc.includes(lower);
+                item.style.display = matches ? '' : 'none';
+            });
+        }
+
         function launchApp(url, name) {
-            closeAppsPanel();
+            closeAppsView();
             // Open in new tab for now - could embed in iframe later
             window.open(url, '_blank');
         }
