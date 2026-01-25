@@ -202,25 +202,9 @@ export async function POST(req: NextRequest) {
         console.log('[generate-image] Headline:', headline)
         console.log('[generate-image] Subheadline:', subheadline)
 
-        // Generate AI background image with Gemini (with novelty tracking)
-        let aiBackgroundImage: string | null = null
-        let promptUsed = ''
-
-        try {
-            const result = await generateGeminiImage(content, platform, postId)
-            if (result.imageUrl && result.imageUrl.startsWith('data:image/')) {
-                aiBackgroundImage = result.imageUrl
-                promptUsed = result.promptUsed
-            }
-        } catch (err) {
-            console.error('[generate-image] Gemini error:', err)
-        }
-
-        const hasAiBackground = Boolean(
-            aiBackgroundImage &&
-            aiBackgroundImage.startsWith('data:image/') &&
-            aiBackgroundImage.length > 1000
-        )
+        // SKIP GEMINI FOR NOW - DEBUG
+        const aiBackgroundImage: string | null = null
+        const hasAiBackground = false
 
         // Generate the image using next/og with AI background
         console.log('[generate-image] Creating ImageResponse...')
