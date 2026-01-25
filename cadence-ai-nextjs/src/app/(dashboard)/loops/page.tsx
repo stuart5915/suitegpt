@@ -114,13 +114,22 @@ interface ScheduledPost {
 // Preset loop templates
 const LOOP_TEMPLATES = [
     {
+        name: 'SuiteGPT Weekly Evergreen',
+        emoji: '🤖',
+        color: '#10b981',
+        description: 'Generate a week of SuiteGPT content with Claude Code',
+        rotationDays: 7,
+        isClaudeCodeSession: true,  // Special flag - shows prompt modal instead of creating loop
+        featured: true
+    },
+    {
         name: 'SUITE User Audiences',
         emoji: '👥',
         color: '#8b5cf6',
         description: 'Pre-configured with 4 audience segments: Entrepreneurs, Contributors, Passive Users, Influencers',
         rotationDays: 7,
         withAudiences: true, // Flag to pre-load SUITE audiences
-        featured: true
+        featured: false // Demoted since SuiteGPT is now the featured one
     },
     {
         name: 'Education',
@@ -215,6 +224,10 @@ function LoopsPageContent() {
     const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 })
     const [scheduledPosts, setScheduledPosts] = useState<ScheduledPost[]>([])
     const [showContentCalendar, setShowContentCalendar] = useState(false)
+
+    // Claude Code session prompt modal
+    const [showClaudeCodePrompt, setShowClaudeCodePrompt] = useState(false)
+    const [promptCopied, setPromptCopied] = useState(false)
 
     // Global brand settings from Settings page
     const [brandSettings, setBrandSettings] = useState<BrandSettings | null>(null)
@@ -455,6 +468,16 @@ function LoopsPageContent() {
         } finally {
             setSavingWorkLog(false)
         }
+    }
+
+    // Handle template click - may create loop or show Claude Code prompt
+    const handleTemplateClick = (template: typeof LOOP_TEMPLATES[0] & { withAudiences?: boolean; featured?: boolean; isClaudeCodeSession?: boolean }) => {
+        if (template.isClaudeCodeSession) {
+            setShowNewLoopModal(false)
+            setShowClaudeCodePrompt(true)
+            return
+        }
+        createLoop(template)
     }
 
     const createLoop = async (template: typeof LOOP_TEMPLATES[0] & { withAudiences?: boolean; featured?: boolean }) => {
@@ -1721,41 +1744,59 @@ function LoopsPageContent() {
 
                         <div className="p-4 space-y-4">
                             {/* Featured Template */}
-                            {LOOP_TEMPLATES.filter(t => (t as any).featured).map(template => (
-                                <button
-                                    key={template.name}
-                                    onClick={() => createLoop(template)}
-                                    className="w-full p-5 bg-gradient-to-r from-purple-500/20 to-blue-500/20 hover:from-purple-500/30 hover:to-blue-500/30 border-2 border-purple-500/50 rounded-xl text-left transition-all group"
-                                >
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className="px-2 py-0.5 text-xs font-semibold bg-purple-500 text-white rounded-full">
-                                            RECOMMENDED
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                        <div
-                                            className="w-14 h-14 rounded-xl flex items-center justify-center text-3xl"
-                                            style={{ background: `${template.color}30` }}
-                                        >
-                                            {template.emoji}
+                            {LOOP_TEMPLATES.filter(t => (t as any).featured).map(template => {
+                                const isClaudeCode = (template as any).isClaudeCodeSession
+                                return (
+                                    <button
+                                        key={template.name}
+                                        onClick={() => handleTemplateClick(template)}
+                                        className={`w-full p-5 rounded-xl text-left transition-all group ${
+                                            isClaudeCode
+                                                ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 border-2 border-emerald-500/50'
+                                                : 'bg-gradient-to-r from-purple-500/20 to-blue-500/20 hover:from-purple-500/30 hover:to-blue-500/30 border-2 border-purple-500/50'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className={`px-2 py-0.5 text-xs font-semibold text-white rounded-full ${
+                                                isClaudeCode ? 'bg-emerald-500' : 'bg-purple-500'
+                                            }`}>
+                                                {isClaudeCode ? 'CLAUDE CODE' : 'RECOMMENDED'}
+                                            </span>
                                         </div>
-                                        <div className="flex-1">
-                                            <div className="font-bold text-lg text-[var(--foreground)] group-hover:text-purple-400">
-                                                {template.name}
+                                        <div className="flex items-center gap-4">
+                                            <div
+                                                className="w-14 h-14 rounded-xl flex items-center justify-center text-3xl"
+                                                style={{ background: `${template.color}30` }}
+                                            >
+                                                {template.emoji}
                                             </div>
-                                            <div className="text-sm text-[var(--foreground-muted)]">
-                                                {template.description}
-                                            </div>
-                                            <div className="flex items-center gap-3 mt-2">
-                                                <span className="text-xs text-purple-400">
-                                                    <Users className="w-3 h-3 inline mr-1" />
-                                                    4 audiences included
-                                                </span>
+                                            <div className="flex-1">
+                                                <div className={`font-bold text-lg text-[var(--foreground)] ${
+                                                    isClaudeCode ? 'group-hover:text-emerald-400' : 'group-hover:text-purple-400'
+                                                }`}>
+                                                    {template.name}
+                                                </div>
+                                                <div className="text-sm text-[var(--foreground-muted)]">
+                                                    {template.description}
+                                                </div>
+                                                <div className="flex items-center gap-3 mt-2">
+                                                    {isClaudeCode ? (
+                                                        <span className="text-xs text-emerald-400">
+                                                            <Sparkles className="w-3 h-3 inline mr-1" />
+                                                            AI-powered content generation
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-xs text-purple-400">
+                                                            <Users className="w-3 h-3 inline mr-1" />
+                                                            4 audiences included
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </button>
-                            ))}
+                                    </button>
+                                )
+                            })}
 
                             {/* Divider */}
                             <div className="flex items-center gap-3">
@@ -1769,7 +1810,7 @@ function LoopsPageContent() {
                                 {LOOP_TEMPLATES.filter(t => !(t as any).featured).map(template => (
                                     <button
                                         key={template.name}
-                                        onClick={() => createLoop(template)}
+                                        onClick={() => handleTemplateClick(template)}
                                         className="w-full p-4 bg-[var(--background)] hover:bg-[var(--surface-hover)] rounded-xl text-left transition-colors group"
                                     >
                                         <div className="flex items-center gap-4">
@@ -1794,6 +1835,174 @@ function LoopsPageContent() {
                                     </button>
                                 ))}
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Claude Code Session Prompt Modal */}
+            {showClaudeCodePrompt && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-[var(--surface)] rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-auto">
+                        <div className="p-6 border-b border-[var(--surface-border)]">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-2xl">
+                                        🤖
+                                    </div>
+                                    <div>
+                                        <h2 className="text-xl font-bold text-[var(--foreground)]">Start Claude Code Session</h2>
+                                        <p className="text-sm text-[var(--foreground-muted)]">
+                                            Copy this prompt and paste it into Claude Code
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setShowClaudeCodePrompt(false)
+                                        setPromptCopied(false)
+                                    }}
+                                    className="p-2 hover:bg-[var(--surface-hover)] rounded-lg"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="p-6 space-y-4">
+                            <div className="flex items-center gap-2 text-sm text-emerald-400 bg-emerald-500/10 px-4 py-2 rounded-lg">
+                                <Sparkles className="w-4 h-4" />
+                                <span>This workflow generates a full week of content in one session</span>
+                            </div>
+
+                            <div className="relative">
+                                <pre className="bg-[var(--background)] p-4 rounded-xl text-sm text-[var(--foreground-muted)] overflow-x-auto whitespace-pre-wrap font-mono border border-[var(--surface-border)]">
+{`# SuiteGPT Weekly Content Generation Session
+
+## Context
+You are helping generate a week's worth of social media content for SuiteGPT (suitegpt.app).
+
+### What is SuiteGPT?
+- **Tagline**: "Your Personal App Concierge"
+- **Value Prop**: "Tell us what you need. We'll find it, change it, or build it for you. Real apps, not just answers."
+- **Key Differentiator**: Unlike ChatGPT which gives instructions, SuiteGPT gives you working apps
+- **URL**: https://suitegpt.app
+
+### Target Audiences
+1. **Non-Technical Builders** - Entrepreneurs with ideas but no coding skills
+2. **Frustrated ChatGPT Users** - People tired of getting answers they can't use
+3. **Small Business Owners** - Need custom tools without dev team costs
+4. **Creators** - Need workflow tools that don't exist yet
+5. **Students** - Need study tools and project helpers
+
+### Brand Voice
+- Confident but not arrogant
+- Simple, clear language (no jargon)
+- Focus on outcomes, not features
+- Slightly provocative/challenging to status quo
+
+### Content Pillars
+1. **"Real Apps, Not Answers"** - The core differentiator
+2. **Use Cases** - Specific examples of what people build
+3. **Comparison/Contrast** - SuiteGPT vs ChatGPT moments
+4. **Social Proof** - What users are building/saying
+
+## Your Task
+Generate content for the week based on my theme/focus below.
+
+### Output Format
+For each piece of content, provide:
+- Platform (X, LinkedIn, Instagram, TikTok)
+- The content (properly formatted for platform)
+- Suggested post date/time
+- Any image suggestions (optional)
+
+### Weekly Output Target
+- 7 tweets (1/day)
+- 3 LinkedIn posts
+- 2 Instagram posts (with caption)
+- 2 TikTok video scripts (optional)
+
+## This Week's Focus
+[TELL ME YOUR THEME OR FOCUS FOR THIS WEEK]
+
+---
+
+When content is finalized, push it to Cadence AI calendar using:
+POST /api/content/bulk-schedule
+
+Ready? Tell me this week's theme or focus.`}
+                                </pre>
+
+                                <button
+                                    onClick={() => {
+                                        const prompt = document.querySelector('pre')?.textContent || ''
+                                        navigator.clipboard.writeText(prompt)
+                                        setPromptCopied(true)
+                                        setTimeout(() => setPromptCopied(false), 2000)
+                                    }}
+                                    className="absolute top-3 right-3 flex items-center gap-2 px-3 py-1.5 bg-[var(--surface)] hover:bg-[var(--surface-hover)] rounded-lg text-sm font-medium transition-colors"
+                                >
+                                    {promptCopied ? (
+                                        <>
+                                            <Check className="w-4 h-4 text-emerald-400" />
+                                            <span className="text-emerald-400">Copied!</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Copy className="w-4 h-4" />
+                                            <span>Copy</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+
+                            <div className="bg-[var(--background)] p-4 rounded-xl border border-[var(--surface-border)]">
+                                <h4 className="font-semibold text-[var(--foreground)] mb-2 flex items-center gap-2">
+                                    <FileText className="w-4 h-4 text-emerald-400" />
+                                    How to Use
+                                </h4>
+                                <ol className="text-sm text-[var(--foreground-muted)] space-y-2 list-decimal list-inside">
+                                    <li>Copy the prompt above</li>
+                                    <li>Open Claude Code in your terminal</li>
+                                    <li>Paste the prompt and add your weekly theme</li>
+                                    <li>Review and refine the generated content</li>
+                                    <li>Claude will push approved content to your calendar</li>
+                                </ol>
+                            </div>
+                        </div>
+
+                        <div className="p-6 border-t border-[var(--surface-border)] flex justify-end gap-3">
+                            <button
+                                onClick={() => {
+                                    setShowClaudeCodePrompt(false)
+                                    setPromptCopied(false)
+                                }}
+                                className="btn btn-secondary"
+                            >
+                                Close
+                            </button>
+                            <button
+                                onClick={() => {
+                                    const prompt = document.querySelector('pre')?.textContent || ''
+                                    navigator.clipboard.writeText(prompt)
+                                    setPromptCopied(true)
+                                    setTimeout(() => setPromptCopied(false), 2000)
+                                }}
+                                className="btn btn-primary flex items-center gap-2"
+                            >
+                                {promptCopied ? (
+                                    <>
+                                        <Check className="w-4 h-4" />
+                                        Copied!
+                                    </>
+                                ) : (
+                                    <>
+                                        <Copy className="w-4 h-4" />
+                                        Copy Prompt
+                                    </>
+                                )}
+                            </button>
                         </div>
                     </div>
                 </div>
