@@ -1475,6 +1475,207 @@
             color: var(--text-primary);
         }
 
+        /* === APP PREVIEW (Full Screen Inline) === */
+        .app-preview-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-primary);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+        }
+
+        .app-preview-overlay.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .app-preview-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-subtle);
+            gap: 16px;
+            flex-shrink: 0;
+        }
+
+        .app-preview-back {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-family: inherit;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .app-preview-back:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-hover);
+        }
+
+        .app-preview-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .app-preview-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .app-preview-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .app-preview-title span {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .app-preview-add {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 0.95rem;
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .app-preview-add:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+        }
+
+        .app-preview-add.added {
+            background: #22c55e;
+            pointer-events: none;
+        }
+
+        .app-preview-content {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .app-preview-content iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Mobile responsive for app preview */
+        @media (max-width: 600px) {
+            .app-preview-header {
+                padding: 10px 12px;
+                gap: 8px;
+            }
+
+            .app-preview-back {
+                padding: 8px 12px;
+                font-size: 0.85rem;
+            }
+
+            .app-preview-back svg {
+                width: 16px;
+                height: 16px;
+            }
+
+            .app-preview-title span {
+                font-size: 0.95rem;
+            }
+
+            .app-preview-icon {
+                width: 28px;
+                height: 28px;
+                border-radius: 8px;
+            }
+
+            .app-preview-add {
+                padding: 8px 12px;
+                font-size: 0.85rem;
+            }
+
+            .app-preview-add span {
+                display: none;
+            }
+
+            .app-preview-add::after {
+                content: 'Add';
+            }
+        }
+
+        @media (max-width: 400px) {
+            .app-preview-back span {
+                display: none;
+            }
+
+            .app-preview-title {
+                gap: 8px;
+            }
+        }
+
+        /* Toast notification */
+        .app-toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 10px 30px rgba(34, 197, 94, 0.3);
+            z-index: 10001;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .app-toast.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
+
         /* === APPS PANEL === */
         .apps-panel-overlay {
             position: fixed;
@@ -4650,6 +4851,31 @@
         </div>
     </div>
 
+    <!-- App Preview Container (Full Screen Inline) -->
+    <div class="app-preview-overlay" id="appPreviewOverlay">
+        <div class="app-preview-header">
+            <button class="app-preview-back" onclick="closeAppPreview()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                Back to Chat
+            </button>
+            <div class="app-preview-title">
+                <div class="app-preview-icon" id="appPreviewIcon"></div>
+                <span id="appPreviewName">App Name</span>
+            </div>
+            <button class="app-preview-add" id="appPreviewAddBtn" onclick="addAppToProfile()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+                Add to Profile
+            </button>
+        </div>
+        <div class="app-preview-content">
+            <iframe id="appPreviewFrame" src="" frameborder="0" allow="camera; microphone; geolocation"></iframe>
+        </div>
+    </div>
+
     <!-- Apps Panel -->
     <div class="apps-panel-overlay" id="appsPanelOverlay" onclick="if(event.target === this) closeAppsPanel()">
         <div class="apps-panel">
@@ -5687,7 +5913,7 @@
                 item.className = 'apps-view-item';
                 item.dataset.name = app.name.toLowerCase();
                 item.dataset.desc = app.description.toLowerCase();
-                item.onclick = () => launchApp(app.url, app.name);
+                item.onclick = () => launchApp(key, app.url, app.name);
 
                 const iconHtml = app.iconUrl
                     ? `<img src="${app.iconUrl}" alt="${app.name}">`
@@ -5752,10 +5978,118 @@
             });
         }
 
-        function launchApp(url, name) {
+        // Current previewing app key
+        let currentPreviewApp = null;
+
+        function launchApp(appKey, url, name) {
             closeAppsView();
-            // Open in new tab for now - could embed in iframe later
-            window.open(url, '_blank');
+            closeAppsPanel();
+            previewApp(appKey, url, name);
+        }
+
+        function previewApp(appKey, appUrl, appName) {
+            const overlay = document.getElementById('appPreviewOverlay');
+            const frame = document.getElementById('appPreviewFrame');
+            const nameEl = document.getElementById('appPreviewName');
+            const iconEl = document.getElementById('appPreviewIcon');
+            const addBtn = document.getElementById('appPreviewAddBtn');
+
+            if (!overlay || !frame) return;
+
+            currentPreviewApp = appKey;
+
+            // Get app info
+            const app = appKey ? SUITE_APPS[appKey] : null;
+
+            // Set app name
+            nameEl.textContent = appName || app?.name || 'App';
+
+            // Set app icon
+            if (app?.iconUrl) {
+                iconEl.innerHTML = `<img src="${app.iconUrl}" alt="${app.name}">`;
+                iconEl.style.background = app.iconBg || 'var(--bg-card)';
+            } else {
+                iconEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`;
+                iconEl.style.background = 'var(--bg-card)';
+            }
+
+            // Reset add button state
+            const savedApps = JSON.parse(localStorage.getItem('savedApps') || '[]');
+            if (appKey && savedApps.includes(appKey)) {
+                addBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> Added!`;
+                addBtn.classList.add('added');
+            } else {
+                addBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Add to Profile`;
+                addBtn.classList.remove('added');
+            }
+
+            // Load the app in iframe
+            frame.src = appUrl;
+
+            // Show overlay
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeAppPreview() {
+            const overlay = document.getElementById('appPreviewOverlay');
+            const frame = document.getElementById('appPreviewFrame');
+
+            if (overlay) {
+                overlay.classList.remove('active');
+            }
+
+            // Clear iframe after animation
+            setTimeout(() => {
+                if (frame) frame.src = '';
+            }, 300);
+
+            document.body.style.overflow = '';
+            currentPreviewApp = null;
+        }
+
+        function addAppToProfile() {
+            if (!currentPreviewApp) return;
+
+            const addBtn = document.getElementById('appPreviewAddBtn');
+            const savedApps = JSON.parse(localStorage.getItem('savedApps') || '[]');
+
+            if (!savedApps.includes(currentPreviewApp)) {
+                savedApps.push(currentPreviewApp);
+                localStorage.setItem('savedApps', JSON.stringify(savedApps));
+
+                // Update button
+                addBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> Added!`;
+                addBtn.classList.add('added');
+
+                // Show toast
+                showToast(`${SUITE_APPS[currentPreviewApp]?.name || 'App'} added to your profile!`);
+            }
+        }
+
+        function showToast(message) {
+            // Remove existing toast
+            const existingToast = document.querySelector('.app-toast');
+            if (existingToast) existingToast.remove();
+
+            const toast = document.createElement('div');
+            toast.className = 'app-toast';
+            toast.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 6L9 17l-5-5"/>
+                </svg>
+                ${message}
+            `;
+            document.body.appendChild(toast);
+
+            // Animate in
+            setTimeout(() => toast.classList.add('visible'), 10);
+
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('visible');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
 
         // Apps button click handler
@@ -5769,6 +6103,12 @@
         // Close on Escape key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
+                // Close app preview first (highest priority)
+                const appPreview = document.getElementById('appPreviewOverlay');
+                if (appPreview && appPreview.classList.contains('active')) {
+                    closeAppPreview();
+                    return;
+                }
                 const overlay = document.getElementById('appsPanelOverlay');
                 if (overlay && overlay.classList.contains('active')) {
                     closeAppsPanel();
@@ -6483,9 +6823,10 @@
 
             if (appRecommendation && SUITE_APPS[appRecommendation]) {
                 const app = SUITE_APPS[appRecommendation];
-                const appCard = document.createElement('a');
-                appCard.href = app.url;
+                const appCard = document.createElement('div');
                 appCard.className = 'app-card-inline';
+                appCard.style.cursor = 'pointer';
+                appCard.onclick = () => previewApp(appRecommendation, app.url, app.name);
                 appCard.innerHTML = `
                     <div class="app-icon-inline" style="background: ${app.iconBg}">${app.iconUrl ? `<img src="${app.iconUrl}" alt="${app.name}">` : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>'}</div>
                     <div class="app-info-inline">
@@ -6559,7 +6900,7 @@
                     break;
 
                 case 'open':
-                    window.location.href = url;
+                    previewApp(appId, url, app.name);
                     break;
             }
         }
