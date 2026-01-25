@@ -241,6 +241,8 @@ function LoopsPageContent() {
     const [githubActivity, setGithubActivity] = useState<string>('')
     const [githubActivityLoading, setGithubActivityLoading] = useState(false)
     const [githubActivityCount, setGithubActivityCount] = useState(0)
+    const [suggestedThemes, setSuggestedThemes] = useState<Array<{ title: string; reason: string }>>([])
+    const [suggestingTheme, setSuggestingTheme] = useState(false)
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
         history: false,
         github: false,
@@ -287,6 +289,27 @@ function LoopsPageContent() {
             console.error('Failed to fetch GitHub activity:', error)
         } finally {
             setGithubActivityLoading(false)
+        }
+    }
+
+    const suggestThemes = async () => {
+        if (!researchFindings && !githubActivity) return
+        setSuggestingTheme(true)
+        setSuggestedThemes([])
+        try {
+            const response = await fetch('/api/content/suggest-theme', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ researchFindings, githubActivity })
+            })
+            const data = await response.json()
+            if (data.success && data.themes) {
+                setSuggestedThemes(data.themes)
+            }
+        } catch (error) {
+            console.error('Failed to suggest themes:', error)
+        } finally {
+            setSuggestingTheme(false)
         }
     }
 
@@ -2245,16 +2268,54 @@ Please research and provide:
                                     {expandedSections.theme ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
                                 </button>
                                 {expandedSections.theme && (
-                                    <div className="p-4 border-t border-[var(--surface-border)]">
-                                        <input
-                                            type="text"
-                                            value={weeklyTheme}
-                                            onChange={(e) => setWeeklyTheme(e.target.value)}
-                                            placeholder="e.g., 'Real Apps vs ChatGPT Answers' or 'Student Use Cases'"
-                                            className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--surface-border)] rounded-lg text-[var(--foreground)]"
-                                        />
-                                        <p className="text-xs text-[var(--foreground-muted)] mt-2">
-                                            This will be the main focus for all content this week
+                                    <div className="p-4 border-t border-[var(--surface-border)] space-y-3">
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={weeklyTheme}
+                                                onChange={(e) => setWeeklyTheme(e.target.value)}
+                                                placeholder="e.g., 'Real Apps vs ChatGPT Answers' or 'Student Use Cases'"
+                                                className="flex-1 px-4 py-3 bg-[var(--background)] border border-[var(--surface-border)] rounded-lg text-[var(--foreground)]"
+                                            />
+                                            <button
+                                                onClick={suggestThemes}
+                                                disabled={suggestingTheme || (!researchFindings && !githubActivity)}
+                                                className="px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                            >
+                                                {suggestingTheme ? (
+                                                    <>
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                        Thinking...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Sparkles className="w-4 h-4" />
+                                                        Suggest
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+
+                                        {suggestedThemes.length > 0 && (
+                                            <div className="space-y-2">
+                                                <p className="text-xs text-[var(--foreground-muted)]">Click a suggestion to use it:</p>
+                                                {suggestedThemes.map((theme, idx) => (
+                                                    <button
+                                                        key={idx}
+                                                        onClick={() => setWeeklyTheme(theme.title)}
+                                                        className="w-full p-3 bg-[var(--background)] hover:bg-amber-500/10 border border-[var(--surface-border)] hover:border-amber-500/50 rounded-lg text-left transition-colors"
+                                                    >
+                                                        <div className="font-medium text-[var(--foreground)]">{theme.title}</div>
+                                                        <div className="text-xs text-[var(--foreground-muted)] mt-1">{theme.reason}</div>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        <p className="text-xs text-[var(--foreground-muted)]">
+                                            {(!researchFindings && !githubActivity)
+                                                ? 'Add research findings or wait for GitHub activity to enable suggestions'
+                                                : 'This will be the main focus for all content this week'}
                                         </p>
                                     </div>
                                 )}
