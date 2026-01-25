@@ -1,4 +1,4 @@
-import { ImageResponse } from '@vercel/og'
+import { ImageResponse } from 'next/og'
 import { NextRequest, NextResponse } from 'next/server'
 import {
     PLATFORM_DIMENSIONS,
