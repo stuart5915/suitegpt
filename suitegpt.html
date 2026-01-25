@@ -5121,6 +5121,20 @@
         console.log('[Auth Debug] URL hash:', window.location.hash);
         console.log('[Auth Debug] URL search:', window.location.search);
 
+        // Check for OAuth error in URL
+        const debugParams = new URLSearchParams(window.location.search);
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        if (debugParams.get('error') || hashParams.get('error')) {
+            console.error('[Auth Debug] OAuth ERROR:', debugParams.get('error') || hashParams.get('error'));
+            console.error('[Auth Debug] Error description:', debugParams.get('error_description') || hashParams.get('error_description'));
+        }
+        if (debugParams.get('code')) {
+            console.log('[Auth Debug] OAuth code found in URL - exchange should happen');
+        }
+        if (hashParams.get('access_token')) {
+            console.log('[Auth Debug] Access token found in hash');
+        }
+
         // Test if localStorage works
         try {
             localStorage.setItem('_test', '1');
