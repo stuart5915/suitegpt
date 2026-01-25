@@ -46,7 +46,7 @@ function getPatternStyle(pattern: string | undefined, color: string): string {
 }
 
 export async function POST(req: NextRequest) {
-    console.log('[generate-image] API called')
+    console.log('[generate-image] API called - TEMPLATE VERSION 2.0')
     try {
         const body: GenerateImageRequest = await req.json()
         const { postId, platform, content, templateId } = body
@@ -216,7 +216,7 @@ export async function POST(req: NextRequest) {
                                 opacity: 0.8,
                             }}
                         >
-                            suitegpt.app • Real apps, not answers.
+                            suitegpt.app • Real apps, not answers. [v2]
                         </p>
                     </div>
                 </div>
@@ -373,7 +373,7 @@ export async function GET(req: NextRequest) {
                         marginTop: '20px',
                     }}
                 >
-                    suitegpt.app • Real apps, not answers.
+                    suitegpt.app • Real apps, not answers. [v2]
                 </p>
             </div>
         ),
