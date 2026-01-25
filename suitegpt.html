@@ -1261,11 +1261,17 @@
 
         /* === INLINE APPS VIEW === */
         .apps-view {
-            flex: 1;
+            display: none;
+            flex-direction: column;
             padding: 40px;
             max-width: 1200px;
             margin: 0 auto;
             width: 100%;
+            box-sizing: border-box;
+        }
+
+        .apps-view.active {
+            display: flex;
         }
 
         .apps-view-header {
@@ -3654,7 +3660,7 @@
                 </section>
 
                 <!-- Inline Apps View -->
-                <section class="apps-view" id="appsView" style="display: none;">
+                <section class="apps-view" id="appsView">
                     <div class="apps-view-header">
                         <button class="apps-view-back" onclick="closeAppsView()">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -4316,12 +4322,10 @@
             const appsView = document.getElementById('appsView');
             const createView = document.getElementById('createView');
             const earningsView = document.getElementById('earningsView');
-            const useCasesSection = document.getElementById('useCasesSection');
 
             if (welcomeState) welcomeState.style.display = 'none';
-            if (appsView) appsView.style.display = 'none';
+            if (appsView) appsView.classList.remove('active');
             if (earningsView) earningsView.classList.remove('active');
-            if (useCasesSection) useCasesSection.style.display = 'none';
             if (createView) createView.style.display = 'block';
         }
 
@@ -4332,7 +4336,7 @@
             const earningsView = document.getElementById('earningsView');
 
             if (welcomeState) welcomeState.style.display = 'none';
-            if (appsView) appsView.style.display = 'none';
+            if (appsView) appsView.classList.remove('active');
             if (createView) createView.style.display = 'none';
             if (earningsView) earningsView.classList.add('active');
         }
@@ -4340,11 +4344,9 @@
         function closeCreateView() {
             const welcomeState = document.getElementById('welcomeState');
             const createView = document.getElementById('createView');
-            const useCasesSection = document.getElementById('useCasesSection');
 
             if (welcomeState) welcomeState.style.display = '';
             if (createView) createView.style.display = 'none';
-            if (useCasesSection) useCasesSection.style.display = '';
         }
 
         function closeEarningsView() {
@@ -4861,7 +4863,7 @@
             if (welcomeState) welcomeState.style.display = 'none';
             if (createView) createView.style.display = 'none';
             if (earningsView) earningsView.classList.remove('active');
-            if (appsView) appsView.style.display = 'block';
+            if (appsView) appsView.classList.add('active');
 
             // Populate apps grid
             grid.innerHTML = '';
@@ -4900,7 +4902,7 @@
 
             // Show welcome state, hide apps view
             if (welcomeState) welcomeState.style.display = '';
-            if (appsView) appsView.style.display = 'none';
+            if (appsView) appsView.classList.remove('active');
             if (searchInput) searchInput.value = '';
         }
 
