@@ -312,7 +312,7 @@
 
         /* Add to Home Screen Button */
         .add-to-home-btn {
-            display: flex;
+            display: none;
             align-items: center;
             gap: 10px;
             width: calc(100% - 32px);
@@ -358,6 +358,10 @@
 
         .add-to-home-dismiss:hover {
             color: var(--text-primary);
+        }
+
+        .add-to-home-btn.visible {
+            display: flex;
         }
 
         .add-to-home-btn.hidden {
@@ -5459,9 +5463,11 @@
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
             if (isStandalone || dismissed) {
+                btn.classList.remove('visible');
                 btn.classList.add('hidden');
             } else {
                 btn.classList.remove('hidden');
+                btn.classList.add('visible');
             }
         }
 
@@ -5503,7 +5509,10 @@
         function dismissAddToHome() {
             localStorage.setItem('addToHomeDismissed', 'true');
             const btn = document.getElementById('addToHomeBtn');
-            if (btn) btn.classList.add('hidden');
+            if (btn) {
+                btn.classList.remove('visible');
+                btn.classList.add('hidden');
+            }
         }
 
         // Listen for app installed
