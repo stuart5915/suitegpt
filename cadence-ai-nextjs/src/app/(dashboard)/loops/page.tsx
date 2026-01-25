@@ -237,6 +237,7 @@ function LoopsPageContent() {
     const [contentHistory, setContentHistory] = useState<string>('')
     const [contentHistoryLoading, setContentHistoryLoading] = useState(false)
     const [contentHistoryCount, setContentHistoryCount] = useState(0)
+    const [researchPromptCopied, setResearchPromptCopied] = useState(false)
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
         history: false,
         research: true,
@@ -2061,57 +2062,60 @@ Generate the content now.`
                                 {expandedSections.research && (
                                     <div className="p-4 border-t border-[var(--surface-border)] space-y-3">
                                         <p className="text-sm text-[var(--foreground-muted)]">
-                                            Copy these prompts into Google AI, Grok, or Perplexity to gather fresh data:
+                                            Copy this prompt into Google AI, Grok, or Perplexity to gather fresh data:
                                         </p>
-                                        <div className="space-y-2">
-                                            <div className="bg-[var(--background)] p-3 rounded-lg border border-[var(--surface-border)]">
-                                                <div className="flex items-center justify-between mb-1">
-                                                    <span className="text-xs font-medium text-blue-400">Trending Topics</span>
-                                                    <button
-                                                        onClick={() => {
-                                                            navigator.clipboard.writeText("What are the top trending topics and conversations in the AI app building, no-code, and solopreneur space this week? Include any viral posts, new tool launches, or debates happening on X/Twitter and LinkedIn.")
-                                                        }}
-                                                        className="text-xs text-[var(--foreground-muted)] hover:text-[var(--foreground)] flex items-center gap-1"
-                                                    >
+                                        <div className="relative bg-[var(--background)] p-4 rounded-lg border border-[var(--surface-border)]">
+                                            <button
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(`I'm creating social media content for SuiteGPT (suitegpt.app) - an AI app concierge that builds real working apps, not just gives answers like ChatGPT.
+
+Please research and provide:
+
+1. **Trending Topics This Week** - What are the hot conversations in AI app building, no-code tools, and solopreneur/indie hacker spaces? Any viral posts, debates, or news on X/Twitter and LinkedIn?
+
+2. **Competitor Updates** - What are ChatGPT, Claude, Bolt, Lovable, Replit, and similar tools shipping or announcing? What's the sentiment around them?
+
+3. **Viral Content Formats** - What post formats, hooks, and styles are currently performing well in the tech/AI space? Give specific examples of high-engagement posts.
+
+4. **Pain Points & Frustrations** - What are people complaining about with current AI tools? What gaps exist that SuiteGPT could address?
+
+5. **Content Opportunities** - Based on the above, what angles or topics would resonate this week for a product that turns ideas into real apps?
+
+Format your response with clear sections I can reference when creating content.`)
+                                                    setResearchPromptCopied(true)
+                                                    setTimeout(() => setResearchPromptCopied(false), 2000)
+                                                }}
+                                                className={`absolute top-3 right-3 flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-all ${
+                                                    researchPromptCopied
+                                                        ? 'bg-emerald-500/20 text-emerald-400'
+                                                        : 'bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--foreground)]'
+                                                }`}
+                                            >
+                                                {researchPromptCopied ? (
+                                                    <>
+                                                        <Check className="w-3 h-3" /> Copied!
+                                                    </>
+                                                ) : (
+                                                    <>
                                                         <Copy className="w-3 h-3" /> Copy
-                                                    </button>
-                                                </div>
-                                                <p className="text-xs text-[var(--foreground-muted)]">
-                                                    "What are the top trending topics and conversations in the AI app building, no-code, and solopreneur space this week?"
-                                                </p>
-                                            </div>
-                                            <div className="bg-[var(--background)] p-3 rounded-lg border border-[var(--surface-border)]">
-                                                <div className="flex items-center justify-between mb-1">
-                                                    <span className="text-xs font-medium text-purple-400">Competitor Watch</span>
-                                                    <button
-                                                        onClick={() => {
-                                                            navigator.clipboard.writeText("What are ChatGPT, Claude, Bolt, Lovable, and Replit shipping or announcing this week? What are people saying about them on social media?")
-                                                        }}
-                                                        className="text-xs text-[var(--foreground-muted)] hover:text-[var(--foreground)] flex items-center gap-1"
-                                                    >
-                                                        <Copy className="w-3 h-3" /> Copy
-                                                    </button>
-                                                </div>
-                                                <p className="text-xs text-[var(--foreground-muted)]">
-                                                    "What are ChatGPT, Claude, Bolt, Lovable, and Replit shipping this week? What are people saying about them?"
-                                                </p>
-                                            </div>
-                                            <div className="bg-[var(--background)] p-3 rounded-lg border border-[var(--surface-border)]">
-                                                <div className="flex items-center justify-between mb-1">
-                                                    <span className="text-xs font-medium text-emerald-400">Viral Formats</span>
-                                                    <button
-                                                        onClick={() => {
-                                                            navigator.clipboard.writeText("What content formats and hooks are going viral on X/Twitter and LinkedIn in the tech/AI space right now? Give me examples of high-performing posts.")
-                                                        }}
-                                                        className="text-xs text-[var(--foreground-muted)] hover:text-[var(--foreground)] flex items-center gap-1"
-                                                    >
-                                                        <Copy className="w-3 h-3" /> Copy
-                                                    </button>
-                                                </div>
-                                                <p className="text-xs text-[var(--foreground-muted)]">
-                                                    "What content formats and hooks are going viral on X/Twitter and LinkedIn in the tech/AI space right now?"
-                                                </p>
-                                            </div>
+                                                    </>
+                                                )}
+                                            </button>
+                                            <pre className="text-xs text-[var(--foreground-muted)] whitespace-pre-wrap pr-16">
+{`I'm creating social media content for SuiteGPT (suitegpt.app) - an AI app concierge that builds real working apps, not just gives answers like ChatGPT.
+
+Please research and provide:
+
+1. Trending Topics This Week - What are the hot conversations in AI app building, no-code tools, and solopreneur/indie hacker spaces?
+
+2. Competitor Updates - What are ChatGPT, Claude, Bolt, Lovable, Replit shipping or announcing? What's the sentiment?
+
+3. Viral Content Formats - What post formats and hooks are performing well in tech/AI right now?
+
+4. Pain Points & Frustrations - What are people complaining about with current AI tools?
+
+5. Content Opportunities - Based on the above, what angles would resonate this week?`}
+                                            </pre>
                                         </div>
                                     </div>
                                 )}
