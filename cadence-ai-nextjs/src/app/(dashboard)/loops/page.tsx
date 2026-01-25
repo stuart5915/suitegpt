@@ -238,18 +238,23 @@ function LoopsPageContent() {
     const [contentHistoryLoading, setContentHistoryLoading] = useState(false)
     const [contentHistoryCount, setContentHistoryCount] = useState(0)
     const [researchPromptCopied, setResearchPromptCopied] = useState(false)
+    const [githubActivity, setGithubActivity] = useState<string>('')
+    const [githubActivityLoading, setGithubActivityLoading] = useState(false)
+    const [githubActivityCount, setGithubActivityCount] = useState(0)
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
         history: false,
+        github: false,
         research: true,
         findings: false,
         theme: true,
         prompt: false
     })
 
-    // Fetch content history when modal opens
+    // Fetch content history and GitHub activity when modal opens
     useEffect(() => {
         if (showClaudeCodePrompt) {
             fetchContentHistory()
+            fetchGithubActivity()
         }
     }, [showClaudeCodePrompt])
 
@@ -266,6 +271,22 @@ function LoopsPageContent() {
             console.error('Failed to fetch content history:', error)
         } finally {
             setContentHistoryLoading(false)
+        }
+    }
+
+    const fetchGithubActivity = async () => {
+        setGithubActivityLoading(true)
+        try {
+            const response = await fetch('/api/content/github-activity?days=7')
+            const data = await response.json()
+            if (data.success) {
+                setGithubActivity(data.formattedForPrompt || '')
+                setGithubActivityCount(data.count || 0)
+            }
+        } catch (error) {
+            console.error('Failed to fetch GitHub activity:', error)
+        } finally {
+            setGithubActivityLoading(false)
         }
     }
 
@@ -309,6 +330,13 @@ ${contentHistory ? `## IMPORTANT: Recent Content (Last 30 Days) - DO NOT REPEAT
 The following content was already posted. Create NEW, FRESH content that does not repeat these themes, hooks, or examples:
 
 ${contentHistory}
+
+---` : ''}
+
+${githubActivity ? `## Recent Development Activity (What We Shipped)
+Use these commits to create "building in public" content, dev updates, or highlight new features:
+
+${githubActivity}
 
 ---` : ''}
 
@@ -2038,6 +2066,55 @@ Generate the content now.`
                                         ) : (
                                             <p className="text-sm text-[var(--foreground-muted)]">
                                                 No recent content found. This is your first batch!
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Section: GitHub Activity */}
+                            <div className="border border-[var(--surface-border)] rounded-xl overflow-hidden">
+                                <button
+                                    onClick={() => toggleSection('github')}
+                                    className="w-full p-4 flex items-center justify-between bg-[var(--background)] hover:bg-[var(--surface-hover)] transition-colors"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <GitCommit className="w-5 h-5 text-green-400" />
+                                        <div className="text-left">
+                                            <div className="font-semibold text-[var(--foreground)]">What We Shipped (Last 7 Days)</div>
+                                            <div className="text-xs text-[var(--foreground-muted)]">
+                                                {githubActivityLoading ? 'Loading...' : `${githubActivityCount} commits - auto-included in prompt`}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        {githubActivityCount > 0 && (
+                                            <span className="px-2 py-0.5 text-xs bg-green-500/20 text-green-400 rounded-full">
+                                                {githubActivityCount}
+                                            </span>
+                                        )}
+                                        {expandedSections.github ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                                    </div>
+                                </button>
+                                {expandedSections.github && (
+                                    <div className="p-4 border-t border-[var(--surface-border)]">
+                                        {githubActivityLoading ? (
+                                            <div className="flex items-center gap-2 text-sm text-[var(--foreground-muted)]">
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                Loading GitHub activity...
+                                            </div>
+                                        ) : githubActivity ? (
+                                            <div className="space-y-2">
+                                                <p className="text-xs text-[var(--foreground-muted)]">
+                                                    Recent commits for "building in public" content:
+                                                </p>
+                                                <pre className="bg-[var(--background)] p-3 rounded-lg text-xs text-[var(--foreground-muted)] overflow-x-auto whitespace-pre-wrap font-mono max-h-40 overflow-y-auto border border-[var(--surface-border)]">
+                                                    {githubActivity}
+                                                </pre>
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-[var(--foreground-muted)]">
+                                                No recent commits found.
                                             </p>
                                         )}
                                     </div>
