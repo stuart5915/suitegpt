@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
-const anthropic = new Anthropic({
-    apiKey: process.env.ANTHROPIC_API_KEY
-})
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
 
 export async function POST(req: NextRequest) {
     try {
@@ -28,7 +26,7 @@ For each theme suggestion, provide:
 1. A short theme title (5-7 words max)
 2. One sentence explaining why this theme would resonate this week
 
-Format your response as JSON:
+Format your response as JSON only, no markdown:
 {
   "themes": [
     { "title": "Theme title here", "reason": "Why this theme works" },
@@ -37,18 +35,26 @@ Format your response as JSON:
   ]
 }
 
-Only respond with valid JSON, no other text.`
+Only respond with valid JSON, no other text or markdown.`
 
-        const message = await anthropic.messages.create({
-            model: 'claude-3-5-haiku-20241022',
-            max_tokens: 500,
-            messages: [{ role: 'user', content: prompt }]
-        })
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+        const result = await model.generateContent(prompt)
+        const responseText = result.response.text()
 
-        const responseText = message.content[0].type === 'text' ? message.content[0].text : ''
+        // Clean up response - remove markdown code blocks if present
+        let cleanedResponse = responseText.trim()
+        if (cleanedResponse.startsWith('```json')) {
+            cleanedResponse = cleanedResponse.slice(7)
+        } else if (cleanedResponse.startsWith('```')) {
+            cleanedResponse = cleanedResponse.slice(3)
+        }
+        if (cleanedResponse.endsWith('```')) {
+            cleanedResponse = cleanedResponse.slice(0, -3)
+        }
+        cleanedResponse = cleanedResponse.trim()
 
         // Parse JSON response
-        const parsed = JSON.parse(responseText)
+        const parsed = JSON.parse(cleanedResponse)
 
         return NextResponse.json({
             success: true,
