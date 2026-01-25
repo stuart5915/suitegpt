@@ -2969,6 +2969,51 @@
                                 placeholder="I need help with..."
                                 autocomplete="off"
                             >
+                            <div class="model-selector" id="modelSelector" onclick="toggleModelDropdown(event)">
+                                <img src="/assets/icons/claude-icon.png" alt="Claude" class="model-selector-icon" id="modelIcon" onerror="this.style.display='none'">
+                                <span class="model-selector-name" id="modelName">Claude</span>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="6 9 12 15 18 9"/>
+                                </svg>
+                                <div class="model-dropdown" id="modelDropdown">
+                                    <button class="model-dropdown-item active" onclick="selectModel('claude', 'Claude Sonnet', '/assets/icons/claude-icon.png')">
+                                        <img src="/assets/icons/claude-icon.png" alt="Claude" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%23d97706%22><circle cx=%2212%22 cy=%2212%22 r=%2210%22/></svg>'">
+                                        <div class="model-dropdown-item-info">
+                                            <div class="model-dropdown-item-name">Claude Sonnet</div>
+                                            <div class="model-dropdown-item-desc">Fast & intelligent</div>
+                                        </div>
+                                    </button>
+                                    <button class="model-dropdown-item" onclick="selectModel('claude-opus', 'Claude Opus', '/assets/icons/claude-icon.png')">
+                                        <img src="/assets/icons/claude-icon.png" alt="Claude" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%23d97706%22><circle cx=%2212%22 cy=%2212%22 r=%2210%22/></svg>'">
+                                        <div class="model-dropdown-item-info">
+                                            <div class="model-dropdown-item-name">Claude Opus</div>
+                                            <div class="model-dropdown-item-desc">Most capable</div>
+                                        </div>
+                                        <span class="model-pro-badge">Pro</span>
+                                    </button>
+                                    <button class="model-dropdown-item" onclick="selectModel('gpt4o', 'GPT-4o', '/assets/icons/openai-icon.png')">
+                                        <img src="/assets/icons/openai-icon.png" alt="GPT-4" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%2310a37f%22><circle cx=%2212%22 cy=%2212%22 r=%2210%22/></svg>'">
+                                        <div class="model-dropdown-item-info">
+                                            <div class="model-dropdown-item-name">GPT-4o</div>
+                                            <div class="model-dropdown-item-desc">OpenAI's flagship</div>
+                                        </div>
+                                    </button>
+                                    <button class="model-dropdown-item" onclick="selectModel('gemini', 'Gemini Pro', '/assets/icons/gemini-icon.png')">
+                                        <img src="/assets/icons/gemini-icon.png" alt="Gemini" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%234285f4%22><circle cx=%2212%22 cy=%2212%22 r=%2210%22/></svg>'">
+                                        <div class="model-dropdown-item-info">
+                                            <div class="model-dropdown-item-name">Gemini Pro</div>
+                                            <div class="model-dropdown-item-desc">Google's best</div>
+                                        </div>
+                                    </button>
+                                    <button class="model-dropdown-item" onclick="selectModel('llama', 'Llama 3', '/assets/icons/meta-icon.png')">
+                                        <img src="/assets/icons/meta-icon.png" alt="Llama" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%230668E1%22><circle cx=%2212%22 cy=%2212%22 r=%2210%22/></svg>'">
+                                        <div class="model-dropdown-item-info">
+                                            <div class="model-dropdown-item-name">Llama 3</div>
+                                            <div class="model-dropdown-item-desc">Open source</div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
                             <button class="send-btn" id="sendBtn" disabled>
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                                     <path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/>
@@ -3982,6 +4027,63 @@
             const toolsDropdown = document.getElementById('toolsDropdown');
             if (toolsBtn && toolsDropdown && !toolsBtn.contains(e.target)) {
                 closeToolsDropdown();
+            }
+        });
+
+        // ========================
+        // MODEL SELECTOR
+        // ========================
+        let currentModel = 'claude';
+
+        function toggleModelDropdown(e) {
+            e.stopPropagation();
+            const dropdown = document.getElementById('modelDropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        function closeModelDropdown() {
+            const dropdown = document.getElementById('modelDropdown');
+            if (dropdown) dropdown.classList.remove('active');
+        }
+
+        function selectModel(modelId, modelName, iconUrl) {
+            currentModel = modelId;
+
+            // Update the selector display
+            const nameEl = document.getElementById('modelName');
+            const iconEl = document.getElementById('modelIcon');
+
+            if (nameEl) nameEl.textContent = modelName;
+            if (iconEl) {
+                iconEl.src = iconUrl;
+                iconEl.style.display = '';
+            }
+
+            // Update active state in dropdown
+            const items = document.querySelectorAll('.model-dropdown-item');
+            items.forEach(item => item.classList.remove('active'));
+            event.target.closest('.model-dropdown-item').classList.add('active');
+
+            closeModelDropdown();
+
+            // Check if Pro model requires upgrade
+            if (modelId === 'claude-opus') {
+                const isLoggedIn = !!(localStorage.getItem('connectedWallet') || localStorage.getItem('telegram_user'));
+                if (!isLoggedIn) {
+                    openConnectModal();
+                    return;
+                }
+                // TODO: Check if user has Pro subscription
+            }
+
+            console.log('Selected model:', modelId);
+        }
+
+        // Close model dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const selector = document.getElementById('modelSelector');
+            if (selector && !selector.contains(e.target)) {
+                closeModelDropdown();
             }
         });
 
