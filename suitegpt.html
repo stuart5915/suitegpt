@@ -5410,7 +5410,15 @@
                           localStorage.getItem('suiteWalletAddress') ||
                           localStorage.getItem('suiteWallet');
             const telegramUserStr = localStorage.getItem('telegram_user');
-            const telegramUser = telegramUserStr ? JSON.parse(telegramUserStr) : null;
+            let telegramUser = null;
+            if (telegramUserStr) {
+                try {
+                    telegramUser = JSON.parse(telegramUserStr);
+                } catch (e) {
+                    console.error('Failed to parse telegram_user:', e);
+                    localStorage.removeItem('telegram_user');
+                }
+            }
 
             const isLoggedIn = !!(wallet || telegramUser || supabaseUser);
 
@@ -5787,6 +5795,14 @@
                 iconUrl: '/assets/icons/defiknowledge-icon.png',
                 iconBg: 'linear-gradient(135deg, #06b6d4, #0891b2)',
                 url: '/suite-shell.html?app=defiknowledge'
+            },
+            // Spirituality Apps
+            'jesus-is-god': {
+                name: 'Jesus Is God',
+                description: 'Explore the truth of who Jesus is',
+                icon: '✝️',
+                iconBg: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                url: '/jesus-is-god.html'
             },
             // Health & Wellness Apps
             'hydrotrack': {
@@ -6539,7 +6555,14 @@
                           localStorage.getItem('suiteWalletAddress') ||
                           localStorage.getItem('suiteWallet');
             const telegramUserStr = localStorage.getItem('telegram_user');
-            const telegramUser = telegramUserStr ? JSON.parse(telegramUserStr) : null;
+            let telegramUser = null;
+            if (telegramUserStr) {
+                try {
+                    telegramUser = JSON.parse(telegramUserStr);
+                } catch (e) {
+                    console.error('Failed to parse telegram_user:', e);
+                }
+            }
 
             if (!wallet && !telegramUser) {
                 alert('Please log in to request a withdrawal');
@@ -6613,7 +6636,12 @@
                     // Update auth state
                     checkAuthState();
                 } else if (event === 'SIGNED_OUT') {
-                    checkAuthState();
+                    // Don't trigger logout if user is logged in via Telegram or wallet
+                    const hasTelegram = localStorage.getItem('telegram_user');
+                    const hasWallet = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWalletAddress');
+                    if (!hasTelegram && !hasWallet) {
+                        checkAuthState();
+                    }
                 }
             });
         }
