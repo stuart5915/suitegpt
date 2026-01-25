@@ -6627,11 +6627,19 @@
         let supabaseClient = null;
         if (window.supabase) {
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log('[Auth] Supabase client created');
+
+            // Check for OAuth callback in URL (code parameter)
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('code')) {
+                console.log('[Auth] OAuth code detected in URL, exchanging...');
+            }
 
             // Listen for auth state changes (handles OAuth redirect)
             supabaseClient.auth.onAuthStateChange((event, session) => {
-                console.log('Supabase auth event:', event, session ? 'has session' : 'no session');
-                if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
+                console.log('[Auth] Supabase event:', event, session ? 'has session' : 'no session');
+                if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') && session) {
+                    console.log('[Auth] User authenticated:', session.user?.email);
                     // Close modal if open
                     const modal = document.getElementById('connectModalOverlay');
                     if (modal && modal.classList.contains('active')) {
@@ -6648,6 +6656,16 @@
                     }
                 }
             });
+
+            // Also explicitly check session on page load (handles OAuth redirect)
+            supabaseClient.auth.getSession().then(({ data: { session }, error }) => {
+                console.log('[Auth] Explicit session check:', session ? session.user?.email : 'no session', error || '');
+                if (session) {
+                    checkAuthState();
+                }
+            });
+        } else {
+            console.error('[Auth] Supabase library not loaded!');
         }
 
         // DOM Elements
