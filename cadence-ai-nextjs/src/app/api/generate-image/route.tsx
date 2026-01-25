@@ -1,5 +1,6 @@
 import { ImageResponse } from 'next/og'
 import { NextRequest, NextResponse } from 'next/server'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 import {
     PLATFORM_DIMENSIONS,
     TEMPLATES,
@@ -12,6 +13,9 @@ import {
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
+// Gemini config
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
+
 interface GenerateImageRequest {
     postId: string
     platform: string
@@ -19,34 +23,55 @@ interface GenerateImageRequest {
     templateId?: string  // Optional: force a specific template
 }
 
-// Pattern SVG generators
-function generateDotsPattern(color: string): string {
-    return `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='2' cy='2' r='1' fill='${encodeURIComponent(color)}' fill-opacity='0.15'/%3E%3C/svg%3E")`
-}
+/**
+ * Generate an AI image with Gemini based on post content
+ */
+async function generateGeminiImage(content: string, platform: string): Promise<string | null> {
+    try {
+        console.log('[generate-image] Generating Gemini AI image...')
 
-function generateGridPattern(color: string): string {
-    return `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h40v40H0z' fill='none' stroke='${encodeURIComponent(color)}' stroke-opacity='0.1' stroke-width='1'/%3E%3C/svg%3E")`
-}
+        // Create a prompt for image generation based on post content
+        const imagePrompt = `Create a visually striking, professional social media background image that represents this concept: "${content.substring(0, 200)}".
+Style: Modern, tech-forward, clean aesthetic with subtle gradients.
+DO NOT include any text in the image.
+The image should work well as a background with text overlay.
+Make it visually interesting but not too busy - leave space for text.
+Use a color palette that works with purple/magenta accents.
+${platform === 'tiktok' ? 'Vertical orientation, portrait mode.' : platform === 'instagram' ? 'Square format.' : 'Landscape, wide format.'}`
 
-function generateWavesPattern(color: string): string {
-    return `url("data:image/svg+xml,%3Csvg width='100' height='20' viewBox='0 0 100 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 10 Q 25 0, 50 10 T 100 10' fill='none' stroke='${encodeURIComponent(color)}' stroke-opacity='0.1' stroke-width='2'/%3E%3C/svg%3E")`
-}
+        const model = genAI.getGenerativeModel({
+            model: 'gemini-2.0-flash-exp',
+        })
 
-function getPatternStyle(pattern: string | undefined, color: string): string {
-    switch (pattern) {
-        case 'dots':
-            return generateDotsPattern(color)
-        case 'grid':
-            return generateGridPattern(color)
-        case 'waves':
-            return generateWavesPattern(color)
-        default:
-            return 'none'
+        const result = await model.generateContent({
+            contents: [{ role: 'user', parts: [{ text: `Generate an image: ${imagePrompt}` }] }],
+            generationConfig: {
+                // @ts-ignore - Gemini image generation config
+                responseModalities: ['image', 'text'],
+            },
+        })
+
+        // Extract image from response
+        const response = result.response
+        const imagePart = response.candidates?.[0]?.content?.parts?.find(
+            (part: any) => part.inlineData?.mimeType?.startsWith('image/')
+        )
+
+        if (imagePart?.inlineData?.data) {
+            console.log('[generate-image] Gemini image generated successfully')
+            return `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`
+        }
+
+        console.log('[generate-image] No image in Gemini response')
+        return null
+    } catch (error) {
+        console.error('[generate-image] Gemini image generation failed:', error)
+        return null
     }
 }
 
 export async function POST(req: NextRequest) {
-    console.log('[generate-image] API called - TEMPLATE VERSION 2.0')
+    console.log('[generate-image] API called - VERSION 3.0 WITH GEMINI AI')
     try {
         const body: GenerateImageRequest = await req.json()
         const { postId, platform, content, templateId } = body
@@ -76,7 +101,11 @@ export async function POST(req: NextRequest) {
         console.log('[generate-image] Headline:', headline)
         console.log('[generate-image] Subheadline:', subheadline)
 
-        // Generate the image using @vercel/og
+        // Generate AI background image with Gemini
+        const aiBackgroundImage = await generateGeminiImage(content, platform)
+        const hasAiBackground = !!aiBackgroundImage
+
+        // Generate the image using next/og with AI background
         const imageResponse = new ImageResponse(
             (
                 <div
@@ -87,36 +116,36 @@ export async function POST(req: NextRequest) {
                         flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        background: template.background,
-                        backgroundImage: getPatternStyle(template.pattern, template.accentColor),
-                        backgroundSize: template.pattern === 'waves' ? '100px 20px' : '20px 20px',
-                        padding: '60px',
                         position: 'relative',
+                        background: template.background,
                     }}
                 >
-                    {/* Decorative accent shapes */}
+                    {/* AI Generated Background Image */}
+                    {hasAiBackground && (
+                        <img
+                            src={aiBackgroundImage}
+                            style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                            }}
+                        />
+                    )}
+
+                    {/* Dark overlay for text readability */}
                     <div
                         style={{
                             position: 'absolute',
-                            top: '-100px',
-                            right: '-100px',
-                            width: '400px',
-                            height: '400px',
-                            borderRadius: '50%',
-                            background: template.accentColor,
-                            opacity: 0.1,
-                        }}
-                    />
-                    <div
-                        style={{
-                            position: 'absolute',
-                            bottom: '-150px',
-                            left: '-150px',
-                            width: '500px',
-                            height: '500px',
-                            borderRadius: '50%',
-                            background: template.accentColor,
-                            opacity: 0.08,
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            background: hasAiBackground
+                                ? 'linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.8) 100%)'
+                                : 'transparent',
                         }}
                     />
 
@@ -129,7 +158,8 @@ export async function POST(req: NextRequest) {
                             justifyContent: 'center',
                             textAlign: template.style === 'centered' ? 'center' : 'left',
                             maxWidth: '90%',
-                            zIndex: 1,
+                            padding: '60px',
+                            zIndex: 10,
                         }}
                     >
                         {/* Logo / Brand */}
@@ -154,8 +184,9 @@ export async function POST(req: NextRequest) {
                                 style={{
                                     fontSize: '24px',
                                     fontWeight: 700,
-                                    color: template.textColor,
+                                    color: '#ffffff',
                                     letterSpacing: '-0.02em',
+                                    textShadow: hasAiBackground ? '0 2px 4px rgba(0,0,0,0.5)' : 'none',
                                 }}
                             >
                                 SuiteGPT
@@ -167,12 +198,13 @@ export async function POST(req: NextRequest) {
                             style={{
                                 fontSize: platform === 'tiktok' ? '64px' : platform === 'instagram' ? '56px' : '48px',
                                 fontWeight: 800,
-                                color: template.textColor,
+                                color: '#ffffff',
                                 lineHeight: 1.1,
                                 margin: 0,
                                 marginBottom: '20px',
                                 letterSpacing: '-0.03em',
                                 maxWidth: '100%',
+                                textShadow: hasAiBackground ? '0 2px 8px rgba(0,0,0,0.7)' : 'none',
                             }}
                         >
                             {headline}
@@ -182,10 +214,11 @@ export async function POST(req: NextRequest) {
                         <p
                             style={{
                                 fontSize: platform === 'tiktok' ? '28px' : '24px',
-                                color: template.secondaryTextColor,
+                                color: 'rgba(255,255,255,0.9)',
                                 lineHeight: 1.4,
                                 margin: 0,
                                 maxWidth: '90%',
+                                textShadow: hasAiBackground ? '0 1px 4px rgba(0,0,0,0.5)' : 'none',
                             }}
                         >
                             {subheadline}
@@ -206,12 +239,12 @@ export async function POST(req: NextRequest) {
                         <p
                             style={{
                                 fontSize: '18px',
-                                color: template.secondaryTextColor,
+                                color: 'rgba(255,255,255,0.8)',
                                 marginTop: '20px',
-                                opacity: 0.8,
+                                textShadow: hasAiBackground ? '0 1px 2px rgba(0,0,0,0.5)' : 'none',
                             }}
                         >
-                            suitegpt.app • Real apps, not answers. [v2]
+                            suitegpt.app • Real apps, not answers.
                         </p>
                     </div>
                 </div>
@@ -280,7 +313,8 @@ export async function POST(req: NextRequest) {
             success: true,
             imageUrl,
             template: template.id,
-            templateName: template.name
+            templateName: template.name,
+            hasAiBackground
         })
 
     } catch (error) {
@@ -304,7 +338,7 @@ export async function GET(req: NextRequest) {
 
     const template = TEMPLATES.find(t => t.id === templateId) || TEMPLATES[0]
 
-    // Return a preview image
+    // Return a preview image (without AI background for speed)
     return new ImageResponse(
         (
             <div
@@ -363,7 +397,7 @@ export async function GET(req: NextRequest) {
                         marginTop: '20px',
                     }}
                 >
-                    suitegpt.app • Real apps, not answers. [v2]
+                    suitegpt.app • Real apps, not answers.
                 </p>
             </div>
         ),
