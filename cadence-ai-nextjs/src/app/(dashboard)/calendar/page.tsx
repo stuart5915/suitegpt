@@ -18,7 +18,9 @@ import {
     Clock,
     Zap,
     GitCommit,
-    ImagePlus
+    ImagePlus,
+    Layout,
+    Layers
 } from 'lucide-react'
 import { Project, PLATFORM_CONFIG } from '@/lib/supabase/types'
 import { PlatformIcon, PLATFORM_NAMES } from '@/components/ui/PlatformIcon'
@@ -43,6 +45,10 @@ interface ScheduledPost {
     scheduled_for: string | null
     status: string
     created_at: string
+    // Split image generation columns
+    template_image_url?: string | null
+    ai_background_url?: string | null
+    combined_image_url?: string | null
 }
 
 // Automation config for placeholders
@@ -114,10 +120,13 @@ function CalendarPageContent() {
     // Automation configs for placeholders
     const [automationConfigs, setAutomationConfigs] = useState<AutomationConfig[]>([])
 
-    // Image generation state
+    // Image generation state - split into 3 separate operations
     const [generatingImageFor, setGeneratingImageFor] = useState<string | null>(null)
+    const [generatingTemplateFor, setGeneratingTemplateFor] = useState<string | null>(null)
+    const [generatingAiBackgroundFor, setGeneratingAiBackgroundFor] = useState<string | null>(null)
+    const [combiningImagesFor, setCombiningImagesFor] = useState<string | null>(null)
 
-    // Generate image for a post using AI
+    // Generate image for a post using AI (legacy - combined approach)
     const generateImageForPost = async (post: ScheduledPost) => {
         setGeneratingImageFor(post.id)
         try {
@@ -149,6 +158,121 @@ function CalendarPageContent() {
             alert('Failed to generate image. Please try again.')
         } finally {
             setGeneratingImageFor(null)
+        }
+    }
+
+    // Generate template-only image (fast, no AI)
+    const generateTemplateImage = async (post: ScheduledPost) => {
+        setGeneratingTemplateFor(post.id)
+        try {
+            const response = await fetch('/api/generate-template-only', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    postId: post.id,
+                    platform: post.platform,
+                    content: post.post_text
+                })
+            })
+            const data = await response.json()
+            if (data.success && data.templateImageUrl) {
+                // Update local state with template image
+                setQueuePosts(prev => prev.map(p =>
+                    p.id === post.id ? { ...p, template_image_url: data.templateImageUrl } : p
+                ))
+                if (editingPost?.id === post.id) {
+                    setEditingPost(prev => prev ? { ...prev, template_image_url: data.templateImageUrl } : null)
+                }
+            } else {
+                console.error('Template generation failed:', data.error)
+                alert('Failed to generate template: ' + (data.error || 'Unknown error'))
+            }
+        } catch (err) {
+            console.error('Failed to generate template:', err)
+            alert('Failed to generate template. Please try again.')
+        } finally {
+            setGeneratingTemplateFor(null)
+        }
+    }
+
+    // Generate AI background image (Gemini)
+    const generateAiBackground = async (post: ScheduledPost) => {
+        setGeneratingAiBackgroundFor(post.id)
+        try {
+            const response = await fetch('/api/generate-ai-background', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    postId: post.id,
+                    platform: post.platform,
+                    content: post.post_text
+                })
+            })
+            const data = await response.json()
+            if (data.success && data.aiBackgroundUrl) {
+                // Update local state with AI background
+                setQueuePosts(prev => prev.map(p =>
+                    p.id === post.id ? { ...p, ai_background_url: data.aiBackgroundUrl } : p
+                ))
+                if (editingPost?.id === post.id) {
+                    setEditingPost(prev => prev ? { ...prev, ai_background_url: data.aiBackgroundUrl } : null)
+                }
+            } else {
+                console.error('AI background generation failed:', data.error)
+                alert('Failed to generate AI background: ' + (data.error || 'Unknown error'))
+            }
+        } catch (err) {
+            console.error('Failed to generate AI background:', err)
+            alert('Failed to generate AI background. Please try again.')
+        } finally {
+            setGeneratingAiBackgroundFor(null)
+        }
+    }
+
+    // Combine template + AI background into final image
+    const combineImages = async (post: ScheduledPost) => {
+        if (!post.ai_background_url) {
+            alert('Please generate an AI background first')
+            return
+        }
+        setCombiningImagesFor(post.id)
+        try {
+            const response = await fetch('/api/combine-images', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    postId: post.id,
+                    platform: post.platform,
+                    content: post.post_text,
+                    aiBackgroundUrl: post.ai_background_url
+                })
+            })
+            const data = await response.json()
+            if (data.success && data.combinedImageUrl) {
+                // Update local state with combined image
+                setQueuePosts(prev => prev.map(p =>
+                    p.id === post.id ? {
+                        ...p,
+                        combined_image_url: data.combinedImageUrl,
+                        images: [data.combinedImageUrl]
+                    } : p
+                ))
+                if (editingPost?.id === post.id) {
+                    setEditingPost(prev => prev ? {
+                        ...prev,
+                        combined_image_url: data.combinedImageUrl,
+                        images: [data.combinedImageUrl]
+                    } : null)
+                }
+            } else {
+                console.error('Image combination failed:', data.error)
+                alert('Failed to combine images: ' + (data.error || 'Unknown error'))
+            }
+        } catch (err) {
+            console.error('Failed to combine images:', err)
+            alert('Failed to combine images. Please try again.')
+        } finally {
+            setCombiningImagesFor(null)
         }
     }
 
@@ -843,6 +967,105 @@ function CalendarPageContent() {
                                         {/* Post content */}
                                         <p className="text-sm text-[var(--foreground)] line-clamp-3 mb-3">{post.post_text}</p>
 
+                                        {/* Image Generation Buttons - 3 separate operations */}
+                                        <div className="flex items-center gap-2 flex-wrap mb-2">
+                                            {/* Template Button */}
+                                            <button
+                                                onClick={() => generateTemplateImage(post)}
+                                                disabled={generatingTemplateFor === post.id}
+                                                className="flex items-center gap-1 px-2 py-1 bg-blue-500/20 text-blue-400 rounded text-xs hover:bg-blue-500/30 disabled:opacity-50"
+                                                title="Generate branded template with gradient background (fast, no AI)"
+                                            >
+                                                {generatingTemplateFor === post.id ? (
+                                                    <>
+                                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                                        Template...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Layout className="w-3 h-3" />
+                                                        Template
+                                                    </>
+                                                )}
+                                            </button>
+
+                                            {/* AI Image Button */}
+                                            <button
+                                                onClick={() => generateAiBackground(post)}
+                                                disabled={generatingAiBackgroundFor === post.id}
+                                                className="flex items-center gap-1 px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs hover:bg-purple-500/30 disabled:opacity-50"
+                                                title="Generate AI background with Gemini (may take a few seconds)"
+                                            >
+                                                {generatingAiBackgroundFor === post.id ? (
+                                                    <>
+                                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                                        AI...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Sparkles className="w-3 h-3" />
+                                                        AI Image
+                                                    </>
+                                                )}
+                                            </button>
+
+                                            {/* Combine Button */}
+                                            <button
+                                                onClick={() => combineImages(post)}
+                                                disabled={!post.ai_background_url || combiningImagesFor === post.id}
+                                                className="flex items-center gap-1 px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs hover:bg-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                title={post.ai_background_url ? "Combine template + AI background into final image" : "Generate AI background first"}
+                                            >
+                                                {combiningImagesFor === post.id ? (
+                                                    <>
+                                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                                        Combining...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Layers className="w-3 h-3" />
+                                                        Combine
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+
+                                        {/* Image preview thumbnails */}
+                                        {(post.template_image_url || post.ai_background_url || post.combined_image_url) && (
+                                            <div className="flex gap-2 mb-2 flex-wrap">
+                                                {post.template_image_url && (
+                                                    <div className="relative group">
+                                                        <img
+                                                            src={post.template_image_url}
+                                                            alt="Template"
+                                                            className="w-16 h-16 object-cover rounded border border-blue-500/30"
+                                                        />
+                                                        <span className="absolute bottom-0 left-0 right-0 text-[8px] bg-blue-500/80 text-white text-center">Template</span>
+                                                    </div>
+                                                )}
+                                                {post.ai_background_url && (
+                                                    <div className="relative group">
+                                                        <img
+                                                            src={post.ai_background_url}
+                                                            alt="AI Background"
+                                                            className="w-16 h-16 object-cover rounded border border-purple-500/30"
+                                                        />
+                                                        <span className="absolute bottom-0 left-0 right-0 text-[8px] bg-purple-500/80 text-white text-center">AI</span>
+                                                    </div>
+                                                )}
+                                                {post.combined_image_url && (
+                                                    <div className="relative group">
+                                                        <img
+                                                            src={post.combined_image_url}
+                                                            alt="Combined"
+                                                            className="w-16 h-16 object-cover rounded border border-emerald-500/30"
+                                                        />
+                                                        <span className="absolute bottom-0 left-0 right-0 text-[8px] bg-emerald-500/80 text-white text-center">Final</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
                                         {/* Action buttons */}
                                         <div className="flex items-center gap-2 flex-wrap">
                                             {!['approved', 'posted', 'scheduled'].includes(post.status) && (
@@ -854,23 +1077,6 @@ function CalendarPageContent() {
                                                     Approve
                                                 </button>
                                             )}
-                                            <button
-                                                onClick={() => generateImageForPost(post)}
-                                                disabled={isGeneratingImage}
-                                                className="flex items-center gap-1 px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs hover:bg-purple-500/30 disabled:opacity-50"
-                                            >
-                                                {isGeneratingImage ? (
-                                                    <>
-                                                        <Loader2 className="w-3 h-3 animate-spin" />
-                                                        Generating...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <ImagePlus className="w-3 h-3" />
-                                                        {hasImage ? 'New Image' : 'Generate Image'}
-                                                    </>
-                                                )}
-                                            </button>
                                             <button
                                                 onClick={() => openEditModal(post)}
                                                 className="flex items-center gap-1 px-2 py-1 bg-[var(--surface-hover)] text-[var(--foreground-muted)] rounded text-xs hover:bg-[var(--surface-border)]"
@@ -1032,31 +1238,146 @@ function CalendarPageContent() {
                         </div>
 
                         <div className="p-4 space-y-4 overflow-y-auto">
-                            {/* Image Section */}
+                            {/* Image Generation Section - 3 Separate Buttons */}
                             <div>
-                                <div className="flex items-center justify-between mb-2">
-                                    <label className="block text-sm font-medium text-[var(--foreground)]">
-                                        Post Image
-                                    </label>
+                                <label className="block text-sm font-medium text-[var(--foreground)] mb-3">
+                                    Image Generation
+                                </label>
+
+                                {/* 3 Button Row */}
+                                <div className="flex gap-2 mb-4">
+                                    {/* Template Button */}
                                     <button
-                                        onClick={() => generateImageForPost(editingPost)}
-                                        disabled={generatingImageFor === editingPost.id}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/20 text-purple-400 rounded-lg text-xs font-medium hover:bg-purple-500/30 disabled:opacity-50"
+                                        onClick={() => generateTemplateImage(editingPost)}
+                                        disabled={generatingTemplateFor === editingPost.id}
+                                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-500/20 text-blue-400 rounded-lg text-sm font-medium hover:bg-blue-500/30 disabled:opacity-50"
+                                        title="Fast branded template with gradient"
                                     >
-                                        {generatingImageFor === editingPost.id ? (
+                                        {generatingTemplateFor === editingPost.id ? (
                                             <>
-                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                                <Loader2 className="w-4 h-4 animate-spin" />
                                                 Generating...
                                             </>
                                         ) : (
                                             <>
-                                                <ImagePlus className="w-3 h-3" />
-                                                {editingPost.images?.length ? 'Regenerate' : 'Generate'} Image
+                                                <Layout className="w-4 h-4" />
+                                                Template
+                                            </>
+                                        )}
+                                    </button>
+
+                                    {/* AI Image Button */}
+                                    <button
+                                        onClick={() => generateAiBackground(editingPost)}
+                                        disabled={generatingAiBackgroundFor === editingPost.id}
+                                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-purple-500/20 text-purple-400 rounded-lg text-sm font-medium hover:bg-purple-500/30 disabled:opacity-50"
+                                        title="Gemini AI background"
+                                    >
+                                        {generatingAiBackgroundFor === editingPost.id ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                Generating...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Sparkles className="w-4 h-4" />
+                                                AI Image
+                                            </>
+                                        )}
+                                    </button>
+
+                                    {/* Combine Button */}
+                                    <button
+                                        onClick={() => combineImages(editingPost)}
+                                        disabled={!editingPost.ai_background_url || combiningImagesFor === editingPost.id}
+                                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-500/20 text-emerald-400 rounded-lg text-sm font-medium hover:bg-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title={editingPost.ai_background_url ? "Combine into final" : "Generate AI background first"}
+                                    >
+                                        {combiningImagesFor === editingPost.id ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                Combining...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Layers className="w-4 h-4" />
+                                                Combine
                                             </>
                                         )}
                                     </button>
                                 </div>
-                                {editingPost.images && editingPost.images.length > 0 ? (
+
+                                {/* Image Preview Grid */}
+                                <div className="grid grid-cols-3 gap-3">
+                                    {/* Template Preview */}
+                                    <div className="space-y-1">
+                                        <span className="text-xs text-blue-400 font-medium">Template</span>
+                                        {editingPost.template_image_url ? (
+                                            <div className="rounded-lg overflow-hidden border border-blue-500/30 aspect-square">
+                                                <img
+                                                    src={editingPost.template_image_url}
+                                                    alt="Template"
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="rounded-lg border-2 border-dashed border-[var(--surface-border)] aspect-square flex items-center justify-center">
+                                                <Layout className="w-6 h-6 text-[var(--foreground-muted)]" />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* AI Background Preview */}
+                                    <div className="space-y-1">
+                                        <span className="text-xs text-purple-400 font-medium">AI Background</span>
+                                        {editingPost.ai_background_url ? (
+                                            <div className="rounded-lg overflow-hidden border border-purple-500/30 aspect-square">
+                                                <img
+                                                    src={editingPost.ai_background_url}
+                                                    alt="AI Background"
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="rounded-lg border-2 border-dashed border-[var(--surface-border)] aspect-square flex items-center justify-center">
+                                                <Sparkles className="w-6 h-6 text-[var(--foreground-muted)]" />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Combined Preview */}
+                                    <div className="space-y-1">
+                                        <span className="text-xs text-emerald-400 font-medium">Final Combined</span>
+                                        {editingPost.combined_image_url ? (
+                                            <div className="rounded-lg overflow-hidden border border-emerald-500/30 aspect-square">
+                                                <img
+                                                    src={editingPost.combined_image_url}
+                                                    alt="Combined"
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="rounded-lg border-2 border-dashed border-[var(--surface-border)] aspect-square flex items-center justify-center">
+                                                <Layers className="w-6 h-6 text-[var(--foreground-muted)]" />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Helper text */}
+                                <p className="text-xs text-[var(--foreground-muted)] mt-3">
+                                    1. Click <span className="text-blue-400">Template</span> for fast branded image.
+                                    2. Click <span className="text-purple-400">AI Image</span> for custom background.
+                                    3. Click <span className="text-emerald-400">Combine</span> to merge them.
+                                </p>
+                            </div>
+
+                            {/* Legacy full image preview (if exists) */}
+                            {editingPost.images && editingPost.images.length > 0 && !editingPost.combined_image_url && (
+                                <div>
+                                    <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
+                                        Current Post Image
+                                    </label>
                                     <div className="rounded-lg overflow-hidden border border-[var(--surface-border)]">
                                         <img
                                             src={editingPost.images[0]}
@@ -1064,18 +1385,8 @@ function CalendarPageContent() {
                                             className="w-full h-auto"
                                         />
                                     </div>
-                                ) : (
-                                    <div className="rounded-lg border-2 border-dashed border-[var(--surface-border)] p-8 text-center">
-                                        <ImagePlus className="w-8 h-8 mx-auto text-[var(--foreground-muted)] mb-2" />
-                                        <p className="text-sm text-[var(--foreground-muted)]">
-                                            No image attached. Click "Generate Image" to create one.
-                                        </p>
-                                        <p className="text-xs text-[var(--foreground-muted)] mt-1">
-                                            Images will be sized for {PLATFORM_NAMES[editingPost.platform] || editingPost.platform}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
+                                </div>
+                            )}
 
                             {/* Post Text */}
                             <div>
