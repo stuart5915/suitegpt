@@ -5276,7 +5276,7 @@
             }
 
             try {
-                // Use explicit redirect URL to avoid www vs non-www localStorage mismatch
+                // Use explicit redirect URL
                 const redirectUrl = 'https://suitegpt.app/';
                 console.log('[Auth] Starting Google OAuth, redirectTo:', redirectUrl);
 
@@ -5284,12 +5284,19 @@
                     provider: 'google',
                     options: {
                         redirectTo: redirectUrl,
+                        skipBrowserRedirect: true,  // Don't auto-redirect, let us see the URL
                         queryParams: {
-                            prompt: 'select_account',  // Shows account picker for one-click login
+                            prompt: 'select_account',
                             access_type: 'offline'
                         }
                     }
                 });
+
+                if (data?.url) {
+                    console.log('[Auth] OAuth URL generated:', data.url);
+                    // Now manually redirect
+                    window.location.href = data.url;
+                }
 
                 if (error) {
                     console.error('Google login error:', error);
