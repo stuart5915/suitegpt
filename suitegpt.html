@@ -5120,9 +5120,20 @@
         console.log('[Auth Debug] URL:', window.location.href);
         console.log('[Auth Debug] URL hash:', window.location.hash);
         console.log('[Auth Debug] URL search:', window.location.search);
+
+        // Test if localStorage works
+        try {
+            localStorage.setItem('_test', '1');
+            localStorage.removeItem('_test');
+            console.log('[Auth Debug] localStorage is working');
+        } catch (e) {
+            console.error('[Auth Debug] localStorage is BLOCKED:', e);
+        }
+
         const sbKey = 'sb-rdsmdywbdiskxknluiym-auth-token';
         console.log('[Auth Debug] Supabase localStorage key exists:', !!localStorage.getItem(sbKey));
-        console.log('[Auth Debug] All localStorage keys:', Object.keys(localStorage).filter(k => k.includes('supabase') || k.includes('sb-')));
+        console.log('[Auth Debug] All localStorage keys:', Object.keys(localStorage));
+        console.log('[Auth Debug] Supabase-related keys:', Object.keys(localStorage).filter(k => k.includes('supabase') || k.includes('sb-')));
 
         // ========================
         // GLOBAL VIEW FUNCTIONS (must be at top for onclick handlers)
@@ -6636,8 +6647,16 @@
 
         // Initialize Supabase client for Auth (config declared at top of script)
         if (window.supabase) {
-            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            console.log('[Auth] Supabase client created');
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                auth: {
+                    autoRefreshToken: true,
+                    persistSession: true,
+                    detectSessionInUrl: true,
+                    flowType: 'pkce',
+                    storage: window.localStorage
+                }
+            });
+            console.log('[Auth] Supabase client created with auth config');
 
             // Check for OAuth callback in URL (code parameter)
             const urlParams = new URLSearchParams(window.location.search);
