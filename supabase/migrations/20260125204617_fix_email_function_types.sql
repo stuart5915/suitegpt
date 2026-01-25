@@ -1,11 +1,11 @@
 -- Fix return type mismatch in get_or_create_credits_by_email function
--- The balance column is INTEGER in the table, not DECIMAL
+-- The balance columns are DECIMAL/NUMERIC in the table
 
 -- Drop existing function first (can't change return type without dropping)
 DROP FUNCTION IF EXISTS get_or_create_credits_by_email(TEXT, TEXT);
 
 CREATE OR REPLACE FUNCTION get_or_create_credits_by_email(p_email TEXT, p_supabase_id TEXT DEFAULT NULL)
-RETURNS TABLE(wallet_address TEXT, balance INTEGER, locked_balance INTEGER) AS $$
+RETURNS TABLE(wallet_address TEXT, balance NUMERIC, locked_balance NUMERIC) AS $$
 BEGIN
   -- Try to find by email first
   RETURN QUERY SELECT sc.wallet_address, sc.balance, sc.locked_balance
@@ -30,5 +30,28 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Also fix the telegram function while we're at it
+DROP FUNCTION IF EXISTS get_credits_by_telegram(TEXT);
+
+CREATE OR REPLACE FUNCTION get_credits_by_telegram(tg_id TEXT)
+RETURNS TABLE(
+  wallet_address TEXT,
+  balance NUMERIC,
+  locked_balance NUMERIC,
+  linked_telegram_username TEXT
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    sc.wallet_address,
+    sc.balance,
+    sc.locked_balance,
+    sc.linked_telegram_username
+  FROM suite_credits sc
+  WHERE sc.linked_telegram_id = tg_id;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Grant permissions
 GRANT EXECUTE ON FUNCTION get_or_create_credits_by_email TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION get_credits_by_telegram TO anon, authenticated;

@@ -72,7 +72,7 @@ ${platform === 'tiktok' ? 'Vertical orientation, portrait mode.' : platform === 
 }
 
 export async function POST(req: NextRequest) {
-    console.log('[generate-image] API called - VERSION 3.0 WITH GEMINI AI')
+    console.log('[generate-image] API called - VERSION 5.0 WITH SPENT FIX')
     try {
         const body: GenerateImageRequest = await req.json()
         const { postId, platform, content, templateId } = body
@@ -326,7 +326,7 @@ export async function POST(req: NextRequest) {
     } catch (error) {
         console.error('Error generating image:', error)
         return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Failed to generate image' },
+            { error: error instanceof Error ? error.message : 'Failed to generate image', version: '5.0' },
             { status: 500 }
         )
     }
