@@ -197,14 +197,33 @@ export async function POST(req: NextRequest) {
         console.log('[generate-image] Selected template:', template.id, template.name)
 
         // Extract text for the image
-        const headline = extractHeadline(content, platform === 'x' ? 50 : 60)
-        const subheadline = extractSubheadline(content, platform === 'x' ? 80 : 100)
+        let headline = extractHeadline(content, platform === 'x' ? 50 : 60)
+        let subheadline = extractSubheadline(content, platform === 'x' ? 80 : 100)
+
+        // WORKAROUND: The word "spent" crashes next/og - replace with "used"
+        headline = headline.replace(/spent/gi, 'used')
+        subheadline = subheadline.replace(/spent/gi, 'used')
+
         console.log('[generate-image] Headline:', headline)
         console.log('[generate-image] Subheadline:', subheadline)
 
-        // SKIP GEMINI FOR NOW - DEBUG
-        const aiBackgroundImage: string | null = null
-        const hasAiBackground = false
+        // Generate AI background image with Gemini (with novelty tracking)
+        let aiBackgroundImage: string | null = null
+
+        try {
+            const result = await generateGeminiImage(content, platform, postId)
+            if (result.imageUrl && result.imageUrl.startsWith('data:image/')) {
+                aiBackgroundImage = result.imageUrl
+            }
+        } catch (err) {
+            console.error('[generate-image] Gemini error:', err)
+        }
+
+        const hasAiBackground = Boolean(
+            aiBackgroundImage &&
+            aiBackgroundImage.startsWith('data:image/') &&
+            aiBackgroundImage.length > 1000
+        )
 
         // Generate the image using next/og with AI background
         console.log('[generate-image] Creating ImageResponse...')
