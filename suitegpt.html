@@ -4670,8 +4670,6 @@
     </div>
 
     <script>
-        console.log('=== SCRIPT START ===');
-
         // ========================
         // GLOBAL VIEW FUNCTIONS (must be at top for onclick handlers)
         // ========================
@@ -5079,9 +5077,7 @@
         }
 
         // Check auth state on page load
-        console.log('=== ABOUT TO CHECK AUTH ===');
         checkAuthState();
-        console.log('=== AUTH CHECK DONE ===');
 
         // Listen for auth changes
         window.addEventListener('storage', (e) => {
@@ -5891,10 +5887,8 @@
 
         // Load use cases - show hardcoded immediately, update from Supabase if available
         async function loadUseCases() {
-            console.log('loadUseCases called');
             // Show hardcoded data immediately so users don't wait
             useCases = getHardcodedUseCases();
-            console.log('Got hardcoded use cases:', useCases.length);
             renderUseCases();
 
             // Then try to fetch from Supabase with a timeout
@@ -5965,19 +5959,11 @@
 
         // Render use cases
         function renderUseCases() {
-            console.log('renderUseCases called, useCasesGrid:', useCasesGrid);
-            console.log('useCases array:', useCases);
-
-            if (!useCasesGrid) {
-                console.error('useCasesGrid not found!');
-                return;
-            }
+            if (!useCasesGrid) return;
 
             const filtered = currentIntent === 'all'
                 ? useCases
                 : useCases.filter(uc => uc.intent === currentIntent);
-
-            console.log('Rendering', filtered.length, 'use cases');
 
             if (useCaseCount) useCaseCount.textContent = `(${filtered.length})`;
 
@@ -6335,7 +6321,6 @@
         }
 
         // Initialize
-        console.log('=== ABOUT TO LOAD USE CASES ===');
         loadUseCases();
 
         // ============================================
