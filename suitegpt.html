@@ -30,6 +30,7 @@
     <meta property="og:url" content="https://getsuite.app/suitegpt.html">
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="/nav.css">
     <style>
         * {
@@ -2152,8 +2153,41 @@
         // AUTH STATE MANAGEMENT
         // ========================
 
+        // Check for Telegram WebApp (Mini App) data
+        function checkTelegramWebApp() {
+            if (window.Telegram && window.Telegram.WebApp) {
+                const webApp = window.Telegram.WebApp;
+                const initData = webApp.initDataUnsafe;
+
+                if (initData && initData.user) {
+                    const user = initData.user;
+                    const tgUser = {
+                        id: user.id,
+                        username: user.username || user.first_name,
+                        first_name: user.first_name,
+                        last_name: user.last_name,
+                        photo_url: user.photo_url,
+                        auth_date: Math.floor(Date.now() / 1000),
+                        from_webapp: true
+                    };
+
+                    localStorage.setItem('telegram_user', JSON.stringify(tgUser));
+                    console.log('Logged in via Telegram WebApp:', tgUser.username);
+
+                    // Expand the WebApp to full height
+                    webApp.expand();
+
+                    return true;
+                }
+            }
+            return false;
+        }
+
         // Check if user is logged in
         function checkAuthState() {
+            // First check if opened as Telegram WebApp
+            checkTelegramWebApp();
+
             const wallet = localStorage.getItem('connectedWallet') ||
                           localStorage.getItem('walletAddress') ||
                           localStorage.getItem('suiteWalletAddress') ||
