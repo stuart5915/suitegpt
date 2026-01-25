@@ -278,7 +278,7 @@ export async function POST(req: NextRequest) {
                             }}
                         >
                             <img
-                                src={`${req.nextUrl.origin}/suitegpt-logo.png`}
+                                src={`${req.nextUrl.origin}/suitegpt-logo-small.png`}
                                 width={48}
                                 height={48}
                                 style={{
@@ -481,7 +481,7 @@ export async function GET(req: NextRequest) {
                     }}
                 >
                     <img
-                        src={`${req.nextUrl.origin}/suitegpt-logo.png`}
+                        src={`${req.nextUrl.origin}/suitegpt-logo-small.png`}
                         width={48}
                         height={48}
                         style={{
