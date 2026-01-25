@@ -327,6 +327,60 @@
             transform: scale(1.02);
         }
 
+        /* Add to Home Screen Button */
+        .add-to-home-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: calc(100% - 32px);
+            margin: 0 16px 12px 16px;
+            padding: 12px 14px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15));
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .add-to-home-btn:hover {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(139, 92, 246, 0.25));
+            border-color: var(--accent-primary);
+        }
+
+        .add-to-home-btn svg {
+            width: 20px;
+            height: 20px;
+            color: var(--accent-primary);
+            flex-shrink: 0;
+        }
+
+        .add-to-home-btn span {
+            flex: 1;
+            text-align: left;
+        }
+
+        .add-to-home-dismiss {
+            background: none;
+            border: none;
+            color: var(--text-tertiary);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0 4px;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+
+        .add-to-home-dismiss:hover {
+            color: var(--text-primary);
+        }
+
+        .add-to-home-btn.hidden {
+            display: none;
+        }
+
         /* Profile Dropdown (Dropup) */
         .sidebar-footer {
             position: relative;
@@ -3365,6 +3419,16 @@
             </nav>
 
             <div class="sidebar-footer">
+                <!-- Add to Home Screen Button -->
+                <button class="add-to-home-btn" id="addToHomeBtn" onclick="handleAddToHome()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14" stroke-linecap="round"/>
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    </svg>
+                    <span>Add to Home Screen</span>
+                    <button class="add-to-home-dismiss" onclick="event.stopPropagation(); dismissAddToHome();">&times;</button>
+                </button>
+
                 <!-- Profile Dropdown -->
                 <div class="profile-dropdown" id="profileDropdown">
                     <button class="profile-dropdown-item" onclick="openSettings()">
@@ -5078,6 +5142,85 @@
             checkAuthState();
             location.reload();
         }
+
+        // ========================
+        // ADD TO HOME SCREEN (PWA)
+        // ========================
+        let deferredPrompt = null;
+
+        // Check if running as PWA or dismissed
+        function checkAddToHomeVisibility() {
+            const btn = document.getElementById('addToHomeBtn');
+            if (!btn) return;
+
+            // Hide if already running as PWA
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                || window.navigator.standalone === true;
+
+            // Hide if user dismissed it
+            const dismissed = localStorage.getItem('addToHomeDismissed');
+
+            // Hide if already installed (no prompt available and not iOS)
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+            if (isStandalone || dismissed) {
+                btn.classList.add('hidden');
+            } else {
+                btn.classList.remove('hidden');
+            }
+        }
+
+        // Capture the install prompt
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            checkAddToHomeVisibility();
+        });
+
+        // Handle add to home click
+        function handleAddToHome() {
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+            if (isIOS) {
+                // Show iOS instructions
+                alert('To add SuiteGPT to your home screen:\n\n1. Tap the Share button (square with arrow)\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add" to confirm');
+                return;
+            }
+
+            if (deferredPrompt) {
+                // Show the install prompt
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                        const btn = document.getElementById('addToHomeBtn');
+                        if (btn) btn.classList.add('hidden');
+                    }
+                    deferredPrompt = null;
+                });
+            } else {
+                // Fallback for browsers that don't support beforeinstallprompt
+                alert('To add SuiteGPT to your home screen, use your browser\'s menu and look for "Add to Home Screen" or "Install App" option.');
+            }
+        }
+
+        // Dismiss the button
+        function dismissAddToHome() {
+            localStorage.setItem('addToHomeDismissed', 'true');
+            const btn = document.getElementById('addToHomeBtn');
+            if (btn) btn.classList.add('hidden');
+        }
+
+        // Listen for app installed
+        window.addEventListener('appinstalled', () => {
+            console.log('SuiteGPT was installed');
+            const btn = document.getElementById('addToHomeBtn');
+            if (btn) btn.classList.add('hidden');
+            deferredPrompt = null;
+        });
+
+        // Check visibility on load
+        document.addEventListener('DOMContentLoaded', checkAddToHomeVisibility);
 
         // ========================
         // UPGRADE MODAL
