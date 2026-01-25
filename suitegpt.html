@@ -310,23 +310,6 @@
             gap: 8px;
         }
 
-        .sidebar-upgrade-btn {
-            padding: 2px 8px;
-            font-size: 0.65rem;
-            font-weight: 600;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: opacity 0.2s, transform 0.2s;
-        }
-
-        .sidebar-upgrade-btn:hover {
-            opacity: 0.9;
-            transform: scale(1.02);
-        }
-
         /* Add to Home Screen Button */
         .add-to-home-btn {
             display: flex;
@@ -434,14 +417,6 @@
             width: 18px;
             height: 18px;
             color: var(--text-secondary);
-        }
-
-        .profile-dropdown-item.upgrade {
-            color: #a78bfa;
-        }
-
-        .profile-dropdown-item.upgrade svg {
-            color: #a78bfa;
         }
 
         .profile-dropdown-item.logout {
@@ -4688,41 +4663,103 @@
             const profileName = document.getElementById('sidebarProfileName');
             const profileStatus = document.getElementById('sidebarProfileStatus');
             const profileAvatar = document.getElementById('sidebarAvatar');
-            const upgradeBtn = document.getElementById('sidebarUpgradeBtn');
+            const creditsSection = document.getElementById('profileCreditsSection');
 
             if (isLoggedIn) {
                 document.body.classList.remove('logged-out');
+
+                // Show credits section in dropdown
+                if (creditsSection) creditsSection.style.display = 'block';
 
                 if (telegramUser) {
                     // Telegram user
                     const displayName = telegramUser.username || telegramUser.first_name || 'User';
                     if (profileName) profileName.textContent = displayName;
-                    if (profileStatus) profileStatus.textContent = 'Free';
-                    if (upgradeBtn) upgradeBtn.style.display = 'inline-block';
                     if (profileAvatar && telegramUser.photo_url) {
                         profileAvatar.innerHTML = `<img src="${telegramUser.photo_url}" alt="${displayName}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
                     }
+                    // Fetch credits for telegram user
+                    fetchUserCredits(telegramUser.id, 'telegram');
                 } else if (wallet) {
                     // Wallet user
                     const shortWallet = wallet.slice(0, 6) + '...' + wallet.slice(-4);
                     if (profileName) profileName.textContent = shortWallet;
-                    if (profileStatus) profileStatus.textContent = 'Free';
-                    if (upgradeBtn) upgradeBtn.style.display = 'inline-block';
+                    // Fetch credits for wallet user
+                    fetchUserCredits(wallet, 'wallet');
                 }
             } else {
                 document.body.classList.add('logged-out');
                 if (profileName) profileName.textContent = 'Guest';
                 if (profileStatus) profileStatus.textContent = 'Not signed in';
-                if (upgradeBtn) upgradeBtn.style.display = 'none';
+                if (creditsSection) creditsSection.style.display = 'none';
                 if (profileAvatar) {
                     profileAvatar.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
                         <circle cx="12" cy="7" r="4"/>
                     </svg>`;
                 }
+                // Reset credits display
+                updateCreditsDisplay(0);
             }
 
             return isLoggedIn;
+        }
+
+        // Fetch user credits from Supabase
+        async function fetchUserCredits(userId, authType) {
+            try {
+                // Query the users table for credits
+                const queryParam = authType === 'telegram' ? `telegram_id=eq.${userId}` : `wallet_address=eq.${userId}`;
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/users?${queryParam}&select=credits`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && data.length > 0 && typeof data[0].credits === 'number') {
+                        updateCreditsDisplay(data[0].credits);
+                    } else {
+                        // User not found or no credits - default to 0
+                        updateCreditsDisplay(0);
+                    }
+                } else {
+                    updateCreditsDisplay(0);
+                }
+            } catch (error) {
+                console.error('Error fetching credits:', error);
+                updateCreditsDisplay(0);
+            }
+        }
+
+        // Update credits display in sidebar and dropdown
+        function updateCreditsDisplay(credits) {
+            userCredits = credits;
+            const formattedCredits = credits.toLocaleString();
+            const usdValue = (credits / 1000).toFixed(2);
+
+            // Update sidebar status
+            const profileStatus = document.getElementById('sidebarProfileStatus');
+            if (profileStatus) {
+                profileStatus.textContent = `${formattedCredits} credits`;
+            }
+
+            // Update dropdown credits
+            const dropdownCredits = document.getElementById('dropdownCredits');
+            const dropdownCreditsValue = document.getElementById('dropdownCreditsValue');
+            if (dropdownCredits) dropdownCredits.textContent = formattedCredits;
+            if (dropdownCreditsValue) dropdownCreditsValue.textContent = `~$${usdValue} value`;
+
+            // Update withdrawal modal if it exists
+            const withdrawalCredits = document.getElementById('withdrawalCredits');
+            const withdrawalValue = document.getElementById('withdrawalValue');
+            if (withdrawalCredits) withdrawalCredits.textContent = formattedCredits;
+            if (withdrawalValue) withdrawalValue.textContent = `~$${usdValue} USD value`;
         }
 
         // Start a new chat
@@ -5525,6 +5562,111 @@
             alert(`Selected ${credits} credits! Payment integration coming soon.`);
         }
 
+        // ========================
+        // WITHDRAWAL MODAL
+        // ========================
+        function openWithdrawalModal() {
+            closeProfileDropdown();
+            const overlay = document.getElementById('withdrawalModalOverlay');
+            const amountInput = document.getElementById('withdrawalAmount');
+
+            // Update modal with current credits
+            updateCreditsDisplay(userCredits);
+
+            // Clear previous input
+            if (amountInput) amountInput.value = '';
+
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeWithdrawalModal() {
+            const overlay = document.getElementById('withdrawalModalOverlay');
+            overlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function setMaxWithdrawal() {
+            const amountInput = document.getElementById('withdrawalAmount');
+            if (amountInput) {
+                amountInput.value = userCredits;
+            }
+        }
+
+        async function submitWithdrawal() {
+            const amountInput = document.getElementById('withdrawalAmount');
+            const confirmBtn = document.getElementById('withdrawalConfirmBtn');
+            const amount = parseInt(amountInput?.value) || 0;
+
+            if (amount <= 0) {
+                alert('Please enter a valid amount');
+                return;
+            }
+
+            if (amount > userCredits) {
+                alert('Amount exceeds your available credits');
+                return;
+            }
+
+            // Get user info
+            const wallet = localStorage.getItem('connectedWallet') ||
+                          localStorage.getItem('walletAddress') ||
+                          localStorage.getItem('suiteWalletAddress') ||
+                          localStorage.getItem('suiteWallet');
+            const telegramUserStr = localStorage.getItem('telegram_user');
+            const telegramUser = telegramUserStr ? JSON.parse(telegramUserStr) : null;
+
+            if (!wallet && !telegramUser) {
+                alert('Please log in to request a withdrawal');
+                return;
+            }
+
+            // Disable button while processing
+            if (confirmBtn) {
+                confirmBtn.disabled = true;
+                confirmBtn.textContent = 'Processing...';
+            }
+
+            try {
+                // Create withdrawal request in Supabase
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/withdrawal_requests`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({
+                            user_id: telegramUser?.id || wallet,
+                            auth_type: telegramUser ? 'telegram' : 'wallet',
+                            amount: amount,
+                            usd_value: amount / 1000,
+                            status: 'pending',
+                            requested_at: new Date().toISOString()
+                        })
+                    }
+                );
+
+                if (response.ok) {
+                    closeWithdrawalModal();
+                    alert(`Withdrawal request for ${amount.toLocaleString()} credits (~$${(amount / 1000).toFixed(2)}) submitted successfully! You'll be notified when funds are available.`);
+                } else {
+                    throw new Error('Failed to submit withdrawal request');
+                }
+            } catch (error) {
+                console.error('Withdrawal error:', error);
+                alert('Failed to submit withdrawal request. Please try again later.');
+            } finally {
+                if (confirmBtn) {
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = 'Confirm Withdrawal Request';
+                }
+            }
+        }
+
         // Supabase config
         const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
@@ -5552,6 +5694,7 @@
         let conversationHistory = [];
         let useCases = [];
         let currentIntent = 'all';
+        let userCredits = 0;
 
         // Mobile sidebar toggle
         if (mobileMenuBtn) {
