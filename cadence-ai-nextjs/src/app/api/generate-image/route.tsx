@@ -102,36 +102,16 @@ async function generateGeminiImage(
     const contentSummary = content.substring(0, 200).replace(/[\n\r]+/g, ' ').trim()
 
     try {
-        console.log('[generate-image] Generating Gemini AI image with novelty tracking...')
-
-        // Fetch recent prompts to ensure this image is different
-        const recentPrompts = await fetchRecentPrompts(15)
-        console.log(`[generate-image] Found ${recentPrompts.length} recent prompts to avoid`)
-
-        // Build the novelty avoidance section from recent content summaries
-        let noveltySection = ''
-        if (recentPrompts.length > 0) {
-            const recentSummaries = recentPrompts
-                .map(p => `- ${p.prompt_used.replace(/[\n\r]+/g, ' ').substring(0, 100)}`)
-                .join('\n')
-            noveltySection = `
-IMPORTANT - Create something DIFFERENT from these recent images:
-${recentSummaries}
-
-Use different colors, shapes, mood, and visual concept than the above.
-`
-        }
+        console.log('[generate-image] Generating Gemini AI image...')
 
         // Create the prompt for image generation
-        const imagePrompt = `Create a visually striking social media background for: "${contentSummary}".
-${noveltySection}
-Requirements:
-- NO text in the image
-- Works as background with text overlay
-- Professional, modern aesthetic
-- Visually interesting but not too busy
-- Surprise us with something fresh
-${platform === 'tiktok' ? 'Vertical orientation.' : platform === 'instagram' ? 'Square format.' : 'Landscape format.'}`
+        const imagePrompt = `Create a visually striking, professional social media background image that represents this concept: "${contentSummary}".
+Style: Modern, tech-forward, clean aesthetic with subtle gradients.
+DO NOT include any text in the image.
+The image should work well as a background with text overlay.
+Make it visually interesting but not too busy - leave space for text.
+Use a color palette that works with purple/magenta accents.
+${platform === 'tiktok' ? 'Vertical orientation, portrait mode.' : platform === 'instagram' ? 'Square format.' : 'Landscape, wide format.'}`
 
         const model = genAI.getGenerativeModel({
             model: 'gemini-2.0-flash-exp',
