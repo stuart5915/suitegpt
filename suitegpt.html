@@ -2286,6 +2286,114 @@
             }
         }
 
+        /* === CREATOR DASHBOARD === */
+        .creator-dashboard {
+            display: none;
+            flex-direction: column;
+            padding: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .creator-dashboard.active {
+            display: flex;
+        }
+
+        .creator-dashboard-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+        .creator-dashboard-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .creator-dashboard-title svg {
+            width: 28px;
+            height: 28px;
+            color: var(--accent-primary);
+        }
+
+        .creator-dashboard-tabs {
+            display: flex;
+            gap: 4px;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 4px;
+            border-radius: 12px;
+            margin-bottom: 32px;
+        }
+
+        .creator-dashboard-tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .creator-dashboard-tab:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .creator-dashboard-tab.active {
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--accent-primary);
+        }
+
+        .creator-dashboard-tab svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .creator-dashboard-panel {
+            display: none;
+        }
+
+        .creator-dashboard-panel.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .creator-dashboard {
+                padding: 20px;
+            }
+
+            .creator-dashboard-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+
+            .creator-dashboard-tabs {
+                width: 100%;
+                overflow-x: auto;
+            }
+
+            .creator-dashboard-tab {
+                padding: 10px 16px;
+                font-size: 0.85rem;
+                white-space: nowrap;
+            }
+        }
+
         /* === YOUR APPS VIEW === */
         .your-apps-view {
             display: none;
@@ -5817,31 +5925,15 @@
                         </span>
                         <span>Apps</span>
                     </button>
-                    <button class="sidebar-item" id="createBtn" onclick="openCreate()">
+                    <button class="sidebar-item" id="creatorDashboardBtn" onclick="openCreatorDashboard()">
                         <span class="sidebar-item-icon">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 3v18M3 12h18" stroke-linecap="round"/>
-                                <path d="M5 5l2 2M17 5l-2 2M5 19l2-2M17 19l-2-2" stroke-linecap="round"/>
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18"/>
+                                <path d="M9 21V9"/>
                             </svg>
                         </span>
-                        <span>Create</span>
-                    </button>
-                    <button class="sidebar-item" id="yourAppsBtn" onclick="openYourApps()">
-                        <span class="sidebar-item-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </span>
-                        <span>Your Apps/Projects</span>
-                    </button>
-                    <button class="sidebar-item" id="earningsBtn" onclick="openEarnings()">
-                        <span class="sidebar-item-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="12" y1="1" x2="12" y2="23"/>
-                                <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
-                            </svg>
-                        </span>
-                        <span>Creator Earnings</span>
+                        <span>Creator Dashboard</span>
                     </button>
                 </div>
                 <div class="sidebar-section">
@@ -6129,11 +6221,102 @@
                     </div>
                 </section>
 
-                <!-- Inline Create View -->
-                <section class="create-view" id="createView" style="display: none;">
-                    <div class="apps-view-header">
-                        <h2 class="apps-view-title">Create Something New</h2>
+                <!-- Creator Dashboard -->
+                <section class="creator-dashboard" id="creatorDashboard">
+                    <div class="creator-dashboard-header">
+                        <h2 class="creator-dashboard-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18"/>
+                                <path d="M9 21V9"/>
+                            </svg>
+                            Creator Dashboard
+                        </h2>
                     </div>
+
+                    <div class="creator-dashboard-tabs">
+                        <button class="creator-dashboard-tab active" data-tab="your-apps" onclick="switchDashboardTab('your-apps')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                            </svg>
+                            Your Apps
+                        </button>
+                        <button class="creator-dashboard-tab" data-tab="create" onclick="switchDashboardTab('create')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14M5 12h14" stroke-linecap="round"/>
+                            </svg>
+                            Create
+                        </button>
+                        <button class="creator-dashboard-tab" data-tab="earnings" onclick="switchDashboardTab('earnings')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="1" x2="12" y2="23"/>
+                                <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                            </svg>
+                            Earnings
+                        </button>
+                    </div>
+
+                    <!-- Your Apps Tab Panel -->
+                    <div class="creator-dashboard-panel active" id="dashboardPanelYourApps">
+                        <div class="your-apps-header">
+                            <h3 class="your-apps-title">Your Apps / Projects</h3>
+                            <button class="your-apps-create-btn" onclick="switchDashboardTab('create')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 5v14M5 12h14" stroke-linecap="round"/>
+                                </svg>
+                                Create New
+                            </button>
+                        </div>
+
+                        <!-- Empty State -->
+                        <div class="your-apps-empty" id="dashboardAppsEmpty" style="display: none;">
+                            <div class="your-apps-empty-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                                </svg>
+                            </div>
+                            <h3>No apps saved yet</h3>
+                            <p>Add apps to your profile from the Apps gallery, or create a new app proposal.</p>
+                            <button class="your-apps-create-btn" onclick="switchDashboardTab('create')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 5v14M5 12h14" stroke-linecap="round"/>
+                                </svg>
+                                Create Something
+                            </button>
+                        </div>
+
+                        <!-- Apps Content -->
+                        <div class="your-apps-content" id="dashboardAppsContent">
+                            <div class="your-apps-tier" id="dashboardTierTools" style="display: none;">
+                                <div class="your-apps-tier-header">
+                                    <span class="your-apps-tier-icon">🔧</span>
+                                    <h3 class="your-apps-tier-title">Tools</h3>
+                                    <span class="your-apps-tier-count" id="dashboardToolsCount">0</span>
+                                </div>
+                                <div class="your-apps-grid" id="dashboardToolsGrid"></div>
+                            </div>
+                            <div class="your-apps-tier" id="dashboardTierApps" style="display: none;">
+                                <div class="your-apps-tier-header">
+                                    <span class="your-apps-tier-icon">📱</span>
+                                    <h3 class="your-apps-tier-title">Apps</h3>
+                                    <span class="your-apps-tier-count" id="dashboardAppsCount">0</span>
+                                </div>
+                                <div class="your-apps-grid" id="dashboardAppsGrid"></div>
+                            </div>
+                            <div class="your-apps-tier" id="dashboardTierSolutions" style="display: none;">
+                                <div class="your-apps-tier-header">
+                                    <span class="your-apps-tier-icon">🏢</span>
+                                    <h3 class="your-apps-tier-title">Solutions</h3>
+                                    <span class="your-apps-tier-count" id="dashboardSolutionsCount">0</span>
+                                </div>
+                                <div class="your-apps-grid" id="dashboardSolutionsGrid"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Create Tab Panel -->
+                    <div class="creator-dashboard-panel" id="dashboardPanelCreate">
+                        <p class="create-view-subtitle">Choose what you'd like to build</p>
                     <p class="create-view-subtitle">Choose what you'd like to build</p>
 
                     <!-- AI Agents & Bots Section -->
@@ -6335,11 +6518,11 @@
                             </div>
                         </div>
                     </div>
-                </section>
+                    </div>
 
-                <!-- Creator Earnings View -->
-                <section class="earnings-view" id="earningsView">
-                    <div class="earnings-header">
+                    <!-- Earnings Tab Panel -->
+                    <div class="creator-dashboard-panel" id="dashboardPanelEarnings">
+                        <div class="earnings-header">
                         <div class="earnings-header-icon">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                                 <line x1="12" y1="1" x2="12" y2="23"/>
@@ -6419,10 +6602,11 @@
                             <p>Track growth in real-time</p>
                         </div>
                     </div>
+                    </div>
                 </section>
 
-                <!-- Your Apps/Projects View -->
-                <section class="your-apps-view" id="yourAppsView">
+                <!-- Legacy Your Apps/Projects View (kept for backwards compatibility) -->
+                <section class="your-apps-view" id="yourAppsView" style="display: none !important;">
                     <div class="your-apps-header">
                         <h2 class="your-apps-title">Your Apps / Projects</h2>
                         <button class="your-apps-create-btn" onclick="openCreateAppModal()">
@@ -7359,74 +7543,11 @@
             if (sidebarOverlay) sidebarOverlay.classList.remove('active');
         }
 
-        function openCreate() {
-            const welcomeState = document.getElementById('welcomeState');
-            const appsView = document.getElementById('appsView');
-            const createView = document.getElementById('createView');
-            const earningsView = document.getElementById('earningsView');
-            const yourAppsView = document.getElementById('yourAppsView');
-            const factoryView = document.getElementById('factoryView');
-            const useCasesSection = document.getElementById('useCasesSection');
-            const chatArea = document.querySelector('.chat-area');
-
-            if (welcomeState) welcomeState.style.display = 'none';
-            if (useCasesSection) useCasesSection.style.display = 'none';
-            if (appsView) appsView.classList.remove('active');
-            if (earningsView) earningsView.classList.remove('active');
-            if (yourAppsView) yourAppsView.classList.remove('active');
-            if (factoryView) factoryView.classList.remove('active');
-            if (createView) createView.style.display = 'block';
-            if (chatArea) chatArea.scrollTop = 0;
-            closeMobileSidebar();
-        }
-
-        function openEarnings() {
-            const welcomeState = document.getElementById('welcomeState');
-            const appsView = document.getElementById('appsView');
-            const createView = document.getElementById('createView');
-            const earningsView = document.getElementById('earningsView');
-            const yourAppsView = document.getElementById('yourAppsView');
-            const factoryView = document.getElementById('factoryView');
-            const useCasesSection = document.getElementById('useCasesSection');
-            const chatArea = document.querySelector('.chat-area');
-
-            if (welcomeState) welcomeState.style.display = 'none';
-            if (useCasesSection) useCasesSection.style.display = 'none';
-            if (appsView) appsView.classList.remove('active');
-            if (createView) createView.style.display = 'none';
-            if (yourAppsView) yourAppsView.classList.remove('active');
-            if (factoryView) factoryView.classList.remove('active');
-            if (earningsView) earningsView.classList.add('active');
-            if (chatArea) chatArea.scrollTop = 0;
-            closeMobileSidebar();
-        }
-
-        function closeCreateView() {
-            const welcomeState = document.getElementById('welcomeState');
-            const createView = document.getElementById('createView');
-            const useCasesSection = document.getElementById('useCasesSection');
-
-            if (welcomeState) welcomeState.style.display = '';
-            if (useCasesSection) useCasesSection.style.display = '';
-            if (createView) createView.style.display = 'none';
-        }
-
-        function closeEarningsView() {
-            const welcomeState = document.getElementById('welcomeState');
-            const earningsView = document.getElementById('earningsView');
-            const useCasesSection = document.getElementById('useCasesSection');
-
-            if (welcomeState) welcomeState.style.display = '';
-            if (useCasesSection) useCasesSection.style.display = '';
-            if (earningsView) earningsView.classList.remove('active');
-        }
-
         // ========================
-        // YOUR APPS/PROJECTS VIEW
+        // CREATOR DASHBOARD
         // ========================
 
-        // App tier definitions (for now, stored in SUITE_APPS as tier property)
-        // Default tier mapping based on app type
+        // App tier definitions
         const APP_TIER_MAP = {
             // Tools (quick utilities)
             'hydrotrack': 'tool',
@@ -7466,14 +7587,13 @@
         let currentProposalApp = null;
         let currentProposalIsNew = false;
         let selectedTier = null;
+        let currentDashboardTab = 'your-apps';
 
-        function openYourApps() {
+        function openCreatorDashboard(tab = 'your-apps') {
             const welcomeState = document.getElementById('welcomeState');
             const appsView = document.getElementById('appsView');
-            const createView = document.getElementById('createView');
-            const earningsView = document.getElementById('earningsView');
             const factoryView = document.getElementById('factoryView');
-            const yourAppsView = document.getElementById('yourAppsView');
+            const creatorDashboard = document.getElementById('creatorDashboard');
             const useCasesSection = document.getElementById('useCasesSection');
             const chatArea = document.querySelector('.chat-area');
 
@@ -7481,23 +7601,84 @@
             if (welcomeState) welcomeState.style.display = 'none';
             if (useCasesSection) useCasesSection.style.display = 'none';
             if (appsView) appsView.classList.remove('active');
-            if (createView) createView.style.display = 'none';
-            if (earningsView) earningsView.classList.remove('active');
             if (factoryView) factoryView.classList.remove('active');
 
-            // Show Your Apps view
-            if (yourAppsView) yourAppsView.classList.add('active');
+            // Show Creator Dashboard
+            if (creatorDashboard) creatorDashboard.classList.add('active');
             if (chatArea) chatArea.scrollTop = 0;
             closeMobileSidebar();
 
-            // Render the apps
-            renderYourApps();
+            // Switch to specified tab
+            switchDashboardTab(tab);
+
+            // Render apps if on your-apps tab
+            if (tab === 'your-apps') {
+                renderDashboardApps();
+            }
+        }
+
+        function switchDashboardTab(tabId) {
+            currentDashboardTab = tabId;
+
+            // Update tab buttons
+            document.querySelectorAll('.creator-dashboard-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.tab === tabId);
+            });
+
+            // Update panels
+            const panelMap = {
+                'your-apps': 'dashboardPanelYourApps',
+                'create': 'dashboardPanelCreate',
+                'earnings': 'dashboardPanelEarnings'
+            };
+
+            Object.entries(panelMap).forEach(([key, panelId]) => {
+                const panel = document.getElementById(panelId);
+                if (panel) {
+                    panel.classList.toggle('active', key === tabId);
+                }
+            });
+
+            // Render apps when switching to your-apps tab
+            if (tabId === 'your-apps') {
+                renderDashboardApps();
+            }
+        }
+
+        function closeCreatorDashboard() {
+            const welcomeState = document.getElementById('welcomeState');
+            const creatorDashboard = document.getElementById('creatorDashboard');
+            const useCasesSection = document.getElementById('useCasesSection');
+
+            if (welcomeState) welcomeState.style.display = '';
+            if (useCasesSection) useCasesSection.style.display = '';
+            if (creatorDashboard) creatorDashboard.classList.remove('active');
+        }
+
+        // Legacy function for backwards compatibility
+        function openYourApps() {
+            openCreatorDashboard('your-apps');
+        }
+
+        function openCreate() {
+            openCreatorDashboard('create');
+        }
+
+        function openEarnings() {
+            openCreatorDashboard('earnings');
         }
 
         function closeYourAppsView() {
-            const welcomeState = document.getElementById('welcomeState');
-            const yourAppsView = document.getElementById('yourAppsView');
-            const useCasesSection = document.getElementById('useCasesSection');
+            closeCreatorDashboard();
+        }
+
+        function closeCreateView() {
+            closeCreatorDashboard();
+        }
+
+        function closeEarningsView() {
+            closeCreatorDashboard();
+        }
 
             if (welcomeState) welcomeState.style.display = '';
             if (useCasesSection) useCasesSection.style.display = '';
@@ -7513,10 +7694,10 @@
             return APP_TIER_MAP[appKey] || 'app';
         }
 
-        function renderYourApps() {
+        function renderDashboardApps() {
             const savedApps = JSON.parse(localStorage.getItem('savedApps') || '[]');
-            const emptyState = document.getElementById('yourAppsEmpty');
-            const content = document.getElementById('yourAppsContent');
+            const emptyState = document.getElementById('dashboardAppsEmpty');
+            const content = document.getElementById('dashboardAppsContent');
 
             // Show empty state if no apps
             if (savedApps.length === 0) {
@@ -7547,9 +7728,14 @@
             });
 
             // Render each tier
-            renderTierGrid('Tools', tools, 'yourAppsTierTools', 'yourAppsToolsGrid', 'yourAppsToolsCount');
-            renderTierGrid('Apps', apps, 'yourAppsTierApps', 'yourAppsAppsGrid', 'yourAppsAppsCount');
-            renderTierGrid('Solutions', solutions, 'yourAppsTierSolutions', 'yourAppsSolutionsGrid', 'yourAppsSolutionsCount');
+            renderTierGrid('Tools', tools, 'dashboardTierTools', 'dashboardToolsGrid', 'dashboardToolsCount');
+            renderTierGrid('Apps', apps, 'dashboardTierApps', 'dashboardAppsGrid', 'dashboardAppsCount');
+            renderTierGrid('Solutions', solutions, 'dashboardTierSolutions', 'dashboardSolutionsGrid', 'dashboardSolutionsCount');
+        }
+
+        // Legacy function for backwards compatibility
+        function renderYourApps() {
+            renderDashboardApps();
         }
 
         function renderTierGrid(tierName, appsList, tierId, gridId, countId) {
@@ -7832,9 +8018,7 @@
         function openFactory(skipPushState = false) {
             const welcomeState = document.getElementById('welcomeState');
             const appsView = document.getElementById('appsView');
-            const createView = document.getElementById('createView');
-            const earningsView = document.getElementById('earningsView');
-            const yourAppsView = document.getElementById('yourAppsView');
+            const creatorDashboard = document.getElementById('creatorDashboard');
             const factoryView = document.getElementById('factoryView');
             const useCasesSection = document.getElementById('useCasesSection');
             const chatArea = document.querySelector('.chat-area');
@@ -7842,9 +8026,7 @@
             if (welcomeState) welcomeState.style.display = 'none';
             if (useCasesSection) useCasesSection.style.display = 'none';
             if (appsView) appsView.classList.remove('active');
-            if (createView) createView.style.display = 'none';
-            if (earningsView) earningsView.classList.remove('active');
-            if (yourAppsView) yourAppsView.classList.remove('active');
+            if (creatorDashboard) creatorDashboard.classList.remove('active');
             if (factoryView) factoryView.classList.add('active');
             if (chatArea) chatArea.scrollTop = 0;
             closeMobileSidebar();
@@ -9518,9 +9700,7 @@
             const welcomeState = document.getElementById('welcomeState');
             const useCasesSection = document.getElementById('useCasesSection');
             const appsView = document.getElementById('appsView');
-            const createView = document.getElementById('createView');
-            const earningsView = document.getElementById('earningsView');
-            const yourAppsView = document.getElementById('yourAppsView');
+            const creatorDashboard = document.getElementById('creatorDashboard');
             const factoryView = document.getElementById('factoryView');
 
             // Clear chat
@@ -9533,9 +9713,7 @@
 
             // Hide all other views
             if (appsView) appsView.classList.remove('active');
-            if (createView) createView.style.display = 'none';
-            if (earningsView) earningsView.classList.remove('active');
-            if (yourAppsView) yourAppsView.classList.remove('active');
+            if (creatorDashboard) creatorDashboard.classList.remove('active');
             if (factoryView) factoryView.classList.remove('active');
 
             // Reset UI to welcome state
@@ -9920,9 +10098,7 @@
             // Show inline apps view instead of modal
             const welcomeState = document.getElementById('welcomeState');
             const appsView = document.getElementById('appsView');
-            const createView = document.getElementById('createView');
-            const earningsView = document.getElementById('earningsView');
-            const yourAppsView = document.getElementById('yourAppsView');
+            const creatorDashboard = document.getElementById('creatorDashboard');
             const factoryView = document.getElementById('factoryView');
             const useCasesSection = document.getElementById('useCasesSection');
             const chatArea = document.querySelector('.chat-area');
@@ -9931,9 +10107,7 @@
             // Hide all other views, show apps view
             if (welcomeState) welcomeState.style.display = 'none';
             if (useCasesSection) useCasesSection.style.display = 'none';
-            if (createView) createView.style.display = 'none';
-            if (earningsView) earningsView.classList.remove('active');
-            if (yourAppsView) yourAppsView.classList.remove('active');
+            if (creatorDashboard) creatorDashboard.classList.remove('active');
             if (factoryView) factoryView.classList.remove('active');
             if (appsView) appsView.classList.add('active');
 
