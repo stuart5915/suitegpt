@@ -6225,12 +6225,8 @@
             );
         }
 
-        // Check auth state on page load (async)
-        checkAuthState().then(() => {
-            console.log('Auth state checked');
-        }).catch(err => {
-            console.error('Auth state check failed:', err);
-        });
+        // Initial auth state check is deferred until Supabase is ready
+        // See Supabase initialization section below
 
         // Listen for auth changes
         window.addEventListener('storage', (e) => {
@@ -7151,15 +7147,16 @@
                 }
             });
 
-            // Also explicitly check session on page load (handles OAuth redirect)
+            // Check session on page load (handles OAuth redirect)
             supabaseClient.auth.getSession().then(({ data: { session }, error }) => {
                 console.log('[Auth] Explicit session check:', session ? session.user?.email : 'no session', error || '');
-                if (session) {
-                    checkAuthState();
-                }
+                // Always call checkAuthState after Supabase is ready
+                checkAuthState();
             });
         } else {
             console.error('[Auth] Supabase library not loaded!');
+            // Still check auth state for wallet/telegram users
+            checkAuthState();
         }
 
         // DOM Elements
