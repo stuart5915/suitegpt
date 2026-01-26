@@ -56,7 +56,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json()
-    const { proposal_id, direction, vote_type, vote_power, telegram_auth, wallet_address } = body
+    const { proposal_id, direction, vote_type, vote_power, telegram_auth, wallet_address, supabase_auth } = body
 
     // Validate required fields
     if (!proposal_id) {
@@ -82,8 +82,8 @@ serve(async (req) => {
     // Vote power defaults to 1 (the free vote)
     const requestedPower = Math.max(1, Math.floor(vote_power || 1))
 
-    // Must have either Telegram auth or wallet
-    if (!telegram_auth && !wallet_address) {
+    // Must have either Telegram auth, wallet, or Supabase/Google auth
+    if (!telegram_auth && !wallet_address && !supabase_auth) {
       return new Response(JSON.stringify({ error: 'Authentication required' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 401
@@ -158,6 +158,61 @@ serve(async (req) => {
           .from('factory_users')
           .insert({
             wallet_address: walletLower,
+            display_name: displayName,
+            reputation: 0
+          })
+          .select()
+          .single()
+
+        if (createError) {
+          return new Response(JSON.stringify({ error: 'Failed to create user' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500
+          })
+        }
+        user = newUser
+      }
+    } else if (supabase_auth) {
+      // Google/Supabase authenticated user
+      const supabaseId = supabase_auth.id
+      const email = supabase_auth.email
+
+      if (!supabaseId && !email) {
+        return new Response(JSON.stringify({ error: 'Invalid Supabase auth' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401
+        })
+      }
+
+      // Find existing user by supabase_id or email
+      let existingUser = null
+      if (supabaseId) {
+        const { data } = await supabase
+          .from('factory_users')
+          .select('*')
+          .eq('supabase_id', supabaseId)
+          .single()
+        existingUser = data
+      }
+      if (!existingUser && email) {
+        const { data } = await supabase
+          .from('factory_users')
+          .select('*')
+          .eq('email', email)
+          .single()
+        existingUser = data
+      }
+
+      if (existingUser) {
+        user = existingUser
+      } else {
+        // Create new user with Google/Supabase auth
+        const displayName = supabase_auth.display_name || email?.split('@')[0] || 'User'
+        const { data: newUser, error: createError } = await supabase
+          .from('factory_users')
+          .insert({
+            supabase_id: supabaseId || null,
+            email: email || null,
             display_name: displayName,
             reputation: 0
           })
