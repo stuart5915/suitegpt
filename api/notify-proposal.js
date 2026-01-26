@@ -19,21 +19,20 @@ export default async function handler(req, res) {
     try {
         const { type, table, record, old_record } = req.body;
 
-        // Only handle INSERT on proposals table
-        if (type !== 'INSERT' || table !== 'proposals') {
+        // Only handle INSERT on factory_proposals table
+        if (type !== 'INSERT' || table !== 'factory_proposals') {
             return res.status(200).json({ ok: true, skipped: true });
         }
 
         const proposal = record;
 
-        // Build notification message
+        // Build notification message (factory_proposals uses 'content' not 'description')
         const message = `🏛️ *New Governance Proposal!*
 
 *Title:* ${escapeMarkdown(proposal.title)}
 *Category:* ${proposal.category || 'feature'}
-*Author:* ${escapeMarkdown(proposal.author_name || 'Anonymous')}
 
-${escapeMarkdown(truncate(proposal.description, 200))}
+${escapeMarkdown(truncate(proposal.content || proposal.description, 200))}
 
 [View Proposal](https://www.getsuite.app/factory.html)`;
 
