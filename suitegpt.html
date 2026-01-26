@@ -5826,14 +5826,14 @@
                         </span>
                         <span>Create</span>
                     </button>
-                    <a href="/factory.html" class="sidebar-item">
+                    <button class="sidebar-item" id="yourAppsBtn" onclick="openYourApps()">
                         <span class="sidebar-item-icon">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
                         </span>
                         <span>Your Apps/Projects</span>
-                    </a>
+                    </button>
                     <button class="sidebar-item" id="earningsBtn" onclick="openEarnings()">
                         <span class="sidebar-item-icon">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -7364,6 +7364,8 @@
             const appsView = document.getElementById('appsView');
             const createView = document.getElementById('createView');
             const earningsView = document.getElementById('earningsView');
+            const yourAppsView = document.getElementById('yourAppsView');
+            const factoryView = document.getElementById('factoryView');
             const useCasesSection = document.getElementById('useCasesSection');
             const chatArea = document.querySelector('.chat-area');
 
@@ -7371,6 +7373,8 @@
             if (useCasesSection) useCasesSection.style.display = 'none';
             if (appsView) appsView.classList.remove('active');
             if (earningsView) earningsView.classList.remove('active');
+            if (yourAppsView) yourAppsView.classList.remove('active');
+            if (factoryView) factoryView.classList.remove('active');
             if (createView) createView.style.display = 'block';
             if (chatArea) chatArea.scrollTop = 0;
             closeMobileSidebar();
@@ -7381,6 +7385,8 @@
             const appsView = document.getElementById('appsView');
             const createView = document.getElementById('createView');
             const earningsView = document.getElementById('earningsView');
+            const yourAppsView = document.getElementById('yourAppsView');
+            const factoryView = document.getElementById('factoryView');
             const useCasesSection = document.getElementById('useCasesSection');
             const chatArea = document.querySelector('.chat-area');
 
@@ -7388,6 +7394,8 @@
             if (useCasesSection) useCasesSection.style.display = 'none';
             if (appsView) appsView.classList.remove('active');
             if (createView) createView.style.display = 'none';
+            if (yourAppsView) yourAppsView.classList.remove('active');
+            if (factoryView) factoryView.classList.remove('active');
             if (earningsView) earningsView.classList.add('active');
             if (chatArea) chatArea.scrollTop = 0;
             closeMobileSidebar();
@@ -7411,6 +7419,391 @@
             if (welcomeState) welcomeState.style.display = '';
             if (useCasesSection) useCasesSection.style.display = '';
             if (earningsView) earningsView.classList.remove('active');
+        }
+
+        // ========================
+        // YOUR APPS/PROJECTS VIEW
+        // ========================
+
+        // App tier definitions (for now, stored in SUITE_APPS as tier property)
+        // Default tier mapping based on app type
+        const APP_TIER_MAP = {
+            // Tools (quick utilities)
+            'hydrotrack': 'tool',
+            'focusflow': 'tool',
+            'quickbudget': 'tool',
+            'breatheasy': 'tool',
+            'stretchtimer': 'tool',
+            'quickdecide': 'tool',
+            'stepgoal': 'tool',
+            // Apps (full-featured)
+            'foodvitals': 'app',
+            'trueform': 'app',
+            'opticrep': 'app',
+            'sleepwell': 'app',
+            'moodlog': 'app',
+            'pillpal': 'app',
+            'flashmind': 'app',
+            'bookshelf': 'app',
+            'skilltree': 'app',
+            'mealprep': 'app',
+            'cleanhome': 'app',
+            'datenight': 'app',
+            'petcare': 'app',
+            'packlight': 'app',
+            'giftguru': 'app',
+            'habitstack': 'app',
+            'cadence-ai': 'app',
+            'defi-knowledge': 'app',
+            'remcast': 'app',
+            'cheshbon': 'app',
+            'jesus-is-god': 'app',
+            // Solutions (business/enterprise)
+            'proto-golf': 'solution'
+        };
+
+        // Current proposal state
+        let currentProposalApp = null;
+        let currentProposalIsNew = false;
+        let selectedTier = null;
+
+        function openYourApps() {
+            const welcomeState = document.getElementById('welcomeState');
+            const appsView = document.getElementById('appsView');
+            const createView = document.getElementById('createView');
+            const earningsView = document.getElementById('earningsView');
+            const factoryView = document.getElementById('factoryView');
+            const yourAppsView = document.getElementById('yourAppsView');
+            const useCasesSection = document.getElementById('useCasesSection');
+            const chatArea = document.querySelector('.chat-area');
+
+            // Hide all other views
+            if (welcomeState) welcomeState.style.display = 'none';
+            if (useCasesSection) useCasesSection.style.display = 'none';
+            if (appsView) appsView.classList.remove('active');
+            if (createView) createView.style.display = 'none';
+            if (earningsView) earningsView.classList.remove('active');
+            if (factoryView) factoryView.classList.remove('active');
+
+            // Show Your Apps view
+            if (yourAppsView) yourAppsView.classList.add('active');
+            if (chatArea) chatArea.scrollTop = 0;
+            closeMobileSidebar();
+
+            // Render the apps
+            renderYourApps();
+        }
+
+        function closeYourAppsView() {
+            const welcomeState = document.getElementById('welcomeState');
+            const yourAppsView = document.getElementById('yourAppsView');
+            const useCasesSection = document.getElementById('useCasesSection');
+
+            if (welcomeState) welcomeState.style.display = '';
+            if (useCasesSection) useCasesSection.style.display = '';
+            if (yourAppsView) yourAppsView.classList.remove('active');
+        }
+
+        function getAppTier(appKey) {
+            // Check if app has explicit tier in SUITE_APPS
+            if (SUITE_APPS[appKey]?.tier) {
+                return SUITE_APPS[appKey].tier;
+            }
+            // Use default tier map
+            return APP_TIER_MAP[appKey] || 'app';
+        }
+
+        function renderYourApps() {
+            const savedApps = JSON.parse(localStorage.getItem('savedApps') || '[]');
+            const emptyState = document.getElementById('yourAppsEmpty');
+            const content = document.getElementById('yourAppsContent');
+
+            // Show empty state if no apps
+            if (savedApps.length === 0) {
+                if (emptyState) emptyState.style.display = 'flex';
+                if (content) content.style.display = 'none';
+                return;
+            }
+
+            // Hide empty state, show content
+            if (emptyState) emptyState.style.display = 'none';
+            if (content) content.style.display = 'block';
+
+            // Categorize apps by tier
+            const tools = [];
+            const apps = [];
+            const solutions = [];
+
+            savedApps.forEach(appKey => {
+                const app = SUITE_APPS[appKey];
+                if (!app) return;
+
+                const tier = getAppTier(appKey);
+                const appData = { key: appKey, ...app };
+
+                if (tier === 'tool') tools.push(appData);
+                else if (tier === 'solution') solutions.push(appData);
+                else apps.push(appData);
+            });
+
+            // Render each tier
+            renderTierGrid('Tools', tools, 'yourAppsTierTools', 'yourAppsToolsGrid', 'yourAppsToolsCount');
+            renderTierGrid('Apps', apps, 'yourAppsTierApps', 'yourAppsAppsGrid', 'yourAppsAppsCount');
+            renderTierGrid('Solutions', solutions, 'yourAppsTierSolutions', 'yourAppsSolutionsGrid', 'yourAppsSolutionsCount');
+        }
+
+        function renderTierGrid(tierName, appsList, tierId, gridId, countId) {
+            const tierEl = document.getElementById(tierId);
+            const gridEl = document.getElementById(gridId);
+            const countEl = document.getElementById(countId);
+
+            if (!tierEl || !gridEl) return;
+
+            // Hide tier if no apps
+            if (appsList.length === 0) {
+                tierEl.style.display = 'none';
+                return;
+            }
+
+            // Show tier
+            tierEl.style.display = 'block';
+            if (countEl) countEl.textContent = appsList.length;
+
+            // Clear and render grid
+            gridEl.innerHTML = '';
+
+            appsList.forEach(app => {
+                const card = document.createElement('div');
+                card.className = 'your-apps-card';
+
+                const iconHtml = app.iconUrl
+                    ? `<img src="${app.iconUrl}" alt="${app.name}">`
+                    : app.icon || '📱';
+
+                card.innerHTML = `
+                    <div class="your-apps-card-header" onclick="launchApp('${app.key}', '${app.url}', '${app.name}')">
+                        <div class="your-apps-card-icon" style="background: ${app.iconBg}">
+                            ${iconHtml}
+                        </div>
+                        <div class="your-apps-card-info">
+                            <div class="your-apps-card-name">${app.name}</div>
+                            <div class="your-apps-card-desc">${app.description}</div>
+                        </div>
+                    </div>
+                    <div class="your-apps-card-actions">
+                        <button class="your-apps-card-btn propose" onclick="openProposeModal('${app.key}')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                            Propose
+                        </button>
+                        <button class="your-apps-card-btn remove" onclick="removeFromYourApps('${app.key}')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                `;
+
+                gridEl.appendChild(card);
+            });
+        }
+
+        function removeFromYourApps(appKey) {
+            const savedApps = JSON.parse(localStorage.getItem('savedApps') || '[]');
+            const index = savedApps.indexOf(appKey);
+            if (index > -1) {
+                savedApps.splice(index, 1);
+                localStorage.setItem('savedApps', JSON.stringify(savedApps));
+                renderYourApps();
+                showToast(`${SUITE_APPS[appKey]?.name || 'App'} removed from your apps`);
+            }
+        }
+
+        // Proposal Modal Functions
+        function openProposeModal(appKey) {
+            currentProposalApp = appKey;
+            currentProposalIsNew = false;
+            selectedTier = null;
+
+            const overlay = document.getElementById('proposalModalOverlay');
+            const title = document.getElementById('proposalModalTitle');
+            const appSection = document.getElementById('proposalModalApp');
+            const tierOptions = document.getElementById('proposalTierOptions');
+            const label = document.getElementById('proposalModalLabel');
+            const textarea = document.getElementById('proposalModalTextarea');
+            const appIcon = document.getElementById('proposalModalAppIcon');
+            const appName = document.getElementById('proposalModalAppName');
+
+            // Configure for refinement mode
+            title.textContent = 'Propose Refinement';
+            label.textContent = 'What would you like to improve?';
+            textarea.placeholder = 'Describe your improvement idea for this app...';
+            textarea.value = '';
+
+            // Show app info, hide tier options
+            if (appSection) appSection.style.display = 'flex';
+            if (tierOptions) tierOptions.style.display = 'none';
+
+            // Set app info
+            const app = SUITE_APPS[appKey];
+            if (app) {
+                const iconHtml = app.iconUrl
+                    ? `<img src="${app.iconUrl}" alt="${app.name}">`
+                    : app.icon || '📱';
+                appIcon.innerHTML = iconHtml;
+                appIcon.style.background = app.iconBg;
+                appName.textContent = app.name;
+            }
+
+            // Show modal
+            if (overlay) overlay.classList.add('active');
+            updateProposalSubmitState();
+        }
+
+        function openCreateAppModal() {
+            currentProposalApp = null;
+            currentProposalIsNew = true;
+            selectedTier = null;
+
+            const overlay = document.getElementById('proposalModalOverlay');
+            const title = document.getElementById('proposalModalTitle');
+            const appSection = document.getElementById('proposalModalApp');
+            const tierOptions = document.getElementById('proposalTierOptions');
+            const label = document.getElementById('proposalModalLabel');
+            const textarea = document.getElementById('proposalModalTextarea');
+
+            // Configure for new app mode
+            title.textContent = 'Create New App';
+            label.textContent = 'Describe your app idea';
+            textarea.placeholder = 'What should this app do? Who is it for? What problem does it solve?';
+            textarea.value = '';
+
+            // Hide app info, show tier options
+            if (appSection) appSection.style.display = 'none';
+            if (tierOptions) tierOptions.style.display = 'block';
+
+            // Reset tier selection
+            document.querySelectorAll('.tier-option').forEach(opt => opt.classList.remove('selected'));
+
+            // Show modal
+            if (overlay) overlay.classList.add('active');
+            updateProposalSubmitState();
+        }
+
+        function closeProposalModal(event) {
+            if (event && event.target !== event.currentTarget) return;
+
+            const overlay = document.getElementById('proposalModalOverlay');
+            if (overlay) overlay.classList.remove('active');
+
+            currentProposalApp = null;
+            currentProposalIsNew = false;
+            selectedTier = null;
+        }
+
+        function selectTierOption(element) {
+            // Remove selection from all options
+            document.querySelectorAll('.tier-option').forEach(opt => opt.classList.remove('selected'));
+
+            // Select this option
+            element.classList.add('selected');
+            selectedTier = element.dataset.tier;
+
+            updateProposalSubmitState();
+        }
+
+        function updateProposalSubmitState() {
+            const textarea = document.getElementById('proposalModalTextarea');
+            const submitBtn = document.getElementById('proposalModalSubmit');
+
+            if (!textarea || !submitBtn) return;
+
+            const hasText = textarea.value.trim().length > 10;
+            const hasTier = !currentProposalIsNew || selectedTier !== null;
+
+            submitBtn.disabled = !hasText || !hasTier;
+        }
+
+        async function submitProposal() {
+            const textarea = document.getElementById('proposalModalTextarea');
+            const submitBtn = document.getElementById('proposalModalSubmit');
+
+            if (!textarea || submitBtn.disabled) return;
+
+            const content = textarea.value.trim();
+            if (!content) return;
+
+            // Disable button while submitting
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+
+            try {
+                // Get current user info
+                let username = 'Anonymous';
+                let userEmail = null;
+
+                if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+                    const { data: { user } } = await supabaseClient.auth.getUser();
+                    if (user) {
+                        username = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Anonymous';
+                        userEmail = user.email;
+                    }
+                }
+
+                // Build proposal data
+                const proposalData = {
+                    content: content,
+                    section: 'suite_apps',
+                    category: currentProposalIsNew ? 'feature' : 'enhancement',
+                    is_new_app: currentProposalIsNew,
+                    username: username
+                };
+
+                // Add app target for refinements
+                if (!currentProposalIsNew && currentProposalApp) {
+                    proposalData.app_target = currentProposalApp;
+                    const app = SUITE_APPS[currentProposalApp];
+                    if (app) {
+                        proposalData.content = `[${app.name}] ${content}`;
+                    }
+                }
+
+                // Add tier for new apps
+                if (currentProposalIsNew && selectedTier) {
+                    proposalData.tier = selectedTier;
+                    const tierNames = { tool: 'Tool', app: 'App', solution: 'Solution' };
+                    proposalData.content = `[New ${tierNames[selectedTier]}] ${content}`;
+                }
+
+                // Submit to factory endpoint
+                const response = await fetch('https://hpogoxpyzwlcmiynpvkg.supabase.co/functions/v1/factory-submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(proposalData)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to submit proposal');
+                }
+
+                // Success
+                closeProposalModal();
+                showToast(currentProposalIsNew
+                    ? 'New app proposal submitted! Track it in Governance.'
+                    : 'Refinement proposal submitted! Track it in Governance.'
+                );
+
+            } catch (error) {
+                console.error('Error submitting proposal:', error);
+                showToast('Failed to submit proposal. Please try again.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Proposal';
+            }
         }
 
         // ========================
@@ -7441,6 +7834,7 @@
             const appsView = document.getElementById('appsView');
             const createView = document.getElementById('createView');
             const earningsView = document.getElementById('earningsView');
+            const yourAppsView = document.getElementById('yourAppsView');
             const factoryView = document.getElementById('factoryView');
             const useCasesSection = document.getElementById('useCasesSection');
             const chatArea = document.querySelector('.chat-area');
@@ -7450,6 +7844,7 @@
             if (appsView) appsView.classList.remove('active');
             if (createView) createView.style.display = 'none';
             if (earningsView) earningsView.classList.remove('active');
+            if (yourAppsView) yourAppsView.classList.remove('active');
             if (factoryView) factoryView.classList.add('active');
             if (chatArea) chatArea.scrollTop = 0;
             closeMobileSidebar();
@@ -7665,8 +8060,8 @@
                 console.log('[Factory] Loading proposals from Supabase...');
                 console.log('[Factory] SUPABASE_URL:', SUPABASE_URL);
 
-                // Simple query first - just get all proposals
-                const url = `${SUPABASE_URL}/rest/v1/factory_proposals?select=*&order=created_at.desc`;
+                // Get all proposals with author info
+                const url = `${SUPABASE_URL}/rest/v1/factory_proposals?select=*,author:factory_users(id,display_name)&order=created_at.desc`;
                 console.log('[Factory] Fetching:', url);
 
                 const response = await fetch(url, {
@@ -9116,6 +9511,11 @@
             const chatInput = document.getElementById('chatInput');
             const welcomeState = document.getElementById('welcomeState');
             const useCasesSection = document.getElementById('useCasesSection');
+            const appsView = document.getElementById('appsView');
+            const createView = document.getElementById('createView');
+            const earningsView = document.getElementById('earningsView');
+            const yourAppsView = document.getElementById('yourAppsView');
+            const factoryView = document.getElementById('factoryView');
 
             // Clear chat
             if (chatMessages) chatMessages.innerHTML = '';
@@ -9125,8 +9525,16 @@
                 conversationHistory = [];
             }
 
+            // Hide all other views
+            if (appsView) appsView.classList.remove('active');
+            if (createView) createView.style.display = 'none';
+            if (earningsView) earningsView.classList.remove('active');
+            if (yourAppsView) yourAppsView.classList.remove('active');
+            if (factoryView) factoryView.classList.remove('active');
+
             // Reset UI to welcome state
             if (welcomeState) {
+                welcomeState.style.display = '';
                 welcomeState.classList.remove('chat-active');
             }
             if (useCasesSection) {
@@ -9508,6 +9916,8 @@
             const appsView = document.getElementById('appsView');
             const createView = document.getElementById('createView');
             const earningsView = document.getElementById('earningsView');
+            const yourAppsView = document.getElementById('yourAppsView');
+            const factoryView = document.getElementById('factoryView');
             const useCasesSection = document.getElementById('useCasesSection');
             const chatArea = document.querySelector('.chat-area');
             const grid = document.getElementById('appsViewGrid');
@@ -9517,6 +9927,8 @@
             if (useCasesSection) useCasesSection.style.display = 'none';
             if (createView) createView.style.display = 'none';
             if (earningsView) earningsView.classList.remove('active');
+            if (yourAppsView) yourAppsView.classList.remove('active');
+            if (factoryView) factoryView.classList.remove('active');
             if (appsView) appsView.classList.add('active');
 
             // Scroll to top of chat area
