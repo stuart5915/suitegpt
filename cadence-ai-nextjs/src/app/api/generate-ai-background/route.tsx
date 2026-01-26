@@ -12,23 +12,25 @@ interface GenerateAiBackgroundRequest {
     postId: string
     platform: string
     content: string
+    customPrompt?: string  // User-defined or AI-extracted prompt
 }
 
 /**
- * Generate an AI image with Gemini based on post content
+ * Generate an AI image with Gemini based on prompt
  */
-async function generateGeminiImage(content: string, platform: string): Promise<{ data: string; mimeType: string } | null> {
+async function generateGeminiImage(prompt: string, platform: string): Promise<{ data: string; mimeType: string } | null> {
     try {
         console.log('[generate-ai-background] Generating Gemini AI image...')
+        console.log('[generate-ai-background] Using prompt:', prompt)
 
-        // Create a prompt for image generation based on post content
-        const imagePrompt = `Create a visually striking, professional social media background image that represents this concept: "${content.substring(0, 200)}".
-Style: Modern, tech-forward, clean aesthetic with subtle gradients.
-DO NOT include any text in the image.
-The image should work well as a background with text overlay.
-Make it visually interesting but not too busy - leave space for text.
-Use a color palette that works with purple/magenta accents.
-${platform === 'tiktok' ? 'Vertical orientation, portrait mode.' : platform === 'instagram' ? 'Square format.' : 'Landscape, wide format.'}`
+        // Add platform-specific orientation
+        const orientationHint = platform === 'tiktok'
+            ? 'Vertical/portrait orientation.'
+            : platform === 'instagram'
+                ? 'Square format.'
+                : 'Landscape/wide format.'
+
+        const imagePrompt = `${prompt}. ${orientationHint} No text in the image.`
 
         const model = genAI.getGenerativeModel({
             model: 'gemini-2.0-flash-exp',
@@ -68,8 +70,8 @@ export async function POST(req: NextRequest) {
     console.log('[generate-ai-background] API called')
     try {
         const body: GenerateAiBackgroundRequest = await req.json()
-        const { postId, platform, content } = body
-        console.log('[generate-ai-background] Request:', { postId, platform, contentLength: content?.length })
+        const { postId, platform, content, customPrompt } = body
+        console.log('[generate-ai-background] Request:', { postId, platform, contentLength: content?.length, hasCustomPrompt: !!customPrompt })
 
         if (!postId || !platform || !content) {
             console.log('[generate-ai-background] Missing fields')
@@ -79,8 +81,11 @@ export async function POST(req: NextRequest) {
             )
         }
 
+        // Use custom prompt if provided, otherwise use content directly
+        const promptToUse = customPrompt || `Visual representation of: ${content.substring(0, 200)}`
+
         // Generate AI background image with Gemini
-        const geminiResult = await generateGeminiImage(content, platform)
+        const geminiResult = await generateGeminiImage(promptToUse, platform)
 
         if (!geminiResult) {
             return NextResponse.json(

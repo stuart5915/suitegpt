@@ -22,7 +22,8 @@ import {
     GitCommit,
     ImagePlus,
     Layout,
-    Layers
+    Layers,
+    Wand2
 } from 'lucide-react'
 import { Project, PLATFORM_CONFIG } from '@/lib/supabase/types'
 import { PlatformIcon, PLATFORM_NAMES } from '@/components/ui/PlatformIcon'
@@ -51,6 +52,7 @@ interface ScheduledPost {
     template_image_url?: string | null
     ai_background_url?: string | null
     combined_image_url?: string | null
+    ai_image_prompt?: string | null
 }
 
 // Automation config for placeholders
@@ -127,6 +129,10 @@ function CalendarPageContent() {
     const [generatingTemplateFor, setGeneratingTemplateFor] = useState<string | null>(null)
     const [generatingAiBackgroundFor, setGeneratingAiBackgroundFor] = useState<string | null>(null)
     const [combiningImagesFor, setCombiningImagesFor] = useState<string | null>(null)
+    const [generatingPromptFor, setGeneratingPromptFor] = useState<string | null>(null)
+
+    // Editable prompt for AI image generation (keyed by post ID)
+    const [editablePrompts, setEditablePrompts] = useState<Record<string, string>>({})
 
     // Lightbox state for viewing full images
     const [lightboxImage, setLightboxImage] = useState<{ url: string; label: string } | null>(null)
@@ -200,8 +206,46 @@ function CalendarPageContent() {
         }
     }
 
+    // Generate image prompt by extracting meaning from post
+    const generateImagePrompt = async (post: ScheduledPost) => {
+        setGeneratingPromptFor(post.id)
+        try {
+            const response = await fetch('/api/generate-image-prompt', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    postId: post.id,
+                    content: post.post_text
+                })
+            })
+            const data = await response.json()
+            if (data.success && data.imagePrompt) {
+                // Update local editable prompts state
+                setEditablePrompts(prev => ({ ...prev, [post.id]: data.imagePrompt }))
+                // Also update the post in local state
+                setQueuePosts(prev => prev.map(p =>
+                    p.id === post.id ? { ...p, ai_image_prompt: data.imagePrompt } : p
+                ))
+                if (editingPost?.id === post.id) {
+                    setEditingPost(prev => prev ? { ...prev, ai_image_prompt: data.imagePrompt } : null)
+                }
+            } else {
+                console.error('Prompt generation failed:', data.error)
+                alert('Failed to generate prompt: ' + (data.error || 'Unknown error'))
+            }
+        } catch (err) {
+            console.error('Failed to generate prompt:', err)
+            alert('Failed to generate prompt. Please try again.')
+        } finally {
+            setGeneratingPromptFor(null)
+        }
+    }
+
     // Generate AI background image (Gemini)
     const generateAiBackground = async (post: ScheduledPost) => {
+        // Use custom prompt if available, otherwise fall back to post text
+        const customPrompt = editablePrompts[post.id] || post.ai_image_prompt
+
         setGeneratingAiBackgroundFor(post.id)
         try {
             const response = await fetch('/api/generate-ai-background', {
@@ -210,7 +254,8 @@ function CalendarPageContent() {
                 body: JSON.stringify({
                     postId: post.id,
                     platform: post.platform,
-                    content: post.post_text
+                    content: post.post_text,
+                    customPrompt: customPrompt || undefined
                 })
             })
             const data = await response.json()
@@ -1261,8 +1306,8 @@ function CalendarPageContent() {
                                     Image Generation
                                 </label>
 
-                                {/* 3 Button Row */}
-                                <div className="flex gap-2 mb-4">
+                                {/* Button Row */}
+                                <div className="flex gap-2 mb-3">
                                     {/* Template Button */}
                                     <button
                                         onClick={() => generateTemplateImage(editingPost)}
@@ -1283,12 +1328,46 @@ function CalendarPageContent() {
                                         )}
                                     </button>
 
+                                    {/* Generate Prompt Button */}
+                                    <button
+                                        onClick={() => generateImagePrompt(editingPost)}
+                                        disabled={generatingPromptFor === editingPost.id}
+                                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-orange-500/20 text-orange-400 rounded-lg text-sm font-medium hover:bg-orange-500/30 disabled:opacity-50"
+                                        title="AI extracts the visual meaning from your post"
+                                    >
+                                        {generatingPromptFor === editingPost.id ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                Thinking...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Wand2 className="w-4 h-4" />
+                                                Gen Prompt
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+
+                                {/* Editable Prompt Field */}
+                                <div className="mb-3">
+                                    <textarea
+                                        value={editablePrompts[editingPost.id] || editingPost.ai_image_prompt || ''}
+                                        onChange={(e) => setEditablePrompts(prev => ({ ...prev, [editingPost.id]: e.target.value }))}
+                                        placeholder="Click 'Gen Prompt' to extract visual meaning, or type your own image prompt..."
+                                        rows={2}
+                                        className="w-full px-3 py-2 bg-[var(--surface)] border border-[var(--surface-border)] rounded-lg text-sm text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] resize-none"
+                                    />
+                                </div>
+
+                                {/* AI Image & Combine Row */}
+                                <div className="flex gap-2 mb-4">
                                     {/* AI Image Button */}
                                     <button
                                         onClick={() => generateAiBackground(editingPost)}
                                         disabled={generatingAiBackgroundFor === editingPost.id}
                                         className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-purple-500/20 text-purple-400 rounded-lg text-sm font-medium hover:bg-purple-500/30 disabled:opacity-50"
-                                        title="Gemini AI background"
+                                        title={editablePrompts[editingPost.id] || editingPost.ai_image_prompt ? "Generate image using the prompt above" : "Generate image (use Gen Prompt first for better results)"}
                                     >
                                         {generatingAiBackgroundFor === editingPost.id ? (
                                             <>
@@ -1392,9 +1471,10 @@ function CalendarPageContent() {
 
                                 {/* Helper text */}
                                 <p className="text-xs text-[var(--foreground-muted)] mt-3">
-                                    1. Click <span className="text-blue-400">Template</span> for fast branded image.
-                                    2. Click <span className="text-purple-400">AI Image</span> for custom background.
-                                    3. Click <span className="text-emerald-400">Combine</span> to merge them.
+                                    1. <span className="text-blue-400">Template</span> = fast branded overlay.
+                                    2. <span className="text-orange-400">Gen Prompt</span> = AI extracts visual meaning.
+                                    3. <span className="text-purple-400">AI Image</span> = generate background.
+                                    4. <span className="text-emerald-400">Combine</span> = merge template + AI.
                                 </p>
                             </div>
 
