@@ -7,8 +7,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-// SECURITY: Restrict CORS to only allow requests from getsuite.app
-const ALLOWED_ORIGINS = ['https://getsuite.app', 'https://www.getsuite.app']
+// SECURITY: Restrict CORS to only allow requests from getsuite.app and suitegpt.app
+const ALLOWED_ORIGINS = ['https://getsuite.app', 'https://www.getsuite.app', 'https://suitegpt.app', 'https://www.suitegpt.app']
 
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get('origin') || ''

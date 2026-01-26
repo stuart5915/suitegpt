@@ -3699,11 +3699,31 @@
             margin-bottom: 12px;
             cursor: pointer;
             transition: all 0.2s;
+            position: relative;
         }
 
         .factory-proposal-card:hover {
             border-color: var(--accent-primary);
             transform: translateY(-2px);
+        }
+
+        .factory-admin-delete {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(239, 68, 68, 0.2);
+            border: none;
+            border-radius: 6px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            opacity: 0.7;
+            transition: all 0.2s;
+        }
+
+        .factory-admin-delete:hover {
+            background: rgba(239, 68, 68, 0.4);
+            opacity: 1;
         }
 
         .factory-proposal-category {
@@ -7493,6 +7513,7 @@
         // ========================
         const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
+        const ADMIN_WALLETS = ['0x92d67d8ad8b986e78b369be0272e121ae5acad59'];
         let supabaseClient = null;
 
         // Debug: Check localStorage for Supabase session
@@ -8465,6 +8486,52 @@
             document.getElementById('factoryRefinementsCards').style.display = tab === 'refinements' ? 'block' : 'none';
         }
 
+        function isFactoryAdmin() {
+            const currentUser = getFactoryCurrentUser();
+            if (!currentUser) return false;
+            if (currentUser.wallet_address) {
+                return ADMIN_WALLETS.includes(currentUser.wallet_address.toLowerCase());
+            }
+            return false;
+        }
+
+        async function deleteFactoryProposal(proposalId) {
+            if (!confirm('Are you sure you want to delete this proposal?')) return;
+
+            const currentUser = getFactoryCurrentUser();
+            if (!currentUser || !currentUser.wallet_address) {
+                alert('Admin wallet required');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/factory-admin`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        action: 'delete',
+                        proposal_id: proposalId,
+                        wallet_address: currentUser.wallet_address
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    await loadFactoryProposals();
+                } else {
+                    alert(result.error || 'Failed to delete proposal');
+                }
+            } catch (err) {
+                console.error('Delete error:', err);
+                alert('Error deleting proposal');
+            }
+        }
+
         function renderFactoryProposalCard(proposal) {
             const category = FACTORY_CATEGORIES[proposal.category] || FACTORY_CATEGORIES.general;
             const authorName = proposal.author?.display_name || 'Anonymous';
@@ -8472,6 +8539,7 @@
             const userVoteCount = factoryUserVotes[proposal.id] || 0;
             const nextVoteCost = getFactoryVoteCost(userVoteCount + 1);
             const canVote = getFactoryCurrentUser() && ['submitted', 'open_voting'].includes(proposal.status);
+            const isAdmin = isFactoryAdmin();
             const formattedDate = new Date(proposal.created_at).toLocaleDateString('en-US', {
                 month: 'short',
                 day: 'numeric'
@@ -8489,8 +8557,16 @@
                 appTag = '<span class="factory-app-tag general">📋 General</span>';
             }
 
+            // Admin delete button
+            const adminControls = isAdmin ? `
+                <button class="factory-admin-delete" onclick="event.stopPropagation(); deleteFactoryProposal('${proposal.id}')" title="Delete proposal">
+                    🗑️
+                </button>
+            ` : '';
+
             return `
                 <div class="factory-proposal-card" data-id="${proposal.id}">
+                    ${adminControls}
                     ${appTag}
                     <div class="factory-proposal-category">${category.emoji} ${category.label}</div>
                     <div class="factory-proposal-title">${escapeFactoryHtml(proposal.title || 'Untitled')}</div>
