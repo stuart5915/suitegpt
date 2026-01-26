@@ -480,7 +480,7 @@ async function connectWallet() {
 }
 
 function loginWithTelegram() {
-    const botId = '8341049569';
+    const botId = '8574475080'; // SUITEGovBot (for getsuite.app domain)
     closeProfileMenu();
 
     if (!window.Telegram || !window.Telegram.Login) {

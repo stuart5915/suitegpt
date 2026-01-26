@@ -499,7 +499,7 @@ async function connectWalletFromNav() {
 
 // Telegram login - clean one-click popup flow
 function loginWithTelegramWidget() {
-    const botId = '8341049569'; // SUITEHubBot
+    const botId = '8574475080'; // SUITEGovBot (for getsuite.app domain)
 
     closeNavConnectModal();
 
