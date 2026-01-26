@@ -10,8 +10,8 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN')!
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')!
 
-// SECURITY: Restrict CORS to only allow requests from getsuite.app
-const ALLOWED_ORIGINS = ['https://getsuite.app', 'https://www.getsuite.app']
+// SECURITY: Restrict CORS to only allow requests from getsuite.app and suitegpt.app
+const ALLOWED_ORIGINS = ['https://getsuite.app', 'https://www.getsuite.app', 'https://suitegpt.app', 'https://www.suitegpt.app']
 
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get('origin') || ''
@@ -335,6 +335,7 @@ serve(async (req) => {
         category,
         section: section || 'business',
         app_target: app_target || null,
+        app_slug: app_target || null,
         is_new_app: is_new_app || false,
         status: 'submitted'
       })
