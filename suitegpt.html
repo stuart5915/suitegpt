@@ -2900,6 +2900,57 @@
             font-weight: 600;
         }
 
+        .factory-submitted-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 12px;
+            background: var(--bg-dark);
+            padding: 4px;
+            border-radius: 8px;
+        }
+
+        .factory-submitted-tab {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .factory-submitted-tab:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .factory-submitted-tab.active {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        .factory-submitted-tab span {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+        }
+
+        .factory-subtab-content {
+            display: none;
+        }
+
+        .factory-subtab-content.active {
+            display: block;
+        }
+
         .factory-proposal-card {
             background: var(--bg-card-hover);
             border: 1px solid var(--border-subtle);
@@ -6812,16 +6863,27 @@
                 p.status === 'passed' || p.status === 'implemented'
             );
 
+            // Split submitted into new app ideas vs refinements
+            const newAppIdeas = submitted.filter(p => p.is_new_app || p.app_slug === 'new_app');
+            const refinements = submitted.filter(p => !p.is_new_app && p.app_slug !== 'new_app');
+
             // Update column counts
             document.getElementById('factorySubmittedCount').textContent = submitted.length;
+            document.getElementById('factoryNewAppsCount').textContent = newAppIdeas.length;
+            document.getElementById('factoryRefinementsCount').textContent = refinements.length;
             document.getElementById('factoryVotingCount').textContent = voting.length;
             document.getElementById('factoryWorkingCount').textContent = working.length;
             document.getElementById('factoryImplementedCount').textContent = implemented.length;
 
-            // Render cards
-            document.getElementById('factorySubmittedCards').innerHTML =
-                submitted.length ? submitted.map(p => renderFactoryProposalCard(p)).join('') :
-                '<div class="factory-empty-state"><div class="factory-empty-icon">📭</div><p>No proposals yet</p></div>';
+            // Render new app ideas
+            document.getElementById('factoryNewAppsCards').innerHTML =
+                newAppIdeas.length ? newAppIdeas.map(p => renderFactoryProposalCard(p)).join('') :
+                '<div class="factory-empty-state"><div class="factory-empty-icon">💡</div><p>No new app ideas yet</p></div>';
+
+            // Render refinements
+            document.getElementById('factoryRefinementsCards').innerHTML =
+                refinements.length ? refinements.map(p => renderFactoryProposalCard(p)).join('') :
+                '<div class="factory-empty-state"><div class="factory-empty-icon">🔧</div><p>No refinements yet</p></div>';
 
             document.getElementById('factoryVotingCards').innerHTML =
                 voting.length ? voting.map(p => renderFactoryProposalCard(p)).join('') :
@@ -6834,6 +6896,19 @@
             document.getElementById('factoryImplementedCards').innerHTML =
                 implemented.length ? implemented.map(p => renderFactoryProposalCard(p)).join('') :
                 '<div class="factory-empty-state"><div class="factory-empty-icon">✅</div><p>No implemented proposals</p></div>';
+        }
+
+        function switchSubmittedTab(tab) {
+            // Update tab buttons
+            document.querySelectorAll('.factory-submitted-tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.subtab === tab);
+            });
+
+            // Show/hide content
+            document.getElementById('factoryNewAppsCards').classList.toggle('active', tab === 'newapps');
+            document.getElementById('factoryNewAppsCards').style.display = tab === 'newapps' ? 'block' : 'none';
+            document.getElementById('factoryRefinementsCards').classList.toggle('active', tab === 'refinements');
+            document.getElementById('factoryRefinementsCards').style.display = tab === 'refinements' ? 'block' : 'none';
         }
 
         function renderFactoryProposalCard(proposal) {
