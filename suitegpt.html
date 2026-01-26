@@ -2338,121 +2338,76 @@
             }
         }
 
-        /* Apps View Tier Sections - Collapsible Horizontal Rows */
-        .apps-view-tier {
+        /* Apps View Tabs */
+        .apps-view-tabs {
+            display: flex;
+            gap: 8px;
             margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .apps-view-tab {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
             background: var(--bg-elevated);
-            border-radius: 16px;
             border: 1px solid var(--border-subtle);
-            overflow: hidden;
-        }
-
-        .apps-view-tier:last-child {
-            margin-bottom: 0;
-        }
-
-        .apps-view-tier-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 16px 20px;
-            cursor: pointer;
-            transition: background 0.15s ease;
-            user-select: none;
-        }
-
-        .apps-view-tier-header:hover {
-            background: rgba(255, 255, 255, 0.02);
-        }
-
-        .apps-view-tier-icon {
-            font-size: 1.5rem;
-            width: 40px;
-            height: 40px;
-            background: var(--bg-dark);
             border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
         }
 
-        .apps-view-tier-info {
-            flex: 1;
-        }
-
-        .apps-view-tier-title {
-            font-size: 1rem;
-            font-weight: 600;
+        .apps-view-tab:hover {
+            background: rgba(255, 255, 255, 0.05);
             color: var(--text-primary);
-            margin: 0;
         }
 
-        .apps-view-tier-subtitle {
-            font-size: 0.8rem;
-            color: var(--text-tertiary);
-            margin-top: 2px;
-        }
-
-        .apps-view-tier-count {
+        .apps-view-tab.active {
             background: var(--accent-primary);
+            border-color: var(--accent-primary);
             color: white;
-            padding: 4px 10px;
-            border-radius: 12px;
+        }
+
+        .apps-view-tab-icon {
+            font-size: 1.1rem;
+        }
+
+        .apps-view-tab-count {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 10px;
             font-size: 0.8rem;
-            font-weight: 600;
-            margin-right: 8px;
         }
 
-        .apps-view-tier-toggle {
-            width: 24px;
-            height: 24px;
-            color: var(--text-tertiary);
-            transition: transform 0.2s ease;
+        .apps-view-tab.active .apps-view-tab-count {
+            background: rgba(255, 255, 255, 0.25);
         }
 
-        .apps-view-tier.collapsed .apps-view-tier-toggle {
-            transform: rotate(-90deg);
-        }
-
-        .apps-view-tier-content {
-            padding: 0 20px 20px;
-        }
-
-        .apps-view-tier.collapsed .apps-view-tier-content {
+        .apps-view-panel {
             display: none;
         }
 
-        .apps-view-tier-grid {
+        .apps-view-panel.active {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
             gap: 16px;
         }
 
         @media (max-width: 768px) {
-            .apps-view-tier {
-                border-radius: 12px;
+            .apps-view-tabs {
+                gap: 6px;
             }
 
-            .apps-view-tier-header {
-                padding: 12px 16px;
-                gap: 10px;
+            .apps-view-tab {
+                padding: 8px 12px;
+                font-size: 0.85rem;
             }
 
-            .apps-view-tier-icon {
-                width: 36px;
-                height: 36px;
-                font-size: 1.25rem;
-            }
-
-            .apps-view-tier-title {
-                font-size: 0.95rem;
-            }
-
-            .apps-view-tier-content {
-                padding: 0 16px 16px;
-            }
-
-            .apps-view-tier-grid {
+            .apps-view-panel.active {
                 grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
                 gap: 12px;
             }
@@ -10808,57 +10763,49 @@
                 return item;
             };
 
-            // Helper to create collapsible tier section
-            const createTierSection = (icon, title, subtitle, appsList, tierId) => {
-                if (appsList.length === 0) return null;
+            // Define tiers
+            const tiers = [
+                { id: 'tools', icon: '🔧', label: 'Tools', apps: tools },
+                { id: 'extensions', icon: '🧩', label: 'Extensions', apps: extensions },
+                { id: 'apps', icon: '📱', label: 'Apps', apps: apps },
+                { id: 'platforms', icon: '🏢', label: 'Platforms', apps: platforms }
+            ];
 
-                const section = document.createElement('div');
-                section.className = 'apps-view-tier';
-                section.id = `appsViewTier${tierId}`;
-
-                const header = document.createElement('div');
-                header.className = 'apps-view-tier-header';
-                header.onclick = () => section.classList.toggle('collapsed');
-                header.innerHTML = `
-                    <span class="apps-view-tier-icon">${icon}</span>
-                    <div class="apps-view-tier-info">
-                        <h3 class="apps-view-tier-title">${title}</h3>
-                        <span class="apps-view-tier-subtitle">${subtitle}</span>
-                    </div>
-                    <span class="apps-view-tier-count">${appsList.length}</span>
-                    <svg class="apps-view-tier-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M19 9l-7 7-7-7"/>
-                    </svg>
-                `;
-
-                const content = document.createElement('div');
-                content.className = 'apps-view-tier-content';
-
-                const tierGrid = document.createElement('div');
-                tierGrid.className = 'apps-view-tier-grid';
-
-                appsList.forEach(appData => {
-                    tierGrid.appendChild(createAppItem(appData));
-                });
-
-                content.appendChild(tierGrid);
-                section.appendChild(header);
-                section.appendChild(content);
-                return section;
-            };
-
-            // Populate grid with tier sections
+            // Build tabs and panels
             grid.innerHTML = '';
 
-            const toolsSection = createTierSection('🔧', 'Tools', 'Quick utilities', tools, 'Tools');
-            const extensionsSection = createTierSection('🧩', 'Extensions', 'Add-ons & integrations', extensions, 'Extensions');
-            const appsSection = createTierSection('📱', 'Apps', 'Full-featured applications', apps, 'Apps');
-            const platformsSection = createTierSection('🏢', 'Platforms', 'Business & enterprise', platforms, 'Platforms');
+            // Create tabs container
+            const tabsContainer = document.createElement('div');
+            tabsContainer.className = 'apps-view-tabs';
 
-            if (toolsSection) grid.appendChild(toolsSection);
-            if (extensionsSection) grid.appendChild(extensionsSection);
-            if (appsSection) grid.appendChild(appsSection);
-            if (platformsSection) grid.appendChild(platformsSection);
+            // Create panels
+            const panels = {};
+
+            tiers.forEach((tier, index) => {
+                // Create tab
+                const tab = document.createElement('button');
+                tab.className = 'apps-view-tab' + (index === 0 ? ' active' : '');
+                tab.dataset.tier = tier.id;
+                tab.innerHTML = `
+                    <span class="apps-view-tab-icon">${tier.icon}</span>
+                    ${tier.label}
+                    <span class="apps-view-tab-count">${tier.apps.length}</span>
+                `;
+                tab.onclick = () => switchAppsTab(tier.id);
+                tabsContainer.appendChild(tab);
+
+                // Create panel
+                const panel = document.createElement('div');
+                panel.className = 'apps-view-panel' + (index === 0 ? ' active' : '');
+                panel.id = `appsPanel${tier.id}`;
+                tier.apps.forEach(appData => {
+                    panel.appendChild(createAppItem(appData));
+                });
+                panels[tier.id] = panel;
+            });
+
+            grid.appendChild(tabsContainer);
+            Object.values(panels).forEach(panel => grid.appendChild(panel));
 
             // Focus search input
             setTimeout(() => {
@@ -10890,6 +10837,18 @@
             closeAppsView();
         }
 
+        function switchAppsTab(tierId) {
+            // Update tabs
+            document.querySelectorAll('.apps-view-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.tier === tierId);
+            });
+
+            // Update panels
+            document.querySelectorAll('.apps-view-panel').forEach(panel => {
+                panel.classList.toggle('active', panel.id === `appsPanel${tierId}`);
+            });
+        }
+
         function filterApps(query) {
             const items = document.querySelectorAll('.apps-panel-item');
             const lower = query.toLowerCase();
@@ -10906,7 +10865,7 @@
             const items = document.querySelectorAll('.apps-view-item');
             const lower = query.toLowerCase();
 
-            // Filter individual items
+            // Filter items across all panels
             items.forEach(item => {
                 const name = item.dataset.name;
                 const desc = item.dataset.desc;
@@ -10914,11 +10873,15 @@
                 item.style.display = matches ? '' : 'none';
             });
 
-            // Hide empty tier sections
-            const tierSections = document.querySelectorAll('.apps-view-tier');
-            tierSections.forEach(section => {
-                const visibleItems = section.querySelectorAll('.apps-view-item:not([style*="display: none"])');
-                section.style.display = visibleItems.length > 0 ? '' : 'none';
+            // Update tab counts to show filtered counts
+            document.querySelectorAll('.apps-view-tab').forEach(tab => {
+                const tierId = tab.dataset.tier;
+                const panel = document.getElementById(`appsPanel${tierId}`);
+                if (panel) {
+                    const visibleCount = panel.querySelectorAll('.apps-view-item:not([style*="display: none"])').length;
+                    const countEl = tab.querySelector('.apps-view-tab-count');
+                    if (countEl) countEl.textContent = visibleCount;
+                }
             });
         }
 
