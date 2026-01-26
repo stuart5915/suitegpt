@@ -39,6 +39,51 @@
     <meta property="og:image" content="https://getsuite.app/assets/images/1200x630-getsuite.jpg">
     <meta property="og:url" content="https://getsuite.app/suitegpt.html">
 
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="SuiteGPT | Your Personal App Concierge">
+    <meta name="twitter:description" content="Tell us what you need. We'll find it, change it, or build it for you. Real apps, not just answers.">
+    <meta name="twitter:image" content="https://getsuite.app/assets/images/1200x630-getsuite.jpg">
+
+    <!-- Structured Data - SoftwareApplication -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "SuiteGPT",
+        "alternateName": "Your Personal App Concierge",
+        "description": "Tell us what you need. We'll find it, change it, or build it for you. Real apps, not just answers. SuiteGPT is an AI-powered app concierge that helps you discover, customize, or request new apps.",
+        "url": "https://suitegpt.app",
+        "applicationCategory": "UtilitiesApplication",
+        "operatingSystem": "Web Browser",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD",
+            "description": "Free to use with optional credits"
+        },
+        "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.8",
+            "ratingCount": "100"
+        },
+        "author": {
+            "@type": "Organization",
+            "name": "SUITE",
+            "url": "https://getsuite.app"
+        },
+        "featureList": [
+            "AI-powered app discovery",
+            "Custom app requests",
+            "20+ free productivity apps",
+            "Multiple AI models (Claude, GPT-4, Gemini)",
+            "Web search capability",
+            "Image generation",
+            "Voice mode"
+        ]
+    }
+    </script>
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2286,9 +2331,13 @@
             }
         }
 
-        /* Apps View Tier Sections */
+        /* Apps View Tier Sections - Collapsible Horizontal Rows */
         .apps-view-tier {
-            margin-bottom: 32px;
+            margin-bottom: 24px;
+            background: var(--bg-elevated);
+            border-radius: 16px;
+            border: 1px solid var(--border-subtle);
+            overflow: hidden;
         }
 
         .apps-view-tier:last-child {
@@ -2299,13 +2348,25 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 16px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid var(--border-subtle);
+            padding: 16px 20px;
+            cursor: pointer;
+            transition: background 0.15s ease;
+            user-select: none;
+        }
+
+        .apps-view-tier-header:hover {
+            background: rgba(255, 255, 255, 0.02);
         }
 
         .apps-view-tier-icon {
             font-size: 1.5rem;
+            width: 40px;
+            height: 40px;
+            background: var(--bg-dark);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .apps-view-tier-info {
@@ -2313,48 +2374,108 @@
         }
 
         .apps-view-tier-title {
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 600;
             color: var(--text-primary);
             margin: 0;
         }
 
         .apps-view-tier-subtitle {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: var(--text-tertiary);
+            margin-top: 2px;
         }
 
         .apps-view-tier-count {
-            background: var(--bg-elevated);
-            color: var(--text-secondary);
+            background: var(--accent-primary);
+            color: white;
             padding: 4px 10px;
             border-radius: 12px;
-            font-size: 0.85rem;
-            font-weight: 500;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+
+        .apps-view-tier-toggle {
+            width: 24px;
+            height: 24px;
+            color: var(--text-tertiary);
+            transition: transform 0.2s ease;
+        }
+
+        .apps-view-tier.collapsed .apps-view-tier-toggle {
+            transform: rotate(-90deg);
+        }
+
+        .apps-view-tier-content {
+            padding: 0 20px 20px;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+        }
+
+        .apps-view-tier.collapsed .apps-view-tier-content {
+            max-height: 0 !important;
+            padding-top: 0;
+            padding-bottom: 0;
         }
 
         .apps-view-tier-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            display: flex;
             gap: 16px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .apps-view-tier-grid::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .apps-view-tier-grid::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .apps-view-tier-grid::-webkit-scrollbar-thumb {
+            background: var(--border-subtle);
+            border-radius: 3px;
+        }
+
+        .apps-view-tier-grid .apps-view-item {
+            flex: 0 0 180px;
+            scroll-snap-align: start;
         }
 
         @media (max-width: 768px) {
-            .apps-view-tier-grid {
-                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-                gap: 12px;
+            .apps-view-tier {
+                border-radius: 12px;
             }
 
             .apps-view-tier-header {
+                padding: 12px 16px;
                 gap: 10px;
             }
 
             .apps-view-tier-icon {
+                width: 36px;
+                height: 36px;
                 font-size: 1.25rem;
             }
 
             .apps-view-tier-title {
-                font-size: 1rem;
+                font-size: 0.95rem;
+            }
+
+            .apps-view-tier-content {
+                padding: 0 16px 16px;
+            }
+
+            .apps-view-tier-grid {
+                gap: 12px;
+            }
+
+            .apps-view-tier-grid .apps-view-item {
+                flex: 0 0 150px;
             }
         }
 
@@ -8033,6 +8154,9 @@
             'stretchtimer': 'tool',
             'quickdecide': 'tool',
             'stepgoal': 'tool',
+            // Extensions (add-ons & integrations)
+            'defi-knowledge': 'extension',
+            'cadence-ai': 'extension',
             // Apps (full-featured)
             'foodvitals': 'app',
             'trueform': 'app',
@@ -8050,13 +8174,11 @@
             'packlight': 'app',
             'giftguru': 'app',
             'habitstack': 'app',
-            'cadence-ai': 'app',
-            'defi-knowledge': 'app',
             'remcast': 'app',
             'cheshbon': 'app',
             'jesus-is-god': 'app',
-            // Solutions (business/enterprise)
-            'proto-golf': 'solution'
+            // Platforms (business/enterprise)
+            'proto-golf': 'platform'
         };
 
         // Current proposal state
@@ -10671,14 +10793,16 @@
 
             // Categorize apps by tier
             const tools = [];
+            const extensions = [];
             const apps = [];
-            const solutions = [];
+            const platforms = [];
 
             Object.entries(SUITE_APPS).forEach(([key, app]) => {
                 const tier = getAppTier(key);
                 const appData = { key, ...app };
                 if (tier === 'tool') tools.push(appData);
-                else if (tier === 'solution') solutions.push(appData);
+                else if (tier === 'extension') extensions.push(appData);
+                else if (tier === 'platform') platforms.push(appData);
                 else apps.push(appData);
             });
 
@@ -10705,7 +10829,7 @@
                 return item;
             };
 
-            // Helper to create tier section
+            // Helper to create collapsible tier section
             const createTierSection = (icon, title, subtitle, appsList, tierId) => {
                 if (appsList.length === 0) return null;
 
@@ -10715,6 +10839,7 @@
 
                 const header = document.createElement('div');
                 header.className = 'apps-view-tier-header';
+                header.onclick = () => section.classList.toggle('collapsed');
                 header.innerHTML = `
                     <span class="apps-view-tier-icon">${icon}</span>
                     <div class="apps-view-tier-info">
@@ -10722,7 +10847,13 @@
                         <span class="apps-view-tier-subtitle">${subtitle}</span>
                     </div>
                     <span class="apps-view-tier-count">${appsList.length}</span>
+                    <svg class="apps-view-tier-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 9l-7 7-7-7"/>
+                    </svg>
                 `;
+
+                const content = document.createElement('div');
+                content.className = 'apps-view-tier-content';
 
                 const tierGrid = document.createElement('div');
                 tierGrid.className = 'apps-view-tier-grid';
@@ -10731,8 +10862,9 @@
                     tierGrid.appendChild(createAppItem(appData));
                 });
 
+                content.appendChild(tierGrid);
                 section.appendChild(header);
-                section.appendChild(tierGrid);
+                section.appendChild(content);
                 return section;
             };
 
@@ -10740,12 +10872,14 @@
             grid.innerHTML = '';
 
             const toolsSection = createTierSection('🔧', 'Tools', 'Quick utilities', tools, 'Tools');
+            const extensionsSection = createTierSection('🧩', 'Extensions', 'Add-ons & integrations', extensions, 'Extensions');
             const appsSection = createTierSection('📱', 'Apps', 'Full-featured applications', apps, 'Apps');
-            const solutionsSection = createTierSection('🏢', 'Solutions', 'Business & enterprise', solutions, 'Solutions');
+            const platformsSection = createTierSection('🏢', 'Platforms', 'Business & enterprise', platforms, 'Platforms');
 
             if (toolsSection) grid.appendChild(toolsSection);
+            if (extensionsSection) grid.appendChild(extensionsSection);
             if (appsSection) grid.appendChild(appsSection);
-            if (solutionsSection) grid.appendChild(solutionsSection);
+            if (platformsSection) grid.appendChild(platformsSection);
 
             // Focus search input
             setTimeout(() => {
