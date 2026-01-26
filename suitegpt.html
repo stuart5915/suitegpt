@@ -3011,6 +3011,115 @@
             margin-bottom: 12px;
         }
 
+        /* How it Works View */
+        .factory-howitworks-content {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .factory-howitworks-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 24px;
+        }
+
+        .factory-howitworks-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 28px;
+            text-align: center;
+        }
+
+        .factory-howitworks-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+
+        .factory-howitworks-card h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 0 0 20px 0;
+            color: var(--text-primary);
+        }
+
+        .factory-howitworks-detail {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px;
+            background: var(--bg-dark);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+        }
+
+        .factory-howitworks-value {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--accent-primary);
+        }
+
+        .factory-howitworks-value.highlight {
+            color: #22c55e;
+        }
+
+        .factory-howitworks-note {
+            font-size: 0.85rem;
+            color: var(--text-tertiary);
+            margin: 16px 0 0 0;
+        }
+
+        /* Leaderboard View */
+        .factory-leaderboard-content {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .factory-leaderboard-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .factory-leaderboard-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
+
+        .factory-leaderboard-item:hover {
+            border-color: var(--accent-primary);
+            transform: translateX(4px);
+        }
+
+        .factory-leaderboard-rank {
+            font-size: 1.5rem;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .factory-leaderboard-name {
+            flex: 1;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .factory-leaderboard-credits {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+        }
+
         /* Factory Submit Modal */
         .factory-modal-overlay {
             position: fixed;
@@ -5607,63 +5716,16 @@
                             <button class="factory-main-tab" data-view="stream" onclick="switchFactoryMainView('stream')">
                                 📡 Stream
                             </button>
+                            <button class="factory-main-tab" data-view="howitworks" onclick="switchFactoryMainView('howitworks')">
+                                ❓ How it Works
+                            </button>
+                            <button class="factory-main-tab" data-view="leaderboard" onclick="switchFactoryMainView('leaderboard')">
+                                🏆 Leaderboard
+                            </button>
                         </div>
                     </div>
 
                     <div class="factory-view-content">
-                        <!-- Sidebar Panel -->
-                        <div class="factory-sidebar-panel">
-                            <div class="factory-sidebar-section factory-rep-explainer">
-                                <div class="factory-sidebar-title">How Voting Works</div>
-                                <div class="factory-rep-section">
-                                    <div class="factory-rep-header earn">
-                                        <span>💳</span> Get Credits
-                                    </div>
-                                    <div class="factory-rep-item">
-                                        <span class="factory-rep-value positive">1,000</span>
-                                        <span>credits per $1 USDC</span>
-                                    </div>
-                                </div>
-                                <div class="factory-rep-section">
-                                    <div class="factory-rep-header spend">
-                                        <span>🗳️</span> Spend Credits
-                                    </div>
-                                    <div class="factory-rep-item">
-                                        <span class="factory-rep-value cost">FREE</span>
-                                        <span>1st vote on any proposal</span>
-                                    </div>
-                                    <div class="factory-rep-item">
-                                        <span class="factory-rep-value cost">1→3→6</span>
-                                        <span>quadratic cost for more</span>
-                                    </div>
-                                </div>
-                                <div class="factory-rep-section" style="background: rgba(34, 197, 94, 0.1);">
-                                    <div class="factory-rep-header" style="color: #22c55e;">
-                                        <span>📝</span> Submit Proposals
-                                    </div>
-                                    <div class="factory-rep-item">
-                                        <span class="factory-rep-value positive">FREE</span>
-                                        <span>to submit any proposal</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="factory-sidebar-section">
-                                <div class="factory-sidebar-title">Your Stats</div>
-                                <div class="factory-stat-card">
-                                    <div class="factory-stat-label">Credits</div>
-                                    <div class="factory-stat-value" id="factoryUserCredits">0</div>
-                                </div>
-                            </div>
-
-                            <div class="factory-sidebar-section">
-                                <div class="factory-sidebar-title">🏆 Leaderboard</div>
-                                <div id="factoryLeaderboard">
-                                    <p style="color: var(--text-tertiary); font-size: 0.85rem;">Loading...</p>
-                                </div>
-                            </div>
-                        </div>
-
                         <!-- Proposals Area -->
                         <div class="factory-proposals-area">
                             <!-- Governance Main View -->
@@ -5741,6 +5803,56 @@
                                 <div class="factory-empty-state">
                                     <div class="factory-empty-icon">📡</div>
                                     <p>Real-time updates will appear here</p>
+                                </div>
+                            </div>
+
+                            <!-- How it Works View -->
+                            <div class="factory-main-view" id="factoryHowItWorksView" style="display: none;">
+                                <div class="factory-howitworks-content">
+                                    <h2 style="text-align: center; margin-bottom: 32px;">How Governance Works</h2>
+                                    <div class="factory-howitworks-cards">
+                                        <div class="factory-howitworks-card">
+                                            <div class="factory-howitworks-icon">💳</div>
+                                            <h3>Get Credits</h3>
+                                            <div class="factory-howitworks-detail">
+                                                <span class="factory-howitworks-value">1,000</span>
+                                                <span>credits per $1 USDC</span>
+                                            </div>
+                                            <p class="factory-howitworks-note">Buy credits on your Profile page</p>
+                                        </div>
+                                        <div class="factory-howitworks-card">
+                                            <div class="factory-howitworks-icon">🗳️</div>
+                                            <h3>Spend Credits</h3>
+                                            <div class="factory-howitworks-detail">
+                                                <span class="factory-howitworks-value highlight">FREE</span>
+                                                <span>1st vote on any proposal</span>
+                                            </div>
+                                            <div class="factory-howitworks-detail">
+                                                <span class="factory-howitworks-value">1→3→6</span>
+                                                <span>quadratic cost for more votes</span>
+                                            </div>
+                                            <p class="factory-howitworks-note">Credits spent = removed from circulation</p>
+                                        </div>
+                                        <div class="factory-howitworks-card">
+                                            <div class="factory-howitworks-icon">📝</div>
+                                            <h3>Submit Proposals</h3>
+                                            <div class="factory-howitworks-detail">
+                                                <span class="factory-howitworks-value highlight">FREE</span>
+                                                <span>to submit any proposal</span>
+                                            </div>
+                                            <p class="factory-howitworks-note">7 days to get moved to voting or removed</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Leaderboard View -->
+                            <div class="factory-main-view" id="factoryLeaderboardView" style="display: none;">
+                                <div class="factory-leaderboard-content">
+                                    <h2 style="text-align: center; margin-bottom: 32px;">🏆 Leaderboard</h2>
+                                    <div class="factory-leaderboard-list" id="factoryLeaderboardList">
+                                        <p style="text-align: center; color: var(--text-tertiary);">Loading...</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -6490,6 +6602,13 @@
             document.getElementById('factoryGovernanceView').style.display = view === 'governance' ? 'block' : 'none';
             document.getElementById('factoryAgentsView').style.display = view === 'agents' ? 'block' : 'none';
             document.getElementById('factoryStreamView').style.display = view === 'stream' ? 'block' : 'none';
+            document.getElementById('factoryHowItWorksView').style.display = view === 'howitworks' ? 'block' : 'none';
+            document.getElementById('factoryLeaderboardView').style.display = view === 'leaderboard' ? 'block' : 'none';
+
+            // Load leaderboard data when switching to that view
+            if (view === 'leaderboard') {
+                loadFactoryLeaderboard();
+            }
         }
 
         function switchFactorySection(section) {
@@ -7110,20 +7229,20 @@
         }
 
         function renderFactoryLeaderboard(leaders) {
-            const container = document.getElementById('factoryLeaderboard');
+            const container = document.getElementById('factoryLeaderboardList');
             if (!container) return;
 
             if (!leaders || leaders.length === 0) {
-                container.innerHTML = '<p style="color: var(--text-tertiary); font-size: 0.85rem;">No leaders yet</p>';
+                container.innerHTML = '<p style="text-align: center; color: var(--text-tertiary);">No leaders yet</p>';
                 return;
             }
 
             const medals = ['🥇', '🥈', '🥉'];
-            container.innerHTML = leaders.slice(0, 5).map((user, i) => `
-                <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--bg-card); border-radius: 8px; margin-bottom: 8px;">
-                    <span style="font-size: 1.2rem;">${medals[i] || (i + 1)}</span>
-                    <span style="flex: 1; font-size: 0.85rem; color: var(--text-primary);">${escapeFactoryHtml(user.display_name || 'Anonymous')}</span>
-                    <span style="font-weight: 700; color: var(--accent-primary);">${user.reputation || 0}</span>
+            container.innerHTML = leaders.map((user, i) => `
+                <div class="factory-leaderboard-item">
+                    <span class="factory-leaderboard-rank">${medals[i] || '#' + (i + 1)}</span>
+                    <span class="factory-leaderboard-name">${escapeFactoryHtml(user.display_name || 'Anonymous')}</span>
+                    <span class="factory-leaderboard-credits">${user.reputation || 0} credits</span>
                 </div>
             `).join('');
         }
