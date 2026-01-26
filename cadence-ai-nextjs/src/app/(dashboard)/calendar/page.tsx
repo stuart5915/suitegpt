@@ -1,5 +1,7 @@
 'use client'
 
+// v1.1.0 - 3-button split image generation (template, AI background, combine)
+
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
