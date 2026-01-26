@@ -6579,26 +6579,40 @@
         }
 
         function getFactoryCurrentUser() {
-            // Check for supabase auth first
-            if (currentSupabaseUser) {
-                return {
-                    id: currentSupabaseUser.id,
-                    supabase_id: currentSupabaseUser.id,
-                    email: currentSupabaseUser.email,
-                    display_name: currentSupabaseUser.user_metadata?.full_name || currentSupabaseUser.email?.split('@')[0] || 'User',
-                    reputation: 0
-                };
+            // Check for Supabase auth via localStorage token
+            const sbKey = 'sb-rdsmdywbdiskxknluiym-auth-token';
+            const sbToken = localStorage.getItem(sbKey);
+            if (sbToken) {
+                try {
+                    const session = JSON.parse(sbToken);
+                    const user = session?.user;
+                    if (user) {
+                        return {
+                            id: user.id,
+                            supabase_id: user.id,
+                            email: user.email,
+                            display_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+                            reputation: 0
+                        };
+                    }
+                } catch (e) {
+                    console.error('[Factory] Error parsing Supabase token:', e);
+                }
             }
             // Check for telegram
             const tgUser = localStorage.getItem('telegram_user');
             if (tgUser) {
-                const user = JSON.parse(tgUser);
-                return {
-                    id: user.id?.toString(),
-                    telegram_id: user.id?.toString(),
-                    display_name: user.username || user.first_name,
-                    reputation: 0
-                };
+                try {
+                    const user = JSON.parse(tgUser);
+                    return {
+                        id: user.id?.toString(),
+                        telegram_id: user.id?.toString(),
+                        display_name: user.username || user.first_name,
+                        reputation: 0
+                    };
+                } catch (e) {
+                    console.error('[Factory] Error parsing telegram user:', e);
+                }
             }
             // Check for wallet
             const wallet = localStorage.getItem('connectedWallet');
