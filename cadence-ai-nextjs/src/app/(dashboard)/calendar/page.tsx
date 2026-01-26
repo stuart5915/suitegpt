@@ -23,7 +23,9 @@ import {
     ImagePlus,
     Layout,
     Layers,
-    Wand2
+    Wand2,
+    Upload,
+    Image as ImageIcon
 } from 'lucide-react'
 import { Project, PLATFORM_CONFIG } from '@/lib/supabase/types'
 import { PlatformIcon, PLATFORM_NAMES } from '@/components/ui/PlatformIcon'
@@ -136,6 +138,10 @@ function CalendarPageContent() {
 
     // Lightbox state for viewing full images
     const [lightboxImage, setLightboxImage] = useState<{ url: string; label: string } | null>(null)
+
+    // Day images state (background images per day)
+    const [dayImages, setDayImages] = useState<Record<string, string>>({}) // date -> imageUrl
+    const [uploadingForDay, setUploadingForDay] = useState<string | null>(null)
 
     // Generate image for a post using AI (legacy - combined approach)
     const generateImageForPost = async (post: ScheduledPost) => {
@@ -422,6 +428,7 @@ function CalendarPageContent() {
         }
         loadQueuePosts()
         loadAutomationConfigs()
+        loadDayImages()
     }, [selectedProject, currentDate])
 
     // Load automation configs for placeholders
@@ -489,6 +496,85 @@ function CalendarPageContent() {
             setQueuePosts(data.posts || [])
         } catch (err) {
             console.error('Failed to load queue posts:', err)
+        }
+    }
+
+    // Load day images
+    const loadDayImages = async () => {
+        try {
+            const response = await fetch('/api/day-image')
+            const data = await response.json()
+            if (data.dayImages) {
+                const imageMap: Record<string, string> = {}
+                data.dayImages.forEach((di: { date: string; image_url: string }) => {
+                    imageMap[di.date] = di.image_url
+                })
+                setDayImages(imageMap)
+            }
+        } catch (err) {
+            console.error('Failed to load day images:', err)
+        }
+    }
+
+    // Upload image for a day
+    const uploadDayImage = async (date: string, file: File) => {
+        setUploadingForDay(date)
+        try {
+            const formData = new FormData()
+            formData.append('file', file)
+            formData.append('date', date)
+
+            const response = await fetch('/api/day-image', {
+                method: 'POST',
+                body: formData
+            })
+            const data = await response.json()
+
+            if (data.success && data.imageUrl) {
+                // Update local day images state
+                setDayImages(prev => ({ ...prev, [date]: data.imageUrl }))
+
+                // Update all posts for this day with the new background
+                setQueuePosts(prev => prev.map(p => {
+                    const postDate = p.scheduled_for ? p.scheduled_for.split('T')[0] : null
+                    if (postDate === date) {
+                        return { ...p, ai_background_url: data.imageUrl }
+                    }
+                    return p
+                }))
+            } else {
+                alert('Failed to upload image: ' + (data.error || 'Unknown error'))
+            }
+        } catch (err) {
+            console.error('Failed to upload day image:', err)
+            alert('Failed to upload image')
+        } finally {
+            setUploadingForDay(null)
+        }
+    }
+
+    // Remove day image
+    const removeDayImage = async (date: string) => {
+        try {
+            await fetch(`/api/day-image?date=${date}`, { method: 'DELETE' })
+
+            // Update local state
+            setDayImages(prev => {
+                const updated = { ...prev }
+                delete updated[date]
+                return updated
+            })
+
+            // Clear background from posts for this day
+            setQueuePosts(prev => prev.map(p => {
+                const postDate = p.scheduled_for ? p.scheduled_for.split('T')[0] : null
+                if (postDate === date) {
+                    return { ...p, ai_background_url: null }
+                }
+                return p
+            }))
+        } catch (err) {
+            console.error('Failed to remove day image:', err)
         }
     }
 
@@ -772,11 +858,66 @@ function CalendarPageContent() {
                                     setDraggedPost(null)
                                 }}
                             >
-                                {/* Date Number */}
-                                <div className={`text-sm font-medium mb-1 ${day.isToday ? 'text-[var(--primary)] font-bold' :
-                                    day.isCurrentMonth ? 'text-[var(--foreground)]' : 'text-[var(--foreground-muted)]'
-                                    }`}>
-                                    {new Date(day.date).getDate()}
+                                {/* Date Number + Day Image Drop Zone */}
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className={`text-sm font-medium ${day.isToday ? 'text-[var(--primary)] font-bold' :
+                                        day.isCurrentMonth ? 'text-[var(--foreground)]' : 'text-[var(--foreground-muted)]'
+                                        }`}>
+                                        {new Date(day.date).getDate()}
+                                    </span>
+
+                                    {/* Day Image Upload/Preview */}
+                                    {day.isCurrentMonth && (
+                                        <div className="relative">
+                                            {dayImages[day.date] ? (
+                                                <div className="group relative">
+                                                    <img
+                                                        src={dayImages[day.date]}
+                                                        alt="Day background"
+                                                        className="w-6 h-6 rounded object-cover cursor-pointer border border-purple-500/50"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            setLightboxImage({ url: dayImages[day.date], label: `Background for ${day.date}` })
+                                                        }}
+                                                    />
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            removeDayImage(day.date)
+                                                        }}
+                                                        className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        title="Remove day image"
+                                                    >
+                                                        <X className="w-2 h-2 text-white" />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <label
+                                                    className="w-6 h-6 rounded border border-dashed border-[var(--surface-border)] flex items-center justify-center cursor-pointer hover:border-purple-500 hover:bg-purple-500/10 transition-colors"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    title="Upload background image for this day"
+                                                >
+                                                    {uploadingForDay === day.date ? (
+                                                        <Loader2 className="w-3 h-3 animate-spin text-purple-400" />
+                                                    ) : (
+                                                        <ImageIcon className="w-3 h-3 text-[var(--foreground-muted)]" />
+                                                    )}
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="hidden"
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0]
+                                                            if (file) {
+                                                                uploadDayImage(day.date, file)
+                                                            }
+                                                            e.target.value = ''
+                                                        }}
+                                                    />
+                                                </label>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Automation Placeholders */}
