@@ -48,6 +48,7 @@
             <div class="nav-links">
                 <a href="https://suitegpt.app">SuiteGPT</a>
                 <a href="/suite-shell.html">Apps</a>
+                <a href="/learn/articles.html">Learn</a>
                 <a href="/docs/">Docs</a>
                 <a href="/factory.html">Dashboard</a>
                 <a href="/profile.html">Profile</a>
@@ -79,6 +80,7 @@
         <div class="mobile-menu" id="mobileMenu">
             <a href="https://suitegpt.app">SuiteGPT</a>
             <a href="/suite-shell.html">Apps</a>
+            <a href="/learn/articles.html">Learn</a>
             <a href="/docs/">Docs</a>
             <a href="/factory.html">Dashboard</a>
             <a href="/profile.html">Profile</a>
