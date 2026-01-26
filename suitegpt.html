@@ -810,15 +810,60 @@
             color: var(--accent-color);
         }
 
-        .credits-modal-bonus-link {
+        .credits-modal-bonus-toggle {
             font-size: 0.8rem;
             color: var(--accent-color);
-            text-decoration: none;
+            background: none;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
             transition: opacity 0.2s;
         }
 
-        .credits-modal-bonus-link:hover {
+        .credits-modal-bonus-toggle:hover {
             opacity: 0.8;
+        }
+
+        .credits-modal-bonus-toggle .toggle-arrow {
+            transition: transform 0.3s;
+        }
+
+        .credits-modal-bonus.expanded .toggle-arrow {
+            transform: rotate(180deg);
+        }
+
+        .credits-modal-bonus-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, margin-top 0.3s ease;
+            margin-top: 0;
+        }
+
+        .credits-modal-bonus.expanded .credits-modal-bonus-content {
+            max-height: 200px;
+            margin-top: 12px;
+        }
+
+        .credits-modal-bonus-content p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin: 0 0 10px 0;
+        }
+
+        .credits-modal-docs-link {
+            font-size: 0.75rem;
+            color: var(--accent-color);
+            text-decoration: none;
+            opacity: 0.9;
+            transition: opacity 0.2s;
+        }
+
+        .credits-modal-docs-link:hover {
+            opacity: 1;
         }
 
         /* Withdrawal Modal */
@@ -5330,14 +5375,20 @@
                 </button>
             </div>
 
-            <div class="credits-modal-bonus">
+            <div class="credits-modal-bonus" id="bonusCreditsSection">
                 <div class="credits-modal-bonus-header">
                     <span>Bonus Credits</span>
                     <span class="credits-modal-bonus-amount">0</span>
                 </div>
-                <a href="/learn/bonus-credits.html" class="credits-modal-bonus-link" onclick="closeCreditsModal()">
-                    Learn more <span>→</span>
-                </a>
+                <button class="credits-modal-bonus-toggle" onclick="toggleBonusExplanation()">
+                    Learn more <span class="toggle-arrow">↓</span>
+                </button>
+                <div class="credits-modal-bonus-content" id="bonusExplanation">
+                    <p>Bonus Credits are earned through referrals, community contributions, and special promotions. They work just like regular credits but cannot be withdrawn - only used for AI interactions.</p>
+                    <a href="/learn/bonus-credits.html" class="credits-modal-docs-link" onclick="closeCreditsModal()">
+                        Read full documentation →
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -7158,6 +7209,16 @@
             const overlay = document.getElementById('creditsModalOverlay');
             overlay.classList.remove('active');
             document.body.style.overflow = '';
+            // Reset expanded state when closing
+            const bonusSection = document.getElementById('bonusCreditsSection');
+            if (bonusSection) bonusSection.classList.remove('expanded');
+        }
+
+        function toggleBonusExplanation() {
+            const bonusSection = document.getElementById('bonusCreditsSection');
+            if (bonusSection) {
+                bonusSection.classList.toggle('expanded');
+            }
         }
 
         // ========================
