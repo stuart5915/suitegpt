@@ -3265,6 +3265,117 @@
             }
         }
 
+        /* === MY REQUESTS PANEL === */
+        .my-requests-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .my-requests-header h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0 0 8px 0;
+        }
+
+        .my-requests-header p {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        .my-requests-empty {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .my-requests-empty-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 16px;
+            background: var(--bg-elevated);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .my-requests-empty-icon svg {
+            width: 32px;
+            height: 32px;
+            color: var(--text-tertiary);
+        }
+
+        .my-requests-empty h4 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0 0 8px 0;
+        }
+
+        .my-requests-empty p {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            margin: 0 0 24px 0;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .my-requests-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .my-request-item {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .my-request-status {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .my-request-status.pending {
+            background: #f59e0b;
+        }
+
+        .my-request-status.approved {
+            background: #22c55e;
+        }
+
+        .my-request-status.rejected {
+            background: #ef4444;
+        }
+
+        .my-request-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .my-request-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .my-request-meta {
+            font-size: 0.85rem;
+            color: var(--text-tertiary);
+        }
+
         /* === FACTORY/GOVERNANCE VIEW === */
         .factory-view {
             display: none;
@@ -5974,15 +6085,6 @@
                         </span>
                         <span>Chat History</span>
                     </button>
-                    <button class="sidebar-item" id="myRequestsBtn">
-                        <span class="sidebar-item-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </span>
-                        <span>My Requests</span>
-                        <span class="sidebar-item-badge" style="display: none;">0</span>
-                    </button>
                     <button class="sidebar-item" id="importHistoryBtn">
                         <span class="sidebar-item-icon">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -6281,6 +6383,12 @@
                                 <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
                             </svg>
                             Earnings
+                        </button>
+                        <button class="creator-dashboard-tab" data-tab="my-requests" onclick="switchDashboardTab('my-requests')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            My Requests
                         </button>
                     </div>
 
@@ -6629,6 +6737,34 @@
                             <p>Track growth in real-time</p>
                         </div>
                     </div>
+                    </div>
+
+                    <!-- My Requests Tab Panel -->
+                    <div class="creator-dashboard-panel" id="dashboardPanelMyRequests">
+                        <div class="my-requests-header">
+                            <h3>My Requests</h3>
+                            <p>Track your app proposals and feature requests</p>
+                        </div>
+
+                        <div class="my-requests-empty" id="myRequestsEmpty">
+                            <div class="my-requests-empty-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <h4>No requests yet</h4>
+                            <p>When you submit app proposals or feature requests, they'll appear here so you can track their progress.</p>
+                            <button class="your-apps-create-btn" onclick="switchDashboardTab('create')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 5v14M5 12h14" stroke-linecap="round"/>
+                                </svg>
+                                Create Something
+                            </button>
+                        </div>
+
+                        <div class="my-requests-list" id="myRequestsList" style="display: none;">
+                            <!-- Requests will be populated here -->
+                        </div>
                     </div>
                 </section>
 
@@ -7662,7 +7798,8 @@
             const panelMap = {
                 'your-apps': 'dashboardPanelYourApps',
                 'create': 'dashboardPanelCreate',
-                'earnings': 'dashboardPanelEarnings'
+                'earnings': 'dashboardPanelEarnings',
+                'my-requests': 'dashboardPanelMyRequests'
             };
 
             Object.entries(panelMap).forEach(([key, panelId]) => {
@@ -10994,7 +11131,6 @@
         const sidebarOverlay = document.getElementById('sidebarOverlay');
         const mobileMenuBtn = document.getElementById('mobileMenuBtn');
         const importHistoryBtn = document.getElementById('importHistoryBtn');
-        const myRequestsBtn = document.getElementById('myRequestsBtn');
         const chatHistoryBtn = document.getElementById('chatHistoryBtn');
 
         // State
@@ -11024,14 +11160,6 @@
             importHistoryBtn.addEventListener('click', () => {
                 document.getElementById('importModal').classList.add('active');
                 resetImportModal();
-                sidebar.classList.remove('open');
-                sidebarOverlay.classList.remove('active');
-            });
-        }
-
-        if (myRequestsBtn) {
-            myRequestsBtn.addEventListener('click', () => {
-                alert('My Requests feature coming soon!');
                 sidebar.classList.remove('open');
                 sidebarOverlay.classList.remove('active');
             });
