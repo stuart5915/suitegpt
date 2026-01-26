@@ -1172,46 +1172,7 @@
         }
 
         /* === LOGGED OUT STATE === */
-        body.logged-out .sidebar {
-            display: none;
-        }
-
-        body.logged-out .sidebar-overlay {
-            display: none !important;
-        }
-
-        body.logged-out .main-content {
-            margin-left: 0;
-            width: 100%;
-            max-width: 100vw;
-            overflow-x: hidden;
-        }
-
-        body.logged-out .bg-gradient {
-            left: 0;
-        }
-
-        body.logged-out .welcome-state {
-            width: 100%;
-            max-width: 100vw;
-            box-sizing: border-box;
-            overflow-x: hidden;
-        }
-
-        body.logged-out .chat-area {
-            width: 100%;
-            max-width: 100vw;
-            overflow-x: hidden;
-        }
-
-        body.logged-out .input-container {
-            max-width: calc(100% - 32px);
-            margin: 0 auto;
-        }
-
-        body.logged-out .mobile-header {
-            display: none !important;
-        }
+        /* Guests see full sidebar - no hiding */
 
         /* Auth Header for logged-out state */
         .auth-header {
@@ -1230,8 +1191,9 @@
             justify-content: space-between;
         }
 
+        /* Auth header hidden - guests use sidebar profile instead */
         body.logged-out .auth-header {
-            display: flex;
+            display: none;
         }
 
         .auth-header-logo {
@@ -1299,87 +1261,7 @@
             box-shadow: 0 6px 20px var(--accent-glow);
         }
 
-        body.logged-out .welcome-state {
-            padding-top: 100px;
-        }
-
-        @media (max-width: 768px) {
-            .auth-header {
-                padding: 0 16px;
-                padding-left: max(16px, env(safe-area-inset-left));
-                padding-right: max(16px, env(safe-area-inset-right));
-                height: 56px;
-            }
-
-            .auth-header-logo-text {
-                display: none;
-            }
-
-            .auth-btn {
-                padding: 8px 16px;
-                font-size: 0.85rem;
-            }
-
-            body.logged-out .welcome-state {
-                padding-top: 72px;
-                padding-left: max(16px, env(safe-area-inset-left));
-                padding-right: max(16px, env(safe-area-inset-right));
-            }
-
-            body.logged-out .use-cases-section {
-                display: block !important;
-                visibility: visible !important;
-                opacity: 1 !important;
-                padding-left: max(12px, env(safe-area-inset-left));
-                padding-right: max(12px, env(safe-area-inset-right));
-            }
-
-            body.logged-out .use-cases-grid {
-                display: grid !important;
-                visibility: visible !important;
-                min-height: 100px;
-            }
-
-            body.logged-out .use-case-card {
-                display: block !important;
-                visibility: visible !important;
-            }
-
-            body.logged-out .chat-area {
-                display: flex !important;
-                flex-direction: column;
-            }
-
-            body.logged-out .welcome-state {
-                display: flex !important;
-                flex-direction: column;
-                align-items: center;
-            }
-
-            body.logged-out .input-container {
-                max-width: 100%;
-                padding: 0 12px;
-            }
-        }
-
-        @media (max-width: 375px) {
-            .auth-header {
-                padding: 0 12px;
-            }
-
-            .auth-btn {
-                padding: 6px 12px;
-                font-size: 0.8rem;
-            }
-
-            body.logged-out .welcome-state {
-                padding-top: 64px;
-            }
-
-            body.logged-out .welcome-title {
-                font-size: 1.2rem;
-            }
-        }
+        /* No extra padding needed - auth header hidden, sidebar visible */
 
         /* === CONNECT MODAL === */
         .connect-modal-overlay {
@@ -5660,8 +5542,8 @@
                 }
             } else {
                 document.body.classList.add('logged-out');
-                if (profileName) profileName.textContent = 'Guest';
-                if (profileStatus) profileStatus.textContent = 'Not signed in';
+                if (profileName) profileName.textContent = 'Get Started';
+                if (profileStatus) profileStatus.textContent = 'Connect to save progress';
                 if (creditsSection) creditsSection.style.display = 'none';
                 if (profileAvatar) {
                     profileAvatar.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -5803,7 +5685,7 @@
 
             let html = '';
 
-            // Wallet status
+            // Wallet status - always show connect option if not connected
             if (wallet) {
                 const shortWallet = wallet.slice(0, 6) + '...' + wallet.slice(-4);
                 html += `
@@ -5812,11 +5694,11 @@
                         <span class="linked-account-value">${shortWallet}</span>
                     </button>
                 `;
-            } else if (supabaseUser || telegramUser) {
+            } else {
                 html += `<button class="link-account-btn" onclick="connectWalletToLink()">+ Connect Wallet</button>`;
             }
 
-            // Google/Email status
+            // Google/Email status - always show connect option if not connected
             if (supabaseUser) {
                 const displayEmail = supabaseUser.email?.length > 20
                     ? supabaseUser.email.slice(0, 17) + '...'
@@ -5827,11 +5709,11 @@
                         <span class="linked-account-value">${displayEmail}</span>
                     </button>
                 `;
-            } else if (wallet || telegramUser) {
+            } else {
                 html += `<button class="link-account-btn" onclick="linkGoogleAccount()">+ Link Google</button>`;
             }
 
-            // Telegram status
+            // Telegram status - always show connect option if not connected
             if (telegramUser) {
                 const tgDisplay = telegramUser.username ? `@${telegramUser.username}` : telegramUser.first_name;
                 html += `
@@ -5840,14 +5722,14 @@
                         <span class="linked-account-value">${tgDisplay}</span>
                     </button>
                 `;
-            } else if (wallet) {
+            } else {
                 html += `<button class="link-account-btn" onclick="linkTelegramAccount()">+ Link Telegram</button>`;
             }
 
-            // Show section only when logged in
+            // Always show the linked accounts section (guests can connect)
             const section = document.getElementById('linkedAccountsSection');
             if (section) {
-                section.style.display = (wallet || supabaseUser || telegramUser) ? 'block' : 'none';
+                section.style.display = 'block';
             }
 
             container.innerHTML = html || '<div class="linked-account" style="color:var(--text-tertiary)">No accounts linked</div>';
