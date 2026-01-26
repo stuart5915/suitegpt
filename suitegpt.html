@@ -2286,6 +2286,78 @@
             }
         }
 
+        /* Apps View Tier Sections */
+        .apps-view-tier {
+            margin-bottom: 32px;
+        }
+
+        .apps-view-tier:last-child {
+            margin-bottom: 0;
+        }
+
+        .apps-view-tier-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .apps-view-tier-icon {
+            font-size: 1.5rem;
+        }
+
+        .apps-view-tier-info {
+            flex: 1;
+        }
+
+        .apps-view-tier-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .apps-view-tier-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-tertiary);
+        }
+
+        .apps-view-tier-count {
+            background: var(--bg-elevated);
+            color: var(--text-secondary);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .apps-view-tier-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .apps-view-tier-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 12px;
+            }
+
+            .apps-view-tier-header {
+                gap: 10px;
+            }
+
+            .apps-view-tier-icon {
+                font-size: 1.25rem;
+            }
+
+            .apps-view-tier-title {
+                font-size: 1rem;
+            }
+        }
+
         /* === CREATOR DASHBOARD === */
         .creator-dashboard {
             display: none;
@@ -10596,28 +10668,83 @@
             if (chatArea) chatArea.scrollTop = 0;
             closeMobileSidebar();
 
-            // Populate apps grid
-            grid.innerHTML = '';
+            // Categorize apps by tier
+            const tools = [];
+            const apps = [];
+            const solutions = [];
+
             Object.entries(SUITE_APPS).forEach(([key, app]) => {
+                const tier = getAppTier(key);
+                const appData = { key, ...app };
+                if (tier === 'tool') tools.push(appData);
+                else if (tier === 'solution') solutions.push(appData);
+                else apps.push(appData);
+            });
+
+            // Helper to create app item
+            const createAppItem = (appData) => {
                 const item = document.createElement('div');
                 item.className = 'apps-view-item';
-                item.dataset.name = app.name.toLowerCase();
-                item.dataset.desc = app.description.toLowerCase();
-                item.onclick = () => launchApp(key, app.url, app.name);
+                item.dataset.name = appData.name.toLowerCase();
+                item.dataset.desc = appData.description.toLowerCase();
+                item.dataset.tier = getAppTier(appData.key);
+                item.onclick = () => launchApp(appData.key, appData.url, appData.name);
 
-                const iconHtml = app.iconUrl
-                    ? `<img src="${app.iconUrl}" alt="${app.name}">`
-                    : app.icon || '📱';
+                const iconHtml = appData.iconUrl
+                    ? `<img src="${appData.iconUrl}" alt="${appData.name}">`
+                    : appData.icon || '📱';
 
                 item.innerHTML = `
-                    <div class="apps-view-item-icon" style="background: ${app.iconBg}">
+                    <div class="apps-view-item-icon" style="background: ${appData.iconBg}">
                         ${iconHtml}
                     </div>
-                    <div class="apps-view-item-name">${app.name}</div>
-                    <div class="apps-view-item-desc">${app.description}</div>
+                    <div class="apps-view-item-name">${appData.name}</div>
+                    <div class="apps-view-item-desc">${appData.description}</div>
                 `;
-                grid.appendChild(item);
-            });
+                return item;
+            };
+
+            // Helper to create tier section
+            const createTierSection = (icon, title, subtitle, appsList, tierId) => {
+                if (appsList.length === 0) return null;
+
+                const section = document.createElement('div');
+                section.className = 'apps-view-tier';
+                section.id = `appsViewTier${tierId}`;
+
+                const header = document.createElement('div');
+                header.className = 'apps-view-tier-header';
+                header.innerHTML = `
+                    <span class="apps-view-tier-icon">${icon}</span>
+                    <div class="apps-view-tier-info">
+                        <h3 class="apps-view-tier-title">${title}</h3>
+                        <span class="apps-view-tier-subtitle">${subtitle}</span>
+                    </div>
+                    <span class="apps-view-tier-count">${appsList.length}</span>
+                `;
+
+                const tierGrid = document.createElement('div');
+                tierGrid.className = 'apps-view-tier-grid';
+
+                appsList.forEach(appData => {
+                    tierGrid.appendChild(createAppItem(appData));
+                });
+
+                section.appendChild(header);
+                section.appendChild(tierGrid);
+                return section;
+            };
+
+            // Populate grid with tier sections
+            grid.innerHTML = '';
+
+            const toolsSection = createTierSection('🔧', 'Tools', 'Quick utilities', tools, 'Tools');
+            const appsSection = createTierSection('📱', 'Apps', 'Full-featured applications', apps, 'Apps');
+            const solutionsSection = createTierSection('🏢', 'Solutions', 'Business & enterprise', solutions, 'Solutions');
+
+            if (toolsSection) grid.appendChild(toolsSection);
+            if (appsSection) grid.appendChild(appsSection);
+            if (solutionsSection) grid.appendChild(solutionsSection);
 
             // Focus search input
             setTimeout(() => {
@@ -10665,11 +10792,19 @@
             const items = document.querySelectorAll('.apps-view-item');
             const lower = query.toLowerCase();
 
+            // Filter individual items
             items.forEach(item => {
                 const name = item.dataset.name;
                 const desc = item.dataset.desc;
                 const matches = name.includes(lower) || desc.includes(lower);
                 item.style.display = matches ? '' : 'none';
+            });
+
+            // Hide empty tier sections
+            const tierSections = document.querySelectorAll('.apps-view-tier');
+            tierSections.forEach(section => {
+                const visibleItems = section.querySelectorAll('.apps-view-item:not([style*="display: none"])');
+                section.style.display = visibleItems.length > 0 ? '' : 'none';
             });
         }
 
