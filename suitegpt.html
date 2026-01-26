@@ -7298,13 +7298,13 @@
                             Back
                         </button>
                         <div class="profile-dropdown-divider"></div>
-                        <a href="https://getsuite.app/docs/" target="_blank" class="profile-dropdown-item">
+                        <button onclick="openDocsView()" class="profile-dropdown-item">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
                                 <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
                             </svg>
                             Documentation
-                        </a>
+                        </button>
                         <button onclick="openLearnView()" class="profile-dropdown-item">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
@@ -7681,6 +7681,70 @@
                         <div class="learn-article-reader-content" id="learnArticleContent">
                             <!-- Article content loads here -->
                         </div>
+                    </div>
+                </section>
+
+                <!-- Inline Docs View -->
+                <section class="learn-view" id="docsView">
+                    <div class="learn-view-header">
+                        <button class="learn-view-back" onclick="closeDocsView()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M15 18l-6-6 6-6"/>
+                            </svg>
+                            Back
+                        </button>
+                        <h2 class="learn-view-title">Documentation</h2>
+                    </div>
+                    <p class="learn-view-subtitle">Guides and references for using SUITE.</p>
+
+                    <div class="learn-articles-grid">
+                        <a href="https://getsuite.app/docs/suitegpt-guide.html" target="_blank" class="learn-article-card">
+                            <div class="learn-article-content">
+                                <div class="learn-article-title">SuiteGPT Guide</div>
+                                <p class="learn-article-desc">Learn how to use SuiteGPT to find, change, or build any app you need.</p>
+                            </div>
+                            <div class="learn-article-arrow">→</div>
+                        </a>
+
+                        <a href="https://getsuite.app/docs/earning.html" target="_blank" class="learn-article-card">
+                            <div class="learn-article-content">
+                                <div class="learn-article-title">Earning on SUITE</div>
+                                <p class="learn-article-desc">How to earn credits and rewards by participating in the ecosystem.</p>
+                            </div>
+                            <div class="learn-article-arrow">→</div>
+                        </a>
+
+                        <a href="https://getsuite.app/docs/vault.html" target="_blank" class="learn-article-card">
+                            <div class="learn-article-content">
+                                <div class="learn-article-title">The Vault</div>
+                                <p class="learn-article-desc">Deposit crypto, earn yield, and use apps for free forever.</p>
+                            </div>
+                            <div class="learn-article-arrow">→</div>
+                        </a>
+
+                        <a href="https://getsuite.app/docs/app-operators.html" target="_blank" class="learn-article-card">
+                            <div class="learn-article-content">
+                                <div class="learn-article-title">App Operators</div>
+                                <p class="learn-article-desc">Become an operator and help run SUITE apps.</p>
+                            </div>
+                            <div class="learn-article-arrow">→</div>
+                        </a>
+
+                        <a href="https://getsuite.app/docs/governance.html" target="_blank" class="learn-article-card">
+                            <div class="learn-article-content">
+                                <div class="learn-article-title">Governance</div>
+                                <p class="learn-article-desc">How community voting and proposals work in the Factory.</p>
+                            </div>
+                            <div class="learn-article-arrow">→</div>
+                        </a>
+
+                        <a href="https://getsuite.app/docs/" target="_blank" class="learn-article-card">
+                            <div class="learn-article-content">
+                                <div class="learn-article-title">View All Docs</div>
+                                <p class="learn-article-desc">Browse the complete documentation on getsuite.app.</p>
+                            </div>
+                            <div class="learn-article-arrow">→</div>
+                        </a>
                     </div>
                 </section>
 
@@ -11428,6 +11492,7 @@
             const creatorDashboard = document.getElementById('creatorDashboard');
             const factoryView = document.getElementById('factoryView');
             const learnView = document.getElementById('learnView');
+            const docsView = document.getElementById('docsView');
 
             // Clear chat
             if (chatMessages) chatMessages.innerHTML = '';
@@ -11442,6 +11507,7 @@
             if (creatorDashboard) creatorDashboard.classList.remove('active');
             if (factoryView) factoryView.classList.remove('active');
             if (learnView) learnView.classList.remove('active');
+            if (docsView) docsView.classList.remove('active');
 
             // Also hide article reader if open
             hideArticle();
@@ -12871,6 +12937,7 @@
             const creatorDashboard = document.getElementById('creatorDashboard');
             const factoryView = document.getElementById('factoryView');
             const learnView = document.getElementById('learnView');
+            const docsView = document.getElementById('docsView');
             const chatArea = document.querySelector('.chat-area');
 
             // Hide all other views
@@ -12879,6 +12946,7 @@
             if (appsView) appsView.classList.remove('active');
             if (creatorDashboard) creatorDashboard.classList.remove('active');
             if (factoryView) factoryView.classList.remove('active');
+            if (docsView) docsView.classList.remove('active');
 
             // Show learn view
             if (learnView) learnView.classList.add('active');
@@ -12901,6 +12969,49 @@
 
             // Also hide article reader if open
             hideArticle();
+        }
+
+        // Docs View functions
+        function openDocsView() {
+            // Close the dropdown
+            closeProfileDropdown();
+
+            // Get elements
+            const welcomeState = document.getElementById('welcomeState');
+            const useCasesSection = document.getElementById('useCasesSection');
+            const appsView = document.getElementById('appsView');
+            const creatorDashboard = document.getElementById('creatorDashboard');
+            const factoryView = document.getElementById('factoryView');
+            const learnView = document.getElementById('learnView');
+            const docsView = document.getElementById('docsView');
+            const chatArea = document.querySelector('.chat-area');
+
+            // Hide all other views
+            if (welcomeState) welcomeState.style.display = 'none';
+            if (useCasesSection) useCasesSection.style.display = 'none';
+            if (appsView) appsView.classList.remove('active');
+            if (creatorDashboard) creatorDashboard.classList.remove('active');
+            if (factoryView) factoryView.classList.remove('active');
+            if (learnView) learnView.classList.remove('active');
+
+            // Show docs view
+            if (docsView) docsView.classList.add('active');
+
+            // Scroll to top
+            if (chatArea) chatArea.scrollTop = 0;
+        }
+
+        function closeDocsView() {
+            const welcomeState = document.getElementById('welcomeState');
+            const useCasesSection = document.getElementById('useCasesSection');
+            const docsView = document.getElementById('docsView');
+
+            // Hide docs view
+            if (docsView) docsView.classList.remove('active');
+
+            // Show welcome state
+            if (welcomeState) welcomeState.style.display = '';
+            if (useCasesSection) useCasesSection.style.display = '';
         }
 
         // Article content database
