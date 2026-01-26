@@ -128,6 +128,9 @@ function CalendarPageContent() {
     const [generatingAiBackgroundFor, setGeneratingAiBackgroundFor] = useState<string | null>(null)
     const [combiningImagesFor, setCombiningImagesFor] = useState<string | null>(null)
 
+    // Lightbox state for viewing full images
+    const [lightboxImage, setLightboxImage] = useState<{ url: string; label: string } | null>(null)
+
     // Generate image for a post using AI (legacy - combined approach)
     const generateImageForPost = async (post: ScheduledPost) => {
         setGeneratingImageFor(post.id)
@@ -957,7 +960,10 @@ function CalendarPageContent() {
 
                                         {/* Image preview if available */}
                                         {hasImage && (
-                                            <div className="mb-3 rounded-lg overflow-hidden border border-[var(--surface-border)]">
+                                            <div
+                                                className="mb-3 rounded-lg overflow-hidden border border-[var(--surface-border)] cursor-pointer hover:border-[var(--primary)] transition-colors"
+                                                onClick={() => setLightboxImage({ url: post.images[0], label: 'Post Image' })}
+                                            >
                                                 <img
                                                     src={post.images[0]}
                                                     alt="Post image"
@@ -1036,7 +1042,10 @@ function CalendarPageContent() {
                                         {(post.template_image_url || post.ai_background_url || post.combined_image_url) && (
                                             <div className="flex gap-2 mb-2 flex-wrap">
                                                 {post.template_image_url && (
-                                                    <div className="relative group">
+                                                    <div
+                                                        className="relative group cursor-pointer hover:scale-105 transition-transform"
+                                                        onClick={() => setLightboxImage({ url: post.template_image_url!, label: 'Template' })}
+                                                    >
                                                         <img
                                                             src={post.template_image_url}
                                                             alt="Template"
@@ -1046,7 +1055,10 @@ function CalendarPageContent() {
                                                     </div>
                                                 )}
                                                 {post.ai_background_url && (
-                                                    <div className="relative group">
+                                                    <div
+                                                        className="relative group cursor-pointer hover:scale-105 transition-transform"
+                                                        onClick={() => setLightboxImage({ url: post.ai_background_url!, label: 'AI Background' })}
+                                                    >
                                                         <img
                                                             src={post.ai_background_url}
                                                             alt="AI Background"
@@ -1056,7 +1068,10 @@ function CalendarPageContent() {
                                                     </div>
                                                 )}
                                                 {post.combined_image_url && (
-                                                    <div className="relative group">
+                                                    <div
+                                                        className="relative group cursor-pointer hover:scale-105 transition-transform"
+                                                        onClick={() => setLightboxImage({ url: post.combined_image_url!, label: 'Final Combined' })}
+                                                    >
                                                         <img
                                                             src={post.combined_image_url}
                                                             alt="Combined"
@@ -1315,7 +1330,10 @@ function CalendarPageContent() {
                                     <div className="space-y-1">
                                         <span className="text-xs text-blue-400 font-medium">Template</span>
                                         {editingPost.template_image_url ? (
-                                            <div className="rounded-lg overflow-hidden border border-blue-500/30 aspect-square">
+                                            <div
+                                                className="rounded-lg overflow-hidden border border-blue-500/30 aspect-square cursor-pointer hover:border-blue-400 transition-colors"
+                                                onClick={() => setLightboxImage({ url: editingPost.template_image_url!, label: 'Template' })}
+                                            >
                                                 <img
                                                     src={editingPost.template_image_url}
                                                     alt="Template"
@@ -1333,7 +1351,10 @@ function CalendarPageContent() {
                                     <div className="space-y-1">
                                         <span className="text-xs text-purple-400 font-medium">AI Background</span>
                                         {editingPost.ai_background_url ? (
-                                            <div className="rounded-lg overflow-hidden border border-purple-500/30 aspect-square">
+                                            <div
+                                                className="rounded-lg overflow-hidden border border-purple-500/30 aspect-square cursor-pointer hover:border-purple-400 transition-colors"
+                                                onClick={() => setLightboxImage({ url: editingPost.ai_background_url!, label: 'AI Background' })}
+                                            >
                                                 <img
                                                     src={editingPost.ai_background_url}
                                                     alt="AI Background"
@@ -1351,7 +1372,10 @@ function CalendarPageContent() {
                                     <div className="space-y-1">
                                         <span className="text-xs text-emerald-400 font-medium">Final Combined</span>
                                         {editingPost.combined_image_url ? (
-                                            <div className="rounded-lg overflow-hidden border border-emerald-500/30 aspect-square">
+                                            <div
+                                                className="rounded-lg overflow-hidden border border-emerald-500/30 aspect-square cursor-pointer hover:border-emerald-400 transition-colors"
+                                                onClick={() => setLightboxImage({ url: editingPost.combined_image_url!, label: 'Final Combined' })}
+                                            >
                                                 <img
                                                     src={editingPost.combined_image_url}
                                                     alt="Combined"
@@ -1462,6 +1486,33 @@ function CalendarPageContent() {
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Lightbox Modal for viewing full images */}
+            {lightboxImage && (
+                <div
+                    className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4"
+                    onClick={() => setLightboxImage(null)}
+                >
+                    <div className="relative max-w-4xl max-h-[90vh] w-full">
+                        <button
+                            onClick={() => setLightboxImage(null)}
+                            className="absolute -top-10 right-0 text-white hover:text-gray-300 flex items-center gap-2"
+                        >
+                            <X className="w-6 h-6" />
+                            <span>Close</span>
+                        </button>
+                        <div className="text-center mb-2">
+                            <span className="text-white text-lg font-medium">{lightboxImage.label}</span>
+                        </div>
+                        <img
+                            src={lightboxImage.url}
+                            alt={lightboxImage.label}
+                            className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+                            onClick={(e) => e.stopPropagation()}
+                        />
                     </div>
                 </div>
             )}
