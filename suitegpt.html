@@ -6507,8 +6507,11 @@
         async function loadFactoryProposals() {
             try {
                 console.log('[Factory] Loading proposals from Supabase...');
-                const url = `${SUPABASE_URL}/rest/v1/factory_proposals?select=*,author:factory_users!factory_proposals_author_id_fkey(id,display_name,reputation)&section=in.(suite_apps,business,content,social)&order=created_at.desc`;
-                console.log('[Factory] URL:', url);
+                console.log('[Factory] SUPABASE_URL:', SUPABASE_URL);
+
+                // Simple query first - just get all proposals
+                const url = `${SUPABASE_URL}/rest/v1/factory_proposals?select=*&order=created_at.desc`;
+                console.log('[Factory] Fetching:', url);
 
                 const response = await fetch(url, {
                     headers: {
@@ -6518,10 +6521,19 @@
                 });
 
                 console.log('[Factory] Response status:', response.status);
+                console.log('[Factory] Response ok:', response.ok);
 
                 if (response.ok) {
                     factoryProposals = await response.json();
-                    console.log('[Factory] Loaded proposals:', factoryProposals.length);
+                    console.log('[Factory] Loaded proposals:', factoryProposals);
+                    console.log('[Factory] Proposals count:', factoryProposals.length);
+
+                    // Filter to governance sections client-side
+                    factoryProposals = factoryProposals.filter(p =>
+                        ['suite_apps', 'business', 'content', 'social'].includes(p.section)
+                    );
+                    console.log('[Factory] After filtering:', factoryProposals.length);
+
                     renderFactoryProposals();
                     updateFactoryCounts();
 
@@ -6531,7 +6543,7 @@
                     }
                 } else {
                     const errorText = await response.text();
-                    console.error('[Factory] Failed to load:', errorText);
+                    console.error('[Factory] Failed to load:', response.status, errorText);
                 }
             } catch (error) {
                 console.error('[Factory] Error loading proposals:', error);
