@@ -616,6 +616,26 @@
             cursor: not-allowed;
         }
 
+        .link-account-btn.connected {
+            justify-content: space-between;
+            color: var(--text-primary);
+        }
+
+        .link-account-btn.connected .linked-account-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .link-account-btn.connected .checkmark {
+            color: #10b981;
+        }
+
+        .link-account-btn.connected .linked-account-value {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+        }
+
         /* Withdrawal Modal */
         .withdrawal-modal-overlay {
             position: fixed;
@@ -4298,14 +4318,6 @@
                         </svg>
                         Settings
                     </button>
-                    <button class="profile-dropdown-item logout" onclick="logout()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
-                            <polyline points="16 17 21 12 16 7"/>
-                            <line x1="21" y1="12" x2="9" y2="12"/>
-                        </svg>
-                        Log out
-                    </button>
                 </div>
 
                 <div class="sidebar-profile" id="sidebarProfile" onclick="toggleProfileDropdown()">
@@ -5792,10 +5804,10 @@
             if (wallet) {
                 const shortWallet = wallet.slice(0, 6) + '...' + wallet.slice(-4);
                 html += `
-                    <div class="linked-account">
+                    <button class="link-account-btn connected" onclick="disconnectWallet()">
                         <span class="linked-account-status"><span class="checkmark">&#10003;</span> Wallet</span>
                         <span class="linked-account-value">${shortWallet}</span>
-                    </div>
+                    </button>
                 `;
             } else if (supabaseUser || telegramUser) {
                 html += `<button class="link-account-btn" onclick="connectWalletToLink()">+ Connect Wallet</button>`;
@@ -5807,10 +5819,10 @@
                     ? supabaseUser.email.slice(0, 17) + '...'
                     : supabaseUser.email;
                 html += `
-                    <div class="linked-account">
+                    <button class="link-account-btn connected" onclick="disconnectGoogle()">
                         <span class="linked-account-status"><span class="checkmark">&#10003;</span> Google</span>
                         <span class="linked-account-value">${displayEmail}</span>
-                    </div>
+                    </button>
                 `;
             } else if (wallet || telegramUser) {
                 html += `<button class="link-account-btn" onclick="linkGoogleAccount()">+ Link Google</button>`;
@@ -5820,10 +5832,10 @@
             if (telegramUser) {
                 const tgDisplay = telegramUser.username ? `@${telegramUser.username}` : telegramUser.first_name;
                 html += `
-                    <div class="linked-account">
+                    <button class="link-account-btn connected" onclick="disconnectTelegram()">
                         <span class="linked-account-status"><span class="checkmark">&#10003;</span> Telegram</span>
                         <span class="linked-account-value">${tgDisplay}</span>
-                    </div>
+                    </button>
                 `;
             } else if (wallet) {
                 html += `<button class="link-account-btn" onclick="linkTelegramAccount()">+ Link Telegram</button>`;
@@ -5995,6 +6007,28 @@
         }
 
         // Credits state (must be declared before updateCreditsDisplay)
+        // Disconnect functions
+        function disconnectWallet() {
+            localStorage.removeItem('connectedWallet');
+            localStorage.removeItem('suiteWalletAddress');
+            checkAuthState();
+            renderLinkedAccounts();
+        }
+
+        async function disconnectGoogle() {
+            if (supabaseClient) {
+                await supabaseClient.auth.signOut();
+            }
+            checkAuthState();
+            renderLinkedAccounts();
+        }
+
+        function disconnectTelegram() {
+            localStorage.removeItem('telegram_user');
+            checkAuthState();
+            renderLinkedAccounts();
+        }
+
         let userCredits = 0;
 
         // Update credits display in sidebar and dropdown
