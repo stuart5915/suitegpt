@@ -5694,7 +5694,7 @@
                     );
                     if (response.ok) {
                         const data = await response.json();
-                        credits = data[0]?.user_balance || 0;
+                        credits = data[0]?.balance || 0;
                     }
                 } else if (authType === 'email') {
                     // Use RPC to get or create credits for email user
@@ -5716,7 +5716,7 @@
                     );
                     if (response.ok) {
                         const data = await response.json();
-                        credits = data[0]?.user_balance || 0;
+                        credits = data[0]?.balance || 0;
                     }
 
                     // Auto-link: If wallet exists locally, try to link email to it
@@ -5890,6 +5890,8 @@
                         if (result.success) {
                             console.log('[Auth] Linked wallet to email account');
                             alert('Wallet linked successfully! You can now withdraw credits.');
+                            // Fetch wallet credits directly since that's where the merged balance is
+                            await fetchUserCredits(walletAddress, 'wallet');
                         } else {
                             console.warn('[Auth] Could not link wallet:', result.error);
                             if (result.error?.includes('already has credits')) {
