@@ -5,6 +5,30 @@ This is the SUITE ecosystem website (getsuite.app), hosted on Vercel with auto-d
 
 ---
 
+## /system Command
+
+Quick reference for SUITE's implemented systems. Data stored in `systems.json`.
+
+### Usage
+- `/system` → List all available systems
+- `/system [name]` → Get full context for a specific system (e.g., `/system yield-rewards`)
+- `/system add` → Add a new system definition
+
+### When user types `/system`:
+1. Read `systems.json` from project root
+2. If no argument: list all systems with name + summary
+3. If argument provided: output the full description, files, tables, and notes for that system
+4. If "add": prompt user for name, summary, description, related files/tables, then save to systems.json
+
+### Current Systems (auto-updated):
+- `yield-rewards` - User deposits earn yield, distributed to shared reward pool
+- `credits` - Credits for app usage, stored in Supabase
+- `suite-shell` - Single container that loads all SUITE apps in iframe
+- `apps-table` - Supabase table storing all SUITE ecosystem apps
+- `cross-domain-auth` - Pass auth tokens between suitegpt.app and external app iframes
+
+---
+
 ## /publish-article Command
 
 When you receive a `/publish-article` prompt (from the publish daemon or manually), follow these steps:

@@ -1,0 +1,42 @@
+{
+  "yield-rewards": {
+    "name": "Yield Rewards Pool System",
+    "summary": "User deposits earn yield, distributed to shared reward pool",
+    "description": "Users deposit funds via Stripe or crypto payments. These funds are held and earn yield (via DeFi protocols or interest-bearing accounts). The yield generated flows into a shared rewards pool. Users can then request withdrawals/rewards from this pool. Key components: deposit tracking, yield generation, reward pool balance, withdrawal requests, fair distribution logic.",
+    "files": [],
+    "tables": ["user_credits", "deposits", "withdrawals"],
+    "notes": "This is the core monetization model - users benefit from collective yield rather than individual interest."
+  },
+  "credits": {
+    "name": "User Credits System",
+    "summary": "Credits for app usage, stored in Supabase",
+    "description": "Users have credits stored in Supabase `user_credits` table. Apps deduct credits when users perform actions (AI generations, etc.). Credits can be purchased or earned through referrals/rewards. Each app tracks credit usage differently.",
+    "files": ["js/supabase-config.js", "supabase-migration-user-credits.sql"],
+    "tables": ["user_credits"],
+    "notes": ""
+  },
+  "suite-shell": {
+    "name": "Suite Shell (Unified App Container)",
+    "summary": "Single container that loads all SUITE apps in iframe",
+    "description": "suite-shell.html is the unified app container. It loads apps from the Supabase `apps` table, displays them in a grid, and when clicked, loads the app in an iframe. URL updates with ?app=slug for direct linking. Back button returns to grid. Used by suitegpt.app domain.",
+    "files": ["suite-shell.html", "js/supabase-config.js"],
+    "tables": ["apps"],
+    "notes": "suitegpt.app rewrites to suite-shell.html via vercel.json"
+  },
+  "apps-table": {
+    "name": "Apps Database",
+    "summary": "Supabase table storing all SUITE ecosystem apps",
+    "description": "The `apps` table in Supabase stores all apps in the ecosystem. Fields: id, name, slug, description, icon_url, app_url, category, status (pending/approved/featured), creator_name, download_count. Apps with status 'approved' or 'featured' are shown publicly.",
+    "files": ["supabase-migration-apps.sql", "js/supabase-config.js"],
+    "tables": ["apps"],
+    "notes": "Add new apps via Supabase dashboard or API with service role key"
+  },
+  "cross-domain-auth": {
+    "name": "Cross-Domain Authentication",
+    "summary": "Pass auth tokens between suitegpt.app and external app iframes",
+    "description": "When suitegpt.app opens an external app (like cadence-ai-nextjs.vercel.app) in an iframe, auth doesn't transfer automatically due to different domains. Solution: suitegpt.html's previewApp() function gets the current Supabase session and passes access_token + refresh_token as URL params (suite_token, suite_refresh). The target app checks for these params and calls supabase.auth.setSession() to establish the session.",
+    "files": ["suitegpt.html", "cadence-ai-nextjs/src/contexts/TelegramAuthContext.tsx"],
+    "tables": [],
+    "notes": "Both apps must use the same Supabase instance for this to work"
+  }
+}
