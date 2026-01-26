@@ -31,7 +31,8 @@ Your task:
 Rules:
 - Focus on the MEANING, not literal text
 - Describe a visual scene, mood, or abstract concept
-- NO text in the image
+- NEVER mention signs, text, words, labels, or typography in your prompt
+- NEVER describe screens, monitors, or displays showing text
 - Make it visually interesting and artistic
 - Be specific about colors, lighting, or composition if relevant
 
@@ -39,6 +40,7 @@ Examples:
 - Post about productivity → "A serene minimalist workspace at golden hour with soft light streaming through windows"
 - Post about crypto gains → "Abstract flowing golden particles rising upward against a deep purple void"
 - Post about feeling stuck → "A single door of light at the end of a long dark corridor"
+- Post about a new feature → "Glowing geometric shapes emerging from darkness with rays of light"
 
 Output ONLY the image prompt, nothing else:`
 

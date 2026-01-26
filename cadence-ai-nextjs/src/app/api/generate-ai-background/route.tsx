@@ -30,14 +30,23 @@ async function generateGeminiImage(prompt: string, platform: string): Promise<{ 
                 ? 'Square format.'
                 : 'Landscape/wide format.'
 
-        const imagePrompt = `${prompt}. ${orientationHint} No text in the image.`
+        // CRITICAL: Strongly enforce no text in the image
+        const imagePrompt = `IMPORTANT: Generate an image with ABSOLUTELY NO TEXT, NO WORDS, NO LETTERS, NO NUMBERS, NO WRITING OF ANY KIND.
+
+Create a visual scene: ${prompt}
+
+Requirements:
+- ${orientationHint}
+- ZERO text, labels, captions, watermarks, or any written characters
+- Pure visual imagery only - no typography whatsoever
+- This will be used as a background with text overlaid later`
 
         const model = genAI.getGenerativeModel({
             model: 'gemini-2.0-flash-exp',
         })
 
         const result = await model.generateContent({
-            contents: [{ role: 'user', parts: [{ text: `Generate an image: ${imagePrompt}` }] }],
+            contents: [{ role: 'user', parts: [{ text: imagePrompt }] }],
             generationConfig: {
                 // @ts-ignore - Gemini image generation config
                 responseModalities: ['image', 'text'],
