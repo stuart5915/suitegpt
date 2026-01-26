@@ -5,13 +5,15 @@
  * Provides Telegram user state throughout the app
  *
  * Auth sources (in priority order):
- * 1. URL params from Telegram Mini App iframe (tg_id, tg_username, etc.)
- * 2. Session cookie (persisted from previous session)
- * 3. Telegram Login Widget (for direct web access)
+ * 1. SUITE token from parent iframe (suite_token, suite_refresh)
+ * 2. URL params from Telegram Mini App iframe (tg_id, tg_username, etc.)
+ * 3. Session cookie (persisted from previous session)
+ * 4. Telegram Login Widget (for direct web access)
  */
 
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 
 export interface TelegramUser {
   id: string
@@ -114,7 +116,50 @@ function cleanUrlParams() {
   url.searchParams.delete('tg_photo')
   url.searchParams.delete('tg_auth_date')
   url.searchParams.delete('tg_hash')
+  url.searchParams.delete('suite_token')
+  url.searchParams.delete('suite_refresh')
   window.history.replaceState({}, '', url.pathname + url.search)
+}
+
+// Check for SUITE token from parent iframe and establish Supabase session
+async function handleSuiteToken(): Promise<TelegramUser | null> {
+  if (typeof window === 'undefined') return null
+
+  const params = new URLSearchParams(window.location.search)
+  const suiteToken = params.get('suite_token')
+  const suiteRefresh = params.get('suite_refresh')
+
+  if (!suiteToken || !suiteRefresh) return null
+
+  try {
+    const supabase = createClient()
+
+    // Set the session using the tokens from the parent
+    const { data, error } = await supabase.auth.setSession({
+      access_token: suiteToken,
+      refresh_token: suiteRefresh,
+    })
+
+    if (error) {
+      console.error('Failed to set SUITE session:', error)
+      return null
+    }
+
+    if (data.user) {
+      // Map Supabase user to TelegramUser format
+      const user: TelegramUser = {
+        id: data.user.id,
+        username: data.user.user_metadata?.username || data.user.email?.split('@')[0] || 'User',
+        firstName: data.user.user_metadata?.full_name || data.user.user_metadata?.name || 'SUITE User',
+        photoUrl: data.user.user_metadata?.avatar_url || data.user.user_metadata?.picture || null,
+      }
+      return user
+    }
+  } catch (error) {
+    console.error('Error handling SUITE token:', error)
+  }
+
+  return null
 }
 
 export function TelegramAuthProvider({ children }: { children: ReactNode }) {
@@ -210,6 +255,16 @@ export function TelegramAuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const initAuth = async () => {
       if (typeof window === 'undefined') {
+        setIsLoading(false)
+        return
+      }
+
+      // Priority 0: SUITE token from parent iframe (suitegpt.app)
+      const suiteUser = await handleSuiteToken()
+      if (suiteUser) {
+        setUser(suiteUser)
+        saveUser(suiteUser)
+        cleanUrlParams()
         setIsLoading(false)
         return
       }

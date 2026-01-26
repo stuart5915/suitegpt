@@ -6738,7 +6738,7 @@
             previewApp(appKey, url, name);
         }
 
-        function previewApp(appKey, appUrl, appName) {
+        async function previewApp(appKey, appUrl, appName) {
             const overlay = document.getElementById('appPreviewOverlay');
             const frame = document.getElementById('appPreviewFrame');
             const nameEl = document.getElementById('appPreviewName');
@@ -6774,8 +6774,24 @@
                 addBtn.classList.remove('added');
             }
 
+            // Build URL with auth token for cross-domain apps
+            let finalUrl = appUrl;
+            if (appUrl.startsWith('http') && supabaseClient) {
+                try {
+                    const { data: { session } } = await supabaseClient.auth.getSession();
+                    if (session?.access_token) {
+                        const url = new URL(appUrl);
+                        url.searchParams.set('suite_token', session.access_token);
+                        url.searchParams.set('suite_refresh', session.refresh_token);
+                        finalUrl = url.toString();
+                    }
+                } catch (e) {
+                    console.log('Could not get session for app:', e);
+                }
+            }
+
             // Load the app in iframe
-            frame.src = appUrl;
+            frame.src = finalUrl;
 
             // Show overlay
             overlay.classList.add('active');
