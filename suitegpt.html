@@ -7948,6 +7948,54 @@
         </div>
     </div>
 
+    <!-- App Launch Modal (Desktop only) -->
+    <div class="app-launch-modal-overlay" id="appLaunchModalOverlay" onclick="if(event.target === this) closeAppLaunchModal()">
+        <div class="app-launch-modal">
+            <div class="app-launch-modal-icon" id="appLaunchModalIcon"></div>
+            <h3 id="appLaunchModalName">App Name</h3>
+            <p>How would you like to view this app?</p>
+            <div class="app-launch-options">
+                <div class="app-launch-option" onclick="launchAppFullscreen()">
+                    <div class="app-launch-option-icon">🖥️</div>
+                    <div class="app-launch-option-title">Fullscreen</div>
+                    <div class="app-launch-option-desc">Full browser view</div>
+                </div>
+                <div class="app-launch-option" onclick="launchAppMobile()">
+                    <div class="app-launch-option-icon">📱</div>
+                    <div class="app-launch-option-title">Mobile View</div>
+                    <div class="app-launch-option-desc">Draggable phone window</div>
+                </div>
+            </div>
+            <button class="app-launch-modal-close" onclick="closeAppLaunchModal()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Mobile App Container (Draggable Phone View) -->
+    <div class="mobile-app-container" id="mobileAppContainer">
+        <div class="mobile-app-notch"></div>
+        <div class="mobile-app-header" id="mobileAppHeader">
+            <div class="mobile-app-header-left">
+                <div class="mobile-app-header-icon" id="mobileAppIcon"></div>
+                <span class="mobile-app-header-title" id="mobileAppTitle">App Name</span>
+            </div>
+            <div class="mobile-app-header-actions">
+                <button class="mobile-app-btn mobile-app-btn-fullscreen" onclick="switchToFullscreen()" title="Switch to Fullscreen">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/>
+                    </svg>
+                </button>
+                <button class="mobile-app-btn mobile-app-btn-close" onclick="closeMobileApp()" title="Close">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="mobile-app-content">
+            <iframe id="mobileAppFrame" src="" frameborder="0" allow="camera; microphone; geolocation"></iframe>
+        </div>
+    </div>
+
     <!-- Apps Panel -->
     <div class="apps-panel-overlay" id="appsPanelOverlay" onclick="if(event.target === this) closeAppsPanel()">
         <div class="apps-panel">
@@ -11193,6 +11241,9 @@
         // Current previewing app key
         let currentPreviewApp = null;
 
+        // Pending app launch info (for modal)
+        let pendingAppLaunch = { key: null, url: null, name: null };
+
         function launchApp(appKey, url, name) {
             const app = SUITE_APPS[appKey];
 
@@ -11205,7 +11256,195 @@
 
             closeAppsView();
             closeAppsPanel();
-            previewApp(appKey, url, name);
+
+            // Check if on mobile - if so, launch directly in fullscreen
+            if (window.innerWidth < 768) {
+                previewApp(appKey, url, name);
+                return;
+            }
+
+            // On desktop, show launch modal
+            showAppLaunchModal(appKey, url, name);
+        }
+
+        function showAppLaunchModal(appKey, url, name) {
+            const app = SUITE_APPS[appKey];
+            const overlay = document.getElementById('appLaunchModalOverlay');
+            const iconEl = document.getElementById('appLaunchModalIcon');
+            const nameEl = document.getElementById('appLaunchModalName');
+
+            if (!overlay) return;
+
+            // Store pending launch info
+            pendingAppLaunch = { key: appKey, url, name };
+
+            // Set app info
+            nameEl.textContent = name || app?.name || 'App';
+
+            if (app?.iconUrl) {
+                iconEl.innerHTML = `<img src="${app.iconUrl}" alt="${app.name}">`;
+                iconEl.style.background = app.iconBg || 'var(--bg-card)';
+            } else if (app?.icon) {
+                iconEl.innerHTML = app.icon;
+                iconEl.style.background = app.iconBg || 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))';
+            } else {
+                iconEl.innerHTML = '📱';
+                iconEl.style.background = 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))';
+            }
+
+            overlay.classList.add('active');
+        }
+
+        function closeAppLaunchModal() {
+            const overlay = document.getElementById('appLaunchModalOverlay');
+            if (overlay) overlay.classList.remove('active');
+        }
+
+        function launchAppFullscreen() {
+            closeAppLaunchModal();
+            previewApp(pendingAppLaunch.key, pendingAppLaunch.url, pendingAppLaunch.name);
+        }
+
+        function launchAppMobile() {
+            closeAppLaunchModal();
+            openMobileAppView(pendingAppLaunch.key, pendingAppLaunch.url, pendingAppLaunch.name);
+        }
+
+        function openMobileAppView(appKey, url, name) {
+            const app = SUITE_APPS[appKey];
+            const container = document.getElementById('mobileAppContainer');
+            const frame = document.getElementById('mobileAppFrame');
+            const iconEl = document.getElementById('mobileAppIcon');
+            const titleEl = document.getElementById('mobileAppTitle');
+
+            if (!container || !frame) return;
+
+            currentPreviewApp = appKey;
+            pendingAppLaunch = { key: appKey, url, name };
+
+            // Set app info
+            titleEl.textContent = name || app?.name || 'App';
+
+            if (app?.iconUrl) {
+                iconEl.innerHTML = `<img src="${app.iconUrl}" alt="${app.name}">`;
+                iconEl.style.background = app.iconBg || 'var(--bg-card)';
+            } else if (app?.icon) {
+                iconEl.innerHTML = app.icon;
+                iconEl.style.background = app.iconBg || 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))';
+            } else {
+                iconEl.innerHTML = '📱';
+                iconEl.style.background = 'var(--bg-card)';
+            }
+
+            // Center the container initially
+            container.style.top = '50%';
+            container.style.left = '50%';
+            container.style.transform = 'translate(-50%, -50%)';
+
+            // Load the app
+            frame.src = url;
+            container.classList.add('active');
+
+            // Initialize dragging
+            initMobileAppDrag();
+        }
+
+        function closeMobileApp() {
+            const container = document.getElementById('mobileAppContainer');
+            const frame = document.getElementById('mobileAppFrame');
+
+            if (container) {
+                container.classList.remove('active');
+                // Reset position for next open
+                container.style.transform = 'translate(-50%, -50%)';
+            }
+            if (frame) frame.src = '';
+            currentPreviewApp = null;
+        }
+
+        function switchToFullscreen() {
+            closeMobileApp();
+            previewApp(pendingAppLaunch.key, pendingAppLaunch.url, pendingAppLaunch.name);
+        }
+
+        // Dragging functionality for mobile app container
+        function initMobileAppDrag() {
+            const container = document.getElementById('mobileAppContainer');
+            const header = document.getElementById('mobileAppHeader');
+
+            if (!container || !header) return;
+
+            let isDragging = false;
+            let startX, startY, startLeft, startTop;
+            let hasMoved = false;
+
+            const onMouseDown = (e) => {
+                if (e.target.closest('.mobile-app-btn')) return; // Don't drag when clicking buttons
+
+                isDragging = true;
+                hasMoved = false;
+
+                // Get current position
+                const rect = container.getBoundingClientRect();
+                startLeft = rect.left;
+                startTop = rect.top;
+                startX = e.clientX || e.touches?.[0]?.clientX;
+                startY = e.clientY || e.touches?.[0]?.clientY;
+
+                // Remove centering transform once we start dragging
+                container.style.transform = 'none';
+                container.style.left = startLeft + 'px';
+                container.style.top = startTop + 'px';
+
+                header.style.cursor = 'grabbing';
+                e.preventDefault();
+            };
+
+            const onMouseMove = (e) => {
+                if (!isDragging) return;
+
+                const clientX = e.clientX || e.touches?.[0]?.clientX;
+                const clientY = e.clientY || e.touches?.[0]?.clientY;
+
+                const deltaX = clientX - startX;
+                const deltaY = clientY - startY;
+
+                if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+                    hasMoved = true;
+                }
+
+                let newLeft = startLeft + deltaX;
+                let newTop = startTop + deltaY;
+
+                // Keep within viewport
+                const rect = container.getBoundingClientRect();
+                const maxLeft = window.innerWidth - rect.width;
+                const maxTop = window.innerHeight - rect.height;
+
+                newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+                newTop = Math.max(0, Math.min(newTop, maxTop));
+
+                container.style.left = newLeft + 'px';
+                container.style.top = newTop + 'px';
+            };
+
+            const onMouseUp = () => {
+                isDragging = false;
+                header.style.cursor = 'grab';
+            };
+
+            // Remove old listeners if any
+            header.onmousedown = null;
+            document.onmousemove = null;
+            document.onmouseup = null;
+
+            // Add listeners
+            header.addEventListener('mousedown', onMouseDown);
+            header.addEventListener('touchstart', onMouseDown, { passive: false });
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('touchmove', onMouseMove, { passive: false });
+            document.addEventListener('mouseup', onMouseUp);
+            document.addEventListener('touchend', onMouseUp);
         }
 
         async function previewApp(appKey, appUrl, appName) {
