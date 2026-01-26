@@ -142,6 +142,8 @@ function CalendarPageContent() {
     // Day images state (background images per day)
     const [dayImages, setDayImages] = useState<Record<string, string>>({}) // date -> imageUrl
     const [uploadingForDay, setUploadingForDay] = useState<string | null>(null)
+    const [generatingForDay, setGeneratingForDay] = useState<string | null>(null)
+    const [dayImagePromptModal, setDayImagePromptModal] = useState<{ date: string; prompt: string } | null>(null)
 
     // Generate image for a post using AI (legacy - combined approach)
     const generateImageForPost = async (post: ScheduledPost) => {
@@ -578,6 +580,41 @@ function CalendarPageContent() {
         }
     }
 
+    // Generate day background with Flux
+    const generateDayBackground = async (date: string, prompt: string) => {
+        setGeneratingForDay(date)
+        setDayImagePromptModal(null)
+        try {
+            const response = await fetch('/api/generate-day-background', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ date, prompt, aspectRatio: '16:9' })
+            })
+            const data = await response.json()
+
+            if (data.success && data.imageUrl) {
+                // Update local day images state
+                setDayImages(prev => ({ ...prev, [date]: data.imageUrl }))
+
+                // Update all posts for this day with the new background
+                setQueuePosts(prev => prev.map(p => {
+                    const postDate = p.scheduled_for ? p.scheduled_for.split('T')[0] : null
+                    if (postDate === date) {
+                        return { ...p, ai_background_url: data.imageUrl }
+                    }
+                    return p
+                }))
+            } else {
+                alert('Failed to generate: ' + (data.error || 'Unknown error'))
+            }
+        } catch (err) {
+            console.error('Failed to generate day background:', err)
+            alert('Failed to generate background')
+        } finally {
+            setGeneratingForDay(null)
+        }
+    }
+
     // Approve a queue post
     const approveQueuePost = async (id: string) => {
         try {
@@ -866,9 +903,9 @@ function CalendarPageContent() {
                                         {new Date(day.date).getDate()}
                                     </span>
 
-                                    {/* Day Image Upload/Preview */}
+                                    {/* Day Image Upload/Generate/Preview */}
                                     {day.isCurrentMonth && (
-                                        <div className="relative">
+                                        <div className="relative flex items-center gap-1">
                                             {dayImages[day.date] ? (
                                                 <div className="group relative">
                                                     <img
@@ -891,30 +928,44 @@ function CalendarPageContent() {
                                                         <X className="w-2 h-2 text-white" />
                                                     </button>
                                                 </div>
+                                            ) : (uploadingForDay === day.date || generatingForDay === day.date) ? (
+                                                <div className="w-6 h-6 rounded border border-purple-500/50 flex items-center justify-center bg-purple-500/10">
+                                                    <Loader2 className="w-3 h-3 animate-spin text-purple-400" />
+                                                </div>
                                             ) : (
-                                                <label
-                                                    className="w-6 h-6 rounded border border-dashed border-[var(--surface-border)] flex items-center justify-center cursor-pointer hover:border-purple-500 hover:bg-purple-500/10 transition-colors"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    title="Upload background image for this day"
-                                                >
-                                                    {uploadingForDay === day.date ? (
-                                                        <Loader2 className="w-3 h-3 animate-spin text-purple-400" />
-                                                    ) : (
-                                                        <ImageIcon className="w-3 h-3 text-[var(--foreground-muted)]" />
-                                                    )}
-                                                    <input
-                                                        type="file"
-                                                        accept="image/*"
-                                                        className="hidden"
-                                                        onChange={(e) => {
-                                                            const file = e.target.files?.[0]
-                                                            if (file) {
-                                                                uploadDayImage(day.date, file)
-                                                            }
-                                                            e.target.value = ''
+                                                <>
+                                                    {/* Upload button */}
+                                                    <label
+                                                        className="w-5 h-5 rounded border border-dashed border-[var(--surface-border)] flex items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-500/10 transition-colors"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        title="Upload image"
+                                                    >
+                                                        <Upload className="w-2.5 h-2.5 text-[var(--foreground-muted)]" />
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            className="hidden"
+                                                            onChange={(e) => {
+                                                                const file = e.target.files?.[0]
+                                                                if (file) {
+                                                                    uploadDayImage(day.date, file)
+                                                                }
+                                                                e.target.value = ''
+                                                            }}
+                                                        />
+                                                    </label>
+                                                    {/* Generate button */}
+                                                    <button
+                                                        className="w-5 h-5 rounded border border-dashed border-[var(--surface-border)] flex items-center justify-center cursor-pointer hover:border-purple-500 hover:bg-purple-500/10 transition-colors"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            setDayImagePromptModal({ date: day.date, prompt: '' })
                                                         }}
-                                                    />
-                                                </label>
+                                                        title="Generate with AI (Flux)"
+                                                    >
+                                                        <Sparkles className="w-2.5 h-2.5 text-[var(--foreground-muted)]" />
+                                                    </button>
+                                                </>
                                             )}
                                         </div>
                                     )}
@@ -1707,6 +1758,69 @@ function CalendarPageContent() {
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Day Image Prompt Modal */}
+            {dayImagePromptModal && (
+                <div
+                    className="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4"
+                    onClick={() => setDayImagePromptModal(null)}
+                >
+                    <div
+                        className="bg-[var(--surface)] rounded-xl p-6 max-w-md w-full border border-[var(--surface-border)]"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-semibold text-[var(--foreground)]">
+                                Generate Background
+                            </h3>
+                            <button
+                                onClick={() => setDayImagePromptModal(null)}
+                                className="p-1 hover:bg-[var(--surface-hover)] rounded"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <p className="text-sm text-[var(--foreground-muted)] mb-3">
+                            Describe the background image you want for <span className="text-purple-400 font-medium">{dayImagePromptModal.date}</span>
+                        </p>
+
+                        <textarea
+                            value={dayImagePromptModal.prompt}
+                            onChange={(e) => setDayImagePromptModal(prev => prev ? { ...prev, prompt: e.target.value } : null)}
+                            placeholder="e.g., abstract purple gradient with floating particles, futuristic tech vibes..."
+                            rows={3}
+                            className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--surface-border)] rounded-lg text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] resize-none mb-4"
+                            autoFocus
+                        />
+
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setDayImagePromptModal(null)}
+                                className="flex-1 px-4 py-2 text-[var(--foreground-muted)] hover:bg-[var(--surface-hover)] rounded-lg text-sm font-medium"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (dayImagePromptModal.prompt.trim()) {
+                                        generateDayBackground(dayImagePromptModal.date, dayImagePromptModal.prompt)
+                                    }
+                                }}
+                                disabled={!dayImagePromptModal.prompt.trim()}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-lg text-sm font-medium hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <Sparkles className="w-4 h-4" />
+                                Generate
+                            </button>
+                        </div>
+
+                        <p className="text-xs text-[var(--foreground-muted)] mt-3 text-center">
+                            Powered by Flux Pro
+                        </p>
                     </div>
                 </div>
             )}
