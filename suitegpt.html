@@ -5860,10 +5860,14 @@
                 return;
             }
 
+            // Use clean redirect URL (origin + pathname only)
+            const redirectUrl = window.location.origin + window.location.pathname;
+            console.log('[Auth] Starting Google OAuth, redirect to:', redirectUrl);
+
             // Trigger Google OAuth - auto-linking happens in auth state change handler
             const { data, error } = await supabaseClient.auth.signInWithOAuth({
                 provider: 'google',
-                options: { redirectTo: window.location.href }
+                options: { redirectTo: redirectUrl }
             });
 
             if (error) {
@@ -7120,8 +7124,9 @@
 
             // Listen for auth state changes (handles OAuth redirect)
             supabaseClient.auth.onAuthStateChange(async (event, session) => {
-                console.log('[Auth] Supabase event:', event, session ? 'has session' : 'no session');
-                if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') && session) {
+                console.log('[Auth] Supabase event:', event, session ? `has session: ${session.user?.email}` : 'no session');
+
+                if (session) {
                     console.log('[Auth] User authenticated:', session.user?.email);
                     // Close modal if open
                     const modal = document.getElementById('connectModalOverlay');
@@ -7135,10 +7140,11 @@
                         await autoLinkEmailToWallet(wallet, session.user.email, session.user.id);
                     }
 
-                    // Update auth state
+                    // Always update auth state when we have a session
                     checkAuthState();
-                } else if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !session)) {
-                    // Don't trigger logout if user is logged in via Telegram or wallet
+                    renderLinkedAccounts();
+                } else if (event === 'SIGNED_OUT') {
+                    // Only reset if no other auth methods
                     const hasTelegram = localStorage.getItem('telegram_user');
                     const hasWallet = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWalletAddress');
                     if (!hasTelegram && !hasWallet) {
@@ -7149,9 +7155,13 @@
 
             // Check session on page load (handles OAuth redirect)
             supabaseClient.auth.getSession().then(({ data: { session }, error }) => {
-                console.log('[Auth] Explicit session check:', session ? session.user?.email : 'no session', error || '');
+                if (error) {
+                    console.error('[Auth] Session check error:', error);
+                }
+                console.log('[Auth] Explicit session check:', session ? session.user?.email : 'no session');
                 // Always call checkAuthState after Supabase is ready
                 checkAuthState();
+                renderLinkedAccounts();
             });
         } else {
             console.error('[Auth] Supabase library not loaded!');
