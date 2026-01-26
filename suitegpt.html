@@ -8099,6 +8099,7 @@
             // Extensions (add-ons & integrations)
             'defi-knowledge': 'extension',
             'cadence-ai': 'extension',
+            'visual-feedback': 'extension',
             // Apps (full-featured)
             'foodvitals': 'app',
             'trueform': 'app',
@@ -10701,6 +10702,14 @@
                 icon: '🎲',
                 iconBg: 'linear-gradient(135deg, #67e8f9, #0891b2)',
                 url: '/quickdecide.html'
+            },
+            'visual-feedback': {
+                name: 'Visual Feedback',
+                description: 'Chrome extension for agentic coding - Alt+X to select elements',
+                icon: '🎯',
+                iconBg: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                url: '/extensions/suite-visual-feedback/',
+                isExtension: true
             }
         };
 
@@ -10897,6 +10906,15 @@
         let currentPreviewApp = null;
 
         function launchApp(appKey, url, name) {
+            const app = SUITE_APPS[appKey];
+
+            // Check if this is an extension
+            if (app && app.isExtension) {
+                // Open the extension folder/download page
+                window.open(url, '_blank');
+                return;
+            }
+
             closeAppsView();
             closeAppsPanel();
             previewApp(appKey, url, name);
