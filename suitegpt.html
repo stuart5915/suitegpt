@@ -6416,7 +6416,7 @@
             general: { emoji: '📋', label: 'General' }
         };
 
-        function openFactory() {
+        function openFactory(skipPushState = false) {
             const welcomeState = document.getElementById('welcomeState');
             const appsView = document.getElementById('appsView');
             const createView = document.getElementById('createView');
@@ -6434,13 +6434,18 @@
             if (chatArea) chatArea.scrollTop = 0;
             closeMobileSidebar();
 
+            // Update URL to /governance
+            if (!skipPushState) {
+                history.pushState({ view: 'governance' }, '', '/governance');
+            }
+
             // Load data
             loadFactoryProposals();
             loadFactoryLeaderboard();
             updateFactoryUserCredits();
         }
 
-        function closeFactoryView() {
+        function closeFactoryView(skipPushState = false) {
             const welcomeState = document.getElementById('welcomeState');
             const factoryView = document.getElementById('factoryView');
             const useCasesSection = document.getElementById('useCasesSection');
@@ -6448,6 +6453,29 @@
             if (welcomeState) welcomeState.style.display = '';
             if (useCasesSection) useCasesSection.style.display = '';
             if (factoryView) factoryView.classList.remove('active');
+
+            // Update URL back to root
+            if (!skipPushState) {
+                history.pushState({ view: 'home' }, '', '/');
+            }
+        }
+
+        // Handle browser back/forward buttons
+        window.addEventListener('popstate', function(event) {
+            const path = window.location.pathname;
+            if (path === '/governance') {
+                openFactory(true);
+            } else {
+                closeFactoryView(true);
+            }
+        });
+
+        // Check URL on page load to open Factory if on /governance
+        function checkInitialRoute() {
+            const path = window.location.pathname;
+            if (path === '/governance') {
+                openFactory(true);
+            }
         }
 
         function switchFactoryMainView(view) {
@@ -8434,6 +8462,9 @@
             if (appsBtn) {
                 appsBtn.addEventListener('click', openAppsPanel);
             }
+
+            // Check if we should open Factory based on URL
+            checkInitialRoute();
         });
 
         // Close on Escape key
