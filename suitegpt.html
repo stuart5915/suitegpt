@@ -5771,10 +5771,24 @@
                                 <div class="factory-kanban" id="factoryKanban">
                                     <div class="factory-column">
                                         <div class="factory-column-header">📥 Submitted <span class="factory-column-count" id="factorySubmittedCount">0</span></div>
-                                        <div id="factorySubmittedCards">
+                                        <div class="factory-submitted-tabs">
+                                            <button class="factory-submitted-tab active" data-subtab="newapps" onclick="switchSubmittedTab('newapps')">
+                                                💡 New App Ideas <span id="factoryNewAppsCount">0</span>
+                                            </button>
+                                            <button class="factory-submitted-tab" data-subtab="refinements" onclick="switchSubmittedTab('refinements')">
+                                                🔧 Refinements <span id="factoryRefinementsCount">0</span>
+                                            </button>
+                                        </div>
+                                        <div id="factoryNewAppsCards" class="factory-subtab-content active">
                                             <div class="factory-empty-state">
-                                                <div class="factory-empty-icon">📭</div>
-                                                <p>No proposals yet</p>
+                                                <div class="factory-empty-icon">💡</div>
+                                                <p>No new app ideas yet</p>
+                                            </div>
+                                        </div>
+                                        <div id="factoryRefinementsCards" class="factory-subtab-content" style="display: none;">
+                                            <div class="factory-empty-state">
+                                                <div class="factory-empty-icon">🔧</div>
+                                                <p>No refinements yet</p>
                                             </div>
                                         </div>
                                     </div>
@@ -8626,13 +8640,11 @@
             }, 3000);
         }
 
-        // Apps button click handler - navigate to /apps page
+        // Apps button click handler - open in-page apps panel
         document.addEventListener('DOMContentLoaded', () => {
             const appsBtn = document.getElementById('appsBtn');
             if (appsBtn) {
-                appsBtn.addEventListener('click', () => {
-                    window.location.href = '/apps';
-                });
+                appsBtn.addEventListener('click', openAppsPanel);
             }
 
             // Check if we should open Factory based on URL
