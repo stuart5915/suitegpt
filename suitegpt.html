@@ -5921,16 +5921,78 @@
             }
         }
 
-        // Link Telegram account (redirects to bot)
+        // Link Telegram account using widget
         function linkTelegramAccount() {
-            const wallet = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWalletAddress');
-            if (!wallet) {
-                alert('Please connect a wallet first');
-                return;
+            const botId = '8341049569'; // SUITEHubBot
+            const botUsername = 'SUITEHubBot';
+
+            // Check if mobile
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+            if (isMobile) {
+                // On mobile: Open Telegram app directly
+                window.location.href = `tg://resolve?domain=${botUsername}&start=link`;
+                setTimeout(() => {
+                    window.location.href = `https://t.me/${botUsername}?start=link`;
+                }, 500);
+            } else {
+                // On desktop: Use Telegram Login Widget
+                if (!window.Telegram || !window.Telegram.Login) {
+                    const script = document.createElement('script');
+                    script.src = 'https://telegram.org/js/telegram-widget.js?22';
+                    script.onload = () => openTelegramLinkAuth(botId);
+                    document.head.appendChild(script);
+                } else {
+                    openTelegramLinkAuth(botId);
+                }
             }
-            // Open Telegram bot with wallet for verification
-            window.open(`https://t.me/SUITEHubBot?start=link_${wallet}`, '_blank');
-            alert('Opening Telegram bot. Complete the verification there, then refresh this page.');
+        }
+
+        function openTelegramLinkAuth(botId) {
+            window.Telegram.Login.auth(
+                { bot_id: botId, request_access: true },
+                async (user) => {
+                    if (user) {
+                        // Store Telegram user
+                        const tgUser = {
+                            id: user.id,
+                            username: user.username || user.first_name,
+                            first_name: user.first_name,
+                            last_name: user.last_name,
+                            photo_url: user.photo_url,
+                            auth_date: user.auth_date,
+                            hash: user.hash
+                        };
+                        localStorage.setItem('telegram_user', JSON.stringify(tgUser));
+
+                        // Link to existing wallet/email in database
+                        const wallet = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWalletAddress');
+                        if (wallet) {
+                            try {
+                                await fetch(`${SUPABASE_URL}/rest/v1/rpc/link_telegram_to_wallet`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'apikey': SUPABASE_ANON_KEY,
+                                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        p_wallet_address: wallet,
+                                        p_telegram_id: String(user.id),
+                                        p_telegram_username: user.username || null
+                                    })
+                                });
+                            } catch (e) {
+                                console.error('Error linking Telegram:', e);
+                            }
+                        }
+
+                        checkAuthState();
+                        renderLinkedAccounts();
+                        alert('Telegram linked successfully!');
+                    }
+                }
+            );
         }
 
         // Credits state (must be declared before updateCreditsDisplay)
