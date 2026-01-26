@@ -8098,19 +8098,24 @@
                 openFactory(true);
             } else if (path === '/creator-dashboard') {
                 openCreatorDashboard('your-apps', true);
+            } else if (path === '/apps') {
+                openAppsPanel(true);
             } else {
                 closeFactoryView(true);
                 closeCreatorDashboard(true);
+                closeAppsView(true);
             }
         });
 
-        // Check URL on page load to open Factory if on /governance or Creator Dashboard if on /creator-dashboard
+        // Check URL on page load to open the appropriate view based on path
         function checkInitialRoute() {
             const path = window.location.pathname;
             if (path === '/governance') {
                 openFactory(true);
             } else if (path === '/creator-dashboard') {
                 openCreatorDashboard('your-apps', true);
+            } else if (path === '/apps') {
+                openAppsPanel(true);
             }
         }
 
@@ -9816,6 +9821,9 @@
                 chatInput.focus();
             }
 
+            // Update URL to root
+            history.pushState({ view: 'home' }, '', '/');
+
             // Close mobile sidebar if open
             closeMobileSidebar();
         }
@@ -10186,7 +10194,7 @@
         // ========================
         // APPS PANEL FUNCTIONALITY
         // ========================
-        function openAppsPanel() {
+        function openAppsPanel(skipPushState = false) {
             // Show inline apps view instead of modal
             const welcomeState = document.getElementById('welcomeState');
             const appsView = document.getElementById('appsView');
@@ -10202,6 +10210,11 @@
             if (creatorDashboard) creatorDashboard.classList.remove('active');
             if (factoryView) factoryView.classList.remove('active');
             if (appsView) appsView.classList.add('active');
+
+            // Update URL to /apps
+            if (!skipPushState) {
+                history.pushState({ view: 'apps' }, '', '/apps');
+            }
 
             // Scroll to top of chat area
             if (chatArea) chatArea.scrollTop = 0;
@@ -10237,7 +10250,7 @@
             }, 100);
         }
 
-        function closeAppsView() {
+        function closeAppsView(skipPushState = false) {
             const welcomeState = document.getElementById('welcomeState');
             const appsView = document.getElementById('appsView');
             const useCasesSection = document.getElementById('useCasesSection');
@@ -10248,6 +10261,11 @@
             if (useCasesSection) useCasesSection.style.display = '';
             if (appsView) appsView.classList.remove('active');
             if (searchInput) searchInput.value = '';
+
+            // Update URL back to root
+            if (!skipPushState) {
+                history.pushState({ view: 'home' }, '', '/');
+            }
         }
 
         function closeAppsPanel() {
