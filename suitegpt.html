@@ -3376,6 +3376,169 @@
             color: var(--text-tertiary);
         }
 
+        /* === SETTINGS MODAL === */
+        .settings-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .settings-modal-overlay.active {
+            display: flex;
+        }
+
+        .settings-modal {
+            background: var(--bg-elevated);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 700px;
+            max-height: 80vh;
+            display: flex;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .settings-nav {
+            width: 200px;
+            background: var(--bg-dark);
+            border-right: 1px solid var(--border-subtle);
+            padding: 16px 0;
+            flex-shrink: 0;
+        }
+
+        .settings-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-size: 0.95rem;
+            transition: all 0.15s ease;
+        }
+
+        .settings-nav-item:hover {
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+        }
+
+        .settings-nav-item.active {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        .settings-nav-item svg {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        .settings-content {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .settings-content-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .settings-content-header h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .settings-close-btn {
+            background: none;
+            border: none;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 6px;
+            transition: all 0.15s ease;
+        }
+
+        .settings-close-btn:hover {
+            background: var(--bg-dark);
+            color: var(--text-primary);
+        }
+
+        .settings-panel {
+            display: none;
+        }
+
+        .settings-panel.active {
+            display: block;
+        }
+
+        .settings-panel-description {
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+
+        .settings-action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .settings-action-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .settings-action-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        @media (max-width: 600px) {
+            .settings-modal {
+                flex-direction: column;
+                max-height: 90vh;
+            }
+
+            .settings-nav {
+                width: 100%;
+                flex-direction: row;
+                overflow-x: auto;
+                padding: 8px;
+                border-right: none;
+                border-bottom: 1px solid var(--border-subtle);
+            }
+
+            .settings-nav-item {
+                padding: 8px 16px;
+                white-space: nowrap;
+            }
+        }
+
         /* === FACTORY/GOVERNANCE VIEW === */
         .factory-view {
             display: none;
@@ -6085,14 +6248,6 @@
                         </span>
                         <span>Chat History</span>
                     </button>
-                    <button class="sidebar-item" id="importHistoryBtn">
-                        <span class="sidebar-item-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </span>
-                        <span>Import History</span>
-                    </button>
                 </div>
             </nav>
 
@@ -6119,25 +6274,12 @@
                         </div>
                     </div>
                     <div class="profile-dropdown-divider"></div>
-                    <a href="https://www.getsuite.app/docs/" target="_blank" class="profile-dropdown-item" style="text-decoration: none;">
+                    <button onclick="openSettingsModal(); toggleProfileDropdown();" class="profile-dropdown-item" style="width: 100%; text-align: left; background: none; border: none; cursor: pointer;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-                            <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
                         </svg>
-                        Documentation
-                    </a>
-                    <a href="https://t.me/getsuiteapp" target="_blank" class="profile-dropdown-item" style="text-decoration: none;">
-                        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-                            <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18 1.897-.962 6.502-1.359 8.627-.168.9-.5 1.201-.82 1.23-.697.064-1.226-.461-1.901-.903-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.015-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.139-5.062 3.345-.479.329-.913.489-1.302.481-.428-.009-1.252-.242-1.865-.442-.751-.244-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.831-2.529 6.998-3.015 3.333-1.386 4.025-1.627 4.477-1.635.099-.002.321.023.465.142.121.1.154.234.169.337.015.103.034.337.019.519z"/>
-                        </svg>
-                        Community Chat
-                    </a>
-                    <button onclick="openFactory(); toggleProfileDropdown();" class="profile-dropdown-item" style="width: 100%; text-align: left; background: none; border: none; cursor: pointer;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                            <path d="M2 20h20M5 20V8l7-5 7 5v12M9 20v-6h6v6"/>
-                            <path d="M9 12h.01M15 12h.01"/>
-                        </svg>
-                        Factory (Governance)
+                        Settings
                     </button>
                 </div>
 
@@ -7611,6 +7753,103 @@
                     <a href="/learn/bonus-credits.html" class="credits-modal-docs-link" onclick="closeCreditsModal()">
                         Read full documentation →
                     </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="settings-modal-overlay" id="settingsModalOverlay" onclick="if(event.target === this) closeSettingsModal()">
+        <div class="settings-modal">
+            <nav class="settings-nav">
+                <button class="settings-nav-item active" data-panel="docs" onclick="switchSettingsPanel('docs')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                        <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+                    </svg>
+                    Documentation
+                </button>
+                <button class="settings-nav-item" data-panel="community" onclick="switchSettingsPanel('community')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                    </svg>
+                    Community Chat
+                </button>
+                <button class="settings-nav-item" data-panel="factory" onclick="switchSettingsPanel('factory')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M2 20h20M5 20V8l7-5 7 5v12M9 20v-6h6v6"/>
+                        <path d="M9 12h.01M15 12h.01"/>
+                    </svg>
+                    Factory (Governance)
+                </button>
+                <button class="settings-nav-item" data-panel="import" onclick="switchSettingsPanel('import')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Import History
+                </button>
+            </nav>
+            <div class="settings-content">
+                <div class="settings-content-header">
+                    <h2 id="settingsPanelTitle">Documentation</h2>
+                    <button class="settings-close-btn" onclick="closeSettingsModal()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Documentation Panel -->
+                <div class="settings-panel active" id="settingsPanelDocs">
+                    <p class="settings-panel-description">
+                        Access the SUITE documentation to learn about features, APIs, and how to get the most out of the platform.
+                    </p>
+                    <a href="https://www.getsuite.app/docs/" target="_blank" class="settings-action-btn" style="text-decoration: none;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
+                            <path d="M15 3h6v6M10 14L21 3"/>
+                        </svg>
+                        Open Documentation
+                    </a>
+                </div>
+
+                <!-- Community Chat Panel -->
+                <div class="settings-panel" id="settingsPanelCommunity">
+                    <p class="settings-panel-description">
+                        Join the SUITE community on Telegram to chat with other users, share ideas, get help, and stay updated on the latest features.
+                    </p>
+                    <a href="https://t.me/getsuiteapp" target="_blank" class="settings-action-btn" style="text-decoration: none;">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18 1.897-.962 6.502-1.359 8.627-.168.9-.5 1.201-.82 1.23-.697.064-1.226-.461-1.901-.903-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.015-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.139-5.062 3.345-.479.329-.913.489-1.302.481-.428-.009-1.252-.242-1.865-.442-.751-.244-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.831-2.529 6.998-3.015 3.333-1.386 4.025-1.627 4.477-1.635.099-.002.321.023.465.142.121.1.154.234.169.337.015.103.034.337.019.519z"/>
+                        </svg>
+                        Join Telegram Community
+                    </a>
+                </div>
+
+                <!-- Factory (Governance) Panel -->
+                <div class="settings-panel" id="settingsPanelFactory">
+                    <p class="settings-panel-description">
+                        The Factory is where SUITE's governance happens. Submit proposals, vote on features, and help shape the future of the platform.
+                    </p>
+                    <button class="settings-action-btn" onclick="closeSettingsModal(); openFactory();">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M2 20h20M5 20V8l7-5 7 5v12M9 20v-6h6v6"/>
+                        </svg>
+                        Open Factory
+                    </button>
+                </div>
+
+                <!-- Import History Panel -->
+                <div class="settings-panel" id="settingsPanelImport">
+                    <p class="settings-panel-description">
+                        Import your chat history from other AI assistants like ChatGPT. Your conversations will be securely stored and available across devices.
+                    </p>
+                    <button class="settings-action-btn" onclick="closeSettingsModal(); triggerHistoryImport();">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                        </svg>
+                        Import Chat History
+                    </button>
                 </div>
             </div>
         </div>
@@ -10946,6 +11185,62 @@
         }
 
         // ========================
+        // SETTINGS MODAL
+        // ========================
+        function openSettingsModal() {
+            const overlay = document.getElementById('settingsModalOverlay');
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeSettingsModal() {
+            const overlay = document.getElementById('settingsModalOverlay');
+            overlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function switchSettingsPanel(panelId) {
+            // Update nav items
+            document.querySelectorAll('.settings-nav-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.panel === panelId);
+            });
+
+            // Update panels
+            const panelMap = {
+                'docs': { id: 'settingsPanelDocs', title: 'Documentation' },
+                'community': { id: 'settingsPanelCommunity', title: 'Community Chat' },
+                'factory': { id: 'settingsPanelFactory', title: 'Factory (Governance)' },
+                'import': { id: 'settingsPanelImport', title: 'Import History' }
+            };
+
+            // Hide all panels
+            document.querySelectorAll('.settings-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+
+            // Show selected panel
+            const panelInfo = panelMap[panelId];
+            if (panelInfo) {
+                const panel = document.getElementById(panelInfo.id);
+                if (panel) panel.classList.add('active');
+
+                const title = document.getElementById('settingsPanelTitle');
+                if (title) title.textContent = panelInfo.title;
+            }
+        }
+
+        function triggerHistoryImport() {
+            // Use existing import modal
+            const importModal = document.getElementById('importModal');
+            if (importModal) {
+                importModal.classList.add('active');
+                if (typeof resetImportModal === 'function') {
+                    resetImportModal();
+                }
+            }
+        }
+
+        // ========================
         // WITHDRAWAL MODAL
         // ========================
         function openWithdrawalModal() {
@@ -11130,7 +11425,6 @@
         const sidebar = document.getElementById('sidebar');
         const sidebarOverlay = document.getElementById('sidebarOverlay');
         const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-        const importHistoryBtn = document.getElementById('importHistoryBtn');
         const chatHistoryBtn = document.getElementById('chatHistoryBtn');
 
         // State
@@ -11150,16 +11444,6 @@
 
         if (sidebarOverlay) {
             sidebarOverlay.addEventListener('click', () => {
-                sidebar.classList.remove('open');
-                sidebarOverlay.classList.remove('active');
-            });
-        }
-
-        // Sidebar navigation
-        if (importHistoryBtn) {
-            importHistoryBtn.addEventListener('click', () => {
-                document.getElementById('importModal').classList.add('active');
-                resetImportModal();
                 sidebar.classList.remove('open');
                 sidebarOverlay.classList.remove('active');
             });
