@@ -6324,6 +6324,113 @@
             box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
         }
 
+        /* Builder Switch Confirmation Modal */
+        .builder-switch-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100002;
+            backdrop-filter: blur(8px);
+        }
+
+        .builder-switch-modal-overlay.active {
+            display: flex;
+            animation: modalFadeIn 0.2s ease;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .builder-switch-modal {
+            background: linear-gradient(145deg, rgba(30, 30, 45, 0.98), rgba(20, 20, 35, 0.98));
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 32px;
+            width: 90%;
+            max-width: 420px;
+            text-align: center;
+            animation: modalSlideUp 0.3s ease;
+        }
+
+        @keyframes modalSlideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .builder-switch-modal-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: rgba(251, 191, 36, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            color: #fbbf24;
+        }
+
+        .builder-switch-modal h3 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .builder-switch-modal p {
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .builder-switch-modal p strong {
+            color: #a5b4fc;
+        }
+
+        .builder-switch-modal-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .builder-switch-btn {
+            flex: 1;
+            padding: 14px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+
+        .builder-switch-btn.cancel {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .builder-switch-btn.cancel:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .builder-switch-btn.confirm {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+        }
+
+        .builder-switch-btn.confirm:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+        }
+
         /* Factory Comments */
         .factory-comments-section {
             display: none;
@@ -11511,6 +11618,25 @@
         </div>
     </div>
 
+    <!-- Builder Switch Confirmation Modal -->
+    <div class="builder-switch-modal-overlay" id="builderSwitchModal">
+        <div class="builder-switch-modal">
+            <div class="builder-switch-modal-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+            </div>
+            <h3>Switch to Regular Chat?</h3>
+            <p>This will start a new conversation. You can find this builder chat in your <strong>History</strong> tab if you want to continue building your app later.</p>
+            <div class="builder-switch-modal-actions">
+                <button class="builder-switch-btn cancel" onclick="closeBuilderSwitchModal()">Stay in Builder</button>
+                <button class="builder-switch-btn confirm" id="builderSwitchConfirmBtn">Switch Model</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Connect Modal -->
     <div class="connect-modal-overlay" id="connectModalOverlay" onclick="if(event.target === this) closeConnectModal()">
         <div class="connect-modal">
@@ -16291,23 +16417,59 @@
             if (selector) selector.classList.remove('active');
         }
 
+        // Pending switch state for confirmation modal
+        let pendingBuilderSwitch = { mode: null, modeName: null };
+
         function switchBuilderModel(mode, modeName) {
-            currentBuilderModel = mode;
+            closeBuilderModelDropdown();
 
-            // Update the selector display
-            const nameEl = document.getElementById('builderModelName');
-            if (nameEl) nameEl.textContent = modeName;
+            // If staying in suitegpt mode, just update the display
+            if (mode === 'suitegpt') {
+                currentBuilderModel = mode;
+                const nameEl = document.getElementById('builderModelName');
+                if (nameEl) nameEl.textContent = modeName;
+                updateBuilderDropdownActive(mode);
+                return;
+            }
 
-            // Update active state in dropdown
-            const items = document.querySelectorAll('.builder-model-dropdown-item');
-            items.forEach(item => {
+            // Switching away from builder - show confirmation modal
+            pendingBuilderSwitch = { mode, modeName };
+            openBuilderSwitchModal();
+        }
+
+        function openBuilderSwitchModal() {
+            const modal = document.getElementById('builderSwitchModal');
+            if (modal) modal.classList.add('active');
+        }
+
+        function closeBuilderSwitchModal() {
+            const modal = document.getElementById('builderSwitchModal');
+            if (modal) modal.classList.remove('active');
+            pendingBuilderSwitch = { mode: null, modeName: null };
+        }
+
+        function confirmBuilderSwitch() {
+            const { mode, modeName } = pendingBuilderSwitch;
+            if (!mode) return;
+
+            closeBuilderSwitchModal();
+
+            // Exit builder mode
+            exitBuilderMode();
+
+            // Update main chat model selector
+            currentModel = mode;
+            const mainNameEl = document.getElementById('modelName');
+            if (mainNameEl) mainNameEl.textContent = modeName;
+
+            // Update main dropdown active state
+            const mainItems = document.querySelectorAll('#modelDropdown .model-dropdown-item');
+            mainItems.forEach(item => {
                 item.classList.remove('active');
                 if (item.dataset.mode === mode) {
                     item.classList.add('active');
                 }
             });
-
-            closeBuilderModelDropdown();
 
             // Check if Pro mode requires upgrade
             if (mode === 'opus') {
@@ -16318,8 +16480,34 @@
                 }
             }
 
-            console.log('Builder using model:', mode);
+            console.log('Switched to model:', mode);
         }
+
+        function updateBuilderDropdownActive(mode) {
+            const items = document.querySelectorAll('.builder-model-dropdown-item');
+            items.forEach(item => {
+                item.classList.remove('active');
+                if (item.dataset.mode === mode) {
+                    item.classList.add('active');
+                }
+            });
+        }
+
+        // Set up builder switch confirm button
+        document.addEventListener('DOMContentLoaded', function() {
+            const confirmBtn = document.getElementById('builderSwitchConfirmBtn');
+            if (confirmBtn) {
+                confirmBtn.addEventListener('click', confirmBuilderSwitch);
+            }
+        });
+
+        // Close modal when clicking overlay
+        document.addEventListener('click', function(e) {
+            const modal = document.getElementById('builderSwitchModal');
+            if (e.target === modal) {
+                closeBuilderSwitchModal();
+            }
+        });
 
         // Close builder dropdown when clicking outside
         document.addEventListener('click', function(e) {
