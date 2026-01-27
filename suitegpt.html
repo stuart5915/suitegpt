@@ -7044,6 +7044,635 @@
             border-color: rgba(34, 197, 94, 0.4);
         }
 
+        /* ========================================= */
+        /* SUITEGPT BUILDER MODE                    */
+        /* ========================================= */
+
+        .builder-mode {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #0a0a12 0%, #12121f 50%, #0d0d18 100%);
+            z-index: 2000;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .builder-mode.active {
+            display: flex;
+            animation: builderFadeIn 0.4s ease;
+        }
+
+        @keyframes builderFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Animated Background Orbs */
+        .builder-bg-effects {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .builder-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+            animation: orbFloat 20s ease-in-out infinite;
+        }
+
+        .builder-orb-1 {
+            width: 400px;
+            height: 400px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            top: -100px;
+            right: -100px;
+            animation-delay: 0s;
+        }
+
+        .builder-orb-2 {
+            width: 300px;
+            height: 300px;
+            background: linear-gradient(135deg, #06b6d4, #3b82f6);
+            bottom: -50px;
+            left: -50px;
+            animation-delay: -7s;
+        }
+
+        .builder-orb-3 {
+            width: 250px;
+            height: 250px;
+            background: linear-gradient(135deg, #f472b6, #c084fc);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation-delay: -14s;
+        }
+
+        @keyframes orbFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(30px, -30px) scale(1.05); }
+            50% { transform: translate(-20px, 20px) scale(0.95); }
+            75% { transform: translate(-30px, -20px) scale(1.02); }
+        }
+
+        /* Builder Header */
+        .builder-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 32px;
+            position: relative;
+            z-index: 10;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(20px);
+        }
+
+        .builder-brand {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .builder-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
+        }
+
+        .builder-title-group {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .builder-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: white;
+            margin: 0;
+            letter-spacing: -0.02em;
+        }
+
+        .builder-subtitle {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .builder-exit-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .builder-exit-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Builder Content Layout */
+        .builder-content {
+            flex: 1;
+            display: flex;
+            gap: 24px;
+            padding: 24px 32px;
+            position: relative;
+            z-index: 10;
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        /* Builder Chat Area */
+        .builder-chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .builder-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 16px;
+        }
+
+        .builder-message {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            animation: messageSlideIn 0.4s ease;
+        }
+
+        @keyframes messageSlideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .builder-message.user {
+            flex-direction: row-reverse;
+        }
+
+        .builder-message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .builder-message.assistant .builder-message-avatar {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .builder-message.user .builder-message-avatar {
+            background: linear-gradient(135deg, #06b6d4, #3b82f6);
+            color: white;
+        }
+
+        .builder-message-content {
+            max-width: 600px;
+            padding: 20px 24px;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .builder-message.assistant .builder-message-content {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .builder-message.user .builder-message-content {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border-radius: 20px 20px 6px 20px;
+        }
+
+        .builder-welcome-text {
+            margin: 0 0 20px 0;
+            font-size: 1.05rem;
+        }
+
+        /* Builder Starter Prompts */
+        .builder-starter-prompts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .builder-starter-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 18px;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 12px;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .builder-starter-chip:hover {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: rgba(99, 102, 241, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.2);
+        }
+
+        .starter-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: rgba(99, 102, 241, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #a5b4fc;
+        }
+
+        /* Builder Spec Panel */
+        .builder-spec-panel {
+            width: 360px;
+            flex-shrink: 0;
+            display: none;
+        }
+
+        .builder-spec-panel.active {
+            display: block;
+            animation: specSlideIn 0.5s ease;
+        }
+
+        @keyframes specSlideIn {
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .builder-spec-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            overflow: hidden;
+            backdrop-filter: blur(20px);
+        }
+
+        .spec-card-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 24px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.1));
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .spec-card-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
+        }
+
+        .spec-card-title-area {
+            flex: 1;
+        }
+
+        .spec-card-title {
+            margin: 0 0 4px 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .spec-card-status {
+            font-size: 0.8rem;
+            color: rgba(99, 102, 241, 1);
+            font-weight: 500;
+        }
+
+        .spec-card-body {
+            padding: 24px;
+        }
+
+        .spec-section {
+            margin-bottom: 20px;
+        }
+
+        .spec-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .spec-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 8px;
+        }
+
+        .spec-value {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.5;
+        }
+
+        .spec-placeholder {
+            color: rgba(255, 255, 255, 0.3);
+            font-style: italic;
+        }
+
+        .spec-features-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .spec-feature-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: rgba(99, 102, 241, 0.08);
+            border-radius: 10px;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .spec-feature-item::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #6366f1;
+            flex-shrink: 0;
+        }
+
+        .spec-feature-item.spec-placeholder::before {
+            display: none;
+        }
+
+        .spec-estimate-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 18px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .spec-estimate-time {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .spec-estimate-cost {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #a5b4fc;
+        }
+
+        .spec-card-actions {
+            display: flex;
+            gap: 12px;
+            padding: 20px 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .spec-action-btn {
+            flex: 1;
+            padding: 14px 20px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .spec-action-btn.secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .spec-action-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .spec-action-btn.primary {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border: none;
+            color: white;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .spec-action-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(99, 102, 241, 0.4);
+        }
+
+        .spec-action-cost {
+            padding: 4px 10px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            font-size: 0.8rem;
+        }
+
+        /* Builder Input Area */
+        .builder-input-area {
+            padding: 20px 32px 32px;
+            position: relative;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .builder-input-wrapper {
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 16px 20px;
+            transition: all 0.2s ease;
+        }
+
+        .builder-input-wrapper:focus-within {
+            border-color: rgba(99, 102, 241, 0.5);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15), 0 8px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .builder-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-size: 1rem;
+            font-family: inherit;
+            color: white;
+            resize: none;
+            min-height: 24px;
+            max-height: 150px;
+            line-height: 1.5;
+        }
+
+        .builder-input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .builder-send-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .builder-send-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+        }
+
+        .builder-send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .builder-input-hint {
+            text-align: center;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.3);
+            margin-top: 12px;
+        }
+
+        /* Model Dropdown Additions */
+        .model-dropdown-divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 8px 0;
+        }
+
+        .suitegpt-builder-option {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.05));
+            border: 1px solid rgba(99, 102, 241, 0.2) !important;
+            margin: 4px;
+            border-radius: 12px !important;
+        }
+
+        .suitegpt-builder-option:hover {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.1));
+            border-color: rgba(99, 102, 241, 0.4) !important;
+        }
+
+        .suitegpt-builder-name {
+            background: linear-gradient(135deg, #6366f1, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 600;
+        }
+
+        .model-builder-badge {
+            padding: 4px 10px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 600;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        /* Mobile Responsive for Builder */
+        @media (max-width: 900px) {
+            .builder-content {
+                flex-direction: column;
+                padding: 16px;
+            }
+
+            .builder-spec-panel {
+                width: 100%;
+                order: -1;
+            }
+
+            .builder-spec-panel.active {
+                max-height: 300px;
+                overflow-y: auto;
+            }
+
+            .builder-header {
+                padding: 16px 20px;
+            }
+
+            .builder-input-area {
+                padding: 16px 20px 24px;
+            }
+
+            .builder-starter-prompts {
+                flex-direction: column;
+            }
+
+            .builder-starter-chip {
+                justify-content: flex-start;
+            }
+        }
+
         /* Use Cases Section */
         .use-cases-section {
             width: 100%;
@@ -8577,6 +9206,14 @@
                                 </div>
                                 <span class="model-pro-badge">Pro</span>
                             </div>
+                            <div class="model-dropdown-divider"></div>
+                            <div class="model-dropdown-item suitegpt-builder-option" data-mode="suitegpt" data-name="SuiteGPT Builder">
+                                <div class="model-dropdown-item-info">
+                                    <span class="model-dropdown-item-name suitegpt-builder-name">SuiteGPT Builder</span>
+                                    <span class="model-dropdown-item-desc">Create apps & tools</span>
+                                </div>
+                                <span class="model-builder-badge">Build</span>
+                            </div>
                         </div>
                         </div>
 
@@ -8620,6 +9257,154 @@
                         </button>
                     </div>
 
+                </section>
+
+                <!-- SuiteGPT Builder Mode -->
+                <section class="builder-mode" id="builderMode">
+                    <div class="builder-bg-effects">
+                        <div class="builder-orb builder-orb-1"></div>
+                        <div class="builder-orb builder-orb-2"></div>
+                        <div class="builder-orb builder-orb-3"></div>
+                    </div>
+
+                    <div class="builder-header">
+                        <div class="builder-brand">
+                            <div class="builder-logo">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+                                    <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/>
+                                    <line x1="12" y1="22" x2="12" y2="15.5"/>
+                                    <polyline points="22 8.5 12 15.5 2 8.5"/>
+                                </svg>
+                            </div>
+                            <div class="builder-title-group">
+                                <h2 class="builder-title">SuiteGPT Builder</h2>
+                                <span class="builder-subtitle">Create anything you can imagine</span>
+                            </div>
+                        </div>
+                        <button class="builder-exit-btn" onclick="exitBuilderMode()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                                <path d="M18 6L6 18M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="builder-content">
+                        <!-- Builder Chat Area -->
+                        <div class="builder-chat-area" id="builderChatArea">
+                            <div class="builder-messages" id="builderMessages">
+                                <!-- Welcome Message -->
+                                <div class="builder-message assistant">
+                                    <div class="builder-message-avatar">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                                            <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/>
+                                        </svg>
+                                    </div>
+                                    <div class="builder-message-content">
+                                        <p class="builder-welcome-text">Welcome to SuiteGPT Builder. Tell me what you want to create, and I'll help you build it.</p>
+                                        <div class="builder-starter-prompts">
+                                            <button class="builder-starter-chip" onclick="useBuilderStarter('I want to build an app that')">
+                                                <span class="starter-icon">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                                        <path d="M12 8v8M8 12h8"/>
+                                                    </svg>
+                                                </span>
+                                                Build an app
+                                            </button>
+                                            <button class="builder-starter-chip" onclick="useBuilderStarter('I need a tool that helps me')">
+                                                <span class="starter-icon">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                                        <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
+                                                    </svg>
+                                                </span>
+                                                Create a tool
+                                            </button>
+                                            <button class="builder-starter-chip" onclick="useBuilderStarter('Modify an existing app:')">
+                                                <span class="starter-icon">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                                        <path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                                                    </svg>
+                                                </span>
+                                                Modify an app
+                                            </button>
+                                            <button class="builder-starter-chip" onclick="useBuilderStarter('I have an idea:')">
+                                                <span class="starter-icon">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                                        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                                                    </svg>
+                                                </span>
+                                                Share an idea
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Builder Spec Card (shows as conversation progresses) -->
+                        <div class="builder-spec-panel" id="builderSpecPanel">
+                            <div class="builder-spec-card" id="builderSpecCard">
+                                <div class="spec-card-header">
+                                    <div class="spec-card-icon" id="specCardIcon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+                                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                            <path d="M12 8v8M8 12h8"/>
+                                        </svg>
+                                    </div>
+                                    <div class="spec-card-title-area">
+                                        <h3 class="spec-card-title" id="specCardTitle">Your App</h3>
+                                        <span class="spec-card-status" id="specCardStatus">Defining...</span>
+                                    </div>
+                                </div>
+                                <div class="spec-card-body">
+                                    <div class="spec-section" id="specDescription">
+                                        <div class="spec-label">Description</div>
+                                        <div class="spec-value spec-placeholder">Describe your idea to get started</div>
+                                    </div>
+                                    <div class="spec-section" id="specFeatures">
+                                        <div class="spec-label">Features</div>
+                                        <div class="spec-features-list">
+                                            <div class="spec-feature-item spec-placeholder">Features will appear here</div>
+                                        </div>
+                                    </div>
+                                    <div class="spec-section" id="specEstimate">
+                                        <div class="spec-label">Estimate</div>
+                                        <div class="spec-estimate-row">
+                                            <span class="spec-estimate-time">~24 hours</span>
+                                            <span class="spec-estimate-cost" id="specCost">50 credits</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="spec-card-actions">
+                                    <button class="spec-action-btn secondary" onclick="refineSpec()">Refine More</button>
+                                    <button class="spec-action-btn primary" onclick="submitBuildRequest()">
+                                        <span>Request Build</span>
+                                        <span class="spec-action-cost">50 credits</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Builder Input -->
+                    <div class="builder-input-area">
+                        <div class="builder-input-wrapper">
+                            <textarea
+                                class="builder-input"
+                                id="builderInput"
+                                placeholder="Describe what you want to build..."
+                                rows="1"
+                            ></textarea>
+                            <button class="builder-send-btn" id="builderSendBtn" onclick="sendBuilderMessage()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="builder-input-hint">
+                            Be as specific as possible. Include features, users, and use cases.
+                        </div>
+                    </div>
                 </section>
 
                 <!-- Inline Apps View -->
@@ -14502,6 +15287,15 @@
 
             closeModelDropdown();
 
+            // Check if SuiteGPT Builder mode
+            if (mode === 'suitegpt') {
+                openBuilderMode();
+                // Reset model selector to previous model
+                if (nameEl) nameEl.textContent = 'Gemini Flash 2.0';
+                currentModel = 'flash';
+                return;
+            }
+
             // Check if Pro mode requires upgrade
             if (mode === 'opus') {
                 const isLoggedIn = !!(localStorage.getItem('connectedWallet') || localStorage.getItem('telegram_user'));
@@ -14513,6 +15307,316 @@
 
             console.log('Selected mode:', mode);
         }
+
+        // =========================================
+        // SUITEGPT BUILDER MODE
+        // =========================================
+
+        let builderState = {
+            messages: [],
+            spec: {
+                name: 'Your App',
+                description: '',
+                features: [],
+                cost: 50
+            },
+            isLoading: false
+        };
+
+        function openBuilderMode() {
+            const builderMode = document.getElementById('builderMode');
+            if (builderMode) {
+                builderMode.classList.add('active');
+                document.body.style.overflow = 'hidden';
+
+                // Focus the input
+                setTimeout(() => {
+                    const builderInput = document.getElementById('builderInput');
+                    if (builderInput) builderInput.focus();
+                }, 300);
+            }
+        }
+
+        function exitBuilderMode() {
+            const builderMode = document.getElementById('builderMode');
+            if (builderMode) {
+                builderMode.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+
+        function useBuilderStarter(prefix) {
+            const builderInput = document.getElementById('builderInput');
+            if (builderInput) {
+                builderInput.value = prefix + ' ';
+                builderInput.focus();
+                // Move cursor to end
+                builderInput.selectionStart = builderInput.selectionEnd = builderInput.value.length;
+            }
+        }
+
+        function sendBuilderMessage() {
+            const builderInput = document.getElementById('builderInput');
+            const builderMessages = document.getElementById('builderMessages');
+            const message = builderInput?.value.trim();
+
+            if (!message || builderState.isLoading) return;
+
+            builderState.isLoading = true;
+            builderInput.value = '';
+
+            // Add user message
+            const userMsgHtml = `
+                <div class="builder-message user">
+                    <div class="builder-message-avatar">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                    </div>
+                    <div class="builder-message-content">${escapeHtml(message)}</div>
+                </div>
+            `;
+            builderMessages.insertAdjacentHTML('beforeend', userMsgHtml);
+            builderMessages.scrollTop = builderMessages.scrollHeight;
+
+            builderState.messages.push({ role: 'user', content: message });
+
+            // Show typing indicator
+            const typingHtml = `
+                <div class="builder-message assistant" id="builderTyping">
+                    <div class="builder-message-avatar">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                            <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/>
+                        </svg>
+                    </div>
+                    <div class="builder-message-content">
+                        <div class="typing-indicator"><span></span><span></span><span></span></div>
+                    </div>
+                </div>
+            `;
+            builderMessages.insertAdjacentHTML('beforeend', typingHtml);
+            builderMessages.scrollTop = builderMessages.scrollHeight;
+
+            // Simulate AI response (in production, this would call the API)
+            setTimeout(() => {
+                processBuilderResponse(message);
+            }, 1500);
+        }
+
+        function processBuilderResponse(userMessage) {
+            const builderMessages = document.getElementById('builderMessages');
+            const typingEl = document.getElementById('builderTyping');
+            if (typingEl) typingEl.remove();
+
+            // Generate contextual response based on the conversation stage
+            let response = '';
+            let showSpec = false;
+
+            if (builderState.messages.length === 1) {
+                // First message - acknowledge and ask clarifying questions
+                builderState.spec.description = userMessage;
+
+                // Extract app name from message
+                const nameMatch = userMessage.match(/(?:app|tool|thing) (?:that |for |to )?(.+?)(?:\.|,|$)/i);
+                if (nameMatch) {
+                    const extracted = nameMatch[1].trim();
+                    builderState.spec.name = extracted.length > 30 ? extracted.substring(0, 30) + '...' : extracted;
+                }
+
+                response = `Great idea! Let me understand this better:\n\n**What you described:** ${userMessage.substring(0, 100)}${userMessage.length > 100 ? '...' : ''}\n\nA few questions to nail down the details:\n\n1. **Who is this for?** (yourself, a team, public users?)\n2. **What's the most important feature?**\n3. **Should it work offline?**`;
+                showSpec = true;
+            } else if (builderState.messages.length === 2) {
+                // Second message - extract features
+                builderState.spec.features = [
+                    'Core functionality based on your description',
+                    'Clean, intuitive interface',
+                    'Data persistence'
+                ];
+
+                // Add user-mentioned features
+                if (userMessage.toLowerCase().includes('offline')) {
+                    builderState.spec.features.push('Offline support');
+                }
+                if (userMessage.toLowerCase().includes('team') || userMessage.toLowerCase().includes('share')) {
+                    builderState.spec.features.push('Sharing & collaboration');
+                    builderState.spec.cost = 75;
+                }
+
+                response = `Perfect! I'm building out the spec now. Here's what I'm thinking:\n\n**Features I'll include:**\n${builderState.spec.features.map(f => `- ${f}`).join('\n')}\n\nDoes this capture what you need? Or would you like to add/change anything?`;
+                showSpec = true;
+            } else {
+                // Further refinements
+                if (userMessage.toLowerCase().includes('add') || userMessage.toLowerCase().includes('also')) {
+                    const newFeature = userMessage.replace(/^(add|also|and|include|i want|i need)\s*/i, '').trim();
+                    if (newFeature && newFeature.length > 3) {
+                        builderState.spec.features.push(newFeature.charAt(0).toUpperCase() + newFeature.slice(1));
+                        builderState.spec.cost += 10;
+                    }
+                    response = `Added! Your updated spec is ready. Check the card on the right - when you're happy with it, hit "Request Build" to submit.`;
+                } else if (userMessage.toLowerCase().includes('look') || userMessage.toLowerCase().includes('good') || userMessage.toLowerCase().includes('yes') || userMessage.toLowerCase().includes('perfect')) {
+                    response = `Awesome! Your app spec is ready to go. Click **"Request Build"** to submit it to our build queue. It'll be reviewed and built within 24 hours typically.\n\nOnce it's ready, you'll be able to:\n- Use it immediately\n- Make it public or keep it private\n- Earn credits if others use it`;
+                } else {
+                    response = `Got it! I've updated the spec. Take a look at the card and let me know if it looks right, or tell me what else to change.`;
+                }
+                showSpec = true;
+            }
+
+            builderState.messages.push({ role: 'assistant', content: response });
+
+            // Add assistant message
+            const assistantMsgHtml = `
+                <div class="builder-message assistant">
+                    <div class="builder-message-avatar">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                            <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/>
+                        </svg>
+                    </div>
+                    <div class="builder-message-content">${formatBuilderMessage(response)}</div>
+                </div>
+            `;
+            builderMessages.insertAdjacentHTML('beforeend', assistantMsgHtml);
+            builderMessages.scrollTop = builderMessages.scrollHeight;
+
+            // Show spec panel if needed
+            if (showSpec) {
+                updateBuilderSpec();
+                const specPanel = document.getElementById('builderSpecPanel');
+                if (specPanel) specPanel.classList.add('active');
+            }
+
+            builderState.isLoading = false;
+        }
+
+        function formatBuilderMessage(text) {
+            // Convert markdown-like formatting
+            return text
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, '<br>')
+                .replace(/- (.+)/g, '<span style="display:block;padding-left:16px;">• $1</span>');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function updateBuilderSpec() {
+            const titleEl = document.getElementById('specCardTitle');
+            const statusEl = document.getElementById('specCardStatus');
+            const descEl = document.querySelector('#specDescription .spec-value');
+            const featuresEl = document.querySelector('#specFeatures .spec-features-list');
+            const costEl = document.getElementById('specCost');
+
+            if (titleEl) titleEl.textContent = builderState.spec.name || 'Your App';
+            if (statusEl) statusEl.textContent = builderState.messages.length > 2 ? 'Ready to build' : 'Defining...';
+
+            if (descEl) {
+                descEl.textContent = builderState.spec.description || 'Describe your idea to get started';
+                descEl.classList.toggle('spec-placeholder', !builderState.spec.description);
+            }
+
+            if (featuresEl) {
+                if (builderState.spec.features.length > 0) {
+                    featuresEl.innerHTML = builderState.spec.features
+                        .map(f => `<div class="spec-feature-item">${f}</div>`)
+                        .join('');
+                } else {
+                    featuresEl.innerHTML = '<div class="spec-feature-item spec-placeholder">Features will appear here</div>';
+                }
+            }
+
+            if (costEl) {
+                costEl.textContent = `${builderState.spec.cost} credits`;
+            }
+
+            // Update action button cost
+            const actionCost = document.querySelector('.spec-action-cost');
+            if (actionCost) actionCost.textContent = `${builderState.spec.cost} credits`;
+        }
+
+        function refineSpec() {
+            const builderInput = document.getElementById('builderInput');
+            if (builderInput) {
+                builderInput.value = 'I want to change ';
+                builderInput.focus();
+                builderInput.selectionStart = builderInput.selectionEnd = builderInput.value.length;
+            }
+        }
+
+        function submitBuildRequest() {
+            // In production, this would submit to the backend
+            alert(`Build request submitted!\n\nApp: ${builderState.spec.name}\nCost: ${builderState.spec.cost} credits\n\nYou'll be notified when your app is ready (typically within 24 hours).`);
+
+            // Reset and close
+            builderState = {
+                messages: [],
+                spec: { name: 'Your App', description: '', features: [], cost: 50 },
+                isLoading: false
+            };
+
+            // Reset UI
+            const builderMessages = document.getElementById('builderMessages');
+            const specPanel = document.getElementById('builderSpecPanel');
+
+            if (specPanel) specPanel.classList.remove('active');
+
+            // Reset to welcome message
+            if (builderMessages) {
+                builderMessages.innerHTML = `
+                    <div class="builder-message assistant">
+                        <div class="builder-message-avatar">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                                <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/>
+                            </svg>
+                        </div>
+                        <div class="builder-message-content">
+                            <p class="builder-welcome-text">Build request submitted! Want to create something else?</p>
+                            <div class="builder-starter-prompts">
+                                <button class="builder-starter-chip" onclick="useBuilderStarter('I want to build an app that')">
+                                    <span class="starter-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                            <path d="M12 8v8M8 12h8"/>
+                                        </svg>
+                                    </span>
+                                    Build another app
+                                </button>
+                                <button class="builder-starter-chip" onclick="exitBuilderMode()">
+                                    <span class="starter-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+                                            <polyline points="16 17 21 12 16 7"/>
+                                            <line x1="21" y1="12" x2="9" y2="12"/>
+                                        </svg>
+                                    </span>
+                                    Back to chat
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Builder input auto-resize and enter to send
+        document.addEventListener('DOMContentLoaded', () => {
+            const builderInput = document.getElementById('builderInput');
+            if (builderInput) {
+                builderInput.addEventListener('input', function() {
+                    this.style.height = 'auto';
+                    this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+                });
+
+                builderInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendBuilderMessage();
+                    }
+                });
+            }
+        });
 
         // Initialize model selector
         document.addEventListener('DOMContentLoaded', () => {
