@@ -63,11 +63,13 @@ async function broadcastEvent(event) {
     const req = https.request(options, (res) => {
         if (res.statusCode === 200 || res.statusCode === 202) {
             console.log(`📡 Sent: ${event.label} - ${event.detail || ''}`);
+        } else {
+            console.log(`❌ Failed to send (${res.statusCode}): ${event.label}`);
         }
     });
 
     req.on('error', (e) => {
-        // Silent fail - don't spam console
+        console.log(`❌ Network error: ${e.message}`);
     });
 
     req.write(data);
@@ -234,6 +236,11 @@ if (!process.stdin.isTTY) {
 
 // Start watching
 watchDirectory(CLAUDE_DIR);
+
+// Re-scan for new files every 5 seconds (Windows fs.watch can miss new files)
+setInterval(() => {
+    findJsonlFiles(CLAUDE_DIR).forEach(watchFile);
+}, 5000);
 
 // Send heartbeat every 30s to show streamer is alive
 setInterval(() => {
