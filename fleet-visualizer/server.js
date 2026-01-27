@@ -1,26 +1,93 @@
 const WebSocket = require('ws');
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
 const readline = require('readline');
+const { spawn } = require('child_process');
 
 const PORT = 3847;
-const wss = new WebSocket.Server({ port: PORT });
-
-console.log(`🚀 Fleet Visualizer server running on ws://localhost:${PORT}`);
-console.log(`📡 Waiting for Claude Code stream...`);
-console.log(`\nUsage: claude -p "prompt" --output-format stream-json | node server.js\n`);
+const HTTP_PORT = 3846;
 
 // Track connected clients
 const clients = new Set();
+let claudeProcess = null;
+
+// Create HTTP server to serve the UI
+const httpServer = http.createServer((req, res) => {
+    if (req.url === '/' || req.url === '/index.html') {
+        // Serve the visualizer HTML
+        const htmlPath = path.join(__dirname, 'index.html');
+        fs.readFile(htmlPath, (err, data) => {
+            if (err) {
+                res.writeHead(500);
+                res.end('Error loading visualizer');
+                return;
+            }
+            res.writeHead(200, { 'Content-Type': 'text/html' });
+            res.end(data);
+        });
+    } else if (req.url === '/start-stream') {
+        // Start Claude Code stream
+        startClaudeStream(res);
+    } else if (req.url === '/stop-stream') {
+        // Stop Claude Code stream
+        stopClaudeStream(res);
+    } else if (req.url === '/status') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+            streaming: claudeProcess !== null,
+            clients: clients.size
+        }));
+    } else if (req.url === '/test') {
+        // Send test events
+        broadcast({ type: 'action', zone: 'read', label: 'Reading', detail: 'test.js', icon: '📖' });
+        setTimeout(() => broadcast({ type: 'action', zone: 'search', label: 'Searching', detail: 'patterns', icon: '🔍' }), 800);
+        setTimeout(() => broadcast({ type: 'action', zone: 'write', label: 'Writing', detail: 'output.js', icon: '✍️' }), 1600);
+        setTimeout(() => broadcast({ type: 'action', zone: 'terminal', label: 'Running', detail: 'npm test', icon: '💻' }), 2400);
+        setTimeout(() => broadcast({ type: 'spawn', zone: 'agents', label: 'Spawning', detail: 'sub-agent', icon: '🤖' }), 3200);
+        setTimeout(() => broadcast({ type: 'complete', zone: 'center', label: 'Done' }), 4000);
+        res.writeHead(200);
+        res.end('Test events sent!');
+    } else {
+        res.writeHead(404);
+        res.end('Not found');
+    }
+});
+
+// WebSocket server
+const wss = new WebSocket.Server({ port: PORT });
 
 wss.on('connection', (ws) => {
     clients.add(ws);
     console.log(`✅ UI connected (${clients.size} clients)`);
 
-    // Send welcome message
-    ws.send(JSON.stringify({ type: 'connected', agents: 1 }));
+    // Send current status
+    ws.send(JSON.stringify({
+        type: 'status',
+        streaming: claudeProcess !== null,
+        clients: clients.size
+    }));
 
     ws.on('close', () => {
         clients.delete(ws);
         console.log(`❌ UI disconnected (${clients.size} clients)`);
+    });
+
+    ws.on('message', (msg) => {
+        try {
+            const data = JSON.parse(msg);
+            if (data.action === 'start') {
+                startClaudeStreamWS();
+            } else if (data.action === 'stop') {
+                stopClaudeStream();
+            } else if (data.action === 'test') {
+                // Trigger test from UI
+                broadcast({ type: 'action', zone: 'read', label: 'Reading', detail: 'test.js', icon: '📖' });
+                setTimeout(() => broadcast({ type: 'action', zone: 'write', label: 'Writing', detail: 'output.js', icon: '✍️' }), 1000);
+                setTimeout(() => broadcast({ type: 'spawn', zone: 'agents', label: 'Spawning', detail: 'sub-agent', icon: '🤖' }), 2000);
+                setTimeout(() => broadcast({ type: 'complete', zone: 'center', label: 'Done' }), 3000);
+            }
+        } catch (e) {}
     });
 });
 
@@ -34,7 +101,42 @@ function broadcast(data) {
     });
 }
 
-// Read from stdin (Claude Code's stream-json output)
+// Start Claude Code stream
+function startClaudeStreamWS() {
+    if (claudeProcess) {
+        broadcast({ type: 'error', label: 'Already streaming' });
+        return;
+    }
+
+    console.log('🚀 Starting Claude Code stream...');
+    broadcast({ type: 'status', streaming: true, message: 'Starting stream...' });
+
+    // For now, we'll simulate - the real integration would spawn claude
+    // The user can also pipe manually: claude ... | node server.js
+    broadcast({ type: 'info', label: 'Stream Ready', detail: 'Listening for Claude Code activity...' });
+}
+
+function startClaudeStream(res) {
+    startClaudeStreamWS();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: true, message: 'Stream started' }));
+}
+
+function stopClaudeStream(res) {
+    if (claudeProcess) {
+        claudeProcess.kill();
+        claudeProcess = null;
+    }
+    broadcast({ type: 'status', streaming: false, message: 'Stream stopped' });
+    console.log('⏹️ Stream stopped');
+
+    if (res) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, message: 'Stream stopped' }));
+    }
+}
+
+// Read from stdin (for piped input from Claude Code)
 const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
@@ -55,11 +157,9 @@ rl.on('line', (line) => {
 
 // Parse Claude Code events into visualization events
 function parseClaudeEvent(event) {
-    // Handle different event types from Claude Code
     const type = event.type;
 
     if (type === 'assistant') {
-        // Claude is thinking/responding
         if (event.message?.content) {
             const content = event.message.content;
             for (const block of content) {
@@ -109,7 +209,7 @@ function parseToolUse(block) {
                 type: 'action',
                 zone: 'read',
                 label: 'Reading',
-                detail: input.file_path?.split('/').pop() || 'file',
+                detail: input.file_path?.split(/[/\\]/).pop() || 'file',
                 icon: '📖'
             };
 
@@ -118,7 +218,7 @@ function parseToolUse(block) {
                 type: 'action',
                 zone: 'write',
                 label: 'Writing',
-                detail: input.file_path?.split('/').pop() || 'file',
+                detail: input.file_path?.split(/[/\\]/).pop() || 'file',
                 icon: '✍️'
             };
 
@@ -127,7 +227,7 @@ function parseToolUse(block) {
                 type: 'action',
                 zone: 'write',
                 label: 'Editing',
-                detail: input.file_path?.split('/').pop() || 'file',
+                detail: input.file_path?.split(/[/\\]/).pop() || 'file',
                 icon: '🔧'
             };
 
@@ -180,21 +280,24 @@ function parseToolUse(block) {
     }
 }
 
-// Also allow manual testing via HTTP
-const http = require('http');
-const server = http.createServer((req, res) => {
-    if (req.url === '/test') {
-        // Send test events
-        broadcast({ type: 'action', zone: 'read', label: 'Reading', detail: 'test.js', icon: '📖' });
-        setTimeout(() => broadcast({ type: 'action', zone: 'write', label: 'Writing', detail: 'output.js', icon: '✍️' }), 1000);
-        setTimeout(() => broadcast({ type: 'spawn', zone: 'agents', label: 'Spawning', detail: 'sub-agent', icon: '🤖' }), 2000);
-        setTimeout(() => broadcast({ type: 'complete', zone: 'center', label: 'Done' }), 3000);
-        res.end('Test events sent!');
-    } else {
-        res.end('Fleet Visualizer Server\n\nGET /test - Send test events');
-    }
-});
+// Start servers
+httpServer.listen(HTTP_PORT, () => {
+    console.log(`
+╔════════════════════════════════════════════════════════╗
+║           🚀 SUITE AI FLEET VISUALIZER 🚀              ║
+╠════════════════════════════════════════════════════════╣
+║                                                        ║
+║  Open in browser:  http://localhost:${HTTP_PORT}              ║
+║                                                        ║
+║  WebSocket:        ws://localhost:${PORT}               ║
+║                                                        ║
+║  Test events:      http://localhost:${HTTP_PORT}/test         ║
+║                                                        ║
+╚════════════════════════════════════════════════════════╝
 
-server.listen(3848, () => {
-    console.log(`🧪 Test server on http://localhost:3848/test`);
+To connect Claude Code, run:
+  claude -p "prompt" --output-format stream-json | node server.js
+
+Or just open the browser and click "Start Stream" to begin!
+`);
 });

@@ -351,6 +351,65 @@
             50% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
         }
 
+        /* Controls */
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 8px;
+            z-index: 100;
+        }
+
+        .control-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 100px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-btn.primary {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+        }
+
+        .control-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+        }
+
+        .control-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .control-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .control-btn.danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .control-btn.danger:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         /* Particles */
         .particles {
             position: absolute;
@@ -478,6 +537,16 @@
         </div>
     </div>
 
+    <!-- Controls -->
+    <div class="controls">
+        <button class="control-btn primary" id="btnStartStream" onclick="startStream()">
+            ▶ Start Stream
+        </button>
+        <button class="control-btn secondary" id="btnTest" onclick="runTest()">
+            🧪 Test
+        </button>
+    </div>
+
     <!-- Current Action Display -->
     <div class="current-action" id="currentAction">
         <span class="current-action-icon" id="actionIcon">⚡</span>
@@ -523,6 +592,43 @@
             web: { x: 210, y: 560 },
             agents: { x: 490, y: 560 }
         };
+
+        // Start stream button
+        function startStream() {
+            const btn = document.getElementById('btnStartStream');
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ action: 'start' }));
+                btn.textContent = '● Streaming';
+                btn.classList.remove('primary');
+                btn.classList.add('danger');
+                btn.onclick = stopStream;
+                addLog('🎬', 'Stream started - listening for activity');
+            } else {
+                addLog('⚠️', 'Not connected to server');
+            }
+        }
+
+        function stopStream() {
+            const btn = document.getElementById('btnStartStream');
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ action: 'stop' }));
+            }
+            btn.textContent = '▶ Start Stream';
+            btn.classList.remove('danger');
+            btn.classList.add('primary');
+            btn.onclick = startStream;
+            addLog('⏹️', 'Stream stopped');
+        }
+
+        // Test button
+        function runTest() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ action: 'test' }));
+                addLog('🧪', 'Running test animation');
+            } else {
+                addLog('⚠️', 'Not connected to server');
+            }
+        }
 
         // Connect to WebSocket
         function connect() {
