@@ -16870,8 +16870,10 @@
                     if (profileName) profileName.textContent = displayName;
                     if (profileAvatar) {
                         if (supabaseUser.user_metadata?.avatar_url) {
+                            userAvatarUrl = supabaseUser.user_metadata.avatar_url;
                             profileAvatar.innerHTML = `<img src="${supabaseUser.user_metadata.avatar_url}" alt="${displayName}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
                         } else {
+                            userAvatarUrl = null;
                             // Default avatar for email users
                             profileAvatar.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
@@ -16886,7 +16888,10 @@
                     const displayName = telegramUser.username || telegramUser.first_name || 'User';
                     if (profileName) profileName.textContent = displayName;
                     if (profileAvatar && telegramUser.photo_url) {
+                        userAvatarUrl = telegramUser.photo_url;
                         profileAvatar.innerHTML = `<img src="${telegramUser.photo_url}" alt="${displayName}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+                    } else {
+                        userAvatarUrl = null;
                     }
                     // Fetch credits for telegram user
                     fetchUserCredits(telegramUser.id, 'telegram');
@@ -16899,6 +16904,7 @@
                 }
             } else {
                 document.body.classList.add('logged-out');
+                userAvatarUrl = null; // Reset avatar for chat messages
                 if (profileName) profileName.textContent = 'Get Started';
                 if (profileStatus) profileStatus.textContent = 'Connect to save progress';
                 if (creditsSection) creditsSection.style.display = 'none';
@@ -17276,6 +17282,7 @@
         }
 
         let userCredits = 0;
+        let userAvatarUrl = null; // Store user's profile picture for chat messages
 
         // Update credits display in sidebar and dropdown
         function updateCreditsDisplay(credits) {
@@ -20628,9 +20635,13 @@
 
             const avatar = document.createElement('div');
             avatar.className = 'message-avatar';
-            avatar.innerHTML = role === 'user'
-                ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
-                : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
+            if (role === 'user' && userAvatarUrl) {
+                avatar.innerHTML = `<img src="${userAvatarUrl}" alt="You" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+            } else if (role === 'user') {
+                avatar.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+            } else {
+                avatar.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
+            }
 
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
@@ -21319,9 +21330,13 @@
 
             const avatar = document.createElement('div');
             avatar.className = 'message-avatar';
-            avatar.innerHTML = role === 'user'
-                ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
-                : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
+            if (role === 'user' && userAvatarUrl) {
+                avatar.innerHTML = `<img src="${userAvatarUrl}" alt="You" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+            } else if (role === 'user') {
+                avatar.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+            } else {
+                avatar.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
+            }
 
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
