@@ -40,9 +40,10 @@ async function broadcastEvent(event) {
     lastSent = now;
 
     const payload = {
-        type: 'broadcast',
+        channel: CHANNEL,
         event: 'fleet-event',
-        payload: event
+        payload: event,
+        type: 'broadcast'
     };
 
     const data = JSON.stringify(payload);
