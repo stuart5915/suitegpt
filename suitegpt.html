@@ -9777,6 +9777,35 @@
             transition: transform 0.2s ease;
         }
 
+        .builder-back-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .builder-back-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+            color: var(--text-primary);
+        }
+
+        .builder-back-btn svg {
+            opacity: 0.7;
+        }
+
+        .builder-back-btn:hover svg {
+            opacity: 1;
+        }
+
         .builder-send-btn {
             width: 44px;
             height: 44px;
@@ -11797,11 +11826,11 @@
                                     rows="1"
                                 ></textarea>
                                 <div class="builder-input-toolbar">
-                                    <div class="builder-model-selector" id="builderModelSelector" onclick="toggleBuilderModelDropdown()">
-                                        <span class="builder-model-name" id="builderModelName">SuiteGPT Builder</span>
-                                        <svg class="builder-model-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                                            <polyline points="6 9 12 15 18 9"/>
+                                    <div class="builder-back-btn" id="builderModelSelector" onclick="closeBuilderMode()">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                            <path d="M19 12H5M12 19l-7-7 7-7"/>
                                         </svg>
+                                        <span>Go back</span>
                                     </div>
                                     <button class="builder-send-btn" id="builderSendBtn" onclick="sendBuilderMessage()">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
@@ -14363,6 +14392,9 @@
         let currentDashboardTab = 'your-apps';
 
         function openCreatorDashboard(tab = 'your-apps', skipPushState = false) {
+            // Close builder mode if open
+            exitBuilderMode();
+
             const welcomeState = document.getElementById('welcomeState');
             const appsView = document.getElementById('appsView');
             const factoryView = document.getElementById('factoryView');
@@ -14509,6 +14541,9 @@
         };
 
         function openConnections(skipPushState = false) {
+            // Close builder mode if open
+            exitBuilderMode();
+
             const welcomeState = document.getElementById('welcomeState');
             const connectionsView = document.getElementById('connectionsView');
             const appsView = document.getElementById('appsView');
@@ -14958,6 +14993,9 @@
         };
 
         function openFactory(skipPushState = false) {
+            // Close builder mode if open
+            exitBuilderMode();
+
             const welcomeState = document.getElementById('welcomeState');
             const appsView = document.getElementById('appsView');
             const creatorDashboard = document.getElementById('creatorDashboard');
@@ -17397,6 +17435,9 @@
 
         // Start a new chat
         function startNewChat() {
+            // Close builder mode if open
+            exitBuilderMode();
+
             const chatMessages = document.getElementById('chatMessages');
             const chatInput = document.getElementById('chatInput');
             const welcomeState = document.getElementById('welcomeState');
@@ -17863,6 +17904,9 @@
         let currentAppsCategory = 'all';
 
         function openAppsPanel(skipPushState = false) {
+            // Close builder mode if open
+            exitBuilderMode();
+
             // Show inline apps view instead of modal
             const welcomeState = document.getElementById('welcomeState');
             const appsView = document.getElementById('appsView');
@@ -18953,6 +18997,14 @@
             }
         }
 
+        function closeBuilderMode() {
+            // Exit builder mode and return to main chat
+            exitBuilderMode();
+            // Focus the main chat input
+            const chatInput = document.getElementById('chatInput');
+            if (chatInput) chatInput.focus();
+        }
+
         // Builder Model Dropdown Functions
         let currentBuilderModel = 'suitegpt';
 
@@ -19607,6 +19659,9 @@
 
         // Learn View functions
         function openLearnView() {
+            // Close builder mode if open
+            exitBuilderMode();
+
             // Close the dropdown
             closeProfileDropdown();
 
@@ -20680,6 +20735,9 @@
 
         // Load a specific chat by ID
         async function loadChat(chatId) {
+            // Close builder mode if open
+            exitBuilderMode();
+
             if (!supabaseClient) return;
 
             try {
