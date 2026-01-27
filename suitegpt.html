@@ -6038,8 +6038,40 @@
         }
 
         .welcome-state.chat-active {
-            padding-top: 20px;
-            justify-content: flex-start;
+            padding: 0;
+            justify-content: flex-end;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        /* Hide welcome content when chatting */
+        .welcome-state.chat-active .welcome-title {
+            display: none;
+        }
+
+        .welcome-state.chat-active .quick-suggestions {
+            display: none;
+        }
+
+        /* Messages area scrollable - use flex order to appear above input */
+        .welcome-state.chat-active .chat-container {
+            order: 1;
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 24px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Input sticks to bottom */
+        .welcome-state.chat-active .input-container {
+            order: 2;
+            position: sticky;
+            bottom: 0;
+            background: var(--bg-dark);
+            padding: 16px 24px 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            flex-shrink: 0;
         }
 
         .welcome-title {
@@ -6053,21 +6085,12 @@
             background-clip: text;
         }
 
-        .welcome-state.chat-active .welcome-title {
-            font-size: clamp(1.4rem, 3vw, 1.8rem);
-            margin-bottom: 16px;
-        }
-
         .welcome-subtitle {
             font-size: 1rem;
             color: var(--text-secondary);
             margin-bottom: 32px;
             max-width: 480px;
             display: none; /* Hidden by default for cleaner look */
-        }
-
-        .welcome-state.chat-active .welcome-subtitle {
-            display: none;
         }
 
         /* ========================================= */
@@ -6468,14 +6491,15 @@
         /* Chat Container */
         .chat-container {
             width: 100%;
-            max-width: min(680px, calc(100% - 24px));
+            max-width: 100%;
             margin: 0 auto;
-            padding: 0 24px 40px;
+            padding: 0;
             display: none;
         }
 
         .chat-container.active {
-            display: block;
+            display: flex;
+            flex-direction: column;
         }
 
         .chat-messages {
@@ -6483,7 +6507,10 @@
             flex-direction: column;
             gap: 20px;
             overflow-x: hidden;
-            max-width: 100%;
+            max-width: 680px;
+            width: 100%;
+            margin: 0 auto;
+            padding-bottom: 20px;
         }
 
         /* Messages */
@@ -7546,8 +7573,16 @@
             }
 
             .chat-container {
-                padding: 0 16px 30px;
-                padding-bottom: max(30px, env(safe-area-inset-bottom));
+                padding: 0 16px 20px;
+            }
+
+            /* Mobile chat-active adjustments */
+            .welcome-state.chat-active .chat-container {
+                padding: 16px;
+            }
+
+            .welcome-state.chat-active .input-container {
+                padding: 12px 16px max(16px, env(safe-area-inset-bottom));
             }
 
             .message {
@@ -12745,6 +12780,11 @@
                 welcomeState.style.display = '';
                 welcomeState.classList.remove('chat-active');
             }
+            // Also remove active class from chat container
+            const chatContainer = document.getElementById('chatContainer');
+            if (chatContainer) {
+                chatContainer.classList.remove('active');
+            }
             if (useCasesSection) {
                 useCasesSection.style.display = 'block';
             }
@@ -13564,7 +13604,7 @@
             if (savedApps.length === 0) {
                 list.innerHTML = `
                     <div class="sidebar-apps-empty">
-                        <button class="sidebar-apps-empty-btn" onclick="showAppsView()">
+                        <button class="sidebar-apps-empty-btn" onclick="openAppsPanel()">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M12 5v14M5 12h14" stroke-linecap="round"/>
                             </svg>
@@ -15359,7 +15399,8 @@
             messageDiv.appendChild(avatar);
             messageDiv.appendChild(contentDiv);
             chatMessages.appendChild(messageDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+            // Scroll the chat container (scrollable parent) to bottom
+            chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
         // Handle quick action button clicks
@@ -15440,7 +15481,8 @@
             messageDiv.appendChild(avatar);
             messageDiv.appendChild(contentDiv);
             chatMessages.appendChild(messageDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+            // Scroll the chat container (scrollable parent) to bottom
+            chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
         function removeTypingIndicator() {
