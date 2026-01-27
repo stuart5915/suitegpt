@@ -5798,48 +5798,148 @@
             display: none;
         }
 
-        /* Input Container */
+        /* ========================================= */
+        /* CHAT INPUT - Modern AI Style            */
+        /* ========================================= */
+
         .input-container {
             width: 100%;
-            max-width: min(680px, calc(100% - 24px));
+            max-width: 680px;
+            position: relative;
         }
 
+        /* Main Input Box */
         .chat-input-wrapper {
             display: flex;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--border-subtle);
+            flex-direction: column;
+            background: rgba(28, 28, 38, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 24px;
-            padding: 8px 8px 8px 12px;
-            backdrop-filter: blur(20px);
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+            padding: 16px 20px 14px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
         }
 
         .chat-input-wrapper:focus-within {
-            border-color: var(--accent-primary);
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15), 0 0 0 4px rgba(99, 102, 241, 0.1);
+            border-color: rgba(99, 102, 241, 0.5);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4), 0 0 0 3px rgba(99, 102, 241, 0.15);
         }
 
+        /* Textarea */
         .chat-input {
-            flex: 1;
+            width: 100%;
             border: none;
             background: transparent;
-            font-size: 1.05rem;
+            font-size: 1rem;
             font-family: inherit;
             color: var(--text-primary);
             outline: none;
-            padding: 14px 0;
+            resize: none;
+            min-height: 24px;
+            max-height: 200px;
+            line-height: 1.5;
+            padding: 0;
+            margin-bottom: 14px;
         }
 
         .chat-input::placeholder {
             color: var(--text-tertiary);
         }
 
+        /* Bottom Toolbar */
+        .chat-input-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Left Actions */
+        .chat-input-actions {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .chat-action-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            border: none;
+            background: transparent;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+        }
+
+        .chat-action-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-primary);
+        }
+
+        .chat-action-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Right Side */
+        .chat-input-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Model Selector */
+        .model-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px 8px 10px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .model-selector:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.18);
+        }
+
+        .model-selector-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 5px;
+            object-fit: cover;
+        }
+
+        .model-selector-name {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .model-selector-arrow {
+            width: 14px;
+            height: 14px;
+            color: var(--text-tertiary);
+            transition: transform 0.2s;
+        }
+
+        .model-selector.active .model-selector-arrow {
+            transform: rotate(180deg);
+        }
+
+        /* Send Button */
         .send-btn {
-            width: 52px;
-            height: 52px;
-            border-radius: 14px;
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
             border: none;
             background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
             color: white;
@@ -5847,310 +5947,75 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             flex-shrink: 0;
         }
 
         .send-btn:hover:not(:disabled) {
             transform: scale(1.05);
-            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.5);
         }
 
         .send-btn:disabled {
-            opacity: 0.4;
+            opacity: 0.3;
             cursor: not-allowed;
+            transform: none;
         }
 
         .send-btn svg {
-            width: 20px;
-            height: 20px;
-        }
-
-        /* Chat Input Actions (+, @, and Tools buttons) */
-        .chat-input-actions {
-            display: flex;
-            align-items: center;
-            gap: 2px;
-            margin-right: 8px;
-            flex-shrink: 0;
-            position: relative;
-        }
-
-        .chat-action-btn {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            border: none;
-            background: rgba(255, 255, 255, 0.06);
-            color: var(--text-secondary);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-            position: relative;
-        }
-
-        .chat-action-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--text-primary);
-        }
-
-        .chat-action-btn svg {
             width: 18px;
             height: 18px;
-        }
-
-        .chat-action-btn.attach-btn svg {
-            width: 20px;
-            height: 20px;
-        }
-
-        /* Tools Dropdown */
-        .tools-dropdown {
-            position: absolute;
-            bottom: calc(100% + 8px);
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 8px;
-            min-width: 200px;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.2s, visibility 0.2s;
-            z-index: 100;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        }
-
-        .tools-dropdown.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .tools-dropdown-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background 0.2s;
-            color: var(--text-primary);
-            font-size: 0.85rem;
-            border: none;
-            background: none;
-            width: 100%;
-            text-align: left;
-        }
-
-        .tools-dropdown-item:hover {
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .tools-dropdown-item svg {
-            width: 16px;
-            height: 16px;
-            color: var(--text-secondary);
-        }
-
-        .tools-dropdown-item span {
-            flex: 1;
-        }
-
-        .tools-dropdown-item .tool-badge {
-            font-size: 0.65rem;
-            padding: 2px 6px;
-            background: rgba(99, 102, 241, 0.2);
-            color: var(--accent-primary);
-            border-radius: 4px;
-        }
-
-        /* Mention (@) Button & Dropdown */
-        .mention-btn svg {
-            width: 18px;
-            height: 18px;
-        }
-
-        .mention-dropdown {
-            position: absolute;
-            bottom: calc(100% + 8px);
-            left: 0;
-            background: var(--bg-sidebar);
-            border: 1px solid var(--border-subtle);
-            border-radius: 12px;
-            padding: 8px;
-            min-width: 220px;
-            max-height: 320px;
-            overflow-y: auto;
-            display: none;
-            z-index: 100;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        }
-
-        .mention-dropdown.active {
-            display: block;
-        }
-
-        .mention-dropdown-section {
-            margin-bottom: 8px;
-        }
-
-        .mention-dropdown-section:last-child {
-            margin-bottom: 0;
-        }
-
-        .mention-dropdown-label {
-            font-size: 0.65rem;
-            font-weight: 700;
-            color: var(--text-tertiary);
-            letter-spacing: 0.5px;
-            padding: 6px 12px 4px;
-            text-transform: uppercase;
-        }
-
-        .mention-apps-list {
-            max-height: 180px;
-            overflow-y: auto;
-        }
-
-        .mention-dropdown-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background 0.2s;
-            color: var(--text-primary);
-            font-size: 0.85rem;
-            border: none;
-            background: none;
-            width: 100%;
-            text-align: left;
-            font-family: inherit;
-        }
-
-        .mention-dropdown-item:hover {
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .mention-item-icon {
-            width: 24px;
-            height: 24px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.9rem;
-            overflow: hidden;
-            flex-shrink: 0;
-        }
-
-        .mention-item-icon img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 6px;
-        }
-
-        .mention-dropdown-item span:last-child {
-            flex: 1;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        /* Model Selector */
-        .model-selector {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--border-subtle);
-            border-radius: 100px;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-right: 8px;
-        }
-
-        .model-selector:hover {
-            border-color: var(--border-color);
-            background: rgba(255, 255, 255, 0.06);
-        }
-
-        .model-selector-icon {
-            width: 18px;
-            height: 18px;
-            border-radius: 4px;
-        }
-
-        .model-selector-name {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .model-selector svg {
-            width: 12px;
-            height: 12px;
-            color: var(--text-tertiary);
         }
 
         /* Model Dropdown */
         .model-dropdown {
             position: absolute;
-            bottom: calc(100% + 8px);
-            left: 0;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
+            bottom: calc(100% + 16px);
+            right: 0;
+            background: #1c1c28;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 16px;
             padding: 8px;
             min-width: 280px;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.2s, visibility 0.2s;
-            z-index: 100;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
         }
 
         .model-dropdown.active {
-            opacity: 1;
-            visibility: visible;
+            display: block;
         }
 
         .model-dropdown-item {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 12px;
-            border-radius: 8px;
+            padding: 12px 14px;
+            border-radius: 12px;
             cursor: pointer;
-            transition: background 0.2s;
-            border: none;
-            background: none;
-            width: 100%;
-            text-align: left;
+            transition: background 0.15s;
         }
 
         .model-dropdown-item:hover {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.06);
         }
 
         .model-dropdown-item.active {
-            background: rgba(99, 102, 241, 0.1);
+            background: rgba(99, 102, 241, 0.15);
         }
 
         .model-dropdown-item img {
-            width: 28px;
-            height: 28px;
-            border-radius: 6px;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            object-fit: cover;
         }
 
         .model-dropdown-item-info {
             flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
         }
 
         .model-dropdown-item-name {
@@ -6164,13 +6029,15 @@
             color: var(--text-tertiary);
         }
 
-        .model-dropdown-item .model-pro-badge {
+        .model-pro-badge {
             font-size: 0.6rem;
-            padding: 2px 6px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            padding: 4px 8px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
             color: white;
-            border-radius: 4px;
-            font-weight: 600;
+            border-radius: 6px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         /* Quick Suggestions */
@@ -6178,15 +6045,14 @@
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
-            margin-top: 20px;
+            margin-top: 24px;
             justify-content: center;
-            max-width: 100%;
         }
 
         .suggestion-chip {
-            padding: 10px 18px;
+            padding: 10px 20px;
             background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--border-subtle);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 100px;
             color: var(--text-secondary);
             font-size: 0.875rem;
@@ -6194,12 +6060,11 @@
             transition: all 0.2s ease;
             font-family: inherit;
             font-weight: 500;
-            white-space: nowrap;
         }
 
         .suggestion-chip:hover {
-            background: rgba(99, 102, 241, 0.1);
-            border-color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.12);
+            border-color: rgba(99, 102, 241, 0.4);
             color: var(--text-primary);
             transform: translateY(-2px);
         }
@@ -7224,46 +7089,55 @@
             }
 
             .chat-input-wrapper {
-                padding: 6px 6px 6px 8px;
+                padding: 14px 16px 12px;
                 border-radius: 20px;
-            }
-
-            .chat-input-actions {
-                gap: 1px;
-                margin-right: 4px;
-            }
-
-            .chat-action-btn {
-                width: 32px;
-                height: 32px;
-                border-radius: 8px;
-            }
-
-            .mention-at {
-                font-size: 0.9rem;
             }
 
             .chat-input {
                 font-size: 1rem;
-                padding: 12px 0;
+                margin-bottom: 10px;
             }
 
-            .mention-dropdown {
-                min-width: 200px;
+            .chat-input-toolbar {
+                padding-top: 10px;
+            }
+
+            .chat-action-btn {
+                width: 34px;
+                height: 34px;
+            }
+
+            .model-selector {
+                padding: 6px 10px 6px 8px;
+            }
+
+            .model-selector-name {
+                font-size: 0.8rem;
+            }
+
+            .model-selector-icon {
+                width: 18px;
+                height: 18px;
             }
 
             .send-btn {
-                width: 46px;
-                height: 46px;
-                border-radius: 12px;
+                width: 38px;
+                height: 38px;
+                border-radius: 10px;
+            }
+
+            .model-dropdown {
+                min-width: 260px;
+                right: -20px;
             }
 
             .quick-suggestions {
-                gap: 6px;
+                gap: 8px;
+                margin-top: 20px;
             }
 
             .suggestion-chip {
-                padding: 6px 12px;
+                padding: 8px 14px;
                 font-size: 0.8rem;
             }
 
@@ -7314,15 +7188,46 @@
 
         /* Small phones (iPhone SE, etc.) */
         @media (max-width: 375px) {
+            .chat-input-wrapper {
+                padding: 12px 14px 10px;
+                border-radius: 18px;
+            }
+
+            .chat-input {
+                font-size: 0.95rem;
+            }
+
+            .chat-action-btn {
+                width: 32px;
+                height: 32px;
+            }
+
+            .model-selector {
+                padding: 5px 8px 5px 6px;
+                gap: 4px;
+            }
+
+            .model-selector-name {
+                display: none;
+            }
+
             .send-btn {
-                width: 40px;
-                height: 40px;
+                width: 36px;
+                height: 36px;
                 border-radius: 10px;
             }
 
             .send-btn svg {
-                width: 18px;
-                height: 18px;
+                width: 16px;
+                height: 16px;
+            }
+
+            .quick-suggestions {
+                display: none;
+            }
+
+            .welcome-title {
+                font-size: 1.25rem;
             }
 
             .apps-view-grid {
@@ -7338,23 +7243,6 @@
             .apps-view-item-icon {
                 width: 48px;
                 height: 48px;
-            }
-
-            .quick-suggestions {
-                display: none;
-            }
-
-            .welcome-title {
-                font-size: 1.25rem;
-            }
-
-            .chat-input-wrapper {
-                padding: 4px 4px 4px 6px;
-            }
-
-            .chat-action-btn {
-                width: 28px;
-                height: 28px;
             }
         }
 
@@ -13076,14 +12964,18 @@
         let currentModel = 'claude';
 
         function toggleModelDropdown(e) {
-            e.stopPropagation();
+            if (e) e.stopPropagation();
             const dropdown = document.getElementById('modelDropdown');
+            const selector = document.getElementById('modelSelector');
             dropdown.classList.toggle('active');
+            selector.classList.toggle('active');
         }
 
         function closeModelDropdown() {
             const dropdown = document.getElementById('modelDropdown');
+            const selector = document.getElementById('modelSelector');
             if (dropdown) dropdown.classList.remove('active');
+            if (selector) selector.classList.remove('active');
         }
 
         function selectModel(modelId, modelName, iconUrl) {
@@ -13102,7 +12994,6 @@
             // Update active state in dropdown
             const items = document.querySelectorAll('.model-dropdown-item');
             items.forEach(item => item.classList.remove('active'));
-            event.target.closest('.model-dropdown-item').classList.add('active');
 
             closeModelDropdown();
 
@@ -13113,16 +13004,40 @@
                     openConnectModal();
                     return;
                 }
-                // TODO: Check if user has Pro subscription
             }
 
             console.log('Selected model:', modelId);
         }
 
+        // Initialize model selector
+        document.addEventListener('DOMContentLoaded', () => {
+            const modelSelector = document.getElementById('modelSelector');
+            const modelDropdown = document.getElementById('modelDropdown');
+
+            if (modelSelector) {
+                modelSelector.addEventListener('click', toggleModelDropdown);
+            }
+
+            // Add click handlers to model items
+            if (modelDropdown) {
+                modelDropdown.querySelectorAll('.model-dropdown-item').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const modelId = item.dataset.model;
+                        const modelName = item.dataset.name;
+                        const iconUrl = item.dataset.icon;
+                        item.classList.add('active');
+                        selectModel(modelId, modelName, iconUrl);
+                    });
+                });
+            }
+        });
+
         // Close model dropdown when clicking outside
         document.addEventListener('click', (e) => {
             const selector = document.getElementById('modelSelector');
-            if (selector && !selector.contains(e.target)) {
+            const dropdown = document.getElementById('modelDropdown');
+            if (selector && dropdown && !selector.contains(e.target) && !dropdown.contains(e.target)) {
                 closeModelDropdown();
             }
         });
