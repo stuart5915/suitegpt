@@ -15769,8 +15769,13 @@
             if (fleetStreamInitialized) return;
             fleetStreamInitialized = true;
 
+            // Create Supabase client for realtime if not exists
+            if (!window.fleetSupabase) {
+                window.fleetSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            }
+
             // Subscribe to Supabase Realtime
-            fleetChannel = supabase.channel('fleet-stream');
+            fleetChannel = window.fleetSupabase.channel('fleet-stream');
 
             fleetChannel
                 .on('broadcast', { event: 'fleet-event' }, (payload) => {
