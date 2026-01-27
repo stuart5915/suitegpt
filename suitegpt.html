@@ -14473,8 +14473,13 @@
         // Handle browser back/forward buttons
         window.addEventListener('popstate', function(event) {
             const path = window.location.pathname;
-            if (path === '/governance') {
+            if (path.startsWith('/governance')) {
                 openFactory(true);
+                // Check for sub-tab
+                const subPath = path.replace('/governance', '').replace('/', '');
+                if (subPath && ['stream', 'howitworks', 'leaderboard', 'rewards', 'agents'].includes(subPath)) {
+                    switchFactoryMainView(subPath, true);
+                }
             } else if (path === '/creator-dashboard') {
                 openCreatorDashboard('your-apps', true);
             } else if (path === '/apps') {
@@ -14492,8 +14497,13 @@
         // Check URL on page load to open the appropriate view based on path
         function checkInitialRoute() {
             const path = window.location.pathname;
-            if (path === '/governance') {
+            if (path.startsWith('/governance')) {
                 openFactory(true);
+                // Check for sub-tab
+                const subPath = path.replace('/governance', '').replace('/', '');
+                if (subPath && ['stream', 'howitworks', 'leaderboard', 'rewards', 'agents'].includes(subPath)) {
+                    switchFactoryMainView(subPath, true);
+                }
             } else if (path === '/creator-dashboard') {
                 openCreatorDashboard('your-apps', true);
             } else if (path === '/apps') {
@@ -14630,7 +14640,7 @@
             renderFactoryProposals();
         }
 
-        function switchFactoryMainView(view) {
+        function switchFactoryMainView(view, skipPushState = false) {
             factoryCurrentView = view;
 
             // Update tabs
@@ -14645,6 +14655,12 @@
             document.getElementById('factoryHowItWorksView').style.display = view === 'howitworks' ? 'block' : 'none';
             document.getElementById('factoryLeaderboardView').style.display = view === 'leaderboard' ? 'block' : 'none';
             document.getElementById('factoryRewardsView').style.display = view === 'rewards' ? 'block' : 'none';
+
+            // Update URL based on view
+            if (!skipPushState) {
+                const urlPath = view === 'governance' ? '/governance' : `/governance/${view}`;
+                history.pushState({ view: 'governance', tab: view }, '', urlPath);
+            }
 
             // Load leaderboard data when switching to that view
             if (view === 'leaderboard') {

@@ -21,7 +21,7 @@ console.log(`
 ╠════════════════════════════════════════════════════════╣
 ║                                                        ║
 ║  Watching for Claude Code activity...                  ║
-║  Events will stream to suitegpt.app/stream             ║
+║  Events will stream to suitegpt.app/governance/stream  ║
 ║                                                        ║
 ║  Keep this window open while streaming.                ║
 ║  Press Ctrl+C to stop.                                 ║
