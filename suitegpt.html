@@ -18478,6 +18478,51 @@
             }
         }
 
+        // Analyze user message for relevant app suggestions (runs in background)
+        function analyzeForAppSuggestions(userMessage, aiResponse) {
+            const message = userMessage.toLowerCase();
+
+            // App keyword mappings
+            const appKeywords = {
+                'foodvitals': ['nutrition', 'diet', 'calories', 'food', 'meals', 'weight', 'eating', 'healthy eating'],
+                'trueform': ['back pain', 'posture', 'stretching', 'physical therapy', 'mobility', 'pain', 'sitting'],
+                'opticrep': ['workout', 'gym', 'fitness', 'exercise', 'training', 'muscle', 'strength', 'reps'],
+                'cheshbon': ['money', 'finance', 'budget', 'spending', 'savings', 'financial'],
+                'remcast': ['reminder', 'routine', 'morning', 'habits', 'schedule', 'notification'],
+                'hydrotrack': ['water', 'hydration', 'thirsty', 'drink', 'dehydrated'],
+                'sleepwell': ['sleep', 'insomnia', 'tired', 'rest', 'bedtime', 'fatigue'],
+                'moodlog': ['mood', 'anxiety', 'stressed', 'mental health', 'depression', 'emotions', 'feelings'],
+                'focusflow': ['focus', 'pomodoro', 'productivity', 'concentration', 'distracted'],
+                'quickbudget': ['expenses', 'spending tracker', 'money management'],
+                'flashmind': ['study', 'flashcards', 'learning', 'memorize', 'exam'],
+                'bookshelf': ['reading', 'books', 'book tracker'],
+                'habitstack': ['habit', 'routine', 'daily habits', 'streak']
+            };
+
+            // Check for keyword matches
+            for (const [appId, keywords] of Object.entries(appKeywords)) {
+                for (const keyword of keywords) {
+                    if (message.includes(keyword)) {
+                        const app = SUITE_APPS[appId];
+                        if (app) {
+                            // Check if we already suggested this app recently
+                            const alreadySuggested = insightsState.pendingInsights.some(
+                                i => i.type === 'app' && i.data.appKey === appId
+                            );
+                            if (!alreadySuggested) {
+                                addInsight('app', {
+                                    appKey: appId,
+                                    appName: app.name,
+                                    appUrl: app.url
+                                });
+                            }
+                            return; // Only suggest one app per message
+                        }
+                    }
+                }
+            }
+        }
+
         function renderSingleInsight(insight) {
             if (!insightsContent) return;
 
@@ -19004,36 +19049,90 @@
                         conversationHistory.push({ role: 'assistant', content: insightResult.message });
                     }
                 } else {
-                    // Regular chat flow
-                    const response = await fetch(`${SUPABASE_URL}/functions/v1/suitegpt-chat`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-                        },
-                        body: JSON.stringify({
-                            message: message,
-                            history: conversationHistory.slice(-10)
-                        })
-                    });
+                    // Route to appropriate AI model based on selection
+                    let aiResponse = '';
+
+                    if (currentModel === 'flash' || currentModel === 'pro') {
+                        // Gemini models - call our API proxy
+                        const geminiModel = currentModel === 'flash' ? 'gemini-2.0-flash' : 'gemini-2.0-pro-exp-02-05';
+
+                        // Build conversation history for Gemini
+                        const geminiContents = conversationHistory.map(msg => ({
+                            role: msg.role === 'user' ? 'user' : 'model',
+                            parts: [{ text: msg.content }]
+                        }));
+
+                        const response = await fetch('/api/gemini', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                model: geminiModel,
+                                contents: geminiContents
+                            })
+                        });
+
+                        if (!response.ok) throw new Error('Gemini API failed');
+
+                        const data = await response.json();
+                        aiResponse = data.text || 'Sorry, I could not generate a response.';
+
+                    } else if (currentModel === 'sonnet' || currentModel === 'opus') {
+                        // Claude models - call Anthropic via edge function
+                        const claudeModel = currentModel === 'sonnet' ? 'claude-sonnet-4-20250514' : 'claude-opus-4-20250514';
+
+                        const response = await fetch(`${SUPABASE_URL}/functions/v1/claude-chat`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                            },
+                            body: JSON.stringify({
+                                model: claudeModel,
+                                messages: conversationHistory.slice(-10)
+                            })
+                        });
+
+                        if (!response.ok) throw new Error('Claude API failed');
+
+                        const data = await response.json();
+                        aiResponse = data.response || data.text || 'Sorry, I could not generate a response.';
+
+                    } else {
+                        // Fallback to SuiteGPT chat (app recommendations)
+                        const response = await fetch(`${SUPABASE_URL}/functions/v1/suitegpt-chat`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                            },
+                            body: JSON.stringify({
+                                message: message,
+                                history: conversationHistory.slice(-10)
+                            })
+                        });
+
+                        if (!response.ok) throw new Error('Failed');
+
+                        const data = await response.json();
+                        aiResponse = data.response;
+
+                        // Track app recommendation as insight
+                        if (data.recommendedApp && SUITE_APPS[data.recommendedApp]) {
+                            const app = SUITE_APPS[data.recommendedApp];
+                            addInsight('app', {
+                                appKey: data.recommendedApp,
+                                appName: app.name,
+                                appUrl: app.url
+                            });
+                        }
+                    }
 
                     removeTypingIndicator();
+                    addMessage(aiResponse, 'assistant', null, userQuery);
+                    conversationHistory.push({ role: 'assistant', content: aiResponse });
 
-                    if (!response.ok) throw new Error('Failed');
-
-                    const data = await response.json();
-                    addMessage(data.response, 'assistant', data.recommendedApp, userQuery);
-                    conversationHistory.push({ role: 'assistant', content: data.response });
-
-                    // Track app recommendation as insight
-                    if (data.recommendedApp && SUITE_APPS[data.recommendedApp]) {
-                        const app = SUITE_APPS[data.recommendedApp];
-                        addInsight('app', {
-                            appKey: data.recommendedApp,
-                            appName: app.name,
-                            appUrl: app.url
-                        });
-                    }
+                    // Analyze message for app suggestions in background (for Insights panel)
+                    analyzeForAppSuggestions(message, aiResponse);
                 }
 
             } catch (error) {
