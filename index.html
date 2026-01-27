@@ -5,15 +5,27 @@
     <meta charset="UTF-8">
     <!-- Load suitegpt.html for suitegpt.app without changing URL -->
     <script>
-        if (window.location.hostname === 'suitegpt.app' || window.location.hostname === 'www.suitegpt.app') {
-            fetch('/suitegpt.html')
-                .then(r => r.text())
-                .then(html => {
-                    document.open();
-                    document.write(html);
-                    document.close();
-                });
-        }
+        (function() {
+            const isSuiteGPT = window.location.hostname === 'suitegpt.app' || window.location.hostname === 'www.suitegpt.app';
+            if (isSuiteGPT) {
+                // Immediately hide the page to prevent flash of getsuite.app content
+                document.documentElement.style.visibility = 'hidden';
+                document.documentElement.style.opacity = '0';
+
+                fetch('/suitegpt.html')
+                    .then(r => r.text())
+                    .then(html => {
+                        document.open();
+                        document.write(html);
+                        document.close();
+                    })
+                    .catch(() => {
+                        // If fetch fails, show the page anyway
+                        document.documentElement.style.visibility = 'visible';
+                        document.documentElement.style.opacity = '1';
+                    });
+            }
+        })();
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SUITE | AI-powered apps for real problems</title>
