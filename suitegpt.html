@@ -19852,11 +19852,19 @@
             // Don't save empty chats
             if (conversationHistory.length === 0) return;
 
-            // Collect current insights to save
-            const insightsToSave = [
+            // Collect current insights to save (deduplicated)
+            const allInsights = [
                 ...insightsState.shownInsights,
                 ...insightsState.pendingInsights
             ];
+            // Dedupe by type + stringified data
+            const seen = new Set();
+            const insightsToSave = allInsights.filter(insight => {
+                const key = insight.type + JSON.stringify(insight.data);
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
 
             const chatData = {
                 user_id: user.id,
