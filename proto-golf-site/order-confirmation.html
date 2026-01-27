@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Confirmed | Proto Golf</title>
+    <meta name="description" content="Thank you for your Proto Golf order.">
+
+    <link rel="icon" type="image/svg+xml" href="assets/images/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .confirmation-container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 120px 24px 80px;
+            text-align: center;
+        }
+
+        .confirmation-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--color-ink);
+            color: var(--color-paper);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            font-size: 2rem;
+        }
+
+        .confirmation-title {
+            font-size: clamp(2rem, 5vw, 3rem);
+            margin-bottom: 12px;
+        }
+
+        .confirmation-subtitle {
+            color: var(--color-steel);
+            margin-bottom: 32px;
+        }
+
+        .order-number {
+            display: inline-block;
+            background: var(--color-bone);
+            border: 1px solid var(--color-silver);
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-family: 'Space Mono', monospace;
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 40px;
+        }
+
+        .confirmation-card {
+            background: var(--color-bone);
+            border: 1px solid var(--color-silver);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: left;
+            margin-bottom: 24px;
+        }
+
+        .confirmation-card h3 {
+            font-size: 1rem;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--color-silver);
+        }
+
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--color-mist);
+        }
+
+        .order-item:last-child {
+            border-bottom: none;
+        }
+
+        .order-item-name {
+            font-weight: 600;
+        }
+
+        .order-item-options {
+            font-size: 0.875rem;
+            color: var(--color-steel);
+        }
+
+        .order-totals {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--color-silver);
+        }
+
+        .order-total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+        }
+
+        .order-total-row.total {
+            font-weight: 700;
+            font-size: 1.125rem;
+            padding-top: 12px;
+            margin-top: 8px;
+            border-top: 1px solid var(--color-silver);
+        }
+
+        .delivery-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .delivery-info {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .delivery-info h4 {
+            font-size: 0.875rem;
+            color: var(--color-steel);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .timeline {
+            margin-top: 40px;
+            text-align: left;
+        }
+
+        .timeline h3 {
+            font-size: 1.25rem;
+            margin-bottom: 20px;
+        }
+
+        .timeline-steps {
+            display: flex;
+            gap: 0;
+        }
+
+        .timeline-step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+        }
+
+        .timeline-step::before {
+            content: '';
+            position: absolute;
+            top: 16px;
+            left: 50%;
+            right: -50%;
+            height: 2px;
+            background: var(--color-silver);
+        }
+
+        .timeline-step:last-child::before {
+            display: none;
+        }
+
+        .timeline-dot {
+            width: 32px;
+            height: 32px;
+            background: var(--color-bone);
+            border: 2px solid var(--color-silver);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .timeline-step.active .timeline-dot {
+            background: var(--color-ink);
+            border-color: var(--color-ink);
+            color: var(--color-paper);
+        }
+
+        .timeline-step.active::before {
+            background: var(--color-ink);
+        }
+
+        .timeline-label {
+            font-size: 0.875rem;
+            color: var(--color-steel);
+        }
+
+        .timeline-step.active .timeline-label {
+            color: var(--color-ink);
+            font-weight: 600;
+        }
+
+        .confirmation-actions {
+            margin-top: 40px;
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+        }
+
+        @media (max-width: 500px) {
+            .confirmation-actions {
+                flex-direction: column;
+            }
+        }
+
+        .demo-notice {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            color: #92400e;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-brand">
+                <div class="nav-logo">P</div>
+                <span class="nav-title">Proto <span>Golf</span></span>
+            </a>
+
+            <ul class="nav-links" id="navLinks">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="shop.html" class="nav-link">Shop</a></li>
+                <li><a href="limited.html" class="nav-link">Limited</a></li>
+                <li><a href="about.html" class="nav-link">About</a></li>
+                <li><a href="faq.html" class="nav-link">FAQ</a></li>
+                <li><a href="contact.html" class="nav-link">Contact</a></li>
+            </ul>
+
+            <div class="nav-cta">
+                <a href="shop.html" class="btn btn-primary btn-sm">Shop Now</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="confirmation-container">
+        <div class="demo-notice" id="demoNotice" style="display: none;">
+            <strong>Demo Mode:</strong> This is a test order. No payment was processed and no order was created.
+        </div>
+
+        <div class="confirmation-icon">✓</div>
+        <h1 class="confirmation-title">Order Confirmed</h1>
+        <p class="confirmation-subtitle">Thank you for your order! We'll start crafting your putter right away.</p>
+
+        <div class="order-number" id="orderNumber">PG-260127-1001</div>
+
+        <!-- Order Details -->
+        <div class="confirmation-card">
+            <h3>Order Details</h3>
+            <div id="orderItems">
+                <!-- Populated by JS -->
+            </div>
+            <div class="order-totals">
+                <div class="order-total-row">
+                    <span>Subtotal</span>
+                    <span id="orderSubtotal">$0.00</span>
+                </div>
+                <div class="order-total-row">
+                    <span>Shipping</span>
+                    <span id="orderShipping">$0.00</span>
+                </div>
+                <div class="order-total-row">
+                    <span>Tax</span>
+                    <span id="orderTax">$0.00</span>
+                </div>
+                <div class="order-total-row total">
+                    <span>Total</span>
+                    <span id="orderTotal">$0.00</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delivery Info -->
+        <div class="confirmation-card">
+            <h3>Delivery Information</h3>
+            <div class="delivery-info">
+                <div>
+                    <h4>Contact</h4>
+                    <p id="customerName">-</p>
+                    <p id="customerEmail">-</p>
+                    <p id="customerPhone">-</p>
+                </div>
+                <div id="deliveryDetails">
+                    <h4>Shipping To</h4>
+                    <p id="shippingAddress">-</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="timeline">
+            <h3>What's Next</h3>
+            <div class="timeline-steps" id="timelineSteps">
+                <div class="timeline-step active">
+                    <div class="timeline-dot">1</div>
+                    <div class="timeline-label">Order Received</div>
+                </div>
+                <div class="timeline-step">
+                    <div class="timeline-dot">2</div>
+                    <div class="timeline-label">Crafting</div>
+                </div>
+                <div class="timeline-step">
+                    <div class="timeline-dot">3</div>
+                    <div class="timeline-label" id="deliveryStep">Shipping</div>
+                </div>
+                <div class="timeline-step">
+                    <div class="timeline-dot">4</div>
+                    <div class="timeline-label">Delivered</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="confirmation-actions">
+            <a href="shop.html" class="btn btn-outline">Continue Shopping</a>
+            <button class="btn btn-primary" onclick="window.print()">Print Receipt</button>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-bottom">
+                <p class="footer-copy">&copy; 2026 Proto Golf. All rights reserved.</p>
+                <p class="footer-telos">A <strong>Telos Manufacturing</strong> Brand</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/cart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check for demo mode
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('demo') === 'true') {
+                document.getElementById('demoNotice').style.display = 'block';
+            }
+
+            // Get order data from session storage
+            const orderDataStr = sessionStorage.getItem('proto_golf_pending_order');
+
+            if (orderDataStr) {
+                const order = JSON.parse(orderDataStr);
+                displayOrder(order);
+
+                // Clear cart after successful order
+                window.cart.clear();
+
+                // Clear pending order
+                sessionStorage.removeItem('proto_golf_pending_order');
+            } else {
+                // No order data, show demo data
+                displayDemoOrder();
+            }
+        });
+
+        function displayOrder(order) {
+            // Generate order number
+            const date = new Date();
+            const orderNum = `PG-${date.getFullYear().toString().slice(-2)}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}-${Math.floor(1000 + Math.random() * 9000)}`;
+            document.getElementById('orderNumber').textContent = orderNum;
+
+            // Order items
+            document.getElementById('orderItems').innerHTML = order.items.map(item => `
+                <div class="order-item">
+                    <div>
+                        <div class="order-item-name">${item.productName}</div>
+                        <div class="order-item-options">${item.finishName} / ${item.shaftColorName} Shaft</div>
+                    </div>
+                    <div>$${item.price.toFixed(2)}</div>
+                </div>
+            `).join('');
+
+            // Totals
+            document.getElementById('orderSubtotal').textContent = `$${order.totals.subtotal.toFixed(2)}`;
+            document.getElementById('orderShipping').textContent = order.totals.shipping > 0 ? `$${order.totals.shipping.toFixed(2)}` : 'Free';
+            document.getElementById('orderTax').textContent = `$${order.totals.tax.toFixed(2)}`;
+            document.getElementById('orderTotal').textContent = `$${order.totals.total.toFixed(2)}`;
+
+            // Customer info
+            document.getElementById('customerName').textContent = `${order.customer.firstName} ${order.customer.lastName}`;
+            document.getElementById('customerEmail').textContent = order.customer.email;
+            document.getElementById('customerPhone').textContent = order.customer.phone || '-';
+
+            // Delivery info
+            if (order.delivery.method === 'shipping') {
+                const addr = order.delivery.shipping;
+                document.getElementById('shippingAddress').innerHTML = `
+                    ${addr.address1}<br>
+                    ${addr.address2 ? addr.address2 + '<br>' : ''}
+                    ${addr.city}, ${addr.state} ${addr.postalCode}<br>
+                    ${addr.country === 'CA' ? 'Canada' : 'United States'}
+                `;
+            } else {
+                document.getElementById('deliveryDetails').innerHTML = `
+                    <h4>Pickup</h4>
+                    <p><strong>${formatDate(order.delivery.pickup.date)}</strong></p>
+                    <p>${order.delivery.pickup.time}</p>
+                    <p style="margin-top: 8px; font-size: 0.875rem; color: var(--color-steel);">
+                        Proto Golf / Telos Manufacturing<br>
+                        1721 Bishop Street North Unit 4<br>
+                        Cambridge, ON N1T 1N5
+                    </p>
+                `;
+                document.getElementById('deliveryStep').textContent = 'Ready for Pickup';
+            }
+        }
+
+        function displayDemoOrder() {
+            // Show demo notice
+            document.getElementById('demoNotice').style.display = 'block';
+            document.getElementById('demoNotice').innerHTML = '<strong>No order found.</strong> This page shows order confirmation after checkout.';
+
+            // Hide order details
+            document.querySelectorAll('.confirmation-card').forEach(card => {
+                card.style.display = 'none';
+            });
+            document.querySelector('.timeline').style.display = 'none';
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+    </script>
+</body>
+</html>

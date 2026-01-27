@@ -336,33 +336,27 @@
             document.getElementById('cartBackdrop').classList.remove('open');
         }
 
-        async function proceedToCheckout() {
+        function proceedToCheckout() {
             if (cart.length === 0) {
                 showToast('Your cart is empty');
                 return;
             }
 
-            try {
-                showToast('Connecting to Stripe...');
-                const response = await fetch('/api/create-checkout', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        items: cart,
-                        success_url: window.location.origin + '/proto-golf-site/shop.html?success=true',
-                        cancel_url: window.location.href
-                    })
-                });
+            // Convert to new cart format and save
+            const newCart = cart.map(item => ({
+                id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                productId: item.id,
+                productName: item.name,
+                finish: item.options.finish.toLowerCase().replace(' ', '-'),
+                finishName: item.options.finish,
+                shaftColor: item.options.shaft.toLowerCase(),
+                shaftColorName: item.options.shaft,
+                price: item.price,
+                quantity: 1
+            }));
 
-                const data = await response.json();
-                if (data.url) {
-                    window.location.href = data.url;
-                } else {
-                    showToast('Demo mode: Order would be processed via Stripe');
-                }
-            } catch (error) {
-                showToast('Demo mode: Order would be processed via Stripe');
-            }
+            localStorage.setItem('proto_golf_cart', JSON.stringify(newCart));
+            window.location.href = '../checkout.html';
         }
 
         function showToast(message) {

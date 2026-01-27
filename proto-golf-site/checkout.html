@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout | Proto Golf</title>
+    <meta name="description" content="Complete your Proto Golf order. Secure checkout with shipping or local pickup options.">
+
+    <link rel="icon" type="image/svg+xml" href="assets/images/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .checkout-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 120px 24px 80px;
+        }
+
+        .checkout-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .checkout-header h1 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            margin-bottom: 8px;
+        }
+
+        .checkout-grid {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 48px;
+        }
+
+        @media (max-width: 900px) {
+            .checkout-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Cart Items */
+        .cart-section {
+            background: var(--color-bone);
+            border: 1px solid var(--color-silver);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .cart-section h2 {
+            font-size: 1.25rem;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--color-silver);
+        }
+
+        .cart-item {
+            display: flex;
+            gap: 16px;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--color-mist);
+        }
+
+        .cart-item:last-child {
+            border-bottom: none;
+        }
+
+        .cart-item-image {
+            width: 80px;
+            height: 80px;
+            background: var(--color-mist);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--color-steel);
+        }
+
+        .cart-item-details {
+            flex: 1;
+        }
+
+        .cart-item-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .cart-item-options {
+            font-size: 0.875rem;
+            color: var(--color-steel);
+        }
+
+        .cart-item-price {
+            font-weight: 600;
+            text-align: right;
+        }
+
+        .cart-item-remove {
+            background: none;
+            border: none;
+            color: var(--color-steel);
+            cursor: pointer;
+            font-size: 0.875rem;
+            padding: 4px 8px;
+            margin-top: 8px;
+        }
+
+        .cart-item-remove:hover {
+            color: #dc2626;
+        }
+
+        .cart-empty {
+            text-align: center;
+            padding: 48px 24px;
+            color: var(--color-steel);
+        }
+
+        .cart-empty a {
+            color: var(--color-ink);
+            font-weight: 600;
+        }
+
+        /* Form Sections */
+        .form-section {
+            background: var(--color-bone);
+            border: 1px solid var(--color-silver);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .form-section h2 {
+            font-size: 1.25rem;
+            margin-bottom: 20px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 600px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid var(--color-silver);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 1rem;
+            background: var(--color-paper);
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--color-ink);
+        }
+
+        /* Delivery Options */
+        .delivery-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .delivery-option {
+            position: relative;
+            padding: 20px;
+            border: 2px solid var(--color-silver);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .delivery-option:hover {
+            border-color: var(--color-steel);
+        }
+
+        .delivery-option.selected {
+            border-color: var(--color-ink);
+            background: var(--color-paper);
+        }
+
+        .delivery-option input {
+            position: absolute;
+            opacity: 0;
+        }
+
+        .delivery-option-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .delivery-option-desc {
+            font-size: 0.875rem;
+            color: var(--color-steel);
+        }
+
+        .delivery-option-price {
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        /* Pickup Calendar */
+        .pickup-calendar {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .pickup-calendar.show {
+            display: block;
+        }
+
+        .pickup-dates {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .pickup-date {
+            padding: 12px 16px;
+            border: 1px solid var(--color-silver);
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            min-width: 80px;
+            transition: all 0.2s;
+        }
+
+        .pickup-date:hover {
+            border-color: var(--color-steel);
+        }
+
+        .pickup-date.selected {
+            border-color: var(--color-ink);
+            background: var(--color-ink);
+            color: var(--color-paper);
+        }
+
+        .pickup-date-day {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .pickup-date-num {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .pickup-times {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 8px;
+        }
+
+        .pickup-time {
+            padding: 10px;
+            border: 1px solid var(--color-silver);
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .pickup-time:hover {
+            border-color: var(--color-steel);
+        }
+
+        .pickup-time.selected {
+            border-color: var(--color-ink);
+            background: var(--color-ink);
+            color: var(--color-paper);
+        }
+
+        /* Shipping Address */
+        .shipping-address {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .shipping-address.show {
+            display: block;
+        }
+
+        /* Order Summary */
+        .order-summary {
+            position: sticky;
+            top: 100px;
+        }
+
+        .summary-card {
+            background: var(--color-ink);
+            color: var(--color-paper);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .summary-card h2 {
+            font-size: 1.25rem;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+        }
+
+        .summary-row.total {
+            font-size: 1.25rem;
+            font-weight: 700;
+            padding-top: 16px;
+            margin-top: 8px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .summary-label {
+            color: var(--color-silver);
+        }
+
+        .pay-button {
+            width: 100%;
+            padding: 16px;
+            margin-top: 24px;
+            background: var(--color-paper);
+            color: var(--color-ink);
+            border: none;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .pay-button:hover {
+            background: var(--color-bone);
+        }
+
+        .pay-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .secure-note {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 0.75rem;
+            color: var(--color-steel);
+        }
+
+        .secure-note svg {
+            width: 14px;
+            height: 14px;
+            vertical-align: middle;
+            margin-right: 4px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-brand">
+                <div class="nav-logo">P</div>
+                <span class="nav-title">Proto <span>Golf</span></span>
+            </a>
+
+            <ul class="nav-links" id="navLinks">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="shop.html" class="nav-link">Shop</a></li>
+                <li><a href="limited.html" class="nav-link">Limited</a></li>
+                <li><a href="about.html" class="nav-link">About</a></li>
+                <li><a href="faq.html" class="nav-link">FAQ</a></li>
+                <li><a href="contact.html" class="nav-link">Contact</a></li>
+            </ul>
+
+            <div class="nav-cta">
+                <a href="checkout.html" class="btn btn-primary btn-sm">
+                    Cart <span class="cart-badge" style="display:none;">0</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="checkout-container">
+        <div class="checkout-header">
+            <h1>Checkout</h1>
+            <p class="text-muted">Secure checkout powered by Stripe</p>
+        </div>
+
+        <div class="checkout-grid">
+            <!-- Left Column - Form -->
+            <div class="checkout-form">
+                <!-- Cart Items -->
+                <div class="cart-section" id="cartItems">
+                    <h2>Your Cart</h2>
+                    <div id="cartItemsList">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Customer Info -->
+                <div class="form-section" id="customerSection">
+                    <h2>Contact Information</h2>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">First Name *</label>
+                            <input type="text" class="form-input" id="firstName" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Last Name *</label>
+                            <input type="text" class="form-input" id="lastName" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email *</label>
+                        <input type="email" class="form-input" id="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone</label>
+                        <input type="tel" class="form-input" id="phone" placeholder="For delivery updates">
+                    </div>
+                </div>
+
+                <!-- Delivery Method -->
+                <div class="form-section" id="deliverySection">
+                    <h2>Delivery Method</h2>
+                    <div class="delivery-options">
+                        <label class="delivery-option" id="shippingOption">
+                            <input type="radio" name="delivery" value="shipping" checked onchange="updateDelivery('shipping')">
+                            <div class="delivery-option-title">Ship to Me</div>
+                            <div class="delivery-option-desc">5-7 business days</div>
+                            <div class="delivery-option-price">$25.00</div>
+                        </label>
+                        <label class="delivery-option" id="pickupOption">
+                            <input type="radio" name="delivery" value="pickup" onchange="updateDelivery('pickup')">
+                            <div class="delivery-option-title">Local Pickup</div>
+                            <div class="delivery-option-desc">Cambridge, ON</div>
+                            <div class="delivery-option-price">Free</div>
+                        </label>
+                    </div>
+
+                    <!-- Shipping Address -->
+                    <div class="shipping-address show" id="shippingAddress">
+                        <div class="form-group">
+                            <label class="form-label">Address *</label>
+                            <input type="text" class="form-input" id="address1" placeholder="Street address">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Apartment, suite, etc.</label>
+                            <input type="text" class="form-input" id="address2">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">City *</label>
+                                <input type="text" class="form-input" id="city">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Province/State *</label>
+                                <input type="text" class="form-input" id="state">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Postal/ZIP Code *</label>
+                                <input type="text" class="form-input" id="postalCode">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Country *</label>
+                                <select class="form-input" id="country">
+                                    <option value="CA">Canada</option>
+                                    <option value="US">United States</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pickup Calendar -->
+                    <div class="pickup-calendar" id="pickupCalendar">
+                        <h3 style="font-size: 1rem; margin-bottom: 12px;">Select Pickup Date</h3>
+                        <div class="pickup-dates" id="pickupDates">
+                            <!-- Generated by JS -->
+                        </div>
+                        <h3 style="font-size: 1rem; margin-bottom: 12px; margin-top: 20px;">Select Time</h3>
+                        <div class="pickup-times" id="pickupTimes">
+                            <!-- Generated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Notes -->
+                <div class="form-section">
+                    <h2>Order Notes (Optional)</h2>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <textarea class="form-input" id="orderNotes" rows="3" placeholder="Special requests, custom engraving, etc."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Summary -->
+            <div class="order-summary">
+                <div class="summary-card">
+                    <h2>Order Summary</h2>
+                    <div id="summaryItems">
+                        <!-- Populated by JS -->
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Subtotal</span>
+                        <span id="summarySubtotal">$0.00</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Shipping</span>
+                        <span id="summaryShipping">$25.00</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Tax (13% HST)</span>
+                        <span id="summaryTax">$0.00</span>
+                    </div>
+                    <div class="summary-row total">
+                        <span>Total</span>
+                        <span id="summaryTotal">$0.00</span>
+                    </div>
+
+                    <button class="pay-button" id="payButton" onclick="proceedToPayment()">
+                        Proceed to Payment
+                    </button>
+
+                    <div class="secure-note">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                        Secure checkout powered by Stripe
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-bottom">
+                <p class="footer-copy">&copy; 2026 Proto Golf. All rights reserved.</p>
+                <p class="footer-telos">A <strong>Telos Manufacturing</strong> Brand</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/cart.js"></script>
+    <script>
+        // Config
+        const SHIPPING_RATE = 25;
+        const TAX_RATE = 0.13; // 13% HST Ontario
+        const PICKUP_TIMES = ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'];
+
+        let deliveryMethod = 'shipping';
+        let selectedPickupDate = null;
+        let selectedPickupTime = null;
+
+        // Initialize checkout
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCart();
+            generatePickupDates();
+            updateSummary();
+            updateDelivery('shipping');
+        });
+
+        // Render cart items
+        function renderCart() {
+            const container = document.getElementById('cartItemsList');
+            const items = window.cart.items;
+
+            if (items.length === 0) {
+                container.innerHTML = `
+                    <div class="cart-empty">
+                        <p>Your cart is empty</p>
+                        <a href="shop.html">Continue Shopping</a>
+                    </div>
+                `;
+                document.getElementById('customerSection').style.display = 'none';
+                document.getElementById('deliverySection').style.display = 'none';
+                document.getElementById('payButton').disabled = true;
+                return;
+            }
+
+            container.innerHTML = items.map(item => `
+                <div class="cart-item">
+                    <div class="cart-item-image">${item.productName.charAt(0)}</div>
+                    <div class="cart-item-details">
+                        <div class="cart-item-name">${item.productName}</div>
+                        <div class="cart-item-options">
+                            ${item.finishName} / ${item.shaftColorName} Shaft
+                        </div>
+                        <button class="cart-item-remove" onclick="removeItem('${item.id}')">Remove</button>
+                    </div>
+                    <div class="cart-item-price">$${item.price.toFixed(2)}</div>
+                </div>
+            `).join('');
+
+            // Update summary items
+            document.getElementById('summaryItems').innerHTML = items.map(item => `
+                <div class="summary-row">
+                    <span class="summary-label">${item.productName}</span>
+                    <span>$${item.price.toFixed(2)}</span>
+                </div>
+            `).join('');
+        }
+
+        // Remove item from cart
+        function removeItem(itemId) {
+            window.cart.remove(itemId);
+            renderCart();
+            updateSummary();
+        }
+
+        // Update delivery method
+        function updateDelivery(method) {
+            deliveryMethod = method;
+
+            // Update UI
+            document.querySelectorAll('.delivery-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            document.getElementById(method === 'shipping' ? 'shippingOption' : 'pickupOption').classList.add('selected');
+
+            // Show/hide address or calendar
+            document.getElementById('shippingAddress').classList.toggle('show', method === 'shipping');
+            document.getElementById('pickupCalendar').classList.toggle('show', method === 'pickup');
+
+            updateSummary();
+        }
+
+        // Generate pickup dates (next 14 days, excluding Sundays)
+        function generatePickupDates() {
+            const container = document.getElementById('pickupDates');
+            const dates = [];
+            const today = new Date();
+
+            // Start 5 days from now (production time)
+            let date = new Date(today);
+            date.setDate(date.getDate() + 5);
+
+            while (dates.length < 10) {
+                if (date.getDay() !== 0) { // Skip Sundays
+                    dates.push(new Date(date));
+                }
+                date.setDate(date.getDate() + 1);
+            }
+
+            container.innerHTML = dates.map((d, i) => {
+                const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+                const dayNum = d.getDate();
+                const month = d.toLocaleDateString('en-US', { month: 'short' });
+                const dateStr = d.toISOString().split('T')[0];
+
+                return `
+                    <div class="pickup-date" onclick="selectPickupDate('${dateStr}', this)">
+                        <div class="pickup-date-day">${dayName}</div>
+                        <div class="pickup-date-num">${dayNum}</div>
+                        <div class="pickup-date-day">${month}</div>
+                    </div>
+                `;
+            }).join('');
+
+            // Generate time slots
+            document.getElementById('pickupTimes').innerHTML = PICKUP_TIMES.map(time => `
+                <div class="pickup-time" onclick="selectPickupTime('${time}', this)">${time}</div>
+            `).join('');
+        }
+
+        function selectPickupDate(date, el) {
+            selectedPickupDate = date;
+            document.querySelectorAll('.pickup-date').forEach(d => d.classList.remove('selected'));
+            el.classList.add('selected');
+        }
+
+        function selectPickupTime(time, el) {
+            selectedPickupTime = time;
+            document.querySelectorAll('.pickup-time').forEach(t => t.classList.remove('selected'));
+            el.classList.add('selected');
+        }
+
+        // Update order summary
+        function updateSummary() {
+            const totals = window.cart.getTotals();
+            const shipping = deliveryMethod === 'shipping' ? SHIPPING_RATE : 0;
+            const subtotal = totals.subtotal;
+            const tax = (subtotal + shipping) * TAX_RATE;
+            const total = subtotal + shipping + tax;
+
+            document.getElementById('summarySubtotal').textContent = `$${subtotal.toFixed(2)}`;
+            document.getElementById('summaryShipping').textContent = shipping > 0 ? `$${shipping.toFixed(2)}` : 'Free';
+            document.getElementById('summaryTax').textContent = `$${tax.toFixed(2)}`;
+            document.getElementById('summaryTotal').textContent = `$${total.toFixed(2)}`;
+        }
+
+        // Validate form
+        function validateForm() {
+            const required = ['firstName', 'lastName', 'email'];
+
+            if (deliveryMethod === 'shipping') {
+                required.push('address1', 'city', 'state', 'postalCode');
+            } else {
+                if (!selectedPickupDate || !selectedPickupTime) {
+                    alert('Please select a pickup date and time');
+                    return false;
+                }
+            }
+
+            for (const field of required) {
+                const el = document.getElementById(field);
+                if (!el.value.trim()) {
+                    alert(`Please fill in ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`);
+                    el.focus();
+                    return false;
+                }
+            }
+
+            // Validate email format
+            const email = document.getElementById('email').value;
+            if (!email.includes('@') || !email.includes('.')) {
+                alert('Please enter a valid email address');
+                return false;
+            }
+
+            return true;
+        }
+
+        // Proceed to payment
+        async function proceedToPayment() {
+            if (window.cart.isEmpty()) {
+                alert('Your cart is empty');
+                return;
+            }
+
+            if (!validateForm()) {
+                return;
+            }
+
+            const button = document.getElementById('payButton');
+            button.disabled = true;
+            button.textContent = 'Processing...';
+
+            // Collect order data
+            const orderData = {
+                customer: {
+                    firstName: document.getElementById('firstName').value,
+                    lastName: document.getElementById('lastName').value,
+                    email: document.getElementById('email').value,
+                    phone: document.getElementById('phone').value
+                },
+                items: window.cart.items,
+                delivery: {
+                    method: deliveryMethod,
+                    shipping: deliveryMethod === 'shipping' ? {
+                        address1: document.getElementById('address1').value,
+                        address2: document.getElementById('address2').value,
+                        city: document.getElementById('city').value,
+                        state: document.getElementById('state').value,
+                        postalCode: document.getElementById('postalCode').value,
+                        country: document.getElementById('country').value
+                    } : null,
+                    pickup: deliveryMethod === 'pickup' ? {
+                        date: selectedPickupDate,
+                        time: selectedPickupTime
+                    } : null
+                },
+                notes: document.getElementById('orderNotes').value,
+                totals: {
+                    subtotal: window.cart.getTotals().subtotal,
+                    shipping: deliveryMethod === 'shipping' ? SHIPPING_RATE : 0,
+                    tax: (window.cart.getTotals().subtotal + (deliveryMethod === 'shipping' ? SHIPPING_RATE : 0)) * TAX_RATE,
+                    total: 0
+                }
+            };
+            orderData.totals.total = orderData.totals.subtotal + orderData.totals.shipping + orderData.totals.tax;
+
+            // Store order data for confirmation page
+            sessionStorage.setItem('proto_golf_pending_order', JSON.stringify(orderData));
+
+            // In production, this would create a Stripe Checkout session
+            // For now, redirect to a demo confirmation page
+            try {
+                // TODO: Replace with actual Stripe Checkout
+                // const response = await fetch('/api/create-checkout', {
+                //     method: 'POST',
+                //     headers: { 'Content-Type': 'application/json' },
+                //     body: JSON.stringify(orderData)
+                // });
+                // const { url } = await response.json();
+                // window.location.href = url;
+
+                // Demo: Go directly to confirmation
+                window.location.href = 'order-confirmation.html?demo=true';
+
+            } catch (error) {
+                console.error('Checkout error:', error);
+                alert('There was an error processing your order. Please try again.');
+                button.disabled = false;
+                button.textContent = 'Proceed to Payment';
+            }
+        }
+
+        // Mobile nav toggle
+        function toggleNav() {
+            const navLinks = document.getElementById('navLinks');
+            navLinks.classList.toggle('open');
+        }
+    </script>
+</body>
+</html>
