@@ -6736,6 +6736,99 @@
             box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
         }
 
+        /* Delete Chat Confirmation Modal */
+        .delete-chat-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100002;
+            backdrop-filter: blur(8px);
+        }
+
+        .delete-chat-modal-overlay.active {
+            display: flex;
+            animation: modalFadeIn 0.2s ease;
+        }
+
+        .delete-chat-modal {
+            background: linear-gradient(145deg, rgba(30, 30, 45, 0.98), rgba(20, 20, 35, 0.98));
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            width: 90%;
+            max-width: 340px;
+            text-align: center;
+            animation: modalSlideUp 0.3s ease;
+        }
+
+        .delete-chat-modal-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: rgba(239, 68, 68, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            color: #f87171;
+        }
+
+        .delete-chat-modal h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .delete-chat-modal p {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .delete-chat-modal-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .delete-chat-btn {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+
+        .delete-chat-btn.cancel {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .delete-chat-btn.cancel:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .delete-chat-btn.delete {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+
+        .delete-chat-btn.delete:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+        }
+
         /* Factory Comments */
         .factory-comments-section {
             display: none;
@@ -12017,6 +12110,25 @@
         </div>
     </div>
 
+    <!-- Delete Chat Confirmation Modal -->
+    <div class="delete-chat-modal-overlay" id="deleteChatModal">
+        <div class="delete-chat-modal">
+            <div class="delete-chat-modal-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28">
+                    <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                    <line x1="10" y1="11" x2="10" y2="17"/>
+                    <line x1="14" y1="11" x2="14" y2="17"/>
+                </svg>
+            </div>
+            <h3>Delete this chat?</h3>
+            <p>This conversation will be permanently deleted and cannot be recovered.</p>
+            <div class="delete-chat-modal-actions">
+                <button class="delete-chat-btn cancel" onclick="closeDeleteChatModal()">Cancel</button>
+                <button class="delete-chat-btn delete" id="deleteChatConfirmBtn">Delete</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Connect Modal -->
     <div class="connect-modal-overlay" id="connectModalOverlay" onclick="if(event.target === this) closeConnectModal()">
         <div class="connect-modal">
@@ -16892,6 +17004,22 @@
             }
         });
 
+        // Set up delete chat confirm button
+        document.addEventListener('DOMContentLoaded', function() {
+            const deleteConfirmBtn = document.getElementById('deleteChatConfirmBtn');
+            if (deleteConfirmBtn) {
+                deleteConfirmBtn.addEventListener('click', confirmDeleteChat);
+            }
+        });
+
+        // Close delete chat modal when clicking overlay
+        document.addEventListener('click', function(e) {
+            const modal = document.getElementById('deleteChatModal');
+            if (e.target === modal) {
+                closeDeleteChatModal();
+            }
+        });
+
         // Close builder dropdown when clicking outside
         document.addEventListener('click', function(e) {
             const dropdown = document.getElementById('builderModelDropdown');
@@ -18527,11 +18655,27 @@
             chatMessages.appendChild(messageDiv);
         }
 
-        // Delete a chat
-        async function deleteChat(chatId, event) {
-            if (event) event.stopPropagation();
+        // Delete chat modal functions
+        let pendingDeleteChatId = null;
 
-            if (!confirm('Delete this chat?')) return;
+        function openDeleteChatModal(chatId, event) {
+            if (event) event.stopPropagation();
+            pendingDeleteChatId = chatId;
+            const modal = document.getElementById('deleteChatModal');
+            if (modal) modal.classList.add('active');
+        }
+
+        function closeDeleteChatModal() {
+            const modal = document.getElementById('deleteChatModal');
+            if (modal) modal.classList.remove('active');
+            pendingDeleteChatId = null;
+        }
+
+        async function confirmDeleteChat() {
+            if (!pendingDeleteChatId) return;
+
+            const chatId = pendingDeleteChatId;
+            closeDeleteChatModal();
 
             try {
                 const { error } = await supabaseClient
@@ -18597,7 +18741,7 @@
                         <span class="chat-history-item-title">${escapeHtml(chat.title)}</span>
                         <span class="chat-history-item-time">${formatTime(chat.updated_at)}</span>
                     </div>
-                    <button class="chat-history-delete-btn" onclick="deleteChat('${chat.id}', event)" title="Delete chat">
+                    <button class="chat-history-delete-btn" onclick="openDeleteChatModal('${chat.id}', event)" title="Delete chat">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
                             <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
                         </svg>
