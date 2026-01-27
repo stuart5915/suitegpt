@@ -5,15 +5,19 @@
 
 const fs = require('fs');
 const path = require('path');
-const https = require('https');
+const { createClient } = require('@supabase/supabase-js');
 
 // Supabase config
 const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
-const CHANNEL = 'fleet-stream';
+const CHANNEL_NAME = 'fleet-stream';
 
 // Claude Code transcript directory
 const CLAUDE_DIR = path.join(process.env.USERPROFILE || process.env.HOME, '.claude');
+
+// Initialize Supabase client
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let channel = null;
 
 console.log(`
 ╔════════════════════════════════════════════════════════╗
@@ -33,48 +37,54 @@ console.log(`
 let lastSent = 0;
 const MIN_INTERVAL = 200; // ms between events
 
+// Initialize channel and start broadcasting
+async function initChannel() {
+    channel = supabase.channel(CHANNEL_NAME);
+
+    channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+            console.log('✅ Connected to Supabase Realtime channel');
+
+            // Send initial online event
+            broadcastEvent({
+                type: 'status',
+                zone: 'center',
+                label: 'Fleet Streamer Online',
+                icon: '🚀',
+                detail: 'Watching for activity...'
+            });
+        } else if (status === 'CHANNEL_ERROR') {
+            console.log('❌ Failed to connect to channel');
+        }
+    });
+}
+
 // Broadcast event to Supabase
 async function broadcastEvent(event) {
     const now = Date.now();
     if (now - lastSent < MIN_INTERVAL) return;
     lastSent = now;
 
-    const payload = {
-        channel: CHANNEL,
-        event: 'fleet-event',
-        payload: event,
-        type: 'broadcast'
-    };
+    if (!channel) {
+        console.log('⏳ Channel not ready, skipping event');
+        return;
+    }
 
-    const data = JSON.stringify(payload);
+    try {
+        const result = await channel.send({
+            type: 'broadcast',
+            event: 'fleet-event',
+            payload: event
+        });
 
-    const options = {
-        hostname: 'rdsmdywbdiskxknluiym.supabase.co',
-        port: 443,
-        path: '/realtime/v1/api/broadcast',
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-            'Content-Length': data.length
-        }
-    };
-
-    const req = https.request(options, (res) => {
-        if (res.statusCode === 200 || res.statusCode === 202) {
+        if (result === 'ok') {
             console.log(`📡 Sent: ${event.label} - ${event.detail || ''}`);
         } else {
-            console.log(`❌ Failed to send (${res.statusCode}): ${event.label}`);
+            console.log(`❌ Failed to send: ${event.label} (${result})`);
         }
-    });
-
-    req.on('error', (e) => {
-        console.log(`❌ Network error: ${e.message}`);
-    });
-
-    req.write(data);
-    req.end();
+    } catch (err) {
+        console.log(`❌ Error: ${err.message}`);
+    }
 }
 
 // Parse Claude Code events
@@ -187,7 +197,12 @@ function watchFile(filePath) {
 
 function readNewLines(filePath) {
     const lastPos = filePositions.get(filePath) || 0;
-    const stats = fs.statSync(filePath);
+    let stats;
+    try {
+        stats = fs.statSync(filePath);
+    } catch (e) {
+        return;
+    }
 
     if (stats.size <= lastPos) return;
 
@@ -235,32 +250,26 @@ if (!process.stdin.isTTY) {
     console.log('📥 Reading from stdin...');
 }
 
-// Start watching
-watchDirectory(CLAUDE_DIR);
+// Start
+initChannel().then(() => {
+    // Start watching
+    watchDirectory(CLAUDE_DIR);
 
-// Re-scan for new files every 5 seconds (Windows fs.watch can miss new files)
-setInterval(() => {
-    findJsonlFiles(CLAUDE_DIR).forEach(watchFile);
-}, 5000);
+    // Re-scan for new files every 5 seconds (Windows fs.watch can miss new files)
+    setInterval(() => {
+        findJsonlFiles(CLAUDE_DIR).forEach(watchFile);
+    }, 5000);
 
-// Send heartbeat every 30s to show streamer is alive
-setInterval(() => {
-    broadcastEvent({
-        type: 'heartbeat',
-        zone: 'center',
-        label: 'Fleet Online',
-        icon: '💚',
-        detail: new Date().toLocaleTimeString()
-    });
-}, 30000);
+    // Send heartbeat every 30s to show streamer is alive
+    setInterval(() => {
+        broadcastEvent({
+            type: 'heartbeat',
+            zone: 'center',
+            label: 'Fleet Online',
+            icon: '💚',
+            detail: new Date().toLocaleTimeString()
+        });
+    }, 30000);
 
-// Initial "online" event
-broadcastEvent({
-    type: 'status',
-    zone: 'center',
-    label: 'Fleet Streamer Online',
-    icon: '🚀',
-    detail: 'Watching for activity...'
+    console.log('✅ Streamer ready! Use Claude Code normally.\n');
 });
-
-console.log('✅ Streamer ready! Use Claude Code normally.\n');
