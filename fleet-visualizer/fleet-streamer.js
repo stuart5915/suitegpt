@@ -1,5 +1,6 @@
 /**
  * Fleet Streamer - Watches Claude Code activity and broadcasts to Supabase
+ * Supports multiple agents/sessions tracked by project folder
  * Double-click "Start Fleet Streamer.bat" to run
  */
 
@@ -19,13 +20,19 @@ const CLAUDE_DIR = path.join(process.env.USERPROFILE || process.env.HOME, '.clau
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let channel = null;
 
+// Track agents by their session file
+const agents = new Map(); // filePath -> { id, project, startTime, lastAction, status }
+
 console.log(`
 ╔════════════════════════════════════════════════════════╗
-║         🚀 SUITE FLEET STREAMER - Running 🚀           ║
+║         🚀 SUITE FLEET STREAMER v2.0 🚀                ║
 ╠════════════════════════════════════════════════════════╣
 ║                                                        ║
 ║  Watching for Claude Code activity...                  ║
 ║  Events will stream to suitegpt.app/governance/stream  ║
+║                                                        ║
+║  Now supporting MULTIPLE AGENTS!                       ║
+║  Each project folder = separate agent card             ║
 ║                                                        ║
 ║  Keep this window open while streaming.                ║
 ║  Press Ctrl+C to stop.                                 ║
@@ -35,7 +42,61 @@ console.log(`
 
 // Track last sent time to avoid spam
 let lastSent = 0;
-const MIN_INTERVAL = 200; // ms between events
+const MIN_INTERVAL = 150; // ms between events
+
+// Generate short unique ID
+function generateId() {
+    return Math.random().toString(36).substring(2, 8);
+}
+
+// Extract project name from file path
+function extractProject(filePath) {
+    // File path looks like: .claude/projects/C--Users-info-Documents-PROJECT-NAME/session.jsonl
+    // Or from tool use: C:\Users\info\Documents\PROJECT-NAME\file.js
+
+    if (!filePath) return 'unknown';
+
+    // Try to extract from .claude/projects path
+    const projectMatch = filePath.match(/projects[/\\]C--[^/\\]+-([^/\\]+)/);
+    if (projectMatch) {
+        return projectMatch[1].replace(/-/g, ' ').substring(0, 20);
+    }
+
+    // Try to extract from regular file path (Documents/PROJECT/...)
+    const docMatch = filePath.match(/Documents[/\\]([^/\\]+)/i);
+    if (docMatch) {
+        return docMatch[1].substring(0, 20);
+    }
+
+    // Fallback: use parent folder name
+    const parts = filePath.split(/[/\\]/);
+    if (parts.length >= 2) {
+        return parts[parts.length - 2].substring(0, 20);
+    }
+
+    return 'project';
+}
+
+// Get or create agent for a session file
+function getAgent(sessionFilePath) {
+    if (!agents.has(sessionFilePath)) {
+        const project = extractProject(sessionFilePath);
+        agents.set(sessionFilePath, {
+            id: generateId(),
+            project: project,
+            startTime: Date.now(),
+            lastActivity: Date.now(),
+            status: 'active',
+            currentAction: null
+        });
+        console.log(`🆕 New agent detected: ${project} (${agents.get(sessionFilePath).id})`);
+    }
+
+    const agent = agents.get(sessionFilePath);
+    agent.lastActivity = Date.now();
+    agent.status = 'active';
+    return agent;
+}
 
 // Initialize channel and start broadcasting
 async function initChannel() {
@@ -47,11 +108,11 @@ async function initChannel() {
 
             // Send initial online event
             broadcastEvent({
-                type: 'status',
-                zone: 'center',
+                type: 'streamer_online',
                 label: 'Fleet Streamer Online',
                 icon: '🚀',
-                detail: 'Watching for activity...'
+                detail: 'Watching for activity...',
+                timestamp: Date.now()
             });
         } else if (status === 'CHANNEL_ERROR') {
             console.log('❌ Failed to connect to channel');
@@ -74,70 +135,179 @@ async function broadcastEvent(event) {
         const result = await channel.send({
             type: 'broadcast',
             event: 'fleet-event',
-            payload: event
+            payload: {
+                ...event,
+                timestamp: Date.now()
+            }
         });
 
         if (result === 'ok') {
-            console.log(`📡 Sent: ${event.label} - ${event.detail || ''}`);
+            const agentInfo = event.agentId ? `[${event.project}]` : '[system]';
+            console.log(`📡 ${agentInfo} ${event.action || event.label}: ${event.detail || ''}`);
         } else {
-            console.log(`❌ Failed to send: ${event.label} (${result})`);
+            console.log(`❌ Failed to send (${result})`);
         }
     } catch (err) {
         console.log(`❌ Error: ${err.message}`);
     }
 }
 
-// Parse Claude Code events
-function parseClaudeEvent(event) {
+// Parse Claude Code events with agent tracking
+function parseClaudeEvent(event, sessionFilePath) {
     const type = event.type;
+    const agent = getAgent(sessionFilePath);
 
     if (type === 'assistant' && event.message?.content) {
         for (const block of event.message.content) {
             if (block.type === 'tool_use') {
-                return parseToolUse(block);
+                return parseToolUse(block, agent, sessionFilePath);
             }
             if (block.type === 'text' && block.text) {
+                // Don't expose actual thinking - just show "Thinking..."
                 return {
                     type: 'thinking',
-                    zone: 'center',
-                    label: 'Thinking',
-                    detail: block.text.substring(0, 60).replace(/\n/g, ' ') + '...',
-                    icon: '🧠'
+                    agentId: agent.id,
+                    project: agent.project,
+                    sessionStart: agent.startTime,
+                    action: 'Thinking',
+                    icon: '💭',
+                    detail: 'Processing...',
+                    status: 'active'
                 };
             }
         }
     }
 
     if (type === 'result') {
+        agent.currentAction = null;
         return {
             type: 'complete',
-            zone: 'center',
-            label: 'Complete',
-            icon: '✅'
+            agentId: agent.id,
+            project: agent.project,
+            sessionStart: agent.startTime,
+            action: 'Complete',
+            icon: '✅',
+            detail: 'Task finished',
+            status: 'idle'
         };
     }
 
     return null;
 }
 
-function parseToolUse(block) {
+function parseToolUse(block, agent, sessionFilePath) {
     const tool = block.name;
     const input = block.input || {};
 
+    // Extract project from file path in the tool input (more accurate)
+    let project = agent.project;
+    const filePath = input.file_path || input.path || '';
+    if (filePath) {
+        const extractedProject = extractProject(filePath);
+        if (extractedProject !== 'unknown' && extractedProject !== 'project') {
+            project = extractedProject;
+            // Update agent's project if we found a better name
+            agent.project = project;
+        }
+    }
+
+    // Safe descriptions - don't expose sensitive details
     const toolMap = {
-        'Read': { zone: 'read', label: 'Reading', icon: '📖', detail: input.file_path?.split(/[/\\]/).pop() },
-        'Write': { zone: 'write', label: 'Writing', icon: '✍️', detail: input.file_path?.split(/[/\\]/).pop() },
-        'Edit': { zone: 'write', label: 'Editing', icon: '🔧', detail: input.file_path?.split(/[/\\]/).pop() },
-        'Bash': { zone: 'terminal', label: 'Terminal', icon: '💻', detail: input.command?.substring(0, 40) },
-        'Glob': { zone: 'search', label: 'Searching', icon: '🔍', detail: input.pattern },
-        'Grep': { zone: 'search', label: 'Searching', icon: '🔍', detail: input.pattern },
-        'Task': { zone: 'agents', label: 'Spawning Agent', icon: '🤖', detail: input.description },
-        'WebSearch': { zone: 'web', label: 'Web Search', icon: '🌐', detail: input.query },
-        'WebFetch': { zone: 'web', label: 'Fetching', icon: '🌐', detail: input.url?.substring(0, 40) }
+        'Read': {
+            action: 'Reading',
+            icon: '📖',
+            detail: safeFileName(input.file_path)
+        },
+        'Write': {
+            action: 'Writing',
+            icon: '✍️',
+            detail: safeFileName(input.file_path)
+        },
+        'Edit': {
+            action: 'Editing',
+            icon: '🔧',
+            detail: safeFileName(input.file_path)
+        },
+        'Bash': {
+            action: 'Terminal',
+            icon: '💻',
+            detail: safeBashCommand(input.command)
+        },
+        'Glob': {
+            action: 'Finding files',
+            icon: '🔍',
+            detail: input.pattern ? `*${path.extname(input.pattern) || '.*'}` : 'searching...'
+        },
+        'Grep': {
+            action: 'Searching code',
+            icon: '🔍',
+            detail: 'pattern match'
+        },
+        'Task': {
+            action: 'Sub-agent',
+            icon: '🤖',
+            detail: input.description?.substring(0, 30) || 'spawning...'
+        },
+        'WebSearch': {
+            action: 'Web search',
+            icon: '🌐',
+            detail: 'researching...'
+        },
+        'WebFetch': {
+            action: 'Fetching web',
+            icon: '🌐',
+            detail: safeDomain(input.url)
+        }
     };
 
-    const mapped = toolMap[tool] || { zone: 'center', label: tool, icon: '⚡', detail: 'working...' };
-    return { type: 'action', ...mapped };
+    const mapped = toolMap[tool] || { action: tool, icon: '⚡', detail: 'working...' };
+
+    agent.currentAction = mapped.action;
+
+    return {
+        type: 'action',
+        agentId: agent.id,
+        project: project,
+        sessionStart: agent.startTime,
+        action: mapped.action,
+        icon: mapped.icon,
+        detail: mapped.detail,
+        status: 'active'
+    };
+}
+
+// Safe extraction functions - don't expose sensitive info
+function safeFileName(filePath) {
+    if (!filePath) return 'file';
+    const name = path.basename(filePath);
+    // Hide potentially sensitive file names
+    if (name.includes('env') || name.includes('secret') || name.includes('key') || name.includes('credential')) {
+        return 'config file';
+    }
+    return name.substring(0, 25);
+}
+
+function safeBashCommand(cmd) {
+    if (!cmd) return 'running command';
+    // Don't expose actual commands - just categorize them
+    if (cmd.startsWith('git')) return 'git operation';
+    if (cmd.startsWith('npm') || cmd.startsWith('yarn') || cmd.startsWith('pnpm')) return 'package manager';
+    if (cmd.startsWith('node')) return 'running node';
+    if (cmd.startsWith('python')) return 'running python';
+    if (cmd.includes('test')) return 'running tests';
+    if (cmd.includes('build')) return 'building';
+    if (cmd.includes('install')) return 'installing';
+    return 'terminal command';
+}
+
+function safeDomain(url) {
+    if (!url) return 'webpage';
+    try {
+        const domain = new URL(url).hostname;
+        return domain.replace('www.', '').substring(0, 20);
+    } catch {
+        return 'webpage';
+    }
 }
 
 // Watch for new JSONL files and tail them
@@ -185,7 +355,8 @@ function watchFile(filePath) {
     const stats = fs.statSync(filePath);
     filePositions.set(filePath, stats.size);
 
-    console.log(`👁️ Watching: ${path.basename(filePath)}`);
+    const project = extractProject(filePath);
+    console.log(`👁️ Watching: ${path.basename(filePath)} (${project})`);
 
     // Watch for changes
     fs.watch(filePath, (eventType) => {
@@ -223,7 +394,7 @@ function readNewLines(filePath) {
         for (const line of lines) {
             try {
                 const event = JSON.parse(line);
-                const visualEvent = parseClaudeEvent(event);
+                const visualEvent = parseClaudeEvent(event, filePath);
                 if (visualEvent) {
                     broadcastEvent(visualEvent);
                 }
@@ -232,22 +403,46 @@ function readNewLines(filePath) {
     });
 }
 
-// Also read from stdin if piped
-if (!process.stdin.isTTY) {
-    const readline = require('readline');
-    const rl = readline.createInterface({ input: process.stdin });
+// Check for idle agents periodically
+function checkIdleAgents() {
+    const now = Date.now();
+    const IDLE_THRESHOLD = 30000; // 30 seconds
 
-    rl.on('line', (line) => {
-        try {
-            const event = JSON.parse(line);
-            const visualEvent = parseClaudeEvent(event);
-            if (visualEvent) {
-                broadcastEvent(visualEvent);
-            }
-        } catch (e) {}
+    for (const [filePath, agent] of agents) {
+        if (agent.status === 'active' && now - agent.lastActivity > IDLE_THRESHOLD) {
+            agent.status = 'idle';
+            broadcastEvent({
+                type: 'status_change',
+                agentId: agent.id,
+                project: agent.project,
+                sessionStart: agent.startTime,
+                action: 'Idle',
+                icon: '💤',
+                detail: 'Waiting...',
+                status: 'idle'
+            });
+        }
+    }
+}
+
+// Send fleet summary periodically
+function sendFleetSummary() {
+    const activeAgents = Array.from(agents.values()).filter(a => a.status === 'active');
+    const idleAgents = Array.from(agents.values()).filter(a => a.status === 'idle');
+
+    broadcastEvent({
+        type: 'fleet_summary',
+        activeCount: activeAgents.length,
+        idleCount: idleAgents.length,
+        totalCount: agents.size,
+        agents: Array.from(agents.values()).map(a => ({
+            id: a.id,
+            project: a.project,
+            status: a.status,
+            sessionStart: a.startTime,
+            lastActivity: a.lastActivity
+        }))
     });
-
-    console.log('📥 Reading from stdin...');
 }
 
 // Start
@@ -260,16 +455,11 @@ initChannel().then(() => {
         findJsonlFiles(CLAUDE_DIR).forEach(watchFile);
     }, 5000);
 
-    // Send heartbeat every 30s to show streamer is alive
-    setInterval(() => {
-        broadcastEvent({
-            type: 'heartbeat',
-            zone: 'center',
-            label: 'Fleet Online',
-            icon: '💚',
-            detail: new Date().toLocaleTimeString()
-        });
-    }, 30000);
+    // Check for idle agents every 10 seconds
+    setInterval(checkIdleAgents, 10000);
+
+    // Send fleet summary every 30 seconds
+    setInterval(sendFleetSummary, 30000);
 
     console.log('✅ Streamer ready! Use Claude Code normally.\n');
 });
