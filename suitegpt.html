@@ -15057,7 +15057,10 @@
                 openAppsPanel(true);
             } else if (path === '/connections') {
                 openConnections(true);
+            } else if (path === '/suitegptbuilder') {
+                openBuilderMode(true);
             } else {
+                exitBuilderMode();
                 closeFactoryView(true);
                 closeCreatorDashboard(true);
                 closeAppsView(true);
@@ -15081,6 +15084,8 @@
                 openAppsPanel(true);
             } else if (path === '/connections') {
                 openConnections(true);
+            } else if (path === '/suitegptbuilder') {
+                openBuilderMode(true);
             }
         }
 
@@ -18975,11 +18980,16 @@
             isLoading: false
         };
 
-        function openBuilderMode() {
+        function openBuilderMode(skipPushState = false) {
             const builderMode = document.getElementById('builderMode');
             if (builderMode) {
                 builderMode.classList.add('active');
                 document.body.style.overflow = 'hidden';
+
+                // Update URL to /suitegptbuilder
+                if (!skipPushState) {
+                    history.pushState({ view: 'suitegptbuilder' }, '', '/suitegptbuilder');
+                }
 
                 // Focus the input
                 setTimeout(() => {
@@ -19000,6 +19010,8 @@
         function closeBuilderMode() {
             // Exit builder mode and return to main chat
             exitBuilderMode();
+            // Update URL back to root
+            history.pushState({ view: 'home' }, '', '/');
             // Focus the main chat input
             const chatInput = document.getElementById('chatInput');
             if (chatInput) chatInput.focus();
