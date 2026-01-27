@@ -815,18 +815,35 @@
     </div>
 
     <script>
-        // Demo inventory data (replace with Supabase when connected)
-        let inventory = [
-            { id: 'rough-mill', name: 'Rough Mill', basePrice: 399, stock: 20, status: 'active' },
-            { id: 'centre-blade', name: 'Centre Blade', basePrice: 449, stock: 15, status: 'active' },
-            { id: 'long-neck-blade', name: 'Long Neck Blade', basePrice: 429, stock: 0, status: 'coming_soon' }
-        ];
+        // Supabase config
+        const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
 
-        // Demo orders data
+        // Data from Supabase
+        let inventory = [];
         let orders = [];
 
         // Auth
         const ADMIN_PASSWORD = 'proto2026';
+
+        // Supabase API helper
+        async function supabaseQuery(table, method = 'GET', body = null, query = '') {
+            const url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
+            const options = {
+                method,
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': method === 'POST' ? 'return=representation' : 'return=minimal'
+                }
+            };
+            if (body) options.body = JSON.stringify(body);
+
+            const response = await fetch(url, options);
+            if (method === 'GET') return response.json();
+            return response.ok;
+        }
 
         function handleLogin(e) {
             e.preventDefault();
@@ -857,9 +874,62 @@
             }
         });
 
-        function initDashboard() {
+        async function initDashboard() {
+            // Hide setup banner once connected
+            document.getElementById('setupBanner').style.display = 'none';
+
+            // Fetch data from Supabase
+            await fetchInventory();
+            await fetchOrders();
             renderInventory();
+            renderOrders();
             updateStats();
+        }
+
+        async function fetchInventory() {
+            try {
+                const data = await supabaseQuery('proto_golf_products', 'GET', null, '?order=name');
+                inventory = data.map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    basePrice: parseFloat(p.base_price),
+                    stock: p.stock,
+                    status: p.status
+                }));
+                console.log('Inventory loaded:', inventory);
+            } catch (e) {
+                console.error('Failed to fetch inventory:', e);
+            }
+        }
+
+        async function fetchOrders() {
+            try {
+                const data = await supabaseQuery('proto_golf_orders', 'GET', null, '?order=created_at.desc&limit=50');
+                orders = data.map(o => ({
+                    id: o.id,
+                    orderNumber: o.order_number,
+                    date: new Date(o.created_at).toLocaleDateString(),
+                    customerName: o.customer_name,
+                    customerEmail: o.customer_email,
+                    customerPhone: o.customer_phone,
+                    productId: o.product_id,
+                    productName: o.product_name,
+                    finish: o.finish,
+                    shaftColor: o.shaft_color,
+                    deliveryMethod: o.delivery_method,
+                    shippingAddress: o.shipping_address ?
+                        `${o.shipping_address.line1}, ${o.shipping_address.city}, ${o.shipping_address.state}` : null,
+                    pickupDate: o.pickup_date,
+                    pickupTime: o.pickup_time,
+                    total: parseFloat(o.total),
+                    status: o.status,
+                    paymentStatus: o.payment_status,
+                    notes: o.notes
+                }));
+                console.log('Orders loaded:', orders);
+            } catch (e) {
+                console.error('Failed to fetch orders:', e);
+            }
         }
 
         function showSection(sectionId, event) {
@@ -904,15 +974,100 @@
             const item = inventory.find(i => i.id === id);
             if (item) {
                 item.stock = parseInt(value) || 0;
+                item.changed = true;
                 renderInventory();
                 updateStats();
             }
         }
 
-        function saveInventory() {
-            // In production, save to Supabase
-            alert('Inventory saved! (Demo mode - not persisted)');
-            console.log('Inventory to save:', inventory);
+        async function saveInventory() {
+            const changedItems = inventory.filter(i => i.changed);
+            if (changedItems.length === 0) {
+                alert('No changes to save');
+                return;
+            }
+
+            let saved = 0;
+            for (const item of changedItems) {
+                try {
+                    await supabaseQuery('proto_golf_products', 'PATCH',
+                        { stock: item.stock },
+                        `?id=eq.${item.id}`
+                    );
+                    item.changed = false;
+                    saved++;
+                } catch (e) {
+                    console.error('Failed to save:', item.id, e);
+                }
+            }
+
+            alert(`Saved ${saved} item(s) to database!`);
+            renderInventory();
+        }
+
+        function renderOrders() {
+            const table = document.getElementById('ordersTable');
+            const recentTable = document.getElementById('recentOrdersTable');
+
+            if (orders.length === 0) {
+                const emptyRow = `<tr><td colspan="8" style="text-align: center; color: var(--color-steel); padding: 40px;">No orders yet</td></tr>`;
+                table.innerHTML = emptyRow;
+                recentTable.innerHTML = emptyRow.replace('8', '5');
+                return;
+            }
+
+            // Full orders table
+            table.innerHTML = orders.map(o => {
+                const statusBadge = o.status === 'pending' ? 'badge-warning' :
+                    o.status === 'shipped' || o.status === 'completed' ? 'badge-success' : 'badge-neutral';
+
+                return `
+                    <tr>
+                        <td><strong>${o.orderNumber}</strong></td>
+                        <td>${o.date}</td>
+                        <td>${o.customerName}<br><small style="color:var(--color-steel)">${o.customerEmail}</small></td>
+                        <td>${o.productName}<br><small style="color:var(--color-steel)">${o.finish}</small></td>
+                        <td>${o.deliveryMethod === 'shipping' ? 'Ship' : 'Pickup'}</td>
+                        <td><strong>$${o.total.toFixed(2)}</strong></td>
+                        <td><span class="badge ${statusBadge}">${o.status}</span></td>
+                        <td><button class="btn btn-secondary btn-sm" onclick="openOrderModal('${o.id}')">View</button></td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Recent orders (first 5)
+            recentTable.innerHTML = orders.slice(0, 5).map(o => {
+                const statusBadge = o.status === 'pending' ? 'badge-warning' :
+                    o.status === 'shipped' || o.status === 'completed' ? 'badge-success' : 'badge-neutral';
+
+                return `
+                    <tr>
+                        <td><strong>${o.orderNumber}</strong></td>
+                        <td>${o.customerName}</td>
+                        <td>${o.productName}</td>
+                        <td><strong>$${o.total.toFixed(2)}</strong></td>
+                        <td><span class="badge ${statusBadge}">${o.status}</span></td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Update stats
+            document.getElementById('ordersToday').textContent = orders.filter(o =>
+                o.date === new Date().toLocaleDateString()
+            ).length;
+
+            document.getElementById('pendingOrders').textContent = orders.filter(o =>
+                o.status === 'pending'
+            ).length;
+
+            const weekRevenue = orders.filter(o => {
+                const orderDate = new Date(o.date);
+                const weekAgo = new Date();
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                return orderDate >= weekAgo && o.paymentStatus === 'paid';
+            }).reduce((sum, o) => sum + o.total, 0);
+
+            document.getElementById('weeklyRevenue').textContent = '$' + weekRevenue.toFixed(0);
         }
 
         function updateStats() {
