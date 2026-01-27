@@ -6002,6 +6002,212 @@
             color: var(--accent-primary);
         }
 
+        /* Stream View - GitHub Commits */
+        .stream-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .stream-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .stream-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .stream-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 16px;
+        }
+
+        .stream-github-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .stream-github-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border-color: var(--border-hover);
+        }
+
+        .stream-commits {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .stream-loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-tertiary);
+        }
+
+        .stream-loading-spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--border-subtle);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            margin: 0 auto 16px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .stream-commit {
+            display: flex;
+            gap: 16px;
+            padding: 16px 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
+
+        .stream-commit:hover {
+            border-color: var(--accent-primary);
+            background: var(--bg-card-hover);
+        }
+
+        .stream-commit-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .stream-commit-icon svg {
+            width: 20px;
+            height: 20px;
+            color: white;
+        }
+
+        .stream-commit-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .stream-commit-message {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+            line-height: 1.4;
+        }
+
+        .stream-commit-message a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .stream-commit-message a:hover {
+            color: var(--accent-primary);
+        }
+
+        .stream-commit-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.8rem;
+            color: var(--text-tertiary);
+            flex-wrap: wrap;
+        }
+
+        .stream-commit-author {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stream-commit-author img {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+        }
+
+        .stream-commit-author span {
+            color: var(--text-secondary);
+        }
+
+        .stream-commit-time {
+            color: var(--text-tertiary);
+        }
+
+        .stream-commit-files {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--accent-primary);
+        }
+
+        .stream-commit-sha {
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            background: rgba(255, 255, 255, 0.05);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .stream-error {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+
+        .stream-error button {
+            margin-top: 16px;
+            padding: 8px 16px;
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .stream-error button:hover {
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .stream-container {
+                padding: 20px 16px;
+            }
+
+            .stream-commit {
+                padding: 14px 16px;
+            }
+
+            .stream-commit-meta {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+            }
+        }
+
         /* Factory Submit Modal */
         .factory-modal-overlay {
             position: fixed;
@@ -11012,8 +11218,21 @@
 
                             <!-- Stream View -->
                             <div class="factory-main-view" id="factoryStreamView" style="display: none;">
-                                <div class="factory-empty-state">
-                                    <p>Real-time updates will appear here</p>
+                                <div class="stream-container">
+                                    <div class="stream-header">
+                                        <h2>Development Stream</h2>
+                                        <p class="stream-subtitle">Live commits from the SUITE codebase</p>
+                                        <a href="https://github.com/stuart5915/stuart-hollinger-landing" target="_blank" class="stream-github-link">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                                            View on GitHub
+                                        </a>
+                                    </div>
+                                    <div class="stream-commits" id="streamCommits">
+                                        <div class="stream-loading">
+                                            <div class="stream-loading-spinner"></div>
+                                            <p>Loading commits...</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -12886,6 +13105,11 @@
             if (view === 'leaderboard') {
                 loadFactoryLeaderboard();
             }
+
+            // Load stream commits when switching to stream view
+            if (view === 'stream') {
+                loadStreamCommits();
+            }
         }
 
         function switchFactorySection(section) {
@@ -13658,6 +13882,133 @@
                     <span class="factory-leaderboard-credits">${user.reputation || 0} credits</span>
                 </div>
             `).join('');
+        }
+
+        // Stream - GitHub Commits
+        let streamCommitsLoaded = false;
+        let streamCommitsCache = null;
+
+        async function loadStreamCommits() {
+            const container = document.getElementById('streamCommits');
+            if (!container) return;
+
+            // Use cache if available and recent
+            if (streamCommitsCache && streamCommitsLoaded) {
+                renderStreamCommits(streamCommitsCache);
+                return;
+            }
+
+            // Show loading
+            container.innerHTML = `
+                <div class="stream-loading">
+                    <div class="stream-loading-spinner"></div>
+                    <p>Loading commits...</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(
+                    'https://api.github.com/repos/stuart5915/stuart-hollinger-landing/commits?per_page=30',
+                    {
+                        headers: {
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(`GitHub API error: ${response.status}`);
+                }
+
+                const commits = await response.json();
+                streamCommitsCache = commits;
+                streamCommitsLoaded = true;
+                renderStreamCommits(commits);
+
+            } catch (error) {
+                console.error('Failed to load commits:', error);
+                container.innerHTML = `
+                    <div class="stream-error">
+                        <p>Failed to load commits</p>
+                        <p style="font-size: 0.8rem; margin-top: 8px;">${error.message}</p>
+                        <button onclick="loadStreamCommits()">Try Again</button>
+                    </div>
+                `;
+            }
+        }
+
+        function renderStreamCommits(commits) {
+            const container = document.getElementById('streamCommits');
+            if (!container) return;
+
+            if (!commits || commits.length === 0) {
+                container.innerHTML = '<div class="stream-error"><p>No commits found</p></div>';
+                return;
+            }
+
+            container.innerHTML = commits.map(commit => {
+                const message = commit.commit.message.split('\n')[0]; // First line only
+                const author = commit.commit.author.name;
+                const authorAvatar = commit.author?.avatar_url || 'https://github.com/ghost.png';
+                const date = new Date(commit.commit.author.date);
+                const timeAgo = getTimeAgo(date);
+                const sha = commit.sha.substring(0, 7);
+                const url = commit.html_url;
+
+                // Check if it's a Co-Authored commit (AI work)
+                const isAICommit = commit.commit.message.includes('Co-Authored-By: Claude');
+                const commitIcon = isAICommit ?
+                    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>` :
+                    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>`;
+
+                return `
+                    <div class="stream-commit">
+                        <div class="stream-commit-icon" ${isAICommit ? 'title="AI-assisted commit"' : ''}>
+                            ${commitIcon}
+                        </div>
+                        <div class="stream-commit-content">
+                            <div class="stream-commit-message">
+                                <a href="${url}" target="_blank" rel="noopener">${escapeHtml(message)}</a>
+                            </div>
+                            <div class="stream-commit-meta">
+                                <span class="stream-commit-author">
+                                    <img src="${authorAvatar}" alt="${escapeHtml(author)}" loading="lazy">
+                                    <span>${escapeHtml(author)}</span>
+                                </span>
+                                <span class="stream-commit-time">${timeAgo}</span>
+                                <span class="stream-commit-sha">${sha}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+
+            const intervals = {
+                year: 31536000,
+                month: 2592000,
+                week: 604800,
+                day: 86400,
+                hour: 3600,
+                minute: 60
+            };
+
+            for (const [name, secondsInUnit] of Object.entries(intervals)) {
+                const interval = Math.floor(seconds / secondsInUnit);
+                if (interval >= 1) {
+                    return interval === 1 ? `1 ${name} ago` : `${interval} ${name}s ago`;
+                }
+            }
+            return 'just now';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         async function updateFactoryUserCredits() {
