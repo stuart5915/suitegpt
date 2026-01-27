@@ -5700,6 +5700,7 @@
             gap: 2px;
             margin-right: 8px;
             flex-shrink: 0;
+            position: relative;
         }
 
         .chat-action-btn {
@@ -5794,38 +5795,29 @@
         }
 
         /* Mention (@) Button & Dropdown */
-        .mention-btn {
-            position: relative;
-        }
-
-        .mention-at {
-            font-size: 1rem;
-            font-weight: 700;
-            color: inherit;
+        .mention-btn svg {
+            width: 18px;
+            height: 18px;
         }
 
         .mention-dropdown {
             position: absolute;
             bottom: calc(100% + 8px);
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
+            left: 0;
+            background: var(--bg-sidebar);
+            border: 1px solid var(--border-subtle);
             border-radius: 12px;
             padding: 8px;
             min-width: 220px;
             max-height: 320px;
             overflow-y: auto;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.2s, visibility 0.2s;
+            display: none;
             z-index: 100;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         }
 
         .mention-dropdown.active {
-            opacity: 1;
-            visibility: visible;
+            display: block;
         }
 
         .mention-dropdown-section {
@@ -5864,6 +5856,7 @@
             background: none;
             width: 100%;
             text-align: left;
+            font-family: inherit;
         }
 
         .mention-dropdown-item:hover {
@@ -7608,27 +7601,30 @@
                                     <input type="file" id="fileInput" style="display: none;" multiple accept="image/*,.pdf,.txt,.doc,.docx">
                                 </button>
                                 <button class="chat-action-btn mention-btn" id="mentionBtn" title="Mention app or context">
-                                    <span class="mention-at">@</span>
-                                    <div class="mention-dropdown" id="mentionDropdown">
-                                        <div class="mention-dropdown-section">
-                                            <div class="mention-dropdown-label">APPS</div>
-                                            <div class="mention-apps-list" id="mentionAppsList">
-                                                <!-- Populated by JavaScript -->
-                                            </div>
-                                        </div>
-                                        <div class="mention-dropdown-section">
-                                            <div class="mention-dropdown-label">CONTEXT</div>
-                                            <button class="mention-dropdown-item" onclick="selectMention('my-apps', 'My saved apps', 'context')">
-                                                <span class="mention-item-icon">&#128193;</span>
-                                                <span>My saved apps</span>
-                                            </button>
-                                            <button class="mention-dropdown-item" onclick="selectMention('recent', 'Recent activity', 'context')">
-                                                <span class="mention-item-icon">&#128336;</span>
-                                                <span>Recent activity</span>
-                                            </button>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                        <circle cx="12" cy="12" r="4"/>
+                                        <path d="M16 8v5a3 3 0 006 0v-1a10 10 0 10-3.92 7.94"/>
+                                    </svg>
+                                </button>
+                                <div class="mention-dropdown" id="mentionDropdown">
+                                    <div class="mention-dropdown-section">
+                                        <div class="mention-dropdown-label">APPS</div>
+                                        <div class="mention-apps-list" id="mentionAppsList">
+                                            <!-- Populated by JavaScript -->
                                         </div>
                                     </div>
-                                </button>
+                                    <div class="mention-dropdown-section">
+                                        <div class="mention-dropdown-label">CONTEXT</div>
+                                        <button class="mention-dropdown-item" onclick="selectMention('my-apps', 'My saved apps', 'context')">
+                                            <span class="mention-item-icon">📁</span>
+                                            <span>My saved apps</span>
+                                        </button>
+                                        <button class="mention-dropdown-item" onclick="selectMention('recent', 'Recent activity', 'context')">
+                                            <span class="mention-item-icon">🕐</span>
+                                            <span>Recent activity</span>
+                                        </button>
+                                    </div>
+                                </div>
                                 <button class="chat-action-btn tools-btn" id="toolsBtn" title="Tools">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
