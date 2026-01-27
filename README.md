@@ -165,5 +165,8 @@ The app uses Supabase for backend - you'll need your own instance for full funct
 
 Built by Stuart Hollinger
 
+- LinkedIn: [stuart-hollinger](https://www.linkedin.com/in/stuart-hollinger/)
+- Email: stuart5915@gmail.com
+- X: [@artstu](https://x.com/artstu)
 - GitHub: [@stuart5915](https://github.com/stuart5915)
 - Project: [suitegpt.app](https://suitegpt.app)
