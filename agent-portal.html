@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUITE Agent Portal</title>
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg-main: #0a0a0f;
+            --bg-card: #12121a;
+            --bg-input: #1a1a24;
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(255, 255, 255, 0.15);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --text-tertiary: rgba(255, 255, 255, 0.4);
+            --accent-primary: #6366f1;
+            --accent-secondary: #8b5cf6;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --success: #22c55e;
+            --warning: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Loading State */
+        .loading-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 1000;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-subtle);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-screen.hidden {
+            display: none;
+        }
+
+        /* Login Screen */
+        .login-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+
+        .login-screen.hidden {
+            display: none;
+        }
+
+        .login-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 24px;
+            padding: 48px;
+            text-align: center;
+            max-width: 420px;
+            width: 90%;
+        }
+
+        .login-logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            margin: 0 auto 24px;
+        }
+
+        .login-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .login-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 32px;
+        }
+
+        .google-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            padding: 14px 24px;
+            background: white;
+            color: #333;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .google-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .google-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Access Denied */
+        .access-denied {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 998;
+        }
+
+        .access-denied.hidden {
+            display: none;
+        }
+
+        .access-denied-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 24px;
+            padding: 48px;
+            text-align: center;
+            max-width: 420px;
+            width: 90%;
+        }
+
+        .access-denied-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        .access-denied h2 {
+            margin-bottom: 12px;
+        }
+
+        .access-denied p {
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+
+        .logout-btn {
+            padding: 12px 24px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            border-color: var(--border-hover);
+        }
+
+        /* Main Portal */
+        .portal-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 900px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .portal-container.hidden {
+            display: none;
+        }
+
+        /* Header */
+        .portal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border-subtle);
+            margin-bottom: 20px;
+        }
+
+        .portal-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .portal-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .portal-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 12px;
+        }
+
+        .portal-name h1 {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .portal-name span {
+            font-size: 0.8rem;
+            color: var(--text-tertiary);
+        }
+
+        .portal-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(34, 197, 94, 0.1);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: var(--success);
+        }
+
+        .portal-status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Chat Area */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .chat-welcome {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .chat-welcome-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+
+        .chat-welcome h2 {
+            font-size: 1.4rem;
+            margin-bottom: 8px;
+        }
+
+        .chat-welcome p {
+            color: var(--text-secondary);
+            max-width: 400px;
+            margin: 0 auto 24px;
+        }
+
+        .quick-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .quick-action-btn {
+            padding: 10px 18px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-action-btn:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        /* Messages */
+        .message {
+            display: flex;
+            gap: 12px;
+            max-width: 85%;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: var(--bg-input);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .message.assistant .message-avatar {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+        }
+
+        .message-content {
+            background: var(--bg-input);
+            padding: 14px 18px;
+            border-radius: 16px;
+            line-height: 1.5;
+        }
+
+        .message.user .message-content {
+            background: var(--accent-primary);
+        }
+
+        .message.assistant .message-content {
+            border: 1px solid var(--border-subtle);
+        }
+
+        /* Suggestions */
+        .suggestions-container {
+            margin-top: 16px;
+            padding: 16px;
+            background: var(--bg-main);
+            border-radius: 12px;
+        }
+
+        .suggestions-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .suggestion-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .suggestion-item:hover {
+            border-color: var(--accent-primary);
+        }
+
+        .suggestion-item.selected {
+            border-color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .suggestion-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-subtle);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+
+        .suggestion-item.selected .suggestion-checkbox {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+        }
+
+        .suggestion-checkbox svg {
+            width: 12px;
+            height: 12px;
+            color: white;
+            opacity: 0;
+        }
+
+        .suggestion-item.selected .suggestion-checkbox svg {
+            opacity: 1;
+        }
+
+        .suggestion-text {
+            flex: 1;
+            font-size: 0.9rem;
+        }
+
+        /* Input Area */
+        .chat-input-area {
+            padding: 20px;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .chat-input-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 14px 18px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            resize: none;
+            outline: none;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+
+        .chat-input:focus {
+            border-color: var(--accent-primary);
+        }
+
+        .chat-input::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .send-btn {
+            padding: 14px 24px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border: none;
+            border-radius: 14px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px var(--accent-glow);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Submit Request Button */
+        .submit-request-row {
+            margin-top: 12px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .submit-request-btn {
+            padding: 12px 24px;
+            background: var(--success);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .submit-request-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(34, 197, 94, 0.3);
+        }
+
+        .submit-request-btn.hidden {
+            display: none;
+        }
+
+        /* Success Modal */
+        .success-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .success-modal.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .success-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 24px;
+            padding: 40px;
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+
+        .success-modal.visible .success-card {
+            transform: scale(1);
+        }
+
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(34, 197, 94, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            margin: 0 auto 20px;
+        }
+
+        .success-card h2 {
+            margin-bottom: 12px;
+        }
+
+        .success-card p {
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .success-summary {
+            background: var(--bg-input);
+            border-radius: 12px;
+            padding: 16px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .success-summary h4 {
+            font-size: 0.85rem;
+            color: var(--text-tertiary);
+            margin-bottom: 8px;
+        }
+
+        .success-summary ul {
+            list-style: none;
+            font-size: 0.9rem;
+        }
+
+        .success-summary li {
+            padding: 4px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .success-summary li::before {
+            content: ">";
+            color: var(--accent-primary);
+        }
+
+        .success-close-btn {
+            padding: 12px 32px;
+            background: var(--accent-primary);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .success-close-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .portal-header {
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+            }
+
+            .quick-actions {
+                flex-direction: column;
+            }
+
+            .message {
+                max-width: 95%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-spinner"></div>
+        <p>Loading portal...</p>
+    </div>
+
+    <!-- Login Screen -->
+    <div class="login-screen hidden" id="loginScreen">
+        <div class="login-card">
+            <div class="login-logo" id="loginLogo">🚀</div>
+            <h2 class="login-title" id="loginTitle">Welcome</h2>
+            <p class="login-subtitle" id="loginSubtitle">Sign in to access your SUITE Agent portal</p>
+            <button class="google-btn" onclick="signInWithGoogle()">
+                <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                Sign in with Google
+            </button>
+        </div>
+    </div>
+
+    <!-- Access Denied Screen -->
+    <div class="access-denied hidden" id="accessDenied">
+        <div class="access-denied-card">
+            <div class="access-denied-icon">🔒</div>
+            <h2>Access Denied</h2>
+            <p>Your email (<span id="deniedEmail"></span>) doesn't have access to this portal.</p>
+            <button class="logout-btn" onclick="signOut()">Sign out & try another account</button>
+        </div>
+    </div>
+
+    <!-- Main Portal -->
+    <div class="portal-container hidden" id="portalContainer">
+        <header class="portal-header">
+            <div class="portal-brand">
+                <div class="portal-logo" id="portalLogo">🏢</div>
+                <div class="portal-name">
+                    <h1 id="portalName">Loading...</h1>
+                    <span>SUITE Agent Portal</span>
+                </div>
+            </div>
+            <div class="portal-status">
+                <div class="portal-status-dot"></div>
+                Online
+            </div>
+        </header>
+
+        <div class="chat-container">
+            <div class="chat-messages" id="chatMessages">
+                <div class="chat-welcome" id="chatWelcome">
+                    <div class="chat-welcome-icon">👋</div>
+                    <h2>Welcome! What can I help you with?</h2>
+                    <p>Tell me what you need - website updates, social media, design, research, anything. I'll help scope it out and get it done.</p>
+                    <div class="quick-actions">
+                        <button class="quick-action-btn" onclick="quickAction('website')">🌐 Website update</button>
+                        <button class="quick-action-btn" onclick="quickAction('social')">📱 Social content</button>
+                        <button class="quick-action-btn" onclick="quickAction('design')">🎨 Design work</button>
+                        <button class="quick-action-btn" onclick="quickAction('research')">📊 Research</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-area">
+                <div class="chat-input-row">
+                    <textarea class="chat-input" id="chatInput" placeholder="Tell me what you need... or just vent about what's frustrating you" rows="2" onkeydown="handleKeyDown(event)"></textarea>
+                    <button class="send-btn" id="sendBtn" onclick="sendMessage()">Send</button>
+                </div>
+                <div class="submit-request-row">
+                    <button class="submit-request-btn hidden" id="submitRequestBtn" onclick="submitRequest()">
+                        <span>✓</span> Submit Request
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="success-modal" id="successModal">
+        <div class="success-card">
+            <div class="success-icon">✅</div>
+            <h2>Request Submitted!</h2>
+            <p>Your request has been sent to the SUITE team.</p>
+            <div class="success-summary" id="successSummary">
+                <h4>Summary:</h4>
+                <ul id="successList"></ul>
+            </div>
+            <p style="font-size: 0.85rem;">Estimated delivery: <strong>24-48 hours</strong></p>
+            <button class="success-close-btn" onclick="closeSuccessModal()">Got it</button>
+        </div>
+    </div>
+
+    <script>
+        // Supabase config
+        const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // State
+        let currentUser = null;
+        let currentClient = null;
+        let conversation = [];
+        let selectedSuggestions = new Set();
+        let currentRequestId = null;
+
+        // Get client slug from URL
+        function getClientSlug() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('client') || window.location.pathname.split('/agent/')[1]?.split('/')[0];
+        }
+
+        // Initialize
+        async function init() {
+            const slug = getClientSlug();
+
+            if (!slug) {
+                showError('No client specified');
+                return;
+            }
+
+            // Check for existing session
+            const { data: { session } } = await supabase.auth.getSession();
+
+            if (session) {
+                currentUser = session.user;
+                await checkAccess(slug);
+            } else {
+                // Load client info for login screen
+                await loadClientForLogin(slug);
+            }
+        }
+
+        async function loadClientForLogin(slug) {
+            try {
+                const { data: client, error } = await supabase
+                    .from('agent_clients')
+                    .select('*')
+                    .eq('slug', slug)
+                    .single();
+
+                if (error || !client) {
+                    showError('Portal not found');
+                    return;
+                }
+
+                currentClient = client;
+
+                // Update login screen
+                document.getElementById('loginTitle').textContent = client.name;
+                document.getElementById('loginSubtitle').textContent = `Sign in to access your ${client.name} agent portal`;
+                if (client.logo_url) {
+                    document.getElementById('loginLogo').innerHTML = `<img src="${client.logo_url}" alt="${client.name}">`;
+                }
+
+                hideLoading();
+                showLogin();
+            } catch (err) {
+                console.error(err);
+                showError('Failed to load portal');
+            }
+        }
+
+        async function checkAccess(slug) {
+            try {
+                const { data: client, error } = await supabase
+                    .from('agent_clients')
+                    .select('*')
+                    .eq('slug', slug)
+                    .single();
+
+                if (error || !client) {
+                    showError('Portal not found');
+                    return;
+                }
+
+                currentClient = client;
+                const userEmail = currentUser.email.toLowerCase();
+                const authorizedEmails = (client.authorized_emails || []).map(e => e.toLowerCase());
+
+                // Check if user email is authorized
+                if (!authorizedEmails.includes(userEmail)) {
+                    hideLoading();
+                    showAccessDenied(userEmail);
+                    return;
+                }
+
+                // Access granted!
+                hideLoading();
+                showPortal();
+            } catch (err) {
+                console.error(err);
+                showError('Failed to verify access');
+            }
+        }
+
+        // Auth functions
+        async function signInWithGoogle() {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.href
+                }
+            });
+
+            if (error) {
+                console.error('Login error:', error);
+                alert('Failed to sign in. Please try again.');
+            }
+        }
+
+        async function signOut() {
+            await supabase.auth.signOut();
+            window.location.reload();
+        }
+
+        // Listen for auth changes
+        supabase.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'SIGNED_IN' && session) {
+                currentUser = session.user;
+                const slug = getClientSlug();
+                if (slug) {
+                    await checkAccess(slug);
+                }
+            }
+        });
+
+        // UI State functions
+        function hideLoading() {
+            document.getElementById('loadingScreen').classList.add('hidden');
+        }
+
+        function showLogin() {
+            document.getElementById('loginScreen').classList.remove('hidden');
+        }
+
+        function showAccessDenied(email) {
+            document.getElementById('deniedEmail').textContent = email;
+            document.getElementById('accessDenied').classList.remove('hidden');
+        }
+
+        function showPortal() {
+            document.getElementById('portalName').textContent = currentClient.name;
+            if (currentClient.logo_url) {
+                document.getElementById('portalLogo').innerHTML = `<img src="${currentClient.logo_url}" alt="${currentClient.name}">`;
+            }
+            document.getElementById('portalContainer').classList.remove('hidden');
+        }
+
+        function showError(message) {
+            hideLoading();
+            document.body.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; height: 100vh; flex-direction: column; gap: 16px;">
+                    <div style="font-size: 3rem;">😕</div>
+                    <h2>${message}</h2>
+                    <a href="https://suitegpt.app" style="color: var(--accent-primary);">Go to SUITE</a>
+                </div>
+            `;
+        }
+
+        // Chat functions
+        function quickAction(type) {
+            const prompts = {
+                website: "I need to update our website...",
+                social: "We need some social media content...",
+                design: "I need some design work done...",
+                research: "I need help researching..."
+            };
+            document.getElementById('chatInput').value = prompts[type];
+            document.getElementById('chatInput').focus();
+        }
+
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            // Hide welcome
+            document.getElementById('chatWelcome').style.display = 'none';
+
+            // Add user message
+            addMessage('user', message);
+            conversation.push({ role: 'user', content: message });
+            input.value = '';
+
+            // Show typing indicator
+            const typingId = showTyping();
+
+            // Generate AI response with suggestions
+            await generateResponse(message, typingId);
+        }
+
+        function addMessage(role, content, suggestions = null) {
+            const container = document.getElementById('chatMessages');
+            const div = document.createElement('div');
+            div.className = `message ${role}`;
+
+            const avatar = role === 'user' ? '👤' : '🤖';
+
+            let html = `
+                <div class="message-avatar">${avatar}</div>
+                <div class="message-content">
+                    ${content}
+                </div>
+            `;
+
+            div.innerHTML = html;
+            container.appendChild(div);
+
+            // Add suggestions if present
+            if (suggestions && suggestions.length > 0) {
+                const suggestionsDiv = document.createElement('div');
+                suggestionsDiv.className = 'suggestions-container';
+                suggestionsDiv.innerHTML = `
+                    <div class="suggestions-title">💡 Suggestions to enhance your request:</div>
+                    ${suggestions.map((s, i) => `
+                        <div class="suggestion-item" onclick="toggleSuggestion(this, ${i}, '${escapeHtml(s)}')" data-index="${i}">
+                            <div class="suggestion-checkbox">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
+                            <span class="suggestion-text">${escapeHtml(s)}</span>
+                        </div>
+                    `).join('')}
+                `;
+                container.appendChild(suggestionsDiv);
+            }
+
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function showTyping() {
+            const container = document.getElementById('chatMessages');
+            const div = document.createElement('div');
+            div.className = 'message assistant';
+            div.id = 'typingIndicator';
+            div.innerHTML = `
+                <div class="message-avatar">🤖</div>
+                <div class="message-content">Thinking...</div>
+            `;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            return div.id;
+        }
+
+        function removeTyping(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        async function generateResponse(userMessage, typingId) {
+            // Simulate AI thinking (in production, call Gemini/Claude API)
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            removeTyping(typingId);
+
+            // Generate contextual response and suggestions
+            const response = generateContextualResponse(userMessage);
+
+            addMessage('assistant', response.message, response.suggestions);
+            conversation.push({ role: 'assistant', content: response.message, suggestions: response.suggestions });
+
+            // Show submit button
+            document.getElementById('submitRequestBtn').classList.remove('hidden');
+        }
+
+        function generateContextualResponse(message) {
+            const lower = message.toLowerCase();
+
+            // Detect intent and generate relevant suggestions
+            if (lower.includes('website') || lower.includes('landing') || lower.includes('page')) {
+                return {
+                    message: "Got it! I can help with that website work. Let me make sure I understand what you need and suggest some additions that might help.",
+                    suggestions: [
+                        "Add email capture / lead form?",
+                        "Include SEO optimization?",
+                        "Mobile-responsive design check?",
+                        "Add analytics tracking?"
+                    ]
+                };
+            } else if (lower.includes('social') || lower.includes('instagram') || lower.includes('twitter') || lower.includes('post')) {
+                return {
+                    message: "Social content - perfect! I'll get that created for you. Here are some ways we could enhance this:",
+                    suggestions: [
+                        "Create a content calendar for the week?",
+                        "Design matching story templates?",
+                        "Write captions with hashtag research?",
+                        "Create video/reel concepts?"
+                    ]
+                };
+            } else if (lower.includes('design') || lower.includes('logo') || lower.includes('graphic')) {
+                return {
+                    message: "Design work, got it! Let me help scope this out properly:",
+                    suggestions: [
+                        "Multiple variations/concepts?",
+                        "Source files included (Figma/AI)?",
+                        "Brand guidelines document?",
+                        "Social media size adaptations?"
+                    ]
+                };
+            } else {
+                return {
+                    message: "I understand! Let me help you scope this out. Here are some things that might be helpful to include:",
+                    suggestions: [
+                        "Set a specific deadline?",
+                        "Include progress updates?",
+                        "Provide multiple options to choose from?",
+                        "Add documentation/instructions?"
+                    ]
+                };
+            }
+        }
+
+        function toggleSuggestion(element, index, text) {
+            element.classList.toggle('selected');
+            if (selectedSuggestions.has(text)) {
+                selectedSuggestions.delete(text);
+            } else {
+                selectedSuggestions.add(text);
+            }
+        }
+
+        async function submitRequest() {
+            // Build summary
+            const summary = [];
+            conversation.forEach(msg => {
+                if (msg.role === 'user') {
+                    summary.push(msg.content);
+                }
+            });
+            selectedSuggestions.forEach(s => {
+                summary.push(s);
+            });
+
+            // Save to database
+            try {
+                const { data, error } = await supabase
+                    .from('agent_requests')
+                    .insert({
+                        client_id: currentClient.id,
+                        title: summary[0]?.substring(0, 100) || 'New request',
+                        conversation: conversation,
+                        selected_options: Array.from(selectedSuggestions),
+                        status: 'submitted',
+                        submitted_at: new Date().toISOString(),
+                        submitted_by: currentUser.email
+                    })
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                // Show success
+                const list = document.getElementById('successList');
+                list.innerHTML = summary.map(item => `<li>${escapeHtml(item.substring(0, 60))}${item.length > 60 ? '...' : ''}</li>`).join('');
+                document.getElementById('successModal').classList.add('visible');
+
+            } catch (err) {
+                console.error('Failed to submit:', err);
+                alert('Failed to submit request. Please try again.');
+            }
+        }
+
+        function closeSuccessModal() {
+            document.getElementById('successModal').classList.remove('visible');
+            // Reset chat
+            conversation = [];
+            selectedSuggestions.clear();
+            document.getElementById('chatMessages').innerHTML = `
+                <div class="chat-welcome" id="chatWelcome">
+                    <div class="chat-welcome-icon">👋</div>
+                    <h2>Request submitted! Need anything else?</h2>
+                    <p>Tell me what you need - website updates, social media, design, research, anything.</p>
+                    <div class="quick-actions">
+                        <button class="quick-action-btn" onclick="quickAction('website')">🌐 Website update</button>
+                        <button class="quick-action-btn" onclick="quickAction('social')">📱 Social content</button>
+                        <button class="quick-action-btn" onclick="quickAction('design')">🎨 Design work</button>
+                        <button class="quick-action-btn" onclick="quickAction('research')">📊 Research</button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('submitRequestBtn').classList.add('hidden');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>
