@@ -17453,6 +17453,15 @@
                 chatInput.focus();
             }
 
+            // Reset model selector to Auto (default)
+            currentModel = 'flash';
+            const modelNameEl = document.getElementById('modelName');
+            if (modelNameEl) modelNameEl.textContent = 'Auto';
+            // Reset dropdown active state
+            document.querySelectorAll('.model-dropdown-item').forEach(item => item.classList.remove('active'));
+            const autoItem = document.querySelector('.model-dropdown-item[data-mode="auto"]');
+            if (autoItem) autoItem.classList.add('active');
+
             // Update URL to root
             history.pushState({ view: 'home' }, '', '/');
 
@@ -17840,7 +17849,7 @@
             'galtwoodco': {
                 name: 'Galtwood Co',
                 description: 'Marketing dashboard for custom woodworking business',
-                icon: '🪵',
+                iconUrl: '/assets/icons/galtwoodco-icon.jpg',
                 iconBg: 'linear-gradient(135deg, #c9a66b, #8b6914)',
                 url: '/galtwoodco/dashboard/index.html'
             }
@@ -18833,7 +18842,7 @@
         // ========================
         // MODEL SELECTOR
         // ========================
-        let currentModel = 'flash'; // Default to Gemini Flash 2.0
+        let currentModel = 'flash'; // Default to Auto (uses Flash under the hood)
 
         function toggleModelDropdown(e) {
             if (e) e.stopPropagation();
@@ -18841,6 +18850,20 @@
             const selector = document.getElementById('modelSelector');
             dropdown.classList.toggle('active');
             selector.classList.toggle('active');
+
+            // Show the correct tab based on current model
+            if (dropdown.classList.contains('active')) {
+                const isPaidModel = ['pro', 'sonnet', 'opus'].includes(currentModel);
+                const tabToShow = isPaidModel ? 'paid' : 'free';
+
+                dropdown.querySelectorAll('.model-dropdown-tab').forEach(t => t.classList.remove('active'));
+                dropdown.querySelectorAll('.model-dropdown-panel').forEach(p => p.classList.remove('active'));
+
+                const activeTab = dropdown.querySelector(`.model-dropdown-tab[data-tab="${tabToShow}"]`);
+                const activePanel = dropdown.querySelector(`[data-panel="${tabToShow}"]`);
+                if (activeTab) activeTab.classList.add('active');
+                if (activePanel) activePanel.classList.add('active');
+            }
         }
 
         function closeModelDropdown() {
@@ -18851,7 +18874,8 @@
         }
 
         function selectMode(mode, modeName) {
-            currentModel = mode;
+            // Auto mode uses flash under the hood
+            currentModel = (mode === 'auto') ? 'flash' : mode;
 
             // Update the selector display
             const nameEl = document.getElementById('modelName');
@@ -18861,14 +18885,22 @@
             const items = document.querySelectorAll('.model-dropdown-item');
             items.forEach(item => item.classList.remove('active'));
 
+            // Mark the selected item as active
+            const selectedItem = document.querySelector(`.model-dropdown-item[data-mode="${mode}"]`);
+            if (selectedItem) selectedItem.classList.add('active');
+
             closeModelDropdown();
 
             // Check if SuiteGPT Builder mode
             if (mode === 'suitegpt') {
                 openBuilderMode();
-                // Reset model selector to previous model
-                if (nameEl) nameEl.textContent = 'Gemini Flash 2.0';
+                // Reset model selector to Auto (default)
+                if (nameEl) nameEl.textContent = 'Auto';
                 currentModel = 'flash';
+                // Reset active state to Auto
+                items.forEach(item => item.classList.remove('active'));
+                const autoItem = document.querySelector('.model-dropdown-item[data-mode="auto"]');
+                if (autoItem) autoItem.classList.add('active');
                 return;
             }
 
@@ -20666,13 +20698,13 @@
 
                 // Update model selector display
                 const modelNames = {
-                    'flash': 'Gemini Flash 2.0',
+                    'flash': 'Auto',
                     'pro': 'Gemini 2.0 Pro',
                     'sonnet': 'Claude Sonnet 4',
                     'opus': 'Claude Opus 4'
                 };
                 const nameEl = document.getElementById('modelName');
-                if (nameEl) nameEl.textContent = modelNames[currentModel] || 'Gemini Flash 2.0';
+                if (nameEl) nameEl.textContent = modelNames[currentModel] || 'Auto';
 
                 // Get DOM elements
                 const chatMessagesEl = document.getElementById('chatMessages');
