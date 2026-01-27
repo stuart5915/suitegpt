@@ -8,7 +8,7 @@ Welcome to the Proto Golf website testing guide. This document walks you through
 
 - **Live Site**: [Your Vercel URL]
 - **Admin Dashboard**: [Your Vercel URL]/admin/dashboard.html
-- **Admin Password**: `protogolf2026`
+- **Admin Password**: (contact admin for password)
 
 ---
 
@@ -99,7 +99,7 @@ Welcome to the Proto Golf website testing guide. This document walks you through
 
 ### Steps:
 1. Go to `/admin/dashboard.html`
-2. Enter password: `protogolf2026`
+2. Enter password: (contact admin for password)
 3. Review the dashboard sections:
    - **Overview**: Quick stats
    - **Inventory**: Current stock levels

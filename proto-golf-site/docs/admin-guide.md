@@ -3,7 +3,7 @@
 ## Accessing the Dashboard
 
 1. Go to: `[your-site]/admin/dashboard.html`
-2. Enter password: `protogolf2026`
+2. Enter password: (contact admin for password)
 3. You're in!
 
 ---

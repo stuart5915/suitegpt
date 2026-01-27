@@ -823,9 +823,6 @@
         let inventory = [];
         let orders = [];
 
-        // Auth
-        const ADMIN_PASSWORD = 'proto2026';
-
         // Supabase API helper
         async function supabaseQuery(table, method = 'GET', body = null, query = '') {
             const url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
@@ -845,18 +842,38 @@
             return response.ok;
         }
 
-        function handleLogin(e) {
+        async function handleLogin(e) {
             e.preventDefault();
             const password = document.getElementById('loginPassword').value;
+            const loginBtn = e.target.querySelector('button');
 
-            if (password === ADMIN_PASSWORD) {
-                document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('dashboard').classList.add('active');
-                sessionStorage.setItem('proto_admin_auth', 'true');
-                initDashboard();
-            } else {
+            loginBtn.textContent = 'Checking...';
+            loginBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/proto-admin-auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('loginScreen').style.display = 'none';
+                    document.getElementById('dashboard').classList.add('active');
+                    sessionStorage.setItem('proto_admin_auth', data.token);
+                    initDashboard();
+                } else {
+                    document.getElementById('loginError').style.display = 'block';
+                }
+            } catch (error) {
+                // Fallback for local development
+                console.warn('Auth API not available, using fallback');
                 document.getElementById('loginError').style.display = 'block';
             }
+
+            loginBtn.textContent = 'Login';
+            loginBtn.disabled = false;
         }
 
         function logout() {

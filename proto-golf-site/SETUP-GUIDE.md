@@ -8,7 +8,7 @@ The following is **working now** (demo mode):
 - ✅ Product pages with variant selection
 - ✅ Cart functionality (localStorage)
 - ✅ Checkout flow with shipping/pickup selection
-- ✅ Admin dashboard at `/admin/dashboard.html` (password: `proto2026`)
+- ✅ Admin dashboard at `/admin/dashboard.html` (password via env var)
 - ✅ Inventory management UI
 - ✅ Order form generation
 
@@ -86,7 +86,7 @@ Emails to set up:
 ## Admin Dashboard
 
 Access: `yourdomain.com/admin/dashboard.html`
-Password: `proto2026` (change this in the code before going live!)
+Password: Set via `PROTO_GOLF_ADMIN_PASSWORD` environment variable in Vercel
 
 ### Features:
 - **Overview**: Quick stats and recent orders
@@ -131,7 +131,7 @@ proto-golf-site/
 - [ ] Add Supabase credentials to config.js
 - [ ] Create Stripe account and add publishable key
 - [ ] Test checkout flow with Stripe test cards
-- [ ] Change admin password from `proto2026`
+- [ ] Set `PROTO_GOLF_ADMIN_PASSWORD` env var in Vercel
 - [ ] Set up email notifications
 - [ ] Test on mobile devices
 - [ ] Set real inventory counts in admin dashboard

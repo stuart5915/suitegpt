@@ -21,7 +21,7 @@
 ### 2. Check Admin Dashboard (1 min)
 
 1. Go to `/admin/dashboard.html`
-2. Password: `protogolf2026`
+2. Password: (contact admin)
 3. Click **Orders** tab
 4. You should see your test order!
 
@@ -46,7 +46,7 @@
 | Item | Value |
 |------|-------|
 | Admin URL | `/admin/dashboard.html` |
-| Admin Password | `protogolf2026` |
+| Admin Password | (contact admin) |
 | Test Card | `4242 4242 4242 4242` |
 | Shipping Cost | $25 flat rate |
 | HST Rate | 13% (Ontario) |

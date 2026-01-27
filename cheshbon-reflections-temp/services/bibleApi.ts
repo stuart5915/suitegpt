@@ -1,4 +1,4 @@
-const ESV_API_KEY = process.env.ESV_API_KEY || 'e55ab33811225c8a3ff071a920733c42bdbd8a01';
+const ESV_API_KEY = process.env.ESV_API_KEY || '';
 const ESV_API_URL = 'https://api.esv.org/v3/passage/html/';
 
 import { OfflineStorageService } from './offlineStorage';

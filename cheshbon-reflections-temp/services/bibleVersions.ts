@@ -2,8 +2,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 
-// API.Bible Key - TODO: Move to .env
-const BIBLE_API_KEY = 'yq2zB4TNCZQ62T0Y5VU96';
+// API.Bible Key - from environment variable
+const BIBLE_API_KEY = process.env.EXPO_PUBLIC_BIBLE_API_KEY || '';
 const BASE_URL = 'https://rest.api.bible/v1';
 
 const STORAGE_KEYS = {
