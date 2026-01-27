@@ -574,11 +574,19 @@
     </footer>
 
     <script src="js/cart.js"></script>
+    <script src="js/analytics.js"></script>
     <script>
+        // Supabase config
+        const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
+
         // Config
         const SHIPPING_RATE = 25;
         const TAX_RATE = 0.13; // 13% HST Ontario
         const PICKUP_TIMES = ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'];
+
+        // Initialize analytics
+        window.analytics.init(SUPABASE_URL, SUPABASE_KEY);
 
         let deliveryMethod = 'shipping';
         let selectedPickupDate = null;
@@ -805,19 +813,72 @@
             // Store order data for confirmation page
             sessionStorage.setItem('proto_golf_pending_order', JSON.stringify(orderData));
 
-            // In production, this would create a Stripe Checkout session
-            // For now, redirect to a demo confirmation page
             try {
-                // TODO: Replace with actual Stripe Checkout
-                // const response = await fetch('/api/create-checkout', {
-                //     method: 'POST',
-                //     headers: { 'Content-Type': 'application/json' },
-                //     body: JSON.stringify(orderData)
-                // });
-                // const { url } = await response.json();
-                // window.location.href = url;
+                // Save order to Supabase for each item in cart
+                for (const item of orderData.items) {
+                    const orderRecord = {
+                        customer_name: `${orderData.customer.firstName} ${orderData.customer.lastName}`,
+                        customer_email: orderData.customer.email,
+                        customer_phone: orderData.customer.phone || null,
+                        product_id: item.productId,
+                        product_name: item.productName,
+                        finish: item.finishName,
+                        shaft_color: item.shaftColorName,
+                        quantity: item.quantity || 1,
+                        unit_price: item.price,
+                        delivery_method: orderData.delivery.method,
+                        shipping_address: orderData.delivery.shipping ? {
+                            line1: orderData.delivery.shipping.address1,
+                            line2: orderData.delivery.shipping.address2,
+                            city: orderData.delivery.shipping.city,
+                            state: orderData.delivery.shipping.state,
+                            postal_code: orderData.delivery.shipping.postalCode,
+                            country: orderData.delivery.shipping.country
+                        } : null,
+                        pickup_date: orderData.delivery.pickup?.date || null,
+                        pickup_time: orderData.delivery.pickup?.time || null,
+                        shipping_cost: orderData.totals.shipping,
+                        subtotal: orderData.totals.subtotal,
+                        tax: orderData.totals.tax,
+                        total: orderData.totals.total,
+                        payment_status: 'pending', // Will be 'paid' after Stripe integration
+                        status: 'pending',
+                        notes: orderData.notes || null
+                    };
 
-                // Demo: Go directly to confirmation
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/proto_golf_orders`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'apikey': SUPABASE_KEY,
+                            'Authorization': `Bearer ${SUPABASE_KEY}`,
+                            'Prefer': 'return=representation'
+                        },
+                        body: JSON.stringify(orderRecord)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to save order');
+                    }
+
+                    const savedOrder = await response.json();
+                    console.log('Order saved:', savedOrder);
+
+                    // Store order number for confirmation page
+                    if (savedOrder && savedOrder[0]) {
+                        orderData.orderNumber = savedOrder[0].order_number;
+                        sessionStorage.setItem('proto_golf_pending_order', JSON.stringify(orderData));
+                    }
+                }
+
+                // Track checkout completion
+                window.analytics.track('checkout_completed', {
+                    total: orderData.totals.total,
+                    item_count: orderData.items.length
+                });
+
+                // TODO: Replace with actual Stripe Checkout when ready
+                // For now, go to confirmation page
                 window.location.href = 'order-confirmation.html?demo=true';
 
             } catch (error) {
