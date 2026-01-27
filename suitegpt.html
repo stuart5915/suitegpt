@@ -1384,16 +1384,17 @@
         .buy-modal-input {
             width: 100%;
             padding: 12px 16px;
-            border: 1px solid var(--border-color);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 10px;
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
+            background: #252542;
+            color: #fff;
             font-size: 1rem;
         }
 
         .buy-modal-input:focus {
             outline: none;
             border-color: var(--accent-primary);
+            background: #2a2a4a;
         }
 
         .buy-modal-amount-btns {
@@ -7887,6 +7888,15 @@
             border-color: rgba(99, 102, 241, 0.5);
         }
 
+        .builder-model-selector.active {
+            background: rgba(99, 102, 241, 0.3);
+            border-color: rgba(99, 102, 241, 0.6);
+        }
+
+        .builder-model-selector.active .builder-model-arrow {
+            transform: rotate(180deg);
+        }
+
         .builder-model-name {
             font-size: 0.85rem;
             font-weight: 500;
@@ -7895,6 +7905,7 @@
 
         .builder-model-arrow {
             color: rgba(255, 255, 255, 0.5);
+            transition: transform 0.2s ease;
         }
 
         .builder-send-btn {
@@ -15909,6 +15920,63 @@
                 document.body.style.overflow = '';
             }
         }
+
+        // Builder Model Dropdown Functions
+        let currentBuilderModel = 'suitegpt';
+
+        function toggleBuilderModelDropdown(e) {
+            if (e) e.stopPropagation();
+            const dropdown = document.getElementById('builderModelDropdown');
+            const selector = document.getElementById('builderModelSelector');
+            if (dropdown) dropdown.classList.toggle('active');
+            if (selector) selector.classList.toggle('active');
+        }
+
+        function closeBuilderModelDropdown() {
+            const dropdown = document.getElementById('builderModelDropdown');
+            const selector = document.getElementById('builderModelSelector');
+            if (dropdown) dropdown.classList.remove('active');
+            if (selector) selector.classList.remove('active');
+        }
+
+        function switchBuilderModel(mode, modeName) {
+            currentBuilderModel = mode;
+
+            // Update the selector display
+            const nameEl = document.getElementById('builderModelName');
+            if (nameEl) nameEl.textContent = modeName;
+
+            // Update active state in dropdown
+            const items = document.querySelectorAll('.builder-model-dropdown-item');
+            items.forEach(item => {
+                item.classList.remove('active');
+                if (item.dataset.mode === mode) {
+                    item.classList.add('active');
+                }
+            });
+
+            closeBuilderModelDropdown();
+
+            // Check if Pro mode requires upgrade
+            if (mode === 'opus') {
+                const isLoggedIn = !!(localStorage.getItem('connectedWallet') || localStorage.getItem('telegram_user'));
+                if (!isLoggedIn) {
+                    openConnectModal();
+                    return;
+                }
+            }
+
+            console.log('Builder using model:', mode);
+        }
+
+        // Close builder dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const dropdown = document.getElementById('builderModelDropdown');
+            const selector = document.getElementById('builderModelSelector');
+            if (dropdown && selector && !selector.contains(e.target) && !dropdown.contains(e.target)) {
+                closeBuilderModelDropdown();
+            }
+        });
 
         function useBuilderStarter(prefix) {
             const builderInput = document.getElementById('builderInput');
