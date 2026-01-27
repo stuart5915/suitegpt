@@ -19852,12 +19852,19 @@
             // Don't save empty chats
             if (conversationHistory.length === 0) return;
 
+            // Collect current insights to save
+            const insightsToSave = [
+                ...insightsState.shownInsights,
+                ...insightsState.pendingInsights
+            ];
+
             const chatData = {
                 user_id: user.id,
                 title: generateChatTitle(conversationHistory[0]?.content || 'New Chat'),
                 messages: conversationHistory,
                 model: currentModel,
                 is_builder: false,
+                insights: insightsToSave,
                 updated_at: new Date().toISOString()
             };
 
@@ -19869,6 +19876,7 @@
                         .update({
                             messages: chatData.messages,
                             model: chatData.model,
+                            insights: chatData.insights,
                             updated_at: chatData.updated_at
                         })
                         .eq('id', currentChatId);
@@ -19999,6 +20007,17 @@
 
                 // Scroll to bottom
                 if (chatContainerEl) chatContainerEl.scrollTop = chatContainerEl.scrollHeight;
+
+                // Restore insights if any were saved with this chat
+                clearInsights();
+                if (data.insights && data.insights.length > 0) {
+                    data.insights.forEach(insight => {
+                        addInsight(insight.type, insight.data);
+                    });
+                    // Show the insights panel
+                    const suiteInsights = document.getElementById('suiteInsights');
+                    if (suiteInsights) suiteInsights.classList.add('active');
+                }
 
                 // Update chat history to show active state
                 renderChatHistory();

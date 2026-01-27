@@ -51,3 +51,9 @@ CREATE TRIGGER update_chats_updated_at
     BEFORE UPDATE ON chats
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
+
+-- ================================
+-- MIGRATION: Add insights column
+-- Run this if table already exists
+-- ================================
+ALTER TABLE chats ADD COLUMN IF NOT EXISTS insights JSONB DEFAULT '[]'::jsonb;
