@@ -7926,6 +7926,15 @@
             font-size: 14px;
         }
 
+        .insight-icon.build-icon {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
+            color: #a78bfa;
+        }
+
+        .insight-icon.build-icon svg {
+            stroke: #a78bfa;
+        }
+
         .insight-text {
             flex: 1;
         }
@@ -7968,6 +7977,18 @@
 
         .insight-btn.primary:hover {
             background: rgba(34, 197, 94, 1);
+        }
+
+        .insight-btn.build-btn {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border: none;
+            color: white;
+        }
+
+        .insight-btn.build-btn:hover {
+            background: linear-gradient(135deg, #7c3aed, #a78bfa);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
         }
 
         .insight-btn-dismiss {
@@ -18892,6 +18913,7 @@
         // Analyze user message for relevant app suggestions (runs in background)
         function analyzeForAppSuggestions(userMessage, aiResponse) {
             const message = userMessage.toLowerCase();
+            const response = (aiResponse || '').toLowerCase();
 
             // App keyword mappings
             const appKeywords = {
@@ -18911,12 +18933,12 @@
             };
 
             // Check for keyword matches
+            let foundApp = false;
             for (const [appId, keywords] of Object.entries(appKeywords)) {
                 for (const keyword of keywords) {
                     if (message.includes(keyword)) {
                         const app = SUITE_APPS[appId];
                         if (app) {
-                            // Check if we already suggested this app recently
                             const alreadySuggested = insightsState.pendingInsights.some(
                                 i => i.type === 'app' && i.data.appKey === appId
                             );
@@ -18926,12 +18948,59 @@
                                     appName: app.name,
                                     appUrl: app.url
                                 });
+                                foundApp = true;
                             }
-                            return; // Only suggest one app per message
+                            break;
                         }
                     }
                 }
+                if (foundApp) break;
             }
+
+            // If no app match and conversation is getting interesting, suggest building something
+            if (!foundApp && conversationHistory.length >= 2) {
+                // Check if we haven't already suggested building
+                const alreadySuggestedBuild = insightsState.pendingInsights.some(
+                    i => i.type === 'build'
+                );
+
+                if (!alreadySuggestedBuild) {
+                    // Detect actionable/interesting topics
+                    const buildableTopics = [
+                        'track', 'manage', 'organize', 'plan', 'schedule', 'remind', 'calculate',
+                        'analyze', 'monitor', 'log', 'record', 'compare', 'find', 'search',
+                        'learn', 'practice', 'improve', 'optimize', 'automate', 'simplify'
+                    ];
+
+                    const hasBuildableTopic = buildableTopics.some(topic =>
+                        message.includes(topic) || response.includes(topic)
+                    );
+
+                    // Also check for question patterns that could become tools
+                    const isToolableQuestion = /how (?:do i|can i|to)|what(?:'s| is) the best way|help me/i.test(userMessage);
+
+                    if (hasBuildableTopic || isToolableQuestion) {
+                        // Extract a topic from the message for the suggestion
+                        const topic = extractTopic(userMessage);
+                        addInsight('build', { topic: topic || 'this' });
+                    }
+                }
+            }
+        }
+
+        // Extract main topic from a message for build suggestions
+        function extractTopic(message) {
+            // Remove common question words and extract the core topic
+            const cleaned = message
+                .replace(/^(how|what|where|when|why|can|could|would|should|is|are|do|does|help me|tell me|i want to|i need to)\s+/gi, '')
+                .replace(/\?/g, '')
+                .trim();
+
+            // Take first 30 chars as topic
+            if (cleaned.length > 30) {
+                return cleaned.substring(0, 30) + '...';
+            }
+            return cleaned || null;
         }
 
         function renderSingleInsight(insight) {
@@ -18970,6 +19039,23 @@
                         <p>This sounds like a great app idea! Want to request it?</p>
                         <div class="insight-actions">
                             <button class="insight-btn primary" onclick="requestAppFromInsight('${encodeURIComponent(insight.data.idea)}')">Request App</button>
+                            <button class="insight-btn-dismiss" onclick="dismissInsight(this)">Not now</button>
+                        </div>
+                    </div>
+                `;
+            } else if (insight.type === 'build') {
+                insightEl.innerHTML = `
+                    <div class="insight-icon build-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                            <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/>
+                            <line x1="12" y1="22" x2="12" y2="15.5"/>
+                            <polyline points="22 8.5 12 15.5 2 8.5"/>
+                        </svg>
+                    </div>
+                    <div class="insight-text">
+                        <p>Want to turn this into an app? SuiteGPT can build custom tools.</p>
+                        <div class="insight-actions">
+                            <button class="insight-btn build-btn" onclick="openBuilderFromInsight()">Build an App</button>
                             <button class="insight-btn-dismiss" onclick="dismissInsight(this)">Not now</button>
                         </div>
                     </div>
@@ -19040,6 +19126,50 @@
                     chatInput.focus();
                 }
             }, 300);
+        }
+
+        function openBuilderFromInsight() {
+            // Extract topic/context from recent conversation
+            let context = '';
+            if (conversationHistory.length > 0) {
+                // Get the last few messages for context
+                const recentMessages = conversationHistory.slice(-4);
+                const topics = [];
+
+                recentMessages.forEach(msg => {
+                    if (msg.role === 'user') {
+                        // Extract key topic from user message
+                        const topic = extractTopic(msg.content);
+                        if (topic && !topics.includes(topic)) {
+                            topics.push(topic);
+                        }
+                    }
+                });
+
+                if (topics.length > 0) {
+                    context = `Build an app to help with: ${topics.join(', ')}`;
+                }
+            }
+
+            // Open builder mode
+            openBuilderMode();
+
+            // Pre-fill the builder input if we have context
+            if (context) {
+                setTimeout(() => {
+                    const builderInput = document.getElementById('builderInput');
+                    if (builderInput) {
+                        builderInput.value = context;
+                        builderInput.focus();
+                        // Auto-resize the textarea
+                        builderInput.style.height = 'auto';
+                        builderInput.style.height = builderInput.scrollHeight + 'px';
+                    }
+                }, 350);
+            }
+
+            // Dismiss the insights panel
+            clearInsights();
         }
 
         function clearInsights() {
