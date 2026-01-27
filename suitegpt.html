@@ -286,6 +286,156 @@
             margin-bottom: 8px;
         }
 
+        .sidebar-section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-right: 6px;
+            margin-bottom: 8px;
+        }
+
+        .sidebar-section-header .sidebar-section-title {
+            margin-bottom: 0;
+        }
+
+        .new-chat-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            border: none;
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--accent-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .new-chat-btn:hover {
+            background: rgba(99, 102, 241, 0.25);
+            transform: scale(1.05);
+        }
+
+        /* Chat History List */
+        .chat-history-list {
+            max-height: 300px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .chat-history-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .chat-history-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-history-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+
+        .chat-history-empty {
+            padding: 16px 10px;
+            text-align: center;
+        }
+
+        .chat-history-empty p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .chat-history-empty span {
+            font-size: 0.7rem;
+            color: var(--text-tertiary);
+        }
+
+        .chat-history-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            margin-bottom: 2px;
+        }
+
+        .chat-history-item:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .chat-history-item.active {
+            background: rgba(99, 102, 241, 0.15);
+        }
+
+        .chat-history-item-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            color: var(--text-tertiary);
+        }
+
+        .chat-history-item-icon svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .chat-history-item.active .chat-history-item-icon {
+            color: var(--accent-primary);
+        }
+
+        .chat-history-item-content {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .chat-history-item-title {
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-history-item-time {
+            font-size: 0.65rem;
+            color: var(--text-tertiary);
+        }
+
+        .chat-history-delete-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            border: none;
+            background: transparent;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: all 0.15s ease;
+        }
+
+        .chat-history-item:hover .chat-history-delete-btn {
+            opacity: 1;
+        }
+
+        .chat-history-delete-btn:hover {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+        }
+
         .sidebar-item {
             display: flex;
             align-items: center;
@@ -9565,15 +9715,20 @@
                     </div>
                 </div>
                 <div class="sidebar-section">
-                    <div class="sidebar-section-title">Your chats</div>
-                    <button class="sidebar-item" id="chatHistoryBtn">
-                        <span class="sidebar-item-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"/>
+                    <div class="sidebar-section-header">
+                        <div class="sidebar-section-title">Your chats</div>
+                        <button class="new-chat-btn" onclick="startNewChat()" title="New Chat">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <path d="M12 5v14M5 12h14"/>
                             </svg>
-                        </span>
-                        <span>Chat History</span>
-                    </button>
+                        </button>
+                    </div>
+                    <div class="chat-history-list" id="chatHistoryList">
+                        <div class="chat-history-empty">
+                            <p>No chat history yet</p>
+                            <span>Your conversations will appear here</span>
+                        </div>
+                    </div>
                 </div>
             </nav>
 
@@ -17898,6 +18053,7 @@
                     // Always update auth state when we have a session
                     checkAuthState();
                     renderLinkedAccounts();
+                    loadUserChats(); // Load user's chat history
                 } else if (event === 'SIGNED_OUT') {
                     // Only reset if no other auth methods
                     const hasTelegram = localStorage.getItem('telegram_user');
@@ -17905,6 +18061,9 @@
                     if (!hasTelegram && !hasWallet) {
                         checkAuthState();
                     }
+                    // Clear chat history on sign out
+                    userChats = [];
+                    renderChatHistory();
                 }
             });
 
@@ -17917,6 +18076,10 @@
                 // Always call checkAuthState after Supabase is ready
                 checkAuthState();
                 renderLinkedAccounts();
+                // Load user's chat history if logged in
+                if (session) {
+                    loadUserChats();
+                }
             });
         } else {
             console.error('[Auth] Supabase library not loaded!');
@@ -17938,7 +18101,6 @@
         const sidebar = document.getElementById('sidebar');
         const sidebarOverlay = document.getElementById('sidebarOverlay');
         const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-        const chatHistoryBtn = document.getElementById('chatHistoryBtn');
 
         // State
         let isLoading = false;
@@ -17954,6 +18116,284 @@
             shownInsights: [],
             badgeCount: 0
         };
+
+        // ========================
+        // CHAT PERSISTENCE STATE
+        // ========================
+        let currentChatId = null;
+        let userChats = [];
+        let chatSaveTimeout = null;
+
+        // ========================
+        // CHAT PERSISTENCE FUNCTIONS
+        // ========================
+
+        // Generate title from first user message
+        function generateChatTitle(message) {
+            const maxLength = 40;
+            const cleaned = message.replace(/\n/g, ' ').trim();
+            if (cleaned.length <= maxLength) return cleaned;
+            return cleaned.substring(0, maxLength).trim() + '...';
+        }
+
+        // Save current chat to Supabase
+        async function saveCurrentChat() {
+            if (!supabaseClient) return;
+
+            // Get current user
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) {
+                console.log('[Chat] No user logged in, chat not saved');
+                return;
+            }
+
+            // Don't save empty chats
+            if (conversationHistory.length === 0) return;
+
+            const chatData = {
+                user_id: user.id,
+                title: generateChatTitle(conversationHistory[0]?.content || 'New Chat'),
+                messages: conversationHistory,
+                model: currentModel,
+                is_builder: false,
+                updated_at: new Date().toISOString()
+            };
+
+            try {
+                if (currentChatId) {
+                    // Update existing chat
+                    const { error } = await supabaseClient
+                        .from('chats')
+                        .update({
+                            messages: chatData.messages,
+                            model: chatData.model,
+                            updated_at: chatData.updated_at
+                        })
+                        .eq('id', currentChatId);
+
+                    if (error) throw error;
+                    console.log('[Chat] Updated chat:', currentChatId);
+                } else {
+                    // Create new chat
+                    const { data, error } = await supabaseClient
+                        .from('chats')
+                        .insert(chatData)
+                        .select()
+                        .single();
+
+                    if (error) throw error;
+                    currentChatId = data.id;
+                    console.log('[Chat] Created new chat:', currentChatId);
+
+                    // Refresh chat list in sidebar
+                    loadUserChats();
+                }
+            } catch (error) {
+                console.error('[Chat] Save error:', error);
+            }
+        }
+
+        // Debounced save (saves 1 second after last message)
+        function scheduleChatSave() {
+            if (chatSaveTimeout) clearTimeout(chatSaveTimeout);
+            chatSaveTimeout = setTimeout(saveCurrentChat, 1000);
+        }
+
+        // Load all chats for current user
+        async function loadUserChats() {
+            if (!supabaseClient) return;
+
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) {
+                userChats = [];
+                renderChatHistory();
+                return;
+            }
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('chats')
+                    .select('id, title, model, is_builder, updated_at')
+                    .eq('user_id', user.id)
+                    .order('updated_at', { ascending: false })
+                    .limit(50);
+
+                if (error) throw error;
+
+                userChats = data || [];
+                renderChatHistory();
+                console.log('[Chat] Loaded', userChats.length, 'chats');
+            } catch (error) {
+                console.error('[Chat] Load error:', error);
+                userChats = [];
+                renderChatHistory();
+            }
+        }
+
+        // Load a specific chat by ID
+        async function loadChat(chatId) {
+            if (!supabaseClient) return;
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('chats')
+                    .select('*')
+                    .eq('id', chatId)
+                    .single();
+
+                if (error) throw error;
+
+                // Set current chat
+                currentChatId = data.id;
+                conversationHistory = data.messages || [];
+                currentModel = data.model || 'flash';
+
+                // Update model selector display
+                const modelNames = {
+                    'flash': 'Gemini Flash 2.0',
+                    'pro': 'Gemini 2.0 Pro',
+                    'sonnet': 'Claude Sonnet 4',
+                    'opus': 'Claude Opus 4'
+                };
+                const nameEl = document.getElementById('modelName');
+                if (nameEl) nameEl.textContent = modelNames[currentModel] || 'Gemini Flash 2.0';
+
+                // Render messages
+                chatMessages.innerHTML = '';
+                welcomeState.classList.add('chat-active');
+                chatContainer.classList.add('active');
+
+                conversationHistory.forEach(msg => {
+                    addMessageToDOM(msg.content, msg.role);
+                });
+
+                // Scroll to bottom
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+
+                // Close sidebar on mobile
+                closeMobileSidebar();
+
+                console.log('[Chat] Loaded chat:', chatId);
+            } catch (error) {
+                console.error('[Chat] Error loading chat:', error);
+            }
+        }
+
+        // Add message to DOM without saving (used when loading existing chat)
+        function addMessageToDOM(content, role) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.innerHTML = role === 'user'
+                ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
+                : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.innerHTML = content.replace(/\n/g, '<br>');
+
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(contentDiv);
+            chatMessages.appendChild(messageDiv);
+        }
+
+        // Start a new chat
+        function startNewChat() {
+            currentChatId = null;
+            conversationHistory = [];
+
+            // Clear UI
+            chatMessages.innerHTML = '';
+            welcomeState.classList.remove('chat-active');
+            chatContainer.classList.remove('active');
+            chatInput.value = '';
+
+            // Close sidebar on mobile
+            closeMobileSidebar();
+
+            console.log('[Chat] Started new chat');
+        }
+
+        // Delete a chat
+        async function deleteChat(chatId, event) {
+            if (event) event.stopPropagation();
+
+            if (!confirm('Delete this chat?')) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('chats')
+                    .delete()
+                    .eq('id', chatId);
+
+                if (error) throw error;
+
+                // If deleting current chat, start new one
+                if (chatId === currentChatId) {
+                    startNewChat();
+                }
+
+                // Refresh list
+                loadUserChats();
+            } catch (error) {
+                console.error('[Chat] Delete error:', error);
+            }
+        }
+
+        // Render chat history in sidebar
+        function renderChatHistory() {
+            const container = document.getElementById('chatHistoryList');
+            if (!container) return;
+
+            if (userChats.length === 0) {
+                container.innerHTML = `
+                    <div class="chat-history-empty">
+                        <p>No chat history yet</p>
+                        <span>Your conversations will appear here</span>
+                    </div>
+                `;
+                return;
+            }
+
+            const formatTime = (dateStr) => {
+                const date = new Date(dateStr);
+                const now = new Date();
+                const diffMs = now - date;
+                const diffMins = Math.floor(diffMs / 60000);
+                const diffHours = Math.floor(diffMs / 3600000);
+                const diffDays = Math.floor(diffMs / 86400000);
+
+                if (diffMins < 1) return 'Just now';
+                if (diffMins < 60) return `${diffMins}m ago`;
+                if (diffHours < 24) return `${diffHours}h ago`;
+                if (diffDays < 7) return `${diffDays}d ago`;
+                return date.toLocaleDateString();
+            };
+
+            container.innerHTML = userChats.map(chat => `
+                <div class="chat-history-item ${chat.id === currentChatId ? 'active' : ''}"
+                     onclick="loadChat('${chat.id}')"
+                     data-chat-id="${chat.id}">
+                    <div class="chat-history-item-icon">
+                        ${chat.is_builder
+                            ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/></svg>'
+                            : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>'
+                        }
+                    </div>
+                    <div class="chat-history-item-content">
+                        <span class="chat-history-item-title">${escapeHtml(chat.title)}</span>
+                        <span class="chat-history-item-time">${formatTime(chat.updated_at)}</span>
+                    </div>
+                    <button class="chat-history-delete-btn" onclick="deleteChat('${chat.id}', event)" title="Delete chat">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                            <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                        </svg>
+                    </button>
+                </div>
+            `).join('');
+        }
 
         // Insights DOM Elements
         const suiteInsights = document.getElementById('suiteInsights');
@@ -18163,14 +18603,6 @@
 
         if (sidebarOverlay) {
             sidebarOverlay.addEventListener('click', () => {
-                sidebar.classList.remove('open');
-                sidebarOverlay.classList.remove('active');
-            });
-        }
-
-        if (chatHistoryBtn) {
-            chatHistoryBtn.addEventListener('click', () => {
-                alert('Chat History feature coming soon!');
                 sidebar.classList.remove('open');
                 sidebarOverlay.classList.remove('active');
             });
@@ -18600,6 +19032,9 @@
             isLoading = false;
             sendBtn.disabled = !chatInput.value.trim();
             chatInput.focus();
+
+            // Save chat to Supabase (debounced)
+            scheduleChatSave();
         }
 
         function getLocalResponse(message) {
