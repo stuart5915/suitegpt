@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { prompt, model = 'gemini-2.0-flash', contents, generationConfig } = req.body;
+        const { prompt, model = 'gemini-2.0-flash', contents, generationConfig, systemInstruction } = req.body;
 
         // Build request body - support both simple prompt and full contents structure
         let requestBody;
@@ -38,6 +38,11 @@ export default async function handler(req, res) {
             };
         } else {
             return res.status(400).json({ error: 'Prompt or contents is required' });
+        }
+
+        // Add system instruction if provided
+        if (systemInstruction) {
+            requestBody.systemInstruction = { parts: [{ text: systemInstruction }] };
         }
 
         const response = await fetch(

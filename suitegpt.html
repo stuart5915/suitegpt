@@ -7610,13 +7610,56 @@
             border-bottom-left-radius: 6px;
         }
 
-        /* Ensure code blocks don't overflow */
-        .message-content pre,
+        /* Markdown styling in chat messages */
+        .message-content strong {
+            font-weight: 700;
+        }
+
+        .message-content em {
+            font-style: italic;
+        }
+
         .message-content code {
-            max-width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.85em;
+        }
+
+        .message-content pre {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin: 12px 0;
             overflow-x: auto;
-            white-space: pre-wrap;
-            word-break: break-all;
+        }
+
+        .message-content pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .message-content h2, .message-content h3, .message-content h4 {
+            margin: 16px 0 8px 0;
+            font-weight: 700;
+        }
+
+        .message-content h2 { font-size: 1.2em; }
+        .message-content h3 { font-size: 1.1em; }
+        .message-content h4 { font-size: 1em; }
+
+        .message-content ul {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+
+        .message-content li {
+            margin: 4px 0;
+        }
+
+        .message.user .message-content code {
+            background: rgba(255, 255, 255, 0.2);
         }
 
         /* App Cards in Chat */
@@ -18648,11 +18691,48 @@
 
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
-            contentDiv.innerHTML = content.replace(/\n/g, '<br>');
+            contentDiv.innerHTML = renderMarkdown(content);
 
             messageDiv.appendChild(avatar);
             messageDiv.appendChild(contentDiv);
             chatMessages.appendChild(messageDiv);
+        }
+
+        // Simple markdown renderer for chat messages
+        function renderMarkdown(text) {
+            if (!text) return '';
+
+            let html = text
+                // Escape HTML first
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                // Code blocks (```)
+                .replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+                // Inline code (`)
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                // Bold (**text** or __text__)
+                .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                .replace(/__([^_]+)__/g, '<strong>$1</strong>')
+                // Italic (*text* or _text_)
+                .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+                .replace(/_([^_]+)_/g, '<em>$1</em>')
+                // Headers (## text)
+                .replace(/^### (.+)$/gm, '<h4>$1</h4>')
+                .replace(/^## (.+)$/gm, '<h3>$1</h3>')
+                .replace(/^# (.+)$/gm, '<h2>$1</h2>')
+                // Bullet points
+                .replace(/^[\-\*] (.+)$/gm, '<li>$1</li>')
+                // Numbered lists
+                .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
+                // Line breaks
+                .replace(/\n/g, '<br>');
+
+            // Wrap consecutive <li> in <ul>
+            html = html.replace(/(<li>.*?<\/li>)(<br>)?(?=<li>|$)/g, '$1');
+            html = html.replace(/(<li>[\s\S]*?<\/li>)+/g, '<ul>$&</ul>');
+
+            return html;
         }
 
         // Delete chat modal functions
@@ -19193,7 +19273,7 @@
 
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
-            contentDiv.innerHTML = content.replace(/\n/g, '<br>');
+            contentDiv.innerHTML = renderMarkdown(content);
 
             if (appRecommendation && SUITE_APPS[appRecommendation]) {
                 const app = SUITE_APPS[appRecommendation];
@@ -19394,12 +19474,18 @@
                             parts: [{ text: msg.content }]
                         }));
 
+                        // System instruction with current date for accurate info
+                        const today = new Date();
+                        const dateStr = today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                        const systemInstruction = `Today's date is ${dateStr}. You are a helpful AI assistant. Always provide accurate, up-to-date information. When discussing current events, facts, or data, use information current as of ${today.getFullYear()}. If you're unsure about recent changes, mention that the user should verify for the most current information.`;
+
                         const response = await fetch('/api/gemini', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 model: geminiModel,
-                                contents: geminiContents
+                                contents: geminiContents,
+                                systemInstruction: systemInstruction
                             })
                         });
 
