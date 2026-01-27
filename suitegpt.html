@@ -13643,6 +13643,7 @@
         function initMobileAppDrag() {
             const container = document.getElementById('mobileAppContainer');
             const header = document.getElementById('mobileAppHeader');
+            const notch = container?.querySelector('.mobile-app-notch');
 
             if (!container || !header) return;
 
@@ -13669,6 +13670,7 @@
                 container.style.top = startTop + 'px';
 
                 header.style.cursor = 'grabbing';
+                if (notch) notch.style.cursor = 'grabbing';
                 e.preventDefault();
             };
 
@@ -13703,6 +13705,7 @@
             const onMouseUp = () => {
                 isDragging = false;
                 header.style.cursor = 'grab';
+                if (notch) notch.style.cursor = 'grab';
             };
 
             // Remove old listeners if any
@@ -13710,9 +13713,17 @@
             document.onmousemove = null;
             document.onmouseup = null;
 
-            // Add listeners
+            // Add listeners to header
             header.addEventListener('mousedown', onMouseDown);
             header.addEventListener('touchstart', onMouseDown, { passive: false });
+
+            // Also add listeners to notch for dragging
+            if (notch) {
+                notch.addEventListener('mousedown', onMouseDown);
+                notch.addEventListener('touchstart', onMouseDown, { passive: false });
+                notch.style.cursor = 'grab';
+            }
+
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('touchmove', onMouseMove, { passive: false });
             document.addEventListener('mouseup', onMouseUp);
