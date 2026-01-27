@@ -6304,6 +6304,11 @@
             object-fit: cover;
         }
 
+        .model-selector-icon-emoji {
+            font-size: 16px;
+            line-height: 1;
+        }
+
         .model-selector-name {
             font-size: 0.85rem;
             color: var(--text-secondary);
@@ -6395,6 +6400,15 @@
             height: 32px;
             border-radius: 8px;
             object-fit: cover;
+        }
+
+        .model-dropdown-emoji {
+            font-size: 24px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .model-dropdown-item-info {
@@ -8087,8 +8101,8 @@
 
                                 <div class="chat-input-right">
                                     <div class="model-selector" id="modelSelector">
-                                        <img src="/assets/icons/claude-icon.png" alt="" class="model-selector-icon" id="modelIcon" onerror="this.style.display='none'">
-                                        <span class="model-selector-name" id="modelName">Claude</span>
+                                        <span class="model-selector-icon-emoji" id="modelEmoji">✨</span>
+                                        <span class="model-selector-name" id="modelName">Auto</span>
                                         <svg class="model-selector-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <polyline points="6 9 12 15 18 9"/>
                                         </svg>
@@ -8223,36 +8237,36 @@
                             </div>
                         </div>
 
-                        <!-- Model Dropdown (outside the input) -->
+                        <!-- Model Dropdown -->
                         <div class="model-dropdown" id="modelDropdown">
-                            <div class="model-dropdown-item active" data-model="claude" data-name="Claude Sonnet" data-icon="/assets/icons/claude-icon.png">
-                                <img src="/assets/icons/claude-icon.png" alt="">
+                            <div class="model-dropdown-item active" data-mode="auto" data-name="Auto" data-emoji="✨">
+                                <span class="model-dropdown-emoji">✨</span>
                                 <div class="model-dropdown-item-info">
-                                    <span class="model-dropdown-item-name">Claude Sonnet</span>
-                                    <span class="model-dropdown-item-desc">Fast & intelligent</span>
+                                    <span class="model-dropdown-item-name">Auto</span>
+                                    <span class="model-dropdown-item-desc">Best model for your task</span>
                                 </div>
                             </div>
-                            <div class="model-dropdown-item" data-model="claude-opus" data-name="Claude Opus" data-icon="/assets/icons/claude-icon.png">
-                                <img src="/assets/icons/claude-icon.png" alt="">
+                            <div class="model-dropdown-item" data-mode="quick" data-name="Quick" data-emoji="⚡">
+                                <span class="model-dropdown-emoji">⚡</span>
                                 <div class="model-dropdown-item-info">
-                                    <span class="model-dropdown-item-name">Claude Opus</span>
-                                    <span class="model-dropdown-item-desc">Most capable</span>
+                                    <span class="model-dropdown-item-name">Quick</span>
+                                    <span class="model-dropdown-item-desc">Fast responses</span>
+                                </div>
+                            </div>
+                            <div class="model-dropdown-item" data-mode="smart" data-name="Smart" data-emoji="🧠">
+                                <span class="model-dropdown-emoji">🧠</span>
+                                <div class="model-dropdown-item-info">
+                                    <span class="model-dropdown-item-name">Smart</span>
+                                    <span class="model-dropdown-item-desc">Complex tasks & coding</span>
+                                </div>
+                            </div>
+                            <div class="model-dropdown-item" data-mode="deep" data-name="Deep" data-emoji="🔬">
+                                <span class="model-dropdown-emoji">🔬</span>
+                                <div class="model-dropdown-item-info">
+                                    <span class="model-dropdown-item-name">Deep</span>
+                                    <span class="model-dropdown-item-desc">Heavy reasoning & analysis</span>
                                 </div>
                                 <span class="model-pro-badge">Pro</span>
-                            </div>
-                            <div class="model-dropdown-item" data-model="gpt4o" data-name="GPT-4o" data-icon="/assets/icons/openai-icon.png">
-                                <img src="/assets/icons/openai-icon.png" alt="">
-                                <div class="model-dropdown-item-info">
-                                    <span class="model-dropdown-item-name">GPT-4o</span>
-                                    <span class="model-dropdown-item-desc">OpenAI's flagship</span>
-                                </div>
-                            </div>
-                            <div class="model-dropdown-item" data-model="gemini" data-name="Gemini Pro" data-icon="/assets/icons/gemini-icon.png">
-                                <img src="/assets/icons/gemini-icon.png" alt="">
-                                <div class="model-dropdown-item-info">
-                                    <span class="model-dropdown-item-name">Gemini Pro</span>
-                                    <span class="model-dropdown-item-desc">Google's best</span>
-                                </div>
                             </div>
                         </div>
                         </div>
@@ -8461,7 +8475,7 @@
                             </div>
                             <div class="connection-item" data-service="whoop">
                                 <div class="connection-item-icon">
-                                    <img src="/assets/icons/whoop-icon.png" alt="Whoop">
+                                    <img src="/assets/icons/whoop-icon.jpeg" alt="Whoop">
                                 </div>
                                 <div class="connection-item-info">
                                     <div class="connection-item-name">Whoop</div>
@@ -14110,18 +14124,15 @@
             if (selector) selector.classList.remove('active');
         }
 
-        function selectModel(modelId, modelName, iconUrl) {
-            currentModel = modelId;
+        function selectMode(mode, modeName, emoji) {
+            currentModel = mode;
 
             // Update the selector display
             const nameEl = document.getElementById('modelName');
-            const iconEl = document.getElementById('modelIcon');
+            const emojiEl = document.getElementById('modelEmoji');
 
-            if (nameEl) nameEl.textContent = modelName;
-            if (iconEl) {
-                iconEl.src = iconUrl;
-                iconEl.style.display = '';
-            }
+            if (nameEl) nameEl.textContent = modeName;
+            if (emojiEl) emojiEl.textContent = emoji;
 
             // Update active state in dropdown
             const items = document.querySelectorAll('.model-dropdown-item');
@@ -14129,8 +14140,8 @@
 
             closeModelDropdown();
 
-            // Check if Pro model requires upgrade
-            if (modelId === 'claude-opus') {
+            // Check if Pro mode requires upgrade
+            if (mode === 'deep') {
                 const isLoggedIn = !!(localStorage.getItem('connectedWallet') || localStorage.getItem('telegram_user'));
                 if (!isLoggedIn) {
                     openConnectModal();
@@ -14138,7 +14149,7 @@
                 }
             }
 
-            console.log('Selected model:', modelId);
+            console.log('Selected mode:', mode);
         }
 
         // Initialize model selector
@@ -14150,16 +14161,16 @@
                 modelSelector.addEventListener('click', toggleModelDropdown);
             }
 
-            // Add click handlers to model items
+            // Add click handlers to mode items
             if (modelDropdown) {
                 modelDropdown.querySelectorAll('.model-dropdown-item').forEach(item => {
                     item.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        const modelId = item.dataset.model;
-                        const modelName = item.dataset.name;
-                        const iconUrl = item.dataset.icon;
+                        const mode = item.dataset.mode;
+                        const modeName = item.dataset.name;
+                        const emoji = item.dataset.emoji;
                         item.classList.add('active');
-                        selectModel(modelId, modelName, iconUrl);
+                        selectMode(mode, modeName, emoji);
                     });
                 });
             }
