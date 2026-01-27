@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live AI Fleet Stream | SUITE</title>
+    <meta name="description" content="Watch AI agents work in real-time. Live visualization of the Suite AI Fleet building apps.">
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a1a;
+            color: #fff;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Grid background */
+        .grid-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        /* Zones */
+        .zones {
+            position: relative;
+            width: 700px;
+            height: 700px;
+        }
+
+        .zone {
+            position: absolute;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            opacity: 0.4;
+        }
+
+        .zone.active {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .zone-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .zone-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255,255,255,0.7);
+        }
+
+        /* Zone positions */
+        .zone-read {
+            width: 120px;
+            height: 120px;
+            top: 80px;
+            left: 150px;
+            background: radial-gradient(circle, rgba(34, 197, 94, 0.2) 0%, transparent 70%);
+            border: 2px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .zone-write {
+            width: 120px;
+            height: 120px;
+            top: 80px;
+            right: 150px;
+            background: radial-gradient(circle, rgba(249, 115, 22, 0.2) 0%, transparent 70%);
+            border: 2px solid rgba(249, 115, 22, 0.3);
+        }
+
+        .zone-search {
+            width: 120px;
+            height: 120px;
+            top: 290px;
+            left: 50px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, transparent 70%);
+            border: 2px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .zone-terminal {
+            width: 120px;
+            height: 120px;
+            top: 290px;
+            right: 50px;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.2) 0%, transparent 70%);
+            border: 2px solid rgba(168, 85, 247, 0.3);
+        }
+
+        .zone-web {
+            width: 120px;
+            height: 120px;
+            bottom: 80px;
+            left: 150px;
+            background: radial-gradient(circle, rgba(236, 72, 153, 0.2) 0%, transparent 70%);
+            border: 2px solid rgba(236, 72, 153, 0.3);
+        }
+
+        .zone-agents {
+            width: 120px;
+            height: 120px;
+            bottom: 80px;
+            right: 150px;
+            background: radial-gradient(circle, rgba(245, 158, 11, 0.2) 0%, transparent 70%);
+            border: 2px solid rgba(245, 158, 11, 0.3);
+        }
+
+        /* Center hub */
+        .hub {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.3) 0%, rgba(99, 102, 241, 0.1) 50%, transparent 70%);
+            border: 3px solid rgba(99, 102, 241, 0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .hub-icon {
+            font-size: 3rem;
+            margin-bottom: 8px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .hub-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #818cf8;
+        }
+
+        .hub-status {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.5);
+            margin-top: 4px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
+
+        /* Connection lines */
+        .connections {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .connection-line {
+            stroke: rgba(99, 102, 241, 0.2);
+            stroke-width: 2;
+            fill: none;
+        }
+
+        /* Agent */
+        .agent {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            z-index: 20;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .agent.moving {
+            box-shadow: 0 0 30px rgba(99, 102, 241, 0.8);
+        }
+
+        /* Activity log */
+        .activity-log {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 320px;
+            max-height: 250px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 0.8rem;
+            z-index: 100;
+        }
+
+        .activity-log h3 {
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+            color: #818cf8;
+        }
+
+        .activity-log::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .activity-log::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.3);
+            border-radius: 2px;
+        }
+
+        .log-entry {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-icon {
+            font-size: 1.1rem;
+        }
+
+        .log-text {
+            color: rgba(255,255,255,0.8);
+            flex: 1;
+        }
+
+        .log-time {
+            color: rgba(255,255,255,0.3);
+            font-size: 0.7rem;
+        }
+
+        /* Current action display */
+        .current-action {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            border-radius: 100px;
+            padding: 14px 28px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .current-action.visible {
+            opacity: 1;
+        }
+
+        .current-action-icon {
+            font-size: 1.6rem;
+        }
+
+        .current-action-text {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .current-action-detail {
+            color: rgba(255,255,255,0.5);
+            font-size: 0.9rem;
+        }
+
+        /* Status */
+        .status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 18px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 100px;
+            font-size: 0.85rem;
+            z-index: 100;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ef4444;
+        }
+
+        .status-dot.connected {
+            background: #22c55e;
+            animation: statusPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes statusPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+        }
+
+        /* Particles */
+        .particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        /* Sub-agents */
+        .sub-agent {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f59e0b, #f97316);
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            z-index: 15;
+            animation: subAgentSpawn 0.5s ease-out;
+        }
+
+        @keyframes subAgentSpawn {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Title */
+        .title {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            text-align: right;
+            z-index: 100;
+        }
+
+        .title h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+        }
+
+        .title p {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.4);
+        }
+
+        .title a {
+            color: #818cf8;
+            text-decoration: none;
+        }
+
+        /* Offline state */
+        .offline-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 50;
+            display: none;
+        }
+
+        .offline-message.visible {
+            display: block;
+        }
+
+        .offline-message h2 {
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+            color: rgba(255,255,255,0.6);
+        }
+
+        .offline-message p {
+            color: rgba(255,255,255,0.4);
+            font-size: 0.95rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .zones {
+                transform: scale(0.6);
+            }
+            .activity-log {
+                width: calc(100% - 40px);
+                max-height: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="grid-bg"></div>
+
+        <div class="zones">
+            <svg class="connections" viewBox="0 0 700 700">
+                <line class="connection-line" x1="350" y1="350" x2="210" y2="140" />
+                <line class="connection-line" x1="350" y1="350" x2="490" y2="140" />
+                <line class="connection-line" x1="350" y1="350" x2="110" y2="350" />
+                <line class="connection-line" x1="350" y1="350" x2="590" y2="350" />
+                <line class="connection-line" x1="350" y1="350" x2="210" y2="560" />
+                <line class="connection-line" x1="350" y1="350" x2="490" y2="560" />
+            </svg>
+
+            <div class="zone zone-read" data-zone="read">
+                <span class="zone-icon">📖</span>
+                <span class="zone-label">Read</span>
+            </div>
+            <div class="zone zone-write" data-zone="write">
+                <span class="zone-icon">✍️</span>
+                <span class="zone-label">Write</span>
+            </div>
+            <div class="zone zone-search" data-zone="search">
+                <span class="zone-icon">🔍</span>
+                <span class="zone-label">Search</span>
+            </div>
+            <div class="zone zone-terminal" data-zone="terminal">
+                <span class="zone-icon">💻</span>
+                <span class="zone-label">Terminal</span>
+            </div>
+            <div class="zone zone-web" data-zone="web">
+                <span class="zone-icon">🌐</span>
+                <span class="zone-label">Web</span>
+            </div>
+            <div class="zone zone-agents" data-zone="agents">
+                <span class="zone-icon">🤖</span>
+                <span class="zone-label">Agents</span>
+            </div>
+
+            <div class="hub">
+                <span class="hub-icon">🚀</span>
+                <span class="hub-label">AI Fleet</span>
+                <span class="hub-status" id="hubStatus">Waiting...</span>
+            </div>
+
+            <div class="agent" id="mainAgent">⚡</div>
+            <div class="particles" id="particles"></div>
+        </div>
+
+        <div class="offline-message" id="offlineMessage">
+            <h2>🌙 Fleet is offline</h2>
+            <p>Check back soon to watch AI agents build apps live!</p>
+        </div>
+    </div>
+
+    <div class="current-action" id="currentAction">
+        <span class="current-action-icon" id="actionIcon">⚡</span>
+        <div>
+            <div class="current-action-text" id="actionText">Working...</div>
+            <div class="current-action-detail" id="actionDetail">processing</div>
+        </div>
+    </div>
+
+    <div class="status">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">Connecting...</span>
+    </div>
+
+    <div class="activity-log" id="activityLog">
+        <h3>📋 Activity Log</h3>
+        <div class="log-entry">
+            <span class="log-icon">🔌</span>
+            <span class="log-text">Connecting to Fleet...</span>
+            <span class="log-time">now</span>
+        </div>
+    </div>
+
+    <div class="title">
+        <h1>Suite AI Fleet</h1>
+        <p>Live Development Stream</p>
+        <p><a href="https://suitegpt.app">suitegpt.app</a></p>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
+
+        const zonePositions = {
+            center: { x: 350, y: 350 },
+            read: { x: 210, y: 140 },
+            write: { x: 490, y: 140 },
+            search: { x: 110, y: 350 },
+            terminal: { x: 590, y: 350 },
+            web: { x: 210, y: 560 },
+            agents: { x: 490, y: 560 }
+        };
+
+        let lastActivity = Date.now();
+        let isOnline = false;
+
+        // Initialize Supabase
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Subscribe to realtime channel
+        async function subscribeToFleet() {
+            const channel = supabase.channel('fleet-stream');
+
+            channel
+                .on('broadcast', { event: 'fleet-event' }, (payload) => {
+                    handleEvent(payload.payload);
+                })
+                .subscribe((status) => {
+                    if (status === 'SUBSCRIBED') {
+                        document.getElementById('statusDot').classList.add('connected');
+                        document.getElementById('statusText').textContent = 'Connected';
+                        addLog('✅', 'Connected to Fleet stream');
+                    }
+                });
+        }
+
+        function handleEvent(data) {
+            if (!data) return;
+
+            lastActivity = Date.now();
+            setOnline(true);
+
+            // Skip heartbeats from showing as actions
+            if (data.type === 'heartbeat') {
+                document.getElementById('hubStatus').textContent = 'Online';
+                return;
+            }
+
+            if (data.type === 'status') {
+                addLog(data.icon || '📡', data.label);
+                document.getElementById('hubStatus').textContent = data.detail || 'Active';
+                return;
+            }
+
+            showAction(data);
+
+            if (data.zone) {
+                moveAgent(data.zone);
+                activateZone(data.zone);
+            }
+
+            addLog(data.icon || '⚡', `${data.label}${data.detail ? ': ' + data.detail : ''}`);
+
+            if (data.type === 'spawn') {
+                spawnSubAgent();
+            }
+
+            if (data.type === 'complete') {
+                createParticleBurst();
+                setTimeout(() => moveAgent('center'), 500);
+            }
+        }
+
+        function setOnline(online) {
+            isOnline = online;
+            document.getElementById('offlineMessage').classList.toggle('visible', !online);
+            document.getElementById('hubStatus').textContent = online ? 'Active' : 'Waiting...';
+        }
+
+        function moveAgent(zone) {
+            const agent = document.getElementById('mainAgent');
+            const pos = zonePositions[zone] || zonePositions.center;
+
+            agent.classList.add('moving');
+            agent.style.left = pos.x + 'px';
+            agent.style.top = pos.y + 'px';
+
+            document.getElementById('hubStatus').textContent = zone === 'center' ? 'Idle' : 'Working...';
+
+            setTimeout(() => agent.classList.remove('moving'), 500);
+        }
+
+        function activateZone(zone) {
+            document.querySelectorAll('.zone').forEach(z => z.classList.remove('active'));
+            const zoneEl = document.querySelector(`[data-zone="${zone}"]`);
+            if (zoneEl) {
+                zoneEl.classList.add('active');
+                setTimeout(() => zoneEl.classList.remove('active'), 2000);
+            }
+        }
+
+        function showAction(data) {
+            const actionEl = document.getElementById('currentAction');
+            document.getElementById('actionIcon').textContent = data.icon || '⚡';
+            document.getElementById('actionText').textContent = data.label || 'Working';
+            document.getElementById('actionDetail').textContent = data.detail || '';
+
+            actionEl.classList.add('visible');
+
+            clearTimeout(window.actionTimeout);
+            window.actionTimeout = setTimeout(() => {
+                actionEl.classList.remove('visible');
+            }, 3000);
+        }
+
+        function addLog(icon, text) {
+            const log = document.getElementById('activityLog');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            entry.innerHTML = `
+                <span class="log-icon">${icon}</span>
+                <span class="log-text">${text}</span>
+                <span class="log-time">${time}</span>
+            `;
+
+            // Insert after the h3
+            const firstEntry = log.querySelector('.log-entry');
+            if (firstEntry) {
+                log.insertBefore(entry, firstEntry);
+            } else {
+                log.appendChild(entry);
+            }
+
+            while (log.querySelectorAll('.log-entry').length > 20) {
+                log.removeChild(log.lastElementChild);
+            }
+        }
+
+        function spawnSubAgent() {
+            const zones = document.querySelector('.zones');
+            const subAgent = document.createElement('div');
+            subAgent.className = 'sub-agent';
+            subAgent.textContent = '🤖';
+            subAgent.style.left = '350px';
+            subAgent.style.top = '350px';
+            subAgent.style.transform = 'translate(-50%, -50%)';
+            zones.appendChild(subAgent);
+
+            setTimeout(() => {
+                subAgent.style.transition = 'all 0.5s ease';
+                subAgent.style.left = '490px';
+                subAgent.style.top = '560px';
+            }, 100);
+
+            setTimeout(() => subAgent.remove(), 3000);
+        }
+
+        function createParticleBurst() {
+            const particles = document.getElementById('particles');
+            for (let i = 0; i < 15; i++) {
+                const particle = document.createElement('div');
+                particle.style.cssText = `
+                    position: absolute;
+                    width: 6px;
+                    height: 6px;
+                    background: rgba(99, 102, 241, 0.6);
+                    border-radius: 50%;
+                    left: ${350 + (Math.random() - 0.5) * 80}px;
+                    top: ${350 + (Math.random() - 0.5) * 80}px;
+                    animation: particleFade 1s ease-out forwards;
+                `;
+                particles.appendChild(particle);
+                setTimeout(() => particle.remove(), 1000);
+            }
+        }
+
+        // Check for offline status
+        setInterval(() => {
+            if (Date.now() - lastActivity > 60000) {
+                setOnline(false);
+            }
+        }, 10000);
+
+        // Start
+        subscribeToFleet();
+
+        // Add particle animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes particleFade {
+                0% { opacity: 1; transform: scale(1); }
+                100% { opacity: 0; transform: scale(2) translateY(-20px); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
