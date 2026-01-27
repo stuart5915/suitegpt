@@ -5601,7 +5601,7 @@
             font-size: clamp(2rem, 5vw, 3rem);
             font-weight: 800;
             letter-spacing: -0.02em;
-            margin-bottom: 12px;
+            margin-bottom: 32px;
             background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.8) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -5614,10 +5614,11 @@
         }
 
         .welcome-subtitle {
-            font-size: 1.1rem;
+            font-size: 1rem;
             color: var(--text-secondary);
             margin-bottom: 32px;
             max-width: 480px;
+            display: none; /* Hidden by default for cleaner look */
         }
 
         .welcome-state.chat-active .welcome-subtitle {
@@ -5635,15 +5636,16 @@
             align-items: center;
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid var(--border-subtle);
-            border-radius: 20px;
-            padding: 8px 8px 8px 24px;
+            border-radius: 24px;
+            padding: 8px 8px 8px 12px;
             backdrop-filter: blur(20px);
             transition: all 0.3s ease;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
         }
 
         .chat-input-wrapper:focus-within {
             border-color: var(--accent-primary);
-            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15), 0 0 0 4px rgba(99, 102, 241, 0.1);
         }
 
         .chat-input {
@@ -5691,12 +5693,13 @@
             height: 20px;
         }
 
-        /* Chat Input Actions (+ and Tools buttons) */
+        /* Chat Input Actions (+, @, and Tools buttons) */
         .chat-input-actions {
             display: flex;
             align-items: center;
-            gap: 4px;
-            margin-right: 12px;
+            gap: 2px;
+            margin-right: 8px;
+            flex-shrink: 0;
         }
 
         .chat-action-btn {
@@ -5788,6 +5791,109 @@
             background: rgba(99, 102, 241, 0.2);
             color: var(--accent-primary);
             border-radius: 4px;
+        }
+
+        /* Mention (@) Button & Dropdown */
+        .mention-btn {
+            position: relative;
+        }
+
+        .mention-at {
+            font-size: 1rem;
+            font-weight: 700;
+            color: inherit;
+        }
+
+        .mention-dropdown {
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 8px;
+            min-width: 220px;
+            max-height: 320px;
+            overflow-y: auto;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .mention-dropdown.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .mention-dropdown-section {
+            margin-bottom: 8px;
+        }
+
+        .mention-dropdown-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .mention-dropdown-label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: var(--text-tertiary);
+            letter-spacing: 0.5px;
+            padding: 6px 12px 4px;
+            text-transform: uppercase;
+        }
+
+        .mention-apps-list {
+            max-height: 180px;
+            overflow-y: auto;
+        }
+
+        .mention-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+        }
+
+        .mention-dropdown-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .mention-item-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .mention-item-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 6px;
+        }
+
+        .mention-dropdown-item span:last-child {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         /* Model Selector */
@@ -5905,28 +6011,31 @@
         .quick-suggestions {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 16px;
+            gap: 10px;
+            margin-top: 20px;
             justify-content: center;
+            max-width: 100%;
         }
 
         .suggestion-chip {
-            padding: 8px 16px;
-            background: rgba(255, 255, 255, 0.06);
+            padding: 10px 18px;
+            background: rgba(255, 255, 255, 0.04);
             border: 1px solid var(--border-subtle);
             border-radius: 100px;
             color: var(--text-secondary);
-            font-size: 0.85rem;
+            font-size: 0.875rem;
             cursor: pointer;
             transition: all 0.2s ease;
             font-family: inherit;
+            font-weight: 500;
+            white-space: nowrap;
         }
 
         .suggestion-chip:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: var(--border-hover);
+            background: rgba(99, 102, 241, 0.1);
+            border-color: var(--accent-primary);
             color: var(--text-primary);
-            transform: translateY(-1px);
+            transform: translateY(-2px);
         }
 
         /* Chat Container */
@@ -6949,13 +7058,32 @@
             }
 
             .chat-input-wrapper {
-                padding: 6px 6px 6px 18px;
-                border-radius: 16px;
+                padding: 6px 6px 6px 8px;
+                border-radius: 20px;
+            }
+
+            .chat-input-actions {
+                gap: 1px;
+                margin-right: 4px;
+            }
+
+            .chat-action-btn {
+                width: 32px;
+                height: 32px;
+                border-radius: 8px;
+            }
+
+            .mention-at {
+                font-size: 0.9rem;
             }
 
             .chat-input {
                 font-size: 1rem;
                 padding: 12px 0;
+            }
+
+            .mention-dropdown {
+                min-width: 200px;
             }
 
             .send-btn {
@@ -7055,7 +7183,12 @@
             }
 
             .chat-input-wrapper {
-                padding: 4px 4px 4px 14px;
+                padding: 4px 4px 4px 6px;
+            }
+
+            .chat-action-btn {
+                width: 28px;
+                height: 28px;
             }
         }
 
@@ -7463,7 +7596,6 @@
                 <!-- Welcome State -->
                 <section class="welcome-state" id="welcomeState">
                     <h1 class="welcome-title">What do you need?</h1>
-                    <p class="welcome-subtitle">Describe your problem, and we'll find or build the solution.</p>
 
                     <div class="input-container">
                         <div class="chat-input-wrapper">
@@ -7474,6 +7606,28 @@
                                         <line x1="5" y1="12" x2="19" y2="12"/>
                                     </svg>
                                     <input type="file" id="fileInput" style="display: none;" multiple accept="image/*,.pdf,.txt,.doc,.docx">
+                                </button>
+                                <button class="chat-action-btn mention-btn" id="mentionBtn" title="Mention app or context">
+                                    <span class="mention-at">@</span>
+                                    <div class="mention-dropdown" id="mentionDropdown">
+                                        <div class="mention-dropdown-section">
+                                            <div class="mention-dropdown-label">APPS</div>
+                                            <div class="mention-apps-list" id="mentionAppsList">
+                                                <!-- Populated by JavaScript -->
+                                            </div>
+                                        </div>
+                                        <div class="mention-dropdown-section">
+                                            <div class="mention-dropdown-label">CONTEXT</div>
+                                            <button class="mention-dropdown-item" onclick="selectMention('my-apps', 'My saved apps', 'context')">
+                                                <span class="mention-item-icon">&#128193;</span>
+                                                <span>My saved apps</span>
+                                            </button>
+                                            <button class="mention-dropdown-item" onclick="selectMention('recent', 'Recent activity', 'context')">
+                                                <span class="mention-item-icon">&#128336;</span>
+                                                <span>Recent activity</span>
+                                            </button>
+                                        </div>
+                                    </div>
                                 </button>
                                 <button class="chat-action-btn tools-btn" id="toolsBtn" title="Tools">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -7521,7 +7675,7 @@
                                 type="text"
                                 class="chat-input"
                                 id="chatInput"
-                                placeholder="I need help with..."
+                                placeholder="Message SuiteGPT..."
                                 autocomplete="off"
                             >
                             <div class="model-selector" id="modelSelector" onclick="toggleModelDropdown(event)">
@@ -7578,14 +7732,12 @@
 
                         <!-- Quick Suggestions -->
                         <div class="quick-suggestions">
-                            <button class="suggestion-chip" data-query="I want to track my fitness">Fitness</button>
-                            <button class="suggestion-chip" data-query="I can't sleep well at night">Sleep</button>
-                            <button class="suggestion-chip" data-query="I want to build better habits">Habits</button>
-                            <button class="suggestion-chip" data-query="I need help focusing at work">Focus</button>
-                            <button class="suggestion-chip" data-query="I feel stressed and anxious">Stress</button>
-                            <button class="suggestion-chip" data-query="I never drink enough water">Water</button>
-                            <button class="suggestion-chip" data-query="I want to read more books">Reading</button>
-                            <button class="suggestion-chip" data-query="I need date night ideas">Date</button>
+                            <button class="suggestion-chip" data-query="Build me an app for tracking my daily habits">Build me an app</button>
+                            <button class="suggestion-chip" data-query="Find me an app for tracking water intake">Find an app</button>
+                            <button class="suggestion-chip" data-query="I want to track my fitness and workouts">Track my fitness</button>
+                            <button class="suggestion-chip" data-query="I need help managing my budget and expenses">Manage my budget</button>
+                            <button class="suggestion-chip" data-query="I need help focusing and being more productive">Help me focus</button>
+                            <button class="suggestion-chip" data-query="I want to plan healthy meals for the week">Plan my meals</button>
                         </div>
                     </div>
 
@@ -7594,30 +7746,6 @@
                         <div class="chat-messages" id="chatMessages"></div>
                     </div>
 
-                    <!-- Use Cases Section -->
-                    <div class="use-cases-section" id="useCasesSection">
-                        <div class="use-cases-header">
-                            <div class="use-cases-title">Example conversations <span id="useCaseCount"></span></div>
-                        </div>
-                        <div class="use-cases-grid" id="useCasesGrid">
-                            <!-- Loading skeletons -->
-                            <div class="use-case-card skeleton">
-                                <div class="skeleton-text" style="height: 20px; width: 90%; margin-bottom: 8px;"></div>
-                                <div class="skeleton-text" style="height: 20px; width: 70%; margin-bottom: 16px;"></div>
-                                <div class="skeleton-text" style="height: 16px; width: 40%;"></div>
-                            </div>
-                            <div class="use-case-card skeleton">
-                                <div class="skeleton-text" style="height: 20px; width: 85%; margin-bottom: 8px;"></div>
-                                <div class="skeleton-text" style="height: 20px; width: 60%; margin-bottom: 16px;"></div>
-                                <div class="skeleton-text" style="height: 16px; width: 45%;"></div>
-                            </div>
-                            <div class="use-case-card skeleton">
-                                <div class="skeleton-text" style="height: 20px; width: 80%; margin-bottom: 8px;"></div>
-                                <div class="skeleton-text" style="height: 20px; width: 65%; margin-bottom: 16px;"></div>
-                                <div class="skeleton-text" style="height: 16px; width: 35%;"></div>
-                            </div>
-                        </div>
-                    </div>
                 </section>
 
                 <!-- Inline Apps View -->
@@ -12648,6 +12776,88 @@
             const toolsDropdown = document.getElementById('toolsDropdown');
             if (toolsBtn && toolsDropdown && !toolsBtn.contains(e.target)) {
                 closeToolsDropdown();
+            }
+        });
+
+        // ========================
+        // MENTION (@) DROPDOWN
+        // ========================
+        function toggleMentionDropdown(e) {
+            e.stopPropagation();
+            const dropdown = document.getElementById('mentionDropdown');
+            dropdown.classList.toggle('active');
+
+            // Populate apps on first open
+            if (dropdown.classList.contains('active')) {
+                populateMentionDropdown();
+            }
+        }
+
+        function closeMentionDropdown() {
+            const dropdown = document.getElementById('mentionDropdown');
+            if (dropdown) dropdown.classList.remove('active');
+        }
+
+        function populateMentionDropdown() {
+            const appsList = document.getElementById('mentionAppsList');
+            if (!appsList || appsList.children.length > 0) return; // Already populated
+
+            // Get top apps from SUITE_APPS
+            const topApps = ['trueform', 'hydrotrack', 'foodvitals', 'sleepwell', 'quickbudget', 'focusflow', 'mealprep', 'moodlog'];
+
+            topApps.forEach(appKey => {
+                const app = SUITE_APPS[appKey];
+                if (!app) return;
+
+                const btn = document.createElement('button');
+                btn.className = 'mention-dropdown-item';
+                btn.onclick = () => selectMention(appKey, app.name, 'app');
+
+                btn.innerHTML = `
+                    <span class="mention-item-icon">
+                        <img src="${app.iconUrl}" alt="${app.name}" onerror="this.parentElement.textContent='${app.name.charAt(0)}'">
+                    </span>
+                    <span>${app.name}</span>
+                `;
+
+                appsList.appendChild(btn);
+            });
+        }
+
+        function selectMention(id, name, type) {
+            closeMentionDropdown();
+
+            const chatInput = document.getElementById('chatInput');
+            const currentValue = chatInput.value;
+            const mentionText = type === 'app' ? `@${name} ` : `@${name} `;
+
+            // Insert mention at cursor or append
+            chatInput.value = currentValue + mentionText;
+            chatInput.focus();
+
+            // Enable send button if there's content
+            const sendBtn = document.getElementById('sendBtn');
+            if (sendBtn && chatInput.value.trim()) {
+                sendBtn.disabled = false;
+            }
+
+            console.log('Selected mention:', type, id, name);
+        }
+
+        // Initialize mention button
+        document.addEventListener('DOMContentLoaded', () => {
+            const mentionBtn = document.getElementById('mentionBtn');
+            if (mentionBtn) {
+                mentionBtn.addEventListener('click', toggleMentionDropdown);
+            }
+        });
+
+        // Close mention dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const mentionBtn = document.getElementById('mentionBtn');
+            const mentionDropdown = document.getElementById('mentionDropdown');
+            if (mentionBtn && mentionDropdown && !mentionBtn.contains(e.target)) {
+                closeMentionDropdown();
             }
         });
 
