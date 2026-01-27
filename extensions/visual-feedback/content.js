@@ -378,7 +378,7 @@
                         body: JSON.stringify({
                             prompt: fullPrompt,
                             status: 'pending',
-                            target: 'stuart-hollinger-landing'
+                            target: 'suitegpt'
                         })
                     });
 
