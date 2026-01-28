@@ -7373,6 +7373,54 @@
         .propose-edit-btn { padding: 8px 14px; border-radius: 6px; background: rgba(255, 140, 66, 0.15); color: var(--accent-primary); border: none; font-weight: 600; font-size: 0.8rem; cursor: pointer; }
         .propose-edit-btn:hover { background: rgba(255, 140, 66, 0.25); }
 
+        /* AI Generation Section */
+        .post-ai-section { display: flex; gap: 8px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
+        .generate-ai-btn { padding: 10px 16px; border-radius: 8px; background: linear-gradient(135deg, #8b5cf6, #6366f1); color: white; border: none; font-weight: 600; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
+        .generate-ai-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4); }
+        .generate-ai-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .generate-ai-btn .spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .ai-context-input { flex: 1; min-width: 200px; padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: #12121f; color: #f5f5f7; font-size: 0.85rem; }
+        .ai-context-input::placeholder { color: #6b7280; }
+
+        /* Proposal Cards */
+        .proposal-card { background: #12121f; border-radius: 10px; padding: 12px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.1); }
+        .proposal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .proposal-author { font-size: 0.8rem; color: var(--text-tertiary); }
+        .proposal-votes { display: flex; gap: 8px; }
+        .proposal-vote-btn { padding: 4px 10px; border-radius: 6px; border: none; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s; }
+        .proposal-vote-btn.upvote { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+        .proposal-vote-btn.upvote:hover { background: rgba(34, 197, 94, 0.25); }
+        .proposal-vote-btn.downvote { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+        .proposal-vote-btn.downvote:hover { background: rgba(239, 68, 68, 0.25); }
+        .proposal-content { font-size: 0.85rem; color: var(--text-primary); line-height: 1.5; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; white-space: pre-wrap; }
+        .proposal-actions { display: flex; gap: 8px; margin-top: 10px; }
+        .proposal-use-btn { padding: 6px 12px; border-radius: 6px; background: rgba(99, 102, 241, 0.15); color: #818cf8; border: none; font-size: 0.75rem; font-weight: 600; cursor: pointer; }
+        .proposal-use-btn:hover { background: rgba(99, 102, 241, 0.25); }
+
+        /* Propose Form */
+        .propose-form { margin-top: 12px; display: none; }
+        .propose-form.active { display: block; }
+        .propose-textarea { width: 100%; min-height: 80px; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: #12121f; color: #f5f5f7; font-size: 0.85rem; resize: vertical; font-family: inherit; margin-bottom: 8px; }
+        .propose-form-actions { display: flex; gap: 8px; }
+        .propose-submit-btn { padding: 8px 14px; border-radius: 6px; background: var(--accent-primary); color: #000; border: none; font-weight: 600; font-size: 0.8rem; cursor: pointer; }
+        .propose-cancel-btn { padding: 8px 14px; border-radius: 6px; background: #12121f; color: #a0a0a0; border: none; font-size: 0.8rem; cursor: pointer; }
+
+        /* Post Now Section */
+        .post-publish-section { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.1); background: #1f1f35; }
+        .post-publish-section h5 { font-size: 0.9rem; margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px; }
+        .publish-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+        .publish-btn { padding: 12px 20px; border-radius: 10px; border: none; font-weight: 700; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
+        .publish-btn:hover { transform: translateY(-2px); }
+        .publish-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .publish-btn.x-btn { background: #000; color: #fff; border: 1px solid #333; }
+        .publish-btn.x-btn:hover { background: #1a1a1a; }
+        .publish-btn.linkedin-btn { background: #0a66c2; color: #fff; }
+        .publish-btn.linkedin-btn:hover { background: #004182; }
+        .publish-status { margin-top: 10px; font-size: 0.8rem; color: var(--text-tertiary); }
+        .publish-status.success { color: #22c55e; }
+        .publish-status.error { color: #ef4444; }
+
         @media (max-width: 900px) {
             .schedule-grid { grid-template-columns: repeat(2, 1fr); }
         }
@@ -13996,6 +14044,14 @@
                                             <span class="post-cadence-label">Cadence:</span>
                                             <span id="postCadenceName">X Posts (Progress Update)</span>
                                         </div>
+                                        <!-- AI Generation -->
+                                        <div class="post-ai-section">
+                                            <input type="text" class="ai-context-input" id="aiContextInput" placeholder="Optional context (e.g., 'just shipped dark mode')">
+                                            <button class="generate-ai-btn" id="generateAiBtn" onclick="generateAIDraft()">
+                                                <span>✨</span>
+                                                <span id="generateBtnText">Generate Draft</span>
+                                            </button>
+                                        </div>
                                         <div class="post-content-area">
                                             <label>Content:</label>
                                             <textarea class="post-content-input" id="postContentInput" placeholder="Write your post content here..."></textarea>
@@ -14021,11 +14077,33 @@
                                         <button class="post-action-btn primary admin-only" onclick="markAsReady()" style="display: none;">✅ Mark Ready</button>
                                     </div>
                                     <div class="post-proposals-section">
-                                        <h5>💬 Proposed Edits</h5>
+                                        <h5>💬 Community Proposals</h5>
                                         <div class="post-proposals-list" id="postProposalsList">
-                                            <p class="no-proposals">No edit proposals yet</p>
+                                            <p class="no-proposals">No proposals yet - be the first!</p>
                                         </div>
-                                        <button class="propose-edit-btn" onclick="proposePostEdit()">+ Propose Edit</button>
+                                        <button class="propose-edit-btn" id="proposeEditBtn" onclick="showProposeForm()">+ Propose Content</button>
+                                        <div class="propose-form" id="proposeForm">
+                                            <textarea class="propose-textarea" id="proposeTextarea" placeholder="Write your proposed content for this post..."></textarea>
+                                            <div class="propose-form-actions">
+                                                <button class="propose-cancel-btn" onclick="hideProposeForm()">Cancel</button>
+                                                <button class="propose-submit-btn" onclick="submitProposal()">Submit Proposal</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Publish Section (Admin Only) -->
+                                    <div class="post-publish-section admin-only" id="postPublishSection" style="display: none;">
+                                        <h5>🚀 Publish</h5>
+                                        <div class="publish-buttons">
+                                            <button class="publish-btn x-btn" onclick="publishToX()" id="publishXBtn">
+                                                <span>𝕏</span>
+                                                <span>Post to X</span>
+                                            </button>
+                                            <button class="publish-btn linkedin-btn" onclick="publishToLinkedIn()" id="publishLinkedInBtn">
+                                                <span>in</span>
+                                                <span>Post to LinkedIn</span>
+                                            </button>
+                                        </div>
+                                        <div class="publish-status" id="publishStatus"></div>
                                     </div>
                                 </div>
                             </div>
@@ -16469,6 +16547,28 @@
                 preview.style.display = 'none';
             }
 
+            // Clear AI context input
+            document.getElementById('aiContextInput').value = '';
+
+            // Render proposals for this post
+            renderProposals();
+
+            // Hide propose form by default
+            hideProposeForm();
+
+            // Show/hide publish section for admins
+            const publishSection = document.getElementById('postPublishSection');
+            if (publishSection) {
+                publishSection.style.display = isMarketingAdmin() ? 'block' : 'none';
+            }
+
+            // Clear publish status
+            const publishStatus = document.getElementById('publishStatus');
+            if (publishStatus) {
+                publishStatus.textContent = '';
+                publishStatus.className = 'publish-status';
+            }
+
             document.getElementById('postModalOverlay').classList.add('active');
         }
 
@@ -16569,12 +16669,352 @@
             }
         }
 
-        function proposePostEdit() {
-            const edit = prompt('Propose an edit to this post:');
-            if (edit && edit.trim()) {
-                alert('Your edit proposal has been submitted for voting!');
+        // ========== PHASE 2: AI Generation & Proposals ==========
+
+        // Storage for proposals
+        let marketingProposals = {};
+
+        function loadProposals() {
+            try {
+                const saved = localStorage.getItem('suite_marketing_proposals');
+                if (saved) {
+                    marketingProposals = JSON.parse(saved);
+                }
+            } catch (e) {
+                console.log('[Marketing] Could not load proposals');
             }
         }
+
+        function saveProposals() {
+            localStorage.setItem('suite_marketing_proposals', JSON.stringify(marketingProposals));
+        }
+
+        // AI Draft Generation
+        async function generateAIDraft() {
+            const btn = document.getElementById('generateAiBtn');
+            const btnText = document.getElementById('generateBtnText');
+            const context = document.getElementById('aiContextInput').value.trim();
+
+            if (!currentPostId) return;
+
+            const [dateKey] = currentPostId.split('_');
+            const post = marketingSchedule[dateKey]?.find(p => p.id === currentPostId);
+            if (!post) return;
+
+            const cadence = CADENCES[post.cadence];
+
+            // Show loading state
+            btn.disabled = true;
+            btnText.innerHTML = '<span class="spinner"></span> Generating...';
+
+            // Build prompt based on cadence type
+            let prompt = `Write a social media post for ${cadence?.name || 'SUITE'}.`;
+
+            if (post.cadence === 'x-posts') {
+                prompt = `Write a short, engaging X (Twitter) post for SUITE - an AI-native app ecosystem. Keep it under 280 characters. Be authentic, not corporate. Focus on building in public vibes.`;
+            } else if (post.cadence === 'app-highlights') {
+                prompt = `Write a short X post highlighting a SUITE app. SUITE has 29+ apps including HydroTrack, FocusFlow, QuickBudget, etc. Pick one and write an engaging feature highlight. Keep it casual and authentic.`;
+            } else if (post.cadence === 'ecosystem-updates') {
+                prompt = `Write a brief ecosystem update for SUITE. Mention progress, new features, or community growth. Keep it under 280 characters and authentic.`;
+            } else if (post.cadence === 'linkedin-posts') {
+                prompt = `Write a professional but authentic LinkedIn post about building SUITE, an AI-native app ecosystem. Focus on the journey, lessons learned, or technical achievements. 2-3 short paragraphs max.`;
+            }
+
+            if (context) {
+                prompt += ` Context for this post: ${context}`;
+            }
+
+            try {
+                // Use the existing Gemini API endpoint
+                const response = await fetch('/api/gemini', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        temperature: 0.8
+                    })
+                });
+
+                if (!response.ok) throw new Error('API error');
+
+                const data = await response.json();
+                const generatedText = data.text || data.response || '';
+
+                if (generatedText) {
+                    document.getElementById('postContentInput').value = generatedText;
+                }
+            } catch (err) {
+                console.error('[Marketing] AI generation error:', err);
+                // Fallback: generate a template
+                let fallback = '';
+                if (post.cadence === 'x-posts') {
+                    fallback = `🚀 Building in public update:\n\n${context || '[What did you ship today?]'}\n\n#buildinpublic #ai #suite`;
+                } else if (post.cadence === 'linkedin-posts') {
+                    fallback = `Building SUITE - Week Update\n\n${context || '[Share your progress]'}\n\nThe journey continues. 🚀`;
+                } else {
+                    fallback = `${context || 'Share your update here...'}`;
+                }
+                document.getElementById('postContentInput').value = fallback;
+            }
+
+            // Reset button
+            btn.disabled = false;
+            btnText.textContent = 'Generate Draft';
+        }
+
+        // Proposal System
+        function showProposeForm() {
+            document.getElementById('proposeForm').classList.add('active');
+            document.getElementById('proposeEditBtn').style.display = 'none';
+            document.getElementById('proposeTextarea').focus();
+        }
+
+        function hideProposeForm() {
+            document.getElementById('proposeForm').classList.remove('active');
+            document.getElementById('proposeEditBtn').style.display = 'block';
+            document.getElementById('proposeTextarea').value = '';
+        }
+
+        function submitProposal() {
+            if (!currentPostId) return;
+
+            const content = document.getElementById('proposeTextarea').value.trim();
+            if (!content) {
+                alert('Please write some content for your proposal.');
+                return;
+            }
+
+            // Get user info
+            const email = localStorage.getItem('user_email') || '';
+            const telegramUser = localStorage.getItem('telegram_user');
+            const telegram = telegramUser ? JSON.parse(telegramUser) : null;
+            const author = telegram?.username || email.split('@')[0] || 'Anonymous';
+
+            // Create proposal
+            if (!marketingProposals[currentPostId]) {
+                marketingProposals[currentPostId] = [];
+            }
+
+            marketingProposals[currentPostId].push({
+                id: Date.now().toString(),
+                content: content,
+                author: author,
+                upvotes: 0,
+                downvotes: 0,
+                voters: [],
+                timestamp: Date.now()
+            });
+
+            saveProposals();
+            renderProposals();
+            hideProposeForm();
+        }
+
+        function renderProposals() {
+            const container = document.getElementById('postProposalsList');
+            if (!currentPostId || !marketingProposals[currentPostId]?.length) {
+                container.innerHTML = '<p class="no-proposals">No proposals yet - be the first!</p>';
+                return;
+            }
+
+            const proposals = marketingProposals[currentPostId].sort((a, b) => (b.upvotes - b.downvotes) - (a.upvotes - a.downvotes));
+
+            container.innerHTML = proposals.map(p => `
+                <div class="proposal-card">
+                    <div class="proposal-header">
+                        <span class="proposal-author">@${p.author} • ${formatTimeAgo(p.timestamp)}</span>
+                        <div class="proposal-votes">
+                            <button class="proposal-vote-btn upvote" onclick="voteProposal('${p.id}', 'up')">
+                                👍 ${p.upvotes}
+                            </button>
+                            <button class="proposal-vote-btn downvote" onclick="voteProposal('${p.id}', 'down')">
+                                👎 ${p.downvotes}
+                            </button>
+                        </div>
+                    </div>
+                    <div class="proposal-content">${escapeHtml(p.content)}</div>
+                    <div class="proposal-actions">
+                        <button class="proposal-use-btn" onclick="useProposal('${p.id}')">📝 Use This</button>
+                        ${isMarketingAdmin() ? `<button class="proposal-use-btn" onclick="deleteProposal('${p.id}')">🗑️ Delete</button>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function voteProposal(proposalId, direction) {
+            if (!currentPostId || !marketingProposals[currentPostId]) return;
+
+            const proposal = marketingProposals[currentPostId].find(p => p.id === proposalId);
+            if (!proposal) return;
+
+            // Simple vote tracking (could use user ID in future)
+            const voterId = localStorage.getItem('user_email') || 'anon';
+            if (proposal.voters?.includes(voterId)) {
+                return; // Already voted
+            }
+
+            proposal.voters = proposal.voters || [];
+            proposal.voters.push(voterId);
+
+            if (direction === 'up') {
+                proposal.upvotes++;
+            } else {
+                proposal.downvotes++;
+            }
+
+            saveProposals();
+            renderProposals();
+        }
+
+        function useProposal(proposalId) {
+            if (!currentPostId || !marketingProposals[currentPostId]) return;
+
+            const proposal = marketingProposals[currentPostId].find(p => p.id === proposalId);
+            if (proposal) {
+                document.getElementById('postContentInput').value = proposal.content;
+            }
+        }
+
+        function deleteProposal(proposalId) {
+            if (!currentPostId || !marketingProposals[currentPostId] || !isMarketingAdmin()) return;
+
+            marketingProposals[currentPostId] = marketingProposals[currentPostId].filter(p => p.id !== proposalId);
+            saveProposals();
+            renderProposals();
+        }
+
+        function formatTimeAgo(timestamp) {
+            const diff = Date.now() - timestamp;
+            const mins = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+
+            if (mins < 1) return 'just now';
+            if (mins < 60) return `${mins}m ago`;
+            if (hours < 24) return `${hours}h ago`;
+            return `${days}d ago`;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ========== PHASE 3: API Publishing ==========
+
+        async function publishToX() {
+            if (!currentPostId || !isMarketingAdmin()) return;
+
+            const content = document.getElementById('postContentInput').value.trim();
+            if (!content) {
+                alert('No content to post!');
+                return;
+            }
+
+            const btn = document.getElementById('publishXBtn');
+            const statusEl = document.getElementById('publishStatus');
+
+            btn.disabled = true;
+            statusEl.textContent = 'Publishing to X...';
+            statusEl.className = 'publish-status';
+
+            try {
+                const response = await fetch('/api/post-to-x', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: content,
+                        postId: currentPostId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    statusEl.textContent = '✅ Posted to X successfully!';
+                    statusEl.className = 'publish-status success';
+
+                    // Update post status
+                    updatePostStatus('posted');
+
+                    // Store tweet ID
+                    const [dateKey] = currentPostId.split('_');
+                    const post = marketingSchedule[dateKey]?.find(p => p.id === currentPostId);
+                    if (post) {
+                        post.tweetId = data.tweetId;
+                        post.postedAt = Date.now();
+                        saveMarketingSchedule();
+                    }
+                } else {
+                    throw new Error(data.error || 'Failed to post');
+                }
+            } catch (err) {
+                console.error('[Marketing] X post error:', err);
+                statusEl.textContent = `❌ Error: ${err.message}`;
+                statusEl.className = 'publish-status error';
+            }
+
+            btn.disabled = false;
+        }
+
+        async function publishToLinkedIn() {
+            if (!currentPostId || !isMarketingAdmin()) return;
+
+            const content = document.getElementById('postContentInput').value.trim();
+            if (!content) {
+                alert('No content to post!');
+                return;
+            }
+
+            const btn = document.getElementById('publishLinkedInBtn');
+            const statusEl = document.getElementById('publishStatus');
+
+            btn.disabled = true;
+            statusEl.textContent = 'Publishing to LinkedIn...';
+            statusEl.className = 'publish-status';
+
+            try {
+                const response = await fetch('/api/post-to-linkedin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: content,
+                        postId: currentPostId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    statusEl.textContent = '✅ Posted to LinkedIn successfully!';
+                    statusEl.className = 'publish-status success';
+
+                    // Update post status
+                    updatePostStatus('posted');
+
+                    // Store post ID
+                    const [dateKey] = currentPostId.split('_');
+                    const post = marketingSchedule[dateKey]?.find(p => p.id === currentPostId);
+                    if (post) {
+                        post.linkedinId = data.postId;
+                        post.postedAt = Date.now();
+                        saveMarketingSchedule();
+                    }
+                } else {
+                    throw new Error(data.error || 'Failed to post');
+                }
+            } catch (err) {
+                console.error('[Marketing] LinkedIn post error:', err);
+                statusEl.textContent = `❌ Error: ${err.message}`;
+                statusEl.className = 'publish-status error';
+            }
+
+            btn.disabled = false;
+        }
+
+        // Load proposals on init
+        loadProposals();
 
         // Initialize when switching to marketing view
         function switchFactorySection(section) {
