@@ -36,14 +36,14 @@
     <!-- Open Graph -->
     <meta property="og:title" content="SuiteGPT | Your Personal App Concierge">
     <meta property="og:description" content="Tell us what you need. We'll find it, change it, or build it for you.">
-    <meta property="og:image" content="https://getsuite.app/assets/images/1200x630-getsuite.jpg">
-    <meta property="og:url" content="https://getsuite.app/suitegpt.html">
+    <meta property="og:image" content="https://suitegpt.app/assets/images/suitegpt-og.jpg">
+    <meta property="og:url" content="https://suitegpt.app">
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="SuiteGPT | Your Personal App Concierge">
     <meta name="twitter:description" content="Tell us what you need. We'll find it, change it, or build it for you. Real apps, not just answers.">
-    <meta name="twitter:image" content="https://getsuite.app/assets/images/1200x630-getsuite.jpg">
+    <meta name="twitter:image" content="https://suitegpt.app/assets/images/suitegpt-og.jpg">
 
     <!-- Structured Data - SoftwareApplication -->
     <script type="application/ld+json">
@@ -13384,32 +13384,55 @@
                                     <div class="marketing-header">
                                         <div class="marketing-header-left">
                                             <h3>📣 Marketing Operations</h3>
-                                            <p class="marketing-description">Active cadences define SUITE's marketing rhythm. View the logic, propose changes, or claim content tasks.</p>
+                                            <p class="marketing-description">Content schedule auto-generated from cadences. Click any post to edit or propose changes.</p>
                                         </div>
                                         <div class="marketing-header-right">
-                                            <button class="marketing-propose-btn" onclick="showProposeCadenceModal()">
-                                                + Propose Cadence
+                                            <button class="marketing-generate-btn" onclick="generateWeekSchedule()">
+                                                🔄 Generate Week
                                             </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Content Schedule (Interactive) -->
+                                    <div class="content-schedule-section">
+                                        <div class="schedule-header">
+                                            <h4 class="cadences-title">📅 Content Schedule</h4>
+                                            <div class="schedule-legend">
+                                                <span class="legend-item empty">Empty</span>
+                                                <span class="legend-item draft">Draft</span>
+                                                <span class="legend-item ready">Ready</span>
+                                                <span class="legend-item posted">Posted</span>
+                                            </div>
+                                        </div>
+                                        <div class="schedule-grid" id="scheduleGrid">
+                                            <!-- Will be populated by JS -->
                                         </div>
                                     </div>
 
                                     <!-- Active Cadences Grid -->
                                     <div class="cadences-section">
-                                        <h4 class="cadences-title">🔄 Active Cadences</h4>
+                                        <div class="cadences-header-row">
+                                            <h4 class="cadences-title">🔄 Active Cadences</h4>
+                                            <span class="admin-badge" id="adminBadge" style="display: none;">Admin Mode</span>
+                                        </div>
                                         <div class="cadences-grid" id="cadencesGrid">
                                             <!-- X Posts Cadence -->
-                                            <div class="cadence-card" data-cadence="x-posts">
+                                            <div class="cadence-card" data-cadence="x-posts" data-active="true">
                                                 <div class="cadence-header">
                                                     <div class="cadence-icon">𝕏</div>
                                                     <div class="cadence-meta">
                                                         <h5>X Posts</h5>
                                                         <span class="cadence-frequency">3× / day</span>
                                                     </div>
+                                                    <label class="cadence-toggle admin-only" style="display: none;">
+                                                        <input type="checkbox" checked onchange="toggleCadence('x-posts', this.checked)">
+                                                        <span class="toggle-slider"></span>
+                                                    </label>
                                                     <div class="cadence-status active">ACTIVE</div>
                                                 </div>
                                                 <div class="cadence-logic">
                                                     <div class="logic-label">Logic:</div>
-                                                    <p>Share building progress, celebrate shipped features, engage with AI/tech community. Mix of: progress updates (40%), feature highlights (30%), community engagement (30%). Authentic voice, no corporate speak.</p>
+                                                    <p>Share building progress, celebrate shipped features, engage with AI/tech community. Mix of: progress updates (40%), feature highlights (30%), community engagement (30%).</p>
                                                 </div>
                                                 <div class="cadence-schedule">
                                                     <span class="schedule-icon">⏰</span>
@@ -13417,23 +13440,26 @@
                                                 </div>
                                                 <div class="cadence-actions">
                                                     <button class="cadence-btn propose" onclick="proposeCadenceChange('x-posts')">Propose Change</button>
-                                                    <span class="cadence-votes">🗳️ 12 votes</span>
                                                 </div>
                                             </div>
 
-                                            <!-- App Highlights Cadence -->
-                                            <div class="cadence-card" data-cadence="app-highlights">
+                                            <!-- App Highlights -->
+                                            <div class="cadence-card" data-cadence="app-highlights" data-active="true">
                                                 <div class="cadence-header">
                                                     <div class="cadence-icon">📱</div>
                                                     <div class="cadence-meta">
                                                         <h5>App Highlights</h5>
                                                         <span class="cadence-frequency">1× / week</span>
                                                     </div>
+                                                    <label class="cadence-toggle admin-only" style="display: none;">
+                                                        <input type="checkbox" checked onchange="toggleCadence('app-highlights', this.checked)">
+                                                        <span class="toggle-slider"></span>
+                                                    </label>
                                                     <div class="cadence-status active">ACTIVE</div>
                                                 </div>
                                                 <div class="cadence-logic">
                                                     <div class="logic-label">Logic:</div>
-                                                    <p>Deep-dive feature on one SUITE app. Include: problem it solves, key features, screenshots/demo, user testimonials if available. Rotate through all 29+ apps. Sunday posts for weekend engagement.</p>
+                                                    <p>Deep-dive on one SUITE app. Problem it solves, key features, screenshots. Rotate through all 29+ apps. Sunday for weekend engagement.</p>
                                                 </div>
                                                 <div class="cadence-schedule">
                                                     <span class="schedule-icon">⏰</span>
@@ -13441,23 +13467,26 @@
                                                 </div>
                                                 <div class="cadence-actions">
                                                     <button class="cadence-btn propose" onclick="proposeCadenceChange('app-highlights')">Propose Change</button>
-                                                    <span class="cadence-votes">🗳️ 8 votes</span>
                                                 </div>
                                             </div>
 
-                                            <!-- Ecosystem Updates Cadence -->
-                                            <div class="cadence-card" data-cadence="ecosystem-updates">
+                                            <!-- Ecosystem Updates -->
+                                            <div class="cadence-card" data-cadence="ecosystem-updates" data-active="true">
                                                 <div class="cadence-header">
                                                     <div class="cadence-icon">🌐</div>
                                                     <div class="cadence-meta">
                                                         <h5>Ecosystem Updates</h5>
                                                         <span class="cadence-frequency">1× / day</span>
                                                     </div>
+                                                    <label class="cadence-toggle admin-only" style="display: none;">
+                                                        <input type="checkbox" checked onchange="toggleCadence('ecosystem-updates', this.checked)">
+                                                        <span class="toggle-slider"></span>
+                                                    </label>
                                                     <div class="cadence-status active">ACTIVE</div>
                                                 </div>
                                                 <div class="cadence-logic">
                                                     <div class="logic-label">Logic:</div>
-                                                    <p>Daily "build in public" update. What was shipped, metrics (users, apps, features), what's coming next. Transparent, data-driven. Use Fleet Stream screenshots when possible. Evening post for recap feel.</p>
+                                                    <p>Daily "build in public" recap. What shipped, metrics, what's next. Use Fleet Stream screenshots. Evening post.</p>
                                                 </div>
                                                 <div class="cadence-schedule">
                                                     <span class="schedule-icon">⏰</span>
@@ -13465,23 +13494,26 @@
                                                 </div>
                                                 <div class="cadence-actions">
                                                     <button class="cadence-btn propose" onclick="proposeCadenceChange('ecosystem-updates')">Propose Change</button>
-                                                    <span class="cadence-votes">🗳️ 15 votes</span>
                                                 </div>
                                             </div>
 
-                                            <!-- LinkedIn Thought Leadership -->
-                                            <div class="cadence-card" data-cadence="linkedin-posts">
+                                            <!-- LinkedIn -->
+                                            <div class="cadence-card" data-cadence="linkedin-posts" data-active="true">
                                                 <div class="cadence-header">
                                                     <div class="cadence-icon">💼</div>
                                                     <div class="cadence-meta">
-                                                        <h5>LinkedIn Thought Leadership</h5>
+                                                        <h5>LinkedIn</h5>
                                                         <span class="cadence-frequency">2× / week</span>
                                                     </div>
+                                                    <label class="cadence-toggle admin-only" style="display: none;">
+                                                        <input type="checkbox" checked onchange="toggleCadence('linkedin-posts', this.checked)">
+                                                        <span class="toggle-slider"></span>
+                                                    </label>
                                                     <div class="cadence-status active">ACTIVE</div>
                                                 </div>
                                                 <div class="cadence-logic">
                                                     <div class="logic-label">Logic:</div>
-                                                    <p>Long-form insights on AI development, building in public, startup lessons. Professional tone but still authentic. Target: AI/tech hiring managers, VCs, potential partners. Tue/Thu for max reach.</p>
+                                                    <p>Long-form AI insights, building in public, startup lessons. Professional but authentic. Tue/Thu for reach.</p>
                                                 </div>
                                                 <div class="cadence-schedule">
                                                     <span class="schedule-icon">⏰</span>
@@ -13489,157 +13521,68 @@
                                                 </div>
                                                 <div class="cadence-actions">
                                                     <button class="cadence-btn propose" onclick="proposeCadenceChange('linkedin-posts')">Propose Change</button>
-                                                    <span class="cadence-votes">🗳️ 6 votes</span>
-                                                </div>
-                                            </div>
-
-                                            <!-- Video Content -->
-                                            <div class="cadence-card" data-cadence="video-content">
-                                                <div class="cadence-header">
-                                                    <div class="cadence-icon">🎥</div>
-                                                    <div class="cadence-meta">
-                                                        <h5>Video Content</h5>
-                                                        <span class="cadence-frequency">1× / week</span>
-                                                    </div>
-                                                    <div class="cadence-status draft">DRAFT</div>
-                                                </div>
-                                                <div class="cadence-logic">
-                                                    <div class="logic-label">Logic:</div>
-                                                    <p>Short-form video (< 60s) showing: app demos, Fleet Stream in action, build sessions timelapse. Platform: X, LinkedIn, YouTube Shorts. Raw and authentic over polished.</p>
-                                                </div>
-                                                <div class="cadence-schedule">
-                                                    <span class="schedule-icon">⏰</span>
-                                                    <span>Fridays 2 PM EST</span>
-                                                </div>
-                                                <div class="cadence-actions">
-                                                    <button class="cadence-btn propose" onclick="proposeCadenceChange('video-content')">Propose Change</button>
-                                                    <span class="cadence-votes">🗳️ 3 votes</span>
-                                                </div>
-                                            </div>
-
-                                            <!-- Community Engagement -->
-                                            <div class="cadence-card" data-cadence="community-engagement">
-                                                <div class="cadence-header">
-                                                    <div class="cadence-icon">💬</div>
-                                                    <div class="cadence-meta">
-                                                        <h5>Community Engagement</h5>
-                                                        <span class="cadence-frequency">Ongoing</span>
-                                                    </div>
-                                                    <div class="cadence-status active">ACTIVE</div>
-                                                </div>
-                                                <div class="cadence-logic">
-                                                    <div class="logic-label">Logic:</div>
-                                                    <p>Reply to all mentions within 2 hours. Engage with AI/startup builders. Quote tweet interesting takes. DM outreach to potential collaborators (5/day). Be helpful, not salesy.</p>
-                                                </div>
-                                                <div class="cadence-schedule">
-                                                    <span class="schedule-icon">⏰</span>
-                                                    <span>9 AM - 9 PM EST active</span>
-                                                </div>
-                                                <div class="cadence-actions">
-                                                    <button class="cadence-btn propose" onclick="proposeCadenceChange('community-engagement')">Propose Change</button>
-                                                    <span class="cadence-votes">🗳️ 10 votes</span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
 
-                                    <!-- Proposed Cadence Changes -->
-                                    <div class="cadence-proposals-section">
-                                        <h4 class="cadences-title">📝 Proposed Changes</h4>
-                                        <div class="cadence-proposals" id="cadenceProposals">
-                                            <div class="proposal-card">
-                                                <div class="proposal-header">
-                                                    <span class="proposal-target">X Posts</span>
-                                                    <span class="proposal-type change">CHANGE</span>
+                            <!-- Post Detail Modal -->
+                            <div class="post-modal-overlay" id="postModalOverlay" onclick="closePostModal(event)">
+                                <div class="post-modal" onclick="event.stopPropagation()">
+                                    <div class="post-modal-header">
+                                        <div class="post-modal-title">
+                                            <span class="post-modal-icon" id="postModalIcon">𝕏</span>
+                                            <span id="postModalTitle">X Post</span>
+                                        </div>
+                                        <div class="post-modal-meta">
+                                            <span id="postModalDate">Mon Jan 28, 10:00 AM</span>
+                                            <select class="post-status-select admin-only" id="postStatusSelect" onchange="updatePostStatus(this.value)" style="display: none;">
+                                                <option value="empty">Empty</option>
+                                                <option value="draft">Draft</option>
+                                                <option value="ready">Ready</option>
+                                                <option value="posted">Posted</option>
+                                            </select>
+                                            <span class="post-status-badge" id="postStatusBadge">DRAFT</span>
+                                        </div>
+                                        <button class="post-modal-close" onclick="closePostModal()">×</button>
+                                    </div>
+                                    <div class="post-modal-body">
+                                        <div class="post-cadence-info">
+                                            <span class="post-cadence-label">Cadence:</span>
+                                            <span id="postCadenceName">X Posts (Progress Update)</span>
+                                        </div>
+                                        <div class="post-content-area">
+                                            <label>Content:</label>
+                                            <textarea class="post-content-input" id="postContentInput" placeholder="Write your post content here..."></textarea>
+                                        </div>
+                                        <div class="post-image-area">
+                                            <label>Image:</label>
+                                            <div class="post-image-upload" id="postImageUpload">
+                                                <input type="file" id="postImageInput" accept="image/*" onchange="handleImageUpload(this)" style="display: none;">
+                                                <div class="image-preview" id="imagePreview" style="display: none;">
+                                                    <img id="previewImg" src="">
+                                                    <button class="remove-image" onclick="removeImage()">×</button>
                                                 </div>
-                                                <div class="proposal-content">
-                                                    <p><strong>Proposal:</strong> Increase to 5x/day during product launches, with countdown posts and launch day threads.</p>
-                                                </div>
-                                                <div class="proposal-footer">
-                                                    <span class="proposal-author">by @operator123</span>
-                                                    <div class="proposal-voting">
-                                                        <button class="vote-btn up">👍 8</button>
-                                                        <button class="vote-btn down">👎 2</button>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div class="proposal-card">
-                                                <div class="proposal-header">
-                                                    <span class="proposal-target">NEW: Newsletter</span>
-                                                    <span class="proposal-type new">NEW</span>
-                                                </div>
-                                                <div class="proposal-content">
-                                                    <p><strong>Proposal:</strong> Weekly newsletter summarizing: apps shipped, top community contributions, metrics growth, upcoming features. Send Saturdays 10 AM.</p>
-                                                </div>
-                                                <div class="proposal-footer">
-                                                    <span class="proposal-author">by @builder_jane</span>
-                                                    <div class="proposal-voting">
-                                                        <button class="vote-btn up">👍 14</button>
-                                                        <button class="vote-btn down">👎 1</button>
-                                                    </div>
-                                                </div>
+                                                <button class="upload-btn" onclick="document.getElementById('postImageInput').click()">
+                                                    📎 Add Image
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
-
-                                    <!-- Content Calendar Preview -->
-                                    <div class="content-calendar-section">
-                                        <h4 class="cadences-title">📅 This Week's Content</h4>
-                                        <div class="calendar-week" id="contentCalendar">
-                                            <div class="calendar-day">
-                                                <div class="day-header">Mon</div>
-                                                <div class="day-content">
-                                                    <div class="content-item x">𝕏 Progress update</div>
-                                                    <div class="content-item x">𝕏 Feature highlight</div>
-                                                    <div class="content-item x">𝕏 Community post</div>
-                                                </div>
-                                            </div>
-                                            <div class="calendar-day">
-                                                <div class="day-header">Tue</div>
-                                                <div class="day-content">
-                                                    <div class="content-item linkedin">💼 AI insights</div>
-                                                    <div class="content-item x">𝕏 Progress</div>
-                                                    <div class="content-item ecosystem">🌐 Daily recap</div>
-                                                </div>
-                                            </div>
-                                            <div class="calendar-day">
-                                                <div class="day-header">Wed</div>
-                                                <div class="day-content">
-                                                    <div class="content-item x">𝕏 Progress update</div>
-                                                    <div class="content-item x">𝕏 Feature highlight</div>
-                                                    <div class="content-item ecosystem">🌐 Daily recap</div>
-                                                </div>
-                                            </div>
-                                            <div class="calendar-day">
-                                                <div class="day-header">Thu</div>
-                                                <div class="day-content">
-                                                    <div class="content-item linkedin">💼 Build in public</div>
-                                                    <div class="content-item x">𝕏 Progress</div>
-                                                    <div class="content-item ecosystem">🌐 Daily recap</div>
-                                                </div>
-                                            </div>
-                                            <div class="calendar-day">
-                                                <div class="day-header">Fri</div>
-                                                <div class="day-content">
-                                                    <div class="content-item video">🎥 Demo video</div>
-                                                    <div class="content-item x">𝕏 Weekend preview</div>
-                                                    <div class="content-item ecosystem">🌐 Week recap</div>
-                                                </div>
-                                            </div>
-                                            <div class="calendar-day weekend">
-                                                <div class="day-header">Sat</div>
-                                                <div class="day-content">
-                                                    <div class="content-item x light">𝕏 Light</div>
-                                                </div>
-                                            </div>
-                                            <div class="calendar-day weekend">
-                                                <div class="day-header">Sun</div>
-                                                <div class="day-content">
-                                                    <div class="content-item app-highlight">📱 App Highlight</div>
-                                                </div>
-                                            </div>
+                                    <div class="post-modal-actions">
+                                        <button class="post-action-btn secondary" onclick="closePostModal()">Cancel</button>
+                                        <button class="post-action-btn" onclick="savePostContent()">💾 Save</button>
+                                        <button class="post-action-btn copy" onclick="copyPostContent()">📋 Copy</button>
+                                        <button class="post-action-btn primary admin-only" onclick="markAsReady()" style="display: none;">✅ Mark Ready</button>
+                                    </div>
+                                    <div class="post-proposals-section">
+                                        <h5>💬 Proposed Edits</h5>
+                                        <div class="post-proposals-list" id="postProposalsList">
+                                            <p class="no-proposals">No edit proposals yet</p>
                                         </div>
+                                        <button class="propose-edit-btn" onclick="proposePostEdit()">+ Propose Edit</button>
                                     </div>
                                 </div>
                             </div>
