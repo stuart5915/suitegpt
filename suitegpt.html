@@ -15163,9 +15163,10 @@
                             <textarea
                                 class="quick-app-input"
                                 id="quickAppInput"
-                                placeholder="I want an app that..."
-                                rows="3"
+                                placeholder="Describe your app idea in detail... the more specific, the better the result!"
+                                rows="5"
                                 onkeydown="handleQuickAppKeydown(event)"
+                                oninput="this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 200) + 'px';"
                             ></textarea>
                         </div>
 
@@ -25397,22 +25398,28 @@ Be concise but helpful. Use markdown formatting.`;
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        prompt: `Generate ONE novel, creative app idea that doesn't exist yet. It should be useful, fun, or solve a real problem.
+                        prompt: `Generate ONE highly detailed, specific, and novel app idea that doesn't exist yet.
 
-EXISTING APPS TO AVOID (don't suggest similar ideas):
+EXISTING APPS TO AVOID (don't suggest anything similar):
 ${existingAppsList}
 
-Requirements:
-- Must be buildable as a single-page web app
-- Should be unique and interesting
-- Describe it in one short sentence (under 15 words)
-- Just output the idea, nothing else. No quotes, no explanation.
+Your idea must be:
+- Extremely specific and detailed (3-5 sentences minimum)
+- Include unique mechanics, features, or interactions
+- Describe exactly how it works, what the user sees, what happens when they interact
+- Novel and creative - something that would make someone say "wow, that's clever"
+- Buildable as a single-page web app
 
-Example format: A mood-based playlist generator that matches music to your current emotion
+BAD example (too vague): "A collaborative mood board app"
+BAD example (too generic): "A habit tracker with streaks"
 
-Your novel app idea:`,
+GOOD example: "A focus timer that grows a procedurally-generated pixel art tree while you work. Each 25-minute session adds branches and leaves in real-time. Different focus categories (deep work, meetings, creative) grow different tree species with unique visual styles. You can view your 'forest' of completed sessions over time, with stats showing your most productive hours and a satisfying animation when trees reach full growth."
+
+GOOD example: "A 'decision roulette' app where you input options you're torn between, then physically spin your phone (using device motion) to randomly select one. The wheel shows your options with satisfying physics, and after selection it shows a fun 'destiny has spoken' animation with confetti. It remembers past decisions so you can see if you followed through or chickened out."
+
+Now generate ONE highly detailed, novel app idea. Output ONLY the idea description, nothing else:`,
                         model: 'gemini-2.0-flash',
-                        generationConfig: { temperature: 1.0, maxOutputTokens: 100 }
+                        generationConfig: { temperature: 1.2, maxOutputTokens: 500 }
                     })
                 });
 
@@ -25431,13 +25438,11 @@ Your novel app idea:`,
                 console.error('Failed to generate idea:', error);
                 // Fallback to random creative ideas
                 const fallbackIdeas = [
-                    'A personal time capsule app where you write letters to your future self',
-                    'A decision spinner that helps you choose between options with fun animations',
-                    'A daily gratitude jar that collects and displays your grateful moments',
-                    'A focus timer that grows a virtual plant while you work',
-                    'A random act of kindness generator with local suggestions',
-                    'A dream journal with mood tracking and pattern analysis',
-                    'A micro-goals tracker that celebrates tiny daily wins'
+                    'A "time capsule" app where you write letters to your future self with a specific unlock date. When writing, you capture your current mood, a photo, and predictions about your future. The letter is sealed with a wax-seal animation and stored in a visual vault. On the unlock date, you get a notification and the letter dramatically unseals itself, showing a side-by-side of past-you vs present-you with your old predictions.',
+                    'A decision roulette where you input options you\'re torn between, then physically shake your phone (using device motion) to spin the wheel. The wheel has satisfying physics and momentum. After it lands, a dramatic "destiny has spoken" reveal with confetti. It tracks your decision history and shows if you actually followed through or chickened out.',
+                    'A focus timer that grows a procedurally-generated pixel art tree while you work. Each 25-minute session adds branches and leaves in real-time animation. Different focus categories (deep work, creative, admin) grow different tree species. View your forest of completed sessions over time with stats on your most productive hours.',
+                    'A "mood weather" journal where instead of writing, you set your emotional weather - sunny, cloudy, stormy, etc. with intensity sliders. Over time it builds a climate map of your emotional patterns. You can see weather fronts (mood changes), identify your emotional seasons, and get insights like "you tend to have emotional storms on Mondays."',
+                    'A micro-achievements app where you set tiny daily goals and when you complete them, you pull a slot machine lever for random celebration animations - confetti, fireworks, a tiny parade, applause. It tracks streaks but the random reward makes each completion exciting. Has a trophy case of your best streaks with ridiculous achievement names.'
                 ];
                 input.value = fallbackIdeas[Math.floor(Math.random() * fallbackIdeas.length)];
                 updateQuickAppBuildBtn();
