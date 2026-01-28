@@ -16022,7 +16022,18 @@
         let currentPostId = null;
         const isMarketingAdmin = () => {
             const email = localStorage.getItem('user_email') || '';
-            return email.includes('stuart') || email.includes('5915');
+            const wallet = localStorage.getItem('connectedWallet') || '';
+            const telegramUser = localStorage.getItem('telegram_user');
+            const telegram = telegramUser ? JSON.parse(telegramUser) : null;
+            const telegramUsername = telegram?.username || '';
+
+            // Stuart's accounts
+            const isAdmin = email.includes('stuart') ||
+                           email.includes('5915') ||
+                           telegramUsername.toLowerCase() === 'stuartdefi';
+
+            console.log('[Marketing] Admin check:', { email, wallet, telegramUsername, isAdmin });
+            return isAdmin;
         };
 
         // Cadence definitions
@@ -16034,11 +16045,14 @@
         };
 
         function initMarketingView() {
+            console.log('[Marketing] Initializing view...');
             loadMarketingSchedule();
             renderScheduleGrid();
+            console.log('[Marketing] Schedule rendered, posts:', Object.keys(marketingSchedule).length, 'days');
             if (isMarketingAdmin()) {
                 document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
-                document.getElementById('adminBadge').style.display = '';
+                const badge = document.getElementById('adminBadge');
+                if (badge) badge.style.display = '';
             }
         }
 
@@ -16092,7 +16106,8 @@
 
         function renderScheduleGrid() {
             const grid = document.getElementById('scheduleGrid');
-            if (!grid) return;
+            console.log('[Marketing] renderScheduleGrid - grid element:', grid);
+            if (!grid) { console.log('[Marketing] ERROR: scheduleGrid not found!'); return; }
 
             const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             const today = new Date();
@@ -16149,13 +16164,17 @@
         }
 
         function openPostModal(postId) {
+            console.log('[Marketing] openPostModal called with:', postId);
+            console.log('[Marketing] Full schedule:', marketingSchedule);
             currentPostId = postId;
             const parts = postId.split('_');
             const dateKey = parts[0];
+            console.log('[Marketing] Looking for dateKey:', dateKey);
             const posts = marketingSchedule[dateKey] || [];
+            console.log('[Marketing] Posts for date:', posts);
             const post = posts.find(p => p.id === postId);
 
-            if (!post) { console.log('Post not found:', postId, dateKey); return; }
+            if (!post) { console.log('[Marketing] Post not found:', postId, 'in', posts.map(p => p.id)); return; }
 
             const cadence = CADENCES[post.cadence];
             const date = new Date(dateKey + 'T' + post.time);
