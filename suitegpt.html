@@ -24233,11 +24233,63 @@ Be concise but helpful. Use markdown formatting.`;
             const choiceScreen = document.getElementById('builderChoiceScreen');
             const builderContent = document.getElementById('builderContent');
             const builderInputArea = document.querySelector('.builder-input-area');
+            const builderMessages = document.getElementById('builderMessages');
 
             // Hide choice screen, show builder content
             if (choiceScreen) choiceScreen.style.display = 'none';
             if (builderContent) builderContent.style.display = 'flex';
             if (builderInputArea) builderInputArea.style.display = 'block';
+
+            // Reset to Create mode welcome message
+            if (builderMessages) {
+                builderMessages.innerHTML = `
+                    <div class="builder-message assistant">
+                        <div class="builder-message-avatar">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                                <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/>
+                            </svg>
+                        </div>
+                        <div class="builder-message-content">
+                            <p class="builder-welcome-text">Welcome to SuiteGPT Builder. Tell me what you want to create, and I'll help you build it.</p>
+                            <div class="builder-starter-prompts">
+                                <button class="builder-starter-chip" onclick="useBuilderStarter('I want to build an app that')">
+                                    <span class="starter-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                            <path d="M12 8v8M8 12h8"/>
+                                        </svg>
+                                    </span>
+                                    Build an app
+                                </button>
+                                <button class="builder-starter-chip" onclick="useBuilderStarter('I need a tool that helps me')">
+                                    <span class="starter-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                            <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
+                                        </svg>
+                                    </span>
+                                    Create a tool
+                                </button>
+                                <button class="builder-starter-chip" onclick="useBuilderStarter('Modify an existing app:')">
+                                    <span class="starter-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                            <path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                                        </svg>
+                                    </span>
+                                    Modify an app
+                                </button>
+                                <button class="builder-starter-chip" onclick="useBuilderStarter('I have an idea:')">
+                                    <span class="starter-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                                        </svg>
+                                    </span>
+                                    Share an idea
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
 
             // Update URL
             history.pushState({ view: 'suitegptbuilder', mode: 'create' }, '', '/suitegptbuilder/create');
