@@ -757,6 +757,20 @@ Target audience: Homeowners looking for unique, handcrafted furniture pieces.
 
         // Check login on load
         document.addEventListener('DOMContentLoaded', () => {
+            // Check if authenticated via parent (Google OAuth)
+            const urlParams = new URLSearchParams(window.location.search);
+            const isAuthed = urlParams.get('authed') === 'true';
+            const email = urlParams.get('email');
+
+            if (isAuthed && email) {
+                // Authenticated via Google OAuth from parent
+                localStorage.setItem('galtwood_token', 'google_' + Date.now());
+                localStorage.setItem('galtwood_email', email);
+                showDashboard();
+                return;
+            }
+
+            // Check for existing token
             const token = localStorage.getItem('galtwood_token');
             if (token) {
                 showDashboard();
@@ -767,8 +781,7 @@ Target audience: Homeowners looking for unique, handcrafted furniture pieces.
             const password = document.getElementById('loginPassword').value;
             const errorEl = document.getElementById('loginError');
 
-            // Simple password check (in production, use proper auth)
-            // For now, accept 'galtwood2026' or check against env var via API
+            // Simple password check as fallback
             if (password === 'galtwood2026') {
                 localStorage.setItem('galtwood_token', 'galtwood_' + Date.now());
                 showDashboard();

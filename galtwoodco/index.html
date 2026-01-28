@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galtwood Co</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f0f0f;
+            --bg-card: #1a1a1a;
+            --accent: #c9a66b;
+            --accent-hover: #d4b67a;
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        /* Tab Bar */
+        .tab-bar {
+            display: flex;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 0 12px;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            color: var(--accent);
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--accent);
+        }
+
+        .tab-icon {
+            margin-right: 8px;
+        }
+
+        /* Dashboard badge for restricted access */
+        .tab .badge {
+            margin-left: 6px;
+            padding: 2px 6px;
+            background: rgba(201, 166, 107, 0.2);
+            color: var(--accent);
+            font-size: 10px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        /* Content Area */
+        .tab-content {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tab-panel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        .tab-panel iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Dashboard Auth Gate */
+        .auth-gate {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .auth-gate-logo {
+            font-size: 3rem;
+            margin-bottom: 24px;
+        }
+
+        .auth-gate h2 {
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+        }
+
+        .auth-gate p {
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            max-width: 400px;
+        }
+
+        .google-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 28px;
+            background: #fff;
+            color: #333;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .google-btn:hover {
+            background: #f5f5f5;
+            transform: translateY(-1px);
+        }
+
+        .google-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .auth-error {
+            margin-top: 16px;
+            color: #ef4444;
+            font-size: 14px;
+            display: none;
+        }
+
+        /* Dashboard Content (when authenticated) */
+        .dashboard-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="tab-bar">
+            <button class="tab active" data-tab="website" onclick="switchTab('website')">
+                <span class="tab-icon">🌐</span>Website
+            </button>
+            <button class="tab" data-tab="dashboard" onclick="switchTab('dashboard')">
+                <span class="tab-icon">📊</span>Dashboard
+                <span class="badge">Admin</span>
+            </button>
+        </div>
+
+        <div class="tab-content">
+            <!-- Website Tab -->
+            <div class="tab-panel active" id="panelWebsite">
+                <iframe src="https://www.galtwoodco.com/" title="Galtwood Co Website"></iframe>
+            </div>
+
+            <!-- Dashboard Tab -->
+            <div class="tab-panel" id="panelDashboard">
+                <!-- Auth Gate (shown when not logged in) -->
+                <div class="auth-gate" id="authGate">
+                    <div class="auth-gate-logo">🪵</div>
+                    <h2>Galtwood Co Dashboard</h2>
+                    <p>Sign in with your authorized Google account to access the marketing dashboard.</p>
+                    <button class="google-btn" onclick="signInWithGoogle()">
+                        <svg viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                        </svg>
+                        Sign in with Google
+                    </button>
+                    <p class="auth-error" id="authError">Access denied. Your email is not authorized.</p>
+                </div>
+
+                <!-- Dashboard (shown when authenticated) -->
+                <iframe class="dashboard-frame" id="dashboardFrame" src="" style="display: none;"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supabase Auth -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script>
+        // Config
+        const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
+
+        // Allowed emails (whitelist)
+        const ALLOWED_EMAILS = [
+            'stuart5915@gmail.com'
+        ];
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentUser = null;
+
+        // Check auth on load
+        async function checkAuth() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user) {
+                handleAuthSuccess(session.user);
+            }
+        }
+
+        // Sign in with Google
+        async function signInWithGoogle() {
+            const { data, error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.href
+                }
+            });
+
+            if (error) {
+                console.error('Auth error:', error);
+                showAuthError('Sign in failed. Please try again.');
+            }
+        }
+
+        // Handle successful auth
+        function handleAuthSuccess(user) {
+            const email = user.email?.toLowerCase();
+
+            // Check if email is in whitelist
+            if (ALLOWED_EMAILS.map(e => e.toLowerCase()).includes(email)) {
+                currentUser = user;
+                document.getElementById('authGate').style.display = 'none';
+                const frame = document.getElementById('dashboardFrame');
+                frame.src = '/galtwoodco/dashboard/index.html?authed=true&email=' + encodeURIComponent(email);
+                frame.style.display = 'block';
+            } else {
+                // Not authorized
+                showAuthError('Access denied. Your email (' + email + ') is not authorized.');
+                supabase.auth.signOut();
+            }
+        }
+
+        function showAuthError(message) {
+            const errorEl = document.getElementById('authError');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+        }
+
+        // Tab switching
+        function switchTab(tab) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.tab === tab);
+            });
+
+            // Update panels
+            document.querySelectorAll('.tab-panel').forEach(p => {
+                p.classList.remove('active');
+            });
+            document.getElementById('panel' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+        }
+
+        // Listen for auth state changes
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' && session?.user) {
+                handleAuthSuccess(session.user);
+            }
+        });
+
+        // Check auth on load
+        checkAuth();
+    </script>
+</body>
+</html>
