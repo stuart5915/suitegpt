@@ -226,8 +226,27 @@
         </div>
     </div>
 
-    <!-- Tab switching (no dependencies) -->
+    <!-- Tab switching and early auth check (no dependencies) -->
     <script>
+        // Allowed emails whitelist
+        const ALLOWED_EMAILS = ['stuart5915@gmail.com'];
+
+        // Check localStorage immediately for suitegpt auth
+        function checkLocalStorageAuth() {
+            const suiteEmail = localStorage.getItem('user_email');
+            console.log('[GaltwoodAuth] localStorage user_email:', suiteEmail);
+
+            if (suiteEmail && ALLOWED_EMAILS.map(e => e.toLowerCase()).includes(suiteEmail.toLowerCase())) {
+                console.log('[GaltwoodAuth] Email is whitelisted, showing dashboard');
+                document.getElementById('authGate').style.display = 'none';
+                const frame = document.getElementById('dashboardFrame');
+                frame.src = '/galtwoodco/dashboard/index.html?authed=true&email=' + encodeURIComponent(suiteEmail);
+                frame.style.display = 'block';
+                return true;
+            }
+            return false;
+        }
+
         function switchTab(tab) {
             document.querySelectorAll('.tab').forEach(t => {
                 t.classList.toggle('active', t.dataset.tab === tab);
@@ -237,11 +256,17 @@
             });
             document.getElementById('panel' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
 
-            // Re-check auth when switching to dashboard
-            if (tab === 'dashboard' && typeof checkAuth === 'function') {
-                checkAuth();
+            // Check auth when switching to dashboard
+            if (tab === 'dashboard') {
+                checkLocalStorageAuth();
             }
         }
+
+        // Run auth check when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('[GaltwoodAuth] DOM ready, checking auth...');
+            checkLocalStorageAuth();
+        });
     </script>
 
     <!-- Supabase Auth -->
@@ -251,10 +276,7 @@
         const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
 
-        // Allowed emails (whitelist)
-        const ALLOWED_EMAILS = [
-            'stuart5915@gmail.com'
-        ];
+        // ALLOWED_EMAILS defined in earlier script block
 
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
