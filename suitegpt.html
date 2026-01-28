@@ -10488,6 +10488,230 @@
             font-style: italic;
         }
 
+        /* Proposal Split View */
+        .proposal-split-view {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+        }
+
+        .proposal-app-preview {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #000;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .proposal-app-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.5);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .proposal-app-header-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .proposal-app-header-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .proposal-app-header-info {
+            flex: 1;
+        }
+
+        .proposal-app-header-name {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .proposal-app-header-hint {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+        }
+
+        .proposal-app-iframe-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .proposal-app-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #0a0a12;
+        }
+
+        .proposal-chat-panel {
+            width: 400px;
+            display: flex;
+            flex-direction: column;
+            background: rgba(10, 10, 18, 0.95);
+        }
+
+        .proposal-chat-header {
+            padding: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .proposal-chat-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .proposal-chat-subtitle {
+            font-size: 0.8rem;
+            color: var(--text-tertiary);
+            margin-top: 4px;
+        }
+
+        .proposal-chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .proposal-chat-input-area {
+            padding: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .proposal-chat-input-wrapper {
+            display: flex;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 8px 12px;
+        }
+
+        .proposal-chat-input {
+            flex: 1;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            outline: none;
+            resize: none;
+            min-height: 24px;
+            max-height: 120px;
+        }
+
+        .proposal-chat-input::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .proposal-chat-send {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .proposal-chat-send:hover {
+            transform: scale(1.05);
+        }
+
+        .proposal-message {
+            margin-bottom: 16px;
+        }
+
+        .proposal-message.user {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .proposal-message.user .proposal-message-content {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border-radius: 16px 16px 4px 16px;
+            padding: 10px 14px;
+            max-width: 85%;
+        }
+
+        .proposal-message.assistant .proposal-message-content {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px 16px 16px 4px;
+            padding: 10px 14px;
+            color: var(--text-secondary);
+        }
+
+        @media (max-width: 900px) {
+            .proposal-split-view {
+                flex-direction: column;
+            }
+
+            .proposal-app-preview {
+                flex: none;
+                height: 50%;
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .proposal-chat-panel {
+                width: 100%;
+                flex: 1;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .proposal-app-preview {
+                height: 40%;
+            }
+
+            .proposal-chat-panel {
+                flex: 1;
+            }
+        }
+
+        .typing-dots {
+            display: inline-flex;
+            gap: 2px;
+        }
+
+        .typing-dots span {
+            animation: typingBounce 1.4s infinite;
+            font-size: 1.2rem;
+            line-height: 1;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingBounce {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-4px); opacity: 1; }
+        }
+
         /* Animated Background Orbs */
         .builder-bg-effects {
             position: absolute;
@@ -21683,36 +21907,181 @@
             });
         }
 
+        let proposalMessages = [];
+
         function selectProposalApp(appKey, appName) {
             proposalSelectedApp = { key: appKey, name: appName };
+            proposalMessages = [];
 
-            // Update the chat to show selected app and start consultative dialog
-            const builderMessages = document.getElementById('builderMessages');
-            if (builderMessages) {
-                builderMessages.innerHTML = `
-                    <div class="builder-message assistant">
-                        <div class="builder-message-avatar">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-                                <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/>
-                            </svg>
-                        </div>
-                        <div class="builder-message-content">
-                            <div class="proposal-selected-app">
-                                <span class="proposal-selected-label">Proposing changes for:</span>
-                                <span class="proposal-selected-name">${appName}</span>
-                            </div>
-                            <p class="builder-welcome-text">Great! Tell me what changes or improvements you'd like to propose for ${appName}. I'll help you refine your ideas into a clear proposal.</p>
-                            <p class="builder-hint-text">Think about: What problem does this solve? What would it look like? Who benefits?</p>
-                        </div>
-                    </div>
-                `;
+            // Get app info
+            const app = SUITE_APPS[appKey];
+            if (!app) return;
+
+            // Hide the regular builder content
+            const builderContent = document.getElementById('builderContent');
+            const builderInputArea = document.querySelector('.builder-input-area');
+            if (builderContent) builderContent.style.display = 'none';
+            if (builderInputArea) builderInputArea.style.display = 'none';
+
+            // Create or get split view container
+            let splitView = document.getElementById('proposalSplitView');
+            if (!splitView) {
+                splitView = document.createElement('div');
+                splitView.id = 'proposalSplitView';
+                splitView.className = 'proposal-split-view';
+                document.getElementById('builderMode').appendChild(splitView);
             }
 
-            // Update input placeholder
-            const builderInput = document.getElementById('builderInput');
-            if (builderInput) {
-                builderInput.placeholder = `What would you like to change about ${appName}?`;
-                builderInput.focus();
+            // Build the split view HTML
+            splitView.innerHTML = `
+                <div class="proposal-app-preview">
+                    <div class="proposal-app-header">
+                        <button onclick="exitProposalSplitView()" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 8px; margin: -8px; margin-right: 4px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                                <path d="M19 12H5M12 19l-7-7 7-7"/>
+                            </svg>
+                        </button>
+                        <div class="proposal-app-header-icon" style="background: ${app.iconBg || 'var(--bg-card)'}">
+                            ${app.iconUrl ? `<img src="${app.iconUrl}" alt="${app.name}">` : ''}
+                        </div>
+                        <div class="proposal-app-header-info">
+                            <div class="proposal-app-header-name">${app.name}</div>
+                            <div class="proposal-app-header-hint">Click around to explore, then describe your changes</div>
+                        </div>
+                    </div>
+                    <div class="proposal-app-iframe-container">
+                        <iframe class="proposal-app-iframe" src="${app.url}" id="proposalAppFrame"></iframe>
+                    </div>
+                </div>
+                <div class="proposal-chat-panel">
+                    <div class="proposal-chat-header">
+                        <h3 class="proposal-chat-title">Proposal for ${app.name}</h3>
+                        <p class="proposal-chat-subtitle">Describe what you'd like to change or improve</p>
+                    </div>
+                    <div class="proposal-chat-messages" id="proposalChatMessages">
+                        <div class="proposal-message assistant">
+                            <div class="proposal-message-content">
+                                <strong>What would you like to change about ${app.name}?</strong><br><br>
+                                Explore the app on the left, then tell me your ideas. Think about:
+                                <ul style="margin: 8px 0 0 16px; color: var(--text-tertiary);">
+                                    <li>What problem does this solve?</li>
+                                    <li>What would it look like?</li>
+                                    <li>Who benefits from this change?</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="proposal-chat-input-area">
+                        <div class="proposal-chat-input-wrapper">
+                            <textarea class="proposal-chat-input" id="proposalChatInput" placeholder="Describe your proposed change..." rows="1" onkeydown="handleProposalInputKeydown(event)"></textarea>
+                            <button class="proposal-chat-send" onclick="sendProposalMessage()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            splitView.style.display = 'flex';
+
+            // Focus input
+            setTimeout(() => {
+                const input = document.getElementById('proposalChatInput');
+                if (input) input.focus();
+            }, 100);
+        }
+
+        function exitProposalSplitView() {
+            const splitView = document.getElementById('proposalSplitView');
+            if (splitView) splitView.style.display = 'none';
+
+            // Go back to proposal mode app selection
+            enterBuilderProposalMode();
+        }
+
+        function handleProposalInputKeydown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendProposalMessage();
+            }
+        }
+
+        async function sendProposalMessage() {
+            const input = document.getElementById('proposalChatInput');
+            const messagesContainer = document.getElementById('proposalChatMessages');
+            if (!input || !messagesContainer) return;
+
+            const text = input.value.trim();
+            if (!text) return;
+
+            // Add user message
+            proposalMessages.push({ role: 'user', content: text });
+            messagesContainer.innerHTML += `
+                <div class="proposal-message user">
+                    <div class="proposal-message-content">${text}</div>
+                </div>
+            `;
+            input.value = '';
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            // Show typing indicator
+            const typingId = 'proposal-typing-' + Date.now();
+            messagesContainer.innerHTML += `
+                <div class="proposal-message assistant" id="${typingId}">
+                    <div class="proposal-message-content">
+                        <span class="typing-dots"><span>.</span><span>.</span><span>.</span></span>
+                    </div>
+                </div>
+            `;
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            try {
+                // Call AI to help refine the proposal
+                const systemPrompt = `You are helping a user create a proposal for changes to the app "${proposalSelectedApp.name}".
+                Help them clarify and refine their ideas. Ask follow-up questions if needed.
+                Keep responses concise (2-3 sentences max).
+                When they've described enough, offer to summarize into a formal proposal.`;
+
+                const response = await fetch('/api/gemini', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'gemini-2.0-flash',
+                        systemInstruction: systemPrompt,
+                        contents: proposalMessages.map(m => ({
+                            role: m.role === 'assistant' ? 'model' : 'user',
+                            parts: [{ text: m.content }]
+                        }))
+                    })
+                });
+
+                const data = await response.json();
+                const aiText = data.text || 'I understand. Can you tell me more about what you have in mind?';
+
+                // Remove typing indicator and add response
+                const typingEl = document.getElementById(typingId);
+                if (typingEl) typingEl.remove();
+
+                proposalMessages.push({ role: 'assistant', content: aiText });
+                messagesContainer.innerHTML += `
+                    <div class="proposal-message assistant">
+                        <div class="proposal-message-content">${aiText}</div>
+                    </div>
+                `;
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            } catch (error) {
+                console.error('Proposal chat error:', error);
+                const typingEl = document.getElementById(typingId);
+                if (typingEl) typingEl.remove();
+
+                messagesContainer.innerHTML += `
+                    <div class="proposal-message assistant">
+                        <div class="proposal-message-content">I understand your idea. Keep describing what you'd like to change!</div>
+                    </div>
+                `;
             }
         }
 
