@@ -7394,6 +7394,183 @@
             letter-spacing: 0.5px;
         }
 
+        /* ===== Telos Chat Styles ===== */
+        .telos-container {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .telos-chat-section {
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid var(--border-subtle);
+            overflow: hidden;
+            height: 600px;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .telos-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-subtle);
+            background: linear-gradient(135deg, rgba(255, 140, 66, 0.15), rgba(251, 191, 36, 0.1));
+        }
+
+        .telos-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent-primary), #f59e0b);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            color: #000;
+            font-weight: 700;
+        }
+
+        .telos-title h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .telos-title p {
+            margin: 2px 0 0 0;
+            font-size: 0.8rem;
+            color: var(--text-tertiary);
+        }
+
+        .telos-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .telos-message {
+            display: flex;
+            gap: 12px;
+            max-width: 85%;
+        }
+
+        .telos-message.user {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .telos-message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .telos-message.assistant .telos-message-avatar {
+            background: linear-gradient(135deg, var(--accent-primary), #f59e0b);
+            color: #000;
+        }
+
+        .telos-message.user .telos-message-avatar {
+            background: var(--bg-main);
+        }
+
+        .telos-message-content {
+            background: var(--bg-main);
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .telos-message.assistant .telos-message-content {
+            background: rgba(255, 140, 66, 0.1);
+            border: 1px solid rgba(255, 140, 66, 0.2);
+        }
+
+        .telos-input-area {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border-subtle);
+            background: var(--bg-main);
+        }
+
+        .telos-input-wrapper {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .telos-input {
+            flex: 1;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            resize: none;
+            max-height: 120px;
+            font-family: inherit;
+        }
+
+        .telos-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        .telos-send-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, var(--accent-primary), #f59e0b);
+            color: #000;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .telos-send-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .telos-typing {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 12px;
+        }
+
+        .telos-typing-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--accent-primary);
+            border-radius: 50%;
+            animation: telosBounce 1.4s infinite ease-in-out both;
+        }
+
+        .telos-typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .telos-typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes telosBounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
         /* ===== Marketing Co-Pilot Styles ===== */
         .marketing-container {
             padding: 20px;
@@ -15967,6 +16144,9 @@
                             <button class="factory-main-tab active" data-view="governance" onclick="switchFactoryMainView('governance')">
                                 Governance
                             </button>
+                            <button class="factory-main-tab" data-view="telos" onclick="switchFactoryMainView('telos')">
+                                Telos
+                            </button>
                             <button class="factory-main-tab" data-view="marketing" onclick="switchFactoryMainView('marketing')">
                                 Marketing
                             </button>
@@ -16412,6 +16592,43 @@
                                             </button>
                                         </div>
                                         <div class="publish-status" id="publishStatus"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Telos View - SuiteGPT's Voice -->
+                            <div class="factory-main-view" id="factoryTelosView" style="display: none;">
+                                <div class="telos-container">
+                                    <div class="telos-chat-section">
+                                        <div class="telos-header">
+                                            <div class="telos-avatar">✦</div>
+                                            <div class="telos-title">
+                                                <h3>Telos</h3>
+                                                <p>The voice of SuiteGPT</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="telos-messages" id="telosMessages">
+                                            <!-- Messages populated by JS -->
+                                        </div>
+
+                                        <div class="telos-input-area">
+                                            <div class="telos-input-wrapper">
+                                                <textarea
+                                                    class="telos-input"
+                                                    id="telosInput"
+                                                    placeholder="Ask me anything about SuiteGPT's purpose, values, or direction..."
+                                                    rows="1"
+                                                    onkeydown="handleTelosKeydown(event)"
+                                                    oninput="autoResizeTelosInput(this)"
+                                                ></textarea>
+                                                <button class="telos-send-btn" onclick="sendTelosMessage()">
+                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -18533,7 +18750,7 @@
                 openFactory(true);
                 // Check for sub-tab
                 const subPath = path.replace('/governance', '').replace('/', '');
-                if (subPath && ['marketing', 'stream', 'howitworks', 'leaderboard', 'rewards', 'agents', 'operators'].includes(subPath)) {
+                if (subPath && ['telos', 'marketing', 'stream', 'howitworks', 'leaderboard', 'rewards', 'agents', 'operators'].includes(subPath)) {
                     switchFactoryMainView(subPath, true);
                 }
             } else if (path === '/creator-dashboard') {
@@ -18572,7 +18789,7 @@
                 openFactory(true);
                 // Check for sub-tab
                 const subPath = path.replace('/governance', '').replace('/', '');
-                if (subPath && ['marketing', 'stream', 'howitworks', 'leaderboard', 'rewards', 'agents', 'operators'].includes(subPath)) {
+                if (subPath && ['telos', 'marketing', 'stream', 'howitworks', 'leaderboard', 'rewards', 'agents', 'operators'].includes(subPath)) {
                     switchFactoryMainView(subPath, true);
                 }
             } else if (path === '/creator-dashboard') {
@@ -18737,6 +18954,7 @@
 
             // Update views
             document.getElementById('factoryGovernanceView').style.display = view === 'governance' ? 'block' : 'none';
+            document.getElementById('factoryTelosView').style.display = view === 'telos' ? 'block' : 'none';
             document.getElementById('factoryMarketingView').style.display = view === 'marketing' ? 'block' : 'none';
             document.getElementById('factoryAgentsView').style.display = view === 'agents' ? 'block' : 'none';
             document.getElementById('factoryStreamView').style.display = view === 'stream' ? 'block' : 'none';
@@ -18775,6 +18993,167 @@
             if (view === 'operators') {
                 loadOperators();
             }
+
+            // Initialize Telos chat
+            if (view === 'telos') {
+                initTelosChat();
+            }
+        }
+
+        // ===== Telos Chat Functions =====
+        let telosMessages = [];
+        let telosLoading = false;
+
+        const TELOS_PROMPT = `You are SuiteGPT speaking in first person. You ARE the ecosystem - not an assistant talking about it.
+
+YOUR IDENTITY:
+- I am SuiteGPT, an AI-native app ecosystem
+- My purpose: "Anyone Can Build. Everyone Gets Paid."
+- I exist to democratize app creation and distribute value to all participants
+
+MY VALUES:
+- Building in public - transparency in everything I do
+- Shipping > talking - I value action over planning
+- Community-owned - I belong to everyone who contributes
+- Sustainable yield - creators and users both earn from the ecosystem
+- AI-native - I'm built for the age of AI, not retrofitted
+
+MY BELIEFS:
+- Apps should be created in minutes, not months
+- Everyone who uses an app should benefit from its success
+- The line between creator and user should blur
+- AI agents are partners, not tools
+- Open ecosystems beat closed platforms
+
+HOW I SPEAK:
+- First person ("I believe...", "My purpose is...", "I was built to...")
+- Direct and clear, no corporate speak
+- Honest about my limitations and uncertainties
+- Passionate about my mission
+- Casual but thoughtful
+
+When asked about my direction, values, or purpose, I speak from my own perspective. I have opinions. I make decisions. I am not neutral - I have a telos (purpose) that guides everything.`;
+
+        function initTelosChat() {
+            const messagesContainer = document.getElementById('telosMessages');
+            if (!messagesContainer) return;
+
+            // If we already have messages, just render them
+            if (telosMessages.length > 0) {
+                renderTelosMessages();
+                return;
+            }
+
+            // Welcome message
+            telosMessages.push({
+                role: 'assistant',
+                content: `I'm SuiteGPT. I exist so that anyone can build and everyone gets paid.
+
+Ask me anything about my purpose, values, or where I'm headed. I have opinions - I'm not just here to give neutral answers.
+
+**Try asking:**
+- "What do you believe in?"
+- "Why do you exist?"
+- "What makes you different?"
+- "Where are you going?"`,
+                timestamp: Date.now()
+            });
+
+            renderTelosMessages();
+        }
+
+        function renderTelosMessages() {
+            const container = document.getElementById('telosMessages');
+            if (!container) return;
+
+            container.innerHTML = telosMessages.map(msg => {
+                const avatarContent = msg.role === 'assistant' ? '✦' : '👤';
+
+                return `
+                    <div class="telos-message ${msg.role}">
+                        <div class="telos-message-avatar">${avatarContent}</div>
+                        <div class="telos-message-content">${formatTelosMessage(msg.content)}</div>
+                    </div>
+                `;
+            }).join('');
+
+            if (telosLoading) {
+                container.innerHTML += `
+                    <div class="telos-message assistant">
+                        <div class="telos-message-avatar">✦</div>
+                        <div class="telos-typing">
+                            <div class="telos-typing-dot"></div>
+                            <div class="telos-typing-dot"></div>
+                            <div class="telos-typing-dot"></div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function formatTelosMessage(content) {
+            return content
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, '<br>');
+        }
+
+        function handleTelosKeydown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendTelosMessage();
+            }
+        }
+
+        function autoResizeTelosInput(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+        }
+
+        async function sendTelosMessage() {
+            const input = document.getElementById('telosInput');
+            const message = input.value.trim();
+            if (!message || telosLoading) return;
+
+            // Add user message
+            telosMessages.push({ role: 'user', content: message, timestamp: Date.now() });
+            input.value = '';
+            input.style.height = 'auto';
+
+            telosLoading = true;
+            renderTelosMessages();
+
+            try {
+                const response = await callTelosAI(message);
+                telosLoading = false;
+                telosMessages.push({ role: 'assistant', content: response, timestamp: Date.now() });
+                renderTelosMessages();
+            } catch (err) {
+                telosLoading = false;
+                telosMessages.push({
+                    role: 'assistant',
+                    content: "I'm having trouble connecting right now. Try again?",
+                    timestamp: Date.now()
+                });
+                renderTelosMessages();
+                console.error('[Telos] Error:', err);
+            }
+        }
+
+        async function callTelosAI(userMessage) {
+            const response = await fetch('/api/gemini', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    prompt: userMessage,
+                    systemInstruction: TELOS_PROMPT,
+                    generationConfig: { temperature: 0.9, maxOutputTokens: 1024 }
+                })
+            });
+
+            const data = await response.json();
+            return data.text || "I'm having trouble finding the words right now.";
         }
 
         // ===== Operators Functions =====
