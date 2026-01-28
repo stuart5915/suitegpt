@@ -18170,7 +18170,11 @@
                 return;
             }
 
-            container.innerHTML = filtered.map(op => `
+            container.innerHTML = filtered.map(op => {
+                // Check if operator has a linked SUITE app
+                const linkedApp = op.app_key && SUITE_APPS[op.app_key] ? SUITE_APPS[op.app_key] : null;
+
+                return `
                 <div class="operator-card" data-id="${op.id}">
                     <div class="operator-card-header">
                         <div class="operator-info">
@@ -18182,7 +18186,8 @@
 
                     <div class="operator-meta">
                         ${op.email ? `<div class="operator-meta-item">📧 ${escapeHtml(op.email)}</div>` : ''}
-                        ${op.url ? `<div class="operator-meta-item">🔗 <a href="${escapeHtml(op.url)}" target="_blank">${new URL(op.url).hostname}</a></div>` : ''}
+                        ${linkedApp ? `<div class="operator-meta-item">📱 <a href="#" onclick="launchApp('${op.app_key}', '${linkedApp.url}', '${linkedApp.name}'); return false;" class="operator-app-link">${linkedApp.name} App</a></div>` : ''}
+                        ${op.url && !linkedApp ? `<div class="operator-meta-item">🔗 <a href="${escapeHtml(op.url)}" target="_blank">${new URL(op.url).hostname}</a></div>` : ''}
                         <div class="operator-meta-item">📅 Added ${formatDate(op.created_at)}</div>
                     </div>
 
@@ -18194,12 +18199,13 @@
                     ` : ''}
 
                     <div class="operator-card-actions">
+                        ${linkedApp ? `<button class="operator-action-btn operator-action-primary" onclick="launchApp('${op.app_key}', '${linkedApp.url}', '${linkedApp.name}')">📱 Open App</button>` : ''}
                         <button class="operator-action-btn" onclick="editOperator('${op.id}')">Edit</button>
                         <button class="operator-action-btn" onclick="updateOperatorStatus('${op.id}')">Update Status</button>
                         <button class="operator-action-btn" onclick="deleteOperator('${op.id}')">Delete</button>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         function formatOperatorStatus(status) {
