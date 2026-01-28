@@ -7686,11 +7686,20 @@
 
         /* Content Calendar */
         .content-calendar {
-            margin-top: 16px;
+            margin: 16px auto 0;
+            max-width: 1200px;
+            max-height: 900px;
             background: var(--bg-card);
             border-radius: 16px;
             border: 1px solid var(--border-subtle);
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .calendar-view {
+            flex: 1;
+            overflow-y: auto;
         }
 
         .calendar-header {
@@ -23668,22 +23677,25 @@ Be concise but helpful. Use markdown formatting. When showing posts, describe th
         }
 
         let proposalMessages = [];
+        let proposalMode = 'propose';
+        let capturedElement = null;
+        let vfActive = false;
 
         function selectProposalApp(appKey, appName) {
             proposalSelectedApp = { key: appKey, name: appName };
             proposalMessages = [];
+            capturedElement = null;
+            proposalMode = 'propose';
+            vfActive = false;
 
-            // Get app info
             const app = SUITE_APPS[appKey];
             if (!app) return;
 
-            // Hide the regular builder content
             const builderContent = document.getElementById('builderContent');
             const builderInputArea = document.querySelector('.builder-input-area');
             if (builderContent) builderContent.style.display = 'none';
             if (builderInputArea) builderInputArea.style.display = 'none';
 
-            // Create or get split view container
             let splitView = document.getElementById('proposalSplitView');
             if (!splitView) {
                 splitView = document.createElement('div');
@@ -23692,10 +23704,9 @@ Be concise but helpful. Use markdown formatting. When showing posts, describe th
                 document.getElementById('builderMode').appendChild(splitView);
             }
 
-            // Build the split view HTML
             splitView.innerHTML = `
                 <div class="proposal-app-preview">
-                    <div class="proposal-app-header">
+                    <div class="proposal-app-header" id="proposalAppHeader">
                         <button onclick="exitProposalSplitView()" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 8px; margin: -8px; margin-right: 4px;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
                                 <path d="M19 12H5M12 19l-7-7 7-7"/>
@@ -23706,28 +23717,37 @@ Be concise but helpful. Use markdown formatting. When showing posts, describe th
                         </div>
                         <div class="proposal-app-header-info">
                             <div class="proposal-app-header-name">${app.name}</div>
-                            <div class="proposal-app-header-hint">Click around to explore, then describe your changes</div>
+                            <div class="proposal-app-header-hint" id="proposalHint">Click "Select Element" to pick a part of the app</div>
                         </div>
+                        <button onclick="toggleVF()" id="vfBtn" style="background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.3); color: #a5b4fc; padding: 8px 12px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M15 15l-2 5L9 9l11 4-5 2z"/></svg>
+                            Select Element
+                        </button>
                     </div>
                     <div class="proposal-app-iframe-container">
-                        <iframe class="proposal-app-iframe" src="${app.url}" id="proposalAppFrame"></iframe>
+                        <iframe class="proposal-app-iframe" src="${app.url}" id="proposalAppFrame" onload="injectVF()"></iframe>
                     </div>
                 </div>
                 <div class="proposal-chat-panel">
                     <div class="proposal-chat-header">
-                        <h3 class="proposal-chat-title">Proposal for ${app.name}</h3>
-                        <p class="proposal-chat-subtitle">Describe what you'd like to change or improve</p>
+                        <div class="proposal-mode-tabs">
+                            <button class="proposal-mode-tab active" id="proposeTab" onclick="setProposalMode('propose')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                Propose
+                            </button>
+                            <button class="proposal-mode-tab fork-tab" id="forkTab" onclick="setProposalMode('fork')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><path d="M18 9v1a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9"/><path d="M12 12v3"/></svg>
+                                Fork
+                            </button>
+                        </div>
+                        <p class="proposal-chat-subtitle" id="modeSubtitle">Submit to governance (24hr review)</p>
                     </div>
+                    <div id="capturedElDisplay" style="display:none;padding:0 16px;"></div>
                     <div class="proposal-chat-messages" id="proposalChatMessages">
                         <div class="proposal-message assistant">
                             <div class="proposal-message-content">
                                 <strong>What would you like to change about ${app.name}?</strong><br><br>
-                                Explore the app on the left, then tell me your ideas. Think about:
-                                <ul style="margin: 8px 0 0 16px; color: var(--text-tertiary);">
-                                    <li>What problem does this solve?</li>
-                                    <li>What would it look like?</li>
-                                    <li>Who benefits from this change?</li>
-                                </ul>
+                                <span style="color:#a5b4fc;">Tip:</span> Click "Select Element" to pick a specific part of the app.
                             </div>
                         </div>
                     </div>
@@ -23741,19 +23761,171 @@ Be concise but helpful. Use markdown formatting. When showing posts, describe th
                             </button>
                         </div>
                     </div>
+                    <div class="proposal-fork-actions" id="forkActions" style="display:none;">
+                        <button class="proposal-fork-btn secondary" onclick="exitProposalSplitView()">Cancel</button>
+                        <button class="proposal-fork-btn primary" id="forkBtn" onclick="applyFork()" disabled>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M20 6L9 17l-5-5"/></svg>
+                            Fork & Apply Changes
+                        </button>
+                    </div>
                 </div>
             `;
 
             splitView.style.display = 'flex';
+            window.addEventListener('message', handleVFMessage);
 
-            // Focus input
             setTimeout(() => {
                 const input = document.getElementById('proposalChatInput');
                 if (input) input.focus();
             }, 100);
         }
 
+        // Mode switching
+        function setProposalMode(mode) {
+            proposalMode = mode;
+            document.getElementById('proposeTab')?.classList.toggle('active', mode === 'propose');
+            document.getElementById('forkTab')?.classList.toggle('active', mode === 'fork');
+            const sub = document.getElementById('modeSubtitle');
+            if (sub) {
+                sub.textContent = mode === 'fork' ? 'Your copy, instant changes (90% revenue)' : 'Submit to governance (24hr review)';
+                sub.style.color = mode === 'fork' ? '#4ade80' : '';
+            }
+            document.getElementById('forkActions').style.display = mode === 'fork' ? 'flex' : 'none';
+            updateForkBtn();
+        }
+
+        function updateForkBtn() {
+            const btn = document.getElementById('forkBtn');
+            if (btn && proposalMode === 'fork') {
+                btn.disabled = proposalMessages.filter(m => m.role === 'user').length === 0;
+            }
+        }
+
+        // Visual Feedback
+        function toggleVF() {
+            vfActive = !vfActive;
+            const btn = document.getElementById('vfBtn');
+            const header = document.getElementById('proposalAppHeader');
+            if (vfActive) {
+                btn.style.background = 'rgba(99,102,241,0.5)';
+                btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M15 15l-2 5L9 9l11 4-5 2z"/></svg> Click element...';
+                header?.classList.add('vf-active');
+                document.getElementById('proposalAppFrame')?.contentWindow?.postMessage({type:'vf-start'}, '*');
+            } else {
+                btn.style.background = 'rgba(99,102,241,0.2)';
+                btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M15 15l-2 5L9 9l11 4-5 2z"/></svg> Select Element';
+                header?.classList.remove('vf-active');
+                document.getElementById('proposalAppFrame')?.contentWindow?.postMessage({type:'vf-stop'}, '*');
+            }
+        }
+
+        function injectVF() {
+            const iframe = document.getElementById('proposalAppFrame');
+            if (!iframe) return;
+            try {
+                const doc = iframe.contentDocument || iframe.contentWindow?.document;
+                if (doc) {
+                    const s = doc.createElement('script');
+                    s.textContent = `(function(){let on=false,hl;function mk(){if(hl)return;hl=document.createElement('div');hl.style.cssText='position:fixed;pointer-events:none;border:3px solid #6366f1;background:rgba(99,102,241,0.15);z-index:999999;display:none;border-radius:4px;';document.body.appendChild(hl);}document.addEventListener('mousemove',e=>{if(!on)return;const el=document.elementFromPoint(e.clientX,e.clientY);if(el&&el!==hl){const r=el.getBoundingClientRect();hl.style.top=r.top+'px';hl.style.left=r.left+'px';hl.style.width=r.width+'px';hl.style.height=r.height+'px';hl.style.display='block';}});document.addEventListener('click',e=>{if(!on)return;e.preventDefault();e.stopPropagation();const el=document.elementFromPoint(e.clientX,e.clientY);if(el&&el!==hl){window.parent.postMessage({type:'vf-picked',data:{tag:el.tagName.toLowerCase(),id:el.id||'',cls:el.className||'',txt:(el.innerText||'').substring(0,80).trim()}},'*');on=false;hl.style.display='none';document.body.style.cursor='';}},true);window.addEventListener('message',e=>{if(e.data.type==='vf-start'){on=true;mk();document.body.style.cursor='crosshair';}else if(e.data.type==='vf-stop'){on=false;if(hl)hl.style.display='none';document.body.style.cursor='';}});})();`;
+                    doc.body.appendChild(s);
+                }
+            } catch(e) { console.log('VF inject failed:', e.message); }
+        }
+
+        function handleVFMessage(e) {
+            if (e.data.type === 'vf-picked') {
+                capturedElement = e.data.data;
+                vfActive = false;
+                const btn = document.getElementById('vfBtn');
+                const header = document.getElementById('proposalAppHeader');
+                if (btn) { btn.style.background = 'rgba(99,102,241,0.2)'; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M15 15l-2 5L9 9l11 4-5 2z"/></svg> Select Element'; }
+                header?.classList.remove('vf-active');
+                showCapturedEl(capturedElement);
+            }
+        }
+
+        function showCapturedEl(el) {
+            const d = document.getElementById('capturedElDisplay');
+            if (!d) return;
+            const sel = el.tag + (el.id ? '#'+el.id : '') + (el.cls ? '.'+el.cls.split(' ').filter(c=>c).slice(0,2).join('.') : '');
+            d.innerHTML = `<div class="captured-element"><div class="captured-element-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M15 15l-2 5L9 9l11 4-5 2z"/></svg></div><div class="captured-element-info"><div class="captured-element-tag">${sel}</div><div class="captured-element-text">${el.txt||'(no text)'}</div></div><button class="captured-element-remove" onclick="clearCapturedEl()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>`;
+            d.style.display = 'block';
+            const msgs = document.getElementById('proposalChatMessages');
+            if (msgs) {
+                msgs.innerHTML += `<div class="proposal-message assistant"><div class="proposal-message-content"><span style="color:#a5b4fc;">Selected:</span> <code style="background:rgba(99,102,241,0.2);padding:2px 6px;border-radius:4px;">${sel}</code>${el.txt?'<br><span style="color:var(--text-tertiary);">"'+el.txt.substring(0,50)+(el.txt.length>50?'...':'')+'"</span>':''}<br><br>What would you like to change?</div></div>`;
+                msgs.scrollTop = msgs.scrollHeight;
+            }
+        }
+
+        function clearCapturedEl() {
+            capturedElement = null;
+            const d = document.getElementById('capturedElDisplay');
+            if (d) { d.innerHTML = ''; d.style.display = 'none'; }
+        }
+
+        // Apply Fork with Kimi K2
+        async function applyFork() {
+            if (!proposalSelectedApp) return;
+            const user = supabase ? (await supabase.auth.getUser()).data.user : null;
+            if (!user) { alert('Please log in to fork apps'); return; }
+
+            const btn = document.getElementById('forkBtn');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<span class="typing-dots"><span>.</span><span>.</span><span>.</span></span> Creating fork...'; }
+
+            try {
+                const app = SUITE_APPS[proposalSelectedApp.key];
+                const resp = await fetch(app.url);
+                const originalCode = await resp.text();
+
+                const changes = proposalMessages.filter(m => m.role === 'user').map(m => m.content).join('\\n');
+                const elCtx = capturedElement ? `Target element: ${capturedElement.tag}${capturedElement.id?'#'+capturedElement.id:''}${capturedElement.cls?'.'+capturedElement.cls.split(' ').slice(0,2).join('.'):''}\\nElement text: "${capturedElement.txt||''}"\\n\\n` : '';
+
+                const kimiResp = await fetch('/api/kimi', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: [
+                            { role: 'system', content: 'You are an expert web developer. Apply the requested changes to this HTML app. Return ONLY the complete modified HTML code. Make minimal, targeted changes.' },
+                            { role: 'user', content: 'Original HTML:\\n```html\\n' + originalCode + '\\n```\\n\\n' + elCtx + 'Requested changes:\\n' + changes + '\\n\\nReturn the modified HTML.' }
+                        ],
+                        temperature: 0.3,
+                        max_tokens: 32000
+                    })
+                });
+
+                const kimiData = await kimiResp.json();
+                if (!kimiResp.ok) throw new Error(kimiData.error || 'Kimi API error');
+
+                let newCode = (kimiData.text || '').replace(/^```html\\n?/i, '').replace(/\\n?```$/i, '').trim();
+                if (!newCode || newCode.length < 100) throw new Error('Invalid AI response');
+
+                const { error } = await supabase.from('user_apps').insert({
+                    user_id: user.id,
+                    name: 'My ' + app.name,
+                    description: 'Forked from ' + app.name,
+                    icon_url: app.iconUrl,
+                    icon_bg: app.iconBg,
+                    code: newCode,
+                    forked_from: proposalSelectedApp.key,
+                    revenue_split: 90,
+                    is_public: false,
+                    is_listed: false
+                });
+
+                if (error) throw error;
+
+                alert('Fork created! Find it in Your Apps section.');
+                exitProposalSplitView();
+
+            } catch (err) {
+                console.error('Fork error:', err);
+                alert('Fork failed: ' + err.message);
+                if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M20 6L9 17l-5-5"/></svg> Fork & Apply Changes'; }
+            }
+        }
+
         function exitProposalSplitView() {
+            window.removeEventListener('message', handleVFMessage);
             const splitView = document.getElementById('proposalSplitView');
             if (splitView) splitView.style.display = 'none';
 
@@ -23785,6 +23957,7 @@ Be concise but helpful. Use markdown formatting. When showing posts, describe th
             `;
             input.value = '';
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            updateForkBtn();
 
             // Show typing indicator
             const typingId = 'proposal-typing-' + Date.now();
