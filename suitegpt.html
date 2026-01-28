@@ -467,6 +467,24 @@
             color: var(--accent-primary);
         }
 
+        /* SuiteGPT Builder sidebar button - special styling */
+        .sidebar-builder-btn {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.1));
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            color: #a5b4fc;
+            margin-bottom: 8px;
+        }
+
+        .sidebar-builder-btn:hover {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(139, 92, 246, 0.15));
+            border-color: rgba(99, 102, 241, 0.4);
+            color: #c7d2fe;
+        }
+
+        .sidebar-builder-btn .sidebar-item-icon {
+            color: #818cf8;
+        }
+
         .sidebar-item-icon {
             width: 20px;
             height: 20px;
@@ -11987,6 +12005,16 @@
 
             <nav class="sidebar-nav">
                 <div class="sidebar-section">
+                    <button class="sidebar-item sidebar-builder-btn" id="sidebarBuilderBtn" onclick="openBuilderMode()">
+                        <span class="sidebar-item-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/>
+                                <line x1="12" y1="22" x2="12" y2="15.5"/>
+                                <polyline points="22 8.5 12 15.5 2 8.5"/>
+                            </svg>
+                        </span>
+                        <span>SuiteGPT Builder</span>
+                    </button>
                     <button class="sidebar-item" id="newChatBtn" onclick="startNewChat()">
                         <span class="sidebar-item-icon">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -12467,16 +12495,6 @@
                                     </div>
                                     <span class="model-credits-badge">15 credits</span>
                                 </div>
-                            </div>
-
-                            <!-- SuiteGPT Builder Button -->
-                            <div class="model-dropdown-divider"></div>
-                            <div class="model-dropdown-item suitegpt-builder-option" data-mode="suitegpt" data-name="SuiteGPT Builder">
-                                <div class="model-dropdown-item-info">
-                                    <span class="model-dropdown-item-name suitegpt-builder-name">SuiteGPT Builder</span>
-                                    <span class="model-dropdown-item-desc">Create apps & tools</span>
-                                </div>
-                                <span class="model-builder-badge">Build</span>
                             </div>
                         </div>
                         </div>
@@ -20702,19 +20720,6 @@
             if (selectedItem) selectedItem.classList.add('active');
 
             closeModelDropdown();
-
-            // Check if SuiteGPT Builder mode
-            if (mode === 'suitegpt') {
-                openBuilderMode();
-                // Reset model selector to Auto (default)
-                if (nameEl) nameEl.textContent = 'Auto';
-                currentModel = 'flash';
-                // Reset active state to Auto
-                items.forEach(item => item.classList.remove('active'));
-                const autoItem = document.querySelector('.model-dropdown-item[data-mode="auto"]');
-                if (autoItem) autoItem.classList.add('active');
-                return;
-            }
 
             // Check if Pro mode requires upgrade
             if (mode === 'opus') {
