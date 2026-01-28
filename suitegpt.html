@@ -12470,6 +12470,13 @@
                                     </div>
                                     <span class="model-free-badge">Free</span>
                                 </div>
+                                <div class="model-dropdown-item" data-mode="llama" data-name="Llama 3.3 70B">
+                                    <div class="model-dropdown-item-info">
+                                        <span class="model-dropdown-item-name">Llama 3.3 70B</span>
+                                        <span class="model-dropdown-item-desc">Powerful open-source</span>
+                                    </div>
+                                    <span class="model-free-badge">Free</span>
+                                </div>
                             </div>
 
                             <!-- Paid Models Panel -->
@@ -22677,7 +22684,8 @@
                     'flash': 'Auto',
                     'pro': 'Gemini 2.0 Pro',
                     'sonnet': 'Claude Sonnet 4',
-                    'opus': 'Claude Opus 4'
+                    'opus': 'Claude Opus 4',
+                    'llama': 'Llama 3.3 70B'
                 };
                 const nameEl = document.getElementById('modelName');
                 if (nameEl) nameEl.textContent = modelNames[currentModel] || 'Auto';
@@ -23701,6 +23709,43 @@
 
                         const data = await response.json();
                         aiResponse = data.response || data.text || 'Sorry, I could not generate a response.';
+
+                    } else if (currentModel === 'llama') {
+                        // Llama 3.3 70B via Groq
+                        const today = new Date();
+                        const dateStr = today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+                        // Build messages array for Groq (OpenAI format)
+                        const groqMessages = [
+                            {
+                                role: 'system',
+                                content: `Today's date is ${dateStr}. You are a helpful AI assistant. Always provide accurate, up-to-date information.`
+                            },
+                            ...conversationHistory.map(msg => ({
+                                role: msg.role,
+                                content: msg.content
+                            }))
+                        ];
+
+                        const response = await fetch('/api/groq', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                model: 'llama-3.3-70b-versatile',
+                                messages: groqMessages
+                            })
+                        });
+
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            if (response.status === 429) {
+                                throw new Error('Rate limit reached. Please wait a moment and try again.');
+                            }
+                            throw new Error(errorData.error || 'Groq API failed');
+                        }
+
+                        const data = await response.json();
+                        aiResponse = data.text || 'Sorry, I could not generate a response.';
 
                     } else {
                         // Fallback to SuiteGPT chat (app recommendations)

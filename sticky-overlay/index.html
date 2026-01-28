@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Sticky Overlay</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: transparent;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        .container {
+            display: flex;
+            gap: 8px;
+            padding: 8px;
+            background: rgba(15, 15, 15, 0.9);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            height: 100%;
+            -webkit-app-region: drag;
+        }
+
+        .note {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .note textarea {
+            width: 100%;
+            height: 100%;
+            padding: 8px 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 12px;
+            font-family: inherit;
+            outline: none;
+            resize: none;
+            line-height: 1.4;
+            -webkit-app-region: no-drag;
+        }
+
+        .note textarea:focus {
+            border-color: rgba(99, 102, 241, 0.6);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .note textarea::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .note-1 textarea { border-left: 3px solid #6366f1; }
+        .note-2 textarea { border-left: 3px solid #22c55e; }
+        .note-3 textarea { border-left: 3px solid #f59e0b; }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding-top: 2px;
+            -webkit-app-region: no-drag;
+        }
+
+        .btn {
+            width: 20px;
+            height: 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+
+        .btn-minimize {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .btn-minimize:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-close {
+            background: rgba(239, 68, 68, 0.2);
+            color: rgba(239, 68, 68, 0.8);
+        }
+
+        .btn-close:hover {
+            background: rgba(239, 68, 68, 0.4);
+        }
+
+        .hint {
+            font-size: 8px;
+            color: rgba(255, 255, 255, 0.3);
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="note note-1">
+            <textarea id="note1" placeholder="Note 1..." spellcheck="false"></textarea>
+        </div>
+        <div class="note note-2">
+            <textarea id="note2" placeholder="Note 2..." spellcheck="false"></textarea>
+        </div>
+        <div class="note note-3">
+            <textarea id="note3" placeholder="Note 3..." spellcheck="false"></textarea>
+        </div>
+        <div class="controls">
+            <button class="btn btn-minimize" onclick="minimize()" title="Minimize">_</button>
+            <button class="btn btn-close" onclick="closeApp()" title="Close">x</button>
+            <span class="hint">Ctrl+Shift+S</span>
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        const fs = require('fs');
+        const path = require('path');
+
+        // Save file path
+        const savePath = path.join(require('os').homedir(), '.sticky-overlay-notes.json');
+
+        // Load saved notes
+        function loadNotes() {
+            try {
+                if (fs.existsSync(savePath)) {
+                    const data = JSON.parse(fs.readFileSync(savePath, 'utf8'));
+                    document.getElementById('note1').value = data.note1 || '';
+                    document.getElementById('note2').value = data.note2 || '';
+                    document.getElementById('note3').value = data.note3 || '';
+                }
+            } catch (e) {
+                console.error('Failed to load notes:', e);
+            }
+        }
+
+        // Save notes
+        function saveNotes() {
+            try {
+                const data = {
+                    note1: document.getElementById('note1').value,
+                    note2: document.getElementById('note2').value,
+                    note3: document.getElementById('note3').value
+                };
+                fs.writeFileSync(savePath, JSON.stringify(data));
+            } catch (e) {
+                console.error('Failed to save notes:', e);
+            }
+        }
+
+        // Auto-save on input
+        document.querySelectorAll('textarea').forEach(textarea => {
+            textarea.addEventListener('input', saveNotes);
+        });
+
+        // Load on start
+        loadNotes();
+
+        // Window controls
+        function minimize() {
+            require('electron').remote?.getCurrentWindow().minimize() ||
+            window.electronAPI?.minimize();
+        }
+
+        function closeApp() {
+            window.close();
+        }
+    </script>
+</body>
+</html>
