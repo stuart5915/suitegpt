@@ -262,10 +262,28 @@
 
         // Check auth on load
         async function checkAuth() {
+            // First check if user is already logged into suitegpt.app (same origin = shared localStorage)
+            const suiteEmail = localStorage.getItem('user_email');
+            if (suiteEmail && ALLOWED_EMAILS.map(e => e.toLowerCase()).includes(suiteEmail.toLowerCase())) {
+                // User is logged into suitegpt with an allowed email
+                showDashboard(suiteEmail);
+                return;
+            }
+
+            // Fallback to Supabase session check
             const { data: { session } } = await supabase.auth.getSession();
             if (session?.user) {
                 handleAuthSuccess(session.user);
             }
+        }
+
+        // Show dashboard directly (for already authenticated users)
+        function showDashboard(email) {
+            currentUser = { email };
+            document.getElementById('authGate').style.display = 'none';
+            const frame = document.getElementById('dashboardFrame');
+            frame.src = '/galtwoodco/dashboard/index.html?authed=true&email=' + encodeURIComponent(email);
+            frame.style.display = 'block';
         }
 
         // Sign in with Google
