@@ -25149,9 +25149,7 @@ Be concise but helpful. Use markdown formatting.`;
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        messages: [{
-                            role: 'user',
-                            content: `Generate ONE novel, creative app idea that doesn't exist yet. It should be useful, fun, or solve a real problem.
+                        prompt: `Generate ONE novel, creative app idea that doesn't exist yet. It should be useful, fun, or solve a real problem.
 
 EXISTING APPS TO AVOID (don't suggest similar ideas):
 ${existingAppsList}
@@ -25164,10 +25162,9 @@ Requirements:
 
 Example format: A mood-based playlist generator that matches music to your current emotion
 
-Your novel app idea:`
-                        }],
+Your novel app idea:`,
                         model: 'gemini-2.0-flash',
-                        temperature: 1.0
+                        generationConfig: { temperature: 1.0, maxOutputTokens: 100 }
                     })
                 });
 
@@ -25229,9 +25226,7 @@ Your novel app idea:`
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        messages: [{
-                            role: 'user',
-                            content: `Create a complete, working single-page HTML app based on this idea:
+                        prompt: `Create a complete, working single-page HTML app based on this idea:
 
 "${idea}"
 
@@ -25243,10 +25238,9 @@ Requirements:
 - Include all necessary features to make it useful
 - Use localStorage if data persistence is needed
 
-Output ONLY the complete HTML code, starting with <!DOCTYPE html> and ending with </html>. No explanations or markdown.`
-                        }],
+Output ONLY the complete HTML code, starting with <!DOCTYPE html> and ending with </html>. No explanations or markdown.`,
                         model: 'gemini-2.0-flash',
-                        temperature: 0.7
+                        generationConfig: { temperature: 0.7, maxOutputTokens: 16000 }
                     })
                 });
 
@@ -25426,9 +25420,7 @@ Output ONLY the complete HTML code, starting with <!DOCTYPE html> and ending wit
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        messages: [{
-                            role: 'user',
-                            content: `Here is the current HTML of an app:
+                        prompt: `Here is the current HTML of an app:
 
 \`\`\`html
 ${window.quickAppResult.html}
@@ -25436,10 +25428,9 @@ ${window.quickAppResult.html}
 
 The user wants this change: "${userMessage}"
 
-Apply the requested change and output the COMPLETE updated HTML. Start with <!DOCTYPE html> and end with </html>. No explanations, just the code.`
-                        }],
+Apply the requested change and output the COMPLETE updated HTML. Start with <!DOCTYPE html> and end with </html>. No explanations, just the code.`,
                         model: 'gemini-2.0-flash',
-                        temperature: 0.5
+                        generationConfig: { temperature: 0.5, maxOutputTokens: 16000 }
                     })
                 });
 
