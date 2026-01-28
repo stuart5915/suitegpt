@@ -16009,6 +16009,11 @@
             if (view === 'rewards') {
                 loadRewardsData();
             }
+
+            // Initialize Marketing view
+            if (view === 'marketing') {
+                initMarketingView();
+            }
         }
 
         // ===== Marketing View Functions =====
@@ -16064,8 +16069,9 @@
                 Object.entries(CADENCES).forEach(([cadenceId, cadence]) => {
                     if (cadence.days.includes(d)) {
                         cadence.times.forEach(time => {
+                            const timeId = time.replace(':', '');
                             marketingSchedule[dateKey].push({
-                                id: `${dateKey}-${cadenceId}-${time}`,
+                                id: `${dateKey}_${cadenceId}_${timeId}`,
                                 cadence: cadenceId,
                                 time: time,
                                 status: 'empty',
@@ -16143,11 +16149,12 @@
 
         function openPostModal(postId) {
             currentPostId = postId;
-            const [dateKey] = postId.split('-');
+            const parts = postId.split('_');
+            const dateKey = parts[0];
             const posts = marketingSchedule[dateKey] || [];
             const post = posts.find(p => p.id === postId);
 
-            if (!post) return;
+            if (!post) { console.log('Post not found:', postId, dateKey); return; }
 
             const cadence = CADENCES[post.cadence];
             const date = new Date(dateKey + 'T' + post.time);
@@ -16185,7 +16192,7 @@
 
         function savePostContent() {
             if (!currentPostId) return;
-            const [dateKey] = currentPostId.split('-');
+            const [dateKey] = currentPostId.split('_');
             const posts = marketingSchedule[dateKey];
             const post = posts?.find(p => p.id === currentPostId);
 
@@ -16208,7 +16215,7 @@
 
         function updatePostStatus(status) {
             if (!currentPostId || !isMarketingAdmin()) return;
-            const [dateKey] = currentPostId.split('-');
+            const [dateKey] = currentPostId.split('_');
             const post = marketingSchedule[dateKey]?.find(p => p.id === currentPostId);
             if (post) {
                 post.status = status;
@@ -16233,7 +16240,7 @@
                     document.getElementById('imagePreview').style.display = 'block';
 
                     if (currentPostId) {
-                        const [dateKey] = currentPostId.split('-');
+                        const [dateKey] = currentPostId.split('_');
                         const post = marketingSchedule[dateKey]?.find(p => p.id === currentPostId);
                         if (post) {
                             post.image = e.target.result;
@@ -16249,7 +16256,7 @@
             document.getElementById('imagePreview').style.display = 'none';
             document.getElementById('postImageInput').value = '';
             if (currentPostId) {
-                const [dateKey] = currentPostId.split('-');
+                const [dateKey] = currentPostId.split('_');
                 const post = marketingSchedule[dateKey]?.find(p => p.id === currentPostId);
                 if (post) {
                     post.image = null;
@@ -16282,14 +16289,6 @@
         }
 
         // Initialize when switching to marketing view
-        const origSwitchFactory = switchFactoryMainView;
-        switchFactoryMainView = function(view, skip) {
-            origSwitchFactory(view, skip);
-            if (view === 'marketing') {
-                initMarketingView();
-            }
-        };
-
         function switchFactorySection(section) {
             factoryCurrentSection = section;
             factoryAppFilter = 'all'; // Reset app filter when switching sections
