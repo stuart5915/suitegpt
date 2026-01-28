@@ -9982,7 +9982,7 @@
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 12px;
             overflow: hidden;
-            max-width: 400px;
+            max-width: 600px;
         }
 
         .proposal-app-search {
@@ -10008,35 +10008,71 @@
         }
 
         .proposal-app-list {
-            max-height: 200px;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+            padding: 12px;
+            max-height: 320px;
             overflow-y: auto;
         }
 
         .proposal-app-item {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            width: 100%;
-            padding: 12px 16px;
+            gap: 6px;
+            padding: 10px 4px;
             background: none;
             border: none;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
             color: var(--text-secondary);
             cursor: pointer;
             transition: all 0.2s;
-            text-align: left;
-        }
-
-        .proposal-app-item:last-child {
-            border-bottom: none;
+            text-align: center;
         }
 
         .proposal-app-item:hover {
-            background: rgba(99, 102, 241, 0.1);
+            background: rgba(99, 102, 241, 0.15);
             color: var(--text-primary);
+            transform: scale(1.05);
+        }
+
+        .proposal-app-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .proposal-app-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .proposal-app-name {
-            font-size: 0.9rem;
+            font-size: 0.7rem;
+            line-height: 1.2;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 600px) {
+            .proposal-app-list {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        @media (max-width: 400px) {
+            .proposal-app-list {
+                grid-template-columns: repeat(3, 1fr);
+            }
         }
 
         .proposal-selected-app {
@@ -13806,6 +13842,9 @@
                             <button class="factory-main-tab" data-view="rewards" onclick="switchFactoryMainView('rewards')">
                                 Rewards
                             </button>
+                            <button class="factory-main-tab" data-view="operators" onclick="switchFactoryMainView('operators')">
+                                Operators
+                            </button>
                         </div>
                     </div>
 
@@ -14473,11 +14512,84 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Operators View -->
+                            <div class="factory-main-view" id="factoryOperatorsView" style="display: none;">
+                                <div class="operators-content">
+                                    <!-- Header -->
+                                    <div class="operators-header">
+                                        <h2>Operators</h2>
+                                        <p class="operators-subtitle">Track client apps and companies in the SUITE ecosystem</p>
+                                        <button class="operators-add-btn" onclick="showAddOperatorModal()">
+                                            + Add Operator
+                                        </button>
+                                    </div>
+
+                                    <!-- Filter Bar -->
+                                    <div class="operators-filters">
+                                        <button class="operators-filter-btn active" data-filter="all" onclick="filterOperators('all')">All</button>
+                                        <button class="operators-filter-btn" data-filter="active" onclick="filterOperators('active')">Active</button>
+                                        <button class="operators-filter-btn" data-filter="pending" onclick="filterOperators('pending')">Pending</button>
+                                        <button class="operators-filter-btn" data-filter="completed" onclick="filterOperators('completed')">Completed</button>
+                                        <button class="operators-filter-btn" data-filter="paused" onclick="filterOperators('paused')">Paused</button>
+                                    </div>
+
+                                    <!-- Operators List -->
+                                    <div class="operators-list" id="operatorsList">
+                                        <div class="operators-loading">Loading operators...</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>
             </div>
         </main>
+    </div>
+
+    <!-- Add Operator Modal -->
+    <div class="operator-modal-overlay" id="addOperatorModal" style="display: none;">
+        <div class="operator-modal-content">
+            <div class="operator-modal-header">
+                <h3>Add New Operator</h3>
+                <button class="operator-modal-close" onclick="hideAddOperatorModal()">&times;</button>
+            </div>
+            <form id="addOperatorForm" onsubmit="submitNewOperator(event)">
+                <div class="operator-form-group">
+                    <label>Company/App Name</label>
+                    <input type="text" id="operatorName" required placeholder="e.g., Galtwood Co">
+                </div>
+                <div class="operator-form-group">
+                    <label>Description</label>
+                    <textarea id="operatorDescription" rows="3" placeholder="What do they do?"></textarea>
+                </div>
+                <div class="operator-form-group">
+                    <label>Contact Email</label>
+                    <input type="email" id="operatorEmail" placeholder="contact@example.com">
+                </div>
+                <div class="operator-form-group">
+                    <label>Website/URL</label>
+                    <input type="url" id="operatorUrl" placeholder="https://...">
+                </div>
+                <div class="operator-form-group">
+                    <label>Status</label>
+                    <select id="operatorStatus">
+                        <option value="pending">Pending - Initial Discussion</option>
+                        <option value="active">Active - In Development</option>
+                        <option value="completed">Completed - Live</option>
+                        <option value="paused">Paused</option>
+                    </select>
+                </div>
+                <div class="operator-form-group">
+                    <label>Current Task / Notes</label>
+                    <textarea id="operatorNotes" rows="3" placeholder="What are we currently working on?"></textarea>
+                </div>
+                <div class="operator-modal-actions">
+                    <button type="button" class="operator-btn-cancel" onclick="hideAddOperatorModal()">Cancel</button>
+                    <button type="submit" class="operator-btn-submit">Add Operator</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- Factory Submit Modal -->
@@ -20907,16 +21019,15 @@
         }
 
         function getProposalAppListHTML() {
-            // Get apps from localStorage savedApps + some default SuiteGPT apps
-            const savedApps = JSON.parse(localStorage.getItem('savedApps') || '[]');
-            const defaultApps = ['habit-tracker', 'budget-manager', 'inventory-tracker', 'task-manager'];
-            const allApps = [...new Set([...savedApps, ...defaultApps])];
-
-            return allApps.map(appKey => {
-                const appName = appKey.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            // Use all apps from SUITE_APPS
+            return Object.entries(SUITE_APPS).map(([appKey, app]) => {
+                const iconHtml = app.iconUrl
+                    ? `<img src="${app.iconUrl}" alt="${app.name}" onerror="this.style.display='none'">`
+                    : `<div style="background: ${app.iconBg || 'linear-gradient(135deg, #6366f1, #4f46e5)'}; width: 100%; height: 100%; border-radius: 10px;"></div>`;
                 return `
-                    <button class="proposal-app-item" onclick="selectProposalApp('${appKey}', '${appName}')">
-                        <span class="proposal-app-name">${appName}</span>
+                    <button class="proposal-app-item" onclick="selectProposalApp('${appKey}', '${app.name}')" data-app-name="${app.name.toLowerCase()}">
+                        <div class="proposal-app-icon">${iconHtml}</div>
+                        <span class="proposal-app-name">${app.name}</span>
                     </button>
                 `;
             }).join('');
@@ -20926,7 +21037,7 @@
             const items = document.querySelectorAll('.proposal-app-item');
             const lower = query.toLowerCase();
             items.forEach(item => {
-                const name = item.querySelector('.proposal-app-name').textContent.toLowerCase();
+                const name = item.dataset.appName || item.querySelector('.proposal-app-name').textContent.toLowerCase();
                 item.style.display = name.includes(lower) ? '' : 'none';
             });
         }
