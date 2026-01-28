@@ -17786,25 +17786,63 @@
             }
         }
 
+        let brandVoice = null;
+
         async function initCopilot() {
             const messagesContainer = document.getElementById('copilotMessages');
             if (!messagesContainer) return;
 
-            // Load chat history from localStorage (or Supabase later)
-            const savedChat = localStorage.getItem('copilot_chat_today');
             const today = new Date().toISOString().split('T')[0];
 
-            if (savedChat) {
-                const parsed = JSON.parse(savedChat);
-                if (parsed.date === today && parsed.messages?.length > 0) {
-                    copilotMessages = parsed.messages;
-                    renderCopilotMessages();
-                    return;
+            // Load from Supabase
+            if (supabaseClient) {
+                try {
+                    // Load today's chat
+                    const { data: chatData } = await supabaseClient
+                        .from('marketing_chat')
+                        .select('*')
+                        .eq('date', today)
+                        .order('created_at', { ascending: true });
+
+                    if (chatData && chatData.length > 0) {
+                        copilotMessages = chatData.map(c => ({
+                            role: c.role,
+                            content: c.content,
+                            metadata: c.metadata || {},
+                            timestamp: new Date(c.created_at).getTime()
+                        }));
+                        renderCopilotMessages();
+                    }
+
+                    // Load current state
+                    const { data: stateData } = await supabaseClient
+                        .from('marketing_state')
+                        .select('*')
+                        .order('updated_at', { ascending: false })
+                        .limit(1)
+                        .single();
+
+                    if (stateData) {
+                        copilotState = stateData;
+                    }
+
+                    // Load brand voice
+                    const { data: voiceData } = await supabaseClient
+                        .from('brand_voice')
+                        .select('*')
+                        .limit(1)
+                        .single();
+
+                    if (voiceData) {
+                        brandVoice = voiceData;
+                    }
+                } catch (err) {
+                    console.log('[Copilot] Supabase load error:', err);
                 }
             }
 
-            // Check if we have a current state
-            copilotState = localStorage.getItem('copilot_state');
+            // If we already have messages, we're done
+            if (copilotMessages.length > 0) return;
 
             // Start conversation
             if (!copilotState) {
@@ -17826,16 +17864,34 @@ For example:
             }
         }
 
-        function addCopilotMessage(role, content, metadata = {}) {
+        async function addCopilotMessage(role, content, metadata = {}) {
             const message = { role, content, metadata, timestamp: Date.now() };
             copilotMessages.push(message);
-            saveCopilotChat();
             renderCopilotMessages();
+
+            // Save to Supabase
+            await saveCopilotChat(role, content, metadata);
+
             return message;
         }
 
-        function saveCopilotChat() {
+        async function saveCopilotChat(role, content, metadata = {}) {
             const today = new Date().toISOString().split('T')[0];
+
+            if (supabaseClient) {
+                try {
+                    await supabaseClient.from('marketing_chat').insert({
+                        date: today,
+                        role: role,
+                        content: content,
+                        metadata: metadata
+                    });
+                } catch (err) {
+                    console.log('[Copilot] Save chat error:', err);
+                }
+            }
+
+            // Also save to localStorage as backup
             localStorage.setItem('copilot_chat_today', JSON.stringify({
                 date: today,
                 messages: copilotMessages
@@ -17958,6 +18014,25 @@ For example:
         }
 
         async function callCopilotAI(userMessage) {
+            // Build brand voice section
+            let brandSection = 'Casual, authentic, "building in public" vibes. No corporate speak.';
+            if (brandVoice) {
+                brandSection = `
+Tone: ${brandVoice.tone || 'casual, authentic'}
+Words to USE: ${(brandVoice.use_words || []).join(', ')}
+Words to AVOID: ${(brandVoice.avoid_words || []).join(', ')}
+Style: ${brandVoice.style_notes || 'Short punchy sentences.'}`;
+            }
+
+            // Build state section
+            let stateSection = 'Not yet created - help user create it';
+            if (copilotState && typeof copilotState === 'object') {
+                stateSection = `
+Priorities: ${(copilotState.priorities || []).join(', ') || 'None set'}
+Recent context: ${copilotState.raw_content || JSON.stringify(copilotState.recent_context || {})}
+Last updated: ${copilotState.updated_at || 'Unknown'}`;
+            }
+
             const systemPrompt = `You are the Marketing Co-Pilot for SUITE, an AI-native app ecosystem. You help Stuart with daily content operations.
 
 Your job:
@@ -17967,9 +18042,11 @@ Your job:
 4. Ask for images/screenshots when needed
 5. Track what's been posted to avoid repetition
 
-Brand voice: Casual, authentic, "building in public" vibes. No corporate speak.
+Brand voice:
+${brandSection}
 
-Current state: ${copilotState || 'Not yet created - help user create it'}
+Current state:
+${stateSection}
 
 Be concise but helpful. Use markdown formatting. When showing posts, describe them clearly.`;
 
@@ -17988,21 +18065,43 @@ Be concise but helpful. Use markdown formatting. When showing posts, describe th
         }
 
         async function createInitialState(userContext, aiResponse) {
+            const today = new Date().toISOString().split('T')[0];
+
             // Create state from user's context
             const state = {
-                created: new Date().toISOString(),
+                date: today,
                 priorities: [],
-                recentContext: userContext,
-                lastUpdated: new Date().toISOString()
+                recent_context: { notes: [userContext], shipped: [], metrics: {} },
+                raw_content: userContext,
+                updated_at: new Date().toISOString()
             };
 
-            copilotState = JSON.stringify(state);
-            localStorage.setItem('copilot_state', copilotState);
+            if (supabaseClient) {
+                try {
+                    // Save current state
+                    const { data, error } = await supabaseClient
+                        .from('marketing_state')
+                        .upsert(state, { onConflict: 'id' })
+                        .select()
+                        .single();
 
-            // Archive to history
-            const history = JSON.parse(localStorage.getItem('copilot_state_history') || '[]');
-            history.push({ date: new Date().toISOString().split('T')[0], state: copilotState });
-            localStorage.setItem('copilot_state_history', JSON.stringify(history.slice(-30))); // Keep last 30
+                    if (data) {
+                        copilotState = data;
+                    }
+
+                    // Archive to history
+                    await supabaseClient.from('marketing_state_history').insert({
+                        date: today,
+                        state_content: userContext,
+                        priorities: []
+                    });
+                } catch (err) {
+                    console.log('[Copilot] Save state error:', err);
+                }
+            }
+
+            // Also save to localStorage as backup
+            localStorage.setItem('copilot_state', JSON.stringify(state));
         }
 
         async function generateTodaysPlan() {
