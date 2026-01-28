@@ -583,6 +583,202 @@
         .scheduled-action-btn:hover {
             color: var(--text-primary);
         }
+
+        /* This Week Guide */
+        .week-guide {
+            max-width: 700px;
+        }
+
+        .week-header {
+            background: linear-gradient(135deg, var(--accent) 0%, #a08050 100%);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            color: #000;
+        }
+
+        .week-header h1 {
+            font-size: 1.5rem;
+            margin-bottom: 4px;
+        }
+
+        .week-header p {
+            opacity: 0.8;
+            font-size: 0.95rem;
+        }
+
+        .week-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .week-section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .week-section-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--bg-elevated);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .week-section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .week-section-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px;
+            background: var(--bg-elevated);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .task-item:hover {
+            background: #2a2a2a;
+        }
+
+        .task-item.completed {
+            opacity: 0.5;
+        }
+
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+        }
+
+        .task-checkbox {
+            width: 22px;
+            height: 22px;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 2px;
+            transition: all 0.2s;
+        }
+
+        .task-item.completed .task-checkbox {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .task-checkbox-icon {
+            color: #000;
+            font-size: 0.8rem;
+            display: none;
+        }
+
+        .task-item.completed .task-checkbox-icon {
+            display: block;
+        }
+
+        .task-content {
+            flex: 1;
+        }
+
+        .task-text {
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+        }
+
+        .task-hint {
+            font-size: 0.8rem;
+            color: var(--text-tertiary);
+        }
+
+        .task-day {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--accent);
+            background: rgba(201, 166, 107, 0.15);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .tip-box {
+            background: rgba(201, 166, 107, 0.1);
+            border: 1px solid rgba(201, 166, 107, 0.3);
+            border-radius: 10px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+
+        .tip-box-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+
+        .tip-box p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: var(--bg-elevated);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 8px;
+        }
+
+        .caption-formula {
+            background: var(--bg-elevated);
+            border-radius: 10px;
+            padding: 16px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            line-height: 1.8;
+            color: var(--text-secondary);
+        }
+
+        .caption-formula strong {
+            color: var(--accent);
+        }
     </style>
 </head>
 <body>
@@ -603,9 +799,9 @@
             <div class="header-left">
                 <div class="header-logo">Galtwood Co</div>
                 <nav class="header-nav">
-                    <button class="header-nav-btn active" data-view="generate" onclick="switchView('generate')">Generate</button>
+                    <button class="header-nav-btn active" data-view="thisweek" onclick="switchView('thisweek')">This Week</button>
+                    <button class="header-nav-btn" data-view="generate" onclick="switchView('generate')">Generate</button>
                     <button class="header-nav-btn" data-view="calendar" onclick="switchView('calendar')">Calendar</button>
-                    <button class="header-nav-btn" data-view="scheduled" onclick="switchView('scheduled')">Scheduled</button>
                 </nav>
             </div>
             <div class="header-right">
@@ -618,8 +814,153 @@
         </header>
 
         <main class="main-content">
+            <!-- This Week View -->
+            <div class="view-panel active" id="viewThisweek">
+                <div class="week-guide">
+                    <div class="week-header">
+                        <h1>📸 Your Content Plan</h1>
+                        <p>Simple weekly tasks to grow your Instagram presence</p>
+                    </div>
+
+                    <!-- Photo Tasks -->
+                    <div class="week-section">
+                        <div class="week-section-header">
+                            <div class="week-section-icon">📷</div>
+                            <div>
+                                <div class="week-section-title">Photos to Capture</div>
+                                <div class="week-section-subtitle">Take these during your normal work this week</div>
+                            </div>
+                        </div>
+                        <div class="task-list" id="photoTasks">
+                            <div class="task-item" onclick="toggleTask(this)">
+                                <div class="task-checkbox"><span class="task-checkbox-icon">✓</span></div>
+                                <div class="task-content">
+                                    <div class="task-text">Raw slab or lumber before you start</div>
+                                    <div class="task-hint">Show the starting material - customers love seeing the "before"</div>
+                                </div>
+                            </div>
+                            <div class="task-item" onclick="toggleTask(this)">
+                                <div class="task-checkbox"><span class="task-checkbox-icon">✓</span></div>
+                                <div class="task-content">
+                                    <div class="task-text">Mid-project work-in-progress shot</div>
+                                    <div class="task-hint">Glue-up, clamping, sanding, routing - any process step</div>
+                                </div>
+                            </div>
+                            <div class="task-item" onclick="toggleTask(this)">
+                                <div class="task-checkbox"><span class="task-checkbox-icon">✓</span></div>
+                                <div class="task-content">
+                                    <div class="task-text">Close-up detail shot</div>
+                                    <div class="task-hint">Grain pattern, joint detail, finish close-up - show the craftsmanship</div>
+                                </div>
+                            </div>
+                            <div class="task-item" onclick="toggleTask(this)">
+                                <div class="task-checkbox"><span class="task-checkbox-icon">✓</span></div>
+                                <div class="task-content">
+                                    <div class="task-text">Finished piece (good lighting!)</div>
+                                    <div class="task-hint">Natural light works best - near a window or outside</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tip-box">
+                            <div class="tip-box-title">💡 Pro Tip</div>
+                            <p>Don't overthink it - phone photos are fine. Just wipe sawdust off the lens and get good natural lighting. One project = 4+ posts worth of content.</p>
+                        </div>
+                    </div>
+
+                    <!-- Posting Schedule -->
+                    <div class="week-section">
+                        <div class="week-section-header">
+                            <div class="week-section-icon">📅</div>
+                            <div>
+                                <div class="week-section-title">Posting Schedule</div>
+                                <div class="week-section-subtitle">3 posts per week - that's it</div>
+                            </div>
+                        </div>
+                        <div class="task-list" id="postTasks">
+                            <div class="task-item" onclick="toggleTask(this)">
+                                <div class="task-checkbox"><span class="task-checkbox-icon">✓</span></div>
+                                <div class="task-content">
+                                    <div class="task-text">Post 1: Process or work-in-progress shot</div>
+                                    <div class="task-hint">Show the craft - sanding, gluing, cutting, routing</div>
+                                </div>
+                                <div class="task-day">MON</div>
+                            </div>
+                            <div class="task-item" onclick="toggleTask(this)">
+                                <div class="task-checkbox"><span class="task-checkbox-icon">✓</span></div>
+                                <div class="task-content">
+                                    <div class="task-text">Post 2: Detail or shop life shot</div>
+                                    <div class="task-hint">Grain close-up, tools, workspace, sawdust vibes</div>
+                                </div>
+                                <div class="task-day">WED</div>
+                            </div>
+                            <div class="task-item" onclick="toggleTask(this)">
+                                <div class="task-checkbox"><span class="task-checkbox-icon">✓</span></div>
+                                <div class="task-content">
+                                    <div class="task-text">Post 3: Finished piece or delivery</div>
+                                    <div class="task-hint">The hero shot - completed work in good lighting</div>
+                                </div>
+                                <div class="task-day">FRI</div>
+                            </div>
+                        </div>
+
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="weekProgress" style="width: 0%"></div>
+                        </div>
+                        <div class="progress-text" id="progressText">0 of 3 posts this week</div>
+                    </div>
+
+                    <!-- Caption Formula -->
+                    <div class="week-section">
+                        <div class="week-section-header">
+                            <div class="week-section-icon">✍️</div>
+                            <div>
+                                <div class="week-section-title">Easy Caption Formula</div>
+                                <div class="week-section-subtitle">Copy this structure for every post</div>
+                            </div>
+                        </div>
+                        <div class="caption-formula">
+<strong>[What it is]</strong> + <strong>[One interesting detail]</strong> + <strong>[Call to action]</strong>
+
+Example:
+"Black walnut live edge desk heading to its new home in Toronto. This slab had the most incredible feathered grain pattern I've seen all year. DM for custom orders →"
+                        </div>
+                        <div class="tip-box">
+                            <div class="tip-box-title">Hashtags to Use</div>
+                            <p>#galtwoodco #customfurniture #liveedge #woodworking #handcrafted #walnut #torontofurniture #madeinontario #customtable #woodwork</p>
+                        </div>
+                    </div>
+
+                    <!-- Weekly Time Commitment -->
+                    <div class="week-section">
+                        <div class="week-section-header">
+                            <div class="week-section-icon">⏱️</div>
+                            <div>
+                                <div class="week-section-title">Time Required</div>
+                                <div class="week-section-subtitle">This should take ~15 minutes total per week</div>
+                            </div>
+                        </div>
+                        <div class="task-list">
+                            <div class="task-item" style="cursor: default;">
+                                <div class="task-content">
+                                    <div class="task-text">Taking photos during work</div>
+                                    <div class="task-hint">2-3 minutes scattered through your week</div>
+                                </div>
+                                <div class="task-day">~3 min</div>
+                            </div>
+                            <div class="task-item" style="cursor: default;">
+                                <div class="task-content">
+                                    <div class="task-text">Sunday batch session</div>
+                                    <div class="task-hint">Pick 3 photos, write captions, schedule posts</div>
+                                </div>
+                                <div class="task-day">~12 min</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Generate View -->
-            <div class="view-panel active" id="viewGenerate">
+            <div class="view-panel" id="viewGenerate">
                 <div class="section-header">
                     <h1>Content Generator</h1>
                     <p>Create posts, captions, and content ideas for Galtwood Co</p>
@@ -1020,6 +1361,74 @@ Write the content now. Be concise but compelling. For Instagram, include 5-10 re
             div.textContent = text;
             return div.innerHTML;
         }
+
+        // Task Management for This Week view
+        function toggleTask(element) {
+            element.classList.toggle('completed');
+            saveTaskProgress();
+            updateWeekProgress();
+        }
+
+        function saveTaskProgress() {
+            const weekKey = getWeekKey();
+            const photoTasks = document.querySelectorAll('#photoTasks .task-item');
+            const postTasks = document.querySelectorAll('#postTasks .task-item');
+
+            const progress = {
+                photos: Array.from(photoTasks).map(t => t.classList.contains('completed')),
+                posts: Array.from(postTasks).map(t => t.classList.contains('completed'))
+            };
+
+            localStorage.setItem('galtwood_tasks_' + weekKey, JSON.stringify(progress));
+        }
+
+        function loadTaskProgress() {
+            const weekKey = getWeekKey();
+            const saved = localStorage.getItem('galtwood_tasks_' + weekKey);
+
+            if (saved) {
+                const progress = JSON.parse(saved);
+                const photoTasks = document.querySelectorAll('#photoTasks .task-item');
+                const postTasks = document.querySelectorAll('#postTasks .task-item');
+
+                progress.photos.forEach((completed, i) => {
+                    if (completed && photoTasks[i]) photoTasks[i].classList.add('completed');
+                });
+
+                progress.posts.forEach((completed, i) => {
+                    if (completed && postTasks[i]) postTasks[i].classList.add('completed');
+                });
+            }
+
+            updateWeekProgress();
+        }
+
+        function updateWeekProgress() {
+            const postTasks = document.querySelectorAll('#postTasks .task-item');
+            const completed = document.querySelectorAll('#postTasks .task-item.completed').length;
+            const total = postTasks.length;
+
+            const progressBar = document.getElementById('weekProgress');
+            const progressText = document.getElementById('progressText');
+
+            if (progressBar) progressBar.style.width = (completed / total * 100) + '%';
+            if (progressText) progressText.textContent = completed + ' of ' + total + ' posts this week';
+        }
+
+        function getWeekKey() {
+            // Get ISO week number
+            const now = new Date();
+            const start = new Date(now.getFullYear(), 0, 1);
+            const week = Math.ceil(((now - start) / 86400000 + start.getDay() + 1) / 7);
+            return now.getFullYear() + '-W' + week;
+        }
+
+        // Load task progress when dashboard loads
+        const originalShowDashboard = showDashboard;
+        showDashboard = function() {
+            originalShowDashboard();
+            loadTaskProgress();
+        };
     </script>
 </body>
 </html>
