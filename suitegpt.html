@@ -25145,7 +25145,7 @@ Be concise but helpful. Use markdown formatting.`;
                 const existingApps = Object.values(SUITE_APPS).map(app => app.name.toLowerCase());
                 const existingAppsList = existingApps.join(', ');
 
-                const response = await fetch('/api/groq', {
+                const response = await fetch('/api/gemini', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -25160,26 +25160,41 @@ Requirements:
 - Must be buildable as a single-page web app
 - Should be unique and interesting
 - Describe it in one short sentence (under 15 words)
-- Just output the idea, nothing else
+- Just output the idea, nothing else. No quotes, no explanation.
 
-Example format: "A mood-based playlist generator that matches music to your current emotion"
+Example format: A mood-based playlist generator that matches music to your current emotion
 
 Your novel app idea:`
                         }],
-                        model: 'llama-3.3-70b-versatile',
-                        temperature: 0.9,
-                        max_tokens: 100
+                        model: 'gemini-2.0-flash',
+                        temperature: 1.0
                     })
                 });
 
+                if (!response.ok) {
+                    throw new Error('API request failed');
+                }
+
                 const data = await response.json();
                 if (data.text) {
-                    input.value = data.text.trim().replace(/^["']|["']$/g, '');
+                    input.value = data.text.trim().replace(/^["']|["']$/g, '').replace(/\n/g, ' ');
                     updateQuickAppBuildBtn();
+                } else {
+                    throw new Error('No text in response');
                 }
             } catch (error) {
                 console.error('Failed to generate idea:', error);
-                input.value = 'A personal time capsule app where you write letters to your future self';
+                // Fallback to random creative ideas
+                const fallbackIdeas = [
+                    'A personal time capsule app where you write letters to your future self',
+                    'A decision spinner that helps you choose between options with fun animations',
+                    'A daily gratitude jar that collects and displays your grateful moments',
+                    'A focus timer that grows a virtual plant while you work',
+                    'A random act of kindness generator with local suggestions',
+                    'A dream journal with mood tracking and pattern analysis',
+                    'A micro-goals tracker that celebrates tiny daily wins'
+                ];
+                input.value = fallbackIdeas[Math.floor(Math.random() * fallbackIdeas.length)];
                 updateQuickAppBuildBtn();
             }
 
