@@ -7189,9 +7189,192 @@
             .marketing-header {
                 flex-direction: column;
             }
-            .calendar-week {
+            .calendar-week, .schedule-grid {
                 grid-template-columns: 1fr;
             }
+        }
+
+        /* Generate Button */
+        .marketing-generate-btn {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .marketing-generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(34, 197, 94, 0.4);
+        }
+
+        /* Content Schedule Grid */
+        .content-schedule-section {
+            margin-bottom: 28px;
+        }
+
+        .schedule-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .schedule-legend {
+            display: flex;
+            gap: 12px;
+            font-size: 0.75rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .legend-item::before {
+            content: '';
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+        }
+
+        .legend-item.empty::before { background: var(--bg-main); border: 1px dashed var(--border-subtle); }
+        .legend-item.draft::before { background: rgba(99, 102, 241, 0.3); }
+        .legend-item.ready::before { background: rgba(34, 197, 94, 0.3); }
+        .legend-item.posted::before { background: rgba(107, 114, 128, 0.3); }
+
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 14px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .schedule-day {
+            background: var(--bg-main);
+            border-radius: 10px;
+            padding: 10px;
+            min-height: 180px;
+        }
+
+        .schedule-day.weekend { opacity: 0.8; }
+
+        .schedule-day-header {
+            font-weight: 700;
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .schedule-day-date {
+            color: var(--text-tertiary);
+            font-weight: 400;
+            font-size: 0.7rem;
+        }
+
+        .schedule-posts { display: flex; flex-direction: column; gap: 6px; }
+
+        .schedule-post {
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .schedule-post:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .schedule-post.empty {
+            background: var(--bg-card);
+            border: 1px dashed var(--border-subtle);
+            color: var(--text-tertiary);
+            text-align: center;
+        }
+
+        .schedule-post.empty:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
+        .schedule-post.draft { background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.3); }
+        .schedule-post.ready { background: rgba(34, 197, 94, 0.15); border-color: rgba(34, 197, 94, 0.3); }
+        .schedule-post.posted { background: rgba(107, 114, 128, 0.15); opacity: 0.7; }
+
+        .schedule-post-time { font-weight: 600; margin-bottom: 2px; color: var(--text-secondary); }
+        .schedule-post-type { display: flex; align-items: center; gap: 4px; }
+        .schedule-post-preview { color: var(--text-tertiary); font-size: 0.65rem; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* Cadence Toggle */
+        .cadences-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .admin-badge { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.7rem; font-weight: 700; }
+
+        .cadence-toggle { position: relative; width: 44px; height: 24px; margin-left: auto; margin-right: 8px; }
+        .cadence-toggle input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #374151; transition: 0.3s; border-radius: 24px; }
+        .toggle-slider::before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: 0.3s; border-radius: 50%; }
+        .cadence-toggle input:checked + .toggle-slider { background-color: #22c55e; }
+        .cadence-toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+        .cadence-card[data-active="false"] { opacity: 0.5; }
+        .cadence-card[data-active="false"] .cadence-status.active { background: rgba(239, 68, 68, 0.15) !important; color: #ef4444 !important; }
+        .cadence-card[data-active="false"] .cadence-status.active::after { content: ' (PAUSED)'; }
+
+        /* Post Modal */
+        .post-modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); z-index: 10000; align-items: center; justify-content: center; padding: 20px; }
+        .post-modal-overlay.active { display: flex; }
+        .post-modal { background: var(--bg-card); border-radius: 16px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border-subtle); }
+        .post-modal-header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--border-subtle); flex-wrap: wrap; }
+        .post-modal-title { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 1.1rem; }
+        .post-modal-icon { font-size: 1.3rem; }
+        .post-modal-meta { display: flex; align-items: center; gap: 10px; margin-left: auto; font-size: 0.8rem; color: var(--text-tertiary); }
+        .post-status-badge { padding: 4px 10px; border-radius: 6px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; background: rgba(99, 102, 241, 0.15); color: #818cf8; }
+        .post-status-badge.ready { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+        .post-status-badge.posted { background: rgba(107, 114, 128, 0.15); color: #6b7280; }
+        .post-status-badge.empty { background: var(--bg-main); color: var(--text-tertiary); }
+        .post-status-select { padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-subtle); background: var(--bg-main); color: var(--text-primary); font-size: 0.8rem; cursor: pointer; }
+        .post-modal-close { background: none; border: none; font-size: 1.5rem; color: var(--text-tertiary); cursor: pointer; padding: 4px 8px; line-height: 1; }
+        .post-modal-close:hover { color: var(--text-primary); }
+        .post-modal-body { padding: 20px; }
+        .post-cadence-info { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 0.85rem; }
+        .post-cadence-label { color: var(--text-tertiary); }
+        .post-content-area { margin-bottom: 16px; }
+        .post-content-area label, .post-image-area label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 8px; color: var(--text-secondary); }
+        .post-content-input { width: 100%; min-height: 150px; padding: 14px; border-radius: 10px; border: 1px solid var(--border-subtle); background: var(--bg-main); color: var(--text-primary); font-size: 0.9rem; resize: vertical; font-family: inherit; }
+        .post-content-input:focus { outline: none; border-color: var(--accent-primary); }
+        .post-image-upload { display: flex; align-items: center; gap: 12px; }
+        .upload-btn { padding: 10px 16px; border-radius: 8px; border: 1px dashed var(--border-subtle); background: var(--bg-main); color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
+        .upload-btn:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
+        .image-preview { position: relative; width: 80px; height: 80px; border-radius: 8px; overflow: hidden; }
+        .image-preview img { width: 100%; height: 100%; object-fit: cover; }
+        .remove-image { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; border-radius: 50%; background: rgba(0,0,0,0.7); color: white; border: none; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; }
+        .post-modal-actions { display: flex; gap: 8px; padding: 16px 20px; border-top: 1px solid var(--border-subtle); flex-wrap: wrap; }
+        .post-action-btn { padding: 10px 16px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; border: none; background: var(--accent-primary); color: #000; }
+        .post-action-btn:hover { transform: translateY(-1px); }
+        .post-action-btn.secondary { background: var(--bg-main); color: var(--text-secondary); }
+        .post-action-btn.copy { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
+        .post-action-btn.primary { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; }
+        .post-proposals-section { padding: 16px 20px; border-top: 1px solid var(--border-subtle); }
+        .post-proposals-section h5 { font-size: 0.9rem; margin: 0 0 12px 0; }
+        .post-proposals-list { margin-bottom: 12px; }
+        .no-proposals { color: var(--text-tertiary); font-size: 0.85rem; font-style: italic; }
+        .propose-edit-btn { padding: 8px 14px; border-radius: 6px; background: rgba(255, 140, 66, 0.15); color: var(--accent-primary); border: none; font-weight: 600; font-size: 0.8rem; cursor: pointer; }
+        .propose-edit-btn:hover { background: rgba(255, 140, 66, 0.25); }
+
+        @media (max-width: 900px) {
+            .schedule-grid { grid-template-columns: repeat(2, 1fr); }
         }
 
         /* Agent Cards Grid */
@@ -15829,27 +16012,283 @@
         }
 
         // ===== Marketing View Functions =====
-        function showProposeCadenceModal() {
-            alert('Propose Cadence feature coming soon!\n\nYou\'ll be able to:\n- Propose new marketing cadences\n- Suggest changes to existing ones\n- Set frequency, logic, and schedule');
+        let marketingSchedule = {};
+        let currentPostId = null;
+        const isMarketingAdmin = () => {
+            const email = localStorage.getItem('user_email') || '';
+            return email.includes('stuart') || email.includes('5915');
+        };
+
+        // Cadence definitions
+        const CADENCES = {
+            'x-posts': { name: 'X Posts', icon: '𝕏', times: ['10:00', '15:00', '20:00'], days: [0,1,2,3,4,5,6] },
+            'app-highlights': { name: 'App Highlight', icon: '📱', times: ['12:00'], days: [0] },
+            'ecosystem-updates': { name: 'Ecosystem Update', icon: '🌐', times: ['19:00'], days: [1,2,3,4,5] },
+            'linkedin-posts': { name: 'LinkedIn', icon: '💼', times: ['09:00'], days: [2, 4] }
+        };
+
+        function initMarketingView() {
+            loadMarketingSchedule();
+            renderScheduleGrid();
+            if (isMarketingAdmin()) {
+                document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
+                document.getElementById('adminBadge').style.display = '';
+            }
+        }
+
+        function loadMarketingSchedule() {
+            const saved = localStorage.getItem('marketing_schedule');
+            if (saved) {
+                marketingSchedule = JSON.parse(saved);
+            } else {
+                generateWeekSchedule();
+            }
+        }
+
+        function saveMarketingSchedule() {
+            localStorage.setItem('marketing_schedule', JSON.stringify(marketingSchedule));
+        }
+
+        function generateWeekSchedule() {
+            marketingSchedule = {};
+            const today = new Date();
+            const startOfWeek = new Date(today);
+            startOfWeek.setDate(today.getDate() - today.getDay());
+
+            for (let d = 0; d < 7; d++) {
+                const date = new Date(startOfWeek);
+                date.setDate(startOfWeek.getDate() + d);
+                const dateKey = date.toISOString().split('T')[0];
+                marketingSchedule[dateKey] = [];
+
+                Object.entries(CADENCES).forEach(([cadenceId, cadence]) => {
+                    if (cadence.days.includes(d)) {
+                        cadence.times.forEach(time => {
+                            marketingSchedule[dateKey].push({
+                                id: `${dateKey}-${cadenceId}-${time}`,
+                                cadence: cadenceId,
+                                time: time,
+                                status: 'empty',
+                                content: '',
+                                image: null
+                            });
+                        });
+                    }
+                });
+
+                marketingSchedule[dateKey].sort((a, b) => a.time.localeCompare(b.time));
+            }
+
+            saveMarketingSchedule();
+            renderScheduleGrid();
+        }
+
+        function renderScheduleGrid() {
+            const grid = document.getElementById('scheduleGrid');
+            if (!grid) return;
+
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const today = new Date();
+            const startOfWeek = new Date(today);
+            startOfWeek.setDate(today.getDate() - today.getDay());
+
+            let html = '';
+            for (let d = 0; d < 7; d++) {
+                const date = new Date(startOfWeek);
+                date.setDate(startOfWeek.getDate() + d);
+                const dateKey = date.toISOString().split('T')[0];
+                const posts = marketingSchedule[dateKey] || [];
+                const isWeekend = d === 0 || d === 6;
+
+                html += `
+                    <div class="schedule-day ${isWeekend ? 'weekend' : ''}">
+                        <div class="schedule-day-header">
+                            <span>${days[d]}</span>
+                            <span class="schedule-day-date">${date.getDate()}</span>
+                        </div>
+                        <div class="schedule-posts">
+                            ${posts.map(post => renderSchedulePost(post)).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            grid.innerHTML = html;
+        }
+
+        function renderSchedulePost(post) {
+            const cadence = CADENCES[post.cadence];
+            const preview = post.content ? post.content.substring(0, 30) + '...' : '';
+
+            return `
+                <div class="schedule-post ${post.status}" onclick="openPostModal('${post.id}')">
+                    <div class="schedule-post-time">${formatTime(post.time)}</div>
+                    <div class="schedule-post-type">
+                        <span>${cadence?.icon || '📝'}</span>
+                        <span>${cadence?.name || 'Post'}</span>
+                    </div>
+                    ${post.status === 'empty' ? '<div style="margin-top:4px">+ Add</div>' : ''}
+                    ${preview ? `<div class="schedule-post-preview">${preview}</div>` : ''}
+                </div>
+            `;
+        }
+
+        function formatTime(time) {
+            const [h, m] = time.split(':');
+            const hour = parseInt(h);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const hour12 = hour % 12 || 12;
+            return `${hour12}${m !== '00' ? ':' + m : ''} ${ampm}`;
+        }
+
+        function openPostModal(postId) {
+            currentPostId = postId;
+            const [dateKey] = postId.split('-');
+            const posts = marketingSchedule[dateKey] || [];
+            const post = posts.find(p => p.id === postId);
+
+            if (!post) return;
+
+            const cadence = CADENCES[post.cadence];
+            const date = new Date(dateKey + 'T' + post.time);
+
+            document.getElementById('postModalIcon').textContent = cadence?.icon || '📝';
+            document.getElementById('postModalTitle').textContent = cadence?.name || 'Post';
+            document.getElementById('postModalDate').textContent = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ', ' + formatTime(post.time);
+            document.getElementById('postCadenceName').textContent = cadence?.name || 'Unknown';
+            document.getElementById('postContentInput').value = post.content || '';
+
+            const badge = document.getElementById('postStatusBadge');
+            badge.textContent = post.status.toUpperCase();
+            badge.className = 'post-status-badge ' + post.status;
+
+            if (isMarketingAdmin()) {
+                document.getElementById('postStatusSelect').value = post.status;
+            }
+
+            const preview = document.getElementById('imagePreview');
+            if (post.image) {
+                document.getElementById('previewImg').src = post.image;
+                preview.style.display = 'block';
+            } else {
+                preview.style.display = 'none';
+            }
+
+            document.getElementById('postModalOverlay').classList.add('active');
+        }
+
+        function closePostModal(e) {
+            if (e && e.target !== e.currentTarget) return;
+            document.getElementById('postModalOverlay').classList.remove('active');
+            currentPostId = null;
+        }
+
+        function savePostContent() {
+            if (!currentPostId) return;
+            const [dateKey] = currentPostId.split('-');
+            const posts = marketingSchedule[dateKey];
+            const post = posts?.find(p => p.id === currentPostId);
+
+            if (post) {
+                post.content = document.getElementById('postContentInput').value;
+                if (post.content && post.status === 'empty') {
+                    post.status = 'draft';
+                }
+                saveMarketingSchedule();
+                renderScheduleGrid();
+                closePostModal();
+            }
+        }
+
+        function copyPostContent() {
+            const content = document.getElementById('postContentInput').value;
+            navigator.clipboard.writeText(content);
+            alert('Content copied to clipboard!');
+        }
+
+        function updatePostStatus(status) {
+            if (!currentPostId || !isMarketingAdmin()) return;
+            const [dateKey] = currentPostId.split('-');
+            const post = marketingSchedule[dateKey]?.find(p => p.id === currentPostId);
+            if (post) {
+                post.status = status;
+                saveMarketingSchedule();
+
+                const badge = document.getElementById('postStatusBadge');
+                badge.textContent = status.toUpperCase();
+                badge.className = 'post-status-badge ' + status;
+            }
+        }
+
+        function markAsReady() {
+            updatePostStatus('ready');
+            savePostContent();
+        }
+
+        function handleImageUpload(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('previewImg').src = e.target.result;
+                    document.getElementById('imagePreview').style.display = 'block';
+
+                    if (currentPostId) {
+                        const [dateKey] = currentPostId.split('-');
+                        const post = marketingSchedule[dateKey]?.find(p => p.id === currentPostId);
+                        if (post) {
+                            post.image = e.target.result;
+                            saveMarketingSchedule();
+                        }
+                    }
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function removeImage() {
+            document.getElementById('imagePreview').style.display = 'none';
+            document.getElementById('postImageInput').value = '';
+            if (currentPostId) {
+                const [dateKey] = currentPostId.split('-');
+                const post = marketingSchedule[dateKey]?.find(p => p.id === currentPostId);
+                if (post) {
+                    post.image = null;
+                    saveMarketingSchedule();
+                }
+            }
+        }
+
+        function toggleCadence(cadenceId, active) {
+            const card = document.querySelector(`[data-cadence="${cadenceId}"]`);
+            if (card) {
+                card.dataset.active = active.toString();
+            }
         }
 
         function proposeCadenceChange(cadenceId) {
-            const cadenceNames = {
-                'x-posts': 'X Posts',
-                'app-highlights': 'App Highlights',
-                'ecosystem-updates': 'Ecosystem Updates',
-                'linkedin-posts': 'LinkedIn Thought Leadership',
-                'video-content': 'Video Content',
-                'community-engagement': 'Community Engagement'
-            };
-
-            const name = cadenceNames[cadenceId] || cadenceId;
+            const cadence = CADENCES[cadenceId];
+            const name = cadence?.name || cadenceId;
             const proposal = prompt(`Propose a change to "${name}" cadence:\n\nDescribe your proposed change (frequency, logic, timing, etc.):`);
-
             if (proposal && proposal.trim()) {
-                alert(`Your proposal for "${name}" has been submitted!\n\nProposal: ${proposal}\n\nThis will appear in the Proposed Changes section for voting.`);
+                alert(`Your proposal for "${name}" has been submitted!\n\nThis will appear in the governance queue for voting.`);
             }
         }
+
+        function proposePostEdit() {
+            const edit = prompt('Propose an edit to this post:');
+            if (edit && edit.trim()) {
+                alert('Your edit proposal has been submitted for voting!');
+            }
+        }
+
+        // Initialize when switching to marketing view
+        const origSwitchFactory = switchFactoryMainView;
+        switchFactoryMainView = function(view, skip) {
+            origSwitchFactory(view, skip);
+            if (view === 'marketing') {
+                initMarketingView();
+            }
+        };
 
         function switchFactorySection(section) {
             factoryCurrentSection = section;
