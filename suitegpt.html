@@ -7403,6 +7403,104 @@
             gap: 20px;
         }
 
+        /* Co-Pilot Layout with Sidebar */
+        .copilot-layout {
+            display: flex;
+            gap: 16px;
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        /* Current State Sidebar */
+        .copilot-state-sidebar {
+            width: 260px;
+            flex-shrink: 0;
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid var(--border-subtle);
+            display: flex;
+            flex-direction: column;
+            height: 400px;
+        }
+
+        .state-sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-subtle);
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .state-edit-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.85rem;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+
+        .state-edit-btn:hover {
+            opacity: 1;
+        }
+
+        .state-sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 16px;
+            font-size: 0.85rem;
+        }
+
+        .state-empty {
+            text-align: center;
+            color: var(--text-tertiary);
+            padding: 20px 0;
+        }
+
+        .state-empty-hint {
+            font-size: 0.75rem;
+            margin-top: 8px;
+        }
+
+        .state-section {
+            margin-bottom: 16px;
+        }
+
+        .state-section-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-tertiary);
+            margin-bottom: 6px;
+        }
+
+        .state-section-content {
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .state-priority {
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+
+        .state-priority::before {
+            content: "•";
+            color: var(--accent-primary);
+        }
+
+        .state-updated {
+            font-size: 0.7rem;
+            color: var(--text-tertiary);
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-subtle);
+        }
+
         /* Co-Pilot Chat Section */
         .copilot-section {
             display: flex;
@@ -7412,8 +7510,42 @@
             border: 1px solid var(--border-subtle);
             overflow: hidden;
             height: 400px;
-            width: 100%;
-            max-width: 800px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .copilot-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-left: auto;
+        }
+
+        .copilot-refresh-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            opacity: 0.6;
+            transition: all 0.2s;
+            padding: 4px;
+        }
+
+        .copilot-refresh-btn:hover {
+            opacity: 1;
+            transform: rotate(180deg);
+        }
+
+        @media (max-width: 900px) {
+            .copilot-layout {
+                flex-direction: column;
+            }
+
+            .copilot-state-sidebar {
+                width: 100%;
+                height: auto;
+                max-height: 200px;
+            }
         }
 
         .copilot-header {
@@ -15606,39 +15738,61 @@
                             <!-- Marketing View - Co-Pilot -->
                             <div class="factory-main-view" id="factoryMarketingView" style="display: none;">
                                 <div class="marketing-container">
-                                    <!-- Marketing Co-Pilot Chat -->
-                                    <div class="copilot-section">
-                                        <div class="copilot-header">
-                                            <div class="copilot-avatar">🤖</div>
-                                            <div class="copilot-title">
-                                                <h3>Marketing Co-Pilot</h3>
-                                                <p>Your daily content operations assistant</p>
+                                    <!-- Co-Pilot Layout with Sidebar -->
+                                    <div class="copilot-layout">
+                                        <!-- Current State Sidebar -->
+                                        <div class="copilot-state-sidebar" id="copilotStateSidebar">
+                                            <div class="state-sidebar-header">
+                                                <span>Current State</span>
+                                                <button class="state-edit-btn" onclick="editCurrentState()" title="Edit state">✏️</button>
                                             </div>
-                                            <div class="copilot-status">
-                                                <div class="copilot-status-dot"></div>
-                                                <span>Online</span>
+                                            <div class="state-sidebar-content" id="stateSidebarContent">
+                                                <div class="state-empty">
+                                                    <p>No state defined yet</p>
+                                                    <p class="state-empty-hint">Chat with the Co-Pilot to create your marketing state</p>
+                                                </div>
                                             </div>
                                         </div>
 
-                                        <div class="copilot-messages" id="copilotMessages">
-                                            <!-- Messages will be populated by JS -->
-                                        </div>
+                                        <!-- Marketing Co-Pilot Chat -->
+                                        <div class="copilot-section">
+                                            <div class="copilot-header">
+                                                <div class="copilot-avatar">🤖</div>
+                                                <div class="copilot-title">
+                                                    <h3>Marketing Co-Pilot</h3>
+                                                    <p>Your daily content operations assistant</p>
+                                                </div>
+                                                <div class="copilot-header-actions">
+                                                    <button class="copilot-refresh-btn" onclick="resetCopilot()" title="Reset chat & state">
+                                                        🔄
+                                                    </button>
+                                                    <div class="copilot-status">
+                                                        <div class="copilot-status-dot"></div>
+                                                        <span>Online</span>
+                                                    </div>
+                                                </div>
+                                            </div>
 
-                                        <div class="copilot-input-area">
-                                            <div class="copilot-input-wrapper">
-                                                <textarea
-                                                    class="copilot-input"
-                                                    id="copilotInput"
-                                                    placeholder="Type your response..."
-                                                    rows="1"
-                                                    onkeydown="handleCopilotKeydown(event)"
-                                                    oninput="autoResizeCopilotInput(this)"
-                                                ></textarea>
-                                                <button class="copilot-send-btn" id="copilotSendBtn" onclick="sendCopilotMessage()">
-                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
-                                                    </svg>
-                                                </button>
+                                            <div class="copilot-messages" id="copilotMessages">
+                                                <!-- Messages will be populated by JS -->
+                                            </div>
+
+                                            <div class="copilot-input-area">
+                                                <div class="copilot-input-wrapper">
+                                                    <textarea
+                                                        class="copilot-input"
+                                                        id="copilotInput"
+                                                        placeholder="Type your response..."
+                                                        rows="1"
+                                                        onkeydown="handleCopilotKeydown(event)"
+                                                        oninput="autoResizeCopilotInput(this)"
+                                                    ></textarea>
+                                                    <button class="copilot-send-btn" id="copilotSendBtn" onclick="sendCopilotMessage()">
+                                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                            <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                                                        </svg>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -18314,7 +18468,7 @@
 
                     <div class="operator-meta">
                         ${op.email ? `<div class="operator-meta-item">📧 ${escapeHtml(op.email)}</div>` : ''}
-                        ${linkedApp ? `<div class="operator-meta-item">📱 <a href="#" onclick="launchApp('${op.app_key}', '${linkedApp.url}', '${linkedApp.name}'); return false;" class="operator-app-link">${linkedApp.name} App</a></div>` : ''}
+                        ${linkedApp ? `<div class="operator-meta-item">📱 <a href="#" onclick="openMobileAppView('${op.app_key}', '${linkedApp.url}', '${linkedApp.name}'); return false;" class="operator-app-link">${linkedApp.name} App</a></div>` : ''}
                         ${op.url && !linkedApp ? `<div class="operator-meta-item">🔗 <a href="${escapeHtml(op.url)}" target="_blank">${new URL(op.url).hostname}</a></div>` : ''}
                         <div class="operator-meta-item">📅 Added ${formatDate(op.created_at)}</div>
                     </div>
@@ -18327,7 +18481,7 @@
                     ` : ''}
 
                     <div class="operator-card-actions">
-                        ${linkedApp ? `<button class="operator-action-btn operator-action-primary" onclick="launchApp('${op.app_key}', '${linkedApp.url}', '${linkedApp.name}')">📱 Open App</button>` : ''}
+                        ${linkedApp ? `<button class="operator-action-btn operator-action-primary" onclick="openMobileAppView('${op.app_key}', '${linkedApp.url}', '${linkedApp.name}')">📱 Open App</button>` : ''}
                         <button class="operator-action-btn" onclick="editOperator('${op.id}')">Edit</button>
                         <button class="operator-action-btn" onclick="updateOperatorStatus('${op.id}')">Update Status</button>
                         <button class="operator-action-btn" onclick="deleteOperator('${op.id}')">Delete</button>
@@ -18608,6 +18762,7 @@
 
                     if (stateData) {
                         copilotState = stateData;
+                        renderStateSidebar();
                     }
 
                     // Load brand voice
@@ -18680,6 +18835,140 @@ For example:
                 date: today,
                 messages: copilotMessages
             }));
+        }
+
+        function renderStateSidebar() {
+            const container = document.getElementById('stateSidebarContent');
+            if (!container) return;
+
+            if (!copilotState) {
+                container.innerHTML = `
+                    <div class="state-empty">
+                        <p>No state defined yet</p>
+                        <p class="state-empty-hint">Chat with the Co-Pilot to create your marketing state</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const priorities = copilotState.priorities || [];
+            const context = copilotState.recent_context || {};
+            const rawContent = copilotState.raw_content || '';
+            const updated = copilotState.updated_at ? new Date(copilotState.updated_at).toLocaleDateString() : 'Unknown';
+
+            let html = '';
+
+            // Priorities
+            if (priorities.length > 0) {
+                html += `
+                    <div class="state-section">
+                        <div class="state-section-label">Priorities</div>
+                        <div class="state-section-content">
+                            ${priorities.map(p => `<div class="state-priority">${p}</div>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Raw content (main context)
+            if (rawContent) {
+                const truncated = rawContent.length > 300 ? rawContent.substring(0, 300) + '...' : rawContent;
+                html += `
+                    <div class="state-section">
+                        <div class="state-section-label">Context</div>
+                        <div class="state-section-content">${truncated}</div>
+                    </div>
+                `;
+            }
+
+            // Shipped items
+            if (context.shipped && context.shipped.length > 0) {
+                html += `
+                    <div class="state-section">
+                        <div class="state-section-label">Recently Shipped</div>
+                        <div class="state-section-content">
+                            ${context.shipped.map(s => `<div class="state-priority">${s}</div>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Updated timestamp
+            html += `<div class="state-updated">Last updated: ${updated}</div>`;
+
+            container.innerHTML = html;
+        }
+
+        async function resetCopilot() {
+            if (!confirm('Reset the chat and current state? This will start fresh.')) return;
+
+            const today = new Date().toISOString().split('T')[0];
+
+            // Clear local state
+            copilotMessages = [];
+            copilotState = null;
+            copilotLoading = false;
+
+            // Clear from Supabase
+            if (supabaseClient) {
+                try {
+                    // Delete today's chat
+                    await supabaseClient.from('marketing_chat').delete().eq('date', today);
+                    // Delete current state
+                    await supabaseClient.from('marketing_state').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+                    console.log('[Copilot] Reset complete');
+                } catch (err) {
+                    console.log('[Copilot] Reset error:', err);
+                }
+            }
+
+            // Clear localStorage
+            localStorage.removeItem('copilot_chat_today');
+            localStorage.removeItem('copilot_state');
+
+            // Re-render
+            renderStateSidebar();
+            renderCopilotMessages();
+
+            // Start fresh conversation
+            addCopilotMessage('assistant', `Hey! 👋 I'm your Marketing Co-Pilot.
+
+I don't have a current state file yet. Let's create one together so I can help you with daily content.
+
+**What are the main priorities for SUITE right now?**
+
+For example:
+- What did you ship recently?
+- Any upcoming launches?
+- Key metrics to highlight?
+- Current focus areas?`);
+        }
+
+        function editCurrentState() {
+            if (!copilotState) {
+                addCopilotMessage('user', 'I want to update the current state');
+                return;
+            }
+
+            const newContext = prompt('Edit the current state/context:', copilotState.raw_content || '');
+            if (newContext === null) return;
+
+            addCopilotMessage('user', `Updated state: ${newContext}`);
+
+            // Update state
+            copilotState.raw_content = newContext;
+            copilotState.updated_at = new Date().toISOString();
+
+            // Save to Supabase
+            if (supabaseClient) {
+                supabaseClient.from('marketing_state')
+                    .update({ raw_content: newContext, updated_at: copilotState.updated_at })
+                    .eq('id', copilotState.id)
+                    .then(() => console.log('[Copilot] State updated'));
+            }
+
+            renderStateSidebar();
+            addCopilotMessage('assistant', 'Got it! I\'ve updated the current state. What would you like to work on today?');
         }
 
         function renderCopilotMessages() {
@@ -18886,6 +19175,7 @@ Be concise but helpful. Use markdown formatting.`;
 
                     if (data) {
                         copilotState = data;
+                        renderStateSidebar();
                     }
 
                     // Archive to history
@@ -23923,8 +24213,13 @@ Be concise but helpful. Use markdown formatting.`;
                             Select Element
                         </button>
                     </div>
-                    <div class="proposal-app-iframe-container">
-                        <iframe class="proposal-app-iframe" src="${app.url}" id="proposalAppFrame" onload="injectVF()"></iframe>
+                    <div class="proposal-phone-frame" id="proposalPhoneFrame">
+                        <div class="proposal-phone-notch"></div>
+                        <div class="proposal-phone-screen">
+                            <iframe src="${app.url}" id="proposalAppFrame" onload="injectVF()"></iframe>
+                        </div>
+                        <div class="proposal-phone-home"></div>
+                        <div class="proposal-resize-handle"></div>
                     </div>
                 </div>
                 <div class="proposal-chat-panel">
