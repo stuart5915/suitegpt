@@ -7453,52 +7453,131 @@
             font-size: 0.85rem;
         }
 
-        .state-empty {
-            text-align: center;
-            color: var(--text-tertiary);
-            padding: 20px 0;
-        }
-
-        .state-empty-hint {
-            font-size: 0.75rem;
-            margin-top: 8px;
-        }
-
-        .state-section {
+        .state-input-section {
             margin-bottom: 16px;
         }
 
-        .state-section-label {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-tertiary);
-            margin-bottom: 6px;
-        }
-
-        .state-section-content {
+        .state-input-label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
             color: var(--text-secondary);
-            line-height: 1.5;
+            margin-bottom: 8px;
         }
 
-        .state-priority {
+        .state-research-input {
+            width: 100%;
+            background: var(--bg-main);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            resize: none;
+            font-family: inherit;
+        }
+
+        .state-research-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        .github-fetch-row {
             display: flex;
-            align-items: flex-start;
-            gap: 6px;
-            margin-bottom: 4px;
+            gap: 8px;
+            margin-bottom: 8px;
         }
 
-        .state-priority::before {
-            content: "•";
-            color: var(--accent-primary);
+        .github-username-input {
+            flex: 1;
+            background: var(--bg-main);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 0.8rem;
+            color: var(--text-primary);
         }
 
-        .state-updated {
-            font-size: 0.7rem;
+        .github-username-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        .github-fetch-btn {
+            background: var(--bg-main);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .github-fetch-btn:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: var(--accent-primary);
+        }
+
+        .github-activity-preview {
+            background: var(--bg-main);
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 0.75rem;
+            max-height: 80px;
+            overflow-y: auto;
+            color: var(--text-secondary);
+        }
+
+        .github-empty {
             color: var(--text-tertiary);
-            margin-top: 16px;
-            padding-top: 12px;
-            border-top: 1px solid var(--border-subtle);
+            font-style: italic;
+        }
+
+        .github-commit {
+            margin-bottom: 6px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .github-commit:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .github-commit-msg {
+            color: var(--text-primary);
+        }
+
+        .github-commit-repo {
+            color: var(--text-tertiary);
+            font-size: 0.7rem;
+        }
+
+        .generate-posts-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--accent-primary), #f97316);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #000;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 8px;
+        }
+
+        .generate-posts-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 140, 66, 0.3);
+        }
+
+        .generate-posts-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
         }
 
         /* Co-Pilot Chat Section */
@@ -15740,17 +15819,41 @@
                                 <div class="marketing-container">
                                     <!-- Co-Pilot Layout with Sidebar -->
                                     <div class="copilot-layout">
-                                        <!-- Current State Sidebar -->
+                                        <!-- Content Inputs Sidebar -->
                                         <div class="copilot-state-sidebar" id="copilotStateSidebar">
                                             <div class="state-sidebar-header">
-                                                <span>Current State</span>
-                                                <button class="state-edit-btn" onclick="editCurrentState()" title="Edit state">✏️</button>
+                                                <span>Content Inputs</span>
                                             </div>
                                             <div class="state-sidebar-content" id="stateSidebarContent">
-                                                <div class="state-empty">
-                                                    <p>No state defined yet</p>
-                                                    <p class="state-empty-hint">Chat with the Co-Pilot to create your marketing state</p>
+                                                <!-- Research Input -->
+                                                <div class="state-input-section">
+                                                    <label class="state-input-label">📝 Daily Research</label>
+                                                    <textarea
+                                                        class="state-research-input"
+                                                        id="researchInput"
+                                                        placeholder="Paste your research, notes, ideas, things you shipped..."
+                                                        rows="6"
+                                                    ></textarea>
                                                 </div>
+
+                                                <!-- GitHub Fetch -->
+                                                <div class="state-input-section">
+                                                    <label class="state-input-label">🐙 GitHub Activity</label>
+                                                    <div class="github-fetch-row">
+                                                        <input type="text" class="github-username-input" id="githubUsername" placeholder="username" value="anthropics">
+                                                        <button class="github-fetch-btn" onclick="fetchGitHubActivity()">
+                                                            Fetch
+                                                        </button>
+                                                    </div>
+                                                    <div class="github-activity-preview" id="githubActivityPreview">
+                                                        <span class="github-empty">Click Fetch to load recent commits</span>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Generate Button -->
+                                                <button class="generate-posts-btn" onclick="generatePostsFromInputs()">
+                                                    ✨ Generate Posts
+                                                </button>
                                             </div>
                                         </div>
 
@@ -18785,18 +18888,16 @@
 
             // Start conversation
             if (!copilotState) {
-                // Cold start - no state exists
+                // Cold start - guide user to sidebar
                 addCopilotMessage('assistant', `Hey! 👋 I'm your Marketing Co-Pilot.
 
-I don't have a current state file yet. Let's create one together so I can help you with daily content.
+**Ready to generate posts.** Use the sidebar on the left:
 
-**What are the main priorities for SUITE right now?**
+1. **Daily Research** - Paste notes, ideas, things you shipped
+2. **GitHub Activity** - Fetch your recent commits
+3. Click **Generate Posts** and I'll create content for you
 
-For example:
-- What did you ship recently?
-- Any upcoming launches?
-- Key metrics to highlight?
-- Current focus areas?`);
+The posts will appear in the calendar below. Let's ship some content!`);
             } else {
                 // We have state - show today's plan
                 await generateTodaysPlan();
@@ -18838,65 +18939,8 @@ For example:
         }
 
         function renderStateSidebar() {
-            const container = document.getElementById('stateSidebarContent');
-            if (!container) return;
-
-            if (!copilotState) {
-                container.innerHTML = `
-                    <div class="state-empty">
-                        <p>No state defined yet</p>
-                        <p class="state-empty-hint">Chat with the Co-Pilot to create your marketing state</p>
-                    </div>
-                `;
-                return;
-            }
-
-            const priorities = copilotState.priorities || [];
-            const context = copilotState.recent_context || {};
-            const rawContent = copilotState.raw_content || '';
-            const updated = copilotState.updated_at ? new Date(copilotState.updated_at).toLocaleDateString() : 'Unknown';
-
-            let html = '';
-
-            // Priorities
-            if (priorities.length > 0) {
-                html += `
-                    <div class="state-section">
-                        <div class="state-section-label">Priorities</div>
-                        <div class="state-section-content">
-                            ${priorities.map(p => `<div class="state-priority">${p}</div>`).join('')}
-                        </div>
-                    </div>
-                `;
-            }
-
-            // Raw content (main context)
-            if (rawContent) {
-                const truncated = rawContent.length > 300 ? rawContent.substring(0, 300) + '...' : rawContent;
-                html += `
-                    <div class="state-section">
-                        <div class="state-section-label">Context</div>
-                        <div class="state-section-content">${truncated}</div>
-                    </div>
-                `;
-            }
-
-            // Shipped items
-            if (context.shipped && context.shipped.length > 0) {
-                html += `
-                    <div class="state-section">
-                        <div class="state-section-label">Recently Shipped</div>
-                        <div class="state-section-content">
-                            ${context.shipped.map(s => `<div class="state-priority">${s}</div>`).join('')}
-                        </div>
-                    </div>
-                `;
-            }
-
-            // Updated timestamp
-            html += `<div class="state-updated">Last updated: ${updated}</div>`;
-
-            container.innerHTML = html;
+            // No longer used - sidebar is now input-based
+            // Keeping function to avoid errors from existing calls
         }
 
         async function resetCopilot() {
@@ -18931,17 +18975,9 @@ For example:
             renderCopilotMessages();
 
             // Start fresh conversation
-            addCopilotMessage('assistant', `Hey! 👋 I'm your Marketing Co-Pilot.
+            addCopilotMessage('assistant', `Hey! 👋 Chat reset. Ready to go.
 
-I don't have a current state file yet. Let's create one together so I can help you with daily content.
-
-**What are the main priorities for SUITE right now?**
-
-For example:
-- What did you ship recently?
-- Any upcoming launches?
-- Key metrics to highlight?
-- Current focus areas?`);
+Use the sidebar to add your **Daily Research** or **Fetch GitHub** activity, then click **Generate Posts**.`);
         }
 
         function editCurrentState() {
@@ -18969,6 +19005,117 @@ For example:
 
             renderStateSidebar();
             addCopilotMessage('assistant', 'Got it! I\'ve updated the current state. What would you like to work on today?');
+        }
+
+        let githubActivity = [];
+
+        async function fetchGitHubActivity() {
+            const username = document.getElementById('githubUsername').value.trim();
+            if (!username) {
+                alert('Please enter a GitHub username');
+                return;
+            }
+
+            const preview = document.getElementById('githubActivityPreview');
+            preview.innerHTML = '<span class="github-empty">Fetching...</span>';
+
+            try {
+                // Fetch recent events from GitHub API
+                const response = await fetch(`https://api.github.com/users/${username}/events?per_page=10`);
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch GitHub activity');
+                }
+
+                const events = await response.json();
+
+                // Filter for push events and extract commits
+                const commits = [];
+                for (const event of events) {
+                    if (event.type === 'PushEvent' && event.payload.commits) {
+                        for (const commit of event.payload.commits) {
+                            commits.push({
+                                message: commit.message.split('\n')[0], // First line only
+                                repo: event.repo.name,
+                                date: new Date(event.created_at).toLocaleDateString()
+                            });
+                        }
+                    }
+                }
+
+                githubActivity = commits.slice(0, 8); // Keep latest 8
+
+                if (githubActivity.length === 0) {
+                    preview.innerHTML = '<span class="github-empty">No recent commits found</span>';
+                    return;
+                }
+
+                preview.innerHTML = githubActivity.map(c => `
+                    <div class="github-commit">
+                        <div class="github-commit-msg">${c.message}</div>
+                        <div class="github-commit-repo">${c.repo}</div>
+                    </div>
+                `).join('');
+
+                console.log('[GitHub] Fetched activity:', githubActivity);
+            } catch (err) {
+                console.error('[GitHub] Fetch error:', err);
+                preview.innerHTML = '<span class="github-empty">Error fetching activity</span>';
+            }
+        }
+
+        async function generatePostsFromInputs() {
+            const research = document.getElementById('researchInput').value.trim();
+
+            if (!research && githubActivity.length === 0) {
+                alert('Please add some research notes or fetch GitHub activity first');
+                return;
+            }
+
+            // Build context for AI
+            let context = '';
+
+            if (research) {
+                context += `**Daily Research/Notes:**\n${research}\n\n`;
+            }
+
+            if (githubActivity.length > 0) {
+                context += `**Recent GitHub Activity:**\n`;
+                context += githubActivity.map(c => `- ${c.message} (${c.repo})`).join('\n');
+            }
+
+            // Add to chat
+            addCopilotMessage('user', `Generate posts based on this:\n\n${context}`);
+
+            // Generate with AI
+            copilotLoading = true;
+            renderCopilotMessages();
+
+            try {
+                const prompt = `Based on the following inputs, generate 3 X (Twitter) posts. Use the structured format for each post.
+
+${context}
+
+Remember:
+- Keep posts under 280 characters
+- Use casual, builder-focused tone
+- No excessive emojis
+- Focus on what was built/shipped
+
+Generate 3 posts now using the ---POST--- format.`;
+
+                const response = await callCopilotAI(prompt);
+                copilotLoading = false;
+
+                // Parse and save posts
+                await parseAndSavePosts(response);
+
+                addCopilotMessage('assistant', response);
+            } catch (err) {
+                copilotLoading = false;
+                addCopilotMessage('assistant', 'Had trouble generating posts. Try again?');
+                console.error('[Copilot] Generate error:', err);
+            }
         }
 
         function renderCopilotMessages() {
