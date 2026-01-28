@@ -14807,6 +14807,43 @@
                             <p class="builder-choice-subtitle">Build something new or improve what exists</p>
                         </div>
                         <div class="builder-choice-options">
+                            <button class="builder-choice-card" onclick="showCreateAppChoice()">
+                                <div class="builder-choice-icon create">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32">
+                                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                        <path d="M12 8v8M8 12h8"/>
+                                    </svg>
+                                </div>
+                                <h3 class="builder-choice-card-title">Create App</h3>
+                                <p class="builder-choice-card-desc">Build a new app or tool. Describe your idea and get a working prototype.</p>
+                            </button>
+                            <button class="builder-choice-card" onclick="enterBuilderProposalMode()">
+                                <div class="builder-choice-icon proposal">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                        <polyline points="14 2 14 8 20 8"/>
+                                        <line x1="16" y1="13" x2="8" y2="13"/>
+                                        <line x1="16" y1="17" x2="8" y2="17"/>
+                                    </svg>
+                                </div>
+                                <h3 class="builder-choice-card-title">Make Proposal</h3>
+                                <p class="builder-choice-card-desc">Propose changes to an existing app. Fork it or submit to governance.</p>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Create App Sub-Choice Screen -->
+                    <div class="builder-choice-screen" id="createAppChoiceScreen" style="display: none;">
+                        <button class="builder-choice-back" onclick="goBackToBuilderChoice()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                                <path d="M19 12H5M12 19l-7-7 7-7"/>
+                            </svg>
+                        </button>
+                        <div class="builder-choice-header">
+                            <h1 class="builder-choice-title">Create App</h1>
+                            <p class="builder-choice-subtitle">Choose how you want to build</p>
+                        </div>
+                        <div class="builder-choice-options">
                             <button class="builder-choice-card" onclick="enterQuickAppMode()">
                                 <div class="builder-choice-icon quick">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32">
@@ -14825,18 +14862,6 @@
                                 </div>
                                 <h3 class="builder-choice-card-title">Full Build</h3>
                                 <p class="builder-choice-card-desc">More control over features and design. Guided conversation for a refined result.</p>
-                            </button>
-                            <button class="builder-choice-card" onclick="enterBuilderProposalMode()">
-                                <div class="builder-choice-icon proposal">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32">
-                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                        <polyline points="14 2 14 8 20 8"/>
-                                        <line x1="16" y1="13" x2="8" y2="13"/>
-                                        <line x1="16" y1="17" x2="8" y2="17"/>
-                                    </svg>
-                                </div>
-                                <h3 class="builder-choice-card-title">Make Proposal</h3>
-                                <p class="builder-choice-card-desc">Propose changes to an existing app. Fork it or submit to governance.</p>
                             </button>
                         </div>
                     </div>
@@ -18805,6 +18830,8 @@
                 openBuilderMode(true);
                 // Handle sub-routes
                 if (path === '/suitegptbuilder/create') {
+                    showCreateAppChoice();
+                } else if (path === '/suitegptbuilder/create/full') {
                     enterBuilderCreateMode();
                 } else if (path === '/suitegptbuilder/proposal') {
                     enterBuilderProposalMode();
@@ -24862,12 +24889,14 @@ Be concise but helpful. Use markdown formatting.`;
 
         function resetBuilderToChoiceScreen() {
             const choiceScreen = document.getElementById('builderChoiceScreen');
+            const createAppChoiceScreen = document.getElementById('createAppChoiceScreen');
             const builderContent = document.getElementById('builderContent');
             const builderInputArea = document.querySelector('.builder-input-area');
             const quickAppScreen = document.getElementById('quickAppScreen');
             const quickAppPreview = document.getElementById('quickAppPreviewView');
 
             if (choiceScreen) choiceScreen.style.display = 'flex';
+            if (createAppChoiceScreen) createAppChoiceScreen.style.display = 'none';
             if (builderContent) builderContent.style.display = 'none';
             if (builderInputArea) builderInputArea.style.display = 'none';
             if (quickAppScreen) quickAppScreen.classList.remove('active');
@@ -24883,6 +24912,10 @@ Be concise but helpful. Use markdown formatting.`;
             const quickAppScreen = document.getElementById('quickAppScreen');
             if (quickAppScreen) quickAppScreen.classList.remove('active');
 
+            // Hide create app choice screen if visible
+            const createAppChoiceScreen = document.getElementById('createAppChoiceScreen');
+            if (createAppChoiceScreen) createAppChoiceScreen.style.display = 'none';
+
             // Reset to choice screen
             resetBuilderToChoiceScreen();
 
@@ -24890,13 +24923,26 @@ Be concise but helpful. Use markdown formatting.`;
             history.pushState({ view: 'suitegptbuilder' }, '', '/suitegptbuilder');
         }
 
+        function showCreateAppChoice() {
+            const choiceScreen = document.getElementById('builderChoiceScreen');
+            const createAppChoiceScreen = document.getElementById('createAppChoiceScreen');
+
+            if (choiceScreen) choiceScreen.style.display = 'none';
+            if (createAppChoiceScreen) createAppChoiceScreen.style.display = 'flex';
+
+            // Update URL
+            history.pushState({ view: 'suitegptbuilder', mode: 'create' }, '', '/suitegptbuilder/create');
+        }
+
         // ===== QUICK APP MODE =====
         function enterQuickAppMode() {
             const choiceScreen = document.getElementById('builderChoiceScreen');
+            const createAppChoiceScreen = document.getElementById('createAppChoiceScreen');
             const quickAppScreen = document.getElementById('quickAppScreen');
             const builderContent = document.getElementById('builderContent');
 
             if (choiceScreen) choiceScreen.style.display = 'none';
+            if (createAppChoiceScreen) createAppChoiceScreen.style.display = 'none';
             if (builderContent) builderContent.style.display = 'none';
             if (quickAppScreen) quickAppScreen.classList.add('active');
 
@@ -25325,12 +25371,14 @@ Apply the requested change and output the COMPLETE updated HTML. Start with <!DO
 
         function enterBuilderCreateMode() {
             const choiceScreen = document.getElementById('builderChoiceScreen');
+            const createAppChoiceScreen = document.getElementById('createAppChoiceScreen');
             const builderContent = document.getElementById('builderContent');
             const builderInputArea = document.querySelector('.builder-input-area');
             const builderMessages = document.getElementById('builderMessages');
 
-            // Hide choice screen, show builder content
+            // Hide choice screens, show builder content
             if (choiceScreen) choiceScreen.style.display = 'none';
+            if (createAppChoiceScreen) createAppChoiceScreen.style.display = 'none';
             if (builderContent) builderContent.style.display = 'flex';
             if (builderInputArea) builderInputArea.style.display = 'block';
 
@@ -25386,7 +25434,7 @@ Apply the requested change and output the COMPLETE updated HTML. Start with <!DO
             }
 
             // Update URL
-            history.pushState({ view: 'suitegptbuilder', mode: 'create' }, '', '/suitegptbuilder/create');
+            history.pushState({ view: 'suitegptbuilder', mode: 'create-full' }, '', '/suitegptbuilder/create/full');
 
             // Focus input
             setTimeout(() => {
