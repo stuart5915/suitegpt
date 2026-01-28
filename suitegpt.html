@@ -16059,7 +16059,16 @@
         function loadMarketingSchedule() {
             const saved = localStorage.getItem('marketing_schedule');
             if (saved) {
-                marketingSchedule = JSON.parse(saved);
+                const parsed = JSON.parse(saved);
+                // Check if old format (has colons in IDs) - regenerate if so
+                const firstKey = Object.keys(parsed)[0];
+                const firstPost = parsed[firstKey]?.[0];
+                if (firstPost && firstPost.id && firstPost.id.includes(':')) {
+                    console.log('[Marketing] Old format detected, regenerating...');
+                    generateWeekSchedule();
+                } else {
+                    marketingSchedule = parsed;
+                }
             } else {
                 generateWeekSchedule();
             }
