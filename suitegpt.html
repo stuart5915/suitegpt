@@ -7132,6 +7132,27 @@
             color: var(--text-primary);
         }
 
+        .operator-action-btn.operator-action-primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-color: transparent;
+            color: white;
+        }
+
+        .operator-action-btn.operator-action-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .operator-app-link {
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .operator-app-link:hover {
+            text-decoration: underline;
+        }
+
         .operators-empty {
             text-align: center;
             padding: 60px 20px;
@@ -16176,6 +16197,13 @@
                     </select>
                 </div>
                 <div class="operator-form-group">
+                    <label>Linked SUITE App</label>
+                    <select id="operatorAppKey">
+                        <option value="">-- No linked app --</option>
+                    </select>
+                    <p style="font-size: 0.75rem; color: var(--text-tertiary); margin-top: 4px;">Link to an app on the /apps page for quick access</p>
+                </div>
+                <div class="operator-form-group">
                     <label>Current Task / Notes</label>
                     <textarea id="operatorNotes" rows="3" placeholder="What are we currently working on?"></textarea>
                 </div>
@@ -18237,6 +18265,20 @@
         function showAddOperatorModal() {
             document.getElementById('addOperatorModal').style.display = 'flex';
             document.getElementById('addOperatorForm').reset();
+            populateOperatorAppDropdown();
+        }
+
+        function populateOperatorAppDropdown(selectedKey = '') {
+            const select = document.getElementById('operatorAppKey');
+            // Get platform apps only
+            const platformApps = Object.entries(SUITE_APPS)
+                .filter(([key]) => APP_TIER_MAP[key] === 'platform')
+                .sort((a, b) => a[1].name.localeCompare(b[1].name));
+
+            select.innerHTML = '<option value="">-- No linked app --</option>' +
+                platformApps.map(([key, app]) =>
+                    `<option value="${key}" ${key === selectedKey ? 'selected' : ''}>${app.name}</option>`
+                ).join('');
         }
 
         function hideAddOperatorModal() {
@@ -18252,6 +18294,7 @@
                 email: document.getElementById('operatorEmail').value.trim(),
                 url: document.getElementById('operatorUrl').value.trim(),
                 status: document.getElementById('operatorStatus').value,
+                app_key: document.getElementById('operatorAppKey').value || null,
                 notes: document.getElementById('operatorNotes').value.trim()
             };
 
@@ -18275,6 +18318,9 @@
         async function editOperator(id) {
             const op = operatorsData.find(o => o.id === id);
             if (!op) return;
+
+            // Populate app dropdown first
+            populateOperatorAppDropdown(op.app_key || '');
 
             // Populate form with existing data
             document.getElementById('operatorName').value = op.name || '';
@@ -18303,6 +18349,7 @@
                 email: document.getElementById('operatorEmail').value.trim(),
                 url: document.getElementById('operatorUrl').value.trim(),
                 status: document.getElementById('operatorStatus').value,
+                app_key: document.getElementById('operatorAppKey').value || null,
                 notes: document.getElementById('operatorNotes').value.trim(),
                 updated_at: new Date().toISOString()
             };
