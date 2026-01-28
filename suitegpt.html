@@ -11992,7 +11992,7 @@
         <!-- Left Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <a href="/" class="sidebar-logo">
+                <a href="/" class="sidebar-logo" onclick="event.preventDefault(); openBuilderMode();">
                     <img src="/suitegpt-logo.png" alt="SuiteGPT" class="sidebar-logo-icon">
                     <span class="sidebar-logo-text">SuiteGPT</span>
                 </a>
@@ -16164,6 +16164,7 @@
         window.addEventListener('popstate', function(event) {
             const path = window.location.pathname;
             if (path.startsWith('/governance')) {
+                exitBuilderMode();
                 openFactory(true);
                 // Check for sub-tab
                 const subPath = path.replace('/governance', '').replace('/', '');
@@ -16171,19 +16172,31 @@
                     switchFactoryMainView(subPath, true);
                 }
             } else if (path === '/creator-dashboard') {
+                exitBuilderMode();
                 openCreatorDashboard('your-apps', true);
             } else if (path === '/apps') {
+                exitBuilderMode();
                 openAppsPanel(true);
             } else if (path === '/connections') {
+                exitBuilderMode();
                 openConnections(true);
-            } else if (path === '/suitegptbuilder') {
-                openBuilderMode(true);
-            } else {
+            } else if (path === '/chat') {
+                // Chat view
                 exitBuilderMode();
                 closeFactoryView(true);
                 closeCreatorDashboard(true);
                 closeAppsView(true);
                 closeConnections(true);
+            } else if (path === '/suitegptbuilder' || path.startsWith('/suitegptbuilder/') || path === '/') {
+                // Builder is the default/home
+                closeFactoryView(true);
+                closeCreatorDashboard(true);
+                closeAppsView(true);
+                closeConnections(true);
+                openBuilderMode(true);
+            } else {
+                // Unknown path - show builder
+                openBuilderMode(true);
             }
         });
 
@@ -16203,7 +16216,19 @@
                 openAppsPanel(true);
             } else if (path === '/connections') {
                 openConnections(true);
-            } else if (path === '/suitegptbuilder') {
+            } else if (path === '/chat') {
+                // Regular chat mode - don't open builder
+                // Chat is the default view, so nothing special needed
+            } else if (path === '/suitegptbuilder' || path.startsWith('/suitegptbuilder/')) {
+                openBuilderMode(true);
+                // Handle sub-routes
+                if (path === '/suitegptbuilder/create') {
+                    enterBuilderCreateMode();
+                } else if (path === '/suitegptbuilder/proposal') {
+                    enterBuilderProposalMode();
+                }
+            } else {
+                // Root path (/) - show Builder as default landing
                 openBuilderMode(true);
             }
         }
@@ -19296,8 +19321,8 @@
             const autoItem = document.querySelector('.model-dropdown-item[data-mode="auto"]');
             if (autoItem) autoItem.classList.add('active');
 
-            // Update URL to root
-            history.pushState({ view: 'home' }, '', '/');
+            // Update URL to /chat
+            history.pushState({ view: 'chat' }, '', '/chat');
 
             // Close mobile sidebar if open
             closeMobileSidebar();
@@ -20764,9 +20789,9 @@
                 // Show choice screen by default
                 resetBuilderToChoiceScreen();
 
-                // Update URL to /suitegptbuilder
+                // Update URL to / (Builder is the home page)
                 if (!skipPushState) {
-                    history.pushState({ view: 'suitegptbuilder' }, '', '/suitegptbuilder');
+                    history.pushState({ view: 'builder' }, '', '/');
                 }
             }
         }
@@ -20784,8 +20809,8 @@
             exitBuilderMode();
             // Reset to choice screen for next time
             resetBuilderToChoiceScreen();
-            // Update URL back to root
-            history.pushState({ view: 'home' }, '', '/');
+            // Update URL to /chat
+            history.pushState({ view: 'chat' }, '', '/chat');
             // Focus the main chat input
             const chatInput = document.getElementById('chatInput');
             if (chatInput) chatInput.focus();
