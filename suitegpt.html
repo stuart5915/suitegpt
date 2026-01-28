@@ -11950,6 +11950,94 @@
             box-shadow: none;
         }
 
+        .quick-app-expand-btn {
+            padding: 14px 20px;
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.2));
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-radius: 12px;
+            color: #fbbf24;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .quick-app-expand-btn:hover {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(245, 158, 11, 0.3));
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(251, 191, 36, 0.2);
+        }
+
+        .quick-app-expand-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .quick-app-expand-btn.loading {
+            pointer-events: none;
+        }
+
+        .quick-app-quality {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 16px;
+            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            font-size: 0.85rem;
+            color: var(--text-tertiary);
+        }
+
+        .quick-app-quality-label {
+            font-weight: 500;
+        }
+
+        .quick-app-quality-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .quick-app-quality-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        .quick-app-quality-dot.active {
+            background: #fbbf24;
+            box-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
+        }
+
+        .quick-app-quality-dot.active.level-1 {
+            background: #f87171;
+        }
+
+        .quick-app-quality-dot.active.level-2 {
+            background: #fbbf24;
+        }
+
+        .quick-app-quality-dot.active.level-3 {
+            background: #4ade80;
+        }
+
+        .quick-app-quality-text {
+            font-weight: 600;
+            margin-left: 4px;
+        }
+
+        .quick-app-quality-text.level-1 { color: #f87171; }
+        .quick-app-quality-text.level-2 { color: #fbbf24; }
+        .quick-app-quality-text.level-3 { color: #4ade80; }
+
         /* Full Build choice cards */
         .builder-choice-icon.quick {
             background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.2));
@@ -15187,8 +15275,24 @@
                             Surprise me with a novel idea
                         </button>
 
+                        <div class="quick-app-quality" id="quickAppQuality" style="display: none;">
+                            <span class="quick-app-quality-label">Idea detail:</span>
+                            <div class="quick-app-quality-dots">
+                                <div class="quick-app-quality-dot" id="qualityDot1"></div>
+                                <div class="quick-app-quality-dot" id="qualityDot2"></div>
+                                <div class="quick-app-quality-dot" id="qualityDot3"></div>
+                            </div>
+                            <span class="quick-app-quality-text" id="qualityText">Basic</span>
+                        </div>
+
                         <div class="quick-app-actions">
                             <button class="quick-app-back-btn" onclick="goBackToBuilderChoice()">Back</button>
+                            <button class="quick-app-expand-btn" id="quickAppExpandBtn" onclick="expandIdea()" disabled>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                                    <path d="M12 5v14M5 12h14"/>
+                                </svg>
+                                Expand
+                            </button>
                             <button class="quick-app-build-btn" id="quickAppBuildBtn" onclick="buildQuickApp()" disabled>
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                                     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
@@ -16452,7 +16556,7 @@
                                 Governance
                             </button>
                             <button class="factory-main-tab" data-view="telos" onclick="switchFactoryMainView('telos')">
-                                Telos
+                                FAQ
                             </button>
                             <button class="factory-main-tab" data-view="marketing" onclick="switchFactoryMainView('marketing')">
                                 Marketing
@@ -25343,7 +25447,8 @@ Be concise but helpful. Use markdown formatting.`;
                 if (input) input.focus();
             }, 100);
 
-            // Enable/disable build button based on input
+            // Reset expansion level and update buttons
+            resetIdeaExpansion();
             updateQuickAppBuildBtn();
         }
 
@@ -25359,12 +25464,122 @@ Be concise but helpful. Use markdown formatting.`;
             setTimeout(updateQuickAppBuildBtn, 0);
         }
 
+        let ideaExpansionLevel = 0;
+
         function updateQuickAppBuildBtn() {
             const input = document.getElementById('quickAppInput');
-            const btn = document.getElementById('quickAppBuildBtn');
-            if (input && btn) {
-                btn.disabled = !input.value.trim();
+            const buildBtn = document.getElementById('quickAppBuildBtn');
+            const expandBtn = document.getElementById('quickAppExpandBtn');
+            const hasContent = input && input.value.trim().length > 0;
+
+            if (buildBtn) buildBtn.disabled = !hasContent;
+            if (expandBtn) expandBtn.disabled = !hasContent || ideaExpansionLevel >= 3;
+
+            updateIdeaQuality();
+        }
+
+        function updateIdeaQuality() {
+            const input = document.getElementById('quickAppInput');
+            const qualityDiv = document.getElementById('quickAppQuality');
+            const qualityText = document.getElementById('qualityText');
+            const dot1 = document.getElementById('qualityDot1');
+            const dot2 = document.getElementById('qualityDot2');
+            const dot3 = document.getElementById('qualityDot3');
+
+            if (!input || !qualityDiv) return;
+
+            const text = input.value.trim();
+            if (!text) {
+                qualityDiv.style.display = 'none';
+                return;
             }
+
+            qualityDiv.style.display = 'flex';
+
+            // Calculate quality based on length and expansion level
+            const wordCount = text.split(/\s+/).length;
+            let level = 1;
+            if (wordCount > 30 || ideaExpansionLevel >= 1) level = 2;
+            if (wordCount > 60 || ideaExpansionLevel >= 2) level = 3;
+            if (ideaExpansionLevel >= 3) level = 3;
+
+            // Update dots
+            dot1.className = 'quick-app-quality-dot' + (level >= 1 ? ' active level-' + level : '');
+            dot2.className = 'quick-app-quality-dot' + (level >= 2 ? ' active level-' + level : '');
+            dot3.className = 'quick-app-quality-dot' + (level >= 3 ? ' active level-' + level : '');
+
+            // Update text
+            const labels = ['', 'Basic', 'Detailed', 'Comprehensive'];
+            qualityText.textContent = labels[level];
+            qualityText.className = 'quick-app-quality-text level-' + level;
+        }
+
+        function resetIdeaExpansion() {
+            ideaExpansionLevel = 0;
+            updateIdeaQuality();
+        }
+
+        async function expandIdea() {
+            const input = document.getElementById('quickAppInput');
+            const btn = document.getElementById('quickAppExpandBtn');
+            if (!input || !input.value.trim() || ideaExpansionLevel >= 3) return;
+
+            const currentIdea = input.value.trim();
+
+            btn.disabled = true;
+            btn.classList.add('loading');
+            btn.innerHTML = `
+                <svg class="spinning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                    <path d="M21 12a9 9 0 11-6.219-8.56"/>
+                </svg>
+                Expanding...
+            `;
+
+            try {
+                const response = await fetch('/api/gemini', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: `Take this app idea and expand it with MORE specific details, unique mechanics, and interesting features. Make it more elaborate and impressive.
+
+CURRENT IDEA:
+${currentIdea}
+
+EXPANSION RULES:
+- Add 2-3 new specific features or mechanics
+- Be more specific about UI/UX details (animations, interactions, visual feedback)
+- Add a unique twist or clever feature that makes it special
+- Keep it buildable as a single-page web app
+- Don't repeat what's already there, ADD to it
+
+Output ONLY the expanded idea (the full description including original + new details). No intro, no "Here's the expanded version", just the idea itself:`,
+                        model: 'gemini-2.0-flash',
+                        generationConfig: { temperature: 0.9, maxOutputTokens: 800 }
+                    })
+                });
+
+                if (!response.ok) throw new Error('API failed');
+
+                const data = await response.json();
+                if (data.text) {
+                    input.value = data.text.trim();
+                    input.style.height = 'auto';
+                    input.style.height = Math.min(input.scrollHeight, 200) + 'px';
+                    ideaExpansionLevel++;
+                    updateQuickAppBuildBtn();
+                }
+            } catch (error) {
+                console.error('Failed to expand idea:', error);
+            }
+
+            btn.classList.remove('loading');
+            btn.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+                Expand
+            `;
+            updateQuickAppBuildBtn();
         }
 
         function useQuickAppIdea(idea) {
@@ -25372,6 +25587,7 @@ Be concise but helpful. Use markdown formatting.`;
             if (input) {
                 input.value = idea;
                 input.focus();
+                resetIdeaExpansion();
                 updateQuickAppBuildBtn();
             }
         }
@@ -25429,7 +25645,10 @@ Now generate ONE highly detailed, novel app idea. Output ONLY the idea descripti
 
                 const data = await response.json();
                 if (data.text) {
-                    input.value = data.text.trim().replace(/^["']|["']$/g, '').replace(/\n/g, ' ');
+                    input.value = data.text.trim().replace(/^["']|["']$/g, '');
+                    input.style.height = 'auto';
+                    input.style.height = Math.min(input.scrollHeight, 200) + 'px';
+                    resetIdeaExpansion();
                     updateQuickAppBuildBtn();
                 } else {
                     throw new Error('No text in response');
@@ -25445,6 +25664,9 @@ Now generate ONE highly detailed, novel app idea. Output ONLY the idea descripti
                     'A micro-achievements app where you set tiny daily goals and when you complete them, you pull a slot machine lever for random celebration animations - confetti, fireworks, a tiny parade, applause. It tracks streaks but the random reward makes each completion exciting. Has a trophy case of your best streaks with ridiculous achievement names.'
                 ];
                 input.value = fallbackIdeas[Math.floor(Math.random() * fallbackIdeas.length)];
+                input.style.height = 'auto';
+                input.style.height = Math.min(input.scrollHeight, 200) + 'px';
+                resetIdeaExpansion();
                 updateQuickAppBuildBtn();
             }
 
