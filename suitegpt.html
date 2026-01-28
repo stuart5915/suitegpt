@@ -26032,6 +26032,12 @@ Be concise but helpful. Use markdown formatting.`;
 
                 if (session) {
                     console.log('[Auth] User authenticated:', session.user?.email);
+
+                    // Store email in localStorage for cross-app auth
+                    if (session.user?.email) {
+                        localStorage.setItem('user_email', session.user.email);
+                    }
+
                     // Close modal if open
                     const modal = document.getElementById('connectModalOverlay');
                     if (modal && modal.classList.contains('active')) {
@@ -26049,6 +26055,9 @@ Be concise but helpful. Use markdown formatting.`;
                     renderLinkedAccounts();
                     loadUserChats(); // Load user's chat history
                 } else if (event === 'SIGNED_OUT') {
+                    // Clear email from localStorage
+                    localStorage.removeItem('user_email');
+
                     // Only reset if no other auth methods
                     const hasTelegram = localStorage.getItem('telegram_user');
                     const hasWallet = localStorage.getItem('connectedWallet') || localStorage.getItem('suiteWalletAddress');
@@ -26067,6 +26076,12 @@ Be concise but helpful. Use markdown formatting.`;
                     console.error('[Auth] Session check error:', error);
                 }
                 console.log('[Auth] Explicit session check:', session ? session.user?.email : 'no session');
+
+                // Store email in localStorage for cross-app auth
+                if (session?.user?.email) {
+                    localStorage.setItem('user_email', session.user.email);
+                }
+
                 // Always call checkAuthState after Supabase is ready
                 checkAuthState();
                 renderLinkedAccounts();
