@@ -19939,9 +19939,14 @@
             } else if (path === '/creator-dashboard') {
                 exitBuilderMode();
                 openCreatorDashboard('your-apps', true);
+            } else if (path === '/apps/community') {
+                exitBuilderMode();
+                openAppsPanel(true);
+                switchAppsSource('community', true);
             } else if (path === '/apps') {
                 exitBuilderMode();
                 openAppsPanel(true);
+                switchAppsSource('suite', true);
             } else if (path === '/connections') {
                 exitBuilderMode();
                 openConnections(true);
@@ -19977,6 +19982,9 @@
                 }
             } else if (path === '/creator-dashboard') {
                 openCreatorDashboard('your-apps', true);
+            } else if (path === '/apps/community') {
+                openAppsPanel(true);
+                switchAppsSource('community', true);
             } else if (path === '/apps') {
                 openAppsPanel(true);
             } else if (path === '/connections') {
@@ -25202,7 +25210,7 @@ Be concise but helpful. Use markdown formatting.`;
         let currentAppsSource = 'suite';
         let communityAppsCache = [];
 
-        function switchAppsSource(source) {
+        function switchAppsSource(source, skipPushState) {
             currentAppsSource = source;
 
             // Update toggle buttons
@@ -25212,6 +25220,12 @@ Be concise but helpful. Use markdown formatting.`;
             // Show/hide sections
             document.getElementById('appsSuiteSection').style.display = source === 'suite' ? '' : 'none';
             document.getElementById('appsCommunitySection').style.display = source === 'community' ? '' : 'none';
+
+            // Update URL
+            if (!skipPushState) {
+                const url = source === 'community' ? '/apps/community' : '/apps';
+                history.pushState({ view: 'apps', source: source }, '', url);
+            }
 
             // Load community apps if needed
             if (source === 'community') {
