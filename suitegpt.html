@@ -22557,25 +22557,47 @@ Be concise but helpful. Use markdown formatting.`;
                 }
 
                 const accessToken = getSupabaseAccessToken() || SUPABASE_ANON_KEY;
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${accessToken}`
+                };
 
-                // Upsert vote into factory_votes (unique on proposal_id + user_id)
-                // If first vote: insert. If already voted: update vote_power for quadratic voting.
-                const voteRes = await fetch(`${SUPABASE_URL}/rest/v1/factory_votes`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${accessToken}`,
-                        'Prefer': 'return=representation,resolution=merge-duplicates'
-                    },
-                    body: JSON.stringify({
-                        user_id: userId,
-                        proposal_id: proposalId,
-                        vote_direction: 1,
-                        vote_power: newVotePower,
-                        rep_spent: cost
-                    })
-                });
+                // Check if user already has a vote on this proposal
+                const existingRes = await fetch(
+                    `${SUPABASE_URL}/rest/v1/factory_votes?user_id=eq.${userId}&proposal_id=eq.${proposalId}&select=id,vote_power`,
+                    { headers }
+                );
+                const existing = await existingRes.json();
+
+                let voteRes;
+                if (existing && existing.length > 0) {
+                    // Update existing vote (increase vote_power for quadratic)
+                    voteRes = await fetch(
+                        `${SUPABASE_URL}/rest/v1/factory_votes?id=eq.${existing[0].id}`,
+                        {
+                            method: 'PATCH',
+                            headers: { ...headers, 'Prefer': 'return=minimal' },
+                            body: JSON.stringify({
+                                vote_power: newVotePower,
+                                rep_spent: cost
+                            })
+                        }
+                    );
+                } else {
+                    // Insert new vote
+                    voteRes = await fetch(`${SUPABASE_URL}/rest/v1/factory_votes`, {
+                        method: 'POST',
+                        headers: { ...headers, 'Prefer': 'return=minimal' },
+                        body: JSON.stringify({
+                            user_id: userId,
+                            proposal_id: proposalId,
+                            vote_direction: 1,
+                            vote_power: newVotePower,
+                            rep_spent: cost
+                        })
+                    });
+                }
 
                 if (!voteRes.ok) {
                     const err = await voteRes.text();
