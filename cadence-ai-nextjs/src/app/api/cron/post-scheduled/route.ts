@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { postTweet } from '@/lib/twitter'
+import { postToLinkedIn } from '@/lib/linkedin'
 
 export async function POST(req: NextRequest) {
     // Optional: Verify cron secret for security
@@ -41,22 +42,26 @@ export async function POST(req: NextRequest) {
         const results = []
 
         for (const post of posts) {
-            // Only post to Twitter/X for now
-            if (post.platform !== 'x') {
-                results.push({ id: post.id, status: 'skipped', reason: 'Platform not supported yet' })
+            let postResult: { success: boolean; tweetId?: string; postId?: string; error?: string }
+
+            if (post.platform === 'x') {
+                const result = await postTweet(post.post_text)
+                postResult = { success: result.success, tweetId: result.tweetId, error: result.error }
+            } else if (post.platform === 'linkedin') {
+                const result = await postToLinkedIn(post.post_text)
+                postResult = { success: result.success, postId: result.postId, error: result.error }
+            } else {
+                results.push({ id: post.id, status: 'skipped', reason: `Unknown platform: ${post.platform}` })
                 continue
             }
 
-            // Attempt to post
-            const tweetResult = await postTweet(post.post_text)
-
-            if (tweetResult.success) {
-                // Update post status to posted
+            if (postResult.success) {
                 await supabase
                     .from('scheduled_posts')
                     .update({
                         status: 'posted',
-                        twitter_post_id: tweetResult.tweetId,
+                        twitter_post_id: postResult.tweetId || null,
+                        linkedin_post_id: postResult.postId || null,
                         posted_at: new Date().toISOString()
                     })
                     .eq('id', post.id)
@@ -64,22 +69,22 @@ export async function POST(req: NextRequest) {
                 results.push({
                     id: post.id,
                     status: 'posted',
-                    tweetId: tweetResult.tweetId
+                    tweetId: postResult.tweetId,
+                    linkedinPostId: postResult.postId
                 })
             } else {
-                // Update post status to failed
                 await supabase
                     .from('scheduled_posts')
                     .update({
                         status: 'failed',
-                        error_message: tweetResult.error
+                        error_message: postResult.error
                     })
                     .eq('id', post.id)
 
                 results.push({
                     id: post.id,
                     status: 'failed',
-                    error: tweetResult.error
+                    error: postResult.error
                 })
             }
 
