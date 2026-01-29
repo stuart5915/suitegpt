@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transcribe | SUITE</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Nunito',sans-serif;background:#0f0f14;color:#e4e4e7;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+.container{width:100%;max-width:480px;padding:20px 16px;display:flex;flex-direction:column;gap:20px}
+h1{font-size:22px;font-weight:800;text-align:center;background:linear-gradient(135deg,#a78bfa,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{text-align:center;color:#71717a;font-size:13px;margin-top:-12px}
+
+/* Upload area */
+.upload-area{border:2px dashed #3f3f46;border-radius:16px;padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s}
+.upload-area:hover,.upload-area.dragover{border-color:#7c3aed;background:rgba(124,58,237,.06)}
+.upload-area.has-file{border-color:#22c55e;border-style:solid;background:rgba(34,197,94,.05)}
+.upload-icon{font-size:36px;margin-bottom:10px;opacity:.6}
+.upload-label{font-size:14px;font-weight:700;color:#a1a1aa}
+.upload-hint{font-size:11px;color:#52525b;margin-top:6px}
+.file-name{font-size:13px;color:#a78bfa;font-weight:600;margin-top:8px;word-break:break-all}
+input[type="file"]{display:none}
+
+/* Model selector */
+.model-row{display:flex;align-items:center;gap:10px;justify-content:center}
+.model-row label{font-size:12px;color:#71717a;font-weight:600}
+.model-row select{background:#1a1a22;border:1px solid #3f3f46;color:#e4e4e7;padding:6px 10px;border-radius:8px;font-family:inherit;font-size:12px;cursor:pointer}
+.model-row select:focus{outline:none;border-color:#7c3aed}
+
+/* Transcribe button */
+.transcribe-btn{width:100%;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s}
+.transcribe-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 20px rgba(124,58,237,.35)}
+.transcribe-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* Progress */
+.progress-section{display:none;flex-direction:column;gap:8px}
+.progress-section.active{display:flex}
+.progress-label{font-size:12px;color:#a1a1aa;font-weight:600}
+.progress-bar-bg{height:6px;background:#27272a;border-radius:3px;overflow:hidden}
+.progress-bar{height:100%;width:0%;background:linear-gradient(90deg,#7c3aed,#a78bfa);border-radius:3px;transition:width .3s}
+.progress-status{font-size:11px;color:#52525b}
+
+/* Output */
+.output-section{display:none;flex-direction:column;gap:10px}
+.output-section.active{display:flex}
+.output-header{display:flex;justify-content:space-between;align-items:center}
+.output-title{font-size:14px;font-weight:700;color:#a78bfa}
+.copy-btn{padding:6px 14px;border:1px solid #3f3f46;border-radius:8px;background:transparent;color:#a1a1aa;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.copy-btn:hover{border-color:#7c3aed;color:#a78bfa}
+.copy-btn.copied{border-color:#22c55e;color:#22c55e}
+.transcript-box{background:#1a1a22;border:1px solid #27272a;border-radius:12px;padding:16px;font-size:13px;line-height:1.7;color:#d4d4d8;min-height:120px;max-height:400px;overflow-y:auto;white-space:pre-wrap;word-wrap:break-word;-webkit-user-select:all;user-select:all}
+
+/* Error */
+.error-msg{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:12px 16px;font-size:13px;color:#fca5a5;display:none}
+.error-msg.active{display:block}
+
+/* Spinner */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}
+</style>
+</head>
+<body>
+<div class="container">
+    <h1>Transcribe</h1>
+    <p class="subtitle">AI-powered audio & video transcription — runs locally in your browser</p>
+
+    <div class="upload-area" id="uploadArea">
+        <div class="upload-icon">🎙️</div>
+        <div class="upload-label">Drop a file here or tap to browse</div>
+        <div class="upload-hint">MP3, MP4, WAV, M4A, WebM, OGG — up to 100MB</div>
+        <div class="file-name" id="fileName"></div>
+        <input type="file" id="fileInput" accept="audio/*,video/*,.mp3,.mp4,.wav,.m4a,.webm,.ogg,.flac">
+    </div>
+
+    <div class="model-row">
+        <label>Model:</label>
+        <select id="modelSelect">
+            <option value="onnx-community/whisper-tiny.en" selected>Tiny (English) — fastest</option>
+            <option value="onnx-community/whisper-base.en">Base (English) — better accuracy</option>
+            <option value="onnx-community/whisper-tiny">Tiny (Multilingual)</option>
+            <option value="onnx-community/whisper-base">Base (Multilingual)</option>
+        </select>
+    </div>
+
+    <button class="transcribe-btn" id="transcribeBtn" disabled>Transcribe</button>
+
+    <div class="progress-section" id="progressSection">
+        <div class="progress-label" id="progressLabel">Loading model...</div>
+        <div class="progress-bar-bg"><div class="progress-bar" id="progressBar"></div></div>
+        <div class="progress-status" id="progressStatus"></div>
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <div class="output-section" id="outputSection">
+        <div class="output-header">
+            <span class="output-title">Transcript</span>
+            <button class="copy-btn" id="copyBtn">Copy</button>
+        </div>
+        <div class="transcript-box" id="transcriptBox"></div>
+    </div>
+</div>
+
+<script type="module">
+import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.4.1';
+
+const uploadArea = document.getElementById('uploadArea');
+const fileInput = document.getElementById('fileInput');
+const fileName = document.getElementById('fileName');
+const transcribeBtn = document.getElementById('transcribeBtn');
+const progressSection = document.getElementById('progressSection');
+const progressLabel = document.getElementById('progressLabel');
+const progressBar = document.getElementById('progressBar');
+const progressStatus = document.getElementById('progressStatus');
+const errorMsg = document.getElementById('errorMsg');
+const outputSection = document.getElementById('outputSection');
+const transcriptBox = document.getElementById('transcriptBox');
+const copyBtn = document.getElementById('copyBtn');
+const modelSelect = document.getElementById('modelSelect');
+
+let selectedFile = null;
+
+// Upload area interactions
+uploadArea.addEventListener('click', () => fileInput.click());
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+uploadArea.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadArea.classList.remove('dragover');
+    if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files.length) handleFile(fileInput.files[0]); });
+
+function handleFile(file) {
+    if (file.size > 100 * 1024 * 1024) {
+        showError('File too large. Max 100MB.');
+        return;
+    }
+    selectedFile = file;
+    fileName.textContent = file.name + ' (' + (file.size / 1024 / 1024).toFixed(1) + ' MB)';
+    uploadArea.classList.add('has-file');
+    transcribeBtn.disabled = false;
+    hideError();
+}
+
+function showError(msg) {
+    errorMsg.textContent = msg;
+    errorMsg.classList.add('active');
+}
+function hideError() {
+    errorMsg.classList.remove('active');
+}
+
+// Copy button
+copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(transcriptBox.textContent).then(() => {
+        copyBtn.textContent = 'Copied!';
+        copyBtn.classList.add('copied');
+        setTimeout(() => { copyBtn.textContent = 'Copy'; copyBtn.classList.remove('copied'); }, 2000);
+    });
+});
+
+// Extract audio as Float32Array at 16kHz
+async function extractAudio(file) {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+    const arrayBuffer = await file.arrayBuffer();
+    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+
+    // Mix down to mono
+    const numChannels = audioBuffer.numberOfChannels;
+    const length = audioBuffer.length;
+    const mono = new Float32Array(length);
+
+    for (let ch = 0; ch < numChannels; ch++) {
+        const channelData = audioBuffer.getChannelData(ch);
+        for (let i = 0; i < length; i++) {
+            mono[i] += channelData[i] / numChannels;
+        }
+    }
+
+    audioCtx.close();
+    return mono;
+}
+
+// Transcribe
+transcribeBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+
+    transcribeBtn.disabled = true;
+    transcribeBtn.innerHTML = '<span class="spinner"></span>Working...';
+    progressSection.classList.add('active');
+    outputSection.classList.remove('active');
+    hideError();
+
+    try {
+        // Step 1: Extract audio
+        progressLabel.textContent = 'Extracting audio...';
+        progressBar.style.width = '5%';
+        progressStatus.textContent = 'Decoding file...';
+
+        const audioData = await extractAudio(selectedFile);
+
+        // Step 2: Load model
+        progressLabel.textContent = 'Loading AI model...';
+        progressBar.style.width = '10%';
+        progressStatus.textContent = 'First time may download ~40-150MB (cached after)';
+
+        const modelId = modelSelect.value;
+
+        const transcriber = await pipeline(
+            'automatic-speech-recognition',
+            modelId,
+            {
+                dtype: 'q8',
+                device: 'wasm',
+                progress_callback: (progress) => {
+                    if (progress.status === 'download' || progress.status === 'progress') {
+                        const pct = progress.progress ? Math.round(progress.progress) : 0;
+                        progressBar.style.width = (10 + pct * 0.5) + '%';
+                        progressStatus.textContent = progress.file
+                            ? `Downloading ${progress.file}... ${pct}%`
+                            : `Loading... ${pct}%`;
+                    }
+                    if (progress.status === 'ready') {
+                        progressBar.style.width = '60%';
+                        progressStatus.textContent = 'Model ready';
+                    }
+                }
+            }
+        );
+
+        // Step 3: Transcribe
+        progressLabel.textContent = 'Transcribing...';
+        progressBar.style.width = '65%';
+        progressStatus.textContent = 'Processing audio — this may take a moment...';
+
+        const result = await transcriber(audioData, {
+            chunk_length_s: 30,
+            stride_length_s: 5,
+            return_timestamps: false
+        });
+
+        progressBar.style.width = '100%';
+        progressLabel.textContent = 'Done!';
+        progressStatus.textContent = '';
+
+        // Show result
+        const text = result.text.trim();
+        transcriptBox.textContent = text || '(No speech detected)';
+        outputSection.classList.add('active');
+
+    } catch (err) {
+        console.error('Transcription error:', err);
+        showError('Transcription failed: ' + (err.message || 'Unknown error. Try a different file format.'));
+    } finally {
+        transcribeBtn.disabled = false;
+        transcribeBtn.textContent = 'Transcribe';
+        setTimeout(() => progressSection.classList.remove('active'), 3000);
+    }
+});
+</script>
+</body>
+</html>
