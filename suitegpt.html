@@ -17668,9 +17668,15 @@
                                     </div>
                                     <div class="reward-pool-actions">
                                         <div class="reward-pool-share-row" id="rewardPoolShareRow">
-                                            <span class="reward-pool-share">Your est. share: <strong>~$12.40 USDC</strong></span>
+                                            <span class="reward-pool-share">Claimable: <strong>0 USDC</strong></span>
                                             <a href="#" class="reward-pool-wallet-link" onclick="event.preventDefault(); promptConnectWallet()">Connect wallet to claim</a>
                                         </div>
+                                        <button class="reward-pool-deposit-btn" onclick="claimRewardPoolUsdc()" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                                <path d="M12 19V5M5 12l7-7 7 7"/>
+                                            </svg>
+                                            Claim
+                                        </button>
                                         <button class="reward-pool-deposit-btn" onclick="openRewardDeposit()">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
                                                 <path d="M12 5v14M5 12h14"/>
@@ -17690,7 +17696,7 @@
                                     </div>
                                     <div class="reward-pool-stat">
                                         <span class="reward-pool-stat-value" id="rpLastMonth">--</span>
-                                        <span class="reward-pool-stat-label">Paid Last Month</span>
+                                        <span class="reward-pool-stat-label">This Period</span>
                                     </div>
                                     <div class="reward-pool-stat">
                                         <span class="reward-pool-stat-value" id="rpAPY">--</span>
@@ -19629,7 +19635,20 @@
         const BASE_CHAIN_ID = 8453;
         const BASE_RPC = 'https://mainnet.base.org';
         const CREDITS_PER_USDC = 1000;
-        const REWARD_POOL_ADDRESS = '0x92d67d8ad8b986e78b369be0272e121ae5acad59'; // Admin wallet = reward pool receiver
+        // StakingRewards contract — decentralized reward pool
+        // UPDATE THIS after deploying StakingRewards via Foundry
+        const STAKING_REWARDS_ADDRESS = ''; // TODO: deploy and fill in
+        const STAKING_REWARDS_ABI = [
+            'function depositRewards(uint256 amount) external',
+            'function claimUsdc() external',
+            'function claimAndCompound() external',
+            'function earned(address user) view returns (uint256)',
+            'function totalStaked() view returns (uint256)',
+            'function rewardRate() view returns (uint256)',
+            'function rewardsDuration() view returns (uint256)',
+            'function periodFinish() view returns (uint256)',
+            'function getRewardForDuration() view returns (uint256)'
+        ];
 
         const STAKING_ABI = [
             'function availableCredits(address) view returns (uint256)',
@@ -22023,8 +22042,14 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
         }
 
         function getPostsForDate(dateKey) {
-            // Get posts from database for a specific date
-            return (window.calendarPosts || []).filter(p => p.date === dateKey);
+            // Merge Supabase posts + local cadence schedule
+            const dbPosts = (window.calendarPosts || []).filter(p => p.date === dateKey);
+            const localPosts = (marketingSchedule[dateKey] || []).map(p => ({
+                ...p,
+                date: dateKey,
+                platform: p.cadence === 'linkedin-posts' ? 'linkedin' : 'x'
+            }));
+            return dbPosts.length ? dbPosts : localPosts;
         }
 
         function renderCalendarDay(dateKey, dayNum, isOtherMonth, isToday = false, isSelected = false) {
@@ -22039,7 +22064,8 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
             const morePosts = posts.length - 3;
 
             let postsHtml = visiblePosts.map(post => {
-                const icon = post.platform === 'x' ? '𝕏' : '💼';
+                const cadence = CADENCES[post.cadence];
+                const icon = cadence?.icon || (post.platform === 'x' ? '𝕏' : '💼');
                 return `<div class="calendar-day-post ${post.status}">${icon} ${formatTime(post.time)}</div>`;
             }).join('');
 
@@ -22132,24 +22158,38 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
         }
 
         function generateWeekSchedule() {
-            console.log('[Marketing] generateWeekSchedule called');
-            marketingSchedule = {};
-            const today = new Date();
-            const startOfWeek = new Date(today);
-            startOfWeek.setDate(today.getDate() - today.getDay());
+            generateMonthSchedule();
+        }
 
-            for (let d = 0; d < 7; d++) {
-                const date = new Date(startOfWeek);
-                date.setDate(startOfWeek.getDate() + d);
+        function generateMonthSchedule() {
+            // Preserve any posts that already have content
+            const oldSchedule = { ...marketingSchedule };
+            marketingSchedule = {};
+
+            // Generate 6 weeks centered on current month (covers full month view)
+            const today = new Date();
+            const year = calendarDate.getFullYear();
+            const month = calendarDate.getMonth();
+            const firstOfMonth = new Date(year, month, 1);
+            const startDate = new Date(firstOfMonth);
+            startDate.setDate(startDate.getDate() - firstOfMonth.getDay()); // Start from Sunday
+
+            for (let i = 0; i < 42; i++) { // 6 weeks = 42 days
+                const date = new Date(startDate);
+                date.setDate(startDate.getDate() + i);
                 const dateKey = date.toISOString().split('T')[0];
+                const dayOfWeek = date.getDay();
                 marketingSchedule[dateKey] = [];
 
                 Object.entries(CADENCES).forEach(([cadenceId, cadence]) => {
-                    if (cadence.days.includes(d)) {
+                    if (cadence.days.includes(dayOfWeek)) {
                         cadence.times.forEach(time => {
                             const timeId = time.replace(':', '');
-                            marketingSchedule[dateKey].push({
-                                id: `${dateKey}_${cadenceId}_${timeId}`,
+                            const postId = `${dateKey}_${cadenceId}_${timeId}`;
+                            // Preserve existing content if it was already drafted
+                            const oldPost = (oldSchedule[dateKey] || []).find(p => p.id === postId);
+                            marketingSchedule[dateKey].push(oldPost || {
+                                id: postId,
                                 cadence: cadenceId,
                                 time: time,
                                 status: 'empty',
@@ -22164,8 +22204,7 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
             }
 
             saveMarketingSchedule();
-            renderScheduleGrid();
-            console.log('[Marketing] Week generated with', Object.keys(marketingSchedule).length, 'days');
+            renderCalendar();
         }
 
         function renderScheduleGrid() {
@@ -23951,6 +23990,12 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
                 return;
             }
 
+            if (!STAKING_REWARDS_ADDRESS) {
+                statusEl.className = 'rp-deposit-status rp-status-error';
+                statusEl.textContent = 'Reward pool contract not yet deployed';
+                return;
+            }
+
             if (typeof window.ethereum === 'undefined') {
                 statusEl.className = 'rp-deposit-status rp-status-error';
                 statusEl.textContent = 'Please install MetaMask or a Web3 wallet';
@@ -23967,16 +24012,14 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
                 statusEl.textContent = 'Switching to Base network...';
                 await ensureBaseNetwork();
 
-                // Get signer
                 const provider = new ethers.BrowserProvider(window.ethereum);
                 const signer = await provider.getSigner();
                 const userAddress = await signer.getAddress();
 
-                // Save wallet if not already
                 localStorage.setItem('connectedWallet', userAddress);
                 localStorage.setItem('suiteWalletAddress', userAddress);
 
-                const usdcAmountWei = ethers.parseUnits(amount.toString(), 6); // USDC = 6 decimals
+                const usdcAmountWei = ethers.parseUnits(amount.toString(), 6);
                 const usdcContract = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, signer);
 
                 // Check balance
@@ -23986,23 +24029,27 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
                     throw new Error(`Insufficient USDC balance. You have ${ethers.formatUnits(balance, 6)} USDC`);
                 }
 
-                // Transfer USDC to pool address (direct transfer, no approval needed)
-                statusEl.textContent = 'Confirm the transfer in your wallet...';
+                // Approve StakingRewards contract to pull USDC
+                statusEl.textContent = 'Checking approval...';
+                btn.textContent = 'Checking...';
+                const allowance = await usdcContract.allowance(userAddress, STAKING_REWARDS_ADDRESS);
+                if (allowance < usdcAmountWei) {
+                    statusEl.textContent = 'Approve USDC spend in your wallet...';
+                    btn.textContent = 'Approve in wallet...';
+                    const approveTx = await usdcContract.approve(STAKING_REWARDS_ADDRESS, ethers.MaxUint256);
+                    statusEl.textContent = 'Waiting for approval...';
+                    await approveTx.wait();
+                }
+
+                // Call depositRewards on the StakingRewards contract
+                statusEl.textContent = 'Confirm deposit in your wallet...';
                 btn.textContent = 'Confirm in wallet...';
-                const tx = await usdcContract.transfer(REWARD_POOL_ADDRESS, usdcAmountWei);
+                const rewardsContract = new ethers.Contract(STAKING_REWARDS_ADDRESS, STAKING_REWARDS_ABI, signer);
+                const tx = await rewardsContract.depositRewards(usdcAmountWei);
 
                 statusEl.textContent = 'Waiting for confirmation...';
                 btn.textContent = 'Confirming...';
-                const receipt = await tx.wait();
-
-                // Record deposit in Supabase
-                statusEl.textContent = 'Recording deposit...';
-                try {
-                    await recordPoolDeposit(amount, userAddress, receipt.hash);
-                } catch (dbErr) {
-                    console.error('Failed to record deposit in DB:', dbErr);
-                    // Don't fail the UX — the on-chain tx succeeded
-                }
+                await tx.wait();
 
                 // Success
                 statusEl.className = 'rp-deposit-status rp-status-success';
@@ -24010,7 +24057,7 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
                 btn.textContent = 'Done!';
                 showToast(`Deposited ${amount} USDC to the reward pool!`);
 
-                // Refresh banner data
+                // Refresh banner data from chain
                 setTimeout(() => loadRewardPoolBanner(), 2000);
                 setTimeout(() => {
                     const overlay = document.querySelector('.rp-deposit-overlay');
@@ -24020,50 +24067,39 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
             } catch (err) {
                 console.error('Pool deposit failed:', err);
                 statusEl.className = 'rp-deposit-status rp-status-error';
-                statusEl.textContent = err.message || 'Transaction failed';
+                statusEl.textContent = err.reason || err.message || 'Transaction failed';
                 btn.textContent = originalText;
                 btn.disabled = false;
-                return;
             }
         }
 
-        async function recordPoolDeposit(amount, walletAddress, txHash) {
-            const headers = {
-                'apikey': SUPABASE_ANON_KEY,
-                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                'Content-Type': 'application/json',
-                'Prefer': 'return=minimal'
-            };
+        // Claim earned USDC rewards
+        async function claimRewardPoolUsdc() {
+            if (!STAKING_REWARDS_ADDRESS) {
+                showToast('Reward pool contract not yet deployed');
+                return;
+            }
+            if (typeof window.ethereum === 'undefined') {
+                showToast('Please install MetaMask or a Web3 wallet');
+                return;
+            }
 
-            // Insert donation record
-            await fetch(`${SUPABASE_URL}/rest/v1/rewards_donations`, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({
-                    donor_name: truncateAddress(walletAddress),
-                    donor_address: walletAddress.toLowerCase(),
-                    amount: amount,
-                    status: 'confirmed',
-                    stripe_session_id: txHash // reusing column for tx hash
-                })
-            });
+            try {
+                await ensureBaseNetwork();
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                const rewardsContract = new ethers.Contract(STAKING_REWARDS_ADDRESS, STAKING_REWARDS_ABI, signer);
 
-            // Update pool total — fetch current, then update
-            const poolRes = await fetch(`${SUPABASE_URL}/rest/v1/rewards_pool?select=id,total_amount&limit=1`, { headers });
-            const poolData = await poolRes.json();
+                showToast('Confirm claim in your wallet...');
+                const tx = await rewardsContract.claimUsdc();
+                showToast('Claiming rewards...');
+                await tx.wait();
+                showToast('Rewards claimed!');
 
-            if (poolData.length > 0) {
-                await fetch(`${SUPABASE_URL}/rest/v1/rewards_pool?id=eq.${poolData[0].id}`, {
-                    method: 'PATCH',
-                    headers: { ...headers, 'Prefer': 'return=minimal' },
-                    body: JSON.stringify({ total_amount: (poolData[0].total_amount || 0) + amount })
-                });
-            } else {
-                await fetch(`${SUPABASE_URL}/rest/v1/rewards_pool`, {
-                    method: 'POST',
-                    headers,
-                    body: JSON.stringify({ total_amount: amount })
-                });
+                setTimeout(() => loadRewardPoolBanner(), 2000);
+            } catch (err) {
+                console.error('Claim failed:', err);
+                showToast(err.reason || err.message || 'Claim failed');
             }
         }
 
@@ -24097,7 +24133,7 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
                 `;
             } else {
                 shareRow.innerHTML = `
-                    <span class="reward-pool-share">Your est. share: <strong>connect wallet</strong></span>
+                    <span class="reward-pool-share">Claimable: <strong>connect wallet</strong></span>
                     <a href="#" class="reward-pool-wallet-link" onclick="event.preventDefault(); promptConnectWallet()">Connect wallet to claim</a>
                 `;
             }
@@ -24138,9 +24174,7 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
         updateRewardPoolCountdown();
         setInterval(updateRewardPoolCountdown, 1000);
 
-        // Reward pool data — single source of truth for all banner values
-        // Replace these with real Supabase queries later
-        // Format helpers for reward pool
+        // Reward pool data — reads from StakingRewards contract on Base
         const rpFmtUSD = n => '$' + n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
         const rpFmtCredits = n => {
             if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
@@ -24148,76 +24182,85 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
             return n.toLocaleString();
         };
 
-        function renderRewardPoolValues(poolBalance, holders, creditsCirculating, paidLastMonth) {
-            const creditValueUSD = creditsCirculating / 1000;
-            const annualizedPayout = paidLastMonth * 12;
-            const apy = creditValueUSD > 0 ? ((annualizedPayout / creditValueUSD) * 100) : 0;
-
+        function renderRewardPoolValues(poolBalance, holders, creditsCirculating, rewardForDuration, userEarned) {
             const el = id => document.getElementById(id);
+
             if (el('rewardPoolDisplay')) el('rewardPoolDisplay').innerHTML = `${rpFmtUSD(poolBalance)}<span class="reward-pool-currency">USDC</span>`;
             if (el('rpHolders')) el('rpHolders').textContent = holders.toLocaleString();
             if (el('rpCredits')) el('rpCredits').textContent = rpFmtCredits(creditsCirculating);
-            if (el('rpLastMonth')) el('rpLastMonth').textContent = rpFmtUSD(paidLastMonth);
+            if (el('rpLastMonth')) el('rpLastMonth').textContent = rpFmtUSD(rewardForDuration);
+
+            // APY = (rewardForDuration * 12) / totalStakedUSD * 100
+            const totalStakedUSD = creditsCirculating / 1000;
+            const annualized = rewardForDuration * 12;
+            const apy = totalStakedUSD > 0 ? ((annualized / totalStakedUSD) * 100) : 0;
             if (el('rpAPY')) el('rpAPY').textContent = apy.toFixed(1) + '%';
 
-            // Compute user's estimated share
+            // User's earned (claimable) USDC from the on-chain contract
             const shareEl = document.querySelector('.reward-pool-share');
-            if (shareEl && poolBalance > 0 && creditsCirculating > 0 && userCredits > 0) {
-                const userShare = (userCredits / creditsCirculating) * poolBalance;
-                const fmtShare = userShare < 0.01 ? '<0.01' : userShare < 1 ? userShare.toFixed(2) : userShare.toFixed(2);
-                shareEl.innerHTML = `Your est. share: <strong>~${fmtShare} USDC</strong>`;
-            } else if (shareEl && userCredits === 0) {
-                shareEl.innerHTML = `Your est. share: <strong>earn credits first</strong>`;
+            if (shareEl) {
+                if (userEarned > 0) {
+                    const fmtEarned = userEarned < 0.01 ? '<0.01' : userEarned.toFixed(2);
+                    shareEl.innerHTML = `Claimable: <strong>${fmtEarned} USDC</strong>`;
+                } else if (userCredits > 0) {
+                    shareEl.innerHTML = `Claimable: <strong>0 USDC</strong>`;
+                } else {
+                    shareEl.innerHTML = `Claimable: <strong>stake credits first</strong>`;
+                }
             }
 
-            // Update wallet connection status in banner
             updateRewardPoolWalletStatus();
         }
 
         async function loadRewardPoolBanner() {
-            // Defaults (shown while loading or if queries fail)
             let poolBalance = 0;
             let holders = 0;
             let creditsCirculating = 0;
-            let paidLastMonth = 0;
-
-            const headers = {
-                'apikey': SUPABASE_ANON_KEY,
-                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-            };
+            let rewardForDuration = 0;
+            let userEarned = 0;
 
             try {
-                const [poolRes, creditsRes] = await Promise.all([
-                    // Fetch pool balance
-                    fetch(`${SUPABASE_URL}/rest/v1/rewards_pool?select=total_amount&limit=1`, { headers }),
-                    // Fetch all credit holders to sum circulating credits & count holders
-                    fetch(`${SUPABASE_URL}/rest/v1/user_credits?select=credits&credits=gt.0`, { headers })
-                ]);
+                const provider = new ethers.JsonRpcProvider(BASE_RPC);
 
-                if (poolRes.ok) {
-                    const poolData = await poolRes.json();
-                    if (poolData.length > 0) poolBalance = poolData[0].total_amount || 0;
+                if (STAKING_REWARDS_ADDRESS) {
+                    const rewardsContract = new ethers.Contract(STAKING_REWARDS_ADDRESS, STAKING_REWARDS_ABI, provider);
+                    const usdcContract = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, provider);
+
+                    const [balanceRaw, totalStakedRaw, rewardForDurationRaw] = await Promise.all([
+                        usdcContract.balanceOf(STAKING_REWARDS_ADDRESS),
+                        rewardsContract.totalStaked(),
+                        rewardsContract.getRewardForDuration()
+                    ]);
+
+                    poolBalance = parseFloat(ethers.formatUnits(balanceRaw, 6));
+                    rewardForDuration = parseFloat(ethers.formatUnits(rewardForDurationRaw, 6));
+                    creditsCirculating = parseFloat(ethers.formatUnits(totalStakedRaw, 18));
+
+                    const wallet = localStorage.getItem('connectedWallet');
+                    if (wallet) {
+                        try {
+                            const earnedRaw = await rewardsContract.earned(wallet);
+                            userEarned = parseFloat(ethers.formatUnits(earnedRaw, 6));
+                        } catch (e) { console.warn('Could not read earned:', e); }
+                    }
                 }
 
-                if (creditsRes.ok) {
-                    const creditRows = await creditsRes.json();
-                    holders = creditRows.length;
-                    creditsCirculating = creditRows.reduce((sum, r) => sum + (r.credits || 0), 0);
-                }
-
-                // TODO: fetch paidLastMonth from a distributions log table when available
-                // For now derive from pool data if we have it, or use 0
-                paidLastMonth = 0;
+                // Holder count from Supabase
+                const headers = { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` };
+                try {
+                    const creditsRes = await fetch(`${SUPABASE_URL}/rest/v1/user_credits?select=credits&credits=gt.0`, { headers });
+                    if (creditsRes.ok) holders = (await creditsRes.json()).length;
+                } catch (e) { console.warn('Could not fetch holders:', e); }
 
             } catch (err) {
                 console.error('Failed to load reward pool data:', err);
             }
 
-            renderRewardPoolValues(poolBalance, holders, creditsCirculating, paidLastMonth);
+            renderRewardPoolValues(poolBalance, holders, creditsCirculating, rewardForDuration, userEarned);
         }
 
         // Show zeros immediately, then load real data
-        renderRewardPoolValues(0, 0, 0, 0);
+        renderRewardPoolValues(0, 0, 0, 0, 0);
         loadRewardPoolBanner();
 
         function selectDonationAmount(amount) {
