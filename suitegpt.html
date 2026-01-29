@@ -26352,12 +26352,19 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
                     .eq('id', appId)
                     .then(() => {});
 
-                // Open the app in a new preview (using blob URL for the HTML)
+                // Open the app in a blob URL
                 const blob = new Blob([app.code], { type: 'text/html' });
                 const blobUrl = URL.createObjectURL(blob);
 
-                // Use the existing preview system
-                previewApp(null, blobUrl, app.name);
+                closeAppsPanel();
+
+                // On mobile, go fullscreen; on desktop, open in mobile view like other apps
+                if (window.innerWidth < 768) {
+                    closeAppsView();
+                    previewApp(null, blobUrl, app.name);
+                } else {
+                    openMobileAppView(null, blobUrl, app.name);
+                }
 
             } catch (error) {
                 console.error('Error launching community app:', error);
