@@ -12367,6 +12367,166 @@
             100% { content: ''; }
         }
 
+        /* Build Progress Overlay */
+        .build-progress-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(20px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            animation: buildOverlayIn 0.3s ease-out;
+        }
+
+        @keyframes buildOverlayIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .build-progress-content {
+            text-align: center;
+            max-width: 400px;
+            padding: 0 24px;
+        }
+
+        .build-progress-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 28px;
+            border-radius: 24px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: buildPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes buildPulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.3); }
+            50% { transform: scale(1.05); box-shadow: 0 0 40px 10px rgba(99, 102, 241, 0.15); }
+        }
+
+        .build-progress-icon svg {
+            color: #a5b4fc;
+            animation: buildIconSpin 3s linear infinite;
+        }
+
+        @keyframes buildIconSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .build-progress-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .build-progress-step {
+            font-size: 1rem;
+            color: #a5b4fc;
+            margin-bottom: 32px;
+            min-height: 1.5em;
+            transition: opacity 0.3s ease;
+        }
+
+        .build-progress-step.fading {
+            opacity: 0;
+        }
+
+        .build-progress-bar-track {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+
+        .build-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6, #a78bfa);
+            border-radius: 4px;
+            transition: width 0.8s ease;
+            position: relative;
+        }
+
+        .build-progress-bar::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: buildShimmer 1.5s ease-in-out infinite;
+        }
+
+        @keyframes buildShimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .build-progress-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            text-align: left;
+        }
+
+        .build-step-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.9rem;
+            color: var(--text-tertiary);
+            transition: all 0.3s ease;
+        }
+
+        .build-step-item.active {
+            color: #a5b4fc;
+        }
+
+        .build-step-item.done {
+            color: #4ade80;
+        }
+
+        .build-step-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.06);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.3s ease;
+        }
+
+        .build-step-item.active .build-step-dot {
+            background: rgba(99, 102, 241, 0.2);
+            box-shadow: 0 0 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .build-step-item.done .build-step-dot {
+            background: rgba(74, 222, 128, 0.2);
+        }
+
+        .build-step-dot svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .build-step-item.active .build-step-dot svg {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
         /* Full Build choice cards */
         .builder-choice-icon.quick {
             background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.2));
@@ -26274,6 +26434,131 @@ Now generate ONE highly detailed, novel app idea. Output ONLY the idea descripti
             `;
         }
 
+        // ===== BUILD PROGRESS OVERLAY =====
+        const BUILD_STEPS = [
+            { label: 'Analyzing your idea', icon: 'search' },
+            { label: 'Planning features & logic', icon: 'list' },
+            { label: 'Designing the interface', icon: 'palette' },
+            { label: 'Writing the code', icon: 'code' },
+            { label: 'Polishing & testing', icon: 'sparkle' }
+        ];
+
+        function showBuildProgress() {
+            // Remove existing overlay if any
+            const existing = document.getElementById('buildProgressOverlay');
+            if (existing) existing.remove();
+
+            const stepIcons = {
+                search: '<circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>',
+                list: '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>',
+                palette: '<circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12" r="2.5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.04-.24-.3-.39-.65-.39-1.04 0-.83.67-1.5 1.5-1.5H16c3.31 0 6-2.69 6-6 0-5.17-4.49-9.42-10-9.92z"/>',
+                code: '<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>',
+                sparkle: '<path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>'
+            };
+
+            const spinnerSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>';
+            const checkSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>';
+
+            const stepsHtml = BUILD_STEPS.map((step, i) => `
+                <div class="build-step-item" id="buildStep${i}" data-icon='${stepIcons[step.icon]}'>
+                    <div class="build-step-dot">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${stepIcons[step.icon]}</svg>
+                    </div>
+                    <span>${step.label}</span>
+                </div>
+            `).join('');
+
+            const overlay = document.createElement('div');
+            overlay.id = 'buildProgressOverlay';
+            overlay.className = 'build-progress-overlay';
+            overlay.innerHTML = `
+                <div class="build-progress-content">
+                    <div class="build-progress-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="36" height="36">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                        </svg>
+                    </div>
+                    <div class="build-progress-title">Building your app</div>
+                    <div class="build-progress-step" id="buildProgressStep">${BUILD_STEPS[0].label}...</div>
+                    <div class="build-progress-bar-track">
+                        <div class="build-progress-bar" id="buildProgressBar" style="width: 5%"></div>
+                    </div>
+                    <div class="build-progress-steps">
+                        ${stepsHtml}
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(overlay);
+
+            // Start animating through steps
+            animateBuildSteps();
+        }
+
+        let buildStepInterval = null;
+
+        function animateBuildSteps() {
+            let currentStep = 0;
+            const bar = document.getElementById('buildProgressBar');
+            const stepText = document.getElementById('buildProgressStep');
+
+            // Activate first step
+            const firstStep = document.getElementById('buildStep0');
+            if (firstStep) firstStep.classList.add('active');
+            if (bar) bar.style.width = '10%';
+
+            buildStepInterval = setInterval(() => {
+                // Mark current as done
+                const cur = document.getElementById(`buildStep${currentStep}`);
+                if (cur) {
+                    cur.classList.remove('active');
+                    cur.classList.add('done');
+                    // Replace icon with checkmark
+                    const dot = cur.querySelector('.build-step-dot');
+                    if (dot) dot.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>';
+                }
+
+                currentStep++;
+                if (currentStep >= BUILD_STEPS.length) {
+                    clearInterval(buildStepInterval);
+                    buildStepInterval = null;
+                    if (bar) bar.style.width = '95%';
+                    if (stepText) stepText.textContent = 'Almost there...';
+                    return;
+                }
+
+                // Activate next
+                const next = document.getElementById(`buildStep${currentStep}`);
+                if (next) next.classList.add('active');
+
+                // Update progress
+                const pct = 10 + (currentStep / BUILD_STEPS.length) * 85;
+                if (bar) bar.style.width = pct + '%';
+
+                // Fade step text
+                if (stepText) {
+                    stepText.classList.add('fading');
+                    setTimeout(() => {
+                        stepText.textContent = BUILD_STEPS[currentStep].label + '...';
+                        stepText.classList.remove('fading');
+                    }, 300);
+                }
+            }, 3000);
+        }
+
+        function hideBuildProgress() {
+            if (buildStepInterval) {
+                clearInterval(buildStepInterval);
+                buildStepInterval = null;
+            }
+            const overlay = document.getElementById('buildProgressOverlay');
+            if (overlay) {
+                overlay.style.opacity = '0';
+                overlay.style.transition = 'opacity 0.3s ease';
+                setTimeout(() => overlay.remove(), 300);
+            }
+        }
+
         async function buildQuickApp() {
             const input = document.getElementById('quickAppInput');
             const btn = document.getElementById('quickAppBuildBtn');
@@ -26288,14 +26573,9 @@ Now generate ONE highly detailed, novel app idea. Output ONLY the idea descripti
 
             const hasDetailedPrompts = featuresPrompt && designPrompt && interactionsPrompt;
 
-            // Show loading state
+            // Show progress overlay
             btn.disabled = true;
-            btn.innerHTML = `
-                <svg class="spinning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-                    <path d="M21 12a9 9 0 11-6.219-8.56"/>
-                </svg>
-                Building...
-            `;
+            showBuildProgress();
 
             try {
                 // Build the prompt - use detailed prompts if available
@@ -26372,7 +26652,8 @@ Output ONLY the complete HTML code, starting with <!DOCTYPE html> and ending wit
                         html: html
                     };
 
-                    // Transition to preview mode
+                    // Hide progress and show preview
+                    hideBuildProgress();
                     showQuickAppPreview(html, appName, idea);
                 } else {
                     throw new Error('No HTML generated');
@@ -26380,6 +26661,7 @@ Output ONLY the complete HTML code, starting with <!DOCTYPE html> and ending wit
 
             } catch (error) {
                 console.error('Failed to build app:', error);
+                hideBuildProgress();
                 alert('Failed to build app. Please try again.');
             }
 
