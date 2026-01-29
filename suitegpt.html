@@ -12316,6 +12316,23 @@
             font-style: italic;
         }
 
+        .prompt-card-preview.loading {
+            color: var(--text-tertiary);
+        }
+
+        .prompt-card-preview.loading::after {
+            content: '';
+            animation: promptDots 1.4s steps(4, end) infinite;
+        }
+
+        @keyframes promptDots {
+            0%   { content: ''; }
+            25%  { content: '.'; }
+            50%  { content: '..'; }
+            75%  { content: '...'; }
+            100% { content: ''; }
+        }
+
         /* Full Build choice cards */
         .builder-choice-icon.quick {
             background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.2));
@@ -15544,7 +15561,7 @@
                                             <path d="M6 9l6 6 6-6"/>
                                         </svg>
                                     </div>
-                                    <div class="prompt-card-preview" id="promptPreviewFeatures">Generating...</div>
+                                    <div class="prompt-card-preview loading" id="promptPreviewFeatures">Generating</div>
                                     <div class="prompt-card-body">
                                         <textarea class="prompt-card-textarea" id="promptTextFeatures" placeholder="Core features and functionality..." oninput="autoResizePromptCard(this)"></textarea>
                                     </div>
@@ -15564,7 +15581,7 @@
                                             <path d="M6 9l6 6 6-6"/>
                                         </svg>
                                     </div>
-                                    <div class="prompt-card-preview" id="promptPreviewDesign">Generating...</div>
+                                    <div class="prompt-card-preview loading" id="promptPreviewDesign">Generating</div>
                                     <div class="prompt-card-body">
                                         <textarea class="prompt-card-textarea" id="promptTextDesign" placeholder="Visual design and styling..." oninput="autoResizePromptCard(this)"></textarea>
                                     </div>
@@ -15584,7 +15601,7 @@
                                             <path d="M6 9l6 6 6-6"/>
                                         </svg>
                                     </div>
-                                    <div class="prompt-card-preview" id="promptPreviewInteractions">Generating...</div>
+                                    <div class="prompt-card-preview loading" id="promptPreviewInteractions">Generating</div>
                                     <div class="prompt-card-body">
                                         <textarea class="prompt-card-textarea" id="promptTextInteractions" placeholder="User interactions and behaviors..." oninput="autoResizePromptCard(this)"></textarea>
                                     </div>
@@ -18274,6 +18291,11 @@
                 <button class="mobile-app-btn mobile-app-btn-minimize" onclick="minimizeToSidebar()" title="Save & Minimize">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M19 12H5M12 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <button class="mobile-app-btn mobile-app-btn-close" onclick="closeMobileApp()" title="Close App">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </button>
             </div>
@@ -25853,7 +25875,7 @@ Be concise but helpful. Use markdown formatting.`;
                 const card = document.getElementById(`promptCard${type}`);
                 if (card) card.classList.remove('expanded');
                 const preview = document.getElementById(`promptPreview${type}`);
-                if (preview) preview.textContent = 'Generating...';
+                if (preview) { preview.textContent = 'Generating'; preview.classList.add('loading'); }
                 const textarea = document.getElementById(`promptText${type}`);
                 if (textarea) {
                     textarea.value = '';
@@ -25897,7 +25919,7 @@ Be concise but helpful. Use markdown formatting.`;
             // Set loading state
             ['Features', 'Design', 'Interactions'].forEach(type => {
                 const preview = document.getElementById(`promptPreview${type}`);
-                if (preview) preview.textContent = 'Generating...';
+                if (preview) { preview.textContent = 'Generating'; preview.classList.add('loading'); }
                 const textarea = document.getElementById(`promptText${type}`);
                 if (textarea) {
                     textarea.value = '';
@@ -25953,7 +25975,7 @@ Output EXACTLY this JSON format (no markdown, no code blocks, just raw JSON):
                 console.error('Failed to generate prompts:', error);
                 ['Features', 'Design', 'Interactions'].forEach(type => {
                     const preview = document.getElementById(`promptPreview${type}`);
-                    if (preview) preview.textContent = 'Click to write your own prompt';
+                    if (preview) { preview.textContent = 'Click to write your own prompt'; preview.classList.remove('loading'); }
                     const textarea = document.getElementById(`promptText${type}`);
                     if (textarea) {
                         textarea.value = '';
@@ -25976,7 +25998,8 @@ Output EXACTLY this JSON format (no markdown, no code blocks, just raw JSON):
                 textarea.classList.remove('loading');
             }
             if (preview) {
-                preview.textContent = content || 'Generating...';
+                preview.textContent = content || 'Generating';
+                preview.classList.remove('loading');
             }
         }
 
