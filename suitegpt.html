@@ -4578,6 +4578,11 @@
             box-shadow: none;
         }
 
+        .your-apps-header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
         .your-apps-empty-actions {
             display: flex;
             gap: 12px;
@@ -8336,6 +8341,76 @@
         .copilot-post-btn.approve:hover { background: rgba(34, 197, 94, 0.25); }
         .copilot-post-btn.regenerate { background: rgba(255, 140, 66, 0.15); color: var(--accent-primary); }
         .copilot-post-btn.regenerate:hover { background: rgba(255, 140, 66, 0.25); }
+
+        .post-to-x-btn {
+            background: rgba(29, 155, 240, 0.15); color: #1d9bf0;
+        }
+        .post-to-x-btn:hover { background: rgba(29, 155, 240, 0.25); }
+        .post-to-x-btn.posting { opacity: 0.5; cursor: not-allowed; }
+
+        /* Thread cards */
+        .thread-card {
+            background: #12121f; border-radius: 8px; padding: 14px;
+            border: 1px solid var(--border-subtle); position: relative;
+        }
+        .thread-card + .thread-card { margin-top: 8px; }
+        .thread-card .thread-number {
+            position: absolute; top: 10px; right: 12px;
+            font-size: 0.7rem; color: var(--text-tertiary); font-weight: 700;
+        }
+        .thread-card .post-text {
+            white-space: pre-wrap; font-size: 0.85rem; line-height: 1.5;
+            color: var(--text-primary); margin-bottom: 8px;
+        }
+        .thread-card .marketing-post-actions { display: flex; gap: 8px; }
+        .thread-actions-bottom { margin-top: 12px; }
+
+        /* Engagement column */
+        .engagement-keywords-row {
+            display: flex; gap: 8px;
+        }
+        .engagement-keywords-row input {
+            flex: 1; background: #1a1a2e; border: 1px solid var(--border-subtle);
+            border-radius: 8px; padding: 8px 10px; color: #f5f5f7; font-size: 0.85rem;
+        }
+        .engagement-keywords-row input:focus { outline: none; border-color: var(--accent-primary); }
+
+        .engagement-tweet-list {
+            max-height: 500px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
+        }
+        .engagement-tweet-card {
+            background: #12121f; border-radius: 8px; padding: 12px;
+            border: 1px solid var(--border-subtle);
+        }
+        .engagement-tweet-author {
+            display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+        }
+        .engagement-tweet-avatar {
+            width: 32px; height: 32px; border-radius: 50%; background: var(--border-subtle);
+            display: flex; align-items: center; justify-content: center; font-size: 0.8rem;
+        }
+        .engagement-tweet-handle { font-size: 0.8rem; color: #1d9bf0; font-weight: 600; }
+        .engagement-tweet-followers { font-size: 0.7rem; color: var(--text-tertiary); margin-left: auto; }
+        .engagement-tweet-text {
+            font-size: 0.82rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: 8px;
+            display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+        }
+        .engagement-reply-options {
+            display: flex; flex-direction: column; gap: 6px; margin-top: 8px;
+        }
+        .engagement-reply-option {
+            background: #1a1a2e; border-radius: 6px; padding: 10px;
+            border: 1px solid var(--border-subtle); display: flex; align-items: flex-start; gap: 8px;
+        }
+        .engagement-reply-text {
+            flex: 1; font-size: 0.8rem; color: var(--text-primary); line-height: 1.4;
+        }
+        .engagement-reply-btn {
+            background: rgba(29, 155, 240, 0.15); color: #1d9bf0;
+            border: none; border-radius: 6px; padding: 4px 10px; font-size: 0.75rem;
+            cursor: pointer; white-space: nowrap; transition: all 0.2s;
+        }
+        .engagement-reply-btn:hover { background: rgba(29, 155, 240, 0.25); }
 
         /* Content Calendar */
         .content-calendar {
@@ -16722,6 +16797,20 @@
                     <div class="creator-dashboard-panel active" id="dashboardPanelYourApps">
                         <div class="your-apps-header">
                             <h3 class="your-apps-title">Your Apps / Projects <span class="your-apps-count-badge" id="dashboardAppsCountBadge">0</span></h3>
+                            <div class="your-apps-header-actions">
+                                <button class="your-apps-create-btn secondary" onclick="openAppsPanel()">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 5v14M5 12h14" stroke-linecap="round"/>
+                                    </svg>
+                                    Browse Apps
+                                </button>
+                                <button class="your-apps-create-btn" onclick="openBuilderMode()">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 5v14M5 12h14" stroke-linecap="round"/>
+                                    </svg>
+                                    Create App
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Empty State -->
@@ -17188,6 +17277,61 @@
                                                     ✨ Generate Post
                                                 </button>
                                                 <div class="marketing-col-output" id="appHighlightOutput"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Row 2: Quick Post / Thread / Engagement -->
+                                    <div class="marketing-columns">
+                                        <!-- Column 4: Quick Post -->
+                                        <div class="marketing-col">
+                                            <div class="marketing-col-header">
+                                                <span class="marketing-col-icon">📝</span>
+                                                <h3>Quick Post</h3>
+                                                <p>Any idea, any format</p>
+                                            </div>
+                                            <div class="marketing-col-body">
+                                                <textarea id="quickPostInput" class="marketing-col-input"
+                                                    placeholder="Drop an idea, thought, or draft..." rows="5"></textarea>
+                                                <button class="marketing-generate-btn" onclick="generateQuickPost()">
+                                                    ✨ Generate Post
+                                                </button>
+                                                <div class="marketing-col-output" id="quickPostOutput"></div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Column 5: Thread -->
+                                        <div class="marketing-col">
+                                            <div class="marketing-col-header">
+                                                <span class="marketing-col-icon">🧵</span>
+                                                <h3>Thread</h3>
+                                                <p>Turn ideas into threads</p>
+                                            </div>
+                                            <div class="marketing-col-body">
+                                                <textarea id="threadInput" class="marketing-col-input"
+                                                    placeholder="Paste content to turn into a thread..." rows="5"></textarea>
+                                                <button class="marketing-generate-btn" onclick="generateThread()">
+                                                    ✨ Generate Thread
+                                                </button>
+                                                <div class="marketing-col-output" id="threadOutput"></div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Column 6: Engagement -->
+                                        <div class="marketing-col">
+                                            <div class="marketing-col-header">
+                                                <span class="marketing-col-icon">💬</span>
+                                                <h3>Engagement</h3>
+                                                <p>Find & reply to tweets</p>
+                                            </div>
+                                            <div class="marketing-col-body">
+                                                <div class="engagement-keywords-row">
+                                                    <input type="text" id="engagementKeywords" placeholder="Keywords (e.g. AI agents, no-code)">
+                                                    <button class="marketing-fetch-btn" onclick="fetchEngagementTweets()">Fetch</button>
+                                                </div>
+                                                <div class="engagement-tweet-list" id="engagementTweetList">
+                                                    <span class="github-empty">Enter keywords and click Fetch</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -20662,6 +20806,7 @@ Return ONLY the post text, nothing else.`;
                     <div class="marketing-post-actions">
                         <button class="copilot-post-btn approve" onclick="copyPostText(this)">📋 Copy</button>
                         <button class="copilot-post-btn regenerate" onclick="regeneratePost('${type}')">🔄 Redo</button>
+                        <button class="copilot-post-btn post-to-x-btn" onclick="postToX(this)">𝕏 Post</button>
                     </div>
                 </div>`;
         }
@@ -20677,6 +20822,267 @@ Return ONLY the post text, nothing else.`;
             if (type === 'heartbeat') generateHeartbeat();
             else if (type === 'ecosystem') generateEcosystemUpdate();
             else if (type === 'app-highlight') generateAppHighlight();
+            else if (type === 'quick-post') generateQuickPost();
+            else if (type === 'thread') generateThread();
+        }
+
+        // --- Post to X ---
+        async function postToX(btn) {
+            const card = btn.closest('.marketing-post-card') || btn.closest('.thread-card');
+            const text = card.querySelector('.post-text').textContent.trim();
+            if (!text) return;
+            btn.classList.add('posting');
+            btn.textContent = '𝕏 Posting...';
+            btn.disabled = true;
+            try {
+                const resp = await fetch('/api/post-to-x', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    btn.textContent = '✓ Posted';
+                    btn.style.color = '#22c55e';
+                } else {
+                    btn.textContent = '✗ Failed';
+                    btn.style.color = '#ef4444';
+                    console.error('Post to X failed:', data);
+                }
+            } catch (err) {
+                btn.textContent = '✗ Error';
+                btn.style.color = '#ef4444';
+                console.error('Post to X error:', err);
+            }
+            setTimeout(() => {
+                btn.classList.remove('posting');
+                btn.disabled = false;
+                btn.textContent = '𝕏 Post';
+                btn.style.color = '';
+            }, 3000);
+        }
+
+        // --- Quick Post ---
+        async function generateQuickPost() {
+            const idea = document.getElementById('quickPostInput').value.trim();
+            if (!idea) { alert('Drop an idea or thought first.'); return; }
+
+            const prompt = `Generate a single short X/Twitter post (under 280 chars) from this idea.
+Brand: SUITE (suitegpt.app) - Anyone Can Build, Everyone Gets Paid.
+Tone: casual, builder-focused, punchy. No hard sells.
+Idea: ${idea}
+Return ONLY the post text, nothing else.`;
+
+            showGenerating('quickPostOutput');
+            const response = await callCopilotAI(prompt);
+            renderPostCard('quickPostOutput', response, 'quick-post');
+        }
+
+        // --- Thread ---
+        async function generateThread() {
+            const content = document.getElementById('threadInput').value.trim();
+            if (!content) { alert('Paste some content to turn into a thread.'); return; }
+
+            const prompt = `Generate a 3-5 tweet thread from this content. Each tweet must be under 280 chars.
+Brand: SUITE (suitegpt.app) - Anyone Can Build, Everyone Gets Paid.
+Tone: casual, builder-focused, authentic.
+
+Format your response as numbered tweets like:
+1/ First tweet text
+2/ Second tweet text
+3/ Third tweet text
+
+Content: ${content}
+Return ONLY the numbered tweets, nothing else.`;
+
+            showGenerating('threadOutput');
+            const response = await callCopilotAI(prompt);
+            renderThreadCards('threadOutput', response);
+        }
+
+        function renderThreadCards(outputId, text) {
+            const tweets = text.split(/\n/).filter(l => l.match(/^\d+\//)).map(l => l.replace(/^\d+\/\s*/, '').trim());
+            if (!tweets.length) {
+                renderPostCard(outputId, text, 'thread');
+                return;
+            }
+            let html = '';
+            tweets.forEach((t, i) => {
+                html += `<div class="thread-card" data-thread-index="${i}">
+                    <span class="thread-number">${i + 1}/${tweets.length}</span>
+                    <div class="post-text">${t}</div>
+                    <div class="marketing-post-actions">
+                        <button class="copilot-post-btn approve" onclick="copyPostText(this)">📋 Copy</button>
+                    </div>
+                </div>`;
+            });
+            html += `<div class="thread-actions-bottom">
+                <button class="marketing-generate-btn" onclick="postThreadToX(this)" style="background: linear-gradient(135deg, #1d9bf0, #0a66c2);">
+                    𝕏 Post Thread
+                </button>
+            </div>`;
+            document.getElementById(outputId).innerHTML = html;
+        }
+
+        async function postThreadToX(btn) {
+            const container = btn.closest('.marketing-col-output');
+            const cards = container.querySelectorAll('.thread-card');
+            if (!cards.length) return;
+            btn.disabled = true;
+            btn.textContent = '𝕏 Posting thread...';
+            let lastTweetId = null;
+            let success = true;
+            for (const card of cards) {
+                const text = card.querySelector('.post-text').textContent.trim();
+                try {
+                    const body = { text };
+                    if (lastTweetId) body.reply = { in_reply_to_tweet_id: lastTweetId };
+                    const endpoint = lastTweetId ? '/api/x-reply' : '/api/post-to-x';
+                    const resp = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+                    const data = await resp.json();
+                    if (data.success || data.tweetId) {
+                        lastTweetId = data.tweetId;
+                        card.style.borderColor = '#22c55e';
+                    } else {
+                        card.style.borderColor = '#ef4444';
+                        success = false;
+                        break;
+                    }
+                } catch (err) {
+                    card.style.borderColor = '#ef4444';
+                    success = false;
+                    break;
+                }
+            }
+            btn.textContent = success ? '✓ Thread Posted' : '✗ Thread Failed';
+            btn.style.color = success ? '#22c55e' : '#ef4444';
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.textContent = '𝕏 Post Thread';
+                btn.style.color = '';
+            }, 3000);
+        }
+
+        // --- Engagement ---
+        async function fetchEngagementTweets() {
+            const keywords = document.getElementById('engagementKeywords').value.trim();
+            if (!keywords) { alert('Enter some keywords first.'); return; }
+
+            const list = document.getElementById('engagementTweetList');
+            list.innerHTML = '<div class="marketing-generating">Fetching tweets...</div>';
+
+            try {
+                const resp = await fetch(`/api/x-search?q=${encodeURIComponent(keywords)}&max_results=20`);
+                const data = await resp.json();
+                if (!data.tweets || !data.tweets.length) {
+                    list.innerHTML = '<span class="github-empty">No tweets found for those keywords</span>';
+                    return;
+                }
+                // Filter out seen tweets
+                const seen = JSON.parse(localStorage.getItem('engagementSeenTweets') || '[]');
+                const fresh = data.tweets.filter(t => !seen.includes(t.id));
+                if (!fresh.length) {
+                    list.innerHTML = '<span class="github-empty">No new tweets — try different keywords</span>';
+                    return;
+                }
+                // Mark as seen
+                const newSeen = [...seen, ...fresh.map(t => t.id)].slice(-200);
+                localStorage.setItem('engagementSeenTweets', JSON.stringify(newSeen));
+
+                list.innerHTML = fresh.map(t => `
+                    <div class="engagement-tweet-card" data-tweet-id="${t.id}">
+                        <div class="engagement-tweet-author">
+                            <div class="engagement-tweet-avatar">${(t.author_name || '?')[0]}</div>
+                            <span class="engagement-tweet-handle">@${t.author_username || 'unknown'}</span>
+                            <span class="engagement-tweet-followers">${t.followers ? t.followers.toLocaleString() + ' followers' : ''}</span>
+                        </div>
+                        <div class="engagement-tweet-text">${t.text}</div>
+                        <button class="marketing-generate-btn" style="font-size:0.78rem; padding:7px;" onclick="generateReplyOptions('${t.id}', this)">
+                            ✨ Generate Reply
+                        </button>
+                        <div class="engagement-reply-options" id="replies-${t.id}"></div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                list.innerHTML = '<span class="github-empty">Error fetching tweets</span>';
+                console.error('Fetch tweets error:', err);
+            }
+        }
+
+        async function generateReplyOptions(tweetId, btn) {
+            const card = btn.closest('.engagement-tweet-card');
+            const tweetText = card.querySelector('.engagement-tweet-text').textContent;
+            const authorHandle = card.querySelector('.engagement-tweet-handle').textContent;
+            const repliesDiv = document.getElementById(`replies-${tweetId}`);
+
+            btn.disabled = true;
+            btn.textContent = 'Generating...';
+
+            const prompt = `Generate exactly 3 short reply options (each under 280 chars) for this tweet.
+Tweet by ${authorHandle}: "${tweetText}"
+
+Brand: SUITE (suitegpt.app) - Anyone Can Build, Everyone Gets Paid.
+Tone: casual, helpful, not salesy. Be genuine and add value.
+
+Format:
+1) First reply
+2) Second reply
+3) Third reply
+
+Return ONLY the 3 numbered replies, nothing else.`;
+
+            const response = await callCopilotAI(prompt);
+            const replies = response.split(/\n/).filter(l => l.match(/^\d\)/)).map(l => l.replace(/^\d\)\s*/, '').trim());
+
+            if (replies.length) {
+                repliesDiv.innerHTML = replies.map(r => `
+                    <div class="engagement-reply-option">
+                        <div class="engagement-reply-text">${r}</div>
+                        <button class="engagement-reply-btn" onclick="postReply('${tweetId}', this)">Reply</button>
+                    </div>
+                `).join('');
+            } else {
+                repliesDiv.innerHTML = `<div class="engagement-reply-option">
+                    <div class="engagement-reply-text">${response}</div>
+                    <button class="engagement-reply-btn" onclick="postReply('${tweetId}', this)">Reply</button>
+                </div>`;
+            }
+
+            btn.disabled = false;
+            btn.textContent = '✨ Generate Reply';
+        }
+
+        async function postReply(tweetId, btn) {
+            const text = btn.closest('.engagement-reply-option').querySelector('.engagement-reply-text').textContent.trim();
+            btn.disabled = true;
+            btn.textContent = 'Posting...';
+            try {
+                const resp = await fetch('/api/x-reply', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, in_reply_to_tweet_id: tweetId })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    btn.textContent = '✓ Replied';
+                    btn.style.color = '#22c55e';
+                } else {
+                    btn.textContent = '✗ Failed';
+                    btn.style.color = '#ef4444';
+                }
+            } catch (err) {
+                btn.textContent = '✗ Error';
+                btn.style.color = '#ef4444';
+            }
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.textContent = 'Reply';
+                btn.style.color = '';
+            }, 3000);
         }
 
         async function callCopilotAI(userMessage) {
