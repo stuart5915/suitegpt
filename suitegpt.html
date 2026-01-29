@@ -6784,12 +6784,8 @@
         .reward-pool-inner {
             position: relative;
             z-index: 1;
-            display: grid;
-            grid-template-columns: 1fr 240px;
-            gap: 0;
         }
 
-        /* Left: amount + stats */
         .reward-pool-main {
             padding: 28px 32px;
             display: flex;
@@ -6799,8 +6795,16 @@
 
         .reward-pool-header {
             display: flex;
-            align-items: flex-start;
+            align-items: center;
+            justify-content: space-between;
             gap: 16px;
+        }
+
+        .reward-pool-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-left: auto;
         }
 
         .reward-pool-icon {
@@ -6882,78 +6886,20 @@
             font-weight: 600;
         }
 
-        /* Right panel: countdown + actions */
-        .reward-pool-side {
-            padding: 28px 28px 28px 0;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            justify-content: space-between;
-            gap: 12px;
-            border-left: 1px solid rgba(255,255,255,0.04);
-            padding-left: 28px;
-        }
-
-        .reward-pool-countdown-block {
-            text-align: right;
-        }
-
-        .reward-pool-countdown-label {
-            font-size: 0.6rem;
-            color: rgba(255,255,255,0.3);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 600;
-            margin-bottom: 6px;
-        }
-
         .reward-pool-countdown {
-            font-size: 1.25rem;
-            font-weight: 800;
-            color: #fff;
             font-variant-numeric: tabular-nums;
-            letter-spacing: 0.5px;
         }
 
         .reward-pool-countdown .rpc-unit {
-            font-size: 0.6rem;
+            font-size: 0.55rem;
             font-weight: 600;
             color: rgba(255,255,255,0.3);
             margin-left: 1px;
-            margin-right: 6px;
+            margin-right: 4px;
         }
 
         .reward-pool-countdown .rpc-unit:last-child {
             margin-right: 0;
-        }
-
-        .reward-pool-progress {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            align-items: flex-end;
-        }
-
-        .reward-pool-bar-track {
-            width: 100%;
-            height: 4px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 2px;
-            overflow: hidden;
-        }
-
-        .reward-pool-bar-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #059669, #10b981, #34d399);
-            border-radius: 2px;
-            transition: width 1s ease;
-            box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
-        }
-
-        .reward-pool-bar-label {
-            font-size: 0.55rem;
-            color: rgba(255,255,255,0.25);
         }
 
         .reward-pool-share-row {
@@ -7001,7 +6947,7 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-            padding: 10px 24px;
+            padding: 10px 20px;
             background: linear-gradient(135deg, #10b981, #059669);
             border: none;
             border-radius: 10px;
@@ -7011,8 +6957,9 @@
             cursor: pointer;
             transition: all 0.2s;
             box-shadow: 0 2px 12px rgba(16, 185, 129, 0.2);
-            width: 100%;
+            white-space: nowrap;
             letter-spacing: 0.3px;
+            flex-shrink: 0;
         }
 
         .reward-pool-deposit-btn:hover {
@@ -7026,23 +6973,21 @@
         }
 
         @media (max-width: 768px) {
-            .reward-pool-inner {
-                grid-template-columns: 1fr;
-            }
             .reward-pool-main {
-                padding: 24px 20px 16px;
+                padding: 20px 16px;
             }
-            .reward-pool-side {
-                padding: 0 20px 24px;
-                align-items: stretch;
-                min-width: unset;
-                border-left: none;
-                border-top: 1px solid rgba(255,255,255,0.04);
-                padding-top: 16px;
+            .reward-pool-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
             }
-            .reward-pool-countdown-block { text-align: left; }
+            .reward-pool-actions {
+                flex-direction: column;
+                align-items: flex-start;
+                width: 100%;
+            }
             .reward-pool-share-row { align-items: flex-start; }
-            .reward-pool-progress { align-items: flex-start; }
+            .reward-pool-deposit-btn { width: 100%; }
             .reward-pool-amount { font-size: 2.2rem; }
             .reward-pool-stats { flex-wrap: wrap; }
             .reward-pool-stat { min-width: calc(50% - 4px); }
@@ -17569,7 +17514,7 @@
                     <!-- Reward Pool Banner -->
                     <div class="reward-pool-banner" id="rewardPoolBanner">
                         <div class="reward-pool-inner">
-                            <!-- Left: pool amount + stats -->
+                            <!-- Top row: pool amount + actions -->
                             <div class="reward-pool-main">
                                 <div class="reward-pool-header">
                                     <div class="reward-pool-icon">
@@ -17581,7 +17526,19 @@
                                     </div>
                                     <div class="reward-pool-title-group">
                                         <span class="reward-pool-label">Reward Pool</span>
-                                        <span class="reward-pool-amount" id="rewardPoolDisplay">$1,247<span class="reward-pool-currency">USDC</span></span>
+                                        <span class="reward-pool-amount" id="rewardPoolDisplay">$0<span class="reward-pool-currency">USDC</span></span>
+                                    </div>
+                                    <div class="reward-pool-actions">
+                                        <div class="reward-pool-share-row" id="rewardPoolShareRow">
+                                            <span class="reward-pool-share">Your est. share: <strong>~$12.40 USDC</strong></span>
+                                            <a href="#" class="reward-pool-wallet-link" onclick="event.preventDefault(); promptConnectWallet()">Connect wallet to claim</a>
+                                        </div>
+                                        <button class="reward-pool-deposit-btn" onclick="openRewardDeposit()">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                                <path d="M12 5v14M5 12h14"/>
+                                            </svg>
+                                            Deposit
+                                        </button>
                                     </div>
                                 </div>
                                 <div class="reward-pool-stats">
@@ -17601,31 +17558,11 @@
                                         <span class="reward-pool-stat-value" id="rpAPY">--</span>
                                         <span class="reward-pool-stat-label">APY</span>
                                     </div>
-                                </div>
-                            </div>
-
-                            <!-- Right: countdown + deposit -->
-                            <div class="reward-pool-side">
-                                <div class="reward-pool-countdown-block">
-                                    <div class="reward-pool-countdown-label">Next Distribution</div>
-                                    <div class="reward-pool-countdown" id="rewardPoolCountdown"></div>
-                                </div>
-                                <div class="reward-pool-progress">
-                                    <div class="reward-pool-bar-track">
-                                        <div class="reward-pool-bar-fill" id="rewardPoolBarFill" style="width: 0%"></div>
+                                    <div class="reward-pool-stat">
+                                        <span class="reward-pool-stat-value" id="rewardPoolCountdown" style="font-size: 0.85rem;"></span>
+                                        <span class="reward-pool-stat-label">Next Distribution</span>
                                     </div>
-                                    <span class="reward-pool-bar-label">Month progress</span>
                                 </div>
-                                <div class="reward-pool-share-row" id="rewardPoolShareRow">
-                                    <span class="reward-pool-share">Your est. share: <strong>~$12.40 USDC</strong></span>
-                                    <a href="#" class="reward-pool-wallet-link" onclick="event.preventDefault(); promptConnectWallet()">Connect wallet to claim</a>
-                                </div>
-                                <button class="reward-pool-deposit-btn" onclick="openRewardDeposit()">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-                                        <path d="M12 5v14M5 12h14"/>
-                                    </svg>
-                                    Deposit to Pool
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -17724,9 +17661,44 @@
                             <!-- Marketing View - Co-Pilot -->
                             <div class="factory-main-view" id="factoryMarketingView" style="display: none;">
                                 <div class="marketing-container">
-                                    <!-- 3-Column Marketing Dashboard -->
-                                    <div class="marketing-columns">
-                                        <!-- Column 1: Heartbeat -->
+                                    <!-- Cadence Tab Bar -->
+                                    <div class="cadence-tab-bar">
+                                        <button class="cadence-tab active" data-cadence="x-posts" onclick="switchCadenceTab('x-posts')">
+                                            <span class="cadence-tab-icon">𝕏</span>
+                                            <span class="cadence-tab-label">X Posts</span>
+                                            <span class="cadence-tab-freq">3×/day</span>
+                                        </button>
+                                        <button class="cadence-tab" data-cadence="app-highlights" onclick="switchCadenceTab('app-highlights')">
+                                            <span class="cadence-tab-icon">📱</span>
+                                            <span class="cadence-tab-label">App Highlights</span>
+                                            <span class="cadence-tab-freq">1×/wk</span>
+                                        </button>
+                                        <button class="cadence-tab" data-cadence="ecosystem-updates" onclick="switchCadenceTab('ecosystem-updates')">
+                                            <span class="cadence-tab-icon">🌐</span>
+                                            <span class="cadence-tab-label">Ecosystem</span>
+                                            <span class="cadence-tab-freq">1×/day</span>
+                                        </button>
+                                        <button class="cadence-tab" data-cadence="linkedin-posts" onclick="switchCadenceTab('linkedin-posts')">
+                                            <span class="cadence-tab-icon">💼</span>
+                                            <span class="cadence-tab-label">LinkedIn</span>
+                                            <span class="cadence-tab-freq">2×/wk</span>
+                                        </button>
+                                    </div>
+
+                                    <!-- Cadence Info Header -->
+                                    <div class="cadence-info" id="cadenceInfo">
+                                        <div class="cadence-info-left">
+                                            <span class="cadence-info-logic" id="cadenceInfoLogic">Share building progress, celebrate shipped features, engage with AI/tech community. Mix of: progress updates (40%), feature highlights (30%), community engagement (30%).</span>
+                                        </div>
+                                        <div class="cadence-info-right">
+                                            <span class="cadence-info-schedule" id="cadenceInfoSchedule">10 AM, 3 PM, 8 PM EST</span>
+                                            <button class="cadence-btn propose" onclick="proposeCadenceChange(activeCadence)">Propose Change</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Two-Column Workspace -->
+                                    <div class="marketing-workspace">
+                                        <!-- Compose Column -->
                                         <div class="marketing-col">
                                             <div class="marketing-col-header">
                                                 <span class="marketing-col-icon">💡</span>
