@@ -11884,11 +11884,11 @@
             display: none;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            padding: 40px 24px;
+            padding: 40px 24px 80px;
             max-width: 600px;
             margin: 0 auto;
-            min-height: 100%;
+            overflow-y: auto;
+            height: 100%;
         }
 
         .quick-app-screen.active {
@@ -12207,22 +12207,28 @@
             border-radius: 12px;
             overflow: hidden;
             transition: all 0.2s ease;
+            cursor: pointer;
         }
 
         .prompt-card:hover {
             border-color: rgba(255, 255, 255, 0.15);
         }
 
-        .prompt-card:focus-within {
-            border-color: rgba(99, 102, 241, 0.4);
+        .prompt-card.expanded {
+            border-color: rgba(99, 102, 241, 0.3);
             background: rgba(99, 102, 241, 0.05);
+            cursor: default;
         }
 
         .prompt-card-header {
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 10px 14px 0;
+            padding: 10px 14px;
+        }
+
+        .prompt-card.expanded .prompt-card-header {
+            padding-bottom: 0;
         }
 
         .prompt-card-title {
@@ -12245,20 +12251,40 @@
         .prompt-card-title.design svg { color: #f472b6; }
         .prompt-card-title.interactions svg { color: #fbbf24; }
 
-        .prompt-card-edit-hint {
+        .prompt-card-toggle {
             margin-left: auto;
-            font-size: 0.7rem;
             color: var(--text-tertiary);
-            opacity: 0;
-            transition: opacity 0.2s ease;
+            transition: transform 0.2s ease;
+            flex-shrink: 0;
         }
 
-        .prompt-card:hover .prompt-card-edit-hint {
-            opacity: 1;
+        .prompt-card.expanded .prompt-card-toggle {
+            transform: rotate(180deg);
+        }
+
+        .prompt-card-preview {
+            padding: 0 14px 10px;
+            font-size: 0.85rem;
+            color: var(--text-tertiary);
+            line-height: 1.5;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .prompt-card.expanded .prompt-card-preview {
+            display: none;
         }
 
         .prompt-card-body {
+            display: none;
             padding: 8px 14px 12px;
+        }
+
+        .prompt-card.expanded .prompt-card-body {
+            display: block;
         }
 
         .prompt-card-textarea {
@@ -15505,7 +15531,7 @@
                             </div>
                             <div class="prompt-breakdown-cards" id="promptBreakdownCards">
                                 <!-- Core Features Card -->
-                                <div class="prompt-card" id="promptCardFeatures">
+                                <div class="prompt-card" id="promptCardFeatures" onclick="togglePromptCard('Features', event)">
                                     <div class="prompt-card-header">
                                         <div class="prompt-card-title features">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -15514,15 +15540,18 @@
                                             </svg>
                                             Core Features
                                         </div>
-                                        <span class="prompt-card-edit-hint">click to edit</span>
+                                        <svg class="prompt-card-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                            <path d="M6 9l6 6 6-6"/>
+                                        </svg>
                                     </div>
+                                    <div class="prompt-card-preview" id="promptPreviewFeatures">Generating...</div>
                                     <div class="prompt-card-body">
                                         <textarea class="prompt-card-textarea" id="promptTextFeatures" placeholder="Core features and functionality..." oninput="autoResizePromptCard(this)"></textarea>
                                     </div>
                                 </div>
 
                                 <!-- UI Design Card -->
-                                <div class="prompt-card" id="promptCardDesign">
+                                <div class="prompt-card" id="promptCardDesign" onclick="togglePromptCard('Design', event)">
                                     <div class="prompt-card-header">
                                         <div class="prompt-card-title design">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -15531,15 +15560,18 @@
                                             </svg>
                                             UI Design
                                         </div>
-                                        <span class="prompt-card-edit-hint">click to edit</span>
+                                        <svg class="prompt-card-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                            <path d="M6 9l6 6 6-6"/>
+                                        </svg>
                                     </div>
+                                    <div class="prompt-card-preview" id="promptPreviewDesign">Generating...</div>
                                     <div class="prompt-card-body">
                                         <textarea class="prompt-card-textarea" id="promptTextDesign" placeholder="Visual design and styling..." oninput="autoResizePromptCard(this)"></textarea>
                                     </div>
                                 </div>
 
                                 <!-- Interactions Card -->
-                                <div class="prompt-card" id="promptCardInteractions">
+                                <div class="prompt-card" id="promptCardInteractions" onclick="togglePromptCard('Interactions', event)">
                                     <div class="prompt-card-header">
                                         <div class="prompt-card-title interactions">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -15548,8 +15580,11 @@
                                             </svg>
                                             Interactions
                                         </div>
-                                        <span class="prompt-card-edit-hint">click to edit</span>
+                                        <svg class="prompt-card-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                            <path d="M6 9l6 6 6-6"/>
+                                        </svg>
                                     </div>
+                                    <div class="prompt-card-preview" id="promptPreviewInteractions">Generating...</div>
                                     <div class="prompt-card-body">
                                         <textarea class="prompt-card-textarea" id="promptTextInteractions" placeholder="User interactions and behaviors..." oninput="autoResizePromptCard(this)"></textarea>
                                     </div>
@@ -25815,6 +25850,10 @@ Be concise but helpful. Use markdown formatting.`;
 
             // Reset card states
             ['Features', 'Design', 'Interactions'].forEach(type => {
+                const card = document.getElementById(`promptCard${type}`);
+                if (card) card.classList.remove('expanded');
+                const preview = document.getElementById(`promptPreview${type}`);
+                if (preview) preview.textContent = 'Generating...';
                 const textarea = document.getElementById(`promptText${type}`);
                 if (textarea) {
                     textarea.value = '';
@@ -25855,11 +25894,13 @@ Be concise but helpful. Use markdown formatting.`;
             const container = document.getElementById('promptBreakdownContainer');
             if (container) container.classList.add('active');
 
-            // Set loading state on textareas
+            // Set loading state
             ['Features', 'Design', 'Interactions'].forEach(type => {
+                const preview = document.getElementById(`promptPreview${type}`);
+                if (preview) preview.textContent = 'Generating...';
                 const textarea = document.getElementById(`promptText${type}`);
                 if (textarea) {
-                    textarea.value = 'Generating...';
+                    textarea.value = '';
                     textarea.classList.add('loading');
                 }
             });
@@ -25911,10 +25952,12 @@ Output EXACTLY this JSON format (no markdown, no code blocks, just raw JSON):
             } catch (error) {
                 console.error('Failed to generate prompts:', error);
                 ['Features', 'Design', 'Interactions'].forEach(type => {
+                    const preview = document.getElementById(`promptPreview${type}`);
+                    if (preview) preview.textContent = 'Click to write your own prompt';
                     const textarea = document.getElementById(`promptText${type}`);
                     if (textarea) {
                         textarea.value = '';
-                        textarea.placeholder = 'Failed to generate. Type your own prompt here...';
+                        textarea.placeholder = 'Type your own prompt here...';
                         textarea.classList.remove('loading');
                     }
                 });
@@ -25926,11 +25969,34 @@ Output EXACTLY this JSON format (no markdown, no code blocks, just raw JSON):
         function updatePromptCard(type, content) {
             const capitalType = type.charAt(0).toUpperCase() + type.slice(1);
             const textarea = document.getElementById(`promptText${capitalType}`);
+            const preview = document.getElementById(`promptPreview${capitalType}`);
 
             if (textarea) {
                 textarea.value = content;
                 textarea.classList.remove('loading');
-                autoResizePromptCard(textarea);
+            }
+            if (preview) {
+                preview.textContent = content || 'Generating...';
+            }
+        }
+
+        function togglePromptCard(type, event) {
+            // Don't toggle if clicking inside the textarea
+            if (event && event.target.tagName === 'TEXTAREA') return;
+
+            const card = document.getElementById(`promptCard${type}`);
+            if (!card) return;
+
+            const isExpanding = !card.classList.contains('expanded');
+            card.classList.toggle('expanded');
+
+            // Auto-resize textarea when expanding
+            if (isExpanding) {
+                const textarea = document.getElementById(`promptText${type}`);
+                if (textarea) {
+                    autoResizePromptCard(textarea);
+                    textarea.focus();
+                }
             }
         }
 
