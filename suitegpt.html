@@ -24776,43 +24776,17 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
         }
 
         // Render saved apps in sidebar
-        function renderSidebarApps() {
+        async function renderSidebarApps() {
             const list = document.getElementById('sidebarAppsList');
             const countEl = document.getElementById('yourAppsCount');
             const savedApps = JSON.parse(localStorage.getItem('savedApps') || '[]');
 
             if (!list) return;
 
-            // Update count
-            if (countEl) {
-                countEl.textContent = `(${savedApps.length})`;
-            }
-
             // Clear list
             list.innerHTML = '';
 
-            // Show empty state if no apps
-            if (savedApps.length === 0) {
-                list.innerHTML = `
-                    <div class="sidebar-apps-empty">
-                        <button class="sidebar-apps-empty-btn" onclick="openAppsPanel()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 5v14M5 12h14" stroke-linecap="round"/>
-                            </svg>
-                            Add
-                        </button>
-                        <button class="sidebar-apps-empty-btn" onclick="openBuilderMode()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 5v14M5 12h14" stroke-linecap="round"/>
-                            </svg>
-                            Create
-                        </button>
-                    </div>
-                `;
-                return;
-            }
-
-            // Render each app
+            // Render saved SUITE apps
             savedApps.forEach(appKey => {
                 const app = SUITE_APPS[appKey];
                 if (!app) return;
@@ -24821,7 +24795,6 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
                 tab.className = 'sidebar-app-tab';
                 tab.setAttribute('data-app-key', appKey);
 
-                // Check if this app is currently active
                 if (currentPreviewApp === appKey) {
                     tab.classList.add('active');
                 }
@@ -24842,13 +24815,91 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
                     </button>
                 `;
 
-                // Click to reopen app
                 tab.onclick = () => {
                     launchApp(appKey, app.url, app.name);
                 };
 
                 list.appendChild(tab);
             });
+
+            // Fetch user-created apps from Supabase
+            let userCreatedApps = [];
+            if (supabase && currentUser) {
+                try {
+                    const { data, error } = await supabase
+                        .from('user_apps')
+                        .select('id, name, icon_bg, code')
+                        .eq('user_id', currentUser.id)
+                        .order('created_at', { ascending: false })
+                        .limit(20);
+                    if (!error && data) userCreatedApps = data;
+                } catch (e) {
+                    console.error('Failed to load user apps for sidebar:', e);
+                }
+            }
+
+            // Render user-created apps
+            userCreatedApps.forEach(uApp => {
+                const tab = document.createElement('div');
+                tab.className = 'sidebar-app-tab';
+                tab.setAttribute('data-user-app-id', uApp.id);
+
+                tab.innerHTML = `
+                    <div class="sidebar-app-tab-icon" style="background: ${uApp.icon_bg || 'linear-gradient(135deg, #22c55e, #10b981)'}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                        </svg>
+                    </div>
+                    <span class="sidebar-app-tab-name">${uApp.name}</span>
+                    <button class="sidebar-app-tab-remove" onclick="event.stopPropagation(); removeUserApp('${uApp.id}')" title="Remove">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 6L6 18M6 6l12 12"/>
+                        </svg>
+                    </button>
+                `;
+
+                tab.onclick = () => {
+                    launchCommunityApp(uApp.id);
+                };
+
+                list.appendChild(tab);
+            });
+
+            // Update count
+            const totalCount = savedApps.length + userCreatedApps.length;
+            if (countEl) {
+                countEl.textContent = `(${totalCount})`;
+            }
+
+            // Show empty state if no apps at all
+            if (totalCount === 0) {
+                list.innerHTML = `
+                    <div class="sidebar-apps-empty">
+                        <button class="sidebar-apps-empty-btn" onclick="openAppsPanel()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14M5 12h14" stroke-linecap="round"/>
+                            </svg>
+                            Add
+                        </button>
+                        <button class="sidebar-apps-empty-btn" onclick="openBuilderMode()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14M5 12h14" stroke-linecap="round"/>
+                            </svg>
+                            Create
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        async function removeUserApp(appId) {
+            if (!supabase) return;
+            try {
+                await supabase.from('user_apps').delete().eq('id', appId);
+                renderSidebarApps();
+            } catch (e) {
+                console.error('Failed to remove user app:', e);
+            }
         }
 
         // Remove app from sidebar
@@ -26350,6 +26401,7 @@ Output ONLY the COMPLETE updated HTML (with all existing + new code), starting w
                                 .single();
                             if (!error && savedApp) {
                                 window.quickAppResult.savedAppId = savedApp.id;
+                                renderSidebarApps(); // Show in sidebar immediately
                             }
                         } else if (window.quickAppResult.savedAppId) {
                             await supabase
