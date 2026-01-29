@@ -8696,6 +8696,32 @@
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             max-width: 100%; padding: 0 2px; line-height: 1.3;
         }
+        /* Research Prompt */
+        .research-prompt-section { margin-bottom: 10px; }
+        .research-prompt-toggle {
+            display: flex; align-items: center; gap: 6px; width: 100%;
+            background: rgba(99, 102, 241, 0.06); border: 1px solid rgba(99, 102, 241, 0.15);
+            border-radius: 8px; padding: 8px 12px; font-size: 0.78rem; font-weight: 600;
+            color: #818cf8; cursor: pointer; transition: all 0.15s;
+        }
+        .research-prompt-toggle:hover { background: rgba(99, 102, 241, 0.12); }
+        .research-prompt-arrow { margin-left: auto; font-size: 0.65rem; transition: transform 0.2s; }
+        .research-prompt-section.open .research-prompt-arrow { transform: rotate(90deg); }
+        .research-prompt-body {
+            display: none; margin-top: 8px; padding: 12px; background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border-subtle); border-radius: 8px;
+        }
+        .research-prompt-section.open .research-prompt-body { display: block; }
+        .research-prompt-text {
+            font-size: 0.78rem; color: var(--text-secondary); line-height: 1.6;
+            white-space: pre-wrap; font-family: inherit; max-height: 300px; overflow-y: auto;
+        }
+        .research-prompt-copy {
+            margin-top: 10px; padding: 6px 14px; border-radius: 6px; font-size: 0.75rem;
+            font-weight: 600; cursor: pointer; border: 1px solid rgba(99, 102, 241, 0.3);
+            background: rgba(99, 102, 241, 0.1); color: #818cf8; transition: all 0.15s;
+        }
+        .research-prompt-copy:hover { background: rgba(99, 102, 241, 0.2); }
 
         /* Two-Column Workspace */
         .marketing-workspace {
@@ -17901,6 +17927,17 @@
                                                 <!-- Cadence slots summary for this day -->
                                                 <div class="daily-brief-slots" id="dailyBriefSlots"></div>
 
+                                                <!-- Research Prompt -->
+                                                <div class="research-prompt-section" id="researchPromptSection">
+                                                    <button class="research-prompt-toggle" onclick="document.getElementById('researchPromptSection').classList.toggle('open')">
+                                                        🔍 Research Prompt for Agents <span class="research-prompt-arrow">▶</span>
+                                                    </button>
+                                                    <div class="research-prompt-body">
+                                                        <div class="research-prompt-text" id="researchPromptText"></div>
+                                                        <button class="research-prompt-copy" onclick="copyResearchPrompt()">📋 Copy Prompt</button>
+                                                    </div>
+                                                </div>
+
                                                 <!-- Theme -->
                                                 <input type="text" id="dailyTheme" class="daily-theme-input" placeholder="What's today about? (e.g. Staking rewards launch)">
 
@@ -21496,10 +21533,63 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
                 previewEl.style.display = 'none';
             }
 
+            // Research prompt
+            updateResearchPrompt(slots, d);
+
             // Clear generated results (they're per-session)
             dailyGeneratedPosts = [];
             const resultsEl = document.getElementById('dailyPostResults');
             if (resultsEl) resultsEl.innerHTML = '';
+        }
+
+        function getResearchPromptText(slots, date) {
+            const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+            const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+            const dateStr = `${days[date.getDay()]}, ${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+
+            const slotSummary = slots.map(s => {
+                const info = CADENCE_INFO[s.cadence];
+                if (s.cadence === 'linkedin-posts') return `- LinkedIn post (${formatTime(s.time)}) — professional, 2-3 paragraphs`;
+                if (s.cadence === 'app-highlights') return `- App Highlight (${formatTime(s.time)}) — deep-dive on one SUITE app`;
+                if (s.cadence === 'ecosystem-updates') return `- Ecosystem Update (${formatTime(s.time)}) — build-in-public recap`;
+                return `- X/Twitter post (${formatTime(s.time)}) — short, punchy, <280 chars`;
+            }).join('\n');
+
+            return `I need you to research and gather content for my social media posts for ${dateStr}.
+
+ABOUT ME:
+I'm building SUITE (suitegpt.app) — an AI-powered ecosystem where "Anyone Can Build, Everyone Gets Paid." It has 29+ apps that anyone can build, use, and earn from. Key features: AI app builder, yield rewards (users earn USDC from a shared reward pool), credit system, and a community-driven app factory.
+
+TODAY I NEED ${slots.length} POSTS:
+${slotSummary}
+
+WHAT I NEED FROM YOU:
+1. Check my recent GitHub activity (github.com/stuart5915) — what did I ship or commit today?
+2. Find 2-3 trending topics in AI / no-code / indie hacker / SaaS Twitter right now
+3. Look at what's happening in the AI builder space — any news, launches, or discussions I should reference?
+4. Check if there are any relevant trending hashtags or conversations I can join
+5. Suggest a daily theme that ties it all together (1-3 words)
+6. For each post slot, suggest a specific angle or hook based on what you found
+
+FORMAT YOUR RESPONSE AS:
+THEME: [1-3 word theme]
+
+RESEARCH NOTES:
+[All the raw material — commits, trends, news, angles. I'll paste this directly into my Daily Brief tool which generates the posts.]
+
+POST ANGLES:
+${slots.map((s, i) => `${i + 1}. ${s.icon} ${s.name} (${formatTime(s.time)}): [suggested angle]`).join('\n')}`;
+        }
+
+        function updateResearchPrompt(slots, date) {
+            const promptEl = document.getElementById('researchPromptText');
+            if (promptEl) promptEl.textContent = getResearchPromptText(slots, date);
+        }
+
+        function copyResearchPrompt() {
+            const text = document.getElementById('researchPromptText')?.textContent || '';
+            navigator.clipboard.writeText(text);
+            showToast('Research prompt copied!');
         }
 
         function saveDailyBriefFromUI() {
