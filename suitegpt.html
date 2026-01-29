@@ -6126,6 +6126,12 @@
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .factory-proposal-card.expanded .factory-proposal-content {
+            -webkit-line-clamp: unset;
+            display: block;
         }
 
         .factory-proposal-meta {
@@ -22158,7 +22164,7 @@ Be concise but helpful. Use markdown formatting.`;
             ` : '';
 
             return `
-                <div class="factory-proposal-card" data-id="${proposal.id}">
+                <div class="factory-proposal-card" data-id="${proposal.id}" onclick="toggleProposalExpand(this, event)">
                     ${adminControls}
                     ${appTag}
                     <div class="factory-proposal-category">${category.emoji} ${category.label}</div>
@@ -22169,14 +22175,14 @@ Be concise but helpful. Use markdown formatting.`;
                         <span> ${formattedDate}</span>
                     </div>
                     <div class="factory-vote-buttons">
-                        <button class="factory-vote-btn for" onclick="addFactoryVote('${proposal.id}')" ${!canVote ? 'disabled' : ''}>
-                             <span class="factory-vote-count">${votesFor}</span>
+                        <button class="factory-vote-btn for" onclick="event.stopPropagation(); addFactoryVote('${proposal.id}')" ${!canVote ? 'disabled' : ''}>
+                            👍 <span class="factory-vote-count">${votesFor}</span>
                         </button>
-                        <button class="factory-vote-btn against" onclick="removeFactoryVote('${proposal.id}')" ${!canVote || userVoteCount === 0 ? 'disabled' : ''}>
-                             <span class="factory-vote-count">${userVoteCount}</span>
+                        <button class="factory-vote-btn against" onclick="event.stopPropagation(); removeFactoryVote('${proposal.id}')" ${!canVote || userVoteCount === 0 ? 'disabled' : ''}>
+                            👎 <span class="factory-vote-count">${userVoteCount}</span>
                         </button>
-                        <button class="factory-comment-btn ${(proposal.comment_count || 0) > 0 ? 'has-comments' : ''}" onclick="toggleFactoryComments('${proposal.id}')">
-                             ${proposal.comment_count || 0}
+                        <button class="factory-comment-btn ${(proposal.comment_count || 0) > 0 ? 'has-comments' : ''}" onclick="event.stopPropagation(); toggleFactoryComments('${proposal.id}')">
+                            💬 ${proposal.comment_count || 0}
                         </button>
                     </div>
                     <div class="factory-comments-section" id="factory-comments-${proposal.id}">
@@ -22317,6 +22323,13 @@ Be concise but helpful. Use markdown formatting.`;
                 console.error('Remove vote error:', err);
                 alert('Error removing vote');
             }
+        }
+
+        // Expand/collapse proposal card
+        function toggleProposalExpand(card, event) {
+            // Don't expand if clicking a button or link inside
+            if (event.target.closest('button, a, input')) return;
+            card.classList.toggle('expanded');
         }
 
         // Comments
