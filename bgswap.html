@@ -178,7 +178,17 @@ input[type="file"]{display:none}
 
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script type="module">
-import { removeBackground } from 'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.5/+esm';
+let imglyRemoveBackground;
+try {
+    const mod = await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.8/+esm');
+    imglyRemoveBackground = mod.default || mod.removeBackground;
+    if (!imglyRemoveBackground) throw new Error('No export found');
+    console.log('[BgSwap] Library loaded successfully');
+} catch (e) {
+    console.error('[BgSwap] Failed to load library:', e);
+    document.getElementById('errorMsg').textContent = 'Failed to load AI model library. Please refresh and try again.';
+    document.getElementById('errorMsg').classList.add('active');
+}
 
 const uploadArea = document.getElementById('uploadArea');
 const fileInput = document.getElementById('fileInput');
@@ -315,9 +325,14 @@ processBtn.addEventListener('click', async () => {
         overallStatus.textContent = file.name;
 
         try {
-            const fgBlob = await removeBackground(file, {
-                progress(key) {
-                    if (key === 'compute:inference') {
+            const fgBlob = await imglyRemoveBackground(file, {
+                debug: true,
+                model: 'isnet_quint8',
+                progress(key, current, total) {
+                    console.log(`[BgSwap] Progress: ${key} ${current}/${total}`);
+                    if (key.startsWith('fetch:')) {
+                        status.textContent = 'Downloading model...';
+                    } else {
                         status.textContent = 'AI processing...';
                     }
                 }
