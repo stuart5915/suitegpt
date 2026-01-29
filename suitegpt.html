@@ -6742,144 +6742,249 @@
             color: var(--accent-primary);
         }
 
-        /* Reward Pool Banner */
+        /* ===== Reward Pool Banner — Redesigned ===== */
         .reward-pool-banner {
-            background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(34, 197, 94, 0.04));
-            border: 1px solid rgba(16, 185, 129, 0.15);
-            border-radius: 14px;
-            padding: 20px 24px;
-            margin: 0 0 20px 0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 20px;
-            flex-wrap: wrap;
+            position: relative;
+            overflow: hidden;
+            border-radius: 20px;
+            margin: 0 0 24px 0;
+            background: #0a0a0a;
+            border: 1px solid rgba(16, 185, 129, 0.12);
+            animation: rewardBannerFadeIn 0.6s ease-out;
         }
 
-        .reward-pool-left {
+        @keyframes rewardBannerFadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Ambient glow */
+        .reward-pool-banner::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 60% 80% at 10% 50%, rgba(16, 185, 129, 0.1) 0%, transparent 60%),
+                radial-gradient(ellipse 40% 60% at 90% 20%, rgba(34, 197, 94, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Noise texture */
+        .reward-pool-banner::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            opacity: 0.025;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .reward-pool-inner {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: 1fr 240px;
+            gap: 0;
+        }
+
+        /* Left: amount + stats */
+        .reward-pool-main {
+            padding: 28px 32px;
             display: flex;
-            align-items: center;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .reward-pool-header {
+            display: flex;
+            align-items: flex-start;
             gap: 16px;
         }
 
         .reward-pool-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, #10b981, #22c55e);
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            background: linear-gradient(145deg, #10b981, #059669);
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
+            box-shadow: 0 0 24px rgba(16, 185, 129, 0.25), inset 0 1px 0 rgba(255,255,255,0.15);
         }
 
-        .reward-pool-info {
+        .reward-pool-title-group {
             display: flex;
             flex-direction: column;
-            gap: 2px;
+            gap: 6px;
         }
 
         .reward-pool-label {
-            font-size: 0.75rem;
-            color: var(--text-tertiary);
+            font-size: 0.65rem;
+            color: rgba(255,255,255,0.35);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-weight: 600;
+            letter-spacing: 1.5px;
+            font-weight: 700;
         }
 
         .reward-pool-amount {
-            font-size: 1.6rem;
-            font-weight: 800;
-            color: #10b981;
-            line-height: 1.1;
+            font-size: 2.8rem;
+            font-weight: 900;
+            color: #fff;
+            line-height: 1;
+            letter-spacing: -1px;
+            font-variant-numeric: tabular-nums;
         }
 
-        .reward-pool-center {
+        .reward-pool-amount .reward-pool-currency {
+            font-size: 1.4rem;
+            color: #10b981;
+            font-weight: 700;
+            vertical-align: super;
+            margin-left: 2px;
+        }
+
+        .reward-pool-stats {
             display: flex;
-            gap: 24px;
-            align-items: center;
+            gap: 8px;
         }
 
         .reward-pool-stat {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            gap: 2px;
+            gap: 3px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.04);
+            flex: 1;
+            transition: background 0.2s;
+        }
+
+        .reward-pool-stat:hover {
+            background: rgba(255,255,255,0.05);
         }
 
         .reward-pool-stat-value {
-            font-size: 1rem;
-            font-weight: 700;
+            font-size: 1.05rem;
+            font-weight: 800;
             color: var(--text-primary);
-        }
-
-        .reward-pool-stat-label {
-            font-size: 0.7rem;
-            color: var(--text-tertiary);
-        }
-
-        .reward-pool-divider {
-            width: 1px;
-            height: 32px;
-            background: var(--border-subtle);
-        }
-
-        .reward-pool-right {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 4px;
-        }
-
-        .reward-pool-countdown {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            font-weight: 500;
             font-variant-numeric: tabular-nums;
         }
 
+        .reward-pool-stat-label {
+            font-size: 0.6rem;
+            color: rgba(255,255,255,0.35);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        /* Right panel: countdown + actions */
+        .reward-pool-side {
+            padding: 28px 28px 28px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 12px;
+            border-left: 1px solid rgba(255,255,255,0.04);
+            padding-left: 28px;
+        }
+
+        .reward-pool-countdown-block {
+            text-align: right;
+        }
+
+        .reward-pool-countdown-label {
+            font-size: 0.6rem;
+            color: rgba(255,255,255,0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .reward-pool-countdown {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #fff;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.5px;
+        }
+
+        .reward-pool-countdown .rpc-unit {
+            font-size: 0.6rem;
+            font-weight: 600;
+            color: rgba(255,255,255,0.3);
+            margin-left: 1px;
+            margin-right: 6px;
+        }
+
+        .reward-pool-countdown .rpc-unit:last-child {
+            margin-right: 0;
+        }
+
+        .reward-pool-progress {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: flex-end;
+        }
+
         .reward-pool-bar-track {
-            width: 120px;
-            height: 6px;
-            background: rgba(255,255,255,0.06);
-            border-radius: 3px;
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 2px;
             overflow: hidden;
         }
 
         .reward-pool-bar-fill {
             height: 100%;
-            background: linear-gradient(90deg, #10b981, #22c55e);
-            border-radius: 3px;
+            background: linear-gradient(90deg, #059669, #10b981, #34d399);
+            border-radius: 2px;
             transition: width 1s ease;
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+        }
+
+        .reward-pool-bar-label {
+            font-size: 0.55rem;
+            color: rgba(255,255,255,0.25);
         }
 
         .reward-pool-share-row {
             display: flex;
             flex-direction: column;
             align-items: flex-end;
-            gap: 2px;
+            gap: 4px;
         }
 
         .reward-pool-share {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
+            font-size: 0.78rem;
+            color: rgba(255,255,255,0.55);
         }
 
         .reward-pool-share strong {
-            color: #10b981;
-            font-weight: 700;
+            color: #34d399;
+            font-weight: 800;
         }
 
         .reward-pool-wallet-link {
             font-size: 0.68rem;
             color: #fbbf24;
             text-decoration: none;
-            opacity: 0.85;
-            transition: opacity 0.2s;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
         .reward-pool-wallet-link:hover {
-            opacity: 1;
+            color: #fcd34d;
             text-decoration: underline;
         }
 
@@ -6894,40 +6999,53 @@
         .reward-pool-deposit-btn {
             display: flex;
             align-items: center;
-            gap: 6px;
-            margin-top: 4px;
-            padding: 6px 16px;
-            background: linear-gradient(135deg, #10b981, #22c55e);
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 24px;
+            background: linear-gradient(135deg, #10b981, #059669);
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             color: white;
-            font-size: 0.8rem;
-            font-weight: 600;
+            font-size: 0.82rem;
+            font-weight: 700;
             cursor: pointer;
-            transition: opacity 0.2s, transform 0.15s;
+            transition: all 0.2s;
+            box-shadow: 0 2px 12px rgba(16, 185, 129, 0.2);
+            width: 100%;
+            letter-spacing: 0.3px;
         }
 
         .reward-pool-deposit-btn:hover {
-            opacity: 0.9;
             transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.35);
+            background: linear-gradient(135deg, #22c55e, #10b981);
         }
 
         .reward-pool-deposit-btn:active {
-            transform: scale(0.97);
+            transform: scale(0.98);
         }
 
         @media (max-width: 768px) {
-            .reward-pool-banner {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 14px;
+            .reward-pool-inner {
+                grid-template-columns: 1fr;
             }
-            .reward-pool-right {
-                align-items: flex-start;
+            .reward-pool-main {
+                padding: 24px 20px 16px;
             }
-            .reward-pool-center {
-                gap: 16px;
+            .reward-pool-side {
+                padding: 0 20px 24px;
+                align-items: stretch;
+                min-width: unset;
+                border-left: none;
+                border-top: 1px solid rgba(255,255,255,0.04);
+                padding-top: 16px;
             }
+            .reward-pool-countdown-block { text-align: left; }
+            .reward-pool-share-row { align-items: flex-start; }
+            .reward-pool-progress { align-items: flex-start; }
+            .reward-pool-amount { font-size: 2.2rem; }
+            .reward-pool-stats { flex-wrap: wrap; }
+            .reward-pool-stat { min-width: calc(50% - 4px); }
         }
 
         /* Rewards View */
@@ -17389,55 +17507,65 @@
 
                     <!-- Reward Pool Banner -->
                     <div class="reward-pool-banner" id="rewardPoolBanner">
-                        <div class="reward-pool-left">
-                            <div class="reward-pool-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="22" height="22">
-                                    <circle cx="12" cy="12" r="10"/>
-                                    <path d="M16 8h-6a2 2 0 100 4h4a2 2 0 110 4H8"/>
-                                    <path d="M12 6v2m0 8v2"/>
-                                </svg>
+                        <div class="reward-pool-inner">
+                            <!-- Left: pool amount + stats -->
+                            <div class="reward-pool-main">
+                                <div class="reward-pool-header">
+                                    <div class="reward-pool-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="24" height="24">
+                                            <circle cx="12" cy="12" r="10"/>
+                                            <path d="M16 8h-6a2 2 0 100 4h4a2 2 0 110 4H8"/>
+                                            <path d="M12 6v2m0 8v2"/>
+                                        </svg>
+                                    </div>
+                                    <div class="reward-pool-title-group">
+                                        <span class="reward-pool-label">Reward Pool</span>
+                                        <span class="reward-pool-amount" id="rewardPoolDisplay">$1,247<span class="reward-pool-currency">USDC</span></span>
+                                    </div>
+                                </div>
+                                <div class="reward-pool-stats">
+                                    <div class="reward-pool-stat">
+                                        <span class="reward-pool-stat-value">142</span>
+                                        <span class="reward-pool-stat-label">Holders</span>
+                                    </div>
+                                    <div class="reward-pool-stat">
+                                        <span class="reward-pool-stat-value">1.4M</span>
+                                        <span class="reward-pool-stat-label">Credits Circulating</span>
+                                    </div>
+                                    <div class="reward-pool-stat">
+                                        <span class="reward-pool-stat-value">$847</span>
+                                        <span class="reward-pool-stat-label">Paid Last Month</span>
+                                    </div>
+                                    <div class="reward-pool-stat">
+                                        <span class="reward-pool-stat-value">3.2%</span>
+                                        <span class="reward-pool-stat-label">APY</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="reward-pool-info">
-                                <span class="reward-pool-label">Reward Pool</span>
-                                <span class="reward-pool-amount" id="rewardPoolDisplay">$1,247</span>
+
+                            <!-- Right: countdown + deposit -->
+                            <div class="reward-pool-side">
+                                <div class="reward-pool-countdown-block">
+                                    <div class="reward-pool-countdown-label">Next Distribution</div>
+                                    <div class="reward-pool-countdown" id="rewardPoolCountdown"></div>
+                                </div>
+                                <div class="reward-pool-progress">
+                                    <div class="reward-pool-bar-track">
+                                        <div class="reward-pool-bar-fill" id="rewardPoolBarFill" style="width: 0%"></div>
+                                    </div>
+                                    <span class="reward-pool-bar-label">Month progress</span>
+                                </div>
+                                <div class="reward-pool-share-row" id="rewardPoolShareRow">
+                                    <span class="reward-pool-share">Your est. share: <strong>~$12.40 USDC</strong></span>
+                                    <a href="#" class="reward-pool-wallet-link" onclick="event.preventDefault(); promptConnectWallet()">Connect wallet to claim</a>
+                                </div>
+                                <button class="reward-pool-deposit-btn" onclick="openRewardDeposit()">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                        <path d="M12 5v14M5 12h14"/>
+                                    </svg>
+                                    Deposit to Pool
+                                </button>
                             </div>
-                        </div>
-                        <div class="reward-pool-center">
-                            <div class="reward-pool-stat">
-                                <span class="reward-pool-stat-value">142</span>
-                                <span class="reward-pool-stat-label">Credit Holders</span>
-                            </div>
-                            <div class="reward-pool-divider"></div>
-                            <div class="reward-pool-stat">
-                                <span class="reward-pool-stat-value">1.4M</span>
-                                <span class="reward-pool-stat-label">Credits Circulating</span>
-                            </div>
-                            <div class="reward-pool-divider"></div>
-                            <div class="reward-pool-stat">
-                                <span class="reward-pool-stat-value">$847</span>
-                                <span class="reward-pool-stat-label">Last Month</span>
-                            </div>
-                            <div class="reward-pool-divider"></div>
-                            <div class="reward-pool-stat">
-                                <span class="reward-pool-stat-value">3.2%</span>
-                                <span class="reward-pool-stat-label">APY</span>
-                            </div>
-                        </div>
-                        <div class="reward-pool-right">
-                            <span class="reward-pool-countdown" id="rewardPoolCountdown"></span>
-                            <div class="reward-pool-bar-track">
-                                <div class="reward-pool-bar-fill" id="rewardPoolBarFill" style="width: 0%"></div>
-                            </div>
-                            <div class="reward-pool-share-row" id="rewardPoolShareRow">
-                                <span class="reward-pool-share">Your est. share: <strong>~$12.40 USDC</strong></span>
-                                <a href="#" class="reward-pool-wallet-link" onclick="event.preventDefault(); promptConnectWallet()">Connect wallet to claim</a>
-                            </div>
-                            <button class="reward-pool-deposit-btn" onclick="openRewardDeposit()">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-                                    <path d="M12 5v14M5 12h14"/>
-                                </svg>
-                                Deposit
-                            </button>
                         </div>
                     </div>
 
@@ -23741,10 +23869,11 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
             const mins = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
             const secs = Math.floor((remaining % (1000 * 60)) / 1000);
 
+            const pad = n => String(n).padStart(2, '0');
             if (days > 0) {
-                el.textContent = `Distributes in ${days}d ${hours}h ${mins}m ${secs}s`;
+                el.innerHTML = `${days}<span class="rpc-unit">d</span>${pad(hours)}<span class="rpc-unit">h</span>${pad(mins)}<span class="rpc-unit">m</span>${pad(secs)}<span class="rpc-unit">s</span>`;
             } else {
-                el.textContent = `Distributes in ${hours}h ${mins}m ${secs}s`;
+                el.innerHTML = `${pad(hours)}<span class="rpc-unit">h</span>${pad(mins)}<span class="rpc-unit">m</span>${pad(secs)}<span class="rpc-unit">s</span>`;
             }
 
             if (bar) bar.style.width = progress.toFixed(1) + '%';
