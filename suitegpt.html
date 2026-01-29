@@ -1367,6 +1367,82 @@
             color: var(--text-tertiary);
         }
 
+        /* Rewards status in credits modal */
+        .credits-rewards-status {
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 12px;
+        }
+        .credits-rewards-status.earning {
+            background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(5,150,105,0.08));
+            border: 1px solid rgba(16,185,129,0.2);
+        }
+        .credits-rewards-status.not-earning {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .credits-rewards-row {
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .credits-rewards-left {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .credits-rewards-dot {
+            width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+        }
+        .credits-rewards-status.earning .credits-rewards-dot {
+            background: #10b981; box-shadow: 0 0 8px rgba(16,185,129,0.5);
+        }
+        .credits-rewards-status.not-earning .credits-rewards-dot {
+            background: rgba(255,255,255,0.2);
+        }
+        .credits-rewards-text {
+            display: flex; flex-direction: column; gap: 2px;
+        }
+        .credits-rewards-title {
+            font-size: 0.85rem; font-weight: 700; color: var(--text-primary);
+        }
+        .credits-rewards-sub {
+            font-size: 0.72rem; color: var(--text-secondary);
+        }
+        .credits-rewards-sub strong { color: #34d399; }
+        .credits-rewards-action {
+            font-size: 0.72rem; padding: 6px 12px; border-radius: 8px;
+            border: none; cursor: pointer; font-weight: 600; transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .credits-rewards-action.withdraw-suite {
+            background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.5);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .credits-rewards-action.withdraw-suite:hover {
+            background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7);
+        }
+        .credits-rewards-action.enable-rewards {
+            background: linear-gradient(135deg, #10b981, #059669); color: white;
+        }
+        .credits-rewards-action.enable-rewards:hover {
+            box-shadow: 0 2px 12px rgba(16,185,129,0.3);
+        }
+        .credits-rewards-nowallet {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 0.75rem; color: rgba(255,255,255,0.4);
+        }
+        .credits-rewards-nowallet a {
+            color: #fbbf24; text-decoration: none; font-weight: 600;
+        }
+        .credits-rewards-nowallet a:hover { text-decoration: underline; }
+        .credits-rewards-earned {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05);
+        }
+        .credits-rewards-earned-label {
+            font-size: 0.72rem; color: rgba(255,255,255,0.4);
+        }
+        .credits-rewards-earned-value {
+            font-size: 0.85rem; font-weight: 700; color: #34d399;
+        }
+
         .credits-modal-bonus {
             background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(168, 85, 247, 0.1));
             border: 1px solid rgba(124, 58, 237, 0.3);
@@ -19733,6 +19809,28 @@
                 </button>
             </div>
 
+            <!-- Rewards Status -->
+            <div class="credits-rewards-status not-earning" id="creditsRewardsStatus">
+                <div class="credits-rewards-row">
+                    <div class="credits-rewards-left">
+                        <span class="credits-rewards-dot"></span>
+                        <div class="credits-rewards-text">
+                            <span class="credits-rewards-title" id="creditsRewardsTitle">Earning rewards: OFF</span>
+                            <span class="credits-rewards-sub" id="creditsRewardsSub">Connect a wallet to start earning USDC</span>
+                        </div>
+                    </div>
+                    <span id="creditsRewardsActionArea">
+                        <span class="credits-rewards-nowallet">
+                            <a href="#" onclick="event.preventDefault(); closeCreditsModal(); connectWallet();">Link wallet</a>
+                        </span>
+                    </span>
+                </div>
+                <div class="credits-rewards-earned" id="creditsRewardsEarned" style="display: none;">
+                    <span class="credits-rewards-earned-label">Claimable USDC</span>
+                    <span class="credits-rewards-earned-value" id="creditsRewardsEarnedAmt">$0.00</span>
+                </div>
+            </div>
+
             <div class="credits-modal-bonus" id="bonusCreditsSection">
                 <div class="credits-modal-bonus-header">
                     <span>Bonus Credits</span>
@@ -22057,7 +22155,7 @@ CRITICAL: You MUST return ONLY a raw JSON array. No markdown, no \`\`\` code fen
 [{"index":1,"angle":"specific angle description","imagePrompt":"detailed image generation prompt"},{"index":2,"angle":"...","imagePrompt":"..."}]`;
 
             try {
-                const response = await callCopilotAI(prompt);
+                const response = await callCopilotAI(prompt, { maxTokens: 2048 });
                 console.log('[Daily Brief] Raw AI response:', response.substring(0, 500));
                 const parsed = parseJSONResponse(response);
 
@@ -22137,7 +22235,7 @@ CRITICAL: You MUST return ONLY a raw JSON array. No markdown, no \`\`\` code fen
 [{"index":1,"text":"post text here"},{"index":2,"text":"post text here"}]`;
 
             try {
-                const response = await callCopilotAI(prompt);
+                const response = await callCopilotAI(prompt, { maxTokens: 2048 });
                 console.log('[Daily Brief] Raw post response:', response.substring(0, 500));
                 const parsed = parseJSONResponse(response);
 
@@ -22688,7 +22786,7 @@ Return ONLY the 3 numbered replies, nothing else.`;
             }, 3000);
         }
 
-        async function callCopilotAI(userMessage) {
+        async function callCopilotAI(userMessage, options = {}) {
             let brandSection = 'Casual, authentic, "building in public" vibes. No corporate speak.';
             if (brandVoice) {
                 brandSection = `
@@ -22716,7 +22814,10 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
                 body: JSON.stringify({
                     prompt: userMessage,
                     systemInstruction: systemPrompt,
-                    generationConfig: { temperature: 0.8, maxOutputTokens: 512 }
+                    generationConfig: {
+                        temperature: options.temperature ?? 0.8,
+                        maxOutputTokens: options.maxTokens ?? 512
+                    }
                 })
             });
 
@@ -31221,6 +31322,107 @@ Return as JSON array. No markdown, no code blocks.`,
 
             overlay.classList.add('active');
             document.body.style.overflow = 'hidden';
+            updateCreditsRewardsStatus();
+        }
+
+        async function updateCreditsRewardsStatus() {
+            const statusEl = document.getElementById('creditsRewardsStatus');
+            const titleEl = document.getElementById('creditsRewardsTitle');
+            const subEl = document.getElementById('creditsRewardsSub');
+            const actionArea = document.getElementById('creditsRewardsActionArea');
+            const earnedRow = document.getElementById('creditsRewardsEarned');
+            const earnedAmt = document.getElementById('creditsRewardsEarnedAmt');
+            if (!statusEl) return;
+
+            const wallet = localStorage.getItem('connectedWallet');
+
+            if (!wallet) {
+                statusEl.className = 'credits-rewards-status not-earning';
+                titleEl.textContent = 'Earning rewards: OFF';
+                subEl.innerHTML = 'Connect a wallet to start earning USDC from the reward pool';
+                actionArea.innerHTML = '<span class="credits-rewards-nowallet"><a href="#" onclick="event.preventDefault(); closeCreditsModal(); connectWallet();">Link wallet</a></span>';
+                earnedRow.style.display = 'none';
+                return;
+            }
+
+            try {
+                const provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
+                const rewardsContract = new ethers.Contract(STAKING_REWARDS_ADDRESS, STAKING_REWARDS_ABI, provider);
+                const stakingContract = new ethers.Contract(SUITE_STAKING_ADDRESS, [
+                    'function stakedBalance(address) view returns (uint256)',
+                    'function totalCredits(address) view returns (uint256)'
+                ], provider);
+
+                const [stakedBal, earned] = await Promise.all([
+                    stakingContract.stakedBalance(wallet),
+                    rewardsContract.earned(wallet)
+                ]);
+
+                const stakedNum = parseFloat(ethers.formatUnits(stakedBal, 18));
+                const earnedNum = parseFloat(ethers.formatUnits(earned, 6));
+
+                if (stakedNum > 0) {
+                    statusEl.className = 'credits-rewards-status earning';
+                    titleEl.textContent = 'Earning rewards: ON';
+                    subEl.innerHTML = '<strong>' + stakedNum.toLocaleString() + '</strong> credits staked on-chain';
+                    actionArea.innerHTML = '<button class="credits-rewards-action withdraw-suite" onclick="closeCreditsModal(); withdrawSuiteTokens();">Withdraw as SUITE</button>';
+                    earnedRow.style.display = 'flex';
+                    earnedAmt.textContent = '$' + earnedNum.toFixed(earnedNum < 0.01 ? 4 : 2);
+                } else {
+                    statusEl.className = 'credits-rewards-status not-earning';
+                    titleEl.textContent = 'Earning rewards: OFF';
+                    subEl.innerHTML = 'Your credits are not staked on-chain yet';
+                    actionArea.innerHTML = '<button class="credits-rewards-action enable-rewards" onclick="closeCreditsModal(); enableCreditRewards();">Enable rewards</button>';
+                    earnedRow.style.display = earnedNum > 0 ? 'flex' : 'none';
+                    if (earnedNum > 0) earnedAmt.textContent = '$' + earnedNum.toFixed(earnedNum < 0.01 ? 4 : 2);
+                }
+            } catch (err) {
+                console.error('Failed to check rewards status:', err);
+                statusEl.className = 'credits-rewards-status not-earning';
+                titleEl.textContent = 'Earning rewards';
+                subEl.innerHTML = 'Unable to check on-chain status';
+                actionArea.innerHTML = '';
+                earnedRow.style.display = 'none';
+            }
+        }
+
+        async function withdrawSuiteTokens() {
+            try {
+                if (!window.ethereum) {
+                    alert('Please install MetaMask or another wallet to withdraw.');
+                    return;
+                }
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                const stakingContract = new ethers.Contract(SUITE_STAKING_ADDRESS, [
+                    'function stakedBalance(address) view returns (uint256)',
+                    'function unstake(uint256) external'
+                ], signer);
+
+                const wallet = await signer.getAddress();
+                const staked = await stakingContract.stakedBalance(wallet);
+                if (staked === 0n) {
+                    alert('No SUITE tokens staked to withdraw.');
+                    return;
+                }
+
+                const stakedDisplay = parseFloat(ethers.formatUnits(staked, 18)).toLocaleString();
+                if (!confirm('Withdraw ' + stakedDisplay + ' SUITE tokens to your wallet?\n\nYou will stop earning USDC rewards while unstaked.')) return;
+
+                const tx = await stakingContract.unstake(staked);
+                alert('Withdrawal submitted! Waiting for confirmation...');
+                await tx.wait();
+                alert('SUITE tokens withdrawn to your wallet. You can re-enable rewards anytime.');
+            } catch (err) {
+                console.error('Withdraw failed:', err);
+                if (err.code !== 'ACTION_REJECTED') {
+                    alert('Withdrawal failed: ' + (err.reason || err.message));
+                }
+            }
+        }
+
+        async function enableCreditRewards() {
+            alert('Coming soon: Your credits will be automatically staked on-chain when you purchase them.\n\nFor now, you can stake SUITE tokens manually if you have them in your wallet.');
         }
 
         function closeCreditsModal() {
