@@ -6723,6 +6723,135 @@
             color: var(--accent-primary);
         }
 
+        /* Reward Pool Banner */
+        .reward-pool-banner {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(34, 197, 94, 0.04));
+            border: 1px solid rgba(16, 185, 129, 0.15);
+            border-radius: 14px;
+            padding: 20px 24px;
+            margin: 0 0 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .reward-pool-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .reward-pool-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #10b981, #22c55e);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .reward-pool-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .reward-pool-label {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .reward-pool-amount {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #10b981;
+            line-height: 1.1;
+        }
+
+        .reward-pool-center {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .reward-pool-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .reward-pool-stat-value {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .reward-pool-stat-label {
+            font-size: 0.7rem;
+            color: var(--text-tertiary);
+        }
+
+        .reward-pool-divider {
+            width: 1px;
+            height: 32px;
+            background: var(--border-subtle);
+        }
+
+        .reward-pool-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+        }
+
+        .reward-pool-countdown {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .reward-pool-bar-track {
+            width: 120px;
+            height: 6px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .reward-pool-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #22c55e);
+            border-radius: 3px;
+            transition: width 1s ease;
+        }
+
+        .reward-pool-share {
+            font-size: 0.7rem;
+            color: var(--text-tertiary);
+        }
+
+        @media (max-width: 768px) {
+            .reward-pool-banner {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 14px;
+            }
+            .reward-pool-right {
+                align-items: flex-start;
+            }
+            .reward-pool-center {
+                gap: 16px;
+            }
+        }
+
         /* Rewards View */
         .rewards-content {
             max-width: 1000px;
@@ -17118,12 +17247,49 @@
                             <button class="factory-main-tab" data-view="leaderboard" onclick="switchFactoryMainView('leaderboard')">
                                 Leaderboard
                             </button>
-                            <button class="factory-main-tab" data-view="rewards" onclick="switchFactoryMainView('rewards')">
-                                Rewards
-                            </button>
                             <button class="factory-main-tab" data-view="operators" onclick="switchFactoryMainView('operators')">
                                 Operators
                             </button>
+                        </div>
+                    </div>
+
+                    <!-- Reward Pool Banner -->
+                    <div class="reward-pool-banner" id="rewardPoolBanner">
+                        <div class="reward-pool-left">
+                            <div class="reward-pool-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="22" height="22">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M16 8h-6a2 2 0 100 4h4a2 2 0 110 4H8"/>
+                                    <path d="M12 6v2m0 8v2"/>
+                                </svg>
+                            </div>
+                            <div class="reward-pool-info">
+                                <span class="reward-pool-label">Reward Pool</span>
+                                <span class="reward-pool-amount" id="rewardPoolDisplay">$1,247</span>
+                            </div>
+                        </div>
+                        <div class="reward-pool-center">
+                            <div class="reward-pool-stat">
+                                <span class="reward-pool-stat-value">142</span>
+                                <span class="reward-pool-stat-label">Credit Holders</span>
+                            </div>
+                            <div class="reward-pool-divider"></div>
+                            <div class="reward-pool-stat">
+                                <span class="reward-pool-stat-value">$847</span>
+                                <span class="reward-pool-stat-label">Last Month</span>
+                            </div>
+                            <div class="reward-pool-divider"></div>
+                            <div class="reward-pool-stat">
+                                <span class="reward-pool-stat-value">3.2%</span>
+                                <span class="reward-pool-stat-label">APY</span>
+                            </div>
+                        </div>
+                        <div class="reward-pool-right">
+                            <span class="reward-pool-countdown">Distributes in 14 days</span>
+                            <div class="reward-pool-bar-track">
+                                <div class="reward-pool-bar-fill" style="width: 53%"></div>
+                            </div>
+                            <span class="reward-pool-share">Your est. share: ~$12.40</span>
                         </div>
                     </div>
 
@@ -20192,7 +20358,6 @@
             document.getElementById('factoryAgentsView').style.display = view === 'agents' ? 'block' : 'none';
             document.getElementById('factoryStreamView').style.display = view === 'stream' ? 'block' : 'none';
             document.getElementById('factoryLeaderboardView').style.display = view === 'leaderboard' ? 'block' : 'none';
-            document.getElementById('factoryRewardsView').style.display = view === 'rewards' ? 'block' : 'none';
             document.getElementById('factoryOperatorsView').style.display = view === 'operators' ? 'block' : 'none';
 
             // Update URL based on view
@@ -20209,11 +20374,6 @@
             // Initialize Fleet Stream when switching to stream view
             if (view === 'stream') {
                 initFleetStream();
-            }
-
-            // Load rewards data when switching to rewards view
-            if (view === 'rewards') {
-                loadRewardsData();
             }
 
             // Initialize Marketing view
