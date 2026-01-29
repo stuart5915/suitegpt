@@ -6902,45 +6902,48 @@
             margin-right: 0;
         }
 
-        .reward-pool-share-row {
+        /* Your Earned Rewards row */
+        .rp-your-rewards {
             display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 4px;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-radius: 12px;
+            background: rgba(59, 130, 246, 0.06);
+            border: 1px solid rgba(59, 130, 246, 0.1);
         }
+        .rp-your-rewards-left { display: flex; flex-direction: column; gap: 4px; }
+        .rp-your-label { font-size: 0.65rem; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        .rp-your-amount { font-size: 1.2rem; }
+        .rp-your-rewards-right { display: flex; align-items: center; gap: 12px; }
+        .rp-claim-btn {
+            display: flex; align-items: center; gap: 6px; padding: 10px 18px;
+            background: linear-gradient(135deg, #3b82f6, #2563eb); border: none; border-radius: 10px;
+            color: white; font-size: 0.82rem; font-weight: 700; cursor: pointer;
+            transition: all 0.2s; box-shadow: 0 2px 12px rgba(59,130,246,0.2);
+            white-space: nowrap; letter-spacing: 0.3px;
+        }
+        .rp-claim-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(59,130,246,0.35); }
 
-        .reward-pool-share {
-            font-size: 0.78rem;
-            color: rgba(255,255,255,0.55);
-        }
-
-        .reward-pool-share strong {
-            color: #34d399;
-            font-weight: 800;
-        }
+        .reward-pool-share { font-size: 0.78rem; color: rgba(255,255,255,0.55); }
+        .reward-pool-share strong { color: #34d399; font-weight: 800; font-size: 1.15rem; }
 
         .reward-pool-wallet-link {
-            font-size: 0.68rem;
-            color: #fbbf24;
-            text-decoration: none;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 4px;
+            font-size: 0.68rem; color: #fbbf24; text-decoration: none; transition: all 0.2s;
+            display: flex; align-items: center; gap: 4px;
         }
-
-        .reward-pool-wallet-link:hover {
-            color: #fcd34d;
-            text-decoration: underline;
-        }
-
+        .reward-pool-wallet-link:hover { color: #fcd34d; text-decoration: underline; }
         .reward-pool-wallet-connected {
-            font-size: 0.68rem;
-            color: #10b981;
-            display: flex;
-            align-items: center;
-            gap: 4px;
+            font-size: 0.68rem; color: #10b981; display: flex; align-items: center; gap: 4px;
         }
+
+        /* Contract link */
+        .rp-contract-link { text-align: center; padding-top: 4px; }
+        .rp-contract-link a {
+            font-size: 0.62rem; color: rgba(255,255,255,0.25); text-decoration: none;
+            display: inline-flex; align-items: center; gap: 4px; transition: color 0.2s;
+        }
+        .rp-contract-link a:hover { color: rgba(255,255,255,0.5); }
 
         .reward-pool-deposit-btn {
             display: flex;
@@ -7046,6 +7049,14 @@
             .reward-pool-amount { font-size: 2.2rem; }
             .reward-pool-stats { flex-wrap: wrap; }
             .reward-pool-stat { min-width: calc(50% - 4px); }
+            .rp-your-rewards {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+            .rp-your-rewards > div:first-child { width: 100%; }
+            .rp-claim-btn { width: 100%; text-align: center; }
+            .rp-contract-link { justify-content: center; }
         }
 
         /* Rewards View */
@@ -17652,8 +17663,8 @@
                     <!-- Reward Pool Banner -->
                     <div class="reward-pool-banner" id="rewardPoolBanner">
                         <div class="reward-pool-inner">
-                            <!-- Top row: pool amount + actions -->
                             <div class="reward-pool-main">
+                                <!-- Row 1: Pool balance + Deposit -->
                                 <div class="reward-pool-header">
                                     <div class="reward-pool-icon">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="24" height="24">
@@ -17667,32 +17678,37 @@
                                         <span class="reward-pool-amount" id="rewardPoolDisplay">$0<span class="reward-pool-currency">USDC</span></span>
                                     </div>
                                     <div class="reward-pool-actions">
-                                        <div class="reward-pool-share-row" id="rewardPoolShareRow">
-                                            <span class="reward-pool-share">Claimable: <strong>0 USDC</strong></span>
-                                            <a href="#" class="reward-pool-wallet-link" onclick="event.preventDefault(); promptConnectWallet()">Connect wallet to claim</a>
-                                        </div>
-                                        <button class="reward-pool-deposit-btn" onclick="claimRewardPoolUsdc()" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-                                                <path d="M12 19V5M5 12l7-7 7 7"/>
-                                            </svg>
-                                            Claim
-                                        </button>
                                         <button class="reward-pool-deposit-btn" onclick="openRewardDeposit()">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-                                                <path d="M12 5v14M5 12h14"/>
-                                            </svg>
-                                            Deposit
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg>
+                                            Deposit USDC
                                         </button>
                                     </div>
                                 </div>
+
+                                <!-- Row 2: Your earned rewards + Claim -->
+                                <div class="rp-your-rewards" id="rewardPoolShareRow">
+                                    <div class="rp-your-rewards-left">
+                                        <span class="rp-your-label">Your Earned Rewards</span>
+                                        <span class="rp-your-amount reward-pool-share"><strong>0 USDC</strong></span>
+                                    </div>
+                                    <div class="rp-your-rewards-right">
+                                        <button class="rp-claim-btn" onclick="claimRewardPoolUsdc()">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                                            Claim USDC
+                                        </button>
+                                        <a href="#" class="reward-pool-wallet-link" onclick="event.preventDefault(); promptConnectWallet()" id="rpWalletLink">Connect wallet</a>
+                                    </div>
+                                </div>
+
+                                <!-- Row 3: Stats -->
                                 <div class="reward-pool-stats">
+                                    <div class="reward-pool-stat">
+                                        <span class="reward-pool-stat-value" id="rpCredits">--</span>
+                                        <span class="reward-pool-stat-label">Total Credits</span>
+                                    </div>
                                     <div class="reward-pool-stat">
                                         <span class="reward-pool-stat-value" id="rpHolders">--</span>
                                         <span class="reward-pool-stat-label">Holders</span>
-                                    </div>
-                                    <div class="reward-pool-stat">
-                                        <span class="reward-pool-stat-value" id="rpCredits">--</span>
-                                        <span class="reward-pool-stat-label">Credits Circulating</span>
                                     </div>
                                     <div class="reward-pool-stat">
                                         <span class="reward-pool-stat-value" id="rpLastMonth">--</span>
@@ -17703,9 +17719,17 @@
                                         <span class="reward-pool-stat-label">APY</span>
                                     </div>
                                     <div class="reward-pool-stat">
-                                        <span class="reward-pool-stat-value" id="rewardPoolCountdown" style="font-size: 0.85rem;"></span>
-                                        <span class="reward-pool-stat-label">Next Distribution</span>
+                                        <span class="reward-pool-stat-value reward-pool-countdown" id="rewardPoolCountdown" style="font-size: 0.85rem;"></span>
+                                        <span class="reward-pool-stat-label">Period Ends</span>
                                     </div>
+                                </div>
+
+                                <!-- On-chain transparency -->
+                                <div class="rp-contract-link">
+                                    <a href="https://basescan.org/address/0x4e4B34DDAdd4e92c75a2446a26dba2a020dA02f7" target="_blank" rel="noopener">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+                                        View contract on Base
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -24119,29 +24143,27 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
             }
         }
 
-        // Update reward pool banner share row based on wallet status
+        // Update reward pool banner based on wallet connection status
         function updateRewardPoolWalletStatus() {
-            const shareRow = document.getElementById('rewardPoolShareRow');
-            if (!shareRow) return;
-
+            const walletLink = document.getElementById('rpWalletLink');
+            const claimBtn = document.querySelector('.rp-claim-btn');
             const wallet = localStorage.getItem('connectedWallet');
+
             if (wallet) {
                 const truncated = wallet.slice(0, 6) + '...' + wallet.slice(-4);
-                // Est. share is computed by renderRewardPoolValues
-                const shareEl = shareRow.querySelector('.reward-pool-share');
-                const currentShareText = shareEl ? shareEl.innerHTML : 'Your est. share: <strong>calculating...</strong>';
-                shareRow.innerHTML = `
-                    <span class="reward-pool-share">${currentShareText}</span>
-                    <span class="reward-pool-wallet-connected">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg>
-                        ${truncated}
-                    </span>
-                `;
+                if (walletLink) {
+                    walletLink.textContent = truncated;
+                    walletLink.style.color = '#10b981';
+                    walletLink.onclick = null;
+                }
+                if (claimBtn) claimBtn.style.display = 'flex';
             } else {
-                shareRow.innerHTML = `
-                    <span class="reward-pool-share">Claimable: <strong>connect wallet</strong></span>
-                    <a href="#" class="reward-pool-wallet-link" onclick="event.preventDefault(); promptConnectWallet()">Connect wallet to claim</a>
-                `;
+                if (walletLink) {
+                    walletLink.textContent = 'Connect wallet';
+                    walletLink.style.color = '#fbbf24';
+                    walletLink.onclick = (e) => { e.preventDefault(); promptConnectWallet(); };
+                }
+                if (claimBtn) claimBtn.style.display = 'none';
             }
         }
 
