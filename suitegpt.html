@@ -17532,19 +17532,19 @@
                                 </div>
                                 <div class="reward-pool-stats">
                                     <div class="reward-pool-stat">
-                                        <span class="reward-pool-stat-value">142</span>
+                                        <span class="reward-pool-stat-value" id="rpHolders">--</span>
                                         <span class="reward-pool-stat-label">Holders</span>
                                     </div>
                                     <div class="reward-pool-stat">
-                                        <span class="reward-pool-stat-value">1.4M</span>
+                                        <span class="reward-pool-stat-value" id="rpCredits">--</span>
                                         <span class="reward-pool-stat-label">Credits Circulating</span>
                                     </div>
                                     <div class="reward-pool-stat">
-                                        <span class="reward-pool-stat-value">$847</span>
+                                        <span class="reward-pool-stat-value" id="rpLastMonth">--</span>
                                         <span class="reward-pool-stat-label">Paid Last Month</span>
                                     </div>
                                     <div class="reward-pool-stat">
-                                        <span class="reward-pool-stat-value">3.2%</span>
+                                        <span class="reward-pool-stat-value" id="rpAPY">--</span>
                                         <span class="reward-pool-stat-label">APY</span>
                                     </div>
                                 </div>
@@ -23960,6 +23960,38 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
 
         updateRewardPoolCountdown();
         setInterval(updateRewardPoolCountdown, 1000);
+
+        // Reward pool data — single source of truth for all banner values
+        // Replace these with real Supabase queries later
+        function renderRewardPoolStats() {
+            const poolBalance = 1247;       // current pool balance in USD
+            const holders = 142;            // number of credit holders
+            const creditsCirculating = 1400000; // total credits in circulation
+            const paidLastMonth = 847;      // USD paid out last month
+
+            // APY = (annualized monthly payout / credit value at $1:1000 ratio) * 100
+            const creditValueUSD = creditsCirculating / 1000;
+            const annualizedPayout = paidLastMonth * 12;
+            const apy = creditValueUSD > 0 ? ((annualizedPayout / creditValueUSD) * 100) : 0;
+
+            // Format helpers
+            const fmtUSD = n => '$' + n.toLocaleString();
+            const fmtCredits = n => {
+                if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+                if (n >= 1000) return (n / 1000).toFixed(0) + 'K';
+                return n.toLocaleString();
+            };
+
+            // Update DOM
+            const el = id => document.getElementById(id);
+            if (el('rewardPoolDisplay')) el('rewardPoolDisplay').innerHTML = `${fmtUSD(poolBalance)}<span class="reward-pool-currency">USDC</span>`;
+            if (el('rpHolders')) el('rpHolders').textContent = holders.toLocaleString();
+            if (el('rpCredits')) el('rpCredits').textContent = fmtCredits(creditsCirculating);
+            if (el('rpLastMonth')) el('rpLastMonth').textContent = fmtUSD(paidLastMonth);
+            if (el('rpAPY')) el('rpAPY').textContent = apy.toFixed(1) + '%';
+        }
+
+        renderRewardPoolStats();
 
         function selectDonationAmount(amount) {
             // Update input field
