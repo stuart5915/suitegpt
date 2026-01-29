@@ -28,7 +28,7 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Query parameter q is required' });
         }
 
-        // Build query from filter params
+        // Build query from filter params (only operators supported on Basic tier)
         let query = q;
         if (req.query.exclude_retweets === '1') query += ' -is:retweet';
         if (req.query.exclude_replies === '1') query += ' -is:reply';
@@ -36,14 +36,13 @@ export default async function handler(req, res) {
         if (req.query.has_links === '1') query += ' has:links';
         if (req.query.has_media === '1') query += ' has:media';
         if (req.query.has_hashtags === '1') query += ' has:hashtags';
+        if (req.query.lang) query += ` lang:${req.query.lang}`;
+        if (req.query.from_user) query += ` from:${req.query.from_user}`;
+
+        // Engagement minimums - filtered client-side after fetch (not supported on Basic tier)
         const minLikes = parseInt(req.query.min_likes) || 0;
         const minRetweets = parseInt(req.query.min_retweets) || 0;
         const minReplies = parseInt(req.query.min_replies) || 0;
-        if (minLikes > 0) query += ` min_faves:${minLikes}`;
-        if (minRetweets > 0) query += ` min_retweets:${minRetweets}`;
-        if (minReplies > 0) query += ` min_replies:${minReplies}`;
-        if (req.query.lang) query += ` lang:${req.query.lang}`;
-        if (req.query.from_user) query += ` from:${req.query.from_user}`;
 
         const params = new URLSearchParams({
             query,
@@ -84,7 +83,7 @@ export default async function handler(req, res) {
         }
 
         // Map tweets with author info
-        const tweets = data.data.map(tweet => {
+        let tweets = data.data.map(tweet => {
             const author = users[tweet.author_id] || {};
             return {
                 id: tweet.id,
@@ -97,6 +96,16 @@ export default async function handler(req, res) {
                 metrics: tweet.public_metrics || {}
             };
         });
+
+        // Apply engagement minimums post-fetch
+        if (minLikes > 0 || minRetweets > 0 || minReplies > 0) {
+            tweets = tweets.filter(t => {
+                const m = t.metrics;
+                return (m.like_count || 0) >= minLikes
+                    && (m.retweet_count || 0) >= minRetweets
+                    && (m.reply_count || 0) >= minReplies;
+            });
+        }
 
         return res.status(200).json({ tweets });
 
