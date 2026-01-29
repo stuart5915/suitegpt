@@ -26494,19 +26494,28 @@ Return a JSON object with exactly these 3 keys:
 EXISTING APPS TO AVOID (don't suggest anything similar):
 ${existingAppsList}
 
-Your idea must be:
-- Extremely specific and detailed (3-5 sentences minimum)
+AVAILABLE PLATFORM CAPABILITIES - the app can use ANY of these:
+1. AI Text Generation - POST /api/gemini with {prompt, model: "gemini-2.0-flash", generationConfig: {temperature, maxOutputTokens}} → returns {text}
+2. AI Image Generation - POST /api/gemini with {prompt: "generate an image of ...", model: "gemini-2.0-flash", generationConfig: {}} → can describe images for AI
+3. Fast AI Chat - POST /api/groq with {messages: [{role,content}], model: "llama-3.3-70b-versatile"} → returns {text} (very fast responses)
+4. localStorage for data persistence
+5. All browser APIs: Canvas, Web Audio, Speech Synthesis, Speech Recognition, Device Motion, Geolocation, Camera/MediaDevices, Drag & Drop, Clipboard, Notifications
+6. CSS animations, WebGL, SVG graphics
+
+Your idea must:
+- Be extremely specific and detailed (3-5 sentences minimum)
 - Include unique mechanics, features, or interactions
 - Describe exactly how it works, what the user sees, what happens when they interact
-- Novel and creative - something that would make someone say "wow, that's clever"
-- Buildable as a single-page web app
+- Be novel and creative - something that makes someone say "wow, that's clever"
+- STRONGLY PREFER ideas that leverage the AI capabilities (text gen, image gen, chat) combined with creative browser APIs - this makes the app truly unique and not something you could just build anywhere
+- Be buildable as a single-page web app
 
 BAD example (too vague): "A collaborative mood board app"
 BAD example (too generic): "A habit tracker with streaks"
 
-GOOD example: "A focus timer that grows a procedurally-generated pixel art tree while you work. Each 25-minute session adds branches and leaves in real-time. Different focus categories (deep work, meetings, creative) grow different tree species with unique visual styles. You can view your 'forest' of completed sessions over time, with stats showing your most productive hours and a satisfying animation when trees reach full growth."
+GOOD example (uses AI): "An AI art critic app where you draw something on a canvas, and the AI gives you a brutally honest but funny art critique in the style of a snooty gallery curator. It analyzes your drawing, roasts it lovingly, then suggests one specific improvement. You can iterate and get re-critiqued, building up a gallery wall of your progression with the AI's increasingly impressed reviews."
 
-GOOD example: "A 'decision roulette' app where you input options you're torn between, then physically spin your phone (using device motion) to randomly select one. The wheel shows your options with satisfying physics, and after selection it shows a fun 'destiny has spoken' animation with confetti. It remembers past decisions so you can see if you followed through or chickened out."
+GOOD example (uses AI + browser APIs): "A voice-to-visual-story app where you speak a sentence into the mic using Speech Recognition, the AI expands it into a vivid scene description, then generates the scene as a styled story card with atmospheric CSS effects (rain, glow, fog). You keep speaking sentences to build an illustrated story, with each card having a unique visual mood. The final story can be scrolled through like a visual novel."
 
 Now generate ONE highly detailed, novel app idea. Output ONLY the idea description, nothing else:`,
                         model: 'gemini-2.0-flash',
@@ -26702,6 +26711,34 @@ Now generate ONE highly detailed, novel app idea. Output ONLY the idea descripti
             try {
                 // Build the prompt - use detailed prompts if available
                 let buildPrompt;
+                const apiReference = `
+AVAILABLE APIs (use these in the generated code if the idea calls for AI features):
+
+1. Gemini AI (text generation):
+   fetch('/api/gemini', {
+     method: 'POST',
+     headers: {'Content-Type': 'application/json'},
+     body: JSON.stringify({
+       prompt: 'your prompt here',
+       model: 'gemini-2.0-flash',
+       generationConfig: { temperature: 0.7, maxOutputTokens: 8192 }
+     })
+   }).then(r => r.json()).then(data => data.text)
+
+2. Groq AI (fast chat - good for conversational features):
+   fetch('/api/groq', {
+     method: 'POST',
+     headers: {'Content-Type': 'application/json'},
+     body: JSON.stringify({
+       messages: [{role: 'user', content: 'your message'}],
+       model: 'llama-3.3-70b-versatile',
+       temperature: 0.7,
+       max_tokens: 2048
+     })
+   }).then(r => r.json()).then(data => data.text)
+
+Use localStorage for data persistence. All browser APIs are available (Canvas, Audio, Speech, etc).`;
+
                 if (hasDetailedPrompts) {
                     buildPrompt = `Create a complete, working single-page HTML app based on these detailed specifications:
 
@@ -26716,6 +26753,7 @@ ${designPrompt}
 
 USER INTERACTIONS & BEHAVIORS:
 ${interactionsPrompt}
+${apiReference}
 
 Requirements:
 - Self-contained HTML with embedded CSS and JavaScript
@@ -26725,12 +26763,14 @@ Requirements:
 - Use localStorage if data persistence is needed
 - Include all animations and transitions described
 - Make it polished and production-ready
+- If the idea involves AI features, use the APIs above
 
 Output ONLY the complete HTML code, starting with <!DOCTYPE html> and ending with </html>. No explanations or markdown.`;
                 } else {
                     buildPrompt = `Create a complete, working single-page HTML app based on this idea:
 
 "${idea}"
+${apiReference}
 
 Requirements:
 - Self-contained HTML with embedded CSS and JavaScript
@@ -26739,6 +26779,7 @@ Requirements:
 - Functional and interactive
 - Include all necessary features to make it useful
 - Use localStorage if data persistence is needed
+- If the idea involves AI features, use the APIs above
 
 Output ONLY the complete HTML code, starting with <!DOCTYPE html> and ending with </html>. No explanations or markdown.`;
                 }
