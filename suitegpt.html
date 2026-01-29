@@ -8789,6 +8789,57 @@
             min-height: 36px;
         }
         .daily-angle-input:focus { outline: none; border-color: var(--accent-primary); }
+        .daily-angle-imgprompt-row {
+            display: flex; align-items: flex-start; gap: 6px;
+        }
+        .daily-angle-imgprompt-label {
+            font-size: 0.7rem; color: #818cf8; flex-shrink: 0; padding-top: 5px;
+        }
+        .daily-angle-imgprompt {
+            flex: 1; background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.15);
+            border-radius: 6px; padding: 5px 8px; color: #a5b4fc; font-size: 0.72rem;
+            font-family: inherit; line-height: 1.4; resize: none;
+        }
+        .daily-angle-imgprompt:focus { outline: none; border-color: #818cf8; }
+        .daily-angle-copy-btn {
+            background: none; border: 1px solid rgba(99,102,241,0.2); border-radius: 6px;
+            padding: 4px 8px; cursor: pointer; font-size: 0.75rem; color: #818cf8;
+            flex-shrink: 0; transition: all 0.15s;
+        }
+        .daily-angle-copy-btn:hover { background: rgba(99,102,241,0.15); }
+
+        /* Brand Image Overlay */
+        .brand-overlay-container {
+            position: relative; width: 100%; max-width: 512px; aspect-ratio: 1/1;
+            border-radius: 10px; overflow: hidden; background: #0a0a0a;
+        }
+        .brand-overlay-container img.brand-overlay-bg {
+            width: 100%; height: 100%; object-fit: cover; display: block;
+        }
+        .brand-overlay-frame {
+            position: absolute; inset: 0; pointer-events: none;
+            display: flex; flex-direction: column; justify-content: flex-end;
+        }
+        .brand-overlay-bar {
+            display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.85) 30%);
+        }
+        .brand-overlay-logo {
+            width: 28px; height: 28px; border-radius: 6px; flex-shrink: 0;
+        }
+        .brand-overlay-text {
+            display: flex; flex-direction: column; gap: 1px;
+        }
+        .brand-overlay-name {
+            font-size: 0.8rem; font-weight: 800; color: #fff; letter-spacing: 0.5px;
+        }
+        .brand-overlay-tagline {
+            font-size: 0.6rem; color: rgba(255,255,255,0.6); font-weight: 500;
+        }
+        .brand-overlay-url {
+            margin-left: auto; font-size: 0.6rem; color: rgba(250,204,21,0.7);
+            font-weight: 600;
+        }
 
         /* Two-Column Workspace */
         .marketing-workspace {
@@ -21816,10 +21867,12 @@ I need ${dailySlots.length} UNIQUE angles for today's posts. Each angle should b
 Post slots:
 ${slotDescriptions}
 
-For each slot, write a 1-2 sentence angle description. The angle should describe WHAT specific point to make and HOW to frame it. Be specific — reference actual details from the research, not generic statements.
+For each slot, write:
+1. A 1-2 sentence angle description — WHAT specific point to make and HOW to frame it. Be specific, reference actual details from the research.
+2. A text-to-image prompt — a cinematic, photorealistic scene showing human-AI symbiosis. The image should visually represent the angle's concept. Style: real humans interacting with, merging with, or working alongside AI in unexpected, beautiful ways. Think diverse people, warm lighting, slightly surreal blending of organic and digital. Each image must be visually DISTINCT from the others.
 
 IMPORTANT: Return ONLY a valid JSON array. No markdown, no code fences.
-[{"index":1,"angle":"specific angle description here"},{"index":2,"angle":"..."}]`;
+[{"index":1,"angle":"specific angle description","imagePrompt":"detailed image generation prompt"},{"index":2,"angle":"...","imagePrompt":"..."}]`;
 
             try {
                 const response = await callCopilotAI(prompt);
@@ -21835,7 +21888,7 @@ IMPORTANT: Return ONLY a valid JSON array. No markdown, no code fences.
 
                 dailyAngles = dailySlots.map((slot, i) => {
                     const extracted = parsed.find(p => p.index === i + 1) || parsed[i] || {};
-                    return { ...slot, angle: extracted.angle || '' };
+                    return { ...slot, angle: extracted.angle || '', imagePrompt: extracted.imagePrompt || '' };
                 });
 
                 renderAnglesReview();
@@ -21855,7 +21908,14 @@ IMPORTANT: Return ONLY a valid JSON array. No markdown, no code fences.
                         <span class="daily-angle-icon">${a.icon}</span>
                         <span class="daily-angle-time">${formatTime(a.time)}</span>
                     </div>
-                    <textarea class="daily-angle-input" id="angle_${i}" rows="2">${a.angle}</textarea>
+                    <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+                        <textarea class="daily-angle-input" id="angle_${i}" rows="2">${a.angle}</textarea>
+                        <div class="daily-angle-imgprompt-row">
+                            <span class="daily-angle-imgprompt-label">🎨 Image:</span>
+                            <textarea class="daily-angle-imgprompt" id="imgPrompt_${i}" rows="2">${a.imagePrompt}</textarea>
+                            <button class="daily-angle-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('imgPrompt_${i}').value);showToast('Image prompt copied!')">📋</button>
+                        </div>
+                    </div>
                 </div>
             `).join('');
 
@@ -21925,7 +21985,23 @@ IMPORTANT: Return ONLY a valid JSON array. No markdown, no code fences.
             const hasImage = document.getElementById('dailyImagePreview').style.display !== 'none';
             const imageSrc = hasImage ? document.getElementById('dailyImageThumb').src : null;
 
-            let html = dailyGeneratedPosts.map((post, i) => `
+            let html = dailyGeneratedPosts.map((post, i) => {
+                const imageOverlay = imageSrc ? `
+                    <div class="brand-overlay-container">
+                        <img class="brand-overlay-bg" src="${imageSrc}" alt="post image">
+                        <div class="brand-overlay-frame">
+                            <div class="brand-overlay-bar">
+                                <img class="brand-overlay-logo" src="/suitegpt-logo.png" alt="SUITE">
+                                <div class="brand-overlay-text">
+                                    <span class="brand-overlay-name">SUITE</span>
+                                    <span class="brand-overlay-tagline">Anyone Can Build. Everyone Gets Paid.</span>
+                                </div>
+                                <span class="brand-overlay-url">suitegpt.app</span>
+                            </div>
+                        </div>
+                    </div>` : '';
+
+                return `
                 <div class="daily-post-card" data-index="${i}">
                     <div class="daily-post-card-header">
                         <span class="daily-post-card-icon">${post.icon}</span>
@@ -21933,15 +22009,15 @@ IMPORTANT: Return ONLY a valid JSON array. No markdown, no code fences.
                         <span class="daily-post-card-time">${formatTime(post.time)}</span>
                     </div>
                     <textarea class="daily-post-card-text" id="dailyPost_${i}" rows="${post.cadence === 'linkedin-posts' ? 6 : 3}">${post.text}</textarea>
-                    ${imageSrc ? `<img class="daily-post-card-img" src="${imageSrc}" alt="attached">` : ''}
+                    ${imageOverlay}
                     <div class="daily-post-card-actions">
                         <button onclick="copyDailyPost(${i})">📋 Copy</button>
                         <button onclick="redoDailyPost(${i})">🔄 Redo</button>
                         <button onclick="postDailyPostToX(${i})">𝕏 Post</button>
                         <button class="save-btn" onclick="saveDailyPostToCalendar(${i})">💾 Save</button>
                     </div>
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
 
             if (dailyGeneratedPosts.length > 0) {
                 html += `<div class="daily-save-all-row" style="grid-column:1/-1;">
