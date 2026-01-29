@@ -26730,28 +26730,7 @@ Now generate ONE highly detailed, novel app idea. Output ONLY the idea descripti
             }
         }
 
-        async function buildQuickApp() {
-            const input = document.getElementById('quickAppInput');
-            const btn = document.getElementById('quickAppBuildBtn');
-            if (!input || !input.value.trim()) return;
-
-            const idea = input.value.trim();
-
-            // Get the edited prompts from the cards (if generated)
-            const featuresPrompt = document.getElementById('promptTextFeatures')?.value || '';
-            const designPrompt = document.getElementById('promptTextDesign')?.value || '';
-            const interactionsPrompt = document.getElementById('promptTextInteractions')?.value || '';
-
-            const hasDetailedPrompts = featuresPrompt && designPrompt && interactionsPrompt;
-
-            // Show progress overlay
-            btn.disabled = true;
-            showBuildProgress();
-
-            try {
-                // Build the prompt - use detailed prompts if available
-                let buildPrompt;
-                const apiReference = `
+        const SUITE_API_REFERENCE = `
 AVAILABLE APIs (use these in the generated code if the idea calls for AI features):
 
 1. Gemini AI (text generation):
@@ -26779,96 +26758,55 @@ AVAILABLE APIs (use these in the generated code if the idea calls for AI feature
 
 Use localStorage for data persistence. All browser APIs are available (Canvas, Audio, Speech, etc).`;
 
-                if (hasDetailedPrompts) {
-                    buildPrompt = `Create a complete, working single-page HTML app based on these detailed specifications:
+        async function buildQuickApp() {
+            const input = document.getElementById('quickAppInput');
+            const btn = document.getElementById('quickAppBuildBtn');
+            if (!input || !input.value.trim()) return;
 
-ORIGINAL IDEA:
-"${idea}"
+            const idea = input.value.trim();
 
-CORE FEATURES & FUNCTIONALITY:
-${featuresPrompt}
+            // Get the edited prompts from the cards (if generated)
+            const featuresPrompt = document.getElementById('promptTextFeatures')?.value || '';
+            const designPrompt = document.getElementById('promptTextDesign')?.value || '';
+            const interactionsPrompt = document.getElementById('promptTextInteractions')?.value || '';
+            const hasDetailedPrompts = featuresPrompt && designPrompt && interactionsPrompt;
 
-VISUAL DESIGN & STYLING:
-${designPrompt}
+            btn.disabled = true;
+            btn.innerHTML = `
+                <svg class="spinning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                    <path d="M21 12a9 9 0 11-6.219-8.56"/>
+                </svg>
+                Planning...
+            `;
 
-USER INTERACTIONS & BEHAVIORS:
-${interactionsPrompt}
-${apiReference}
+            try {
+                const extraContext = hasDetailedPrompts
+                    ? `\n\nDetailed specs provided by user:\nFEATURES: ${featuresPrompt}\nDESIGN: ${designPrompt}\nINTERACTIONS: ${interactionsPrompt}`
+                    : '';
 
-Requirements:
-- Self-contained HTML with embedded CSS and JavaScript
-- Modern, clean dark theme UI (dark background #0f0f0f, light text)
-- Mobile-friendly and responsive
-- Fully functional and interactive with all specified features
-- Use localStorage if data persistence is needed
-- Include all animations and transitions described
-- Make it polished and production-ready
-- If the idea involves AI features, use the APIs above
+                const buildPlan = await generateBuildPlan(idea, extraContext);
 
-Output ONLY the complete HTML code, starting with <!DOCTYPE html> and ending with </html>. No explanations or markdown.`;
-                } else {
-                    buildPrompt = `Create a complete, working single-page HTML app based on this idea:
-
-"${idea}"
-${apiReference}
-
-Requirements:
-- Self-contained HTML with embedded CSS and JavaScript
-- Modern, clean dark theme UI (dark background, light text)
-- Mobile-friendly and responsive
-- Functional and interactive
-- Include all necessary features to make it useful
-- Use localStorage if data persistence is needed
-- If the idea involves AI features, use the APIs above
-
-Output ONLY the complete HTML code, starting with <!DOCTYPE html> and ending with </html>. No explanations or markdown.`;
+                if (!buildPlan || !buildPlan.steps || buildPlan.steps.length === 0) {
+                    throw new Error('Failed to generate build plan');
                 }
 
-                // Call Gemini to generate the app
-                const response = await fetch('/api/gemini', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        prompt: buildPrompt,
-                        model: 'gemini-2.0-flash',
-                        generationConfig: { temperature: 0.7, maxOutputTokens: 16000 }
-                    })
-                });
+                const appName = buildPlan.appName || idea.split(' ').slice(0, 3).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
-                const data = await response.json();
-                let html = data.text || '';
+                window.quickAppResult = {
+                    name: appName,
+                    idea: idea,
+                    html: '',
+                    buildSteps: buildPlan.steps,
+                    completedSteps: []
+                };
 
-                // Clean up the response - extract HTML
-                const htmlMatch = html.match(/<!DOCTYPE html>[\s\S]*<\/html>/i);
-                if (htmlMatch) {
-                    html = htmlMatch[0];
-                }
-
-                if (html) {
-                    // Generate app name from idea
-                    const appName = idea.split(' ').slice(0, 3).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-
-                    // Store the generated app
-                    window.quickAppResult = {
-                        name: appName,
-                        idea: idea,
-                        html: html
-                    };
-
-                    // Hide progress and show preview
-                    hideBuildProgress();
-                    showQuickAppPreview(html, appName, idea);
-                } else {
-                    throw new Error('No HTML generated');
-                }
+                showMultiStepBuildView(buildPlan, appName, idea);
 
             } catch (error) {
-                console.error('Failed to build app:', error);
-                hideBuildProgress();
-                alert('Failed to build app. Please try again.');
+                console.error('Failed to plan app build:', error);
+                alert('Failed to plan app build. Please try again.');
             }
 
-            // Reset button
             btn.disabled = false;
             btn.innerHTML = `
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
@@ -26879,12 +26817,56 @@ Output ONLY the complete HTML code, starting with <!DOCTYPE html> and ending wit
             updateQuickAppBuildBtn();
         }
 
-        function showQuickAppPreview(html, appName, idea) {
-            // Hide quick app screen
+        async function generateBuildPlan(idea, extraContext) {
+            const response = await fetch('/api/gemini', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    prompt: `You are an expert app architect. Break this app idea into sequential build steps for a single-page HTML app.
+
+APP IDEA: "${idea}"
+${extraContext}
+
+Rules:
+- Step 1 is ALWAYS the base scaffold: HTML structure, navigation/layout, CSS theme (dark theme #0f0f0f), and visual shell. No real logic yet.
+- Each subsequent step adds 1-2 specific features to the existing HTML.
+- The final step is ALWAYS polish: animations, transitions, empty states, error handling, micro-interactions.
+- Generate 4-8 steps depending on complexity.
+- Each step's "prompt" should be a detailed, specific instruction for what to build/add.
+- Keep step titles short (3-6 words).
+
+Return JSON in this exact format:
+{
+  "appName": "Short App Name",
+  "steps": [
+    { "title": "App Shell & Layout", "description": "Create the base HTML structure with navigation and dark theme", "prompt": "detailed build instruction..." },
+    { "title": "Feature Name", "description": "What this adds", "prompt": "detailed build instruction..." }
+  ]
+}`,
+                    model: 'gemini-2.0-flash',
+                    generationConfig: {
+                        temperature: 0.7,
+                        maxOutputTokens: 3000,
+                        responseMimeType: 'application/json'
+                    }
+                })
+            });
+
+            const data = await response.json();
+            let jsonText = (data.text || '').trim();
+            try {
+                return JSON.parse(jsonText);
+            } catch (e) {
+                const match = jsonText.match(/\{[\s\S]*\}/);
+                if (match) return JSON.parse(match[0]);
+                throw new Error('Failed to parse build plan');
+            }
+        }
+
+        function showMultiStepBuildView(plan, appName, idea) {
             const quickAppScreen = document.getElementById('quickAppScreen');
             if (quickAppScreen) quickAppScreen.classList.remove('active');
 
-            // Create/show a preview split view similar to proposal mode
             let previewView = document.getElementById('quickAppPreviewView');
             if (!previewView) {
                 previewView = document.createElement('div');
@@ -26892,6 +26874,16 @@ Output ONLY the complete HTML code, starting with <!DOCTYPE html> and ending wit
                 previewView.className = 'proposal-split-view';
                 document.getElementById('builderMode').appendChild(previewView);
             }
+
+            const stepsHtml = plan.steps.map((step, i) => `
+                <div class="build-log-step pending" id="buildLogStep${i}" data-step-index="${i}">
+                    <div class="build-log-step-icon">${i + 1}</div>
+                    <div class="build-log-step-content">
+                        <div class="build-log-step-title">${step.title}</div>
+                        <div class="build-log-step-desc">${step.description}</div>
+                    </div>
+                </div>
+            `).join('');
 
             previewView.innerHTML = `
                 <div class="proposal-app-preview">
@@ -26908,13 +26900,13 @@ Output ONLY the complete HTML code, starting with <!DOCTYPE html> and ending wit
                         </div>
                         <div class="proposal-app-header-info">
                             <div class="proposal-app-header-name">${appName}</div>
-                            <div class="proposal-app-header-hint">Your app is ready! Tell me what to change.</div>
+                            <div class="proposal-app-header-hint" id="buildHeaderHint">Building step by step...</div>
                         </div>
                     </div>
                     <div class="proposal-phone-frame" id="quickAppPhoneFrame">
                         <div class="proposal-phone-notch"></div>
                         <div class="proposal-phone-screen">
-                            <iframe id="quickAppFrame" srcdoc="${html.replace(/"/g, '&quot;')}"></iframe>
+                            <iframe id="quickAppFrame" srcdoc="<html><body style='background:#0f0f0f;color:#666;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;font-family:system-ui'><div style='text-align:center'><div style='font-size:2rem;margin-bottom:12px'>⚡</div><div>Preparing scaffold...</div></div></body></html>"></iframe>
                         </div>
                         <div class="proposal-phone-home"></div>
                         <div class="proposal-resize-handle"></div>
@@ -26922,20 +26914,16 @@ Output ONLY the complete HTML code, starting with <!DOCTYPE html> and ending wit
                 </div>
                 <div class="proposal-chat-panel">
                     <div class="proposal-chat-header">
-                        <div style="font-weight: 600; color: var(--text-primary);">Iterate on your app</div>
-                        <p class="proposal-chat-subtitle">Click around and tell me what to improve</p>
+                        <div style="font-weight: 600; color: var(--text-primary);">Build Queue</div>
+                        <p class="proposal-chat-subtitle">Step 1 runs automatically. Click others to build.</p>
                     </div>
-                    <div class="proposal-chat-messages" id="quickAppChatMessages">
-                        <div class="proposal-message assistant">
-                            <div class="proposal-message-content">
-                                <strong>Here's your ${appName}!</strong><br><br>
-                                Try it out in the preview. When you're ready, tell me what you'd like to change or improve.
-                            </div>
-                        </div>
+                    <div class="build-log-container" id="buildLogContainer">
+                        ${stepsHtml}
                     </div>
+                    <div class="proposal-chat-messages" id="quickAppChatMessages" style="display: none;"></div>
                     <div class="proposal-chat-input-area">
                         <div class="proposal-chat-input-wrapper">
-                            <textarea class="proposal-chat-input" id="quickAppChatInput" placeholder="What would you like to change?" rows="1" onkeydown="handleQuickAppChatKeydown(event)"></textarea>
+                            <textarea class="proposal-chat-input" id="quickAppChatInput" placeholder="Tweak something between steps..." rows="1" onkeydown="handleQuickAppChatKeydown(event)"></textarea>
                             <button class="proposal-chat-send" onclick="sendQuickAppIteration()">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                                     <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
@@ -26943,7 +26931,7 @@ Output ONLY the complete HTML code, starting with <!DOCTYPE html> and ending wit
                             </button>
                         </div>
                     </div>
-                    <div class="proposal-fork-actions" style="display: flex; flex-wrap: wrap;">
+                    <div class="proposal-fork-actions" id="buildActionButtons" style="display: none; flex-wrap: wrap;">
                         <button class="suggest-refinements-btn" id="suggestRefinementsBtn" onclick="suggestRefinements()">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
@@ -26965,11 +26953,219 @@ Output ONLY the complete HTML code, starting with <!DOCTYPE html> and ending wit
 
             previewView.style.display = 'flex';
 
-            // Focus chat input
-            setTimeout(() => {
-                const chatInput = document.getElementById('quickAppChatInput');
-                if (chatInput) chatInput.focus();
-            }, 100);
+            // Add click handlers to steps (skip step 0, it auto-runs)
+            plan.steps.forEach((step, i) => {
+                if (i === 0) return;
+                const el = document.getElementById(`buildLogStep${i}`);
+                if (el) {
+                    el.style.cursor = 'pointer';
+                    el.addEventListener('click', () => {
+                        if (el.classList.contains('pending') && !window._buildStepRunning) {
+                            executeFeatureStep(i);
+                        }
+                    });
+                }
+            });
+
+            // Auto-run step 0 (scaffold)
+            executeFeatureStep(0);
+        }
+
+        window._buildStepRunning = false;
+
+        async function executeFeatureStep(stepIndex) {
+            const steps = window.quickAppResult?.buildSteps;
+            if (!steps || !steps[stepIndex] || window._buildStepRunning) return;
+
+            window._buildStepRunning = true;
+            const step = steps[stepIndex];
+            const stepEl = document.getElementById(`buildLogStep${stepIndex}`);
+
+            // Mark as active
+            if (stepEl) {
+                stepEl.classList.remove('pending');
+                stepEl.classList.add('active');
+                const reasoningEl = document.createElement('div');
+                reasoningEl.className = 'build-log-step-reasoning';
+                reasoningEl.textContent = stepIndex === 0 ? 'Creating the app foundation...' : `Adding ${step.title.toLowerCase()}...`;
+                stepEl.querySelector('.build-log-step-content').appendChild(reasoningEl);
+                const iconEl = stepEl.querySelector('.build-log-step-icon');
+                if (iconEl) iconEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" class="spinning"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>';
+            }
+
+            const container = document.getElementById('buildLogContainer');
+            if (container && stepEl) stepEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            // Update header hint
+            const hint = document.getElementById('buildHeaderHint');
+            if (hint) hint.textContent = `Step ${stepIndex + 1}/${steps.length}: ${step.title}`;
+
+            try {
+                let buildPrompt;
+                const currentHtml = window.quickAppResult.html;
+
+                if (stepIndex === 0 || !currentHtml) {
+                    buildPrompt = `Create the base scaffold for a single-page HTML app.
+
+APP IDEA: "${window.quickAppResult.idea}"
+
+THIS STEP: ${step.prompt}
+
+Requirements:
+- Self-contained HTML with embedded CSS and JavaScript
+- Modern dark theme (background #0f0f0f, light text, subtle borders)
+- Mobile-friendly and responsive
+- Include navigation/layout structure
+- Use placeholder content where features will be added later
+- Make it visually polished even as a shell
+${SUITE_API_REFERENCE}
+
+Output ONLY the complete HTML code, starting with <!DOCTYPE html> and ending with </html>. No explanations or markdown.`;
+                } else {
+                    buildPrompt = `Here is the current HTML of an app being built step-by-step:
+
+\`\`\`html
+${currentHtml}
+\`\`\`
+
+APP IDEA: "${window.quickAppResult.idea}"
+
+YOUR TASK FOR THIS STEP: ${step.prompt}
+
+Rules:
+- Add this feature to the existing app. Do NOT remove or break existing features.
+- Keep all existing functionality intact.
+- Integrate the new feature naturally into the existing layout/navigation.
+- Maintain the same visual style and theme.
+- If this feature needs AI, use the available APIs below.
+${SUITE_API_REFERENCE}
+
+Output ONLY the COMPLETE updated HTML (with all existing + new code), starting with <!DOCTYPE html> and ending with </html>. No explanations or markdown.`;
+                }
+
+                const response = await fetch('/api/gemini', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: buildPrompt,
+                        model: 'gemini-2.0-flash',
+                        generationConfig: {
+                            temperature: stepIndex === 0 ? 0.7 : 0.5,
+                            maxOutputTokens: 32000
+                        }
+                    })
+                });
+
+                const data = await response.json();
+                let html = data.text || '';
+
+                const htmlMatch = html.match(/<!DOCTYPE html>[\s\S]*<\/html>/i);
+                if (htmlMatch) html = htmlMatch[0];
+                if (!html) throw new Error('No HTML generated');
+
+                // Update stored HTML and preview
+                window.quickAppResult.html = html;
+                window.quickAppResult.completedSteps.push(stepIndex);
+
+                const iframe = document.getElementById('quickAppFrame');
+                if (iframe) iframe.srcdoc = html;
+
+                // Mark step as done
+                if (stepEl) {
+                    stepEl.classList.remove('active');
+                    stepEl.classList.add('done');
+                    stepEl.style.cursor = 'default';
+                    const iconEl = stepEl.querySelector('.build-log-step-icon');
+                    if (iconEl) iconEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>';
+                    const reasoningEl = stepEl.querySelector('.build-log-step-reasoning');
+                    if (reasoningEl) reasoningEl.textContent = 'Done';
+                }
+
+                // Check if all steps done
+                if (window.quickAppResult.completedSteps.length === steps.length) {
+                    transitionToIterationMode();
+                }
+
+            } catch (error) {
+                console.error(`Build step ${stepIndex} failed:`, error);
+                if (stepEl) {
+                    stepEl.classList.remove('active');
+                    stepEl.classList.add('error');
+                    const iconEl = stepEl.querySelector('.build-log-step-icon');
+                    if (iconEl) iconEl.innerHTML = '!';
+                    const reasoningEl = stepEl.querySelector('.build-log-step-reasoning');
+                    if (reasoningEl) reasoningEl.textContent = 'Failed — click to retry';
+                    stepEl.style.cursor = 'pointer';
+                    stepEl.onclick = () => {
+                        stepEl.classList.remove('error');
+                        stepEl.classList.add('pending');
+                        const r = stepEl.querySelector('.build-log-step-reasoning');
+                        if (r) r.remove();
+                        executeFeatureStep(stepIndex);
+                    };
+                }
+            }
+
+            window._buildStepRunning = false;
+        }
+
+        function transitionToIterationMode() {
+            const hint = document.getElementById('buildHeaderHint');
+            if (hint) hint.textContent = 'Your app is ready! Tell me what to change.';
+
+            // Collapse build log into summary
+            const logContainer = document.getElementById('buildLogContainer');
+            if (logContainer && window.quickAppResult?.buildSteps) {
+                const steps = window.quickAppResult.buildSteps;
+                const summaryStepsHtml = steps.map(s =>
+                    `<div class="build-log-summary-step"><span style="color: #10b981;">✓</span> ${s.title}</div>`
+                ).join('');
+
+                logContainer.innerHTML = `
+                    <div class="build-log-summary" onclick="this.classList.toggle('expanded')">
+                        <div class="build-log-summary-header">
+                            <span>✓ Built in ${steps.length} steps</span>
+                            <svg class="build-log-summary-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
+                        </div>
+                        <div class="build-log-summary-steps">${summaryStepsHtml}</div>
+                    </div>
+                `;
+                logContainer.style.flex = 'none';
+            }
+
+            // Show chat area
+            const chatMessages = document.getElementById('quickAppChatMessages');
+            if (chatMessages) {
+                chatMessages.style.display = 'flex';
+                chatMessages.innerHTML = `
+                    <div class="proposal-message assistant">
+                        <div class="proposal-message-content">
+                            <strong>Your ${window.quickAppResult.name} is ready!</strong><br><br>
+                            Built in ${window.quickAppResult.buildSteps.length} steps. Try it out in the preview, then tell me what you'd like to change.
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Show action buttons
+            const actionBtns = document.getElementById('buildActionButtons');
+            if (actionBtns) actionBtns.style.display = 'flex';
+
+            const chatInput = document.getElementById('quickAppChatInput');
+            if (chatInput) {
+                chatInput.placeholder = 'What would you like to change?';
+                chatInput.focus();
+            }
+        }
+
+        // Legacy wrapper for any code that calls showQuickAppPreview directly
+        function showQuickAppPreview(html, appName, idea) {
+            window.quickAppResult = { name: appName, idea: idea, html: html, buildSteps: [], completedSteps: [] };
+            showMultiStepBuildView({ appName, steps: [] }, appName, idea);
+            // Immediately transition since no steps to build
+            const iframe = document.getElementById('quickAppFrame');
+            if (iframe) iframe.srcdoc = html;
+            transitionToIterationMode();
         }
 
         function exitQuickAppPreview() {
