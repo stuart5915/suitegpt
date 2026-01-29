@@ -17832,6 +17832,10 @@
                                                 <span class="workflow-step-num">5</span>
                                                 <div class="workflow-step-text"><strong>Engage</strong> — Use the right column to find tweets in your niche. Hit Generate Reply for AI-suggested responses, then post replies to build community.</div>
                                             </div>
+                                            <div class="workflow-step" style="margin-top:8px; border-top:1px solid rgba(255,255,255,0.1); padding-top:12px;">
+                                                <span class="workflow-step-num">📅</span>
+                                                <div class="workflow-step-text"><strong>Weekly Rhythm</strong> — The calendar below is pre-filled with every post slot from your cadences. Start of week: scroll through the calendar, click empty slots, and generate content to fill them. Mark posts as ready, then post them at the scheduled times throughout the week. X Posts = 3×/day (10AM, 3PM, 8PM), Ecosystem = daily 7PM, LinkedIn = Tue &amp; Thu 9AM, App Highlight = Sundays noon.</div>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -21928,6 +21932,7 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
 
         async function initCalendar() {
             await loadCalendarPosts();
+            loadMarketingSchedule();
             renderCalendar();
         }
 
@@ -21950,6 +21955,8 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
         function navigateCalendar(direction) {
             if (calendarView === 'month') {
                 calendarDate.setMonth(calendarDate.getMonth() + direction);
+                generateMonthSchedule(); // Populate cadence slots for new month (also renders)
+                return;
             } else if (calendarView === 'week') {
                 calendarDate.setDate(calendarDate.getDate() + (direction * 7));
             } else if (calendarView === 'day') {
