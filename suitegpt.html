@@ -8952,6 +8952,39 @@
             font-size: 0.7rem; color: var(--text-tertiary); white-space: nowrap; flex-shrink: 0;
         }
 
+        /* Generate Image Buttons */
+        .generate-image-btn {
+            display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff;
+            border: none; border-radius: 8px; font-size: 0.75rem; font-weight: 600;
+            cursor: pointer; font-family: inherit; transition: all 0.2s;
+        }
+        .generate-image-btn:hover { filter: brightness(1.15); transform: translateY(-1px); }
+        .generate-image-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .generate-all-images-btn {
+            display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff;
+            border: none; border-radius: 10px; font-size: 0.8rem; font-weight: 700;
+            cursor: pointer; font-family: inherit; transition: all 0.2s; margin-bottom: 10px;
+        }
+        .generate-all-images-btn:hover { filter: brightness(1.15); transform: translateY(-1px); }
+        .generate-all-images-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .angle-image-preview {
+            margin-top: 6px; position: relative;
+        }
+        .angle-image-loading {
+            display: flex; align-items: center; justify-content: center;
+            width: 100%; max-width: 280px; aspect-ratio: 1/1; border-radius: 10px;
+            background: rgba(99,102,241,0.1); border: 2px dashed rgba(99,102,241,0.3);
+            color: var(--text-secondary); font-size: 0.8rem;
+        }
+        .angle-image-loading .spinner {
+            width: 24px; height: 24px; border: 3px solid rgba(99,102,241,0.2);
+            border-top-color: #6366f1; border-radius: 50%;
+            animation: spin 0.8s linear infinite; margin-right: 8px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
         /* Brand Image Overlay */
         .brand-overlay-container {
             position: relative; width: 100%; max-width: 512px; aspect-ratio: 1/1;
@@ -22154,28 +22187,36 @@ CRITICAL: You MUST return ONLY a raw JSON array. No markdown, no \`\`\` code fen
             }
         }
 
+        function getImageOverlayHTML(src, maxWidth) {
+            if (!src) return '';
+            return `<div class="brand-overlay-container" style="max-width:${maxWidth || 280}px;">
+                <img class="brand-overlay-bg" src="${src}" alt="post image">
+                <div class="brand-overlay-frame">
+                    <div class="brand-overlay-bar">
+                        <img class="brand-overlay-logo" src="/suitegpt-logo.png" alt="SUITE">
+                        <div class="brand-overlay-text">
+                            <span class="brand-overlay-name">SUITE</span>
+                            <span class="brand-overlay-tagline">Anyone Can Build. Everyone Gets Paid.</span>
+                        </div>
+                        <span class="brand-overlay-url">suitegpt.app</span>
+                    </div>
+                </div>
+            </div>`;
+        }
+
         function renderAnglesReview() {
             const anglesEl = document.getElementById('dailyAnglesResults');
             const genBtn = document.getElementById('generateFromAnglesBtn');
-            const hasImage = document.getElementById('dailyImagePreview')?.style.display !== 'none';
-            const imageSrc = hasImage ? document.getElementById('dailyImageThumb')?.src : null;
 
-            const imageOverlay = imageSrc ? `
-                <div class="brand-overlay-container" style="max-width:280px;">
-                    <img class="brand-overlay-bg" src="${imageSrc}" alt="post image">
-                    <div class="brand-overlay-frame">
-                        <div class="brand-overlay-bar">
-                            <img class="brand-overlay-logo" src="/suitegpt-logo.png" alt="SUITE">
-                            <div class="brand-overlay-text">
-                                <span class="brand-overlay-name">SUITE</span>
-                                <span class="brand-overlay-tagline">Anyone Can Build. Everyone Gets Paid.</span>
-                            </div>
-                            <span class="brand-overlay-url">suitegpt.app</span>
-                        </div>
-                    </div>
-                </div>` : '';
+            let html = `<button class="generate-all-images-btn" onclick="generateAllAngleImages()" id="generateAllImagesBtn">🖼 Generate All Images</button>`;
 
-            anglesEl.innerHTML = dailyAngles.map((a, i) => `
+            html += dailyAngles.map((a, i) => {
+                const imgSrc = a.generatedImage || null;
+                const preview = imgSrc
+                    ? getImageOverlayHTML(imgSrc, 280)
+                    : '<div class="angle-image-placeholder" style="color:var(--text-tertiary);font-size:0.75rem;margin-top:4px;">No image generated yet</div>';
+
+                return `
                 <div class="daily-angle-card">
                     <div class="daily-angle-badge">
                         <span class="daily-angle-icon">${a.icon}</span>
@@ -22188,12 +22229,68 @@ CRITICAL: You MUST return ONLY a raw JSON array. No markdown, no \`\`\` code fen
                             <textarea class="daily-angle-imgprompt" id="imgPrompt_${i}" rows="2">${a.imagePrompt}</textarea>
                             <button class="daily-angle-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('imgPrompt_${i}').value);showToast('Image prompt copied!')">📋</button>
                         </div>
-                        ${imageOverlay}
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <button class="generate-image-btn" id="genImgBtn_${i}" onclick="generateAngleImage(${i})">🖼 Generate Image</button>
+                        </div>
+                        <div class="angle-image-preview" id="angleImagePreview_${i}">${preview}</div>
                     </div>
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
 
+            anglesEl.innerHTML = html;
             genBtn.style.display = 'block';
+        }
+
+        async function generateAngleImage(index) {
+            const promptEl = document.getElementById('imgPrompt_' + index);
+            const previewEl = document.getElementById('angleImagePreview_' + index);
+            const btn = document.getElementById('genImgBtn_' + index);
+            if (!promptEl || !previewEl) return;
+
+            const prompt = promptEl.value.trim();
+            if (!prompt) {
+                showToast('No image prompt to generate from');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Generating...';
+            previewEl.innerHTML = '<div class="angle-image-loading"><div class="spinner"></div>Generating image...</div>';
+
+            try {
+                const resp = await fetch('/api/generate-image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt, aspectRatio: '1:1' })
+                });
+                const data = await resp.json();
+
+                if (!resp.ok) throw new Error(data.error || 'Generation failed');
+
+                dailyAngles[index].generatedImage = data.image;
+                previewEl.innerHTML = getImageOverlayHTML(data.image, 280);
+                btn.textContent = '🖼 Regenerate';
+            } catch (err) {
+                console.error('[Image Gen] Failed:', err);
+                previewEl.innerHTML = `<div style="color:#f87171;font-size:0.75rem;">Failed: ${err.message}</div>`;
+                btn.textContent = '🖼 Retry';
+            }
+            btn.disabled = false;
+        }
+
+        async function generateAllAngleImages() {
+            const btn = document.getElementById('generateAllImagesBtn');
+            btn.disabled = true;
+            const total = dailyAngles.length;
+
+            for (let i = 0; i < total; i++) {
+                btn.textContent = `Generating image ${i + 1}/${total}...`;
+                await generateAngleImage(i);
+            }
+
+            btn.textContent = '🖼 Regenerate All Images';
+            btn.disabled = false;
+            showToast(`Generated ${total} images!`);
         }
 
         // Step 2: Generate posts from the approved/edited angles
@@ -22254,24 +22351,13 @@ CRITICAL: You MUST return ONLY a raw JSON array. No markdown, no \`\`\` code fen
 
         function renderDailyPostResults() {
             const resultsEl = document.getElementById('dailyPostResults');
-            const hasImage = document.getElementById('dailyImagePreview').style.display !== 'none';
-            const imageSrc = hasImage ? document.getElementById('dailyImageThumb').src : null;
+            const hasUserImage = document.getElementById('dailyImagePreview').style.display !== 'none';
+            const userImageSrc = hasUserImage ? document.getElementById('dailyImageThumb').src : null;
 
             let html = dailyGeneratedPosts.map((post, i) => {
-                const imageOverlay = imageSrc ? `
-                    <div class="brand-overlay-container">
-                        <img class="brand-overlay-bg" src="${imageSrc}" alt="post image">
-                        <div class="brand-overlay-frame">
-                            <div class="brand-overlay-bar">
-                                <img class="brand-overlay-logo" src="/suitegpt-logo.png" alt="SUITE">
-                                <div class="brand-overlay-text">
-                                    <span class="brand-overlay-name">SUITE</span>
-                                    <span class="brand-overlay-tagline">Anyone Can Build. Everyone Gets Paid.</span>
-                                </div>
-                                <span class="brand-overlay-url">suitegpt.app</span>
-                            </div>
-                        </div>
-                    </div>` : '';
+                // Per-post image: generated image > user-attached image > none
+                const imgSrc = (dailyAngles[i] && dailyAngles[i].generatedImage) || userImageSrc;
+                const imageOverlay = getImageOverlayHTML(imgSrc);
 
                 return `
                 <div class="daily-post-card" data-index="${i}">
@@ -22379,8 +22465,12 @@ Return ONLY the post text, nothing else.`;
 
             if (!marketingSchedule[dateKey]) marketingSchedule[dateKey] = [];
             const existing = marketingSchedule[dateKey].find(p => p.id === postId);
-            const hasImage = document.getElementById('dailyImagePreview').style.display !== 'none';
-            const imageSrc = hasImage ? document.getElementById('dailyImageThumb').src : null;
+
+            // Per-post image: generated image > user-attached image > null
+            const generatedImg = (dailyAngles[index] && dailyAngles[index].generatedImage) || null;
+            const hasUserImage = document.getElementById('dailyImagePreview').style.display !== 'none';
+            const userImg = hasUserImage ? document.getElementById('dailyImageThumb').src : null;
+            const imageSrc = generatedImg || userImg;
 
             if (existing) {
                 existing.content = text;
