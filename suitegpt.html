@@ -6833,9 +6833,42 @@
             transition: width 1s ease;
         }
 
+        .reward-pool-share-row {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 2px;
+        }
+
         .reward-pool-share {
-            font-size: 0.7rem;
-            color: var(--text-tertiary);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .reward-pool-share strong {
+            color: #10b981;
+            font-weight: 700;
+        }
+
+        .reward-pool-wallet-link {
+            font-size: 0.68rem;
+            color: #fbbf24;
+            text-decoration: none;
+            opacity: 0.85;
+            transition: opacity 0.2s;
+        }
+
+        .reward-pool-wallet-link:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+
+        .reward-pool-wallet-connected {
+            font-size: 0.68rem;
+            color: #10b981;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
         .reward-pool-deposit-btn {
@@ -17360,7 +17393,10 @@
                             <div class="reward-pool-bar-track">
                                 <div class="reward-pool-bar-fill" style="width: 53%"></div>
                             </div>
-                            <span class="reward-pool-share">Your est. share: ~$12.40</span>
+                            <div class="reward-pool-share-row" id="rewardPoolShareRow">
+                                <span class="reward-pool-share">Your est. share: <strong>~$12.40 USDC</strong></span>
+                                <a href="#" class="reward-pool-wallet-link" onclick="event.preventDefault(); promptConnectWallet()">Connect wallet to claim</a>
+                            </div>
                             <button class="reward-pool-deposit-btn" onclick="openRewardDeposit()">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
                                     <path d="M12 5v14M5 12h14"/>
@@ -23625,9 +23661,27 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
         }
 
         function openRewardDeposit() {
-            // For now, scroll to / switch to the old rewards view donate section
             // Later: open a modal with Stripe/crypto deposit flow
             alert('Deposits coming soon! You\'ll be able to deposit via Stripe or crypto to fund the reward pool.');
+        }
+
+        function promptConnectWallet() {
+            // Later: open wallet connection modal (MetaMask, Phantom, etc.)
+            alert('Wallet connection coming soon! Connect a wallet to claim your USDC rewards. Without a wallet, your rewards will accrue until you connect one.');
+        }
+
+        // Call this when user has connected a wallet to update the banner
+        function updateRewardPoolWalletStatus(walletAddress) {
+            const shareRow = document.getElementById('rewardPoolShareRow');
+            if (!shareRow) return;
+            const truncated = walletAddress.slice(0, 6) + '...' + walletAddress.slice(-4);
+            shareRow.innerHTML = `
+                <span class="reward-pool-share">Your est. share: <strong>~$12.40 USDC</strong></span>
+                <span class="reward-pool-wallet-connected">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg>
+                    ${truncated}
+                </span>
+            `;
         }
 
         function selectDonationAmount(amount) {
