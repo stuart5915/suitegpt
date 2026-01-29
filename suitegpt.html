@@ -12584,6 +12584,204 @@
             to { transform: rotate(360deg); }
         }
 
+        /* Multi-Step Build Log */
+        .build-log-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .build-log-header {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .build-log-header-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #a5b4fc;
+        }
+
+        .build-log-step {
+            display: flex;
+            gap: 12px;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .build-log-step:last-child {
+            border-bottom: none;
+        }
+
+        .build-log-step-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+
+        .build-log-step.pending .build-log-step-icon {
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            color: rgba(255, 255, 255, 0.15);
+        }
+
+        .build-log-step.active .build-log-step-icon {
+            border: 2px solid #a78bfa;
+            color: #a78bfa;
+            box-shadow: 0 0 12px rgba(167, 139, 250, 0.3);
+            animation: buildLogPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes buildLogPulse {
+            0%, 100% { box-shadow: 0 0 8px rgba(167, 139, 250, 0.2); }
+            50% { box-shadow: 0 0 16px rgba(167, 139, 250, 0.5); }
+        }
+
+        .build-log-step.done .build-log-step-icon {
+            background: rgba(16, 185, 129, 0.2);
+            border: 2px solid #10b981;
+            color: #10b981;
+        }
+
+        .build-log-step.error .build-log-step-icon {
+            background: rgba(248, 113, 113, 0.2);
+            border: 2px solid #f87171;
+            color: #f87171;
+        }
+
+        .build-log-step-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .build-log-step-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+        }
+
+        .build-log-step.pending .build-log-step-title {
+            color: var(--text-tertiary);
+        }
+
+        .build-log-step.active .build-log-step-title {
+            color: #c4b5fd;
+        }
+
+        .build-log-step.done .build-log-step-title {
+            color: #6ee7b7;
+        }
+
+        .build-log-step-desc {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+
+        .build-log-step.pending .build-log-step-desc {
+            color: var(--text-tertiary);
+            opacity: 0.5;
+        }
+
+        .build-log-step-reasoning {
+            color: var(--text-tertiary);
+            font-size: 0.75rem;
+            margin-top: 6px;
+            font-style: italic;
+            max-height: 80px;
+            overflow: hidden;
+            line-height: 1.4;
+            animation: fadeInReasoning 0.3s ease;
+        }
+
+        @keyframes fadeInReasoning {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .build-log-summary {
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .build-log-summary:hover {
+            background: rgba(16, 185, 129, 0.12);
+        }
+
+        .build-log-summary-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 600;
+            color: #6ee7b7;
+            font-size: 0.85rem;
+        }
+
+        .build-log-summary-chevron {
+            transition: transform 0.2s ease;
+        }
+
+        .build-log-summary.expanded .build-log-summary-chevron {
+            transform: rotate(180deg);
+        }
+
+        .build-log-summary-steps {
+            display: none;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(16, 185, 129, 0.15);
+        }
+
+        .build-log-summary.expanded .build-log-summary-steps {
+            display: block;
+        }
+
+        .build-log-summary-step {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 0;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .build-log-building-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-tertiary);
+            gap: 12px;
+        }
+
+        .build-log-building-placeholder svg {
+            animation: buildIconSpin 3s linear infinite;
+            color: #a5b4fc;
+        }
+
         /* Refinement Suggestions */
         .refinement-suggestions {
             display: flex;
@@ -22347,44 +22545,62 @@ Be concise but helpful. Use markdown formatting.`;
             const cost = getFactoryVoteCost(userVoteCount + 1);
 
             try {
-                const payload = {
-                    proposal_id: proposalId,
-                    direction: 'for',
-                    vote_power: 1
-                };
-
-                // Add auth based on user type
-                if (currentUser.telegram_id) {
-                    payload.telegram_auth = { id: currentUser.telegram_id, username: currentUser.display_name };
-                } else if (currentUser.wallet_address) {
-                    payload.wallet_address = currentUser.wallet_address;
-                } else if (currentUser.supabase_id || currentUser.email) {
-                    payload.supabase_auth = {
-                        id: currentUser.supabase_id,
-                        email: currentUser.email,
-                        display_name: currentUser.display_name
-                    };
+                const userId = await ensureFactoryUser();
+                if (!userId) {
+                    alert('Could not identify user. Please sign in again.');
+                    return;
                 }
 
-                const response = await fetch(`${SUPABASE_URL}/functions/v1/factory-vote`, {
+                const accessToken = getSupabaseAccessToken() || SUPABASE_ANON_KEY;
+
+                // Insert vote into factory_votes
+                const voteRes = await fetch(`${SUPABASE_URL}/rest/v1/factory_votes`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'apikey': SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Prefer': 'return=representation'
                     },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({
+                        user_id: userId,
+                        proposal_id: proposalId,
+                        vote_power: 1
+                    })
                 });
 
-                const result = await response.json();
-
-                if (response.ok && result.success) {
-                    factoryUserVotes[proposalId] = (factoryUserVotes[proposalId] || 0) + 1;
-                    await loadFactoryProposals();
-                    updateFactoryUserCredits();
-                } else {
-                    alert(result.error || 'Failed to vote');
+                if (!voteRes.ok) {
+                    const err = await voteRes.text();
+                    console.error('[Factory] Vote insert error:', err);
+                    alert('Failed to vote. You may have already voted.');
+                    return;
                 }
+
+                // Increment votes_for on the proposal using RPC or direct update
+                // Fetch current count, then update
+                const propRes = await fetch(`${SUPABASE_URL}/rest/v1/factory_proposals?id=eq.${proposalId}&select=votes_for`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                });
+                const propData = await propRes.json();
+                const currentVotes = (propData && propData[0]) ? (propData[0].votes_for || 0) : 0;
+
+                await fetch(`${SUPABASE_URL}/rest/v1/factory_proposals?id=eq.${proposalId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({ votes_for: currentVotes + 1 })
+                });
+
+                factoryUserVotes[proposalId] = (factoryUserVotes[proposalId] || 0) + 1;
+                await loadFactoryProposals();
+                updateFactoryUserCredits();
             } catch (err) {
                 console.error('Vote error:', err);
                 alert('Error voting');
@@ -22405,43 +22621,54 @@ Be concise but helpful. Use markdown formatting.`;
             }
 
             try {
-                const payload = {
-                    proposal_id: proposalId,
-                    direction: 'remove',
-                    vote_power: 1
-                };
-
-                if (currentUser.telegram_id) {
-                    payload.telegram_auth = { id: currentUser.telegram_id, username: currentUser.display_name };
-                } else if (currentUser.wallet_address) {
-                    payload.wallet_address = currentUser.wallet_address;
-                } else if (currentUser.supabase_id || currentUser.email) {
-                    payload.supabase_auth = {
-                        id: currentUser.supabase_id,
-                        email: currentUser.email,
-                        display_name: currentUser.display_name
-                    };
+                const userId = await ensureFactoryUser();
+                if (!userId) {
+                    alert('Could not identify user.');
+                    return;
                 }
 
-                const response = await fetch(`${SUPABASE_URL}/functions/v1/factory-vote`, {
-                    method: 'POST',
+                const accessToken = getSupabaseAccessToken() || SUPABASE_ANON_KEY;
+
+                // Delete one vote record for this user+proposal
+                // Use limit=1 to only remove one vote
+                const delRes = await fetch(`${SUPABASE_URL}/rest/v1/factory_votes?user_id=eq.${userId}&proposal_id=eq.${proposalId}&limit=1`, {
+                    method: 'DELETE',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Prefer': 'return=minimal'
+                    }
+                });
+
+                if (!delRes.ok && delRes.status !== 204) {
+                    alert('Failed to remove vote');
+                    return;
+                }
+
+                // Decrement votes_for on the proposal
+                const propRes = await fetch(`${SUPABASE_URL}/rest/v1/factory_proposals?id=eq.${proposalId}&select=votes_for`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                });
+                const propData = await propRes.json();
+                const currentVotes = (propData && propData[0]) ? (propData[0].votes_for || 0) : 0;
+
+                await fetch(`${SUPABASE_URL}/rest/v1/factory_proposals?id=eq.${proposalId}`, {
+                    method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',
                         'apikey': SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Prefer': 'return=minimal'
                     },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({ votes_for: Math.max(0, currentVotes - 1) })
                 });
 
-                const result = await response.json();
-
-                if (response.ok && result.success) {
-                    factoryUserVotes[proposalId] = Math.max(0, (factoryUserVotes[proposalId] || 0) - 1);
-                    await loadFactoryProposals();
-                    updateFactoryUserCredits();
-                } else {
-                    alert(result.error || 'Failed to remove vote');
-                }
+                factoryUserVotes[proposalId] = Math.max(0, (factoryUserVotes[proposalId] || 0) - 1);
+                await loadFactoryProposals();
+                updateFactoryUserCredits();
             } catch (err) {
                 console.error('Remove vote error:', err);
                 alert('Error removing vote');
