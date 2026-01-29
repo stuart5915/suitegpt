@@ -19645,9 +19645,9 @@
         const STAKING_REWARDS_ABI = [
             'function depositRewards(uint256 amount) external',
             'function claimUsdc() external',
-            'function claimAndCompound() external',
             'function earned(address user) view returns (uint256)',
-            'function totalStaked() view returns (uint256)',
+            'function totalCredits() view returns (uint256)',
+            'function userCredits(address user) view returns (uint256)',
             'function rewardRate() view returns (uint256)',
             'function rewardsDuration() view returns (uint256)',
             'function periodFinish() view returns (uint256)',
@@ -24233,15 +24233,15 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
                     const rewardsContract = new ethers.Contract(STAKING_REWARDS_ADDRESS, STAKING_REWARDS_ABI, provider);
                     const usdcContract = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, provider);
 
-                    const [balanceRaw, totalStakedRaw, rewardForDurationRaw] = await Promise.all([
+                    const [balanceRaw, totalCreditsRaw, rewardForDurationRaw] = await Promise.all([
                         usdcContract.balanceOf(STAKING_REWARDS_ADDRESS),
-                        rewardsContract.totalStaked(),
+                        rewardsContract.totalCredits(),
                         rewardsContract.getRewardForDuration()
                     ]);
 
                     poolBalance = parseFloat(ethers.formatUnits(balanceRaw, 6));
                     rewardForDuration = parseFloat(ethers.formatUnits(rewardForDurationRaw, 6));
-                    creditsCirculating = parseFloat(ethers.formatUnits(totalStakedRaw, 18));
+                    creditsCirculating = parseFloat(ethers.formatUnits(totalCreditsRaw, 18));
 
                     const wallet = localStorage.getItem('connectedWallet');
                     if (wallet) {

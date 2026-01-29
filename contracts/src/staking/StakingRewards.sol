@@ -8,21 +8,24 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
  * @title ISuiteStaking
- * @dev Interface for SuiteStaking contract
+ * @dev Interface for SuiteStaking contract — reads credit balances
  */
 interface ISuiteStaking {
     function stakedBalance(address user) external view returns (uint256);
-    function buyAndStakeFor(address user, uint256 usdcAmount) external;
+    function bonusCredits(address user) external view returns (uint256);
+    function totalBonusCredits() external view returns (uint256);
+    function totalCredits(address user) external view returns (uint256);
 }
 
 /**
  * @title StakingRewards
- * @dev Distribute USDC rewards to SUITE stakers
+ * @dev Distribute USDC rewards proportional to ALL credits (staked + bonus)
  *
- * Two claim options:
- * 1. claimAndCompound() - Converts USDC rewards to more credits (default for normies)
- * 2. claimUsdc() - Withdraws raw USDC (for advanced/crypto users)
+ * Two parties:
+ * 1. Depositors — anyone calls depositRewards() to fund the pool
+ * 2. Credit holders — call claimUsdc() to withdraw their earned share
  *
+ * Distribution is proportional to totalCredits (staked + bonus), not just staked SUITE.
  * Based on Synthetix StakingRewards pattern.
  */
 contract StakingRewards is Ownable, ReentrancyGuard {
@@ -31,11 +34,11 @@ contract StakingRewards is Ownable, ReentrancyGuard {
     // ============ State Variables ============
 
     IERC20 public usdc;                  // Reward token (USDC)
-    IERC20 public suiteToken;            // For reading total staked
-    ISuiteStaking public stakingContract; // SuiteStaking contract
+    IERC20 public suiteToken;            // For reading total staked SUITE
+    ISuiteStaking public stakingContract; // SuiteStaking — source of credit balances
 
     uint256 public rewardRate;           // USDC rewards per second (6 decimals)
-    uint256 public rewardsDuration = 7 days;
+    uint256 public rewardsDuration = 30 days;
     uint256 public periodFinish;
     uint256 public lastUpdateTime;
     uint256 public rewardPerTokenStored;
@@ -47,7 +50,6 @@ contract StakingRewards is Ownable, ReentrancyGuard {
 
     event RewardAdded(uint256 reward, address indexed depositor);
     event RewardClaimedAsUsdc(address indexed user, uint256 amount);
-    event RewardCompounded(address indexed user, uint256 usdcAmount, uint256 creditsAdded);
     event RewardsDurationUpdated(uint256 newDuration);
 
     // ============ Errors ============
@@ -77,17 +79,19 @@ contract StakingRewards is Ownable, ReentrancyGuard {
     // ============ Views ============
 
     /**
-     * @dev Get total SUITE staked in staking contract
+     * @dev Total credits across all users (staked SUITE + all bonus credits)
+     * This is the denominator for reward distribution
      */
-    function totalStaked() public view returns (uint256) {
-        return suiteToken.balanceOf(address(stakingContract));
+    function totalCredits() public view returns (uint256) {
+        return suiteToken.balanceOf(address(stakingContract)) + stakingContract.totalBonusCredits();
     }
 
     /**
-     * @dev Get user's staked balance
+     * @dev A user's total credits (staked + bonus)
+     * This is the user's weight in the reward distribution
      */
-    function stakedBalance(address user) public view returns (uint256) {
-        return stakingContract.stakedBalance(user);
+    function userCredits(address user) public view returns (uint256) {
+        return stakingContract.totalCredits(user);
     }
 
     function lastTimeRewardApplicable() public view returns (uint256) {
@@ -95,29 +99,29 @@ contract StakingRewards is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev Reward per token (scaled by 1e18 for precision, result in USDC per SUITE)
+     * @dev Reward per credit (scaled by 1e18 for precision)
      */
     function rewardPerToken() public view returns (uint256) {
-        uint256 _totalStaked = totalStaked();
-        if (_totalStaked == 0) {
+        uint256 _totalCredits = totalCredits();
+        if (_totalCredits == 0) {
             return rewardPerTokenStored;
         }
         return rewardPerTokenStored + (
-            (lastTimeRewardApplicable() - lastUpdateTime) * rewardRate * 1e18 / _totalStaked
+            (lastTimeRewardApplicable() - lastUpdateTime) * rewardRate * 1e18 / _totalCredits
         );
     }
 
     /**
-     * @dev Calculate earned USDC rewards for a user
+     * @dev Calculate earned USDC rewards for a user based on their credits
      */
     function earned(address user) public view returns (uint256) {
         return (
-            stakedBalance(user) * (rewardPerToken() - userRewardPerTokenPaid[user]) / 1e18
+            userCredits(user) * (rewardPerToken() - userRewardPerTokenPaid[user]) / 1e18
         ) + rewards[user];
     }
 
     /**
-     * @dev Get reward for full duration
+     * @dev Get total USDC reward for the full current period
      */
     function getRewardForDuration() external view returns (uint256) {
         return rewardRate * rewardsDuration;
@@ -126,30 +130,8 @@ contract StakingRewards is Ownable, ReentrancyGuard {
     // ============ User Functions ============
 
     /**
-     * @dev Claim rewards and auto-compound into more credits (DEFAULT)
-     * Converts USDC rewards → buys more SUITE → stakes for credits
-     */
-    function claimAndCompound() external nonReentrant updateReward(msg.sender) {
-        uint256 reward = rewards[msg.sender];
-        if (reward == 0) revert NoRewardsToClaim();
-
-        rewards[msg.sender] = 0;
-
-        // Approve staking contract to spend USDC
-        usdc.approve(address(stakingContract), reward);
-
-        // Buy and stake on behalf of user
-        stakingContract.buyAndStakeFor(msg.sender, reward);
-
-        // Calculate credits added (reward * 1000 SUITE per USDC * 1e12 for decimals)
-        uint256 creditsAdded = reward * 1000 * 1e12;
-
-        emit RewardCompounded(msg.sender, reward, creditsAdded);
-    }
-
-    /**
-     * @dev Claim rewards as raw USDC (ADVANCED)
-     * For crypto users who want to withdraw
+     * @dev Claim rewards as raw USDC
+     * Any credit holder can call this to withdraw their earned share
      */
     function claimUsdc() external nonReentrant updateReward(msg.sender) {
         uint256 reward = rewards[msg.sender];
@@ -164,8 +146,8 @@ contract StakingRewards is Ownable, ReentrancyGuard {
     // ============ Deposit Functions ============
 
     /**
-     * @dev Deposit USDC rewards to be distributed
-     * Anyone can call - treasury, community, etc.
+     * @dev Deposit USDC rewards to be distributed to all credit holders
+     * Anyone can call — treasury, community members, external parties
      */
     function depositRewards(uint256 amount) external nonReentrant updateReward(address(0)) {
         if (amount == 0) revert ZeroAmount();

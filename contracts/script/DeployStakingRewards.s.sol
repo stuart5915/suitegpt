@@ -43,10 +43,7 @@ contract DeployStakingRewards is Script {
         );
 
         console.log("StakingRewards deployed:", address(rewards));
-
-        // Set rewards duration to 30 days (monthly distribution cycle)
-        rewards.setRewardsDuration(30 days);
-        console.log("Rewards duration set to 30 days");
+        console.log("Rewards duration: 30 days (default)");
 
         vm.stopBroadcast();
 
