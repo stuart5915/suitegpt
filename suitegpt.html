@@ -8722,6 +8722,26 @@
             background: rgba(99, 102, 241, 0.1); color: #818cf8; transition: all 0.15s;
         }
         .research-prompt-copy:hover { background: rgba(99, 102, 241, 0.2); }
+        /* Angles Review */
+        .daily-angles-results { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
+        .daily-angle-card {
+            display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px;
+            background: rgba(99, 102, 241, 0.06); border: 1px solid rgba(99, 102, 241, 0.15);
+            border-radius: 8px;
+        }
+        .daily-angle-badge {
+            display: flex; flex-direction: column; align-items: center; gap: 2px;
+            flex-shrink: 0; min-width: 50px;
+        }
+        .daily-angle-icon { font-size: 1.1rem; }
+        .daily-angle-time { font-size: 0.65rem; color: var(--text-tertiary); }
+        .daily-angle-input {
+            flex: 1; background: rgba(0,0,0,0.2); border: 1px solid var(--border-subtle);
+            border-radius: 6px; padding: 6px 10px; color: var(--text-primary);
+            font-size: 0.82rem; font-family: inherit; line-height: 1.4; resize: none;
+            min-height: 36px;
+        }
+        .daily-angle-input:focus { outline: none; border-color: var(--accent-primary); }
 
         /* Two-Column Workspace */
         .marketing-workspace {
@@ -17983,8 +18003,17 @@
                                                     </select>
                                                 </div>
 
-                                                <button class="marketing-generate-btn" id="dailyGenerateBtn" onclick="generateDailyPosts()">
-                                                    ✨ Generate Today's Posts (<span id="dailyPostCount">0</span>)
+                                                <!-- Step 1: Extract Angles -->
+                                                <button class="marketing-generate-btn" id="extractAnglesBtn" onclick="extractAngles()">
+                                                    🔍 Step 1: Extract Angles (<span id="dailyPostCount">0</span> posts)
+                                                </button>
+
+                                                <!-- Angles Review -->
+                                                <div class="daily-angles-results" id="dailyAnglesResults"></div>
+
+                                                <!-- Step 2: Generate Posts (hidden until angles extracted) -->
+                                                <button class="marketing-generate-btn" id="generateFromAnglesBtn" onclick="generateFromAngles()" style="display:none; background: linear-gradient(135deg, #22c55e, #16a34a);">
+                                                    ✨ Step 2: Generate Posts from Angles
                                                 </button>
 
                                                 <!-- Generated Posts Results -->
@@ -21536,8 +21565,13 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
             // Research prompt
             updateResearchPrompt(slots, d);
 
-            // Clear generated results (they're per-session)
+            // Clear angles and generated results (per-session)
+            dailyAngles = [];
             dailyGeneratedPosts = [];
+            const anglesEl = document.getElementById('dailyAnglesResults');
+            if (anglesEl) anglesEl.innerHTML = '';
+            const genBtn = document.getElementById('generateFromAnglesBtn');
+            if (genBtn) genBtn.style.display = 'none';
             const resultsEl = document.getElementById('dailyPostResults');
             if (resultsEl) resultsEl.innerHTML = '';
         }
@@ -21636,12 +21670,10 @@ ${slots.map((s, i) => `${i + 1}. ${s.icon} ${s.name} (${formatTime(s.time)}): [s
             }
         }
 
-        async function generateDailyPosts() {
-            const theme = document.getElementById('dailyTheme').value.trim();
-            const notes = document.getElementById('dailyNotes').value.trim();
-            const dateKey = getDailyBriefDateKey();
+        let dailyAngles = []; // extracted angles for current brief
+        let dailySlots = []; // cached slots for current generation
 
-            // Gather source context
+        function gatherSourceContext() {
             let sourceContext = '';
             if (document.getElementById('githubHelper').style.display !== 'none' && githubActivity.length) {
                 const commits = githubActivity.map(c => `- ${c.repo}: ${c.message}`).join('\n');
@@ -21657,75 +21689,147 @@ ${slots.map((s, i) => `${i + 1}. ${s.icon} ${s.name} (${formatTime(s.time)}): [s
                 const app = SUITE_APPS[appKey];
                 if (app) sourceContext += `\nApp to highlight: ${app.name} - ${app.description}`;
             }
+            return sourceContext;
+        }
+
+        // Step 1: Extract unique angles from the research
+        async function extractAngles() {
+            const theme = document.getElementById('dailyTheme').value.trim();
+            const notes = document.getElementById('dailyNotes').value.trim();
+            const sourceContext = gatherSourceContext();
 
             if (!theme && !notes && !sourceContext) {
                 alert('Add a theme, notes, or enable a source helper first.');
                 return;
             }
 
-            // Save brief
             saveDailyBriefFromUI();
 
-            // Get slots for the day
-            const slots = getDailySlotsForDate(dailyBriefDate);
-            if (!slots.length) {
+            dailySlots = getDailySlotsForDate(dailyBriefDate);
+            if (!dailySlots.length) {
                 alert('No posts scheduled for this day.');
                 return;
             }
 
-            // Show generating state
+            const anglesEl = document.getElementById('dailyAnglesResults');
+            const genBtn = document.getElementById('generateFromAnglesBtn');
             const resultsEl = document.getElementById('dailyPostResults');
-            resultsEl.innerHTML = '<div class="marketing-generating" style="grid-column:1/-1;">Generating ' + slots.length + ' posts...</div>';
+            anglesEl.innerHTML = '<div class="marketing-generating">Reading your research and extracting angles...</div>';
+            genBtn.style.display = 'none';
+            resultsEl.innerHTML = '';
 
-            // Build prompt
-            const slotDescriptions = slots.map((s, i) => {
-                const info = CADENCE_INFO[s.cadence];
-                return `${i + 1}. ${s.name} for ${formatTime(s.time)} — ${info.prompt}`;
+            const slotDescriptions = dailySlots.map((s, i) => {
+                if (s.cadence === 'linkedin-posts') return `${i + 1}. LinkedIn post (${formatTime(s.time)}) — long-form, professional`;
+                if (s.cadence === 'app-highlights') return `${i + 1}. App Highlight (${formatTime(s.time)}) — deep-dive on a SUITE app`;
+                if (s.cadence === 'ecosystem-updates') return `${i + 1}. Ecosystem Update (${formatTime(s.time)}) — build-in-public recap`;
+                return `${i + 1}. X/Twitter post (${formatTime(s.time)}) — short, punchy`;
             }).join('\n');
 
-            const hasImage = document.getElementById('dailyImagePreview').style.display !== 'none';
-
-            const prompt = `You are the social media manager for SUITE (suitegpt.app) — "Anyone Can Build, Everyone Gets Paid."
-SUITE is an AI-powered ecosystem with 29+ apps that anyone can build, use, and earn from.
+            const prompt = `You are extracting post angles from research for SUITE (suitegpt.app) — "Anyone Can Build, Everyone Gets Paid." SUITE is an AI ecosystem with 29+ apps.
 
 Today's theme: ${theme || 'general update'}
 ${notes ? 'Research & notes:\n' + notes : ''}${sourceContext}
-${hasImage ? '\nAn image is attached to accompany these posts.' : ''}
 
-Generate these ${slots.length} posts for today. Each must be UNIQUE — different angles, different hooks. Do not repeat the same idea.
+I need ${dailySlots.length} UNIQUE angles for today's posts. Each angle should be a DIFFERENT take — not just rewording the same idea. Pull out distinct insights, stories, data points, or hooks from the research.
 
+Post slots:
 ${slotDescriptions}
 
-IMPORTANT: Return ONLY a valid JSON array. No markdown, no code fences, no explanation. Just the array:
-[{"index":1,"text":"post text here"},{"index":2,"text":"post text here"}]`;
+For each slot, write a 1-2 sentence angle description. The angle should describe WHAT specific point to make and HOW to frame it. Be specific — reference actual details from the research, not generic statements.
+
+IMPORTANT: Return ONLY a valid JSON array. No markdown, no code fences.
+[{"index":1,"angle":"specific angle description here"},{"index":2,"angle":"..."}]`;
 
             try {
                 const response = await callCopilotAI(prompt);
-
-                // Parse JSON from response (handle possible markdown wrapping)
                 let parsed;
                 try {
                     const jsonStr = response.replace(/```json?\s*/g, '').replace(/```\s*/g, '').trim();
                     parsed = JSON.parse(jsonStr);
                 } catch (e) {
-                    console.error('[Daily Brief] JSON parse failed, trying line-by-line:', e);
-                    // Fallback: try to extract JSON array
                     const match = response.match(/\[[\s\S]*\]/);
-                    if (match) {
-                        parsed = JSON.parse(match[0]);
-                    } else {
-                        throw new Error('Could not parse AI response as JSON');
-                    }
+                    if (match) parsed = JSON.parse(match[0]);
+                    else throw new Error('Could not parse AI response as JSON');
                 }
 
-                // Map parsed posts to slots
-                dailyGeneratedPosts = slots.map((slot, i) => {
+                dailyAngles = dailySlots.map((slot, i) => {
+                    const extracted = parsed.find(p => p.index === i + 1) || parsed[i] || {};
+                    return { ...slot, angle: extracted.angle || '' };
+                });
+
+                renderAnglesReview();
+            } catch (err) {
+                console.error('[Daily Brief] Angle extraction failed:', err);
+                anglesEl.innerHTML = `<div class="marketing-generating" style="color:#f87171;">Extraction failed: ${err.message}. Try again.</div>`;
+            }
+        }
+
+        function renderAnglesReview() {
+            const anglesEl = document.getElementById('dailyAnglesResults');
+            const genBtn = document.getElementById('generateFromAnglesBtn');
+
+            anglesEl.innerHTML = dailyAngles.map((a, i) => `
+                <div class="daily-angle-card">
+                    <div class="daily-angle-badge">
+                        <span class="daily-angle-icon">${a.icon}</span>
+                        <span class="daily-angle-time">${formatTime(a.time)}</span>
+                    </div>
+                    <textarea class="daily-angle-input" id="angle_${i}" rows="2">${a.angle}</textarea>
+                </div>
+            `).join('');
+
+            genBtn.style.display = 'block';
+        }
+
+        // Step 2: Generate posts from the approved/edited angles
+        async function generateFromAngles() {
+            const theme = document.getElementById('dailyTheme').value.trim();
+            const dateKey = getDailyBriefDateKey();
+            const sourceContext = gatherSourceContext();
+            const hasImage = document.getElementById('dailyImagePreview').style.display !== 'none';
+
+            // Read (possibly edited) angles from the textareas
+            dailyAngles.forEach((a, i) => {
+                const el = document.getElementById('angle_' + i);
+                if (el) a.angle = el.value.trim();
+            });
+
+            const resultsEl = document.getElementById('dailyPostResults');
+            resultsEl.innerHTML = '<div class="marketing-generating" style="grid-column:1/-1;">Generating ' + dailyAngles.length + ' posts from your angles...</div>';
+
+            const postInstructions = dailyAngles.map((a, i) => {
+                const info = CADENCE_INFO[a.cadence];
+                return `${i + 1}. ${a.name} (${formatTime(a.time)}) — ${info.prompt}\n   ANGLE: ${a.angle}`;
+            }).join('\n\n');
+
+            const prompt = `You are the social media manager for SUITE (suitegpt.app) — "Anyone Can Build, Everyone Gets Paid."
+SUITE is an AI-powered ecosystem with 29+ apps that anyone can build, use, and earn from.
+
+Today's theme: ${theme || 'general update'}
+${sourceContext}${hasImage ? '\nAn image is attached to accompany these posts.' : ''}
+
+Write each post using its SPECIFIC assigned angle. Do not deviate from the angle — it was chosen deliberately. Make each post feel natural and engaging, not like a template.
+
+${postInstructions}
+
+IMPORTANT: Return ONLY a valid JSON array. No markdown, no code fences.
+[{"index":1,"text":"post text here"},{"index":2,"text":"post text here"}]`;
+
+            try {
+                const response = await callCopilotAI(prompt);
+                let parsed;
+                try {
+                    const jsonStr = response.replace(/```json?\s*/g, '').replace(/```\s*/g, '').trim();
+                    parsed = JSON.parse(jsonStr);
+                } catch (e) {
+                    const match = response.match(/\[[\s\S]*\]/);
+                    if (match) parsed = JSON.parse(match[0]);
+                    else throw new Error('Could not parse AI response as JSON');
+                }
+
+                dailyGeneratedPosts = dailySlots.map((slot, i) => {
                     const generated = parsed.find(p => p.index === i + 1) || parsed[i] || {};
-                    return {
-                        ...slot,
-                        text: generated.text || '',
-                        dateKey
-                    };
+                    return { ...slot, text: generated.text || '', dateKey };
                 });
 
                 renderDailyPostResults();
