@@ -16400,7 +16400,7 @@
                                 <circle cx="11" cy="11" r="8"/>
                                 <path d="M21 21l-4.35-4.35"/>
                             </svg>
-                            <input type="text" id="communityAppsSearch" placeholder="Search community apps..." oninput="filterCommunityApps(this.value)">
+                            <input type="text" id="communityAppsSearch" placeholder="Search community partners..." oninput="filterCommunityApps(this.value)">
                         </div>
 
                         <!-- Community Apps Grid -->
@@ -16416,8 +16416,8 @@
                                 <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
                                 <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                             </svg>
-                            <div class="community-empty-title">No community apps yet</div>
-                            <p class="community-empty-text">Be the first to create or fork an app. Your creations will appear here for others to discover.</p>
+                            <div class="community-empty-title">No community partners yet</div>
+                            <p class="community-empty-text">Businesses and creators using SUITE will appear here.</p>
                             <button class="community-empty-btn" onclick="openBuilderMode()">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                                     <rect x="3" y="3" width="18" height="18" rx="2"/>
@@ -22208,12 +22208,16 @@ Be concise but helpful. Use markdown formatting.`;
             if (!currentUser) return;
 
             try {
+                const userId = await ensureFactoryUser();
+                if (!userId) return;
+
+                const accessToken = getSupabaseAccessToken() || SUPABASE_ANON_KEY;
                 const response = await fetch(
-                    `${SUPABASE_URL}/rest/v1/factory_votes?user_id=eq.${currentUser.id}&select=proposal_id,vote_power`,
+                    `${SUPABASE_URL}/rest/v1/factory_votes?user_id=eq.${userId}&select=proposal_id,vote_power`,
                     {
                         headers: {
                             'apikey': SUPABASE_ANON_KEY,
-                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                            'Authorization': `Bearer ${accessToken}`
                         }
                     }
                 );
@@ -22222,7 +22226,7 @@ Be concise but helpful. Use markdown formatting.`;
                     const votes = await response.json();
                     factoryUserVotes = {};
                     votes.forEach(v => {
-                        factoryUserVotes[v.proposal_id] = (factoryUserVotes[v.proposal_id] || 0) + v.vote_power;
+                        factoryUserVotes[v.proposal_id] = v.vote_power;
                     });
                     renderFactoryProposals();
                 }
@@ -22542,7 +22546,8 @@ Be concise but helpful. Use markdown formatting.`;
             }
 
             const userVoteCount = factoryUserVotes[proposalId] || 0;
-            const cost = getFactoryVoteCost(userVoteCount + 1);
+            const newVotePower = userVoteCount + 1;
+            const cost = getFactoryVoteCost(newVotePower);
 
             try {
                 const userId = await ensureFactoryUser();
@@ -22553,52 +22558,34 @@ Be concise but helpful. Use markdown formatting.`;
 
                 const accessToken = getSupabaseAccessToken() || SUPABASE_ANON_KEY;
 
-                // Insert vote into factory_votes
+                // Upsert vote into factory_votes (unique on proposal_id + user_id)
+                // If first vote: insert. If already voted: update vote_power for quadratic voting.
                 const voteRes = await fetch(`${SUPABASE_URL}/rest/v1/factory_votes`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'apikey': SUPABASE_ANON_KEY,
                         'Authorization': `Bearer ${accessToken}`,
-                        'Prefer': 'return=representation'
+                        'Prefer': 'return=representation,resolution=merge-duplicates'
                     },
                     body: JSON.stringify({
                         user_id: userId,
                         proposal_id: proposalId,
-                        vote_power: 1
+                        vote_direction: 1,
+                        vote_power: newVotePower,
+                        rep_spent: cost
                     })
                 });
 
                 if (!voteRes.ok) {
                     const err = await voteRes.text();
-                    console.error('[Factory] Vote insert error:', err);
-                    alert('Failed to vote. You may have already voted.');
+                    console.error('[Factory] Vote error:', err);
+                    alert('Failed to vote.');
                     return;
                 }
 
-                // Increment votes_for on the proposal using RPC or direct update
-                // Fetch current count, then update
-                const propRes = await fetch(`${SUPABASE_URL}/rest/v1/factory_proposals?id=eq.${proposalId}&select=votes_for`, {
-                    headers: {
-                        'apikey': SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${accessToken}`
-                    }
-                });
-                const propData = await propRes.json();
-                const currentVotes = (propData && propData[0]) ? (propData[0].votes_for || 0) : 0;
-
-                await fetch(`${SUPABASE_URL}/rest/v1/factory_proposals?id=eq.${proposalId}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${accessToken}`,
-                        'Prefer': 'return=minimal'
-                    },
-                    body: JSON.stringify({ votes_for: currentVotes + 1 })
-                });
-
-                factoryUserVotes[proposalId] = (factoryUserVotes[proposalId] || 0) + 1;
+                // Trigger on factory_votes automatically updates votes_for on the proposal
+                factoryUserVotes[proposalId] = newVotePower;
                 await loadFactoryProposals();
                 updateFactoryUserCredits();
             } catch (err) {
@@ -22628,45 +22615,61 @@ Be concise but helpful. Use markdown formatting.`;
                 }
 
                 const accessToken = getSupabaseAccessToken() || SUPABASE_ANON_KEY;
+                const newVotePower = userVoteCount - 1;
 
-                // Delete one vote record for this user+proposal
-                // Use limit=1 to only remove one vote
-                const delRes = await fetch(`${SUPABASE_URL}/rest/v1/factory_votes?user_id=eq.${userId}&proposal_id=eq.${proposalId}&limit=1`, {
-                    method: 'DELETE',
-                    headers: {
-                        'apikey': SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${accessToken}`,
-                        'Prefer': 'return=minimal'
+                if (newVotePower <= 0) {
+                    // Remove vote entirely
+                    const delRes = await fetch(`${SUPABASE_URL}/rest/v1/factory_votes?user_id=eq.${userId}&proposal_id=eq.${proposalId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Prefer': 'return=minimal'
+                        }
+                    });
+
+                    if (!delRes.ok && delRes.status !== 204) {
+                        alert('Failed to remove vote');
+                        return;
                     }
-                });
 
-                if (!delRes.ok && delRes.status !== 204) {
-                    alert('Failed to remove vote');
-                    return;
+                    // Trigger doesn't fire on DELETE, so manually update proposal count
+                    const propRes = await fetch(`${SUPABASE_URL}/rest/v1/factory_proposals?id=eq.${proposalId}&select=votes_for`, {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${accessToken}`
+                        }
+                    });
+                    const propData = await propRes.json();
+                    const currentVotes = (propData && propData[0]) ? (propData[0].votes_for || 0) : 0;
+
+                    await fetch(`${SUPABASE_URL}/rest/v1/factory_proposals?id=eq.${proposalId}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({ votes_for: Math.max(0, currentVotes - 1) })
+                    });
+                } else {
+                    // Reduce vote_power (quadratic downvote)
+                    const cost = getFactoryVoteCost(newVotePower);
+                    await fetch(`${SUPABASE_URL}/rest/v1/factory_votes?user_id=eq.${userId}&proposal_id=eq.${proposalId}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({ vote_power: newVotePower, rep_spent: cost })
+                    });
+                    // Trigger fires on UPDATE and recalculates votes_for
                 }
 
-                // Decrement votes_for on the proposal
-                const propRes = await fetch(`${SUPABASE_URL}/rest/v1/factory_proposals?id=eq.${proposalId}&select=votes_for`, {
-                    headers: {
-                        'apikey': SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${accessToken}`
-                    }
-                });
-                const propData = await propRes.json();
-                const currentVotes = (propData && propData[0]) ? (propData[0].votes_for || 0) : 0;
-
-                await fetch(`${SUPABASE_URL}/rest/v1/factory_proposals?id=eq.${proposalId}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${accessToken}`,
-                        'Prefer': 'return=minimal'
-                    },
-                    body: JSON.stringify({ votes_for: Math.max(0, currentVotes - 1) })
-                });
-
-                factoryUserVotes[proposalId] = Math.max(0, (factoryUserVotes[proposalId] || 0) - 1);
+                factoryUserVotes[proposalId] = Math.max(0, newVotePower);
                 await loadFactoryProposals();
                 updateFactoryUserCredits();
             } catch (err) {
@@ -25198,24 +25201,23 @@ Be concise but helpful. Use markdown formatting.`;
             const grid = document.getElementById('communityAppsGrid');
             const emptyState = document.getElementById('communityEmptyState');
 
-            if (!supabase) {
+            if (!supabaseClient) {
                 if (grid) grid.innerHTML = '';
                 if (emptyState) emptyState.style.display = 'flex';
                 return;
             }
 
             try {
-                // Fetch public/listed community apps
-                const { data: apps, error } = await supabase
-                    .from('user_apps')
+                // Fetch operators (community partners) from suite_operators
+                const { data: operators, error } = await supabaseClient
+                    .from('suite_operators')
                     .select('*')
-                    .eq('is_listed', true)
-                    .order('created_at', { ascending: false })
-                    .limit(50);
+                    .order('created_at', { ascending: false });
 
                 if (error) throw error;
 
-                communityAppsCache = apps || [];
+                // Only show operators that have a linked app
+                communityAppsCache = (operators || []).filter(op => op.app_key && SUITE_APPS[op.app_key]);
                 updateCommunityAppsCount(communityAppsCache.length);
 
                 if (communityAppsCache.length === 0) {
@@ -25228,46 +25230,44 @@ Be concise but helpful. Use markdown formatting.`;
                 renderCommunityApps(communityAppsCache);
 
             } catch (error) {
-                console.error('Error loading community apps:', error);
+                console.error('Error loading community partners:', error);
                 if (grid) grid.innerHTML = '';
                 if (emptyState) emptyState.style.display = 'flex';
             }
         }
 
-        function renderCommunityApps(apps) {
+        function renderCommunityApps(operators) {
             const grid = document.getElementById('communityAppsGrid');
             if (!grid) return;
 
-            grid.innerHTML = apps.map(app => {
-                const forkedBadge = app.forked_from
-                    ? `<div class="community-app-badge community-app-forked">
-                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
-                               <circle cx="12" cy="18" r="3"/>
-                               <circle cx="6" cy="6" r="3"/>
-                               <circle cx="18" cy="6" r="3"/>
-                               <path d="M18 9v1a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9"/>
-                               <path d="M12 12v3"/>
-                           </svg>
-                           Fork
-                       </div>`
-                    : `<div class="community-app-badge">
-                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
-                               <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-                           </svg>
-                           Original
-                       </div>`;
+            grid.innerHTML = operators.map(op => {
+                const linkedApp = SUITE_APPS[op.app_key];
+                if (!linkedApp) return '';
+
+                const statusClass = op.status || 'active';
+                const statusLabel = {
+                    'active': 'Active',
+                    'pending': 'Pending',
+                    'completed': 'Live',
+                    'paused': 'Paused'
+                }[statusClass] || statusClass;
 
                 return `
                     <div class="apps-view-item community-app-card"
-                         data-name="${app.name.toLowerCase()}"
-                         data-desc="${(app.description || '').toLowerCase()}"
-                         onclick="launchCommunityApp('${app.id}')">
-                        ${forkedBadge}
-                        <div class="apps-view-item-icon" style="background: ${app.icon_bg || 'linear-gradient(135deg, #6366f1, #8b5cf6)'}">
-                            ${app.icon_url ? `<img src="${app.icon_url}" alt="${app.name}">` : ''}
+                         data-name="${op.name.toLowerCase()}"
+                         data-desc="${(op.description || '').toLowerCase()}"
+                         onclick="launchApp('${op.app_key}', '${linkedApp.url}', '${linkedApp.name}')">
+                        <div class="community-app-badge">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                                <path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/>
+                            </svg>
+                            ${statusLabel}
                         </div>
-                        <div class="apps-view-item-name">${app.name}</div>
-                        <div class="apps-view-item-desc">${app.description || 'Community app'}</div>
+                        <div class="apps-view-item-icon" style="background: ${linkedApp.iconBg || 'linear-gradient(135deg, #6366f1, #8b5cf6)'}">
+                            ${linkedApp.iconUrl ? `<img src="${linkedApp.iconUrl}" alt="${op.name}">` : ''}
+                        </div>
+                        <div class="apps-view-item-name">${op.name}</div>
+                        <div class="apps-view-item-desc">${op.description || linkedApp.description || 'Community partner'}</div>
                     </div>
                 `;
             }).join('');
