@@ -6972,6 +6972,61 @@
             transform: scale(0.98);
         }
 
+        /* Reward Pool Deposit Modal */
+        .rp-deposit-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+            z-index: 10000; display: flex; align-items: center; justify-content: center;
+            animation: fadeIn 0.2s ease-out;
+        }
+        .rp-deposit-modal {
+            background: #111; border: 1px solid rgba(16,185,129,0.15); border-radius: 16px;
+            padding: 28px; width: 380px; max-width: 90vw; position: relative;
+        }
+        .rp-deposit-modal h3 { margin: 0 0 4px; font-size: 1.1rem; color: #fff; font-weight: 700; }
+        .rp-deposit-modal .rp-subtitle { color: rgba(255,255,255,0.5); font-size: 0.78rem; margin-bottom: 20px; }
+        .rp-deposit-close {
+            position: absolute; top: 12px; right: 12px; background: none; border: none;
+            color: rgba(255,255,255,0.4); font-size: 1.2rem; cursor: pointer; padding: 4px;
+        }
+        .rp-amount-presets { display: flex; gap: 8px; margin-bottom: 16px; }
+        .rp-preset-btn {
+            flex: 1; padding: 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px; color: #fff; font-weight: 600; font-size: 0.85rem; cursor: pointer;
+            transition: all 0.15s;
+        }
+        .rp-preset-btn:hover, .rp-preset-btn.active {
+            border-color: #10b981; background: rgba(16,185,129,0.1); color: #34d399;
+        }
+        .rp-custom-input {
+            width: 100%; padding: 12px 14px; background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #fff;
+            font-size: 1rem; font-weight: 600; margin-bottom: 8px; box-sizing: border-box;
+        }
+        .rp-custom-input::placeholder { color: rgba(255,255,255,0.25); }
+        .rp-custom-input:focus { outline: none; border-color: #10b981; }
+        .rp-network-note {
+            font-size: 0.72rem; color: rgba(255,255,255,0.35); margin-bottom: 20px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .rp-network-note .rp-chain-badge {
+            background: #2563eb; color: white; padding: 1px 6px; border-radius: 4px;
+            font-weight: 700; font-size: 0.65rem; letter-spacing: 0.3px;
+        }
+        .rp-deposit-submit {
+            width: 100%; padding: 14px; background: linear-gradient(135deg, #10b981, #059669);
+            border: none; border-radius: 12px; color: white; font-size: 0.9rem; font-weight: 700;
+            cursor: pointer; transition: all 0.2s; letter-spacing: 0.3px;
+        }
+        .rp-deposit-submit:hover { box-shadow: 0 4px 20px rgba(16,185,129,0.35); transform: translateY(-1px); }
+        .rp-deposit-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+        .rp-deposit-status {
+            margin-top: 12px; padding: 10px 12px; border-radius: 8px; font-size: 0.78rem;
+            display: none;
+        }
+        .rp-deposit-status.rp-status-error { display: block; background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.15); }
+        .rp-deposit-status.rp-status-success { display: block; background: rgba(16,185,129,0.1); color: #34d399; border: 1px solid rgba(16,185,129,0.15); }
+        .rp-deposit-status.rp-status-pending { display: block; background: rgba(251,191,36,0.1); color: #fbbf24; border: 1px solid rgba(251,191,36,0.15); }
+
         @media (max-width: 768px) {
             .reward-pool-main {
                 padding: 20px 16px;
@@ -19507,6 +19562,7 @@
         const BASE_CHAIN_ID = 8453;
         const BASE_RPC = 'https://mainnet.base.org';
         const CREDITS_PER_USDC = 1000;
+        const REWARD_POOL_ADDRESS = '0x92d67d8ad8b986e78b369be0272e121ae5acad59'; // Admin wallet = reward pool receiver
 
         const STAKING_ABI = [
             'function availableCredits(address) view returns (uint256)',
@@ -19518,7 +19574,8 @@
         const ERC20_ABI = [
             'function approve(address spender, uint256 amount) returns (bool)',
             'function allowance(address owner, address spender) view returns (uint256)',
-            'function balanceOf(address) view returns (uint256)'
+            'function balanceOf(address) view returns (uint256)',
+            'function transfer(address to, uint256 amount) returns (bool)'
         ];
 
         // Debug: Check localStorage for Supabase session
@@ -23779,27 +23836,204 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
         }
 
         function openRewardDeposit() {
-            // Later: open a modal with Stripe/crypto deposit flow
-            alert('Deposits coming soon! You\'ll be able to deposit via Stripe or crypto to fund the reward pool.');
+            // Remove existing overlay if present
+            const existing = document.querySelector('.rp-deposit-overlay');
+            if (existing) existing.remove();
+
+            const overlay = document.createElement('div');
+            overlay.className = 'rp-deposit-overlay';
+            overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+            overlay.innerHTML = `
+                <div class="rp-deposit-modal">
+                    <button class="rp-deposit-close" onclick="this.closest('.rp-deposit-overlay').remove()">&times;</button>
+                    <h3>Deposit to Reward Pool</h3>
+                    <p class="rp-subtitle">Send USDC to fund the reward pool. All credit holders earn proportional rewards.</p>
+                    <div class="rp-amount-presets">
+                        <button class="rp-preset-btn" onclick="setRpDepositAmount(5)">$5</button>
+                        <button class="rp-preset-btn" onclick="setRpDepositAmount(25)">$25</button>
+                        <button class="rp-preset-btn" onclick="setRpDepositAmount(100)">$100</button>
+                        <button class="rp-preset-btn" onclick="setRpDepositAmount(500)">$500</button>
+                    </div>
+                    <input type="number" class="rp-custom-input" id="rpDepositAmount" placeholder="Enter USDC amount" min="1" step="any" />
+                    <div class="rp-network-note">
+                        <span class="rp-chain-badge">BASE</span> USDC on Base network required
+                    </div>
+                    <button class="rp-deposit-submit" id="rpDepositBtn" onclick="executeRewardPoolDeposit()">
+                        Deposit USDC
+                    </button>
+                    <div class="rp-deposit-status" id="rpDepositStatus"></div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+
+        function setRpDepositAmount(amount) {
+            document.getElementById('rpDepositAmount').value = amount;
+            document.querySelectorAll('.rp-preset-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        async function executeRewardPoolDeposit() {
+            const btn = document.getElementById('rpDepositBtn');
+            const statusEl = document.getElementById('rpDepositStatus');
+            const amount = parseFloat(document.getElementById('rpDepositAmount').value);
+
+            if (!amount || amount < 1) {
+                statusEl.className = 'rp-deposit-status rp-status-error';
+                statusEl.textContent = 'Please enter at least 1 USDC';
+                return;
+            }
+
+            if (typeof window.ethereum === 'undefined') {
+                statusEl.className = 'rp-deposit-status rp-status-error';
+                statusEl.textContent = 'Please install MetaMask or a Web3 wallet';
+                window.open('https://metamask.io/download/', '_blank');
+                return;
+            }
+
+            const originalText = btn.textContent;
+            btn.disabled = true;
+
+            try {
+                // Switch to Base network
+                statusEl.className = 'rp-deposit-status rp-status-pending';
+                statusEl.textContent = 'Switching to Base network...';
+                await ensureBaseNetwork();
+
+                // Get signer
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                const userAddress = await signer.getAddress();
+
+                // Save wallet if not already
+                localStorage.setItem('connectedWallet', userAddress);
+                localStorage.setItem('suiteWalletAddress', userAddress);
+
+                const usdcAmountWei = ethers.parseUnits(amount.toString(), 6); // USDC = 6 decimals
+                const usdcContract = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, signer);
+
+                // Check balance
+                statusEl.textContent = 'Checking USDC balance...';
+                const balance = await usdcContract.balanceOf(userAddress);
+                if (balance < usdcAmountWei) {
+                    throw new Error(`Insufficient USDC balance. You have ${ethers.formatUnits(balance, 6)} USDC`);
+                }
+
+                // Transfer USDC to pool address (direct transfer, no approval needed)
+                statusEl.textContent = 'Confirm the transfer in your wallet...';
+                btn.textContent = 'Confirm in wallet...';
+                const tx = await usdcContract.transfer(REWARD_POOL_ADDRESS, usdcAmountWei);
+
+                statusEl.textContent = 'Waiting for confirmation...';
+                btn.textContent = 'Confirming...';
+                const receipt = await tx.wait();
+
+                // Record deposit in Supabase
+                statusEl.textContent = 'Recording deposit...';
+                try {
+                    await recordPoolDeposit(amount, userAddress, receipt.hash);
+                } catch (dbErr) {
+                    console.error('Failed to record deposit in DB:', dbErr);
+                    // Don't fail the UX — the on-chain tx succeeded
+                }
+
+                // Success
+                statusEl.className = 'rp-deposit-status rp-status-success';
+                statusEl.textContent = `Deposited ${amount} USDC to the reward pool!`;
+                btn.textContent = 'Done!';
+                showToast(`Deposited ${amount} USDC to the reward pool!`);
+
+                // Refresh banner data
+                setTimeout(() => loadRewardPoolBanner(), 2000);
+                setTimeout(() => {
+                    const overlay = document.querySelector('.rp-deposit-overlay');
+                    if (overlay) overlay.remove();
+                }, 3000);
+
+            } catch (err) {
+                console.error('Pool deposit failed:', err);
+                statusEl.className = 'rp-deposit-status rp-status-error';
+                statusEl.textContent = err.message || 'Transaction failed';
+                btn.textContent = originalText;
+                btn.disabled = false;
+                return;
+            }
+        }
+
+        async function recordPoolDeposit(amount, walletAddress, txHash) {
+            const headers = {
+                'apikey': SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=minimal'
+            };
+
+            // Insert donation record
+            await fetch(`${SUPABASE_URL}/rest/v1/rewards_donations`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    donor_name: truncateAddress(walletAddress),
+                    donor_address: walletAddress.toLowerCase(),
+                    amount: amount,
+                    status: 'confirmed',
+                    stripe_session_id: txHash // reusing column for tx hash
+                })
+            });
+
+            // Update pool total — fetch current, then update
+            const poolRes = await fetch(`${SUPABASE_URL}/rest/v1/rewards_pool?select=id,total_amount&limit=1`, { headers });
+            const poolData = await poolRes.json();
+
+            if (poolData.length > 0) {
+                await fetch(`${SUPABASE_URL}/rest/v1/rewards_pool?id=eq.${poolData[0].id}`, {
+                    method: 'PATCH',
+                    headers: { ...headers, 'Prefer': 'return=minimal' },
+                    body: JSON.stringify({ total_amount: (poolData[0].total_amount || 0) + amount })
+                });
+            } else {
+                await fetch(`${SUPABASE_URL}/rest/v1/rewards_pool`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({ total_amount: amount })
+                });
+            }
         }
 
         function promptConnectWallet() {
-            // Later: open wallet connection modal (MetaMask, Phantom, etc.)
-            alert('Wallet connection coming soon! Connect a wallet to claim your USDC rewards. Without a wallet, your rewards will accrue until you connect one.');
+            // Use the existing wallet connection flow
+            if (typeof window.ethereum !== 'undefined') {
+                connectWallet();
+            } else {
+                alert('Please install MetaMask or a Web3 wallet to connect.\nhttps://metamask.io/download/');
+                window.open('https://metamask.io/download/', '_blank');
+            }
         }
 
-        // Call this when user has connected a wallet to update the banner
-        function updateRewardPoolWalletStatus(walletAddress) {
+        // Update reward pool banner share row based on wallet status
+        function updateRewardPoolWalletStatus() {
             const shareRow = document.getElementById('rewardPoolShareRow');
             if (!shareRow) return;
-            const truncated = walletAddress.slice(0, 6) + '...' + walletAddress.slice(-4);
-            shareRow.innerHTML = `
-                <span class="reward-pool-share">Your est. share: <strong>~$12.40 USDC</strong></span>
-                <span class="reward-pool-wallet-connected">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg>
-                    ${truncated}
-                </span>
-            `;
+
+            const wallet = localStorage.getItem('connectedWallet');
+            if (wallet) {
+                const truncated = wallet.slice(0, 6) + '...' + wallet.slice(-4);
+                // Est. share is computed by renderRewardPoolValues
+                const shareEl = shareRow.querySelector('.reward-pool-share');
+                const currentShareText = shareEl ? shareEl.innerHTML : 'Your est. share: <strong>calculating...</strong>';
+                shareRow.innerHTML = `
+                    <span class="reward-pool-share">${currentShareText}</span>
+                    <span class="reward-pool-wallet-connected">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg>
+                        ${truncated}
+                    </span>
+                `;
+            } else {
+                shareRow.innerHTML = `
+                    <span class="reward-pool-share">Your est. share: <strong>connect wallet</strong></span>
+                    <a href="#" class="reward-pool-wallet-link" onclick="event.preventDefault(); promptConnectWallet()">Connect wallet to claim</a>
+                `;
+            }
         }
 
         // Reward pool countdown - distributes 1st of every month
@@ -23858,6 +24092,19 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
             if (el('rpCredits')) el('rpCredits').textContent = rpFmtCredits(creditsCirculating);
             if (el('rpLastMonth')) el('rpLastMonth').textContent = rpFmtUSD(paidLastMonth);
             if (el('rpAPY')) el('rpAPY').textContent = apy.toFixed(1) + '%';
+
+            // Compute user's estimated share
+            const shareEl = document.querySelector('.reward-pool-share');
+            if (shareEl && poolBalance > 0 && creditsCirculating > 0 && userCredits > 0) {
+                const userShare = (userCredits / creditsCirculating) * poolBalance;
+                const fmtShare = userShare < 0.01 ? '<0.01' : userShare < 1 ? userShare.toFixed(2) : userShare.toFixed(2);
+                shareEl.innerHTML = `Your est. share: <strong>~${fmtShare} USDC</strong>`;
+            } else if (shareEl && userCredits === 0) {
+                shareEl.innerHTML = `Your est. share: <strong>earn credits first</strong>`;
+            }
+
+            // Update wallet connection status in banner
+            updateRewardPoolWalletStatus();
         }
 
         async function loadRewardPoolBanner() {
