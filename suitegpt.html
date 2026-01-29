@@ -8690,6 +8690,13 @@
         .thread-card .marketing-post-actions { display: flex; gap: 8px; }
         .thread-actions-bottom { margin-top: 12px; }
 
+        .cadence-select {
+            width: 100%; background: #1a1a2e; border: 1px solid var(--border-subtle);
+            border-radius: 8px; padding: 6px 10px; color: #f5f5f7; font-size: 0.8rem;
+            margin-bottom: 8px; cursor: pointer;
+        }
+        .cadence-select:focus { outline: none; border-color: var(--accent-primary); }
+
         /* Engagement column */
         .engagement-keywords-row {
             display: flex; gap: 8px;
@@ -17673,6 +17680,13 @@
                                                 <p>Mission, AI/tech, research</p>
                                             </div>
                                             <div class="marketing-col-body">
+                                                <select class="cadence-select" id="heartbeatCadence">
+                                                    <option value="">No cadence</option>
+                                                    <option value="x-posts" selected>𝕏 X Posts (3×/day)</option>
+                                                    <option value="app-highlights">📱 App Highlights (1×/wk)</option>
+                                                    <option value="ecosystem-updates">🌐 Ecosystem Updates (1×/day)</option>
+                                                    <option value="linkedin-posts">💼 LinkedIn (2×/wk)</option>
+                                                </select>
                                                 <textarea id="heartbeatInput" class="marketing-col-input"
                                                     placeholder="Paste research, notes, ideas..." rows="5"></textarea>
                                                 <button class="marketing-generate-btn" onclick="generateHeartbeat()">
@@ -17690,6 +17704,13 @@
                                                 <p>Dev activity & shipping</p>
                                             </div>
                                             <div class="marketing-col-body">
+                                                <select class="cadence-select" id="ecosystemCadence">
+                                                    <option value="">No cadence</option>
+                                                    <option value="x-posts">𝕏 X Posts (3×/day)</option>
+                                                    <option value="app-highlights">📱 App Highlights (1×/wk)</option>
+                                                    <option value="ecosystem-updates" selected>🌐 Ecosystem Updates (1×/day)</option>
+                                                    <option value="linkedin-posts">💼 LinkedIn (2×/wk)</option>
+                                                </select>
                                                 <div class="marketing-github-row">
                                                     <input type="text" id="githubUsername" value="stuart5915" placeholder="username">
                                                     <button class="marketing-fetch-btn" onclick="fetchGitHubActivity()">Fetch</button>
@@ -17712,6 +17733,13 @@
                                                 <p>Feature a SUITE app</p>
                                             </div>
                                             <div class="marketing-col-body">
+                                                <select class="cadence-select" id="appHighlightCadence">
+                                                    <option value="">No cadence</option>
+                                                    <option value="x-posts">𝕏 X Posts (3×/day)</option>
+                                                    <option value="app-highlights" selected>📱 App Highlights (1×/wk)</option>
+                                                    <option value="ecosystem-updates">🌐 Ecosystem Updates (1×/day)</option>
+                                                    <option value="linkedin-posts">💼 LinkedIn (2×/wk)</option>
+                                                </select>
                                                 <select id="appHighlightSelect" class="marketing-app-select">
                                                     <option value="random">🎲 Random App</option>
                                                 </select>
@@ -17733,6 +17761,13 @@
                                                 <p>Any idea, any format</p>
                                             </div>
                                             <div class="marketing-col-body">
+                                                <select class="cadence-select" id="quickPostCadence">
+                                                    <option value="">No cadence</option>
+                                                    <option value="x-posts" selected>𝕏 X Posts (3×/day)</option>
+                                                    <option value="app-highlights">📱 App Highlights (1×/wk)</option>
+                                                    <option value="ecosystem-updates">🌐 Ecosystem Updates (1×/day)</option>
+                                                    <option value="linkedin-posts">💼 LinkedIn (2×/wk)</option>
+                                                </select>
                                                 <textarea id="quickPostInput" class="marketing-col-input"
                                                     placeholder="Drop an idea, thought, or draft..." rows="5"></textarea>
                                                 <button class="marketing-generate-btn" onclick="generateQuickPost()">
@@ -17750,6 +17785,13 @@
                                                 <p>Turn ideas into threads</p>
                                             </div>
                                             <div class="marketing-col-body">
+                                                <select class="cadence-select" id="threadCadence">
+                                                    <option value="">No cadence</option>
+                                                    <option value="x-posts">𝕏 X Posts (3×/day)</option>
+                                                    <option value="app-highlights">📱 App Highlights (1×/wk)</option>
+                                                    <option value="ecosystem-updates">🌐 Ecosystem Updates (1×/day)</option>
+                                                    <option value="linkedin-posts" selected>💼 LinkedIn (2×/wk)</option>
+                                                </select>
                                                 <textarea id="threadInput" class="marketing-col-input"
                                                     placeholder="Paste content to turn into a thread..." rows="5"></textarea>
                                                 <button class="marketing-generate-btn" onclick="generateThread()">
@@ -21304,14 +21346,26 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
 
         // --- 3-Column Generate Functions ---
 
+        function getCadencePromptContext(cadenceId) {
+            const contexts = {
+                'x-posts': 'Cadence: X/Twitter post (3×/day at 10 AM, 3 PM, 8 PM). Content mix: building progress (40%), feature highlights (30%), community engagement (30%). Keep under 280 chars. Short, punchy, authentic.',
+                'app-highlights': 'Cadence: App Highlight (1×/week, Sundays 12 PM). Deep-dive on one SUITE app — the problem it solves, key features, why it matters. Engaging and visual. Keep under 280 chars.',
+                'ecosystem-updates': 'Cadence: Ecosystem Update (daily, 7 PM EST). Build-in-public recap — what shipped, metrics, what\'s next. Evening post energy. Keep under 280 chars.',
+                'linkedin-posts': 'Cadence: LinkedIn post (Tue & Thu, 9 AM). Professional but authentic. Long-form AI insights, building in public, startup lessons. 2-3 short paragraphs max. Do NOT limit to 280 chars.'
+            };
+            return contexts[cadenceId] || '';
+        }
+
         async function generateHeartbeat() {
             const research = document.getElementById('heartbeatInput').value.trim();
             if (!research) { alert('Paste some research or notes first.'); return; }
 
+            const cadence = document.getElementById('heartbeatCadence').value;
+            const cadenceContext = getCadencePromptContext(cadence);
             const prompt = `Generate a single short X/Twitter post (under 280 chars) about the following research/thoughts.
 Brand: SUITE (suitegpt.app) - a platform where Anyone Can Build, Everyone Gets Paid.
 Tone: casual, builder-focused, short punchy sentences. No hard sells. No emojis overload.
-Research/Notes: ${research}
+${cadenceContext ? cadenceContext + '\n' : ''}Research/Notes: ${research}
 Return ONLY the post text, nothing else.`;
 
             showGenerating('heartbeatOutput');
@@ -21323,9 +21377,11 @@ Return ONLY the post text, nothing else.`;
             if (!githubActivity.length) { alert('Fetch GitHub activity first.'); return; }
 
             const commits = githubActivity.map(c => `- ${c.repo}: ${c.message}`).join('\n');
+            const cadence = document.getElementById('ecosystemCadence').value;
+            const cadenceContext = getCadencePromptContext(cadence);
             const prompt = `Generate a single short X/Twitter post (under 280 chars) about recent dev activity.
 Brand: SUITE (suitegpt.app). Tone: building in public, casual, authentic.
-Recent commits:\n${commits}
+${cadenceContext ? cadenceContext + '\n' : ''}Recent commits:\n${commits}
 Return ONLY the post text, nothing else.`;
 
             showGenerating('ecosystemOutput');
@@ -21342,11 +21398,13 @@ Return ONLY the post text, nothing else.`;
             }
             const app = SUITE_APPS[appKey];
 
+            const cadence = document.getElementById('appHighlightCadence').value;
+            const cadenceContext = getCadencePromptContext(cadence);
             const prompt = `Generate a single short X/Twitter post (under 280 chars) highlighting this app.
 App: ${app.name} - ${app.description}
 Part of the SUITE ecosystem (suitegpt.app) where Anyone Can Build, Everyone Gets Paid.
 Tone: casual, authentic. Focus on the problem it solves.
-Return ONLY the post text, nothing else.`;
+${cadenceContext ? cadenceContext + '\n' : ''}Return ONLY the post text, nothing else.`;
 
             showGenerating('appHighlightOutput');
             const response = await callCopilotAI(prompt);
@@ -21425,10 +21483,12 @@ Return ONLY the post text, nothing else.`;
             const idea = document.getElementById('quickPostInput').value.trim();
             if (!idea) { alert('Drop an idea or thought first.'); return; }
 
+            const cadence = document.getElementById('quickPostCadence').value;
+            const cadenceContext = getCadencePromptContext(cadence);
             const prompt = `Generate a single short X/Twitter post (under 280 chars) from this idea.
 Brand: SUITE (suitegpt.app) - Anyone Can Build, Everyone Gets Paid.
 Tone: casual, builder-focused, punchy. No hard sells.
-Idea: ${idea}
+${cadenceContext ? cadenceContext + '\n' : ''}Idea: ${idea}
 Return ONLY the post text, nothing else.`;
 
             showGenerating('quickPostOutput');
@@ -21441,10 +21501,24 @@ Return ONLY the post text, nothing else.`;
             const content = document.getElementById('threadInput').value.trim();
             if (!content) { alert('Paste some content to turn into a thread.'); return; }
 
-            const prompt = `Generate a 3-5 tweet thread from this content. Each tweet must be under 280 chars.
+            const cadence = document.getElementById('threadCadence').value;
+            const cadenceContext = getCadencePromptContext(cadence);
+            const isLinkedIn = cadence === 'linkedin-posts';
+
+            let prompt;
+            if (isLinkedIn) {
+                prompt = `Generate a LinkedIn post from this content. Professional but authentic. 2-3 short paragraphs.
+Brand: SUITE (suitegpt.app) - Anyone Can Build, Everyone Gets Paid.
+Tone: professional, insightful, building in public.
+${cadenceContext}
+
+Content: ${content}
+Return ONLY the post text, nothing else.`;
+            } else {
+                prompt = `Generate a 3-5 tweet thread from this content. Each tweet must be under 280 chars.
 Brand: SUITE (suitegpt.app) - Anyone Can Build, Everyone Gets Paid.
 Tone: casual, builder-focused, authentic.
-
+${cadenceContext ? cadenceContext + '\n' : ''}
 Format your response as numbered tweets like:
 1/ First tweet text
 2/ Second tweet text
@@ -21452,10 +21526,15 @@ Format your response as numbered tweets like:
 
 Content: ${content}
 Return ONLY the numbered tweets, nothing else.`;
+            }
 
             showGenerating('threadOutput');
             const response = await callCopilotAI(prompt);
-            renderThreadCards('threadOutput', response);
+            if (isLinkedIn) {
+                renderPostCard('threadOutput', response, 'thread');
+            } else {
+                renderThreadCards('threadOutput', response);
+            }
         }
 
         function renderThreadCards(outputId, text) {
