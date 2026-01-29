@@ -205,6 +205,82 @@
         let selectedShaft = 'Chrome';
         let selectedShipping = { type: 'shipping', price: 25 };
 
+        // Image sets per finish + shaft combo
+        // Key format: "finish|shaft" — falls back to "finish|*" then default
+        const finishImages = {
+            'Raw|Chrome': [
+                '../assets/putters/polished-rough-mill-1.jpg',
+                '../assets/putters/polished-rough-mill-2.jpg',
+                '../assets/putters/polished-rough-mill-3.jpg',
+                '../assets/putters/polished-rough-mill-4.jpg'
+            ],
+            'Raw|Black': [
+                // TODO: Add raw head + black shaft images when available
+                '../assets/putters/polished-rough-mill-1.jpg',
+                '../assets/putters/polished-rough-mill-2.jpg',
+                '../assets/putters/polished-rough-mill-3.jpg',
+                '../assets/putters/polished-rough-mill-4.jpg'
+            ],
+            'Brushed|Chrome': [
+                '../assets/putters/mineral-torched-rough-mill-1.jpg',
+                '../assets/putters/mineral-torched-rough-mill-2.jpg',
+                '../assets/putters/mineral-torched-rough-mill-3.jpg',
+                '../assets/putters/mineral-torched-rough-mill-4.jpg'
+            ],
+            'Brushed|Black': [
+                '../assets/putters/mineral-torched-rough-mill-5.jpg',
+                '../assets/putters/mineral-torched-rough-mill-6.jpg',
+                '../assets/putters/mineral-torched-rough-mill-7.jpg',
+                '../assets/putters/mineral-torched-rough-mill-8.jpg'
+            ],
+            'Black DLC|Chrome': [
+                '../assets/putters/black-oxide-rough-mill-1.jpg',
+                '../assets/putters/black-oxide-rough-mill-2.jpg',
+                '../assets/putters/black-oxide-rough-mill-3.jpg',
+                '../assets/putters/black-oxide-rough-mill-4.jpg'
+            ],
+            'Black DLC|Black': [
+                '../assets/putters/black-oxide-rough-mill-1.jpg',
+                '../assets/putters/black-oxide-rough-mill-2.jpg',
+                '../assets/putters/black-oxide-rough-mill-3.jpg',
+                '../assets/putters/black-oxide-rough-mill-5.jpg'
+            ],
+            'Chrome|Chrome': [
+                // TODO: Add chrome finish images when available
+                '../assets/putters/polished-rough-mill-1.jpg',
+                '../assets/putters/polished-rough-mill-2.jpg',
+                '../assets/putters/polished-rough-mill-3.jpg',
+                '../assets/putters/polished-rough-mill-4.jpg'
+            ],
+            'Chrome|Black': [
+                // TODO: Add chrome head + black shaft images when available
+                '../assets/putters/polished-rough-mill-1.jpg',
+                '../assets/putters/polished-rough-mill-2.jpg',
+                '../assets/putters/polished-rough-mill-3.jpg',
+                '../assets/putters/polished-rough-mill-4.jpg'
+            ]
+        };
+
+        // Current gallery state
+        let currentGallery = finishImages['Raw|Chrome'];
+
+        function updateGallery() {
+            const key = selectedFinish.name + '|' + selectedShaft;
+            currentGallery = finishImages[key] || finishImages['Raw|Chrome'];
+
+            // Update main image
+            const mainImg = document.getElementById('mainImg');
+            if (mainImg) mainImg.src = currentGallery[0];
+
+            // Rebuild thumbnails
+            const thumbContainer = document.querySelector('.product-thumbnails');
+            if (thumbContainer) {
+                thumbContainer.innerHTML = currentGallery.map((src, i) =>
+                    `<div class="product-thumbnail${i === 0 ? ' active' : ''}" onclick="selectThumb(this, ${i})" style="background: url('${src}') center/cover;"></div>`
+                ).join('');
+            }
+        }
+
         // Cart from localStorage
         let cart = JSON.parse(localStorage.getItem('proto_cart')) || [];
 
@@ -220,6 +296,7 @@
             btn.classList.add('selected');
             selectedFinish = { name, price };
             updatePrice();
+            updateGallery();
         }
 
         function selectShaft(btn, shaft) {
@@ -227,6 +304,7 @@
             btn.classList.add('selected');
             selectedShaft = shaft;
             updatePrice();
+            updateGallery();
         }
 
         function selectShipping(el, type, price) {
@@ -236,18 +314,11 @@
             updatePrice();
         }
 
-        const galleryImages = [
-            '../assets/putters/polished-rough-mill-1.jpg',
-            '../assets/putters/polished-rough-mill-2.jpg',
-            '../assets/putters/mineral-torched-rough-mill-1.jpg',
-            '../assets/putters/black-oxide-rough-mill-1.jpg'
-        ];
-
         function selectThumb(thumb, index) {
             document.querySelectorAll('.product-thumbnail').forEach(t => t.classList.remove('active'));
             thumb.classList.add('active');
             const mainImg = document.getElementById('mainImg');
-            if (mainImg && galleryImages[index]) mainImg.src = galleryImages[index];
+            if (mainImg && currentGallery[index]) mainImg.src = currentGallery[index];
         }
 
         function updatePrice() {

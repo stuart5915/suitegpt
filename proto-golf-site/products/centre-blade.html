@@ -213,6 +213,39 @@
         let selectedShaft = 'Black';
         let selectedShipping = { type: 'shipping', price: 25 };
 
+        // Image sets per finish + shaft combo
+        const finishImages = {
+            'Gun Blue|Black': [
+                '../assets/putters/black-centre-blade-1.jpg',
+                '../assets/putters/black-centre-blade-2.jpg',
+                '../assets/putters/black-centre-blade-3.jpg',
+                '../assets/putters/black-centre-blade-4.jpg'
+            ],
+            'Gun Blue|Chrome': [
+                '../assets/putters/polished-centre-blade-1.jpg',
+                '../assets/putters/polished-centre-blade-2.jpg',
+                '../assets/putters/polished-centre-blade-3.jpg',
+                '../assets/putters/polished-centre-blade-4.jpg'
+            ]
+        };
+
+        let currentGallery = finishImages['Gun Blue|Black'];
+
+        function updateGallery() {
+            const key = selectedFinish.name + '|' + selectedShaft;
+            currentGallery = finishImages[key] || finishImages['Gun Blue|Black'];
+
+            const mainImg = document.getElementById('mainImg');
+            if (mainImg) mainImg.src = currentGallery[0];
+
+            const thumbContainer = document.querySelector('.product-thumbnails');
+            if (thumbContainer) {
+                thumbContainer.innerHTML = currentGallery.map((src, i) =>
+                    `<div class="product-thumbnail${i === 0 ? ' active' : ''}" onclick="selectThumb(this, ${i})" style="background: url('${src}') center/cover;"></div>`
+                ).join('');
+            }
+        }
+
         // Cart from localStorage
         let cart = JSON.parse(localStorage.getItem('proto_cart')) || [];
 
@@ -228,6 +261,7 @@
             btn.classList.add('selected');
             selectedFinish = { name, price };
             updatePrice();
+            updateGallery();
         }
 
         function selectShaft(btn, shaft) {
@@ -235,6 +269,7 @@
             btn.classList.add('selected');
             selectedShaft = shaft;
             updatePrice();
+            updateGallery();
         }
 
         function selectShipping(el, type, price) {
@@ -244,18 +279,11 @@
             updatePrice();
         }
 
-        const galleryImages = [
-            '../assets/putters/polished-centre-blade-1.jpg',
-            '../assets/putters/polished-centre-blade-2.jpg',
-            '../assets/putters/polished-centre-blade-3.jpg',
-            '../assets/putters/black-centre-blade-1.jpg'
-        ];
-
         function selectThumb(thumb, index) {
             document.querySelectorAll('.product-thumbnail').forEach(t => t.classList.remove('active'));
             thumb.classList.add('active');
             const mainImg = document.getElementById('mainImg');
-            if (mainImg && galleryImages[index]) mainImg.src = galleryImages[index];
+            if (mainImg && currentGallery[index]) mainImg.src = currentGallery[index];
         }
 
         function updatePrice() {
