@@ -26915,7 +26915,10 @@ Return JSON in this exact format:
                 <div class="build-log-step pending" id="buildLogStep${i}" data-step-index="${i}">
                     <div class="build-log-step-icon">${i + 1}</div>
                     <div class="build-log-step-content">
-                        <div class="build-log-step-title">${step.title}</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div class="build-log-step-title">${step.title}</div>
+                            <div style="font-size: 0.7rem; color: var(--text-tertiary); white-space: nowrap;">~20 cr</div>
+                        </div>
                         <div class="build-log-step-desc">${step.description}</div>
                     </div>
                 </div>
@@ -26950,8 +26953,13 @@ Return JSON in this exact format:
                 </div>
                 <div class="proposal-chat-panel">
                     <div class="proposal-chat-header">
-                        <div style="font-weight: 600; color: var(--text-primary);">Build Queue</div>
-                        <p class="proposal-chat-subtitle">Step 1 runs automatically. Click others to build.</p>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="font-weight: 600; color: var(--text-primary);">Build Queue</div>
+                            <div id="buildCreditCost" style="font-size: 0.75rem; color: var(--text-tertiary); display: flex; align-items: center; gap: 4px;">
+                                <span style="color: #fbbf24;">⚡</span> ~${plan.steps.length * 20} credits total
+                            </div>
+                        </div>
+                        <p class="proposal-chat-subtitle">Auto-building ${plan.steps.length} steps...</p>
                     </div>
                     <div class="build-log-container" id="buildLogContainer">
                         ${stepsHtml}
@@ -26989,21 +26997,7 @@ Return JSON in this exact format:
 
             previewView.style.display = 'flex';
 
-            // Add click handlers to steps (skip step 0, it auto-runs)
-            plan.steps.forEach((step, i) => {
-                if (i === 0) return;
-                const el = document.getElementById(`buildLogStep${i}`);
-                if (el) {
-                    el.style.cursor = 'pointer';
-                    el.addEventListener('click', () => {
-                        if (el.classList.contains('pending') && !window._buildStepRunning) {
-                            executeFeatureStep(i);
-                        }
-                    });
-                }
-            });
-
-            // Auto-run step 0 (scaffold)
+            // Auto-run all steps sequentially starting from step 0
             executeFeatureStep(0);
         }
 
@@ -27120,6 +27114,14 @@ Output ONLY the COMPLETE updated HTML (with all existing + new code), starting w
                 // Check if all steps done
                 if (window.quickAppResult.completedSteps.length === steps.length) {
                     transitionToIterationMode();
+                } else {
+                    // Auto-run next pending step
+                    window._buildStepRunning = false;
+                    const nextIndex = steps.findIndex((s, idx) => !window.quickAppResult.completedSteps.includes(idx));
+                    if (nextIndex !== -1) {
+                        executeFeatureStep(nextIndex);
+                        return; // skip setting _buildStepRunning below since we already did
+                    }
                 }
 
             } catch (error) {
