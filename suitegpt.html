@@ -6816,6 +6816,7 @@
             font-size: 0.8rem;
             color: var(--text-secondary);
             font-weight: 500;
+            font-variant-numeric: tabular-nums;
         }
 
         .reward-pool-bar-track {
@@ -17389,9 +17390,9 @@
                             </div>
                         </div>
                         <div class="reward-pool-right">
-                            <span class="reward-pool-countdown">Distributes in 14 days</span>
+                            <span class="reward-pool-countdown" id="rewardPoolCountdown"></span>
                             <div class="reward-pool-bar-track">
-                                <div class="reward-pool-bar-fill" style="width: 53%"></div>
+                                <div class="reward-pool-bar-fill" id="rewardPoolBarFill" style="width: 0%"></div>
                             </div>
                             <div class="reward-pool-share-row" id="rewardPoolShareRow">
                                 <span class="reward-pool-share">Your est. share: <strong>~$12.40 USDC</strong></span>
@@ -23683,6 +23684,40 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
                 </span>
             `;
         }
+
+        // Reward pool countdown - distributes 1st of every month
+        function updateRewardPoolCountdown() {
+            const el = document.getElementById('rewardPoolCountdown');
+            const bar = document.getElementById('rewardPoolBarFill');
+            if (!el) return;
+
+            const now = new Date();
+            // Next distribution = 1st of next month at midnight UTC
+            const nextDist = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0));
+            // Start of current period = 1st of this month
+            const periodStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0));
+
+            const remaining = nextDist - now;
+            const totalPeriod = nextDist - periodStart;
+            const elapsed = now - periodStart;
+            const progress = Math.min(100, Math.max(0, (elapsed / totalPeriod) * 100));
+
+            const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const mins = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+            const secs = Math.floor((remaining % (1000 * 60)) / 1000);
+
+            if (days > 0) {
+                el.textContent = `Distributes in ${days}d ${hours}h ${mins}m ${secs}s`;
+            } else {
+                el.textContent = `Distributes in ${hours}h ${mins}m ${secs}s`;
+            }
+
+            if (bar) bar.style.width = progress.toFixed(1) + '%';
+        }
+
+        updateRewardPoolCountdown();
+        setInterval(updateRewardPoolCountdown, 1000);
 
         function selectDonationAmount(amount) {
             // Update input field
