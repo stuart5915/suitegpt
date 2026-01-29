@@ -28,8 +28,22 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Query parameter q is required' });
         }
 
-        // Filter out retweets and replies for cleaner results
-        const query = `${q} -is:retweet -is:reply lang:en`;
+        // Build query from filter params
+        let query = q;
+        if (req.query.exclude_retweets === '1') query += ' -is:retweet';
+        if (req.query.exclude_replies === '1') query += ' -is:reply';
+        if (req.query.exclude_quotes === '1') query += ' -is:quote';
+        if (req.query.has_links === '1') query += ' has:links';
+        if (req.query.has_media === '1') query += ' has:media';
+        if (req.query.has_hashtags === '1') query += ' has:hashtags';
+        const minLikes = parseInt(req.query.min_likes) || 0;
+        const minRetweets = parseInt(req.query.min_retweets) || 0;
+        const minReplies = parseInt(req.query.min_replies) || 0;
+        if (minLikes > 0) query += ` min_faves:${minLikes}`;
+        if (minRetweets > 0) query += ` min_retweets:${minRetweets}`;
+        if (minReplies > 0) query += ` min_replies:${minReplies}`;
+        if (req.query.lang) query += ` lang:${req.query.lang}`;
+        if (req.query.from_user) query += ` from:${req.query.from_user}`;
 
         const params = new URLSearchParams({
             query,

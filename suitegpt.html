@@ -8541,6 +8541,47 @@
         }
         .engagement-reply-btn:hover { background: rgba(29, 155, 240, 0.25); }
 
+        .engagement-advanced-toggle {
+            background: none; border: none; color: var(--text-tertiary); font-size: 0.78rem;
+            cursor: pointer; padding: 4px 0; margin-top: 4px; transition: color 0.2s;
+        }
+        .engagement-advanced-toggle:hover { color: var(--text-primary); }
+        .engagement-advanced-toggle.open { color: var(--accent-primary); }
+
+        .engagement-filters {
+            background: #0e0e1a; border: 1px solid var(--border-subtle); border-radius: 8px;
+            padding: 12px; margin-top: 6px; display: flex; flex-direction: column; gap: 10px;
+        }
+        .engagement-filter-group { display: flex; flex-direction: column; gap: 4px; }
+        .engagement-filter-label {
+            font-size: 0.72rem; color: var(--text-tertiary); text-transform: uppercase;
+            letter-spacing: 0.5px; font-weight: 600;
+        }
+        .engagement-filter-row {
+            display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+        }
+        .engagement-filter-row label {
+            font-size: 0.8rem; color: var(--text-secondary); display: flex; align-items: center; gap: 4px;
+            cursor: pointer;
+        }
+        .engagement-filter-row input[type="checkbox"] {
+            accent-color: var(--accent-primary); width: 14px; height: 14px; cursor: pointer;
+        }
+        .engagement-number-input {
+            background: #1a1a2e; border: 1px solid var(--border-subtle); border-radius: 6px;
+            padding: 4px 8px; color: #f5f5f7; font-size: 0.8rem; width: 60px;
+        }
+        .engagement-number-input:focus { outline: none; border-color: var(--accent-primary); }
+        .engagement-preset-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .engagement-preset-chip {
+            background: rgba(29, 155, 240, 0.1); color: #1d9bf0; border: 1px solid rgba(29, 155, 240, 0.25);
+            border-radius: 20px; padding: 4px 12px; font-size: 0.75rem; cursor: pointer;
+            transition: all 0.2s; white-space: nowrap;
+        }
+        .engagement-preset-chip:hover {
+            background: rgba(29, 155, 240, 0.2); border-color: rgba(29, 155, 240, 0.5);
+        }
+
         /* Content Calendar */
         .content-calendar {
             margin: 16px auto 0;
@@ -17492,9 +17533,71 @@
                                             </div>
                                             <div class="marketing-col-body">
                                                 <div class="engagement-keywords-row">
-                                                    <input type="text" id="engagementKeywords" placeholder="Keywords (e.g. AI agents, no-code)">
-                                                    <button class="marketing-fetch-btn" onclick="fetchEngagementTweets()">Fetch</button>
+                                                    <input type="text" id="engagementKeywords" value="&quot;AI agents&quot; OR &quot;no-code&quot; OR &quot;indie hacker&quot; OR &quot;build apps&quot;" placeholder="Keywords (e.g. AI agents, no-code)">
                                                 </div>
+                                                <button class="engagement-advanced-toggle" onclick="toggleAdvancedFilters()">▼ Advanced Filters</button>
+                                                <div class="engagement-filters" id="engagementFilters" style="display:none;">
+                                                    <div class="engagement-filter-group">
+                                                        <div class="engagement-filter-label">Exclude</div>
+                                                        <div class="engagement-filter-row">
+                                                            <label><input type="checkbox" id="engExcludeRetweets" checked> Retweets</label>
+                                                            <label><input type="checkbox" id="engExcludeReplies" checked> Replies</label>
+                                                            <label><input type="checkbox" id="engExcludeQuotes"> Quotes</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="engagement-filter-group">
+                                                        <div class="engagement-filter-label">Content Must Have</div>
+                                                        <div class="engagement-filter-row">
+                                                            <label><input type="checkbox" id="engHasLinks"> Links</label>
+                                                            <label><input type="checkbox" id="engHasMedia"> Media</label>
+                                                            <label><input type="checkbox" id="engHasHashtags"> Hashtags</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="engagement-filter-group">
+                                                        <div class="engagement-filter-label">Engagement Minimums</div>
+                                                        <div class="engagement-filter-row">
+                                                            <label>Min Likes: <input type="number" class="engagement-number-input" id="engMinLikes" value="5" min="0"></label>
+                                                            <label>Min Retweets: <input type="number" class="engagement-number-input" id="engMinRetweets" value="0" min="0"></label>
+                                                            <label>Min Replies: <input type="number" class="engagement-number-input" id="engMinReplies" value="0" min="0"></label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="engagement-filter-group">
+                                                        <div class="engagement-filter-row" style="flex-wrap:wrap;">
+                                                            <label>Language:
+                                                                <select class="engagement-number-input" id="engLang" style="width:auto;padding:4px 6px;">
+                                                                    <option value="en" selected>English</option>
+                                                                    <option value="es">Spanish</option>
+                                                                    <option value="fr">French</option>
+                                                                    <option value="de">German</option>
+                                                                    <option value="pt">Portuguese</option>
+                                                                    <option value="ja">Japanese</option>
+                                                                    <option value="">Any</option>
+                                                                </select>
+                                                            </label>
+                                                            <label>From User: <input type="text" class="engagement-number-input" id="engFromUser" placeholder="@handle" style="width:90px;"></label>
+                                                            <label>Results:
+                                                                <select class="engagement-number-input" id="engMaxResults" style="width:auto;padding:4px 6px;">
+                                                                    <option value="10">10</option>
+                                                                    <option value="20" selected>20</option>
+                                                                    <option value="50">50</option>
+                                                                    <option value="100">100</option>
+                                                                </select>
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="engagement-filter-group">
+                                                        <div class="engagement-filter-label">Presets</div>
+                                                        <div class="engagement-preset-chips">
+                                                            <button class="engagement-preset-chip" onclick="applyPreset('ai-builders')">AI Builders</button>
+                                                            <button class="engagement-preset-chip" onclick="applyPreset('no-code')">No-Code</button>
+                                                            <button class="engagement-preset-chip" onclick="applyPreset('indie-hackers')">Indie Hackers</button>
+                                                            <button class="engagement-preset-chip" onclick="applyPreset('saas')">SaaS</button>
+                                                            <button class="engagement-preset-chip" onclick="applyPreset('ai-agents')">AI Agents</button>
+                                                            <button class="engagement-preset-chip" onclick="applyPreset('tech-twitter')">Tech Twitter</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <button class="marketing-fetch-btn" style="width:100%;margin-top:8px;" onclick="fetchEngagementTweets()">Fetch Tweets</button>
                                                 <div class="engagement-tweet-list" id="engagementTweetList">
                                                     <span class="github-empty">Enter keywords and click Fetch</span>
                                                 </div>
@@ -21188,6 +21291,63 @@ Return ONLY the numbered tweets, nothing else.`;
         }
 
         // --- Engagement ---
+        const engagementPresets = {
+            'ai-builders': { keywords: '"AI tools" OR "building with AI" OR "AI startup"', minLikes: 5 },
+            'no-code': { keywords: '"no-code" OR "nocode" OR "low-code" OR "build without coding"', minLikes: 3 },
+            'indie-hackers': { keywords: '"indie hacker" OR "side project" OR "shipping" OR "launched"', minLikes: 5 },
+            'saas': { keywords: '"SaaS" OR "micro-saas" OR "MRR" OR "ARR"', minLikes: 10 },
+            'ai-agents': { keywords: '"AI agents" OR "autonomous agents" OR "agentic" OR "agent framework"', minLikes: 5 },
+            'tech-twitter': { keywords: '"developers" OR "open source" OR "dev tools" OR "API"', minLikes: 3 }
+        };
+
+        function applyPreset(name) {
+            const preset = engagementPresets[name];
+            if (!preset) return;
+            document.getElementById('engagementKeywords').value = preset.keywords;
+            document.getElementById('engMinLikes').value = preset.minLikes;
+            // Show advanced filters so user sees what changed
+            const panel = document.getElementById('engagementFilters');
+            if (panel.style.display === 'none') toggleAdvancedFilters();
+        }
+
+        function toggleAdvancedFilters() {
+            const panel = document.getElementById('engagementFilters');
+            const btn = panel.previousElementSibling;
+            if (panel.style.display === 'none') {
+                panel.style.display = 'flex';
+                btn.textContent = '▲ Advanced Filters';
+                btn.classList.add('open');
+            } else {
+                panel.style.display = 'none';
+                btn.textContent = '▼ Advanced Filters';
+                btn.classList.remove('open');
+            }
+        }
+
+        function buildSearchQuery() {
+            const keywords = document.getElementById('engagementKeywords').value.trim();
+            const params = new URLSearchParams();
+            params.set('q', keywords);
+            params.set('max_results', document.getElementById('engMaxResults')?.value || '20');
+            if (document.getElementById('engExcludeRetweets')?.checked) params.set('exclude_retweets', '1');
+            if (document.getElementById('engExcludeReplies')?.checked) params.set('exclude_replies', '1');
+            if (document.getElementById('engExcludeQuotes')?.checked) params.set('exclude_quotes', '1');
+            if (document.getElementById('engHasLinks')?.checked) params.set('has_links', '1');
+            if (document.getElementById('engHasMedia')?.checked) params.set('has_media', '1');
+            if (document.getElementById('engHasHashtags')?.checked) params.set('has_hashtags', '1');
+            const minLikes = parseInt(document.getElementById('engMinLikes')?.value) || 0;
+            const minRetweets = parseInt(document.getElementById('engMinRetweets')?.value) || 0;
+            const minReplies = parseInt(document.getElementById('engMinReplies')?.value) || 0;
+            if (minLikes > 0) params.set('min_likes', minLikes);
+            if (minRetweets > 0) params.set('min_retweets', minRetweets);
+            if (minReplies > 0) params.set('min_replies', minReplies);
+            const lang = document.getElementById('engLang')?.value;
+            if (lang) params.set('lang', lang);
+            const fromUser = document.getElementById('engFromUser')?.value.trim().replace(/^@/, '');
+            if (fromUser) params.set('from_user', fromUser);
+            return params.toString();
+        }
+
         async function fetchEngagementTweets() {
             const keywords = document.getElementById('engagementKeywords').value.trim();
             if (!keywords) { alert('Enter some keywords first.'); return; }
@@ -21196,7 +21356,8 @@ Return ONLY the numbered tweets, nothing else.`;
             list.innerHTML = '<div class="marketing-generating">Fetching tweets...</div>';
 
             try {
-                const resp = await fetch(`/api/x-search?q=${encodeURIComponent(keywords)}&max_results=20`);
+                const queryString = buildSearchQuery();
+                const resp = await fetch(`/api/x-search?${queryString}`);
                 const data = await resp.json();
                 if (!data.tweets || !data.tweets.length) {
                     list.innerHTML = '<span class="github-empty">No tweets found for those keywords</span>';
