@@ -10531,6 +10531,34 @@
             color: var(--accent-primary);
         }
 
+        .factory-comment-delete {
+            background: none;
+            border: none;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: auto;
+            opacity: 0;
+            transition: all 0.2s;
+        }
+
+        .factory-comment-item:hover .factory-comment-delete {
+            opacity: 1;
+        }
+
+        .factory-comment-delete:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .factory-comment-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         @media (max-width: 900px) {
             .factory-sidebar-panel {
                 display: none;
@@ -22385,14 +22413,17 @@ Be concise but helpful. Use markdown formatting.`;
                 return;
             }
 
+            const isAdmin = isFactoryAdmin();
             listEl.innerHTML = comments.map(comment => {
                 const authorName = comment.factory_users?.display_name || 'Anonymous';
                 const timeAgo = formatFactoryTimeAgo(new Date(comment.created_at));
+                const deleteBtn = isAdmin ? `<button class="factory-comment-delete" onclick="deleteFactoryComment('${comment.id}', '${proposalId}')" title="Delete comment">✕</button>` : '';
                 return `
                     <div class="factory-comment-item">
                         <div class="factory-comment-header">
                             <span class="factory-comment-author">@${escapeFactoryHtml(authorName)}</span>
                             <span class="factory-comment-time">${timeAgo}</span>
+                            ${deleteBtn}
                         </div>
                         <div class="factory-comment-content">${escapeFactoryHtml(comment.content)}</div>
                     </div>
@@ -22412,6 +22443,59 @@ Be concise but helpful. Use markdown formatting.`;
             return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         }
 
+        // Ensure user exists in factory_users, return their UUID
+        async function ensureFactoryUser() {
+            const currentUser = getFactoryCurrentUser();
+            if (!currentUser) return null;
+
+            const accessToken = getSupabaseAccessToken() || SUPABASE_ANON_KEY;
+            const displayName = currentUser.display_name || 'Anonymous';
+
+            // Check if user already exists by email, telegram, or wallet
+            let lookupQuery = '';
+            if (currentUser.email) {
+                lookupQuery = `display_name=eq.${encodeURIComponent(displayName)}`;
+            } else if (currentUser.telegram_id) {
+                lookupQuery = `telegram_id=eq.${currentUser.telegram_id}`;
+            } else if (currentUser.wallet_address) {
+                lookupQuery = `wallet_address=eq.${currentUser.wallet_address}`;
+            }
+
+            try {
+                // Try to find existing user
+                const lookupRes = await fetch(`${SUPABASE_URL}/rest/v1/factory_users?${lookupQuery}&limit=1`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                });
+                const existing = await lookupRes.json();
+                if (existing && existing.length > 0) return existing[0].id;
+
+                // Create new user
+                const newUser = { display_name: displayName };
+                if (currentUser.telegram_id) newUser.telegram_id = currentUser.telegram_id;
+                if (currentUser.wallet_address) newUser.wallet_address = currentUser.wallet_address;
+
+                const createRes = await fetch(`${SUPABASE_URL}/rest/v1/factory_users`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify(newUser)
+                });
+                const created = await createRes.json();
+                if (created && created.length > 0) return created[0].id;
+                return null;
+            } catch (e) {
+                console.error('[Factory] ensureFactoryUser error:', e);
+                return null;
+            }
+        }
+
         async function postFactoryComment(proposalId) {
             const currentUser = getFactoryCurrentUser();
             if (!currentUser) {
@@ -22425,46 +22509,75 @@ Be concise but helpful. Use markdown formatting.`;
             const content = inputEl.value.trim();
             if (!content) return;
 
-            try {
-                const payload = {
-                    proposal_id: proposalId,
-                    content: content
-                };
+            const accessToken = getSupabaseAccessToken() || SUPABASE_ANON_KEY;
 
-                if (currentUser.telegram_id) {
-                    payload.telegram_auth = { id: currentUser.telegram_id, username: currentUser.display_name };
-                } else if (currentUser.wallet_address) {
-                    payload.wallet_address = currentUser.wallet_address;
-                } else if (currentUser.supabase_id || currentUser.email) {
-                    payload.supabase_auth = {
-                        id: currentUser.supabase_id,
-                        email: currentUser.email,
-                        display_name: currentUser.display_name
-                    };
+            try {
+                // Ensure user has a factory_users record
+                const userId = await ensureFactoryUser();
+                if (!userId) {
+                    alert('Could not create user profile. Try again.');
+                    return;
                 }
 
-                const response = await fetch(`${SUPABASE_URL}/functions/v1/factory-comment`, {
+                // Insert comment directly
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/factory_comments`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'apikey': SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Prefer': 'return=minimal'
                     },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({
+                        proposal_id: proposalId,
+                        user_id: userId,
+                        content: content
+                    })
                 });
 
-                const result = await response.json();
+                console.log('[Factory] Comment post status:', response.status);
 
-                if (response.ok && result.success) {
+                if (response.ok || response.status === 201) {
                     inputEl.value = '';
                     await loadFactoryComments(proposalId);
-                    await loadFactoryProposals(); // Update comment counts
+                    await loadFactoryProposals();
                 } else {
-                    alert(result.error || 'Failed to post comment');
+                    const errText = await response.text();
+                    console.error('[Factory] Comment post failed:', errText);
+                    alert('Failed to post comment');
                 }
             } catch (err) {
                 console.error('Comment error:', err);
                 alert('Error posting comment');
+            }
+        }
+
+        async function deleteFactoryComment(commentId, proposalId) {
+            if (!confirm('Delete this comment?')) return;
+
+            const accessToken = getSupabaseAccessToken() || SUPABASE_ANON_KEY;
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/factory_comments?id=eq.${commentId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Prefer': 'return=minimal'
+                    }
+                });
+
+                console.log('[Factory] Comment delete status:', response.status);
+
+                if (response.ok || response.status === 204) {
+                    await loadFactoryComments(proposalId);
+                    await loadFactoryProposals();
+                } else {
+                    alert('Failed to delete comment');
+                }
+            } catch (err) {
+                console.error('Comment delete error:', err);
+                alert('Error deleting comment');
             }
         }
 
