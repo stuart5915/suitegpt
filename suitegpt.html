@@ -1559,26 +1559,25 @@
             animation: modalSlideIn 0.3s ease;
         }
 
-        .buy-modal-close {
+        .buy-modal-back {
             position: absolute;
             top: 16px;
-            right: 16px;
-            width: 32px;
-            height: 32px;
+            left: 16px;
             border: none;
-            background: var(--bg-tertiary);
-            border-radius: 50%;
+            background: none;
             cursor: pointer;
-            font-size: 1.2rem;
+            font-size: 0.8rem;
             color: var(--text-secondary);
             display: flex;
             align-items: center;
-            justify-content: center;
+            gap: 4px;
             transition: all 0.2s;
+            padding: 6px 10px;
+            border-radius: 8px;
         }
 
-        .buy-modal-close:hover {
-            background: var(--bg-hover);
+        .buy-modal-back:hover {
+            background: var(--bg-tertiary);
             color: var(--text-primary);
         }
 
@@ -1849,21 +1848,26 @@
             position: relative;
         }
 
-        .withdrawal-modal-close {
+        .withdrawal-modal-back {
             position: absolute;
             top: 12px;
-            right: 12px;
+            left: 12px;
             background: none;
             border: none;
             color: var(--text-secondary);
             cursor: pointer;
-            padding: 8px;
+            padding: 6px 10px;
             border-radius: 8px;
-            transition: background 0.2s;
+            transition: all 0.2s;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
-        .withdrawal-modal-close:hover {
+        .withdrawal-modal-back:hover {
             background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
         }
 
         .withdrawal-modal h2 {
@@ -19834,9 +19838,12 @@
     </div>
 
     <!-- Buy Credits Modal -->
-    <div class="buy-modal-overlay" id="buyModalOverlay" onclick="if(event.target === this) closeBuyModal()">
+    <div class="buy-modal-overlay" id="buyModalOverlay" onclick="if(event.target === this) backToCreditsModal()">
         <div class="buy-modal">
-            <button class="buy-modal-close" onclick="closeBuyModal()">&times;</button>
+            <button class="buy-modal-back" onclick="backToCreditsModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                Back
+            </button>
 
             <!-- Step 1: Choose Payment Method -->
             <div id="buyMethodState">
@@ -20020,12 +20027,11 @@
     </div>
 
     <!-- Withdrawal Modal -->
-    <div class="withdrawal-modal-overlay" id="withdrawalModalOverlay" onclick="if(event.target === this) closeWithdrawalModal()">
+    <div class="withdrawal-modal-overlay" id="withdrawalModalOverlay" onclick="if(event.target === this) backToCreditsFromWithdrawal()">
         <div class="withdrawal-modal">
-            <button class="withdrawal-modal-close" onclick="closeWithdrawalModal()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
+            <button class="withdrawal-modal-back" onclick="backToCreditsFromWithdrawal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                Back
             </button>
             <h2>Request Withdrawal</h2>
 
@@ -31447,6 +31453,11 @@ Return as JSON array. No markdown, no code blocks.`,
             document.body.style.overflow = '';
         }
 
+        function backToCreditsModal() {
+            closeBuyModal();
+            openCreditsModal();
+        }
+
         function showBuyMethodState() {
             document.getElementById('buyMethodState').style.display = 'block';
             document.getElementById('buyCryptoState').style.display = 'none';
@@ -31738,6 +31749,11 @@ Return as JSON array. No markdown, no code blocks.`,
             const overlay = document.getElementById('withdrawalModalOverlay');
             overlay.classList.remove('active');
             document.body.style.overflow = '';
+        }
+
+        function backToCreditsFromWithdrawal() {
+            closeWithdrawalModal();
+            openCreditsModal();
         }
 
         function setMaxWithdrawal() {
