@@ -26425,7 +26425,7 @@ Return a JSON object with exactly these 3 keys:
 - "features": Detailed prompt describing the core features and functionality. Include specific features, data storage needs, and logic.
 - "design": Detailed prompt describing the visual design. Include specific colors, layout, typography, spacing, animations, and visual effects.
 - "interactions": Detailed prompt describing user interactions and behaviors. Include what happens on click, hover, scroll, input, etc.`,
-                        model: 'gemini-3-flash',
+                        model: 'gemini-3-flash-preview',
                         generationConfig: {
                             temperature: 0.7,
                             maxOutputTokens: 2000,
@@ -26594,13 +26594,15 @@ GOOD example (uses AI): "An AI art critic app where you draw something on a canv
 GOOD example (uses AI + browser APIs): "A voice-to-visual-story app where you speak a sentence into the mic using Speech Recognition, the AI expands it into a vivid scene description, then generates the scene as a styled story card with atmospheric CSS effects (rain, glow, fog). You keep speaking sentences to build an illustrated story, with each card having a unique visual mood. The final story can be scrolled through like a visual novel."
 
 Now generate ONE highly detailed, novel app idea. Output ONLY the idea description, nothing else:`,
-                        model: 'gemini-3-flash',
+                        model: 'gemini-3-flash-preview',
                         generationConfig: { temperature: 1.2, maxOutputTokens: 1500 }
                     })
                 });
 
                 if (!response.ok) {
-                    throw new Error('API request failed');
+                    const errData = await response.json().catch(() => ({}));
+                    console.error('Gemini API error:', response.status, errData);
+                    throw new Error('API request failed: ' + (errData.error || response.status));
                 }
 
                 const data = await response.json();
@@ -26775,7 +26777,7 @@ AVAILABLE APIs (use these in the generated code if the idea calls for AI feature
      headers: {'Content-Type': 'application/json'},
      body: JSON.stringify({
        prompt: 'your prompt here',
-       model: 'gemini-3-flash',
+       model: 'gemini-3-flash-preview',
        generationConfig: { temperature: 0.7, maxOutputTokens: 8192 }
      })
    }).then(r => r.json()).then(data => data.text)
@@ -26879,7 +26881,7 @@ Return JSON in this exact format:
     { "title": "Feature Name", "description": "What this adds", "prompt": "detailed build instruction..." }
   ]
 }`,
-                    model: 'gemini-3-flash',
+                    model: 'gemini-3-flash-preview',
                     generationConfig: {
                         temperature: 0.7,
                         maxOutputTokens: 3000,
@@ -27084,7 +27086,7 @@ Output ONLY the COMPLETE updated HTML (with all existing + new code), starting w
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         prompt: buildPrompt,
-                        model: 'gemini-3-flash',
+                        model: 'gemini-3-flash-preview',
                         generationConfig: {
                             temperature: stepIndex === 0 ? 0.7 : 0.5,
                             maxOutputTokens: 32000
@@ -27260,7 +27262,7 @@ ${window.quickAppResult.html}
 The user wants this change: "${userMessage}"
 
 Apply the requested change and output the COMPLETE updated HTML. Start with <!DOCTYPE html> and end with </html>. No explanations, just the code.`,
-                        model: 'gemini-3-flash',
+                        model: 'gemini-3-flash-preview',
                         generationConfig: { temperature: 0.5, maxOutputTokens: 32000 }
                     })
                 });
@@ -27356,7 +27358,7 @@ Focus on things that would make the biggest impact. Look for:
 - Accessibility gaps
 
 Return as JSON array. No markdown, no code blocks.`,
-                        model: 'gemini-3-flash',
+                        model: 'gemini-3-flash-preview',
                         generationConfig: {
                             temperature: 0.7,
                             maxOutputTokens: 2000,
