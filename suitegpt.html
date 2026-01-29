@@ -19639,9 +19639,8 @@
         const BASE_CHAIN_ID = 8453;
         const BASE_RPC = 'https://mainnet.base.org';
         const CREDITS_PER_USDC = 1000;
-        // StakingRewards contract — decentralized reward pool
-        // UPDATE THIS after deploying StakingRewards via Foundry
-        const STAKING_REWARDS_ADDRESS = ''; // TODO: deploy and fill in
+        // StakingRewards contract — decentralized reward pool on Base
+        const STAKING_REWARDS_ADDRESS = '0x4e4B34DDAdd4e92c75a2446a26dba2a020dA02f7';
         const STAKING_REWARDS_ABI = [
             'function depositRewards(uint256 amount) external',
             'function claimUsdc() external',
@@ -26623,9 +26622,9 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
         }
 
         async function removeUserApp(appId) {
-            if (!supabase) return;
+            if (!supabaseClient) return;
             try {
-                await supabase.from('user_apps').delete().eq('id', appId);
+                await supabaseClient.from('user_apps').delete().eq('id', appId);
                 renderSidebarApps();
                 renderDashboardApps();
             } catch (e) {
@@ -27317,6 +27316,7 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
         async function submitIdea() {
             const name = document.getElementById('ideaName')?.value?.trim();
             const description = document.getElementById('ideaDescription')?.value?.trim();
+            const currentUser = getFactoryCurrentUser();
 
             if (!name) {
                 showToast('Please give your idea a name.');
@@ -27382,6 +27382,7 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
             const name = document.getElementById('importAppName')?.value?.trim();
             const description = document.getElementById('importAppDescription')?.value?.trim();
             const code = document.getElementById('importAppCode')?.value?.trim();
+            const currentUser = getFactoryCurrentUser();
 
             if (!name) {
                 showToast('Please enter an app name.');
@@ -27392,7 +27393,7 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
                 return;
             }
 
-            if (!supabase || !currentUser) {
+            if (!supabaseClient || !currentUser) {
                 alert('Please sign in to import an app.');
                 return;
             }
@@ -27401,7 +27402,7 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
             if (btn) { btn.disabled = true; btn.textContent = 'Importing...'; }
 
             try {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('user_apps')
                     .insert({
                         user_id: currentUser.id,
@@ -28655,10 +28656,11 @@ Return as JSON array. No markdown, no code blocks.`,
         }
 
         async function ensureOperatorEntry(userAppId, name, description) {
-            if (!supabase || !currentUser) return;
+            const currentUser = getFactoryCurrentUser();
+            if (!supabaseClient || !currentUser) return;
             try {
                 // Check if operator already exists for this user_app_id
-                const { data: existing } = await supabase
+                const { data: existing } = await supabaseClient
                     .from('suite_operators')
                     .select('id')
                     .eq('user_app_id', userAppId)
@@ -28666,13 +28668,13 @@ Return as JSON array. No markdown, no code blocks.`,
 
                 if (existing) {
                     // Update name/description
-                    await supabase
+                    await supabaseClient
                         .from('suite_operators')
                         .update({ name, description })
                         .eq('id', existing.id);
                 } else {
                     // Insert new operator
-                    await supabase
+                    await supabaseClient
                         .from('suite_operators')
                         .insert({
                             user_app_id: userAppId,
@@ -28691,8 +28693,9 @@ Return as JSON array. No markdown, no code blocks.`,
             if (!window.quickAppResult) return;
 
             const { name, idea, html } = window.quickAppResult;
+            const currentUser = getFactoryCurrentUser();
 
-            if (!supabase || !currentUser) {
+            if (!supabaseClient || !currentUser) {
                 alert('Please sign in to save your app to your collection.');
                 return;
             }
@@ -28700,7 +28703,7 @@ Return as JSON array. No markdown, no code blocks.`,
             try {
                 if (window.quickAppResult.savedAppId) {
                     // Already auto-saved during build - just update with latest code
-                    const { error } = await supabase
+                    const { error } = await supabaseClient
                         .from('user_apps')
                         .update({ code: html, name: name, description: idea })
                         .eq('id', window.quickAppResult.savedAppId);
@@ -28708,7 +28711,7 @@ Return as JSON array. No markdown, no code blocks.`,
                     ensureOperatorEntry(window.quickAppResult.savedAppId, name, idea);
                 } else {
                     // Not yet saved - insert new
-                    const { data, error } = await supabase
+                    const { data, error } = await supabaseClient
                         .from('user_apps')
                         .insert({
                             user_id: currentUser.id,
@@ -29081,7 +29084,7 @@ Return as JSON array. No markdown, no code blocks.`,
         // Apply Fork with Kimi K2
         async function applyFork() {
             if (!proposalSelectedApp) return;
-            const user = supabase ? (await supabase.auth.getUser()).data.user : null;
+            const user = supabaseClient ? (await supabaseClient.auth.getUser()).data.user : null;
             if (!user) { alert('Please log in to fork apps'); return; }
 
             const btn = document.getElementById('forkBtn');
@@ -29114,7 +29117,7 @@ Return as JSON array. No markdown, no code blocks.`,
                 let newCode = (kimiData.text || '').replace(/^```html\\n?/i, '').replace(/\\n?```$/i, '').trim();
                 if (!newCode || newCode.length < 100) throw new Error('Invalid AI response');
 
-                const { error } = await supabase.from('user_apps').insert({
+                const { error } = await supabaseClient.from('user_apps').insert({
                     user_id: user.id,
                     name: 'My ' + app.name,
                     description: 'Forked from ' + app.name,
@@ -32228,7 +32231,7 @@ Return as JSON array. No markdown, no code blocks.`,
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${await supabase.auth.getSession().then(r => r.data.session?.access_token)}`
+                        'Authorization': `Bearer ${await supabaseClient.auth.getSession().then(r => r.data.session?.access_token)}`
                     },
                     body: JSON.stringify({ query })
                 });
