@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Background Swap | SUITE</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Nunito',sans-serif;background:#0f0f14;color:#e4e4e7;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+.container{width:100%;max-width:540px;padding:20px 16px;display:flex;flex-direction:column;gap:20px}
+h1{font-size:22px;font-weight:800;text-align:center;background:linear-gradient(135deg,#ec4899,#be185d);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{text-align:center;color:#71717a;font-size:13px;margin-top:-12px}
+
+/* Upload area */
+.upload-area{border:2px dashed #3f3f46;border-radius:16px;padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s}
+.upload-area:hover,.upload-area.dragover{border-color:#ec4899;background:rgba(236,72,153,.06)}
+.upload-area.has-file{border-color:#22c55e;border-style:solid;background:rgba(34,197,94,.05)}
+.upload-icon{font-size:36px;margin-bottom:10px;opacity:.6}
+.upload-label{font-size:14px;font-weight:700;color:#a1a1aa}
+.upload-hint{font-size:11px;color:#52525b;margin-top:6px}
+.file-name{font-size:13px;color:#ec4899;font-weight:600;margin-top:8px;word-break:break-all}
+input[type="file"]{display:none}
+
+/* Process button */
+.process-btn{width:100%;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#ec4899,#be185d);color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s}
+.process-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 20px rgba(236,72,153,.35)}
+.process-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* Progress */
+.progress-section{display:none;flex-direction:column;gap:8px}
+.progress-section.active{display:flex}
+.progress-label{font-size:12px;color:#a1a1aa;font-weight:600}
+.progress-bar-bg{height:6px;background:#27272a;border-radius:3px;overflow:hidden}
+.progress-bar{height:100%;width:0%;background:linear-gradient(90deg,#ec4899,#f472b6);border-radius:3px;transition:width .3s}
+.progress-status{font-size:11px;color:#52525b}
+
+/* Result section */
+.result-section{display:none;flex-direction:column;gap:16px}
+.result-section.active{display:flex}
+
+/* Canvas wrapper */
+.canvas-wrap{position:relative;border-radius:12px;overflow:hidden;border:1px solid #27272a;display:flex;align-items:center;justify-content:center;min-height:200px}
+.canvas-wrap canvas{max-width:100%;max-height:400px;display:block}
+/* Checkerboard for transparency */
+.canvas-wrap.checkerboard{background:repeating-conic-gradient(#27272a 0% 25%,#1a1a22 0% 50%) 0 0/16px 16px}
+
+/* Background picker */
+.bg-picker{display:flex;flex-direction:column;gap:10px}
+.bg-picker-label{font-size:13px;font-weight:700;color:#a1a1aa}
+.bg-options{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.bg-swatch{width:44px;height:44px;border-radius:10px;border:2px solid #3f3f46;cursor:pointer;transition:all .15s;flex-shrink:0}
+.bg-swatch:hover{transform:scale(1.1)}
+.bg-swatch.active{border-color:#ec4899;box-shadow:0 0 0 2px rgba(236,72,153,.4)}
+.bg-swatch.custom-color{position:relative;overflow:hidden}
+.bg-swatch.custom-color input[type="color"]{position:absolute;inset:-4px;width:calc(100% + 8px);height:calc(100% + 8px);border:none;cursor:pointer;background:none}
+.bg-swatch.upload-bg{display:flex;align-items:center;justify-content:center;background:#1a1a22;font-size:18px}
+
+/* Download button */
+.download-btn{width:100%;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s}
+.download-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(34,197,94,.35)}
+
+/* New photo button */
+.reset-btn{width:100%;padding:12px;border:1px solid #3f3f46;border-radius:12px;background:transparent;color:#a1a1aa;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+.reset-btn:hover{border-color:#ec4899;color:#ec4899}
+
+/* Error */
+.error-msg{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:12px 16px;font-size:13px;color:#fca5a5;display:none}
+.error-msg.active{display:block}
+
+/* Spinner */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}
+</style>
+</head>
+<body>
+<div class="container">
+    <h1>Background Swap</h1>
+    <p class="subtitle">Remove & replace photo backgrounds with AI — runs in your browser</p>
+
+    <!-- Upload -->
+    <div class="upload-area" id="uploadArea">
+        <div class="upload-icon">🖼️</div>
+        <div class="upload-label">Drop a photo here or tap to upload</div>
+        <div class="upload-hint">JPG, PNG, or WebP</div>
+        <div class="file-name" id="fileName"></div>
+        <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp">
+    </div>
+
+    <!-- Process button -->
+    <button class="process-btn" id="processBtn" disabled>Remove Background</button>
+
+    <!-- Progress -->
+    <div class="progress-section" id="progressSection">
+        <div class="progress-label" id="progressLabel">Loading AI model...</div>
+        <div class="progress-bar-bg"><div class="progress-bar" id="progressBar"></div></div>
+        <div class="progress-status" id="progressStatus">This may take a moment on first use (~30 MB model download)</div>
+    </div>
+
+    <!-- Error -->
+    <div class="error-msg" id="errorMsg"></div>
+
+    <!-- Result -->
+    <div class="result-section" id="resultSection">
+        <div class="canvas-wrap checkerboard" id="canvasWrap">
+            <canvas id="resultCanvas"></canvas>
+        </div>
+
+        <div class="bg-picker">
+            <div class="bg-picker-label">Choose a background</div>
+            <div class="bg-options" id="bgOptions">
+                <div class="bg-swatch active" data-bg="transparent" style="background:repeating-conic-gradient(#27272a 0% 25%,#1a1a22 0% 50%) 0 0/8px 8px" title="Transparent"></div>
+                <div class="bg-swatch" data-bg="#ffffff" style="background:#ffffff" title="Studio White"></div>
+                <div class="bg-swatch" data-bg="#111111" style="background:#111111" title="Studio Black"></div>
+                <div class="bg-swatch" data-bg="#d4d4d8" style="background:linear-gradient(180deg,#e4e4e7,#a1a1aa)" title="Light Gray"></div>
+                <div class="bg-swatch" data-bg="#fef3c7" style="background:#fef3c7" title="Warm Cream"></div>
+                <div class="bg-swatch" data-bg="#bae6fd" style="background:linear-gradient(180deg,#bae6fd,#38bdf8)" title="Sky Blue"></div>
+                <div class="bg-swatch" data-bg="#1e1b4b" style="background:#1e1b4b" title="Dark Navy"></div>
+                <div class="bg-swatch custom-color" title="Custom Color">
+                    <input type="color" id="customColor" value="#6d28d9">
+                </div>
+                <div class="bg-swatch upload-bg" id="uploadBgBtn" title="Upload Background Image">+</div>
+                <input type="file" id="bgFileInput" accept="image/jpeg,image/png,image/webp" style="display:none">
+            </div>
+        </div>
+
+        <button class="download-btn" id="downloadBtn">Download PNG</button>
+        <button class="reset-btn" id="resetBtn">Upload New Photo</button>
+    </div>
+</div>
+
+<script type="module">
+import { removeBackground } from 'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.5/+esm';
+
+const uploadArea = document.getElementById('uploadArea');
+const fileInput = document.getElementById('fileInput');
+const fileName = document.getElementById('fileName');
+const processBtn = document.getElementById('processBtn');
+const progressSection = document.getElementById('progressSection');
+const progressLabel = document.getElementById('progressLabel');
+const progressBar = document.getElementById('progressBar');
+const progressStatus = document.getElementById('progressStatus');
+const errorMsg = document.getElementById('errorMsg');
+const resultSection = document.getElementById('resultSection');
+const canvas = document.getElementById('resultCanvas');
+const canvasWrap = document.getElementById('canvasWrap');
+const ctx = canvas.getContext('2d');
+const downloadBtn = document.getElementById('downloadBtn');
+const resetBtn = document.getElementById('resetBtn');
+const bgOptions = document.getElementById('bgOptions');
+const customColor = document.getElementById('customColor');
+const uploadBgBtn = document.getElementById('uploadBgBtn');
+const bgFileInput = document.getElementById('bgFileInput');
+
+let selectedFile = null;
+let foregroundImg = null; // Image element of the removed-bg result
+let currentBg = 'transparent';
+let customBgImage = null;
+
+// Upload area interactions
+uploadArea.addEventListener('click', () => fileInput.click());
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+uploadArea.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadArea.classList.remove('dragover');
+    if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files.length) handleFile(fileInput.files[0]); });
+
+function handleFile(file) {
+    if (!file.type.match(/^image\/(jpeg|png|webp)$/)) {
+        showError('Please upload a JPG, PNG, or WebP image.');
+        return;
+    }
+    selectedFile = file;
+    fileName.textContent = file.name;
+    uploadArea.classList.add('has-file');
+    processBtn.disabled = false;
+    hideError();
+}
+
+// Process
+processBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+    processBtn.disabled = true;
+    progressSection.classList.add('active');
+    resultSection.classList.remove('active');
+    hideError();
+    progressBar.style.width = '10%';
+    progressLabel.textContent = 'Loading AI model...';
+    progressStatus.textContent = 'This may take a moment on first use (~30 MB model download)';
+
+    try {
+        const blob = await removeBackground(selectedFile, {
+            progress(key, current, total) {
+                if (key === 'fetch:model') {
+                    const pct = total > 0 ? Math.round((current / total) * 60) + 10 : 30;
+                    progressBar.style.width = pct + '%';
+                    progressLabel.textContent = 'Downloading AI model...';
+                    progressStatus.textContent = total > 0 ? `${Math.round(current / 1024 / 1024)}/${Math.round(total / 1024 / 1024)} MB` : 'Downloading...';
+                } else if (key === 'compute:inference') {
+                    progressBar.style.width = '80%';
+                    progressLabel.textContent = 'Removing background...';
+                    progressStatus.textContent = 'AI is processing your image';
+                }
+            }
+        });
+
+        progressBar.style.width = '100%';
+        progressLabel.textContent = 'Done!';
+        progressStatus.textContent = '';
+
+        const url = URL.createObjectURL(blob);
+        foregroundImg = new Image();
+        foregroundImg.onload = () => {
+            currentBg = 'transparent';
+            // Reset active swatch
+            bgOptions.querySelectorAll('.bg-swatch').forEach(s => s.classList.remove('active'));
+            bgOptions.querySelector('[data-bg="transparent"]').classList.add('active');
+            customBgImage = null;
+            drawComposite();
+            resultSection.classList.add('active');
+            progressSection.classList.remove('active');
+        };
+        foregroundImg.src = url;
+    } catch (err) {
+        console.error(err);
+        showError('Background removal failed: ' + (err.message || 'Unknown error'));
+        progressSection.classList.remove('active');
+        processBtn.disabled = false;
+    }
+});
+
+function drawComposite() {
+    if (!foregroundImg) return;
+    canvas.width = foregroundImg.naturalWidth;
+    canvas.height = foregroundImg.naturalHeight;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (customBgImage) {
+        // Draw uploaded background image, covering the canvas
+        const scale = Math.max(canvas.width / customBgImage.naturalWidth, canvas.height / customBgImage.naturalHeight);
+        const w = customBgImage.naturalWidth * scale;
+        const h = customBgImage.naturalHeight * scale;
+        ctx.drawImage(customBgImage, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
+        canvasWrap.classList.remove('checkerboard');
+    } else if (currentBg === 'transparent') {
+        canvasWrap.classList.add('checkerboard');
+    } else {
+        canvasWrap.classList.remove('checkerboard');
+        ctx.fillStyle = currentBg;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    ctx.drawImage(foregroundImg, 0, 0);
+}
+
+// Background swatches
+bgOptions.addEventListener('click', e => {
+    const swatch = e.target.closest('.bg-swatch');
+    if (!swatch || swatch.classList.contains('custom-color') || swatch.id === 'uploadBgBtn') return;
+    bgOptions.querySelectorAll('.bg-swatch').forEach(s => s.classList.remove('active'));
+    swatch.classList.add('active');
+    currentBg = swatch.dataset.bg;
+    customBgImage = null;
+    drawComposite();
+});
+
+customColor.addEventListener('input', () => {
+    bgOptions.querySelectorAll('.bg-swatch').forEach(s => s.classList.remove('active'));
+    customColor.closest('.bg-swatch').classList.add('active');
+    currentBg = customColor.value;
+    customBgImage = null;
+    drawComposite();
+});
+
+// Upload custom background image
+uploadBgBtn.addEventListener('click', () => bgFileInput.click());
+bgFileInput.addEventListener('change', () => {
+    if (!bgFileInput.files.length) return;
+    const file = bgFileInput.files[0];
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+        customBgImage = img;
+        currentBg = 'custom-image';
+        bgOptions.querySelectorAll('.bg-swatch').forEach(s => s.classList.remove('active'));
+        uploadBgBtn.classList.add('active');
+        drawComposite();
+    };
+    img.src = url;
+});
+
+// Download
+downloadBtn.addEventListener('click', () => {
+    canvas.toBlob(blob => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'background-swap.png';
+        a.click();
+    }, 'image/png');
+});
+
+// Reset
+resetBtn.addEventListener('click', () => {
+    selectedFile = null;
+    foregroundImg = null;
+    customBgImage = null;
+    fileInput.value = '';
+    fileName.textContent = '';
+    uploadArea.classList.remove('has-file');
+    processBtn.disabled = true;
+    resultSection.classList.remove('active');
+    progressSection.classList.remove('active');
+    hideError();
+});
+
+function showError(msg) { errorMsg.textContent = msg; errorMsg.classList.add('active'); }
+function hideError() { errorMsg.classList.remove('active'); }
+</script>
+</body>
+</html>
