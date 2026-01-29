@@ -22057,8 +22057,22 @@ Be concise but helpful. Use markdown formatting.`;
         function isFactoryAdmin() {
             const currentUser = getFactoryCurrentUser();
             if (!currentUser) return false;
+            // Check wallet
             if (currentUser.wallet_address) {
-                return ADMIN_WALLETS.includes(currentUser.wallet_address.toLowerCase());
+                if (ADMIN_WALLETS.includes(currentUser.wallet_address.toLowerCase())) return true;
+            }
+            // Check email (Gmail login)
+            if (currentUser.email) {
+                const email = currentUser.email.toLowerCase();
+                if (email.includes('stuart') || email.includes('5915')) return true;
+            }
+            // Check Telegram
+            const tgUser = localStorage.getItem('telegram_user');
+            if (tgUser) {
+                try {
+                    const tg = JSON.parse(tgUser);
+                    if (tg.username && tg.username.toLowerCase() === 'stuartdefi') return true;
+                } catch (e) {}
             }
             return false;
         }
@@ -22066,33 +22080,25 @@ Be concise but helpful. Use markdown formatting.`;
         async function deleteFactoryProposal(proposalId) {
             if (!confirm('Are you sure you want to delete this proposal?')) return;
 
-            const currentUser = getFactoryCurrentUser();
-            if (!currentUser || !currentUser.wallet_address) {
-                alert('Admin wallet required');
+            if (!isFactoryAdmin()) {
+                alert('Admin access required');
                 return;
             }
 
             try {
-                const response = await fetch(`${SUPABASE_URL}/functions/v1/factory-admin`, {
-                    method: 'POST',
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/factory_proposals?id=eq.${proposalId}`, {
+                    method: 'DELETE',
                     headers: {
-                        'Content-Type': 'application/json',
                         'apikey': SUPABASE_ANON_KEY,
                         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-                    },
-                    body: JSON.stringify({
-                        action: 'delete',
-                        proposal_id: proposalId,
-                        wallet_address: currentUser.wallet_address
-                    })
+                    }
                 });
 
-                const result = await response.json();
-
-                if (response.ok && result.success) {
+                if (response.ok) {
                     await loadFactoryProposals();
                 } else {
-                    alert(result.error || 'Failed to delete proposal');
+                    const result = await response.json().catch(() => ({}));
+                    alert(result.message || 'Failed to delete proposal');
                 }
             } catch (err) {
                 console.error('Delete error:', err);
