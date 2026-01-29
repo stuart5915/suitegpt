@@ -21824,6 +21824,43 @@ ${slots.map((s, i) => `${i + 1}. ${s.icon} ${s.name} (${formatTime(s.time)}): [s
             return sourceContext;
         }
 
+        // Robust JSON array parser — handles markdown fences, extra text, etc.
+        function parseJSONResponse(raw) {
+            // Strip whitespace
+            let text = raw.trim();
+
+            // Remove markdown code fences
+            text = text.replace(/^```(?:json)?\s*\n?/gm, '').replace(/\n?```\s*$/gm, '').trim();
+
+            // Try direct parse first
+            try { return JSON.parse(text); } catch (e) {}
+
+            // Try to extract JSON array from surrounding text
+            const arrayMatch = text.match(/\[[\s\S]*\]/);
+            if (arrayMatch) {
+                try { return JSON.parse(arrayMatch[0]); } catch (e) {}
+
+                // JSON might have unescaped newlines in strings — try fixing
+                try {
+                    const fixed = arrayMatch[0].replace(/(?<=":[ ]?"[^"]*)\n(?=[^"]*")/g, '\\n');
+                    return JSON.parse(fixed);
+                } catch (e) {}
+            }
+
+            // Try to extract JSON object and wrap in array
+            const objMatch = text.match(/\{[\s\S]*\}/g);
+            if (objMatch) {
+                try {
+                    const items = objMatch.map(m => JSON.parse(m));
+                    if (items.length > 0) return items;
+                } catch (e) {}
+            }
+
+            // Last resort: log the raw response for debugging
+            console.error('[parseJSON] All parsing attempts failed. Raw response:', text.substring(0, 1000));
+            throw new Error('Could not parse AI response as JSON. Check console for raw output.');
+        }
+
         // Step 1: Extract unique angles from the research
         async function extractAngles() {
             const theme = document.getElementById('dailyTheme').value.trim();
@@ -21871,20 +21908,13 @@ For each slot, write:
 1. A 1-2 sentence angle description — WHAT specific point to make and HOW to frame it. Be specific, reference actual details from the research.
 2. A text-to-image prompt — a cinematic, photorealistic scene showing human-AI symbiosis. The image should visually represent the angle's concept. Style: real humans interacting with, merging with, or working alongside AI in unexpected, beautiful ways. Think diverse people, warm lighting, slightly surreal blending of organic and digital. Each image must be visually DISTINCT from the others.
 
-IMPORTANT: Return ONLY a valid JSON array. No markdown, no code fences.
+CRITICAL: You MUST return ONLY a raw JSON array. No markdown, no \`\`\` code fences, no explanation text before or after. Just the JSON array starting with [ and ending with ]. Do not use backticks anywhere.
 [{"index":1,"angle":"specific angle description","imagePrompt":"detailed image generation prompt"},{"index":2,"angle":"...","imagePrompt":"..."}]`;
 
             try {
                 const response = await callCopilotAI(prompt);
-                let parsed;
-                try {
-                    const jsonStr = response.replace(/```json?\s*/g, '').replace(/```\s*/g, '').trim();
-                    parsed = JSON.parse(jsonStr);
-                } catch (e) {
-                    const match = response.match(/\[[\s\S]*\]/);
-                    if (match) parsed = JSON.parse(match[0]);
-                    else throw new Error('Could not parse AI response as JSON');
-                }
+                console.log('[Daily Brief] Raw AI response:', response.substring(0, 500));
+                const parsed = parseJSONResponse(response);
 
                 dailyAngles = dailySlots.map((slot, i) => {
                     const extracted = parsed.find(p => p.index === i + 1) || parsed[i] || {};
@@ -21953,20 +21983,13 @@ Write each post using its SPECIFIC assigned angle. Do not deviate from the angle
 
 ${postInstructions}
 
-IMPORTANT: Return ONLY a valid JSON array. No markdown, no code fences.
+CRITICAL: You MUST return ONLY a raw JSON array. No markdown, no \`\`\` code fences, no explanation text. Just the JSON array starting with [ and ending with ].
 [{"index":1,"text":"post text here"},{"index":2,"text":"post text here"}]`;
 
             try {
                 const response = await callCopilotAI(prompt);
-                let parsed;
-                try {
-                    const jsonStr = response.replace(/```json?\s*/g, '').replace(/```\s*/g, '').trim();
-                    parsed = JSON.parse(jsonStr);
-                } catch (e) {
-                    const match = response.match(/\[[\s\S]*\]/);
-                    if (match) parsed = JSON.parse(match[0]);
-                    else throw new Error('Could not parse AI response as JSON');
-                }
+                console.log('[Daily Brief] Raw post response:', response.substring(0, 500));
+                const parsed = parseJSONResponse(response);
 
                 dailyGeneratedPosts = dailySlots.map((slot, i) => {
                     const generated = parsed.find(p => p.index === i + 1) || parsed[i] || {};
