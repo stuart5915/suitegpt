@@ -21647,13 +21647,13 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
                 }
             }
             // Populate app highlight dropdown
-            populateAppHighlightDropdown();
+            populateSourceAppDropdown();
             // Initialize daily brief
             loadDailyBriefs();
             renderDailyBrief();
         }
 
-        function populateAppHighlightDropdown() {
+        function populateSourceAppDropdown() {
             const select = document.getElementById('appHighlightSelect');
             if (!select || typeof SUITE_APPS === 'undefined') return;
             Object.entries(SUITE_APPS).forEach(([key, app]) => {
@@ -21818,6 +21818,9 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
                 previewEl.style.display = 'none';
             }
 
+            // App highlight picker
+            populateAppHighlightDropdown();
+
             // Research prompt
             updateResearchPrompt(slots, d);
 
@@ -21889,9 +21892,10 @@ ${slots.map((s, i) => `${i + 1}. ${s.icon} ${s.name} (${formatTime(s.time)}): [s
             const thumbEl = document.getElementById('dailyImageThumb');
             const previewEl = document.getElementById('dailyImagePreview');
             const image = (previewEl && previewEl.style.display !== 'none' && thumbEl?.src) ? thumbEl.src : null;
+            const appHighlight = document.getElementById('dailyAppSelect')?.value || '';
 
-            if (theme || notes || image) {
-                dailyBriefs[dateKey] = { theme, notes, image };
+            if (theme || notes || image || appHighlight) {
+                dailyBriefs[dateKey] = { theme, notes, image, appHighlight };
                 saveDailyBriefs();
             }
         }
@@ -21991,8 +21995,9 @@ ${slots.map((s, i) => `${i + 1}. ${s.icon} ${s.name} (${formatTime(s.time)}): [s
             const notes = document.getElementById('dailyNotes').value.trim();
             const sourceContext = gatherSourceContext();
 
-            if (!theme && !notes && !sourceContext) {
-                alert('Add a theme, notes, or enable a source helper first.');
+            const hasAppHighlight = !!document.getElementById('dailyAppSelect')?.value;
+            if (!theme && !notes && !sourceContext && !hasAppHighlight) {
+                alert('Add a theme, notes, select an app highlight, or enable a source helper first.');
                 return;
             }
 
@@ -22011,8 +22016,24 @@ ${slots.map((s, i) => `${i + 1}. ${s.icon} ${s.name} (${formatTime(s.time)}): [s
             genBtn.style.display = 'none';
             resultsEl.innerHTML = '';
 
+            // Check if an app highlight is selected for today
+            const selectedAppKey = document.getElementById('dailyAppSelect')?.value;
+            const selectedApp = selectedAppKey ? SUITE_APPS[selectedAppKey] : null;
+
+            // Separate app-highlight slots from research-driven slots
+            const researchSlots = [];
+            const appSlots = [];
+            dailySlots.forEach((s, i) => {
+                if (s.cadence === 'app-highlights' && selectedApp) {
+                    appSlots.push({ ...s, originalIndex: i });
+                } else {
+                    researchSlots.push({ ...s, originalIndex: i });
+                }
+            });
+
             const slotDescriptions = dailySlots.map((s, i) => {
                 if (s.cadence === 'linkedin-posts') return `${i + 1}. LinkedIn post (${formatTime(s.time)}) — long-form, professional`;
+                if (s.cadence === 'app-highlights' && selectedApp) return `${i + 1}. App Highlight (${formatTime(s.time)}) — spotlight on ${selectedApp.name}: ${selectedApp.description}. Deep-dive on this specific app — problem it solves, key features, why it matters.`;
                 if (s.cadence === 'app-highlights') return `${i + 1}. App Highlight (${formatTime(s.time)}) — deep-dive on a SUITE app`;
                 if (s.cadence === 'ecosystem-updates') return `${i + 1}. Ecosystem Update (${formatTime(s.time)}) — build-in-public recap`;
                 return `${i + 1}. X/Twitter post (${formatTime(s.time)}) — short, punchy`;
@@ -22080,8 +22101,13 @@ CRITICAL: You MUST return ONLY a raw JSON array. No markdown, no \`\`\` code fen
         async function generateFromAngles() {
             const theme = document.getElementById('dailyTheme').value.trim();
             const dateKey = getDailyBriefDateKey();
-            const sourceContext = gatherSourceContext();
+            let sourceContext = gatherSourceContext();
             const hasImage = document.getElementById('dailyImagePreview').style.display !== 'none';
+
+            // Add selected app highlight context
+            const appKey = document.getElementById('dailyAppSelect')?.value;
+            const appInfo = appKey ? SUITE_APPS[appKey] : null;
+            if (appInfo) sourceContext += `\nToday's App Highlight: ${appInfo.name} — ${appInfo.description}`;
 
             // Read (possibly edited) angles from the textareas
             dailyAngles.forEach((a, i) => {
@@ -22218,9 +22244,17 @@ CRITICAL: You MUST return ONLY a raw JSON array. No markdown, no \`\`\` code fen
             const notes = document.getElementById('dailyNotes').value.trim();
             const info = CADENCE_INFO[post.cadence];
 
+            // For app highlight posts, include the selected app context
+            let appContext = '';
+            if (post.cadence === 'app-highlights') {
+                const appKey = document.getElementById('dailyAppSelect')?.value;
+                const app = appKey ? SUITE_APPS[appKey] : null;
+                if (app) appContext = `\nApp to spotlight: ${app.name} — ${app.description}`;
+            }
+
             const prompt = `You are the social media manager for SUITE (suitegpt.app) — "Anyone Can Build, Everyone Gets Paid."
 Today's theme: ${theme || 'general update'}
-${notes ? 'Context: ' + notes : ''}
+${notes ? 'Context: ' + notes : ''}${appContext}
 
 Generate a single ${info.prompt}
 
@@ -22272,6 +22306,84 @@ Return ONLY the post text, nothing else.`;
         function saveAllDailyPosts() {
             dailyGeneratedPosts.forEach((_, i) => saveDailyPostToCalendar(i));
             showToast(`All ${dailyGeneratedPosts.length} posts saved to calendar!`);
+        }
+
+        // --- App Highlight Picker ---
+
+        function loadAppHighlightHistory() {
+            try {
+                return JSON.parse(localStorage.getItem('app_highlight_history') || '{}');
+            } catch { return {}; }
+        }
+
+        function saveAppHighlightHistory(history) {
+            localStorage.setItem('app_highlight_history', JSON.stringify(history));
+        }
+
+        function getAppUsageCount(appKey) {
+            const history = loadAppHighlightHistory();
+            return Object.values(history).filter(v => v === appKey).length;
+        }
+
+        function populateAppHighlightDropdown() {
+            const select = document.getElementById('dailyAppSelect');
+            if (!select) return;
+
+            const history = loadAppHighlightHistory();
+            const dateKey = getDailyBriefDateKey();
+
+            // Build usage counts
+            const usageCounts = {};
+            for (const v of Object.values(history)) {
+                usageCounts[v] = (usageCounts[v] || 0) + 1;
+            }
+
+            // Sort apps: least-used first so user can easily pick under-highlighted ones
+            const appEntries = Object.entries(SUITE_APPS).sort((a, b) => {
+                return (usageCounts[a[0]] || 0) - (usageCounts[b[0]] || 0);
+            });
+
+            let html = '<option value="">Pick an app to highlight...</option>';
+            for (const [key, app] of appEntries) {
+                const count = usageCounts[key] || 0;
+                const countLabel = count > 0 ? ` (×${count})` : '';
+                const selected = history[dateKey] === key ? ' selected' : '';
+                html += `<option value="${key}"${selected}>${app.name}${countLabel}</option>`;
+            }
+            select.innerHTML = html;
+
+            // Update badge
+            updateAppHighlightBadge();
+        }
+
+        function onDailyAppSelect() {
+            const select = document.getElementById('dailyAppSelect');
+            const appKey = select.value;
+            const dateKey = getDailyBriefDateKey();
+            const history = loadAppHighlightHistory();
+
+            if (appKey) {
+                history[dateKey] = appKey;
+            } else {
+                delete history[dateKey];
+            }
+            saveAppHighlightHistory(history);
+            updateAppHighlightBadge();
+        }
+
+        function updateAppHighlightBadge() {
+            const badge = document.getElementById('appHighlightCountBadge');
+            const select = document.getElementById('dailyAppSelect');
+            if (!badge || !select) return;
+
+            const appKey = select.value;
+            if (appKey) {
+                const count = getAppUsageCount(appKey);
+                badge.textContent = count > 0 ? `Featured ${count}×` : 'First time!';
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
         }
 
         function showGenerating(outputId) {
