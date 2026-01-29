@@ -22170,6 +22170,23 @@ CRITICAL: You MUST return ONLY a raw JSON array. No markdown, no \`\`\` code fen
         function renderAnglesReview() {
             const anglesEl = document.getElementById('dailyAnglesResults');
             const genBtn = document.getElementById('generateFromAnglesBtn');
+            const hasImage = document.getElementById('dailyImagePreview')?.style.display !== 'none';
+            const imageSrc = hasImage ? document.getElementById('dailyImageThumb')?.src : null;
+
+            const imageOverlay = imageSrc ? `
+                <div class="brand-overlay-container" style="max-width:280px;">
+                    <img class="brand-overlay-bg" src="${imageSrc}" alt="post image">
+                    <div class="brand-overlay-frame">
+                        <div class="brand-overlay-bar">
+                            <img class="brand-overlay-logo" src="/suitegpt-logo.png" alt="SUITE">
+                            <div class="brand-overlay-text">
+                                <span class="brand-overlay-name">SUITE</span>
+                                <span class="brand-overlay-tagline">Anyone Can Build. Everyone Gets Paid.</span>
+                            </div>
+                            <span class="brand-overlay-url">suitegpt.app</span>
+                        </div>
+                    </div>
+                </div>` : '';
 
             anglesEl.innerHTML = dailyAngles.map((a, i) => `
                 <div class="daily-angle-card">
@@ -22184,6 +22201,7 @@ CRITICAL: You MUST return ONLY a raw JSON array. No markdown, no \`\`\` code fen
                             <textarea class="daily-angle-imgprompt" id="imgPrompt_${i}" rows="2">${a.imagePrompt}</textarea>
                             <button class="daily-angle-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('imgPrompt_${i}').value);showToast('Image prompt copied!')">📋</button>
                         </div>
+                        ${imageOverlay}
                     </div>
                 </div>
             `).join('');
