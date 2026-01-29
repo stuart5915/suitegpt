@@ -25950,27 +25950,44 @@ Be concise but helpful. Use markdown formatting.`;
 APP IDEA:
 "${idea}"
 
-Output EXACTLY this JSON format (no markdown, no code blocks, just raw JSON):
-{
-    "features": "Detailed prompt describing the core features and functionality. Include specific features, data storage needs, and logic. Be very specific about what the app does.",
-    "design": "Detailed prompt describing the visual design. Include specific colors, layout, typography, spacing, animations, and visual effects. Describe the exact look and feel.",
-    "interactions": "Detailed prompt describing user interactions and behaviors. Include what happens on click, hover, scroll, input, etc. Describe transitions and feedback."
-}`,
+Return a JSON object with exactly these 3 keys:
+- "features": Detailed prompt describing the core features and functionality. Include specific features, data storage needs, and logic.
+- "design": Detailed prompt describing the visual design. Include specific colors, layout, typography, spacing, animations, and visual effects.
+- "interactions": Detailed prompt describing user interactions and behaviors. Include what happens on click, hover, scroll, input, etc.`,
                         model: 'gemini-2.0-flash',
-                        generationConfig: { temperature: 0.7, maxOutputTokens: 2000 }
+                        generationConfig: {
+                            temperature: 0.7,
+                            maxOutputTokens: 2000,
+                            responseMimeType: 'application/json'
+                        }
                     })
                 });
 
-                if (!response.ok) throw new Error('API failed');
+                if (!response.ok) throw new Error('API failed: ' + response.status);
 
                 const data = await response.json();
-                let jsonText = data.text || '';
+                let jsonText = (data.text || '').trim();
+                console.log('Prompt breakdown raw:', jsonText.substring(0, 200));
 
-                // Try to extract JSON from response
-                const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    const prompts = JSON.parse(jsonMatch[0]);
+                // Parse JSON - try direct first, then fallback extractions
+                let prompts;
+                try {
+                    prompts = JSON.parse(jsonText);
+                } catch (e1) {
+                    // Fallback: strip markdown code blocks
+                    const codeBlock = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/);
+                    if (codeBlock) {
+                        try { prompts = JSON.parse(codeBlock[1].trim()); } catch(e2) {}
+                    }
+                    if (!prompts) {
+                        const braceMatch = jsonText.match(/\{[\s\S]*\}/);
+                        if (braceMatch) {
+                            try { prompts = JSON.parse(braceMatch[0]); } catch(e3) {}
+                        }
+                    }
+                }
 
+                if (prompts && (prompts.features || prompts.design || prompts.interactions)) {
                     generatedPrompts.features = prompts.features || '';
                     generatedPrompts.design = prompts.design || '';
                     generatedPrompts.interactions = prompts.interactions || '';
@@ -25982,6 +25999,7 @@ Output EXACTLY this JSON format (no markdown, no code blocks, just raw JSON):
 
                     promptBreakdownGenerated = true;
                 } else {
+                    console.error('Could not parse prompts from:', jsonText);
                     throw new Error('Invalid JSON response');
                 }
             } catch (error) {
