@@ -31110,6 +31110,28 @@ Return as JSON array. No markdown, no code blocks.`,
             checkAuthState();
         }
 
+        // One-time migration: update Vestine's Pet Care app with new design
+        (async function migrateVestinePage() {
+            const migKey = 'vestine_v2_migrated';
+            if (localStorage.getItem(migKey)) return;
+            try {
+                const session = await supabaseClient?.auth?.getSession();
+                if (!session?.data?.session) return;
+                const resp = await fetch('/vestine-page.html');
+                if (!resp.ok) return;
+                const newCode = await resp.text();
+                if (!newCode || newCode.length < 500) return;
+                const { error } = await supabaseClient
+                    .from('user_apps')
+                    .update({ code: newCode, icon_bg: 'linear-gradient(160deg, #4A7A5B, #1B3A2D)' })
+                    .eq('id', '5ef849de-0e31-48c1-aafc-11ea47de956c');
+                if (!error) {
+                    localStorage.setItem(migKey, '1');
+                    console.log('[Migration] Vestine page updated to v2');
+                }
+            } catch(e) { console.log('[Migration] Vestine skip:', e); }
+        })();
+
         // DOM Elements
         const chatInput = document.getElementById('chatInput');
         const sendBtn = document.getElementById('sendBtn');

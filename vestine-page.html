@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vestine's Pet Care | Dog Walking, Grooming & Service Dog Training</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --pine: #1B3A2D;
+    --pine-deep: #0F261C;
+    --sage: #4A7A5B;
+    --sage-muted: #6B9B7A;
+    --honey: #D4943A;
+    --honey-light: #E8B96A;
+    --honey-glow: #F5D49A;
+    --cream: #FAF6F0;
+    --cream-warm: #F5EDE0;
+    --linen: #EDE5D8;
+    --bark: #3D2E1F;
+    --bark-soft: #6B5744;
+    --blush: #E8C4B8;
+    --text-primary: #1A1410;
+    --text-body: #3D352C;
+    --text-soft: #7A6E62;
+    --white: #FFFFFF;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    color: var(--text-body);
+    background: var(--cream);
+    line-height: 1.65;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== GRAIN OVERLAY ===== */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 150px;
+  }
+
+  /* ===== SCROLL REVEAL ===== */
+  .reveal {
+    opacity: 0;
+    transform: translateY(32px);
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .stagger > .reveal:nth-child(1) { transition-delay: 0s; }
+  .stagger > .reveal:nth-child(2) { transition-delay: 0.1s; }
+  .stagger > .reveal:nth-child(3) { transition-delay: 0.2s; }
+  .stagger > .reveal:nth-child(4) { transition-delay: 0.3s; }
+  .stagger > .reveal:nth-child(5) { transition-delay: 0.4s; }
+  .stagger > .reveal:nth-child(6) { transition-delay: 0.5s; }
+
+  /* ===== NAV ===== */
+  .nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: 16px 24px;
+    transition: all 0.4s ease;
+  }
+  .nav.scrolled {
+    background: rgba(27, 58, 45, 0.95);
+    backdrop-filter: blur(20px);
+    padding: 10px 24px;
+    box-shadow: 0 4px 30px rgba(0,0,0,0.15);
+  }
+  .nav-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .nav-brand {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.3rem;
+    color: var(--cream);
+    text-decoration: none;
+    letter-spacing: -0.02em;
+  }
+  .nav-brand span { color: var(--honey-light); }
+  .nav-links {
+    display: flex;
+    gap: 28px;
+    list-style: none;
+  }
+  .nav-links a {
+    color: rgba(250, 246, 240, 0.7);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transition: color 0.3s;
+  }
+  .nav-links a:hover { color: var(--honey-light); }
+
+  /* ===== HERO ===== */
+  .hero {
+    min-height: 100vh;
+    background: var(--pine);
+    display: flex;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+    padding: 100px 24px 80px;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -30%;
+    right: -10%;
+    width: 70%;
+    height: 120%;
+    background: radial-gradient(ellipse, rgba(212, 148, 58, 0.12) 0%, transparent 65%);
+    pointer-events: none;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 200px;
+    background: linear-gradient(to top, var(--pine-deep), transparent);
+    pointer-events: none;
+  }
+
+  .hero-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+  }
+
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--honey-light);
+    margin-bottom: 24px;
+  }
+  .hero-eyebrow-dot {
+    width: 7px; height: 7px;
+    background: #5EBB78;
+    border-radius: 50%;
+    animation: breathe 3s ease-in-out infinite;
+  }
+  @keyframes breathe {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(94, 187, 120, 0.4); }
+    50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(94, 187, 120, 0); }
+  }
+
+  .hero h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2.8rem, 5.5vw, 4.8rem);
+    color: var(--cream);
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+    margin-bottom: 24px;
+  }
+  .hero h1 em {
+    font-style: italic;
+    color: var(--honey-light);
+  }
+
+  .hero-body {
+    font-size: 1.1rem;
+    color: rgba(250, 246, 240, 0.6);
+    max-width: 460px;
+    margin-bottom: 36px;
+    font-weight: 300;
+    line-height: 1.75;
+  }
+
+  .hero-ctas {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 15px 34px;
+    border-radius: 60px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    letter-spacing: 0.02em;
+  }
+  .btn-gold {
+    background: var(--honey);
+    color: var(--pine-deep);
+    box-shadow: 0 4px 24px rgba(212, 148, 58, 0.35);
+  }
+  .btn-gold:hover {
+    background: var(--honey-light);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 32px rgba(212, 148, 58, 0.45);
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--cream);
+    border: 1.5px solid rgba(250, 246, 240, 0.25);
+  }
+  .btn-ghost:hover {
+    border-color: var(--honey-light);
+    color: var(--honey-light);
+    transform: translateY(-3px);
+  }
+
+  /* Hero visual — organic shape with icon */
+  .hero-visual {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .hero-visual-shape {
+    width: 100%;
+    max-width: 420px;
+    aspect-ratio: 1;
+    border-radius: 42% 58% 62% 38% / 45% 55% 45% 55%;
+    background: linear-gradient(160deg, var(--sage), var(--pine));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8rem;
+    position: relative;
+    animation: morph 12s ease-in-out infinite;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.25), inset 0 -20px 40px rgba(0,0,0,0.15);
+  }
+  @keyframes morph {
+    0%, 100% { border-radius: 42% 58% 62% 38% / 45% 55% 45% 55%; }
+    25% { border-radius: 55% 45% 48% 52% / 38% 62% 42% 58%; }
+    50% { border-radius: 48% 52% 55% 45% / 58% 42% 55% 45%; }
+    75% { border-radius: 38% 62% 45% 55% / 52% 48% 58% 42%; }
+  }
+
+  .hero-stats {
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 2px;
+    background: rgba(15, 38, 28, 0.9);
+    backdrop-filter: blur(16px);
+    border-radius: 16px;
+    padding: 4px;
+    border: 1px solid rgba(250, 246, 240, 0.08);
+  }
+  .hero-stat {
+    text-align: center;
+    padding: 14px 22px;
+    border-radius: 12px;
+  }
+  .hero-stat:hover { background: rgba(250, 246, 240, 0.05); }
+  .hero-stat-val {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.4rem;
+    color: var(--honey-light);
+    line-height: 1;
+  }
+  .hero-stat-lbl {
+    font-size: 0.65rem;
+    color: rgba(250, 246, 240, 0.45);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 4px;
+    font-weight: 500;
+  }
+
+  /* ===== SECTION DEFAULTS ===== */
+  section { padding: 100px 24px; }
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  .section-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--honey);
+    margin-bottom: 14px;
+  }
+  .section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2rem, 4vw, 3rem);
+    color: var(--text-primary);
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+  .section-desc {
+    font-size: 1.05rem;
+    color: var(--text-soft);
+    max-width: 520px;
+    font-weight: 300;
+  }
+  .section-header {
+    margin-bottom: 56px;
+  }
+
+  /* ===== SERVICES ===== */
+  .services { background: var(--cream); }
+
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+
+  .service-card {
+    background: var(--white);
+    border-radius: 20px;
+    padding: 32px 26px;
+    border: 1px solid rgba(0,0,0,0.04);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+  }
+  .service-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--honey);
+    transform: scaleX(0);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    transform-origin: left;
+  }
+  .service-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.08);
+  }
+  .service-card:hover::before { transform: scaleX(1); }
+
+  .service-emoji {
+    width: 50px; height: 50px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+  }
+  .service-card h3 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.15rem;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+    letter-spacing: -0.01em;
+  }
+  .service-card p {
+    font-size: 0.88rem;
+    color: var(--text-soft);
+    line-height: 1.65;
+    margin-bottom: 18px;
+    font-weight: 300;
+  }
+  .service-price {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--sage);
+    letter-spacing: 0.02em;
+  }
+
+  /* ===== ABOUT ===== */
+  .about {
+    background: var(--pine);
+    position: relative;
+    overflow: hidden;
+  }
+  .about::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -20%;
+    width: 60%;
+    height: 150%;
+    background: radial-gradient(ellipse, rgba(74, 122, 91, 0.2) 0%, transparent 60%);
+  }
+
+  .about-grid {
+    display: grid;
+    grid-template-columns: 5fr 7fr;
+    gap: 64px;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+  }
+
+  .about-portrait {
+    aspect-ratio: 4/5;
+    border-radius: 24px;
+    background: linear-gradient(160deg, var(--sage-muted), var(--sage));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 6rem;
+    position: relative;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+  }
+  .about-portrait-badge {
+    position: absolute;
+    bottom: -12px;
+    right: -12px;
+    background: var(--honey);
+    color: var(--pine-deep);
+    padding: 10px 20px;
+    border-radius: 50px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    box-shadow: 0 8px 24px rgba(212, 148, 58, 0.35);
+  }
+
+  .about-content .section-label { color: var(--honey-glow); }
+  .about-content .section-title { color: var(--cream); }
+  .about-content .section-title em { color: var(--honey-light); font-style: italic; }
+
+  .about-text {
+    font-size: 0.95rem;
+    color: rgba(250, 246, 240, 0.6);
+    margin-bottom: 14px;
+    font-weight: 300;
+    line-height: 1.8;
+  }
+
+  .about-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 28px;
+  }
+  .about-tag {
+    padding: 8px 16px;
+    border-radius: 50px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: rgba(250, 246, 240, 0.08);
+    color: rgba(250, 246, 240, 0.7);
+    border: 1px solid rgba(250, 246, 240, 0.1);
+  }
+
+  /* ===== BIG DOGS ===== */
+  .bigdogs {
+    background: var(--cream-warm);
+    text-align: center;
+    position: relative;
+  }
+  .bigdogs .section-title { max-width: 600px; margin: 0 auto 16px; }
+  .bigdogs .section-desc { margin: 0 auto 40px; max-width: 600px; }
+
+  .breed-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    max-width: 700px;
+    margin: 0 auto 40px;
+  }
+  .breed-pill {
+    padding: 10px 22px;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    background: var(--white);
+    color: var(--bark);
+    border: 1px solid rgba(0,0,0,0.06);
+    transition: all 0.3s ease;
+  }
+  .breed-pill:hover {
+    background: var(--pine);
+    color: var(--cream);
+    transform: translateY(-2px);
+  }
+
+  /* ===== TESTIMONIALS ===== */
+  .testimonials { background: var(--white); }
+
+  .testimonials-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+
+  .testimonial {
+    background: var(--cream);
+    border-radius: 20px;
+    padding: 32px 28px;
+    position: relative;
+    transition: all 0.3s ease;
+  }
+  .testimonial:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.06);
+  }
+
+  .testimonial-quote {
+    font-size: 1.5rem;
+    color: var(--honey);
+    font-family: 'DM Serif Display', serif;
+    margin-bottom: 16px;
+    line-height: 1;
+  }
+  .testimonial-text {
+    font-size: 0.9rem;
+    color: var(--text-body);
+    font-style: italic;
+    line-height: 1.75;
+    margin-bottom: 24px;
+    font-weight: 300;
+  }
+  .testimonial-author {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .testimonial-avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: var(--white);
+  }
+  .testimonial-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+  }
+  .testimonial-pet {
+    font-size: 0.75rem;
+    color: var(--text-soft);
+  }
+
+  /* ===== CONTACT ===== */
+  .contact { background: var(--cream); }
+
+  .contact-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: start;
+  }
+
+  .contact-info-item {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 28px;
+    align-items: flex-start;
+  }
+  .contact-icon {
+    width: 46px; height: 46px;
+    border-radius: 14px;
+    background: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    border: 1px solid rgba(0,0,0,0.05);
+  }
+  .contact-label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+  }
+  .contact-value {
+    font-size: 0.88rem;
+    color: var(--text-soft);
+    font-weight: 300;
+  }
+
+  .contact-form {
+    background: var(--white);
+    border-radius: 24px;
+    padding: 36px;
+    border: 1px solid rgba(0,0,0,0.04);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.04);
+  }
+  .contact-form h3 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.4rem;
+    color: var(--text-primary);
+    margin-bottom: 28px;
+    letter-spacing: -0.01em;
+  }
+  .form-group { margin-bottom: 18px; }
+  .form-group label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  .form-input {
+    width: 100%;
+    padding: 13px 18px;
+    border: 1.5px solid var(--linen);
+    border-radius: 14px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.92rem;
+    color: var(--text-primary);
+    background: var(--cream);
+    outline: none;
+    transition: all 0.3s;
+  }
+  .form-input:focus {
+    border-color: var(--honey);
+    box-shadow: 0 0 0 4px rgba(212, 148, 58, 0.1);
+  }
+  textarea.form-input { resize: vertical; min-height: 90px; }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .btn-submit {
+    width: 100%;
+    padding: 15px;
+    background: var(--pine);
+    color: var(--cream);
+    border: none;
+    border-radius: 60px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.92rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    letter-spacing: 0.02em;
+    margin-top: 6px;
+  }
+  .btn-submit:hover {
+    background: var(--sage);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(27, 58, 45, 0.2);
+  }
+
+  /* ===== FOOTER ===== */
+  .footer {
+    background: var(--pine-deep);
+    text-align: center;
+    padding: 48px 24px;
+  }
+  .footer-brand {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.2rem;
+    color: var(--cream);
+    margin-bottom: 8px;
+  }
+  .footer-brand span { color: var(--honey-light); }
+  .footer-copy {
+    font-size: 0.8rem;
+    color: rgba(250, 246, 240, 0.35);
+    font-weight: 300;
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 900px) {
+    .services-grid, .testimonials-grid { grid-template-columns: repeat(2, 1fr); }
+    .hero-inner { grid-template-columns: 1fr; text-align: center; }
+    .hero-body { margin: 0 auto 36px; }
+    .hero-ctas { justify-content: center; }
+    .hero-visual { margin-top: 40px; }
+    .hero-visual-shape { max-width: 300px; font-size: 5rem; }
+    .about-grid { grid-template-columns: 1fr; }
+    .about-portrait { max-width: 300px; margin: 0 auto; }
+    .contact-grid { grid-template-columns: 1fr; }
+    .nav-links { display: none; }
+  }
+  @media (max-width: 600px) {
+    .services-grid, .testimonials-grid { grid-template-columns: 1fr; }
+    section { padding: 64px 18px; }
+    .hero { padding: 80px 18px 60px; }
+    .hero-stats { flex-direction: row; gap: 0; }
+    .hero-stat { padding: 10px 14px; }
+    .form-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <a href="#" class="nav-brand">Vestine's <span>Pet Care</span></a>
+    <ul class="nav-links">
+      <li><a href="#services">Services</a></li>
+      <li><a href="#about">About</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-eyebrow reveal">
+        <div class="hero-eyebrow-dot"></div>
+        Accepting New Clients
+      </div>
+      <h1 class="reveal">Your pet<br>deserves <em>the best</em></h1>
+      <p class="hero-body reveal">Professional dog walking, grooming, and certified service dog training. Personalized care from someone who truly understands animals.</p>
+      <div class="hero-ctas reveal">
+        <a href="#contact" class="btn btn-gold">Book a Visit</a>
+        <a href="#services" class="btn btn-ghost">View Services</a>
+      </div>
+    </div>
+    <div class="hero-visual reveal">
+      <div class="hero-visual-shape">🐕‍🦺</div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <div class="hero-stat-val">8+</div>
+          <div class="hero-stat-lbl">Years Exp</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-val">200+</div>
+          <div class="hero-stat-lbl">Happy Dogs</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-val">5.0</div>
+          <div class="hero-stat-lbl">Rating</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section class="services" id="services">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-label">Services</div>
+      <h2 class="section-title">What I Offer</h2>
+      <p class="section-desc">Every service delivered with patience, expertise, and genuine love for your pet.</p>
+    </div>
+
+    <div class="services-grid stagger">
+      <div class="service-card reveal">
+        <div class="service-emoji" style="background: #E3F2FD;">🚶</div>
+        <h3>Dog Walking</h3>
+        <p>Energizing walks tailored to your dog's breed, size, and energy level. Leisurely strolls to vigorous outings.</p>
+        <div class="service-price">From $25 / walk</div>
+      </div>
+      <div class="service-card reveal">
+        <div class="service-emoji" style="background: #FFF3E0;">✂️</div>
+        <h3>Dog Grooming</h3>
+        <p>Full grooming including bathing, brushing, nail trimming, ear cleaning, and breed-specific cuts.</p>
+        <div class="service-price">From $55 / session</div>
+      </div>
+      <div class="service-card reveal">
+        <div class="service-emoji" style="background: #E8F5E9;">🎓</div>
+        <h3>Service Dog Training</h3>
+        <p>Specialized training for service and ESA dogs. Task-specific training, public access prep, and handler coaching.</p>
+        <div class="service-price">From $85 / session</div>
+      </div>
+      <div class="service-card reveal">
+        <div class="service-emoji" style="background: #FCE4EC;">🏠</div>
+        <h3>In-Home Pet Sitting</h3>
+        <p>Going out of town? I'll care for your pets in their own home so they stay comfortable and relaxed.</p>
+        <div class="service-price">From $45 / day</div>
+      </div>
+      <div class="service-card reveal">
+        <div class="service-emoji" style="background: #F3E5F5;">🐾</div>
+        <h3>Puppy Socialization</h3>
+        <p>Critical early development sessions to build confidence, learn manners, and get comfortable around others.</p>
+        <div class="service-price">From $40 / session</div>
+      </div>
+      <div class="service-card reveal">
+        <div class="service-emoji" style="background: #E0F7FA;">🐱</div>
+        <h3>Cat Care</h3>
+        <p>Feeding, litter maintenance, playtime, and medication. As a multi-cat owner, I know what your feline needs.</p>
+        <div class="service-price">From $20 / visit</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section class="about" id="about">
+  <div class="container">
+    <div class="about-grid">
+      <div class="about-portrait reveal">
+        🐕‍🦺
+        <div class="about-portrait-badge">Certified Trainer</div>
+      </div>
+      <div class="about-content">
+        <div class="section-label reveal">About</div>
+        <h2 class="section-title reveal">Meet <em>Vestine</em></h2>
+        <p class="about-text reveal">Hi, I'm <strong style="color: var(--cream);">Vestine Mutuzo</strong>, and animals have been my whole world for as long as I can remember. With over 8 years of hands-on experience, I've built my practice on one belief: every animal deserves to be treated with the same love you'd give your own family.</p>
+        <p class="about-text reveal">I'm a certified service dog trainer and work alongside my own service dog every day. At home, I manage a household of one service dog and four cats — all living together in harmony. That experience taught me how to read behavior, manage multi-pet dynamics, and create calm environments.</p>
+        <p class="about-text reveal">While I have a special love for big dogs, I welcome pets of every size, breed, and temperament. My home-based grooming studio is fully equipped for a stress-free experience.</p>
+        <div class="about-tags reveal">
+          <span class="about-tag">🎓 Certified Trainer</span>
+          <span class="about-tag">🐕‍🦺 Service Dog Handler</span>
+          <span class="about-tag">🐱 Multi-Pet Expert</span>
+          <span class="about-tag">💪 Big Dog Specialist</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BIG DOGS -->
+<section class="bigdogs">
+  <div class="container">
+    <div class="section-label reveal" style="text-align:center;">Specialty</div>
+    <h2 class="section-title reveal">Big dog? <em>No problem.</em></h2>
+    <p class="section-desc reveal" style="margin: 0 auto 40px;">Most groomers shy away from large breeds. Not me. I specialize in big dogs and understand their unique needs.</p>
+    <div class="breed-grid stagger">
+      <span class="breed-pill reveal">Great Danes</span>
+      <span class="breed-pill reveal">German Shepherds</span>
+      <span class="breed-pill reveal">Rottweilers</span>
+      <span class="breed-pill reveal">Mastiffs</span>
+      <span class="breed-pill reveal">Bernese Mountain Dogs</span>
+      <span class="breed-pill reveal">Huskies</span>
+      <span class="breed-pill reveal">Saint Bernards</span>
+      <span class="breed-pill reveal">Dobermans</span>
+      <span class="breed-pill reveal">Pit Bulls</span>
+      <span class="breed-pill reveal">& All Breeds</span>
+    </div>
+    <div class="reveal">
+      <a href="#contact" class="btn btn-gold">Book Your Big Dog</a>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="testimonials">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-label">Reviews</div>
+      <h2 class="section-title">What Pet Parents Say</h2>
+      <p class="section-desc">Don't take my word for it — here's what the families I work with have to say.</p>
+    </div>
+
+    <div class="testimonials-grid stagger">
+      <div class="testimonial reveal">
+        <div class="testimonial-quote">"</div>
+        <p class="testimonial-text">Vestine is the only person my 130lb Great Dane will actually behave for. She has this calm, confident energy that big dogs just respond to. Can't recommend her enough.</p>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar" style="background: var(--pine);">MK</div>
+          <div>
+            <div class="testimonial-name">Marcus K.</div>
+            <div class="testimonial-pet">Owner of Zeus (Great Dane)</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial reveal">
+        <div class="testimonial-quote">"</div>
+        <p class="testimonial-text">We have two dogs and a cat, and Vestine manages all three like it's second nature. She pet-sits every time we travel and the animals are always happy when we get back.</p>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar" style="background: var(--sage);">SL</div>
+          <div>
+            <div class="testimonial-name">Sarah L.</div>
+            <div class="testimonial-pet">Owner of Max, Bella & Whiskers</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial reveal">
+        <div class="testimonial-quote">"</div>
+        <p class="testimonial-text">Vestine trained my service dog and the transformation was incredible. She's patient, knowledgeable, and genuinely cares about the outcome. Worth every penny.</p>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar" style="background: var(--honey);">JR</div>
+          <div>
+            <div class="testimonial-name">Jamie R.</div>
+            <div class="testimonial-pet">Service Dog Handler</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section class="contact" id="contact">
+  <div class="container">
+    <div class="contact-grid">
+      <div>
+        <div class="section-label reveal">Contact</div>
+        <h2 class="section-title reveal">Let's Get Started</h2>
+        <p class="section-desc reveal" style="margin-bottom: 40px;">Reach out to book a service or ask questions. I'd love to meet your furry family member.</p>
+
+        <div class="contact-info-item reveal">
+          <div class="contact-icon">📍</div>
+          <div>
+            <div class="contact-label">Location</div>
+            <div class="contact-value">Home-based studio (address shared upon booking)</div>
+          </div>
+        </div>
+        <div class="contact-info-item reveal">
+          <div class="contact-icon">📞</div>
+          <div>
+            <div class="contact-label">Phone</div>
+            <div class="contact-value">Call or text to schedule</div>
+          </div>
+        </div>
+        <div class="contact-info-item reveal">
+          <div class="contact-icon">🕐</div>
+          <div>
+            <div class="contact-label">Availability</div>
+            <div class="contact-value">Monday – Saturday, 7am – 7pm</div>
+          </div>
+        </div>
+        <div class="contact-info-item reveal">
+          <div class="contact-icon">💳</div>
+          <div>
+            <div class="contact-label">Payment</div>
+            <div class="contact-value">Cash, e-Transfer, Credit Card</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="contact-form reveal">
+        <h3>Book a Visit</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Your Name</label>
+            <input type="text" class="form-input" placeholder="Your name">
+          </div>
+          <div class="form-group">
+            <label>Phone or Email</label>
+            <input type="text" class="form-input" placeholder="How to reach you">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Pet's Name</label>
+            <input type="text" class="form-input" placeholder="Your pet's name">
+          </div>
+          <div class="form-group">
+            <label>Service Needed</label>
+            <select class="form-input">
+              <option value="">Select a service</option>
+              <option>Dog Walking</option>
+              <option>Dog Grooming</option>
+              <option>Service Dog Training</option>
+              <option>Pet Sitting</option>
+              <option>Puppy Socialization</option>
+              <option>Cat Care</option>
+              <option>Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Anything Else?</label>
+          <textarea class="form-input" placeholder="Tell me about your pet, any special needs, preferred schedule..."></textarea>
+        </div>
+        <button class="btn-submit" onclick="this.textContent='Sent! We\'ll be in touch.'; this.style.background='var(--sage)'; this.disabled=true;">Send Booking Request</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-brand">Vestine's <span>Pet Care</span></div>
+  <p class="footer-copy">&copy; 2026 Vestine Mutuzo. All rights reserved.</p>
+</footer>
+
+<script>
+  // Scroll reveal
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) entry.target.classList.add('visible');
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // Nav scroll effect
+  window.addEventListener('scroll', () => {
+    document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 60);
+  });
+</script>
+
+</body>
+</html>
