@@ -22057,13 +22057,17 @@ ${slots.map((s, i) => `${i + 1}. ${s.icon} ${s.name} (${formatTime(s.time)}): [s
                 } catch (e) {}
             }
 
-            // Try to extract JSON object and wrap in array
-            const objMatch = text.match(/\{[\s\S]*\}/g);
-            if (objMatch) {
-                try {
-                    const items = objMatch.map(m => JSON.parse(m));
-                    if (items.length > 0) return items;
-                } catch (e) {}
+            // Try to extract individual complete JSON objects (handles truncated arrays)
+            const objMatches = text.match(/\{[^{}]*\}/g);
+            if (objMatches && objMatches.length > 0) {
+                const items = [];
+                for (const m of objMatches) {
+                    try { items.push(JSON.parse(m)); } catch (e) {}
+                }
+                if (items.length > 0) {
+                    console.warn('[parseJSON] Recovered ' + items.length + ' objects from possibly truncated response');
+                    return items;
+                }
             }
 
             // Last resort: log the raw response for debugging
