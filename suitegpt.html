@@ -12154,6 +12154,187 @@
         .quick-app-quality-text.level-2 { color: #fbbf24; }
         .quick-app-quality-text.level-3 { color: #4ade80; }
 
+        /* Prompt Breakdown Cards */
+        .prompt-breakdown-container {
+            display: none;
+            width: 100%;
+            margin-top: 24px;
+            animation: promptFadeIn 0.4s ease-out;
+        }
+
+        .prompt-breakdown-container.active {
+            display: block;
+        }
+
+        @keyframes promptFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .prompt-breakdown-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .prompt-breakdown-header svg {
+            color: #a5b4fc;
+        }
+
+        .prompt-breakdown-header span {
+            color: var(--text-tertiary);
+            font-size: 0.85rem;
+        }
+
+        .prompt-breakdown-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        @media (max-width: 600px) {
+            .prompt-breakdown-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .prompt-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .prompt-card:hover {
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        .prompt-card.expanded {
+            border-color: rgba(99, 102, 241, 0.4);
+            background: rgba(99, 102, 241, 0.08);
+        }
+
+        .prompt-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .prompt-card-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+        }
+
+        .prompt-card-title svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .prompt-card-title.features svg { color: #60a5fa; }
+        .prompt-card-title.design svg { color: #f472b6; }
+        .prompt-card-title.interactions svg { color: #fbbf24; }
+
+        .prompt-card-toggle {
+            color: var(--text-tertiary);
+            transition: transform 0.2s ease;
+        }
+
+        .prompt-card.expanded .prompt-card-toggle {
+            transform: rotate(180deg);
+        }
+
+        .prompt-card-preview {
+            padding: 0 14px 12px;
+            font-size: 0.8rem;
+            color: var(--text-tertiary);
+            line-height: 1.4;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .prompt-card.expanded .prompt-card-preview {
+            display: none;
+        }
+
+        .prompt-card-content {
+            display: none;
+            padding: 0 14px 14px;
+        }
+
+        .prompt-card.expanded .prompt-card-content {
+            display: block;
+        }
+
+        .prompt-card-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            line-height: 1.5;
+            resize: vertical;
+            outline: none;
+        }
+
+        .prompt-card-textarea:focus {
+            border-color: rgba(99, 102, 241, 0.5);
+        }
+
+        .prompt-card-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: rgba(99, 102, 241, 0.1);
+            border-top: 1px solid rgba(99, 102, 241, 0.2);
+            font-size: 0.75rem;
+            color: #a5b4fc;
+        }
+
+        .prompt-card-status.loading {
+            background: rgba(251, 191, 36, 0.1);
+            border-color: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+        }
+
+        .prompt-card-status svg {
+            width: 12px;
+            height: 12px;
+        }
+
+        .prompt-generating-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+        }
+
         /* Full Build choice cards */
         .builder-choice-icon.quick {
             background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.2));
@@ -15292,7 +15473,7 @@
                             <p class="builder-choice-subtitle">Build something new or improve what exists</p>
                         </div>
                         <div class="builder-choice-options">
-                            <button class="builder-choice-card" onclick="showCreateAppChoice()">
+                            <button class="builder-choice-card" onclick="enterCreateAppMode()">
                                 <div class="builder-choice-icon create">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32">
                                         <rect x="3" y="3" width="18" height="18" rx="2"/>
@@ -15317,50 +15498,17 @@
                         </div>
                     </div>
 
-                    <!-- Create App Sub-Choice Screen -->
-                    <div class="builder-choice-screen" id="createAppChoiceScreen" style="display: none;">
-                        <button class="builder-choice-back" onclick="goBackToBuilderChoice()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-                                <path d="M19 12H5M12 19l-7-7 7-7"/>
-                            </svg>
-                        </button>
-                        <div class="builder-choice-header">
-                            <h1 class="builder-choice-title">Create App</h1>
-                            <p class="builder-choice-subtitle">Choose how you want to build</p>
-                        </div>
-                        <div class="builder-choice-options">
-                            <button class="builder-choice-card" onclick="enterQuickAppMode()">
-                                <div class="builder-choice-icon quick">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32">
-                                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-                                    </svg>
-                                </div>
-                                <h3 class="builder-choice-card-title">Quick App</h3>
-                                <p class="builder-choice-card-desc">Get a working app in 30 seconds. Describe your idea and iterate from there.</p>
-                            </button>
-                            <button class="builder-choice-card" onclick="enterBuilderCreateMode()">
-                                <div class="builder-choice-icon full">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32">
-                                        <rect x="3" y="3" width="18" height="18" rx="2"/>
-                                        <path d="M3 9h18M9 21V9"/>
-                                    </svg>
-                                </div>
-                                <h3 class="builder-choice-card-title">Full Build</h3>
-                                <p class="builder-choice-card-desc">More control over features and design. Guided conversation for a refined result.</p>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Quick App Screen -->
+                    <!-- Create App Screen -->
                     <div class="quick-app-screen" id="quickAppScreen">
                         <div class="quick-app-header">
                             <h2 class="quick-app-title">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28">
-                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                    <path d="M12 8v8M8 12h8"/>
                                 </svg>
-                                Quick App
+                                Make App
                             </h2>
-                            <p class="quick-app-subtitle">Describe your idea and get a working app in seconds</p>
+                            <p class="quick-app-subtitle">Describe your idea in detail - the more specific, the better the result</p>
                         </div>
 
                         <div class="quick-app-input-container">
@@ -15370,7 +15518,7 @@
                                 placeholder="Describe your app idea in detail... the more specific, the better the result!"
                                 rows="5"
                                 onkeydown="handleQuickAppKeydown(event)"
-                                oninput="this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 200) + 'px';"
+                                oninput="onQuickAppInput()"
                             ></textarea>
                         </div>
 
@@ -15391,24 +15539,80 @@
                             Surprise me with a novel idea
                         </button>
 
-                        <div class="quick-app-quality" id="quickAppQuality" style="display: none;">
-                            <span class="quick-app-quality-label">Idea detail:</span>
-                            <div class="quick-app-quality-dots">
-                                <div class="quick-app-quality-dot" id="qualityDot1"></div>
-                                <div class="quick-app-quality-dot" id="qualityDot2"></div>
-                                <div class="quick-app-quality-dot" id="qualityDot3"></div>
+                        <!-- Prompt Breakdown Cards -->
+                        <div class="prompt-breakdown-container" id="promptBreakdownContainer">
+                            <div class="prompt-breakdown-header">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                                </svg>
+                                AI-generated prompts
+                                <span>(click to edit)</span>
                             </div>
-                            <span class="quick-app-quality-text" id="qualityText">Basic</span>
+                            <div class="prompt-breakdown-cards" id="promptBreakdownCards">
+                                <!-- Core Features Card -->
+                                <div class="prompt-card" id="promptCardFeatures">
+                                    <div class="prompt-card-header" onclick="togglePromptCard('features')">
+                                        <div class="prompt-card-title features">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                                <path d="M9 9h6M9 15h6M9 12h6"/>
+                                            </svg>
+                                            Core Features
+                                        </div>
+                                        <svg class="prompt-card-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                            <path d="M6 9l6 6 6-6"/>
+                                        </svg>
+                                    </div>
+                                    <div class="prompt-card-preview" id="promptPreviewFeatures">Generating...</div>
+                                    <div class="prompt-card-content">
+                                        <textarea class="prompt-card-textarea" id="promptTextFeatures" placeholder="Core features and functionality..."></textarea>
+                                    </div>
+                                </div>
+
+                                <!-- UI Design Card -->
+                                <div class="prompt-card" id="promptCardDesign">
+                                    <div class="prompt-card-header" onclick="togglePromptCard('design')">
+                                        <div class="prompt-card-title design">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"/>
+                                                <path d="M12 6v6l4 2"/>
+                                            </svg>
+                                            UI Design
+                                        </div>
+                                        <svg class="prompt-card-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                            <path d="M6 9l6 6 6-6"/>
+                                        </svg>
+                                    </div>
+                                    <div class="prompt-card-preview" id="promptPreviewDesign">Generating...</div>
+                                    <div class="prompt-card-content">
+                                        <textarea class="prompt-card-textarea" id="promptTextDesign" placeholder="Visual design and styling..."></textarea>
+                                    </div>
+                                </div>
+
+                                <!-- Interactions Card -->
+                                <div class="prompt-card" id="promptCardInteractions">
+                                    <div class="prompt-card-header" onclick="togglePromptCard('interactions')">
+                                        <div class="prompt-card-title interactions">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M15 15l-2 5L9 9l11 4-5 2z"/>
+                                                <path d="M14.5 14.5L19 19"/>
+                                            </svg>
+                                            Interactions
+                                        </div>
+                                        <svg class="prompt-card-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                            <path d="M6 9l6 6 6-6"/>
+                                        </svg>
+                                    </div>
+                                    <div class="prompt-card-preview" id="promptPreviewInteractions">Generating...</div>
+                                    <div class="prompt-card-content">
+                                        <textarea class="prompt-card-textarea" id="promptTextInteractions" placeholder="User interactions and behaviors..."></textarea>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="quick-app-actions">
                             <button class="quick-app-back-btn" onclick="goBackToBuilderChoice()">Back</button>
-                            <button class="quick-app-expand-btn" id="quickAppExpandBtn" onclick="expandIdea()" disabled>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-                                    <path d="M12 5v14M5 12h14"/>
-                                </svg>
-                                Expand
-                            </button>
                             <button class="quick-app-build-btn" id="quickAppBuildBtn" onclick="buildQuickApp()" disabled>
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                                     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
@@ -19458,14 +19662,12 @@
             } else if (path === '/suitegptbuilder' || path.startsWith('/suitegptbuilder/')) {
                 openBuilderMode(true);
                 // Handle sub-routes
-                if (path === '/suitegptbuilder/create') {
-                    showCreateAppChoice();
+                if (path === '/suitegptbuilder/create' || path === '/suitegptbuilder/quick') {
+                    enterCreateAppMode();
                 } else if (path === '/suitegptbuilder/create/full') {
                     enterBuilderCreateMode();
                 } else if (path === '/suitegptbuilder/proposal') {
                     enterBuilderProposalMode();
-                } else if (path === '/suitegptbuilder/quick') {
-                    enterQuickAppMode();
                 }
             } else {
                 // Root path (/) - show Builder as default landing
@@ -25564,19 +25766,15 @@ Be concise but helpful. Use markdown formatting.`;
             history.pushState({ view: 'suitegptbuilder' }, '', '/suitegptbuilder');
         }
 
-        function showCreateAppChoice() {
-            const choiceScreen = document.getElementById('builderChoiceScreen');
-            const createAppChoiceScreen = document.getElementById('createAppChoiceScreen');
+        // ===== CREATE APP MODE =====
+        let promptBreakdownGenerated = false;
+        let generatedPrompts = {
+            features: '',
+            design: '',
+            interactions: ''
+        };
 
-            if (choiceScreen) choiceScreen.style.display = 'none';
-            if (createAppChoiceScreen) createAppChoiceScreen.style.display = 'flex';
-
-            // Update URL
-            history.pushState({ view: 'suitegptbuilder', mode: 'create' }, '', '/suitegptbuilder/create');
-        }
-
-        // ===== QUICK APP MODE =====
-        function enterQuickAppMode() {
+        function enterCreateAppMode() {
             const choiceScreen = document.getElementById('builderChoiceScreen');
             const createAppChoiceScreen = document.getElementById('createAppChoiceScreen');
             const quickAppScreen = document.getElementById('quickAppScreen');
@@ -25588,7 +25786,7 @@ Be concise but helpful. Use markdown formatting.`;
             if (quickAppScreen) quickAppScreen.classList.add('active');
 
             // Update URL
-            history.pushState({ view: 'suitegptbuilder', mode: 'quick' }, '', '/suitegptbuilder/quick');
+            history.pushState({ view: 'suitegptbuilder', mode: 'create' }, '', '/suitegptbuilder/create');
 
             // Focus input
             setTimeout(() => {
@@ -25596,9 +25794,14 @@ Be concise but helpful. Use markdown formatting.`;
                 if (input) input.focus();
             }, 100);
 
-            // Reset expansion level and update buttons
-            resetIdeaExpansion();
+            // Reset prompt breakdown state
+            resetPromptBreakdown();
             updateQuickAppBuildBtn();
+        }
+
+        // Alias for backward compatibility
+        function enterQuickAppMode() {
+            enterCreateAppMode();
         }
 
         function handleQuickAppKeydown(event) {
@@ -25613,122 +25816,12 @@ Be concise but helpful. Use markdown formatting.`;
             setTimeout(updateQuickAppBuildBtn, 0);
         }
 
-        let ideaExpansionLevel = 0;
-
         function updateQuickAppBuildBtn() {
             const input = document.getElementById('quickAppInput');
             const buildBtn = document.getElementById('quickAppBuildBtn');
-            const expandBtn = document.getElementById('quickAppExpandBtn');
             const hasContent = input && input.value.trim().length > 0;
 
             if (buildBtn) buildBtn.disabled = !hasContent;
-            if (expandBtn) expandBtn.disabled = !hasContent || ideaExpansionLevel >= 3;
-
-            updateIdeaQuality();
-        }
-
-        function updateIdeaQuality() {
-            const input = document.getElementById('quickAppInput');
-            const qualityDiv = document.getElementById('quickAppQuality');
-            const qualityText = document.getElementById('qualityText');
-            const dot1 = document.getElementById('qualityDot1');
-            const dot2 = document.getElementById('qualityDot2');
-            const dot3 = document.getElementById('qualityDot3');
-
-            if (!input || !qualityDiv) return;
-
-            const text = input.value.trim();
-            if (!text) {
-                qualityDiv.style.display = 'none';
-                return;
-            }
-
-            qualityDiv.style.display = 'flex';
-
-            // Calculate quality based on length and expansion level
-            const wordCount = text.split(/\s+/).length;
-            let level = 1;
-            if (wordCount > 30 || ideaExpansionLevel >= 1) level = 2;
-            if (wordCount > 60 || ideaExpansionLevel >= 2) level = 3;
-            if (ideaExpansionLevel >= 3) level = 3;
-
-            // Update dots
-            dot1.className = 'quick-app-quality-dot' + (level >= 1 ? ' active level-' + level : '');
-            dot2.className = 'quick-app-quality-dot' + (level >= 2 ? ' active level-' + level : '');
-            dot3.className = 'quick-app-quality-dot' + (level >= 3 ? ' active level-' + level : '');
-
-            // Update text
-            const labels = ['', 'Basic', 'Detailed', 'Comprehensive'];
-            qualityText.textContent = labels[level];
-            qualityText.className = 'quick-app-quality-text level-' + level;
-        }
-
-        function resetIdeaExpansion() {
-            ideaExpansionLevel = 0;
-            updateIdeaQuality();
-        }
-
-        async function expandIdea() {
-            const input = document.getElementById('quickAppInput');
-            const btn = document.getElementById('quickAppExpandBtn');
-            if (!input || !input.value.trim() || ideaExpansionLevel >= 3) return;
-
-            const currentIdea = input.value.trim();
-
-            btn.disabled = true;
-            btn.classList.add('loading');
-            btn.innerHTML = `
-                <svg class="spinning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-                    <path d="M21 12a9 9 0 11-6.219-8.56"/>
-                </svg>
-                Expanding...
-            `;
-
-            try {
-                const response = await fetch('/api/gemini', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        prompt: `Take this app idea and expand it with MORE specific details, unique mechanics, and interesting features. Make it more elaborate and impressive.
-
-CURRENT IDEA:
-${currentIdea}
-
-EXPANSION RULES:
-- Add 2-3 new specific features or mechanics
-- Be more specific about UI/UX details (animations, interactions, visual feedback)
-- Add a unique twist or clever feature that makes it special
-- Keep it buildable as a single-page web app
-- Don't repeat what's already there, ADD to it
-
-Output ONLY the expanded idea (the full description including original + new details). No intro, no "Here's the expanded version", just the idea itself:`,
-                        model: 'gemini-2.0-flash',
-                        generationConfig: { temperature: 0.9, maxOutputTokens: 800 }
-                    })
-                });
-
-                if (!response.ok) throw new Error('API failed');
-
-                const data = await response.json();
-                if (data.text) {
-                    input.value = data.text.trim();
-                    input.style.height = 'auto';
-                    input.style.height = Math.min(input.scrollHeight, 200) + 'px';
-                    ideaExpansionLevel++;
-                    updateQuickAppBuildBtn();
-                }
-            } catch (error) {
-                console.error('Failed to expand idea:', error);
-            }
-
-            btn.classList.remove('loading');
-            btn.innerHTML = `
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-                    <path d="M12 5v14M5 12h14"/>
-                </svg>
-                Expand
-            `;
-            updateQuickAppBuildBtn();
         }
 
         function useQuickAppIdea(idea) {
@@ -25736,9 +25829,158 @@ Output ONLY the expanded idea (the full description including original + new det
             if (input) {
                 input.value = idea;
                 input.focus();
-                resetIdeaExpansion();
+                resetPromptBreakdown();
+                checkAndGeneratePrompts();
                 updateQuickAppBuildBtn();
             }
+        }
+
+        // ===== PROMPT BREAKDOWN FUNCTIONS =====
+        const PROMPT_THRESHOLD = 100; // Characters needed to trigger prompt generation
+        let isGeneratingPrompts = false;
+
+        function resetPromptBreakdown() {
+            promptBreakdownGenerated = false;
+            generatedPrompts = { features: '', design: '', interactions: '' };
+            const container = document.getElementById('promptBreakdownContainer');
+            if (container) container.classList.remove('active');
+
+            // Reset card states
+            ['features', 'design', 'interactions'].forEach(type => {
+                const card = document.getElementById(`promptCard${type.charAt(0).toUpperCase() + type.slice(1)}`);
+                if (card) card.classList.remove('expanded');
+                const preview = document.getElementById(`promptPreview${type.charAt(0).toUpperCase() + type.slice(1)}`);
+                if (preview) preview.textContent = 'Generating...';
+                const textarea = document.getElementById(`promptText${type.charAt(0).toUpperCase() + type.slice(1)}`);
+                if (textarea) textarea.value = '';
+            });
+        }
+
+        function checkAndGeneratePrompts() {
+            const input = document.getElementById('quickAppInput');
+            if (!input) return;
+
+            const text = input.value.trim();
+            const container = document.getElementById('promptBreakdownContainer');
+
+            // If text is too short, hide prompts
+            if (text.length < PROMPT_THRESHOLD) {
+                if (container) container.classList.remove('active');
+                promptBreakdownGenerated = false;
+                return;
+            }
+
+            // If we already generated prompts for similar content, don't regenerate
+            if (promptBreakdownGenerated && generatedPrompts.features) {
+                if (container) container.classList.add('active');
+                return;
+            }
+
+            // Generate prompts
+            generatePromptBreakdown(text);
+        }
+
+        async function generatePromptBreakdown(idea) {
+            if (isGeneratingPrompts) return;
+            isGeneratingPrompts = true;
+
+            const container = document.getElementById('promptBreakdownContainer');
+            if (container) container.classList.add('active');
+
+            // Set loading state on previews
+            ['Features', 'Design', 'Interactions'].forEach(type => {
+                const preview = document.getElementById(`promptPreview${type}`);
+                if (preview) preview.textContent = 'Generating...';
+            });
+
+            try {
+                const response = await fetch('/api/gemini', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: `Analyze this app idea and break it down into 3 focused prompts for building it. Each prompt should be specific and detailed.
+
+APP IDEA:
+"${idea}"
+
+Output EXACTLY this JSON format (no markdown, no code blocks, just raw JSON):
+{
+    "features": "Detailed prompt describing the core features and functionality. Include specific features, data storage needs, and logic. Be very specific about what the app does.",
+    "design": "Detailed prompt describing the visual design. Include specific colors, layout, typography, spacing, animations, and visual effects. Describe the exact look and feel.",
+    "interactions": "Detailed prompt describing user interactions and behaviors. Include what happens on click, hover, scroll, input, etc. Describe transitions and feedback."
+}`,
+                        model: 'gemini-2.0-flash',
+                        generationConfig: { temperature: 0.7, maxOutputTokens: 2000 }
+                    })
+                });
+
+                if (!response.ok) throw new Error('API failed');
+
+                const data = await response.json();
+                let jsonText = data.text || '';
+
+                // Try to extract JSON from response
+                const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    const prompts = JSON.parse(jsonMatch[0]);
+
+                    generatedPrompts.features = prompts.features || '';
+                    generatedPrompts.design = prompts.design || '';
+                    generatedPrompts.interactions = prompts.interactions || '';
+
+                    // Update the UI
+                    updatePromptCard('features', generatedPrompts.features);
+                    updatePromptCard('design', generatedPrompts.design);
+                    updatePromptCard('interactions', generatedPrompts.interactions);
+
+                    promptBreakdownGenerated = true;
+                } else {
+                    throw new Error('Invalid JSON response');
+                }
+            } catch (error) {
+                console.error('Failed to generate prompts:', error);
+                // Show error in previews
+                ['Features', 'Design', 'Interactions'].forEach(type => {
+                    const preview = document.getElementById(`promptPreview${type}`);
+                    if (preview) preview.textContent = 'Failed to generate. Click to edit manually.';
+                });
+            }
+
+            isGeneratingPrompts = false;
+        }
+
+        function updatePromptCard(type, content) {
+            const capitalType = type.charAt(0).toUpperCase() + type.slice(1);
+            const preview = document.getElementById(`promptPreview${capitalType}`);
+            const textarea = document.getElementById(`promptText${capitalType}`);
+
+            if (preview) {
+                preview.textContent = content.length > 80 ? content.substring(0, 80) + '...' : content;
+            }
+            if (textarea) {
+                textarea.value = content;
+            }
+        }
+
+        function togglePromptCard(type) {
+            const capitalType = type.charAt(0).toUpperCase() + type.slice(1);
+            const card = document.getElementById(`promptCard${capitalType}`);
+            if (card) {
+                card.classList.toggle('expanded');
+            }
+        }
+
+        function onQuickAppInput() {
+            const input = document.getElementById('quickAppInput');
+            if (!input) return;
+
+            // Auto-resize
+            input.style.height = 'auto';
+            input.style.height = Math.min(input.scrollHeight, 200) + 'px';
+
+            // Check for prompt generation threshold
+            checkAndGeneratePrompts();
+            updateQuickAppBuildBtn();
         }
 
         async function generateNovelAppIdea() {
@@ -25797,7 +26039,8 @@ Now generate ONE highly detailed, novel app idea. Output ONLY the idea descripti
                     input.value = data.text.trim().replace(/^["']|["']$/g, '');
                     input.style.height = 'auto';
                     input.style.height = Math.min(input.scrollHeight, 200) + 'px';
-                    resetIdeaExpansion();
+                    resetPromptBreakdown();
+                    checkAndGeneratePrompts();
                     updateQuickAppBuildBtn();
                 } else {
                     throw new Error('No text in response');
@@ -25815,7 +26058,8 @@ Now generate ONE highly detailed, novel app idea. Output ONLY the idea descripti
                 input.value = fallbackIdeas[Math.floor(Math.random() * fallbackIdeas.length)];
                 input.style.height = 'auto';
                 input.style.height = Math.min(input.scrollHeight, 200) + 'px';
-                resetIdeaExpansion();
+                resetPromptBreakdown();
+                checkAndGeneratePrompts();
                 updateQuickAppBuildBtn();
             }
 
@@ -25835,6 +26079,13 @@ Now generate ONE highly detailed, novel app idea. Output ONLY the idea descripti
 
             const idea = input.value.trim();
 
+            // Get the edited prompts from the cards (if generated)
+            const featuresPrompt = document.getElementById('promptTextFeatures')?.value || '';
+            const designPrompt = document.getElementById('promptTextDesign')?.value || '';
+            const interactionsPrompt = document.getElementById('promptTextInteractions')?.value || '';
+
+            const hasDetailedPrompts = featuresPrompt && designPrompt && interactionsPrompt;
+
             // Show loading state
             btn.disabled = true;
             btn.innerHTML = `
@@ -25845,12 +26096,35 @@ Now generate ONE highly detailed, novel app idea. Output ONLY the idea descripti
             `;
 
             try {
-                // Call Gemini to generate the app
-                const response = await fetch('/api/gemini', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        prompt: `Create a complete, working single-page HTML app based on this idea:
+                // Build the prompt - use detailed prompts if available
+                let buildPrompt;
+                if (hasDetailedPrompts) {
+                    buildPrompt = `Create a complete, working single-page HTML app based on these detailed specifications:
+
+ORIGINAL IDEA:
+"${idea}"
+
+CORE FEATURES & FUNCTIONALITY:
+${featuresPrompt}
+
+VISUAL DESIGN & STYLING:
+${designPrompt}
+
+USER INTERACTIONS & BEHAVIORS:
+${interactionsPrompt}
+
+Requirements:
+- Self-contained HTML with embedded CSS and JavaScript
+- Modern, clean dark theme UI (dark background #0f0f0f, light text)
+- Mobile-friendly and responsive
+- Fully functional and interactive with all specified features
+- Use localStorage if data persistence is needed
+- Include all animations and transitions described
+- Make it polished and production-ready
+
+Output ONLY the complete HTML code, starting with <!DOCTYPE html> and ending with </html>. No explanations or markdown.`;
+                } else {
+                    buildPrompt = `Create a complete, working single-page HTML app based on this idea:
 
 "${idea}"
 
@@ -25862,7 +26136,15 @@ Requirements:
 - Include all necessary features to make it useful
 - Use localStorage if data persistence is needed
 
-Output ONLY the complete HTML code, starting with <!DOCTYPE html> and ending with </html>. No explanations or markdown.`,
+Output ONLY the complete HTML code, starting with <!DOCTYPE html> and ending with </html>. No explanations or markdown.`;
+                }
+
+                // Call Gemini to generate the app
+                const response = await fetch('/api/gemini', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: buildPrompt,
                         model: 'gemini-2.0-flash',
                         generationConfig: { temperature: 0.7, maxOutputTokens: 16000 }
                     })
