@@ -3359,6 +3359,25 @@
             margin-top: 4px;
         }
 
+        .community-app-launch-btn {
+            margin-top: 10px;
+            width: 100%;
+            padding: 7px 0;
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 8px;
+            color: #a5b4fc;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .community-app-launch-btn:hover {
+            background: rgba(99, 102, 241, 0.3);
+            color: #fff;
+        }
+
         .community-empty-state {
             display: flex;
             flex-direction: column;
@@ -26285,6 +26304,7 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
                         </div>
                         <div class="apps-view-item-name">${op.name}</div>
                         <div class="apps-view-item-desc">${desc}</div>
+                        <button class="community-app-launch-btn" onclick="event.stopPropagation(); ${clickAction}">Open App</button>
                     </div>
                 `;
             }).join('');
@@ -26313,11 +26333,11 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
         }
 
         async function launchCommunityApp(appId) {
-            if (!supabase) return;
+            if (!supabaseClient) return;
 
             try {
                 // Fetch the app code
-                const { data: app, error } = await supabase
+                const { data: app, error } = await supabaseClient
                     .from('user_apps')
                     .select('*')
                     .eq('id', appId)
@@ -26326,7 +26346,7 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
                 if (error) throw error;
 
                 // Increment uses count
-                supabase
+                supabaseClient
                     .from('user_apps')
                     .update({ uses: (app.uses || 0) + 1 })
                     .eq('id', appId)
