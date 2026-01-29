@@ -12181,7 +12181,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
             color: var(--text-secondary);
             font-size: 0.9rem;
         }
@@ -12196,41 +12196,33 @@
         }
 
         .prompt-breakdown-cards {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-        }
-
-        @media (max-width: 600px) {
-            .prompt-breakdown-cards {
-                grid-template-columns: 1fr;
-            }
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
         .prompt-card {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 12px;
             overflow: hidden;
             transition: all 0.2s ease;
         }
 
         .prompt-card:hover {
-            border-color: rgba(99, 102, 241, 0.3);
+            border-color: rgba(255, 255, 255, 0.15);
         }
 
-        .prompt-card.expanded {
+        .prompt-card:focus-within {
             border-color: rgba(99, 102, 241, 0.4);
-            background: rgba(99, 102, 241, 0.08);
+            background: rgba(99, 102, 241, 0.05);
         }
 
         .prompt-card-header {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 12px 14px;
-            cursor: pointer;
-            user-select: none;
+            gap: 8px;
+            padding: 10px 14px 0;
         }
 
         .prompt-card-title {
@@ -12238,101 +12230,64 @@
             align-items: center;
             gap: 8px;
             font-weight: 600;
-            font-size: 0.85rem;
-            color: var(--text-primary);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .prompt-card-title svg {
-            width: 16px;
-            height: 16px;
+            width: 14px;
+            height: 14px;
         }
 
         .prompt-card-title.features svg { color: #60a5fa; }
         .prompt-card-title.design svg { color: #f472b6; }
         .prompt-card-title.interactions svg { color: #fbbf24; }
 
-        .prompt-card-toggle {
+        .prompt-card-edit-hint {
+            margin-left: auto;
+            font-size: 0.7rem;
             color: var(--text-tertiary);
-            transition: transform 0.2s ease;
+            opacity: 0;
+            transition: opacity 0.2s ease;
         }
 
-        .prompt-card.expanded .prompt-card-toggle {
-            transform: rotate(180deg);
+        .prompt-card:hover .prompt-card-edit-hint {
+            opacity: 1;
         }
 
-        .prompt-card-preview {
-            padding: 0 14px 12px;
-            font-size: 0.8rem;
-            color: var(--text-tertiary);
-            line-height: 1.4;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-        }
-
-        .prompt-card.expanded .prompt-card-preview {
-            display: none;
-        }
-
-        .prompt-card-content {
-            display: none;
-            padding: 0 14px 14px;
-        }
-
-        .prompt-card.expanded .prompt-card-content {
-            display: block;
+        .prompt-card-body {
+            padding: 8px 14px 12px;
         }
 
         .prompt-card-textarea {
             width: 100%;
-            min-height: 100px;
-            padding: 12px;
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
+            padding: 8px 0;
+            background: none;
+            border: none;
+            border-bottom: 1px solid transparent;
             color: var(--text-primary);
-            font-size: 0.85rem;
-            line-height: 1.5;
-            resize: vertical;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            resize: none;
             outline: none;
+            overflow: hidden;
+            transition: all 0.2s ease;
+            cursor: text;
         }
 
         .prompt-card-textarea:focus {
-            border-color: rgba(99, 102, 241, 0.5);
+            border-bottom-color: rgba(99, 102, 241, 0.3);
         }
 
-        .prompt-card-status {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 14px;
-            background: rgba(99, 102, 241, 0.1);
-            border-top: 1px solid rgba(99, 102, 241, 0.2);
-            font-size: 0.75rem;
-            color: #a5b4fc;
+        .prompt-card-textarea::placeholder {
+            color: var(--text-tertiary);
         }
 
-        .prompt-card-status.loading {
-            background: rgba(251, 191, 36, 0.1);
-            border-color: rgba(251, 191, 36, 0.2);
-            color: #fbbf24;
-        }
-
-        .prompt-card-status svg {
-            width: 12px;
-            height: 12px;
-        }
-
-        .prompt-generating-overlay {
-            position: absolute;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 12px;
+        .prompt-card-textarea.loading {
+            color: var(--text-tertiary);
+            font-style: italic;
         }
 
         /* Full Build choice cards */
@@ -15545,13 +15500,13 @@
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                                     <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
                                 </svg>
-                                AI-generated prompts
-                                <span>(click to edit)</span>
+                                Build prompts
+                                <span>edit any to customize</span>
                             </div>
                             <div class="prompt-breakdown-cards" id="promptBreakdownCards">
                                 <!-- Core Features Card -->
                                 <div class="prompt-card" id="promptCardFeatures">
-                                    <div class="prompt-card-header" onclick="togglePromptCard('features')">
+                                    <div class="prompt-card-header">
                                         <div class="prompt-card-title features">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <rect x="3" y="3" width="18" height="18" rx="2"/>
@@ -15559,19 +15514,16 @@
                                             </svg>
                                             Core Features
                                         </div>
-                                        <svg class="prompt-card-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                                            <path d="M6 9l6 6 6-6"/>
-                                        </svg>
+                                        <span class="prompt-card-edit-hint">click to edit</span>
                                     </div>
-                                    <div class="prompt-card-preview" id="promptPreviewFeatures">Generating...</div>
-                                    <div class="prompt-card-content">
-                                        <textarea class="prompt-card-textarea" id="promptTextFeatures" placeholder="Core features and functionality..."></textarea>
+                                    <div class="prompt-card-body">
+                                        <textarea class="prompt-card-textarea" id="promptTextFeatures" placeholder="Core features and functionality..." oninput="autoResizePromptCard(this)"></textarea>
                                     </div>
                                 </div>
 
                                 <!-- UI Design Card -->
                                 <div class="prompt-card" id="promptCardDesign">
-                                    <div class="prompt-card-header" onclick="togglePromptCard('design')">
+                                    <div class="prompt-card-header">
                                         <div class="prompt-card-title design">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <circle cx="12" cy="12" r="10"/>
@@ -15579,19 +15531,16 @@
                                             </svg>
                                             UI Design
                                         </div>
-                                        <svg class="prompt-card-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                                            <path d="M6 9l6 6 6-6"/>
-                                        </svg>
+                                        <span class="prompt-card-edit-hint">click to edit</span>
                                     </div>
-                                    <div class="prompt-card-preview" id="promptPreviewDesign">Generating...</div>
-                                    <div class="prompt-card-content">
-                                        <textarea class="prompt-card-textarea" id="promptTextDesign" placeholder="Visual design and styling..."></textarea>
+                                    <div class="prompt-card-body">
+                                        <textarea class="prompt-card-textarea" id="promptTextDesign" placeholder="Visual design and styling..." oninput="autoResizePromptCard(this)"></textarea>
                                     </div>
                                 </div>
 
                                 <!-- Interactions Card -->
                                 <div class="prompt-card" id="promptCardInteractions">
-                                    <div class="prompt-card-header" onclick="togglePromptCard('interactions')">
+                                    <div class="prompt-card-header">
                                         <div class="prompt-card-title interactions">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <path d="M15 15l-2 5L9 9l11 4-5 2z"/>
@@ -15599,13 +15548,10 @@
                                             </svg>
                                             Interactions
                                         </div>
-                                        <svg class="prompt-card-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                                            <path d="M6 9l6 6 6-6"/>
-                                        </svg>
+                                        <span class="prompt-card-edit-hint">click to edit</span>
                                     </div>
-                                    <div class="prompt-card-preview" id="promptPreviewInteractions">Generating...</div>
-                                    <div class="prompt-card-content">
-                                        <textarea class="prompt-card-textarea" id="promptTextInteractions" placeholder="User interactions and behaviors..."></textarea>
+                                    <div class="prompt-card-body">
+                                        <textarea class="prompt-card-textarea" id="promptTextInteractions" placeholder="User interactions and behaviors..." oninput="autoResizePromptCard(this)"></textarea>
                                     </div>
                                 </div>
                             </div>
@@ -25853,13 +25799,13 @@ Be concise but helpful. Use markdown formatting.`;
             if (container) container.classList.remove('active');
 
             // Reset card states
-            ['features', 'design', 'interactions'].forEach(type => {
-                const card = document.getElementById(`promptCard${type.charAt(0).toUpperCase() + type.slice(1)}`);
-                if (card) card.classList.remove('expanded');
-                const preview = document.getElementById(`promptPreview${type.charAt(0).toUpperCase() + type.slice(1)}`);
-                if (preview) preview.textContent = 'Generating...';
-                const textarea = document.getElementById(`promptText${type.charAt(0).toUpperCase() + type.slice(1)}`);
-                if (textarea) textarea.value = '';
+            ['Features', 'Design', 'Interactions'].forEach(type => {
+                const textarea = document.getElementById(`promptText${type}`);
+                if (textarea) {
+                    textarea.value = '';
+                    textarea.classList.add('loading');
+                    textarea.style.height = 'auto';
+                }
             });
         }
 
@@ -25894,10 +25840,13 @@ Be concise but helpful. Use markdown formatting.`;
             const container = document.getElementById('promptBreakdownContainer');
             if (container) container.classList.add('active');
 
-            // Set loading state on previews
+            // Set loading state on textareas
             ['Features', 'Design', 'Interactions'].forEach(type => {
-                const preview = document.getElementById(`promptPreview${type}`);
-                if (preview) preview.textContent = 'Generating...';
+                const textarea = document.getElementById(`promptText${type}`);
+                if (textarea) {
+                    textarea.value = 'Generating...';
+                    textarea.classList.add('loading');
+                }
             });
 
             try {
@@ -25946,10 +25895,13 @@ Output EXACTLY this JSON format (no markdown, no code blocks, just raw JSON):
                 }
             } catch (error) {
                 console.error('Failed to generate prompts:', error);
-                // Show error in previews
                 ['Features', 'Design', 'Interactions'].forEach(type => {
-                    const preview = document.getElementById(`promptPreview${type}`);
-                    if (preview) preview.textContent = 'Failed to generate. Click to edit manually.';
+                    const textarea = document.getElementById(`promptText${type}`);
+                    if (textarea) {
+                        textarea.value = '';
+                        textarea.placeholder = 'Failed to generate. Type your own prompt here...';
+                        textarea.classList.remove('loading');
+                    }
                 });
             }
 
@@ -25958,23 +25910,18 @@ Output EXACTLY this JSON format (no markdown, no code blocks, just raw JSON):
 
         function updatePromptCard(type, content) {
             const capitalType = type.charAt(0).toUpperCase() + type.slice(1);
-            const preview = document.getElementById(`promptPreview${capitalType}`);
             const textarea = document.getElementById(`promptText${capitalType}`);
 
-            if (preview) {
-                preview.textContent = content.length > 80 ? content.substring(0, 80) + '...' : content;
-            }
             if (textarea) {
                 textarea.value = content;
+                textarea.classList.remove('loading');
+                autoResizePromptCard(textarea);
             }
         }
 
-        function togglePromptCard(type) {
-            const capitalType = type.charAt(0).toUpperCase() + type.slice(1);
-            const card = document.getElementById(`promptCard${capitalType}`);
-            if (card) {
-                card.classList.toggle('expanded');
-            }
+        function autoResizePromptCard(el) {
+            el.style.height = 'auto';
+            el.style.height = el.scrollHeight + 'px';
         }
 
         function onQuickAppInput() {
