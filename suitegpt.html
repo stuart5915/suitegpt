@@ -22278,9 +22278,10 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
             };
             var stColor = statusColors[r.status] || '#888';
             var promptValue = (r.claude_prompt || r.content || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-            var isEditable = r.status === 'submitted' || r.status === 'open';
-            var showActions = r.status === 'submitted' || r.status === 'open';
-            var showApprovedActions = r.status === 'approved' || r.status === 'processing';
+            var admin = isFactoryAdmin();
+            var isEditable = admin && (r.status === 'submitted' || r.status === 'open');
+            var showActions = admin && (r.status === 'submitted' || r.status === 'open');
+            var showApprovedActions = admin && (r.status === 'approved' || r.status === 'processing');
             var showOutput = r.status === 'completed' && r.claude_output;
             var showError = r.status === 'failed' && r.error_message;
 
@@ -22335,6 +22336,7 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
         }
 
         async function approveClientRequest(id) {
+            if (!isFactoryAdmin()) { alert('Admin access required.'); return; }
             var promptEl = document.getElementById('crPrompt-' + id);
             var btn = document.getElementById('crApproveBtn-' + id);
             var prompt = promptEl ? promptEl.value : '';
@@ -22429,6 +22431,7 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
         }
 
         async function markRequestComplete(id) {
+            if (!isFactoryAdmin()) { alert('Admin access required.'); return; }
             try {
                 await fetch(SUPABASE_URL + '/rest/v1/factory_proposals?id=eq.' + id, {
                     method: 'PATCH',
@@ -22448,6 +22451,7 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
         }
 
         async function markRequestFailed(id) {
+            if (!isFactoryAdmin()) { alert('Admin access required.'); return; }
             var reason = prompt('Failure reason (optional):') || 'Manually marked as failed';
             try {
                 await fetch(SUPABASE_URL + '/rest/v1/factory_proposals?id=eq.' + id, {
@@ -22487,6 +22491,7 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
         }
 
         async function rejectClientRequest(id) {
+            if (!isFactoryAdmin()) { alert('Admin access required.'); return; }
             if (!confirm('Reject this request?')) return;
             try {
                 await fetch(SUPABASE_URL + '/rest/v1/factory_proposals?id=eq.' + id, {
@@ -28754,14 +28759,19 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
 
                 const iconBg = linkedApp ? (linkedApp.iconBg || 'linear-gradient(135deg, #6366f1, #8b5cf6)') : (op.icon_bg || 'linear-gradient(135deg, #22c55e, #10b981)');
                 const iconContent = linkedApp && linkedApp.iconUrl ? `<img src="${linkedApp.iconUrl}" alt="${op.name}">` : (isUserApp ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>' : '');
-                const clickAction = isUserApp ? `launchCommunityApp('${op.user_app_id}')` : `launchApp('${op.app_key}', '${linkedApp.url}', '${linkedApp.name}')`;
+                const cardClickAction = isUserApp && op.slug
+                    ? `openAppDetail('${op.slug}')`
+                    : isUserApp
+                        ? `launchCommunityApp('${op.user_app_id}')`
+                        : `launchApp('${op.app_key}', '${linkedApp.url}', '${linkedApp.name}')`;
+                const directLaunchAction = isUserApp ? `launchCommunityApp('${op.user_app_id}')` : `launchApp('${op.app_key}', '${linkedApp.url}', '${linkedApp.name}')`;
                 const desc = op.description || (linkedApp ? linkedApp.description : '') || 'Community app';
 
                 return `
                     <div class="apps-view-item community-app-card"
                          data-name="${op.name.toLowerCase()}"
                          data-desc="${(op.description || '').toLowerCase()}"
-                         onclick="${clickAction}">
+                         onclick="${cardClickAction}">
                         <div class="community-app-badge">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
                                 <path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/>
@@ -28773,7 +28783,7 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
                         </div>
                         <div class="apps-view-item-name">${op.name}</div>
                         <div class="apps-view-item-desc">${desc}</div>
-                        <button class="community-app-launch-btn" onclick="event.stopPropagation(); ${clickAction}">Open App</button>
+                        <button class="community-app-launch-btn" onclick="event.stopPropagation(); ${directLaunchAction}">Open App</button>
                     </div>
                 `;
             }).join('');
@@ -29128,6 +29138,9 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
 
             const addBtn = document.getElementById('appDetailAddBtn');
             const savedApps = JSON.parse(localStorage.getItem('savedApps') || '[]');
+            const appName = SUITE_APPS[currentDetailAppKey]?.name
+                || (currentDetailCommunityApp && communityAppsCache.find(o => o.slug === currentDetailCommunityApp.slug)?.name)
+                || 'App';
 
             if (savedApps.includes(currentDetailAppKey)) {
                 // Remove
@@ -29136,14 +29149,14 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
                 localStorage.setItem('savedApps', JSON.stringify(savedApps));
                 addBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Add to Profile`;
                 addBtn.classList.remove('added');
-                showToast(`${SUITE_APPS[currentDetailAppKey]?.name || 'App'} removed from your profile`);
+                showToast(`${appName} removed from your profile`);
             } else {
                 // Add
                 savedApps.push(currentDetailAppKey);
                 localStorage.setItem('savedApps', JSON.stringify(savedApps));
                 addBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> Added!`;
                 addBtn.classList.add('added');
-                showToast(`${SUITE_APPS[currentDetailAppKey]?.name || 'App'} added to your profile!`);
+                showToast(`${appName} added to your profile!`);
             }
 
             // Live-update sidebar and Your Apps list
