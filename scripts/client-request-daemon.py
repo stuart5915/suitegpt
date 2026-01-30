@@ -289,7 +289,8 @@ Set-Location "{cwd}"
 Write-Host "Running Claude CLI..." -ForegroundColor Yellow
 Write-Host ""
 
-Get-Content "{prompt_file}" | claude --print --dangerously-skip-permissions
+$prompt = [System.IO.File]::ReadAllText("{prompt_file}")
+& claude -p --dangerously-skip-permissions $prompt
 $exitCode = $LASTEXITCODE
 
 Write-Host ""
