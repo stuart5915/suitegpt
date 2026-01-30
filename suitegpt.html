@@ -28201,7 +28201,7 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
                 iconUrl: '/assets/icons/opticrep-icon.jpg',
                 iconBg: 'linear-gradient(135deg, #f97316, #ea580c)',
                 url: '/opticrep/',
-                screens: ['/opticrep/', '/opticrep/workout.html', '/opticrep/coach.html', '/opticrep/journal.html']
+                screens: ['/opticrep/workout.html', '/opticrep/coach.html', '/opticrep/journal.html']
             },
             'cheshbon': {
                 name: 'Cheshbon',
@@ -28847,6 +28847,7 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
 
         // Current detail page app key
         let currentDetailAppKey = null;
+        let currentDetailCommunityApp = null;
 
         // Pending app launch info (for modal)
         let pendingAppLaunch = { key: null, url: null, name: null };
@@ -28854,10 +28855,12 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
         function openAppDetail(appKey, skipPushState) {
             const app = SUITE_APPS[appKey];
             if (!app) {
-                // Unknown app slug - fall back to apps grid
-                openAppsPanel(skipPushState);
+                // Try community app by slug
+                openCommunityAppDetail(appKey, skipPushState);
                 return;
             }
+
+            currentDetailCommunityApp = null;
 
             currentDetailAppKey = appKey;
 
@@ -28968,6 +28971,115 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
             closeMobileSidebar();
         }
 
+        async function openCommunityAppDetail(slug, skipPushState) {
+            // Find community app by slug in cache, or fetch from DB
+            let op = communityAppsCache.find(o => o.slug === slug);
+
+            if (!op && supabaseClient) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('suite_operators')
+                        .select('*')
+                        .eq('slug', slug)
+                        .single();
+                    if (!error && data) op = data;
+                } catch (e) {
+                    console.error('Error fetching community app by slug:', e);
+                }
+            }
+
+            if (!op) {
+                // Not found — fall back to apps grid
+                openAppsPanel(skipPushState);
+                return;
+            }
+
+            currentDetailAppKey = slug;
+            currentDetailCommunityApp = { slug: op.slug, user_app_id: op.user_app_id };
+
+            // Exit builder mode
+            exitBuilderMode();
+
+            // Hide all other views
+            const welcomeState = document.getElementById('welcomeState');
+            const appsView = document.getElementById('appsView');
+            const creatorDashboard = document.getElementById('creatorDashboard');
+            const factoryView = document.getElementById('factoryView');
+            const useCasesSection = document.getElementById('useCasesSection');
+            const learnView = document.getElementById('learnView');
+            const connectionsView = document.getElementById('connectionsView');
+            const detailView = document.getElementById('appDetailView');
+
+            if (welcomeState) welcomeState.style.display = 'none';
+            if (useCasesSection) useCasesSection.style.display = 'none';
+            if (creatorDashboard) creatorDashboard.classList.remove('active');
+            if (factoryView) factoryView.classList.remove('active');
+            if (learnView) learnView.classList.remove('active');
+            if (connectionsView) connectionsView.classList.remove('active');
+            if (appsView) appsView.classList.remove('active');
+            hideArticle();
+
+            // Populate detail view
+            const iconEl = document.getElementById('appDetailIcon');
+            const nameEl = document.getElementById('appDetailName');
+            const categoryEl = document.getElementById('appDetailCategory');
+            const descEl = document.getElementById('appDetailDescription');
+            const addBtn = document.getElementById('appDetailAddBtn');
+            const screenshotsSection = document.getElementById('appDetailScreenshotsSection');
+            const infoGrid = document.getElementById('appDetailInfoGrid');
+
+            const iconBg = op.icon_bg || 'linear-gradient(135deg, #22c55e, #10b981)';
+            iconEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="40" height="40"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>';
+            iconEl.style.background = iconBg;
+
+            nameEl.textContent = op.name;
+            categoryEl.textContent = 'Community';
+            descEl.textContent = op.description || 'Community app';
+
+            // No screenshots for community apps (blob URLs)
+            if (screenshotsSection) screenshotsSection.style.display = 'none';
+
+            // Info grid
+            infoGrid.innerHTML = `
+                <div class="app-detail-info-item">
+                    <div class="app-detail-info-label">Category</div>
+                    <div class="app-detail-info-value">Community</div>
+                </div>
+                <div class="app-detail-info-item">
+                    <div class="app-detail-info-label">Platform</div>
+                    <div class="app-detail-info-value">Web</div>
+                </div>
+                <div class="app-detail-info-item">
+                    <div class="app-detail-info-label">Developer</div>
+                    <div class="app-detail-info-value">${op.name}</div>
+                </div>
+                <div class="app-detail-info-item">
+                    <div class="app-detail-info-label">Price</div>
+                    <div class="app-detail-info-value">Free</div>
+                </div>
+            `;
+
+            // Update add button state
+            const savedApps = JSON.parse(localStorage.getItem('savedApps') || '[]');
+            if (savedApps.includes(slug)) {
+                addBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> Added!`;
+                addBtn.classList.add('added');
+            } else {
+                addBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Add to Profile`;
+                addBtn.classList.remove('added');
+            }
+
+            // Show detail view
+            if (detailView) detailView.classList.add('active');
+
+            // Push URL
+            if (!skipPushState) {
+                history.pushState({ view: 'appDetail', appKey: slug }, '', '/apps/' + slug);
+            }
+
+            closeMobileSidebar();
+        }
+
         function closeAppDetail() {
             const detailView = document.getElementById('appDetailView');
             if (detailView) {
@@ -28978,11 +29090,19 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
                 detailView.classList.remove('active');
             }
             currentDetailAppKey = null;
+            currentDetailCommunityApp = null;
             openAppsPanel();
         }
 
         function openAppFromDetail() {
             if (!currentDetailAppKey) return;
+
+            // Check if it's a community app
+            if (currentDetailCommunityApp) {
+                launchCommunityApp(currentDetailCommunityApp.user_app_id);
+                return;
+            }
+
             const app = SUITE_APPS[currentDetailAppKey];
             if (!app) return;
 
