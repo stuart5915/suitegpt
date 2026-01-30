@@ -11560,11 +11560,18 @@
         .welcome-state.chat-active .chat-container {
             order: 1;
             flex: 1;
+            overflow: hidden;
+            padding: 0;
+            display: flex !important;
+            flex-direction: row;
+            min-height: 0;
+        }
+
+        .welcome-state.chat-active .chat-messages-wrapper {
+            flex: 1;
             overflow-y: auto;
             padding: 20px 24px;
-            display: flex !important;
-            flex-direction: column;
-            min-height: 0;
+            min-width: 0;
         }
 
         /* Input sticks to bottom - just the input, centered */
@@ -12022,7 +12029,15 @@
 
         .chat-container.active {
             display: flex;
+            flex-direction: row;
+        }
+
+        .chat-messages-wrapper {
+            flex: 1;
+            min-width: 0;
+            display: flex;
             flex-direction: column;
+            overflow-y: auto;
         }
 
         .chat-messages {
@@ -12034,6 +12049,7 @@
             width: 100%;
             margin: 0 auto;
             padding-bottom: 20px;
+            padding-right: 12px;
         }
 
         /* Messages */
@@ -12332,23 +12348,33 @@
         /* ========================================= */
 
         .suitegpt-insights {
-            background: rgba(34, 197, 94, 0.08);
-            border: 1px solid rgba(34, 197, 94, 0.2);
-            border-radius: 16px;
-            margin: 20px auto;
-            max-width: 760px;
-            width: 100%;
-            overflow: hidden;
+            width: 280px;
+            min-width: 280px;
+            background: rgba(34, 197, 94, 0.05);
+            border-left: 1px solid rgba(34, 197, 94, 0.15);
+            overflow-y: auto;
             transition: all 0.3s ease;
             display: none;
+            flex-direction: column;
         }
 
         .suitegpt-insights.active {
-            display: block;
+            display: flex;
         }
 
         .suitegpt-insights.minimized {
             display: none;
+        }
+
+        .insights-empty-state {
+            padding: 8px 0;
+            color: var(--text-tertiary);
+            font-size: 0.82rem;
+            line-height: 1.5;
+        }
+
+        .insights-empty-state p {
+            margin: 0;
         }
 
         .insights-header {
@@ -12494,33 +12520,30 @@
             color: var(--text-secondary);
         }
 
-        /* Minimized Insights Button */
-        .insights-minimized-btn {
-            position: fixed;
-            bottom: 140px;
-            right: 24px;
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: rgba(34, 197, 94, 0.9);
+        /* Collapsed Insights Toggle Button */
+        .insights-collapsed-btn {
+            width: 40px;
+            min-width: 40px;
+            background: rgba(34, 197, 94, 0.08);
             border: none;
+            border-left: 1px solid rgba(34, 197, 94, 0.15);
             cursor: pointer;
             display: none;
             align-items: center;
             justify-content: center;
-            color: white;
-            box-shadow: 0 4px 20px rgba(34, 197, 94, 0.3);
+            color: rgba(34, 197, 94, 0.8);
             transition: all 0.3s ease;
-            z-index: 100;
+            position: relative;
+            flex-direction: column;
         }
 
-        .insights-minimized-btn.active {
+        .insights-collapsed-btn.active {
             display: flex;
         }
 
-        .insights-minimized-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 25px rgba(34, 197, 94, 0.4);
+        .insights-collapsed-btn:hover {
+            background: rgba(34, 197, 94, 0.15);
+            color: rgba(34, 197, 94, 1);
         }
 
         .insights-badge {
@@ -16041,7 +16064,25 @@
 
             /* Mobile chat-active adjustments */
             .welcome-state.chat-active .chat-container {
+                padding: 0;
+                flex-direction: column;
+            }
+
+            .welcome-state.chat-active .chat-messages-wrapper {
                 padding: 16px;
+            }
+
+            /* Hide insights side panel on mobile — use collapsed toggle instead */
+            .suitegpt-insights {
+                display: none !important;
+            }
+
+            .suitegpt-insights.active {
+                display: none !important;
+            }
+
+            .insights-collapsed-btn {
+                display: none !important;
             }
 
             .welcome-state.chat-active .input-container {
@@ -16824,25 +16865,29 @@
 
                     <!-- Chat Container -->
                     <div class="chat-container" id="chatContainer">
-                        <div class="chat-messages" id="chatMessages"></div>
+                        <div class="chat-messages-wrapper">
+                            <div class="chat-messages" id="chatMessages"></div>
+                        </div>
 
-                        <!-- SuiteGPT Insights Panel -->
+                        <!-- SuiteGPT Insights Side Panel -->
                         <div class="suitegpt-insights" id="suiteInsights">
                             <div class="insights-header">
                                 <span class="insights-title">SuiteGPT Insights</span>
-                                <button class="insights-minimize-btn" id="insightsMinimizeBtn" title="Minimize">
+                                <button class="insights-minimize-btn" id="insightsMinimizeBtn" title="Collapse">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                                        <path d="M5 12h14"/>
+                                        <path d="M15 18l-6-6 6-6"/>
                                     </svg>
                                 </button>
                             </div>
                             <div class="insights-content" id="insightsContent">
-                                <!-- Insights will be populated here -->
+                                <div class="insights-empty-state">
+                                    <p>Insights will appear here as you chat. I'll suggest relevant SUITE apps based on your conversation.</p>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Minimized Insights Button -->
-                        <button class="insights-minimized-btn" id="insightsMinimizedBtn">
+                        <!-- Collapsed Insights Toggle Button -->
+                        <button class="insights-collapsed-btn" id="insightsMinimizedBtn" title="Show Insights">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                                 <circle cx="12" cy="12" r="10"/>
                                 <path d="M12 16v-4M12 8h.01"/>
@@ -32443,13 +32488,18 @@ Return as JSON array. No markdown, no code blocks.`,
                 // Render messages
                 if (chatMessagesEl) chatMessagesEl.innerHTML = '';
                 if (chatContainerEl) chatContainerEl.classList.add('active');
+                showInsightsPanel();
 
                 conversationHistory.forEach(msg => {
                     addMessageToDOM(msg.content, msg.role);
                 });
 
                 // Scroll to bottom
-                if (chatContainerEl) chatContainerEl.scrollTop = chatContainerEl.scrollHeight;
+                if (chatContainerEl) {
+                    const wrapper = chatContainerEl.querySelector('.chat-messages-wrapper');
+                    if (wrapper) wrapper.scrollTop = wrapper.scrollHeight;
+                    else chatContainerEl.scrollTop = chatContainerEl.scrollHeight;
+                }
 
                 // Restore insights if any were saved with this chat
                 clearInsights();
@@ -32646,6 +32696,14 @@ Return as JSON array. No markdown, no code blocks.`,
         }
         if (insightsMinimizedBtn) {
             insightsMinimizedBtn.addEventListener('click', expandInsights);
+        }
+
+        // Show insights side panel (called when chat becomes active)
+        function showInsightsPanel() {
+            if (suiteInsights && !insightsState.isMinimized) {
+                suiteInsights.classList.add('active');
+                if (insightsMinimizedBtn) insightsMinimizedBtn.classList.remove('active');
+            }
         }
 
         function minimizeInsights() {
@@ -32959,7 +33017,7 @@ Return as JSON array. No markdown, no code blocks.`,
             insightsState.shownInsights = [];
             insightsState.badgeCount = 0;
             updateInsightsBadge();
-            if (insightsContent) insightsContent.innerHTML = '';
+            if (insightsContent) insightsContent.innerHTML = '<div class="insights-empty-state"><p>Insights will appear here as you chat. I\'ll suggest relevant SUITE apps based on your conversation.</p></div>';
             if (suiteInsights) suiteInsights.classList.remove('active');
             if (insightsMinimizedBtn) insightsMinimizedBtn.classList.remove('active');
             insightsState.isMinimized = false;
@@ -33134,6 +33192,7 @@ Return as JSON array. No markdown, no code blocks.`,
 
                     welcomeState.classList.add('chat-active');
                     chatContainer.classList.add('active');
+                    showInsightsPanel();
                     addMessage(query, 'user');
                     addMessage(response, 'assistant', app);
                     conversationHistory.push({ role: 'user', content: query });
@@ -33246,8 +33305,10 @@ Return as JSON array. No markdown, no code blocks.`,
             messageDiv.appendChild(avatar);
             messageDiv.appendChild(contentDiv);
             chatMessages.appendChild(messageDiv);
-            // Scroll the chat container (scrollable parent) to bottom
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            // Scroll the chat messages wrapper to bottom
+            const wrapper = chatContainer.querySelector('.chat-messages-wrapper');
+            if (wrapper) wrapper.scrollTop = wrapper.scrollHeight;
+            else chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
         // Handle quick action button clicks
@@ -33328,8 +33389,10 @@ Return as JSON array. No markdown, no code blocks.`,
             messageDiv.appendChild(avatar);
             messageDiv.appendChild(contentDiv);
             chatMessages.appendChild(messageDiv);
-            // Scroll the chat container (scrollable parent) to bottom
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            // Scroll the chat messages wrapper to bottom
+            const typingWrapper = chatContainer.querySelector('.chat-messages-wrapper');
+            if (typingWrapper) typingWrapper.scrollTop = typingWrapper.scrollHeight;
+            else chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
         function removeTypingIndicator() {
@@ -33347,6 +33410,7 @@ Return as JSON array. No markdown, no code blocks.`,
             chatInput.value = '';
             welcomeState.classList.add('chat-active');
             chatContainer.classList.add('active');
+            showInsightsPanel();
 
             addMessage(message, 'user');
             conversationHistory.push({ role: 'user', content: message });
@@ -33583,7 +33647,7 @@ Return as JSON array. No markdown, no code blocks.`,
             }
 
             return {
-                response: `We don't have an app for that yet, but we can build one!\n\nAI Fleet creates custom apps in 1-12 hours. Just describe:\n• What problem you're solving\n• Key features you need\n\nWant me to start a request?`,
+                response: `I'm here to help! What would you like to know?`,
                 recommendedApp: null
             };
         }
@@ -34178,6 +34242,7 @@ Return as JSON array. No markdown, no code blocks.`,
 
             welcomeState.classList.add('chat-active');
             chatContainer.classList.add('active');
+            showInsightsPanel();
 
             const message = `I'd like to request an app that: ${idea}`;
 
@@ -34208,6 +34273,7 @@ Return as JSON array. No markdown, no code blocks.`,
             if (analysisResults && analysisResults.summary) {
                 welcomeState.classList.add('chat-active');
                 chatContainer.classList.add('active');
+                showInsightsPanel();
 
                 const message = `Based on my chat history, I'm interested in: ${analysisResults.topics?.slice(0, 3).map(t => t.topic).join(', ')}. Can you help me find or build something for this?`;
 
