@@ -18646,6 +18646,9 @@
                             <button class="factory-main-tab" data-view="operators" onclick="switchFactoryMainView('operators')">
                                 Operators
                             </button>
+                            <button class="factory-main-tab" data-view="clients" onclick="switchFactoryMainView('clients')">
+                                Clients
+                            </button>
                         </div>
                     </div>
 
@@ -19836,6 +19839,41 @@
                                     <!-- Operators List -->
                                     <div class="operators-list" id="operatorsList">
                                         <div class="operators-loading">Loading operators...</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Clients View (Client Requests) -->
+                            <div class="factory-main-view" id="factoryClientsView" style="display: none;">
+                                <div style="max-width: 1200px; margin: 0 auto; padding: 40px 20px;">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
+                                        <div>
+                                            <h2 style="font-size: 1.75rem; font-weight: 800; margin: 0;">Client Requests</h2>
+                                            <p style="color: var(--text-secondary); margin: 4px 0 0;">Review, refine, and send client requests to Claude</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Filters -->
+                                    <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
+                                        <select id="crAppFilter" onchange="loadClientRequests()" style="padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: var(--text); font-size: 0.9rem;">
+                                            <option value="">All Apps</option>
+                                            <option value="proto-golf">Proto Golf</option>
+                                        </select>
+                                        <select id="crStatusFilter" onchange="loadClientRequests()" style="padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: var(--text); font-size: 0.9rem;">
+                                            <option value="">All Statuses</option>
+                                            <option value="submitted">Submitted</option>
+                                            <option value="approved">Approved</option>
+                                            <option value="processing">Processing</option>
+                                            <option value="completed">Completed</option>
+                                            <option value="failed">Failed</option>
+                                            <option value="rejected">Rejected</option>
+                                        </select>
+                                        <button onclick="loadClientRequests()" style="padding: 8px 16px; border-radius: 8px; border: none; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: white; cursor: pointer; font-weight: 600;">Refresh</button>
+                                    </div>
+
+                                    <!-- Request Cards -->
+                                    <div id="clientRequestsList" style="display: flex; flex-direction: column; gap: 16px;">
+                                        <p style="color: var(--text-secondary); text-align: center; padding: 40px;">Loading...</p>
                                     </div>
                                 </div>
                             </div>
@@ -21649,7 +21687,7 @@
                 openFactory(true);
                 // Check for sub-tab
                 const subPath = path.replace('/governance', '').replace('/', '');
-                if (subPath && ['telos', 'marketing', 'stream', 'howitworks', 'leaderboard', 'rewards', 'agents', 'operators'].includes(subPath)) {
+                if (subPath && ['telos', 'marketing', 'stream', 'howitworks', 'leaderboard', 'rewards', 'agents', 'operators', 'clients'].includes(subPath)) {
                     switchFactoryMainView(subPath, true);
                 }
             } else if (path === '/creator-dashboard') {
@@ -21713,7 +21751,7 @@
                 openFactory(true);
                 // Check for sub-tab
                 const subPath = path.replace('/governance', '').replace('/', '');
-                if (subPath && ['telos', 'marketing', 'stream', 'howitworks', 'leaderboard', 'rewards', 'agents', 'operators'].includes(subPath)) {
+                if (subPath && ['telos', 'marketing', 'stream', 'howitworks', 'leaderboard', 'rewards', 'agents', 'operators', 'clients'].includes(subPath)) {
                     switchFactoryMainView(subPath, true);
                 }
             } else if (path === '/creator-dashboard') {
@@ -21905,6 +21943,7 @@
             document.getElementById('factoryStreamView').style.display = view === 'stream' ? 'block' : 'none';
             document.getElementById('factoryLeaderboardView').style.display = view === 'leaderboard' ? 'block' : 'none';
             document.getElementById('factoryOperatorsView').style.display = view === 'operators' ? 'block' : 'none';
+            document.getElementById('factoryClientsView').style.display = view === 'clients' ? 'block' : 'none';
 
             // Update URL based on view
             if (!skipPushState) {
@@ -21934,6 +21973,11 @@
                 if (!opDaemonInterval) opDaemonInterval = setInterval(checkOpDaemonStatus, 10000);
             } else {
                 if (opDaemonInterval) { clearInterval(opDaemonInterval); opDaemonInterval = null; }
+            }
+
+            // Load client requests when switching to clients view
+            if (view === 'clients') {
+                loadClientRequests();
             }
 
             // Initialize Telos chat
@@ -22114,6 +22158,158 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
         // ===== Operators Functions =====
         let operatorsData = [];
         let operatorsFilter = 'all';
+
+        // ===== Client Requests Functions =====
+        async function loadClientRequests() {
+            const container = document.getElementById('clientRequestsList');
+            const appFilter = document.getElementById('crAppFilter').value;
+            const statusFilter = document.getElementById('crStatusFilter').value;
+
+            container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">Loading...</p>';
+
+            try {
+                let query = '?category=eq.client_request&order=created_at.desc&limit=50';
+                if (appFilter) query += '&client_app=eq.' + encodeURIComponent(appFilter);
+                if (statusFilter) query += '&status=eq.' + encodeURIComponent(statusFilter);
+
+                const response = await fetch(SUPABASE_URL + '/rest/v1/factory_proposals' + query + '&select=*', {
+                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY }
+                });
+                const data = await response.json();
+
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">No client requests found.</p>';
+                    return;
+                }
+
+                container.innerHTML = data.map(function(r) { return renderClientRequestCard(r); }).join('');
+            } catch (e) {
+                container.innerHTML = '<p style="color: #ef4444; text-align: center; padding: 40px;">Failed to load requests.</p>';
+                console.error('loadClientRequests error:', e);
+            }
+        }
+
+        function renderClientRequestCard(r) {
+            var date = new Date(r.created_at).toLocaleDateString();
+            var statusColors = {
+                'submitted': '#f59e0b',
+                'approved': '#22c55e',
+                'processing': '#3b82f6',
+                'completed': '#22c55e',
+                'failed': '#ef4444',
+                'rejected': '#ef4444'
+            };
+            var stColor = statusColors[r.status] || '#888';
+            var promptValue = (r.claude_prompt || r.content || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+            var isEditable = r.status === 'submitted';
+            var showActions = r.status === 'submitted';
+            var showOutput = r.status === 'completed' && r.claude_output;
+            var showError = r.status === 'failed' && r.error_message;
+
+            return '<div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px;">' +
+                '<div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">' +
+                    '<div>' +
+                        '<h4 style="margin: 0 0 4px;">' + escapeHtml(r.title) + '</h4>' +
+                        '<span style="font-size: 0.8rem; color: var(--text-secondary);">' + escapeHtml(r.client_app || 'unknown') + ' &middot; ' + date + '</span>' +
+                    '</div>' +
+                    '<span style="padding: 4px 10px; border-radius: 100px; font-size: 0.75rem; font-weight: 600; background: ' + stColor + '22; color: ' + stColor + ';">' + r.status + '</span>' +
+                '</div>' +
+                '<p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 16px;">' + escapeHtml(r.content || '').substring(0, 300) + '</p>' +
+
+                '<div style="margin-bottom: 12px;">' +
+                    '<label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Claude Prompt' + (isEditable ? ' (edit before sending)' : '') + '</label>' +
+                    '<textarea id="crPrompt-' + r.id + '" rows="4" ' + (isEditable ? '' : 'disabled') + ' style="width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text); font-family: monospace; font-size: 0.85rem; resize: vertical;">' + promptValue + '</textarea>' +
+                '</div>' +
+
+                (showActions ? (
+                '<div style="margin-bottom: 12px;">' +
+                    '<label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Notes (optional)</label>' +
+                    '<input type="text" id="crNotes-' + r.id + '" placeholder="Add notes..." style="width: 100%; padding: 8px 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text); font-size: 0.85rem;">' +
+                '</div>' +
+                '<div style="display: flex; gap: 8px;">' +
+                    '<button id="crApproveBtn-' + r.id + '" onclick="approveClientRequest(\'' + r.id + '\')" style="padding: 10px 24px; border-radius: 8px; border: none; background: #22c55e; color: white; font-weight: 600; cursor: pointer; font-size: 0.9rem;">Send to Claude</button>' +
+                    '<button onclick="rejectClientRequest(\'' + r.id + '\')" style="padding: 10px 24px; border-radius: 8px; border: none; background: rgba(239,68,68,0.15); color: #ef4444; font-weight: 600; cursor: pointer; font-size: 0.9rem;">Reject</button>' +
+                '</div>'
+                ) : '') +
+
+                (showOutput ? (
+                '<details style="margin-top: 12px;">' +
+                    '<summary style="cursor: pointer; font-weight: 600; font-size: 0.85rem; color: var(--accent-primary);">View Claude Output</summary>' +
+                    '<pre style="margin-top: 8px; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 8px; font-size: 0.8rem; white-space: pre-wrap; overflow-x: auto; max-height: 300px; overflow-y: auto;">' + escapeHtml(r.claude_output) + '</pre>' +
+                '</details>'
+                ) : '') +
+
+                (showError ? (
+                '<div style="margin-top: 12px; padding: 12px; background: rgba(239,68,68,0.1); border-radius: 8px; font-size: 0.85rem; color: #ef4444;">' +
+                    '<strong>Error:</strong> ' + escapeHtml(r.error_message) +
+                '</div>'
+                ) : '') +
+
+            '</div>';
+        }
+
+        async function approveClientRequest(id) {
+            var promptEl = document.getElementById('crPrompt-' + id);
+            var notesEl = document.getElementById('crNotes-' + id);
+            var btn = document.getElementById('crApproveBtn-' + id);
+            var prompt = promptEl ? promptEl.value : '';
+            var notes = notesEl ? notesEl.value : '';
+
+            if (!prompt.trim()) {
+                alert('Prompt cannot be empty.');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+            btn.style.background = '#3b82f6';
+
+            try {
+                await fetch(SUPABASE_URL + '/rest/v1/factory_proposals?id=eq.' + id, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({
+                        status: 'approved',
+                        claude_prompt: prompt,
+                        notes: notes || null
+                    })
+                });
+
+                btn.textContent = 'Sent to Claude!';
+                btn.style.background = '#22c55e';
+                setTimeout(loadClientRequests, 1500);
+            } catch (e) {
+                btn.textContent = 'Failed — try again';
+                btn.style.background = '#ef4444';
+                btn.disabled = false;
+                console.error(e);
+            }
+        }
+
+        async function rejectClientRequest(id) {
+            if (!confirm('Reject this request?')) return;
+            try {
+                await fetch(SUPABASE_URL + '/rest/v1/factory_proposals?id=eq.' + id, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({ status: 'rejected' })
+                });
+                loadClientRequests();
+            } catch (e) {
+                alert('Failed to reject request.');
+                console.error(e);
+            }
+        }
 
         // ===== Client Request Daemon Status (Operators Page) =====
         let opDaemonInterval = null;
