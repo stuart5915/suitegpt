@@ -22280,6 +22280,7 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
             var promptValue = (r.claude_prompt || r.content || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
             var isEditable = r.status === 'submitted' || r.status === 'open';
             var showActions = r.status === 'submitted' || r.status === 'open';
+            var showApprovedActions = r.status === 'approved' || r.status === 'processing';
             var showOutput = r.status === 'completed' && r.claude_output;
             var showError = r.status === 'failed' && r.error_message;
 
@@ -22306,6 +22307,14 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
                 '<div style="display: flex; gap: 8px;">' +
                     '<button id="crApproveBtn-' + r.id + '" onclick="approveClientRequest(\'' + r.id + '\')" style="padding: 10px 24px; border-radius: 8px; border: none; background: #22c55e; color: white; font-weight: 600; cursor: pointer; font-size: 0.9rem;">Send to Claude</button>' +
                     '<button onclick="rejectClientRequest(\'' + r.id + '\')" style="padding: 10px 24px; border-radius: 8px; border: none; background: rgba(239,68,68,0.15); color: #ef4444; font-weight: 600; cursor: pointer; font-size: 0.9rem;">Reject</button>' +
+                '</div>'
+                ) : '') +
+
+                (showApprovedActions ? (
+                '<div style="display: flex; gap: 8px; flex-wrap: wrap;">' +
+                    '<button onclick="markRequestComplete(\'' + r.id + '\')" style="padding: 10px 24px; border-radius: 8px; border: none; background: #22c55e; color: white; font-weight: 600; cursor: pointer; font-size: 0.9rem;">Mark Complete</button>' +
+                    '<button onclick="recopyPrompt(\'' + r.id + '\')" style="padding: 10px 24px; border-radius: 8px; border: none; background: rgba(59,130,246,0.15); color: #3b82f6; font-weight: 600; cursor: pointer; font-size: 0.9rem;">Re-copy Prompt</button>' +
+                    '<button onclick="markRequestFailed(\'' + r.id + '\')" style="padding: 10px 24px; border-radius: 8px; border: none; background: rgba(239,68,68,0.15); color: #ef4444; font-weight: 600; cursor: pointer; font-size: 0.9rem;">Mark Failed</button>' +
                 '</div>'
                 ) : '') +
 
@@ -22417,6 +22426,64 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
                     // keep polling
                 }
             }, 3000);
+        }
+
+        async function markRequestComplete(id) {
+            try {
+                await fetch(SUPABASE_URL + '/rest/v1/factory_proposals?id=eq.' + id, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({ status: 'completed', processed_at: new Date().toISOString() })
+                });
+                loadClientRequests();
+            } catch (e) {
+                alert('Failed to update status.');
+                console.error(e);
+            }
+        }
+
+        async function markRequestFailed(id) {
+            var reason = prompt('Failure reason (optional):') || 'Manually marked as failed';
+            try {
+                await fetch(SUPABASE_URL + '/rest/v1/factory_proposals?id=eq.' + id, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({ status: 'failed', error_message: reason, processed_at: new Date().toISOString() })
+                });
+                loadClientRequests();
+            } catch (e) {
+                alert('Failed to update status.');
+                console.error(e);
+            }
+        }
+
+        function recopyPrompt(id) {
+            var promptEl = document.getElementById('crPrompt-' + id);
+            var text = promptEl ? promptEl.value : '';
+            if (!text) { alert('No prompt to copy.'); return; }
+            navigator.clipboard.writeText(text).then(function() {
+                var btn = event.target;
+                btn.textContent = 'Copied!';
+                setTimeout(function() { btn.textContent = 'Re-copy Prompt'; }, 2000);
+            }).catch(function() {
+                var ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                alert('Copied to clipboard!');
+            });
         }
 
         async function rejectClientRequest(id) {
