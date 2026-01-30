@@ -811,22 +811,23 @@ Tech: JavaScript, HTML/CSS, Solidity, Supabase (Postgres/RPC/Auth), Vercel, REST
         // ===== JOB BOARD BROWSER =====
         // ================================================================
 
+        // embed: false = known to block iframes (X-Frame-Options / CSP)
         const JOB_BOARDS = [
-            { name: ''LinkedIn Jobs'', icon: ''in'', color: ''var(--blue)'', bg: ''var(--blue-soft)'', url: ''https://www.linkedin.com/jobs/search/?keywords=developer%20relations%20AI&f_TPR=r604800&f_WT=2'' },
-            { name: ''Y Combinator'', icon: ''YC'', color: ''var(--orange)'', bg: ''var(--orange-soft)'', url: ''https://www.workatastartup.com/jobs?role=eng&demographic=any&query=AI+developer+relations'' },
-            { name: ''Wellfound'', icon: ''WF'', color: ''var(--green)'', bg: ''var(--green-soft)'', url: ''https://wellfound.com/jobs?query=developer+relations+AI'' },
-            { name: ''Remotive'', icon: ''R'', color: ''var(--green)'', bg: ''var(--green-soft)'', url: ''https://remotive.com/remote-jobs/software-dev'' },
-            { name: ''Web3.career'', icon: ''W3'', color: ''var(--red)'', bg: ''var(--red-soft)'', url: ''https://web3.career/ai-jobs'' },
-            { name: ''CryptoJobs'', icon: ''CJ'', color: ''var(--orange)'', bg: ''var(--orange-soft)'', url: ''https://cryptocurrencyjobs.co/?query=AI'' },
-            { name: ''ai-jobs.net'', icon: ''AI'', color: ''var(--purple)'', bg: ''var(--purple-soft)'', url: ''https://ai-jobs.net/'' },
-            { name: ''Anthropic'', icon: ''A'', color: ''var(--accent)'', bg: ''var(--accent-soft)'', url: ''https://www.anthropic.com/careers'' },
-            { name: ''OpenAI'', icon: ''O'', color: ''var(--green)'', bg: ''var(--green-soft)'', url: ''https://openai.com/careers/search'' },
-            { name: ''DeepMind'', icon: ''G'', color: ''var(--blue)'', bg: ''var(--blue-soft)'', url: ''https://deepmind.google/about/careers/'' },
-            { name: ''Hugging Face'', icon: ''HF'', color: ''var(--purple)'', bg: ''var(--purple-soft)'', url: ''https://huggingface.co/jobs'' },
-            { name: ''Vercel'', icon: ''V'', color: ''var(--green)'', bg: ''var(--green-soft)'', url: ''https://vercel.com/careers'' },
-            { name: ''Supabase'', icon: ''S'', color: ''var(--blue)'', bg: ''var(--blue-soft)'', url: ''https://supabase.com/careers'' },
-            { name: ''Replicate'', icon: ''R'', color: ''var(--orange)'', bg: ''var(--orange-soft)'', url: ''https://replicate.com/about#careers'' },
-            { name: ''Cohere'', icon: ''C'', color: ''var(--red)'', bg: ''var(--red-soft)'', url: ''https://cohere.com/careers'' }
+            { name: ''LinkedIn Jobs'', icon: ''in'', color: ''var(--blue)'', bg: ''var(--blue-soft)'', embed: false, url: ''https://www.linkedin.com/jobs/search/?keywords=developer%20relations%20AI&f_TPR=r604800&f_WT=2'' },
+            { name: ''Y Combinator'', icon: ''YC'', color: ''var(--orange)'', bg: ''var(--orange-soft)'', embed: false, url: ''https://www.workatastartup.com/jobs?role=eng&demographic=any&query=AI+developer+relations'' },
+            { name: ''Wellfound'', icon: ''WF'', color: ''var(--green)'', bg: ''var(--green-soft)'', embed: false, url: ''https://wellfound.com/jobs?query=developer+relations+AI'' },
+            { name: ''Remotive'', icon: ''R'', color: ''var(--green)'', bg: ''var(--green-soft)'', embed: true, url: ''https://remotive.com/remote-jobs/software-dev'' },
+            { name: ''Web3.career'', icon: ''W3'', color: ''var(--red)'', bg: ''var(--red-soft)'', embed: true, url: ''https://web3.career/ai-jobs'' },
+            { name: ''CryptoJobs'', icon: ''CJ'', color: ''var(--orange)'', bg: ''var(--orange-soft)'', embed: true, url: ''https://cryptocurrencyjobs.co/?query=AI'' },
+            { name: ''ai-jobs.net'', icon: ''AI'', color: ''var(--purple)'', bg: ''var(--purple-soft)'', embed: true, url: ''https://ai-jobs.net/'' },
+            { name: ''Anthropic'', icon: ''A'', color: ''var(--accent)'', bg: ''var(--accent-soft)'', embed: false, url: ''https://www.anthropic.com/careers'' },
+            { name: ''OpenAI'', icon: ''O'', color: ''var(--green)'', bg: ''var(--green-soft)'', embed: false, url: ''https://openai.com/careers/search'' },
+            { name: ''DeepMind'', icon: ''G'', color: ''var(--blue)'', bg: ''var(--blue-soft)'', embed: false, url: ''https://deepmind.google/about/careers/'' },
+            { name: ''Hugging Face'', icon: ''HF'', color: ''var(--purple)'', bg: ''var(--purple-soft)'', embed: false, url: ''https://huggingface.co/jobs'' },
+            { name: ''Vercel'', icon: ''V'', color: ''var(--green)'', bg: ''var(--green-soft)'', embed: false, url: ''https://vercel.com/careers'' },
+            { name: ''Supabase'', icon: ''S'', color: ''var(--blue)'', bg: ''var(--blue-soft)'', embed: false, url: ''https://supabase.com/careers'' },
+            { name: ''Replicate'', icon: ''R'', color: ''var(--orange)'', bg: ''var(--orange-soft)'', embed: false, url: ''https://replicate.com/about#careers'' },
+            { name: ''Cohere'', icon: ''C'', color: ''var(--red)'', bg: ''var(--red-soft)'', embed: false, url: ''https://cohere.com/careers'' }
         ];
 
         let activeBoardIndex = -1;
@@ -854,30 +855,20 @@ Tech: JavaScript, HTML/CSS, Solidity, Supabase (Postgres/RPC/Auth), Vercel, REST
             // Update label
             document.getElementById(''boardCurrentLabel'').textContent = board.name;
 
-            // Show iframe, hide fallback
             const iframe = document.getElementById(''boardIframe'');
             const fallback = document.getElementById(''boardFallback'');
-            iframe.style.display = ''block'';
-            fallback.classList.remove(''visible'');
 
-            // Set iframe src
-            iframe.src = board.url;
-
-            // Detect iframe load failure with a timeout
-            // If the iframe loads successfully, onload fires. If blocked, we show fallback.
-            let loaded = false;
-            iframe.onload = function() {
-                loaded = true;
-                // Even if onload fires, the content might be blocked (same-origin policy).
-                // We can''t reliably detect X-Frame-Options blocking from JS,
-                // so we just let it show — the user will see a blank page and can click "Open in New Tab".
-            };
-
-            // After a timeout, if we suspect it didn''t load, show a hint
-            setTimeout(() => {
-                // We can''t detect X-Frame-Options blocking reliably,
-                // so we just ensure the Open in New Tab button is always visible as backup
-            }, 3000);
+            if (board.embed) {
+                // Site allows iframing — show iframe
+                iframe.style.display = ''block'';
+                fallback.classList.remove(''visible'');
+                iframe.src = board.url;
+            } else {
+                // Site blocks iframes — show fallback immediately
+                iframe.style.display = ''none'';
+                iframe.src = ''about:blank'';
+                fallback.classList.add(''visible'');
+            }
         }
 
         function openBoardExternal() {
