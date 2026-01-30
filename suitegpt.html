@@ -19688,6 +19688,25 @@
                                         </button>
                                     </div>
 
+                                    <!-- Client Request Daemon Status -->
+                                    <div id="opDaemonBar" style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px 20px; margin-bottom: 20px;">
+                                        <div style="display: flex; align-items: center; gap: 12px;">
+                                            <div id="opDaemonDot" style="width: 10px; height: 10px; border-radius: 50%; background: #555; flex-shrink: 0;"></div>
+                                            <div>
+                                                <span style="font-weight: 700; font-size: 0.95rem;">Client Request Daemon</span>
+                                                <span id="opDaemonDetail" style="font-size: 0.8rem; color: var(--text-secondary); margin-left: 8px;">Checking...</span>
+                                            </div>
+                                        </div>
+                                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none;">
+                                            <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);" id="opToggleLabel">Processing</span>
+                                            <div style="position: relative; width: 44px; height: 24px;" onclick="document.getElementById('opDaemonToggle').click()">
+                                                <input type="checkbox" id="opDaemonToggle" onchange="toggleOpDaemon(this.checked)" style="opacity: 0; width: 0; height: 0; position: absolute;">
+                                                <div id="opToggleTrack" style="position: absolute; inset: 0; background: #333; border-radius: 12px; cursor: pointer; transition: background 0.2s;"></div>
+                                                <div id="opToggleThumb" style="position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: white; border-radius: 50%; transition: transform 0.2s; pointer-events: none;"></div>
+                                            </div>
+                                        </label>
+                                    </div>
+
                                     <!-- Filter Bar -->
                                     <div class="operators-filters">
                                         <button class="operators-filter-btn active" data-filter="all" onclick="filterOperators('all')">All</button>
@@ -21794,6 +21813,10 @@
             // Load operators when switching to operators view
             if (view === 'operators') {
                 loadOperators();
+                checkOpDaemonStatus();
+                if (!opDaemonInterval) opDaemonInterval = setInterval(checkOpDaemonStatus, 10000);
+            } else {
+                if (opDaemonInterval) { clearInterval(opDaemonInterval); opDaemonInterval = null; }
             }
 
             // Initialize Telos chat
@@ -21974,6 +21997,80 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
         // ===== Operators Functions =====
         let operatorsData = [];
         let operatorsFilter = 'all';
+
+        // ===== Client Request Daemon Status (Operators Page) =====
+        let opDaemonInterval = null;
+
+        async function checkOpDaemonStatus() {
+            try {
+                const resp = await fetch(
+                    `${SUPABASE_URL}/rest/v1/daemon_heartbeat?id=eq.client-request-daemon&select=last_heartbeat,hostname,enabled`,
+                    { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
+                );
+                const data = await resp.json();
+
+                const dot = document.getElementById('opDaemonDot');
+                const detail = document.getElementById('opDaemonDetail');
+                const toggle = document.getElementById('opDaemonToggle');
+                const track = document.getElementById('opToggleTrack');
+                const thumb = document.getElementById('opToggleThumb');
+                const label = document.getElementById('opToggleLabel');
+                if (!dot) return;
+
+                if (data && data.length > 0) {
+                    const age = (Date.now() - new Date(data[0].last_heartbeat).getTime()) / 1000;
+                    const enabled = data[0].enabled !== false;
+                    const online = age < 60;
+
+                    toggle.checked = enabled;
+                    track.style.background = enabled ? '#22c55e' : '#333';
+                    thumb.style.transform = enabled ? 'translateX(20px)' : 'translateX(0)';
+                    label.textContent = enabled ? 'Processing' : 'Paused';
+
+                    if (online && enabled) {
+                        dot.style.background = '#22c55e';
+                        detail.textContent = `Online — ${data[0].hostname || ''}`;
+                    } else if (online && !enabled) {
+                        dot.style.background = '#f59e0b';
+                        detail.textContent = 'Paused — daemon running but not processing';
+                    } else {
+                        dot.style.background = '#555';
+                        detail.textContent = `Offline — last seen ${Math.round(age)}s ago`;
+                    }
+                } else {
+                    dot.style.background = '#555';
+                    detail.textContent = 'Not started — run: python scripts/client-request-daemon.py';
+                }
+            } catch (e) {
+                console.error('Op daemon status error:', e);
+            }
+        }
+
+        async function toggleOpDaemon(enabled) {
+            const track = document.getElementById('opToggleTrack');
+            const thumb = document.getElementById('opToggleThumb');
+            const label = document.getElementById('opToggleLabel');
+
+            track.style.background = enabled ? '#22c55e' : '#333';
+            thumb.style.transform = enabled ? 'translateX(20px)' : 'translateX(0)';
+            label.textContent = enabled ? 'Processing' : 'Paused';
+
+            try {
+                await fetch(`${SUPABASE_URL}/rest/v1/daemon_heartbeat?id=eq.client-request-daemon`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({ enabled })
+                });
+            } catch (e) {
+                console.error('Toggle daemon error:', e);
+            }
+            setTimeout(checkOpDaemonStatus, 1000);
+        }
 
         async function loadOperators() {
             const container = document.getElementById('operatorsList');
