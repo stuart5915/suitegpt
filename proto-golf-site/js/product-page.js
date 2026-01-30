@@ -66,10 +66,10 @@ async function initProductPage() {
         const defaultVariant = variants.find(v => v.is_default) || variants[0];
         if (defaultVariant) {
             selectedFinish = { name: defaultVariant.finish_name, price: parseFloat(defaultVariant.price_addon) || 0 };
-            selectedShaft = defaultVariant.shaft_color;
+            selectedShaft = { name: defaultVariant.shaft_color, price: parseFloat(defaultVariant.shaft_price_addon) || 0 };
         } else {
             selectedFinish = { name: 'Default', price: 0 };
-            selectedShaft = 'Chrome';
+            selectedShaft = { name: 'Chrome', price: 0 };
         }
 
         // Set page title
@@ -116,7 +116,7 @@ function renderProduct() {
     variants.forEach(v => {
         if (!shaftSeen.has(v.shaft_color)) {
             shaftSeen.add(v.shaft_color);
-            shafts.push(v.shaft_color);
+            shafts.push({ name: v.shaft_color, price: parseFloat(v.shaft_price_addon) || 0 });
         }
     });
 
@@ -153,8 +153,9 @@ function renderProduct() {
 
     // Build shaft buttons
     let shaftButtonsHtml = shafts.map(s => {
-        const isSelected = s === selectedShaft;
-        return `<button class="variant-btn${isSelected ? ' selected' : ''}" onclick="selectShaft(this, '${escapeAttr(s)}')">${escapeHtml(s)}</button>`;
+        const isSelected = s.name === selectedShaft.name;
+        const priceLabel = s.price > 0 ? ` (+$${s.price})` : '';
+        return `<button class="variant-btn${isSelected ? ' selected' : ''}" onclick="selectShaft(this, '${escapeAttr(s.name)}', ${s.price})">${escapeHtml(s.name)}${priceLabel}</button>`;
     }).join('');
 
     // Build main content
@@ -265,7 +266,7 @@ function renderProduct() {
 let currentImageIndex = 0;
 
 function updateGallery() {
-    const key = selectedFinish.name + '|' + selectedShaft;
+    const key = selectedFinish.name + '|' + selectedShaft.name;
     currentGallery = dbImages[key] || [];
     currentImageIndex = 0;
 
@@ -290,12 +291,12 @@ function updateGallery() {
                         <polyline points="21 15 16 10 5 21"/>
                     </svg>
                     <span style="font-size:14px;font-weight:600;color:#555">No images for this variant</span>
-                    <span style="font-size:12px;color:#444;margin-top:4px">${selectedFinish.name} · ${selectedShaft}</span>
+                    <span style="font-size:12px;color:#444;margin-top:4px">${selectedFinish.name} · ${selectedShaft.name}</span>
                 `;
                 mainImg.parentNode.insertBefore(placeholder, mainImg);
             } else {
                 placeholder.style.display = 'flex';
-                placeholder.querySelector('span:last-child').textContent = `${selectedFinish.name} · ${selectedShaft}`;
+                placeholder.querySelector('span:last-child').textContent = `${selectedFinish.name} · ${selectedShaft.name}`;
             }
         }
         if (dotsContainer) dotsContainer.innerHTML = '';
@@ -385,10 +386,10 @@ function selectFinish(btn, name, price) {
     updateGallery();
 }
 
-function selectShaft(btn, shaft) {
+function selectShaft(btn, shaft, price) {
     document.querySelectorAll('#shaftOptions .variant-btn').forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
-    selectedShaft = shaft;
+    selectedShaft = { name: shaft, price: price || 0 };
     updatePrice();
     updateGallery();
 }
@@ -405,7 +406,8 @@ function updatePrice() {
     if (!product) return;
     const basePrice = parseFloat(product.base_price);
     const finishPrice = selectedFinish ? selectedFinish.price : 0;
-    const productPrice = basePrice + finishPrice;
+    const shaftPrice = selectedShaft ? selectedShaft.price : 0;
+    const productPrice = basePrice + finishPrice + shaftPrice;
     const total = productPrice + selectedShipping.price;
 
     const priceEl = document.getElementById('productPrice');
@@ -441,11 +443,11 @@ function addToCart() {
     const item = {
         id: product.id,
         name: product.name,
-        price: parseFloat(product.base_price) + (selectedFinish ? selectedFinish.price : 0),
+        price: parseFloat(product.base_price) + (selectedFinish ? selectedFinish.price : 0) + (selectedShaft ? selectedShaft.price : 0),
         icon: product.icon || product.name.charAt(0),
         options: {
             finish: selectedFinish ? selectedFinish.name : '',
-            shaft: selectedShaft || '',
+            shaft: selectedShaft ? selectedShaft.name : '',
             shipping: selectedShipping.type
         },
         shippingCost: selectedShipping.price
