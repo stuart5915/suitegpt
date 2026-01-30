@@ -660,6 +660,7 @@
                     <li><a href="#" onclick="showSection('variants', event)">Variants</a></li>
                     <li><a href="#" onclick="showSection('photos', event)">Photos</a></li>
                     <li><a href="#" onclick="showSection('bgremover', event)">BG Remover</a></li>
+                    <li><a href="#" onclick="showSection('requests', event)">Requests</a></li>
                     <li style="margin-top: 24px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.1);">
                         <a href="../index.html" target="_blank">View Site ↗</a>
                     </li>
@@ -1027,6 +1028,44 @@
                         <div id="bgBulkActions" style="display: none; margin-top: 16px;">
                             <button class="btn btn-primary" style="width: 100%;" id="bgDownloadAllBtn" onclick="bgDownloadAll()">Download All as ZIP</button>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Requests Section -->
+            <div class="content-section" id="section-requests">
+                <div class="main-header">
+                    <h1>Change Requests</h1>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-header">
+                        <h3 class="section-title">Submit a Request</h3>
+                    </div>
+                    <div style="padding: 24px;">
+                        <p style="color: var(--color-steel); margin-bottom: 16px; font-size: 0.9rem;">
+                            Describe what you'd like changed on your site. Stuart will review and approve before changes are made.
+                        </p>
+                        <div class="form-group">
+                            <label class="form-label">Request Title</label>
+                            <input type="text" class="form-input" id="requestTitle" placeholder="e.g. Add new putter model to shop">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">What do you need?</label>
+                            <textarea class="form-input" id="requestContent" rows="4" placeholder="Describe the change you'd like made to your site..."></textarea>
+                        </div>
+                        <button class="btn btn-primary" style="width: 100%;" onclick="submitRequest()">Send Request</button>
+                        <div id="requestStatus" style="margin-top: 12px; display: none; padding: 12px; border-radius: 8px; font-size: 0.9rem;"></div>
+                    </div>
+                </div>
+
+                <div class="section-card" style="margin-top: 24px;">
+                    <div class="section-header">
+                        <h3 class="section-title">Request History</h3>
+                        <button class="btn btn-secondary btn-sm" onclick="loadRequests()">Refresh</button>
+                    </div>
+                    <div id="requestsList" style="padding: 24px;">
+                        <p style="color: var(--color-steel); text-align: center;">Loading requests...</p>
                     </div>
                 </div>
             </div>
@@ -2329,6 +2368,121 @@
             document.getElementById('bgBulkActions').style.display = 'none';
             document.getElementById('bgResetBtn').style.display = 'none';
         }
+
+        // ═══════════════════════════════════════
+        // Client Requests
+        // ═══════════════════════════════════════
+
+        async function submitRequest() {
+            const title = document.getElementById('requestTitle').value.trim();
+            const content = document.getElementById('requestContent').value.trim();
+            const statusEl = document.getElementById('requestStatus');
+
+            if (!title || !content) {
+                statusEl.style.display = 'block';
+                statusEl.style.background = 'rgba(239, 68, 68, 0.1)';
+                statusEl.style.color = 'var(--color-error)';
+                statusEl.textContent = 'Please fill in both title and description.';
+                return;
+            }
+
+            try {
+                statusEl.style.display = 'block';
+                statusEl.style.background = 'rgba(245, 158, 11, 0.1)';
+                statusEl.style.color = 'var(--color-warning)';
+                statusEl.textContent = 'Submitting...';
+
+                await supabaseQuery('factory_proposals', 'POST', {
+                    title: title,
+                    content: content,
+                    category: 'client_request',
+                    client_app: 'proto-golf',
+                    client_project_dir: 'proto-golf-site',
+                    claude_prompt: content,
+                    status: 'open',
+                    section: 'suite_apps'
+                });
+
+                statusEl.style.background = 'rgba(34, 197, 94, 0.1)';
+                statusEl.style.color = 'var(--color-success)';
+                statusEl.textContent = 'Request submitted! Stuart will review it shortly.';
+                document.getElementById('requestTitle').value = '';
+                document.getElementById('requestContent').value = '';
+
+                loadRequests();
+            } catch (e) {
+                statusEl.style.background = 'rgba(239, 68, 68, 0.1)';
+                statusEl.style.color = 'var(--color-error)';
+                statusEl.textContent = 'Failed to submit. Please try again.';
+                console.error('Submit request error:', e);
+            }
+        }
+
+        async function loadRequests() {
+            const container = document.getElementById('requestsList');
+            try {
+                const data = await supabaseQuery('factory_proposals', 'GET', null,
+                    '?category=eq.client_request&client_app=eq.proto-golf&order=created_at.desc&limit=20');
+
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<p style="color: var(--color-steel); text-align: center;">No requests yet. Submit one above!</p>';
+                    return;
+                }
+
+                container.innerHTML = data.map(r => {
+                    const date = new Date(r.created_at).toLocaleDateString();
+                    const statusMap = {
+                        'open': { label: 'Pending Review', cls: 'badge-warning' },
+                        'approved': { label: 'Approved', cls: 'badge-success' },
+                        'processing': { label: 'Processing...', cls: 'badge-warning' },
+                        'completed': { label: 'Completed', cls: 'badge-success' },
+                        'failed': { label: 'Failed', cls: 'badge-error' },
+                        'rejected': { label: 'Rejected', cls: 'badge-error' }
+                    };
+                    const st = statusMap[r.status] || { label: r.status, cls: 'badge-neutral' };
+
+                    let outputHtml = '';
+                    if (r.claude_output) {
+                        outputHtml = `<div style="margin-top: 12px; padding: 12px; background: var(--color-bone); border-radius: 8px; font-size: 0.85rem;">
+                            <strong>Result:</strong><br>
+                            <pre style="white-space: pre-wrap; margin-top: 4px; font-family: 'Space Mono', monospace; font-size: 0.8rem;">${escapeHtml(r.claude_output.substring(0, 500))}${r.claude_output.length > 500 ? '...' : ''}</pre>
+                        </div>`;
+                    }
+                    if (r.error_message) {
+                        outputHtml = `<div style="margin-top: 12px; padding: 12px; background: rgba(239,68,68,0.05); border-radius: 8px; font-size: 0.85rem; color: var(--color-error);">
+                            <strong>Error:</strong> ${escapeHtml(r.error_message)}
+                        </div>`;
+                    }
+
+                    return `<div style="padding: 16px; border-bottom: 1px solid var(--color-mist);">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                            <strong>${escapeHtml(r.title)}</strong>
+                            <span class="badge ${st.cls}">${st.label}</span>
+                        </div>
+                        <p style="color: var(--color-steel); font-size: 0.9rem; margin-bottom: 4px;">${escapeHtml(r.content || '').substring(0, 200)}</p>
+                        <span style="font-size: 0.8rem; color: var(--color-silver);">${date}</span>
+                        ${outputHtml}
+                    </div>`;
+                }).join('');
+            } catch (e) {
+                container.innerHTML = '<p style="color: var(--color-error); text-align: center;">Failed to load requests.</p>';
+                console.error('Load requests error:', e);
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Load requests when section is shown
+        const origShowSection = showSection;
+        showSection = function(sectionId, event) {
+            origShowSection(sectionId, event);
+            if (sectionId === 'requests') loadRequests();
+        };
     </script>
 </body>
 </html>

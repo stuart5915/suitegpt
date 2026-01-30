@@ -5860,6 +5860,7 @@
                             <button class="main-view-tab" data-view="marketing" onclick="switchMainView('marketing')">📣 Marketing</button>
                             <button class="main-view-tab" data-view="agents" onclick="switchMainView('agents')">🤖 Agents <span class="main-tab-count" id="agentsMainCount">0</span></button>
                             <button class="main-view-tab" data-view="stream" onclick="switchMainView('stream')">📡 Stream</button>
+                            <button class="main-view-tab" data-view="clientRequests" onclick="switchMainView('clientRequests')">🔧 Clients</button>
                         </div>
                     </div>
                 </div>
@@ -6572,6 +6573,29 @@
                     </div>
                 </div>
 
+                <!-- Main View: Client Requests -->
+                <div class="main-view" id="clientRequestsMainView">
+                    <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
+                        <select id="crAppFilter" onchange="loadClientRequests()" style="padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-surface); color: var(--text); font-size: 0.9rem;">
+                            <option value="">All Apps</option>
+                            <option value="proto-golf">Proto Golf</option>
+                        </select>
+                        <select id="crStatusFilter" onchange="loadClientRequests()" style="padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-surface); color: var(--text); font-size: 0.9rem;">
+                            <option value="">All Statuses</option>
+                            <option value="open">Open</option>
+                            <option value="approved">Approved</option>
+                            <option value="processing">Processing</option>
+                            <option value="completed">Completed</option>
+                            <option value="failed">Failed</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                        <button onclick="loadClientRequests()" style="padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--accent); color: white; cursor: pointer; font-weight: 600;">Refresh</button>
+                    </div>
+                    <div id="clientRequestsList" style="display: flex; flex-direction: column; gap: 16px;">
+                        <p style="color: var(--text-dim); text-align: center; padding: 40px;">Select the Clients tab to load requests.</p>
+                    </div>
+                </div>
+
             </main>
         </div>
 
@@ -7230,6 +7254,162 @@
                 initStreamMode();
             } else {
                 cleanupStreamMode();
+            }
+
+            // Load client requests when switching to that view
+            if (viewName === 'clientRequests') {
+                loadClientRequests();
+            }
+        }
+
+        // ===== Client Requests Functions =====
+        async function loadClientRequests() {
+            const container = document.getElementById('clientRequestsList');
+            const appFilter = document.getElementById('crAppFilter').value;
+            const statusFilter = document.getElementById('crStatusFilter').value;
+
+            container.innerHTML = '<p style="color: var(--text-dim); text-align: center; padding: 40px;">Loading...</p>';
+
+            try {
+                let query = `?category=eq.client_request&order=created_at.desc&limit=50`;
+                if (appFilter) query += `&client_app=eq.${encodeURIComponent(appFilter)}`;
+                if (statusFilter) query += `&status=eq.${encodeURIComponent(statusFilter)}`;
+
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/factory_proposals${query}&select=*`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                const data = await response.json();
+
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<p style="color: var(--text-dim); text-align: center; padding: 40px;">No client requests found.</p>';
+                    return;
+                }
+
+                container.innerHTML = data.map(r => renderClientRequestCard(r)).join('');
+            } catch (e) {
+                container.innerHTML = '<p style="color: #ef4444; text-align: center; padding: 40px;">Failed to load requests.</p>';
+                console.error('loadClientRequests error:', e);
+            }
+        }
+
+        function renderClientRequestCard(r) {
+            const date = new Date(r.created_at).toLocaleDateString();
+            const statusColors = {
+                'open': '#f59e0b',
+                'approved': '#22c55e',
+                'processing': '#3b82f6',
+                'completed': '#22c55e',
+                'failed': '#ef4444',
+                'rejected': '#ef4444'
+            };
+            const stColor = statusColors[r.status] || '#888';
+            const promptValue = (r.claude_prompt || r.content || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+            const isEditable = r.status === 'open';
+            const showActions = r.status === 'open';
+            const showOutput = r.status === 'completed' && r.claude_output;
+            const showError = r.status === 'failed' && r.error_message;
+
+            return `<div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                    <div>
+                        <h4 style="margin: 0 0 4px;">${escapeHTML(r.title)}</h4>
+                        <span style="font-size: 0.8rem; color: var(--text-dim);">${escapeHTML(r.client_app || 'unknown')} &middot; ${date}</span>
+                    </div>
+                    <span style="padding: 4px 10px; border-radius: 100px; font-size: 0.75rem; font-weight: 600; background: ${stColor}22; color: ${stColor};">${r.status}</span>
+                </div>
+                <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 16px;">${escapeHTML(r.content || '').substring(0, 300)}</p>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-dim); margin-bottom: 6px;">Claude Prompt (editable before approval)</label>
+                    <textarea id="crPrompt-${r.id}" rows="3" ${isEditable ? '' : 'disabled'} style="width: 100%; padding: 10px; background: var(--bg-deep); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: monospace; font-size: 0.85rem; resize: vertical;">${promptValue}</textarea>
+                </div>
+
+                ${showActions ? `
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-dim); margin-bottom: 6px;">Notes (optional)</label>
+                    <input type="text" id="crNotes-${r.id}" placeholder="Add notes..." style="width: 100%; padding: 8px 10px; background: var(--bg-deep); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 0.85rem;">
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button onclick="approveClientRequest('${r.id}')" style="padding: 8px 20px; border-radius: 8px; border: none; background: #22c55e; color: white; font-weight: 600; cursor: pointer;">Approve</button>
+                    <button onclick="rejectClientRequest('${r.id}')" style="padding: 8px 20px; border-radius: 8px; border: none; background: #ef4444; color: white; font-weight: 600; cursor: pointer;">Reject</button>
+                </div>
+                ` : ''}
+
+                ${showOutput ? `
+                <details style="margin-top: 12px;">
+                    <summary style="cursor: pointer; font-weight: 600; font-size: 0.85rem; color: var(--accent);">View Claude Output</summary>
+                    <pre style="margin-top: 8px; padding: 12px; background: var(--bg-deep); border-radius: 8px; font-size: 0.8rem; white-space: pre-wrap; overflow-x: auto; max-height: 300px; overflow-y: auto;">${escapeHTML(r.claude_output)}</pre>
+                </details>
+                ` : ''}
+
+                ${showError ? `
+                <div style="margin-top: 12px; padding: 12px; background: rgba(239,68,68,0.1); border-radius: 8px; font-size: 0.85rem; color: #ef4444;">
+                    <strong>Error:</strong> ${escapeHTML(r.error_message)}
+                </div>
+                ` : ''}
+            </div>`;
+        }
+
+        function escapeHTML(text) {
+            if (!text) return '';
+            const el = document.createElement('span');
+            el.textContent = text;
+            return el.innerHTML;
+        }
+
+        async function approveClientRequest(id) {
+            const promptEl = document.getElementById(`crPrompt-${id}`);
+            const notesEl = document.getElementById(`crNotes-${id}`);
+            const prompt = promptEl ? promptEl.value : '';
+            const notes = notesEl ? notesEl.value : '';
+
+            if (!prompt.trim()) {
+                alert('Prompt cannot be empty.');
+                return;
+            }
+
+            try {
+                await fetch(`${SUPABASE_URL}/rest/v1/factory_proposals?id=eq.${id}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({
+                        status: 'approved',
+                        claude_prompt: prompt,
+                        notes: notes || null
+                    })
+                });
+                loadClientRequests();
+            } catch (e) {
+                alert('Failed to approve request.');
+                console.error(e);
+            }
+        }
+
+        async function rejectClientRequest(id) {
+            if (!confirm('Reject this request?')) return;
+            try {
+                await fetch(`${SUPABASE_URL}/rest/v1/factory_proposals?id=eq.${id}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({ status: 'rejected' })
+                });
+                loadClientRequests();
+            } catch (e) {
+                alert('Failed to reject request.');
+                console.error(e);
             }
         }
 

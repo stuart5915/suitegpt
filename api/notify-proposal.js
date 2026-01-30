@@ -26,8 +26,18 @@ export default async function handler(req, res) {
 
         const proposal = record;
 
-        // Build notification message (factory_proposals uses 'content' not 'description')
-        const message = `🏛️ *New Governance Proposal!*
+        // Build notification message based on category
+        let message;
+        if (proposal.category === 'client_request') {
+            message = `🔧 *Client Request — ${escapeMarkdown(proposal.client_app || 'unknown')}*
+
+*Title:* ${escapeMarkdown(proposal.title)}
+
+${escapeMarkdown(truncate(proposal.content || proposal.description, 200))}
+
+[Review in Factory](https://www.getsuite.app/factory.html)`;
+        } else {
+            message = `🏛️ *New Governance Proposal\\!*
 
 *Title:* ${escapeMarkdown(proposal.title)}
 *Category:* ${proposal.category || 'feature'}
@@ -35,6 +45,7 @@ export default async function handler(req, res) {
 ${escapeMarkdown(truncate(proposal.content || proposal.description, 200))}
 
 [View Proposal](https://www.getsuite.app/factory.html)`;
+        }
 
         // Send to admin
         if (ADMIN_CHAT_ID) {
