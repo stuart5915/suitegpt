@@ -20590,7 +20590,7 @@
         const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
         const ADMIN_WALLETS = ['0x92d67d8ad8b986e78b369be0272e121ae5acad59'];
-        let supabaseClient = null;
+        let supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
         // ========================
         // BLOCKCHAIN CONFIG (for credit purchases)
@@ -33081,12 +33081,8 @@ window.addEventListener('message', function(e) {
             }
         }
 
-        // Initialize Supabase client for Auth (config declared at top of script)
-        if (window.supabase) {
-            // Use minimal config - let Supabase handle defaults
-            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            console.log('[Auth] Supabase client created (default config)');
-
+        // Set up Supabase auth listeners (client created early at declaration)
+        if (supabaseClient) {
             // Check for OAuth callback in URL (code parameter)
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('code')) {
