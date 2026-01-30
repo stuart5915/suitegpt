@@ -8964,6 +8964,54 @@
             border-radius: 6px; font-size: 0.72rem; color: var(--text-tertiary);
         }
         .daily-brief-slot-icon { font-size: 0.8rem; }
+
+        /* Weekly Overview Card */
+        .weekly-overview-card {
+            margin-bottom: 10px;
+        }
+        .weekly-overview-toggle {
+            width: 100%; padding: 8px 12px; background: rgba(59,130,246,0.06);
+            border: 1px solid rgba(59,130,246,0.15); border-radius: 8px;
+            color: var(--text-secondary); font-size: 0.78rem; font-weight: 600;
+            cursor: pointer; text-align: left; display: flex; align-items: center; gap: 6px;
+            transition: all 0.15s;
+        }
+        .weekly-overview-toggle:hover { border-color: rgba(59,130,246,0.3); color: var(--text-primary); }
+        .weekly-overview-arrow {
+            margin-left: auto; font-size: 0.65rem; transition: transform 0.2s;
+        }
+        .weekly-overview-card.open .weekly-overview-arrow { transform: rotate(90deg); }
+        .weekly-overview-body {
+            display: none; margin-top: 8px; padding: 12px;
+            background: rgba(59,130,246,0.04); border: 1px solid rgba(59,130,246,0.1);
+            border-radius: 8px;
+        }
+        .weekly-overview-card.open .weekly-overview-body { display: block; }
+        .weekly-overview-body table {
+            width: 100%; border-collapse: collapse; font-size: 0.72rem;
+        }
+        .weekly-overview-body th {
+            text-align: left; padding: 4px 6px; color: var(--text-tertiary);
+            border-bottom: 1px solid rgba(255,255,255,0.06); font-weight: 600;
+        }
+        .weekly-overview-body td {
+            padding: 4px 6px; color: var(--text-secondary);
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+        .weekly-overview-body td:first-child { font-weight: 700; color: var(--text-primary); }
+        .weekly-overview-today td { background: rgba(59,130,246,0.08); }
+        .weekly-overview-total {
+            display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;
+            padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.06);
+        }
+        .weekly-overview-stat {
+            display: flex; align-items: center; gap: 4px;
+            font-size: 0.72rem; color: var(--text-tertiary);
+        }
+        .weekly-overview-stat strong {
+            color: var(--accent-primary); font-weight: 800;
+        }
+
         .daily-theme-input {
             width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.04);
             border: 1px solid var(--border-subtle); border-radius: 10px; color: var(--text-primary);
@@ -18610,6 +18658,14 @@
                                                 <!-- Cadence slots summary for this day -->
                                                 <div class="daily-brief-slots" id="dailyBriefSlots"></div>
 
+                                                <!-- Weekly Overview Card (collapsible) -->
+                                                <div class="weekly-overview-card" id="weeklyOverviewCard">
+                                                    <button class="weekly-overview-toggle" onclick="document.getElementById('weeklyOverviewCard').classList.toggle('open')">
+                                                        📅 Weekly Output Overview <span class="weekly-overview-arrow">▶</span>
+                                                    </button>
+                                                    <div class="weekly-overview-body" id="weeklyOverviewBody"></div>
+                                                </div>
+
                                                 <!-- Research Prompt -->
                                                 <div class="research-prompt-section" id="researchPromptSection">
                                                     <button class="research-prompt-toggle" onclick="document.getElementById('researchPromptSection').classList.toggle('open')">
@@ -22210,6 +22266,67 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
             return dailyBriefDate.toISOString().split('T')[0];
         }
 
+        function renderWeeklyOverview() {
+            const body = document.getElementById('weeklyOverviewBody');
+            if (!body) return;
+
+            const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+            const today = new Date();
+            today.setHours(0,0,0,0);
+
+            // Build a week starting from Monday of current week
+            const current = new Date(dailyBriefDate);
+            const dayOfWeek = current.getDay();
+            const monday = new Date(current);
+            monday.setDate(current.getDate() - ((dayOfWeek + 6) % 7));
+
+            let totalPosts = 0;
+            let xTotal = 0, appTotal = 0, ecoTotal = 0, liTotal = 0;
+            let rows = '';
+
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(monday);
+                d.setDate(monday.getDate() + i);
+                const dow = d.getDay();
+                const slots = getDailySlotsForDate(d);
+                const isToday = d.getTime() === today.getTime();
+                const isBriefDay = d.toISOString().split('T')[0] === dailyBriefDate.toISOString().split('T')[0];
+
+                const xCount = slots.filter(s => s.cadence === 'x-posts').length;
+                const appCount = slots.filter(s => s.cadence === 'app-highlights').length;
+                const ecoCount = slots.filter(s => s.cadence === 'ecosystem-updates').length;
+                const liCount = slots.filter(s => s.cadence === 'linkedin-posts').length;
+                const dayTotal = slots.length;
+                totalPosts += dayTotal;
+                xTotal += xCount; appTotal += appCount; ecoTotal += ecoCount; liTotal += liCount;
+
+                const rowClass = isBriefDay ? ' class="weekly-overview-today"' : '';
+                const dayLabel = dayNames[dow] + (isToday ? ' ●' : '');
+                rows += `<tr${rowClass}>
+                    <td>${dayLabel}</td>
+                    <td>${xCount > 0 ? '𝕏 ' + xCount : '—'}</td>
+                    <td>${appCount > 0 ? '📱 ' + appCount : '—'}</td>
+                    <td>${ecoCount > 0 ? '🌐 ' + ecoCount : '—'}</td>
+                    <td>${liCount > 0 ? '💼 ' + liCount : '—'}</td>
+                    <td>${dayTotal}</td>
+                </tr>`;
+            }
+
+            body.innerHTML = `
+                <table>
+                    <thead><tr><th>Day</th><th>X</th><th>App</th><th>Eco</th><th>LI</th><th>Total</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+                <div class="weekly-overview-total">
+                    <span class="weekly-overview-stat">𝕏 <strong>${xTotal}</strong></span>
+                    <span class="weekly-overview-stat">📱 <strong>${appTotal}</strong></span>
+                    <span class="weekly-overview-stat">🌐 <strong>${ecoTotal}</strong></span>
+                    <span class="weekly-overview-stat">💼 <strong>${liTotal}</strong></span>
+                    <span class="weekly-overview-stat">= <strong>${totalPosts}</strong> posts/week</span>
+                </div>
+            `;
+        }
+
         function getDailySlotsForDate(date) {
             const dayOfWeek = date.getDay();
             const slots = [];
@@ -22253,6 +22370,9 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
             // Update generate button count
             const countEl = document.getElementById('dailyPostCount');
             if (countEl) countEl.textContent = slots.length;
+
+            // Render weekly overview
+            renderWeeklyOverview();
 
             // Load saved brief
             const brief = dailyBriefs[dateKey] || {};
