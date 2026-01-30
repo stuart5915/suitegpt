@@ -28,9 +28,9 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     const inOnboarding = segments[0] === 'onboarding';
 
     if (!session) {
-      // Not logged in, redirect to login
-      if (!inAuthGroup) {
-        router.replace('/login');
+      // No session — skip login, go straight to app
+      if (inAuthGroup) {
+        router.replace('/(tabs)');
       }
     } else if (profile && !profile.onboarding_complete) {
       // Logged in but hasn't completed onboarding
