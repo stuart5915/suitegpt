@@ -25,7 +25,6 @@ h1{font-size:22px;font-weight:800;text-align:center;background:linear-gradient(1
 .bg-swatch.custom-color{overflow:hidden}
 .bg-swatch.custom-color input[type="color"]{position:absolute;inset:-4px;width:calc(100% + 8px);height:calc(100% + 8px);border:none;cursor:pointer;background:none}
 .bg-swatch.upload-bg{display:flex;align-items:center;justify-content:center;background:#1a1a22;font-size:18px}
-.swatch-label{font-size:9px;color:#71717a;text-align:center;margin-top:2px;line-height:1.1}
 
 /* Upload area */
 .upload-area{border:2px dashed #3f3f46;border-radius:16px;padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s}
@@ -42,52 +41,36 @@ input[type="file"]{display:none}
 .process-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 20px rgba(236,72,153,.35)}
 .process-btn:disabled{opacity:.4;cursor:not-allowed}
 
-/* Queue */
-.queue-section{display:none;flex-direction:column;gap:10px}
-.queue-section.active{display:flex}
-.queue-header{display:flex;justify-content:space-between;align-items:center}
-.queue-title{font-size:14px;font-weight:700;color:#a1a1aa}
-.queue-count{font-size:12px;color:#71717a}
-.queue-list{display:flex;flex-direction:column;gap:6px;max-height:400px;overflow-y:auto}
-.queue-item{display:flex;align-items:center;gap:10px;background:#1a1a22;border:1px solid #27272a;border-radius:10px;padding:8px 12px;transition:border-color .2s}
-.queue-item.processing{border-color:#ec4899}
-.queue-item.done{border-color:#22c55e}
-.queue-item.error{border-color:#ef4444}
-.queue-thumb{width:40px;height:40px;border-radius:6px;object-fit:cover;flex-shrink:0;background:#27272a}
-.queue-info{flex:1;min-width:0}
-.queue-name{font-size:12px;font-weight:600;color:#d4d4d8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.queue-status{font-size:11px;color:#71717a;margin-top:1px}
-.queue-status.processing{color:#f472b6}
-.queue-status.done{color:#4ade80}
-.queue-status.error{color:#fca5a5}
-.queue-check{font-size:16px;flex-shrink:0}
-
 /* Overall progress */
-.overall-progress{display:flex;flex-direction:column;gap:6px}
-.overall-label{font-size:12px;color:#a1a1aa;font-weight:600}
+.progress-section{display:none;flex-direction:column;gap:6px}
+.progress-section.active{display:flex}
+.progress-label{font-size:12px;color:#a1a1aa;font-weight:600}
 .progress-bar-bg{height:6px;background:#27272a;border-radius:3px;overflow:hidden}
 .progress-bar{height:100%;width:0%;background:linear-gradient(90deg,#ec4899,#f472b6);border-radius:3px;transition:width .3s}
 .progress-status{font-size:11px;color:#52525b}
 
-/* Results */
-.results-section{display:none;flex-direction:column;gap:12px}
-.results-section.active{display:flex}
-.results-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
-.result-thumb{border-radius:10px;overflow:hidden;border:1px solid #27272a;cursor:pointer;transition:all .15s;position:relative}
-.result-thumb:hover{border-color:#ec4899;transform:scale(1.02)}
-.result-thumb img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
-.result-thumb .result-name{font-size:10px;color:#a1a1aa;padding:4px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#1a1a22}
+/* Results feed — each result card as it finishes */
+.results-feed{display:flex;flex-direction:column;gap:12px}
+.result-card{background:#1a1a22;border:1px solid #27272a;border-radius:12px;overflow:hidden;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.result-card-img{width:100%;max-height:350px;object-fit:contain;display:block;background:repeating-conic-gradient(#27272a 0% 25%,#1a1a22 0% 50%) 0 0/16px 16px}
+.result-card-footer{display:flex;align-items:center;justify-content:space-between;padding:10px 14px}
+.result-card-name{font-size:12px;font-weight:600;color:#a1a1aa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;margin-right:10px}
+.result-card-dl{padding:8px 16px;border:none;border-radius:8px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;flex-shrink:0}
+.result-card-dl:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(34,197,94,.3)}
 
-/* Preview modal */
-.preview-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center;padding:20px}
-.preview-overlay.active{display:flex}
-.preview-content{max-width:90vw;max-height:90vh;position:relative}
-.preview-content img{max-width:100%;max-height:85vh;border-radius:12px;display:block}
-.preview-close{position:absolute;top:-12px;right:-12px;width:32px;height:32px;border-radius:50%;background:#27272a;border:1px solid #3f3f46;color:#e4e4e7;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.preview-close:hover{background:#3f3f46}
-.preview-download{position:absolute;bottom:12px;right:12px;padding:8px 16px;border-radius:8px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer}
+/* Waiting item in queue */
+.queue-item{display:flex;align-items:center;gap:10px;background:#1a1a22;border:1px solid #27272a;border-radius:10px;padding:8px 12px}
+.queue-item.processing{border-color:#ec4899}
+.queue-thumb{width:36px;height:36px;border-radius:6px;object-fit:cover;flex-shrink:0;background:#27272a}
+.queue-info{flex:1;min-width:0}
+.queue-name{font-size:12px;font-weight:600;color:#d4d4d8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.queue-status{font-size:11px;color:#71717a;margin-top:1px}
+.queue-status.active{color:#f472b6}
 
-/* Download all / reset */
+/* Bulk download / reset */
+.bulk-actions{display:none;flex-direction:column;gap:8px}
+.bulk-actions.active{display:flex}
 .download-all-btn{width:100%;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s}
 .download-all-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(34,197,94,.35)}
 .download-all-btn:disabled{opacity:.4;cursor:not-allowed}
@@ -98,6 +81,7 @@ input[type="file"]{display:none}
 .error-msg{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:12px 16px;font-size:13px;color:#fca5a5;display:none}
 .error-msg.active{display:block}
 
+/* Loading indicator */
 @keyframes spin{to{transform:rotate(360deg)}}
 .spinner-inline{width:14px;height:14px;border:2px solid rgba(255,255,255,.2);border-top-color:#f472b6;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;flex-shrink:0}
 </style>
@@ -108,7 +92,7 @@ input[type="file"]{display:none}
     <p class="subtitle">Remove & replace photo backgrounds with AI — runs in your browser</p>
 
     <!-- Step 1: Background -->
-    <div class="bg-picker">
+    <div class="bg-picker" id="step1">
         <div class="step-label"><span class="step-num">1</span> Choose a background</div>
         <div class="bg-options" id="bgOptions">
             <div class="bg-swatch active" data-bg="#ffffff" style="background:#ffffff" title="Studio White"></div>
@@ -127,12 +111,12 @@ input[type="file"]{display:none}
     </div>
 
     <!-- Step 2: Upload photos -->
-    <div>
+    <div id="step2">
         <div class="step-label" style="margin-bottom:10px"><span class="step-num">2</span> Upload photos</div>
         <div class="upload-area" id="uploadArea">
             <div class="upload-icon">🖼️</div>
             <div class="upload-label">Drop photos here or tap to upload</div>
-            <div class="upload-hint">JPG, PNG, or WebP — drop multiple for batch processing</div>
+            <div class="upload-hint">JPG, PNG, or WebP — drop multiple for batch</div>
             <div class="file-count" id="fileCount"></div>
             <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" multiple>
         </div>
@@ -144,50 +128,50 @@ input[type="file"]{display:none}
     <!-- Error -->
     <div class="error-msg" id="errorMsg"></div>
 
-    <!-- Queue -->
-    <div class="queue-section" id="queueSection">
-        <div class="overall-progress">
-            <div class="overall-label" id="overallLabel">Processing...</div>
-            <div class="progress-bar-bg"><div class="progress-bar" id="overallBar"></div></div>
-            <div class="progress-status" id="overallStatus"></div>
-        </div>
-        <div class="queue-header">
-            <div class="queue-title">Queue</div>
-            <div class="queue-count" id="queueCount"></div>
-        </div>
-        <div class="queue-list" id="queueList"></div>
+    <!-- Progress -->
+    <div class="progress-section" id="progressSection">
+        <div class="progress-label" id="progressLabel">Processing...</div>
+        <div class="progress-bar-bg"><div class="progress-bar" id="progressBar"></div></div>
+        <div class="progress-status" id="progressStatus"></div>
     </div>
 
-    <!-- Results -->
-    <div class="results-section" id="resultsSection">
-        <div class="step-label"><span class="step-num">3</span> Results</div>
-        <div class="results-grid" id="resultsGrid"></div>
+    <!-- Results feed — cards appear here as each image finishes -->
+    <div class="results-feed" id="resultsFeed"></div>
+
+    <!-- Bulk actions — appear when all done -->
+    <div class="bulk-actions" id="bulkActions">
         <button class="download-all-btn" id="downloadAllBtn">Download All as ZIP</button>
         <button class="reset-btn" id="resetBtn">Start Over</button>
     </div>
 </div>
 
-<!-- Preview modal -->
-<div class="preview-overlay" id="previewOverlay">
-    <div class="preview-content">
-        <button class="preview-close" id="previewClose">&times;</button>
-        <img id="previewImg" src="">
-        <button class="preview-download" id="previewDownload">Download</button>
-    </div>
-</div>
-
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script type="module">
+// Try multiple CDNs for reliability
 let imglyRemoveBackground;
-try {
-    const mod = await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.8/+esm');
-    imglyRemoveBackground = mod.default || mod.removeBackground;
-    if (!imglyRemoveBackground) throw new Error('No export found');
-    console.log('[BgSwap] Library loaded successfully');
-} catch (e) {
-    console.error('[BgSwap] Failed to load library:', e);
-    document.getElementById('errorMsg').textContent = 'Failed to load AI model library. Please refresh and try again.';
+const cdnUrls = [
+    'https://esm.sh/@imgly/background-removal@1.5.8',
+    'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.8/+esm'
+];
+
+for (const url of cdnUrls) {
+    try {
+        console.log('[BgSwap] Trying:', url);
+        const mod = await import(url);
+        imglyRemoveBackground = mod.default || mod.removeBackground;
+        if (imglyRemoveBackground) {
+            console.log('[BgSwap] Loaded from:', url);
+            break;
+        }
+    } catch (e) {
+        console.warn('[BgSwap] Failed:', url, e.message);
+    }
+}
+
+if (!imglyRemoveBackground) {
+    document.getElementById('errorMsg').textContent = 'Failed to load AI library. Please refresh the page.';
     document.getElementById('errorMsg').classList.add('active');
+    document.getElementById('processBtn').disabled = true;
 }
 
 const uploadArea = document.getElementById('uploadArea');
@@ -199,26 +183,19 @@ const bgOptions = document.getElementById('bgOptions');
 const customColor = document.getElementById('customColor');
 const uploadBgBtn = document.getElementById('uploadBgBtn');
 const bgFileInput = document.getElementById('bgFileInput');
-const queueSection = document.getElementById('queueSection');
-const queueList = document.getElementById('queueList');
-const queueCount = document.getElementById('queueCount');
-const overallLabel = document.getElementById('overallLabel');
-const overallBar = document.getElementById('overallBar');
-const overallStatus = document.getElementById('overallStatus');
-const resultsSection = document.getElementById('resultsSection');
-const resultsGrid = document.getElementById('resultsGrid');
+const progressSection = document.getElementById('progressSection');
+const progressLabel = document.getElementById('progressLabel');
+const progressBar = document.getElementById('progressBar');
+const progressStatus = document.getElementById('progressStatus');
+const resultsFeed = document.getElementById('resultsFeed');
+const bulkActions = document.getElementById('bulkActions');
 const downloadAllBtn = document.getElementById('downloadAllBtn');
 const resetBtn = document.getElementById('resetBtn');
-const previewOverlay = document.getElementById('previewOverlay');
-const previewImg = document.getElementById('previewImg');
-const previewClose = document.getElementById('previewClose');
-const previewDownload = document.getElementById('previewDownload');
 
 let selectedFiles = [];
 let currentBg = '#ffffff';
 let customBgImage = null;
 let results = []; // { name, blob, url }
-let previewCurrent = null;
 
 // Background swatch clicks
 bgOptions.addEventListener('click', e => {
@@ -269,7 +246,7 @@ function handleFiles(fileList) {
         if (f.type.match(/^image\/(jpeg|png|webp)$/)) valid.push(f);
     }
     if (valid.length === 0) {
-        showError('No valid images found. Please upload JPG, PNG, or WebP files.');
+        showError('No valid images found. Upload JPG, PNG, or WebP.');
         return;
     }
     selectedFiles = valid;
@@ -279,101 +256,82 @@ function handleFiles(fileList) {
     hideError();
 }
 
-// Process queue
+// Process
 processBtn.addEventListener('click', async () => {
-    if (selectedFiles.length === 0) return;
+    if (!imglyRemoveBackground || selectedFiles.length === 0) return;
+
     processBtn.disabled = true;
     processBtn.style.display = 'none';
-    resultsSection.classList.remove('active');
-    queueSection.classList.add('active');
+    progressSection.classList.add('active');
+    resultsFeed.innerHTML = '';
+    bulkActions.classList.remove('active');
     hideError();
     results = [];
 
     const total = selectedFiles.length;
-    queueCount.textContent = `0 / ${total} done`;
-
-    // Build queue UI
-    queueList.innerHTML = selectedFiles.map((f, i) => `
-        <div class="queue-item" id="qi-${i}">
-            <img class="queue-thumb" src="${URL.createObjectURL(f)}" alt="">
-            <div class="queue-info">
-                <div class="queue-name">${f.name}</div>
-                <div class="queue-status" id="qs-${i}">Waiting...</div>
-            </div>
-            <div class="queue-check" id="qc-${i}"></div>
-        </div>
-    `).join('');
-
     let completed = 0;
     let failed = 0;
+    let modelLoaded = false;
 
     for (let i = 0; i < total; i++) {
         const file = selectedFiles[i];
-        const item = document.getElementById(`qi-${i}`);
-        const status = document.getElementById(`qs-${i}`);
-        const check = document.getElementById(`qc-${i}`);
+        const baseName = file.name.replace(/\.[^.]+$/, '');
 
-        item.classList.add('processing');
-        status.textContent = 'Removing background...';
-        status.className = 'queue-status processing';
-        check.innerHTML = '<span class="spinner-inline"></span>';
-
-        // Scroll item into view
-        item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-        overallLabel.textContent = `Processing ${i + 1} of ${total}...`;
-        overallStatus.textContent = file.name;
+        progressLabel.textContent = `Processing ${i + 1} of ${total}: ${file.name}`;
+        progressStatus.textContent = modelLoaded ? 'Removing background...' : 'Loading AI model (first image is slowest)...';
+        progressBar.style.width = Math.round((i / total) * 100) + '%';
 
         try {
             const fgBlob = await imglyRemoveBackground(file, {
                 debug: true,
                 model: 'isnet_quint8',
-                progress(key, current, total) {
-                    console.log(`[BgSwap] Progress: ${key} ${current}/${total}`);
+                progress(key, current, tot) {
+                    console.log(`[BgSwap] ${key}: ${current}/${tot}`);
                     if (key.startsWith('fetch:')) {
-                        status.textContent = 'Downloading model...';
+                        progressStatus.textContent = tot > 0
+                            ? `Downloading model... ${Math.round(current / 1024 / 1024)}/${Math.round(tot / 1024 / 1024)} MB`
+                            : 'Downloading AI model...';
                     } else {
-                        status.textContent = 'AI processing...';
+                        progressStatus.textContent = 'AI removing background...';
                     }
                 }
             });
 
+            modelLoaded = true;
+
             // Composite with chosen background
             const compositeBlob = await compositeImage(fgBlob);
             const url = URL.createObjectURL(compositeBlob);
-            const baseName = file.name.replace(/\.[^.]+$/, '');
-            results.push({ name: baseName + '.png', blob: compositeBlob, url });
+            const name = baseName + '.png';
+            results.push({ name, blob: compositeBlob, url });
 
-            item.classList.remove('processing');
-            item.classList.add('done');
-            status.textContent = 'Done';
-            status.className = 'queue-status done';
-            check.textContent = '\u2713';
+            // Add result card immediately
+            addResultCard(name, url, results.length - 1);
             completed++;
         } catch (err) {
-            console.error('Failed:', file.name, err);
-            item.classList.remove('processing');
-            item.classList.add('error');
-            status.textContent = 'Failed';
-            status.className = 'queue-status error';
-            check.textContent = '\u2717';
+            console.error('[BgSwap] Failed:', file.name, err);
+            addErrorCard(file.name, err.message);
             failed++;
         }
 
-        const pct = Math.round(((completed + failed) / total) * 100);
-        overallBar.style.width = pct + '%';
-        queueCount.textContent = `${completed + failed} / ${total} done`;
+        progressBar.style.width = Math.round(((completed + failed) / total) * 100) + '%';
     }
 
-    overallLabel.textContent = `Finished — ${completed} of ${total} succeeded`;
-    if (failed > 0) overallStatus.textContent = `${failed} failed`;
-    else overallStatus.textContent = '';
+    // Done
+    progressLabel.textContent = `Done — ${completed} of ${total} succeeded` + (failed > 0 ? ` (${failed} failed)` : '');
+    progressStatus.textContent = '';
+    progressBar.style.width = '100%';
 
-    // Show results
-    if (results.length > 0) {
-        renderResults();
-        resultsSection.classList.add('active');
+    if (results.length > 1) {
+        bulkActions.classList.add('active');
+        downloadAllBtn.textContent = `Download All ${results.length} as ZIP`;
+    } else if (results.length === 1) {
+        // Still show reset
+        bulkActions.classList.add('active');
+        downloadAllBtn.style.display = 'none';
     }
+    // Always show reset
+    bulkActions.classList.add('active');
 });
 
 function compositeImage(fgBlob) {
@@ -385,7 +343,6 @@ function compositeImage(fgBlob) {
             canvas.height = fgImg.naturalHeight;
             const ctx = canvas.getContext('2d');
 
-            // Draw background
             if (customBgImage) {
                 const scale = Math.max(canvas.width / customBgImage.naturalWidth, canvas.height / customBgImage.naturalHeight);
                 const w = customBgImage.naturalWidth * scale;
@@ -396,59 +353,54 @@ function compositeImage(fgBlob) {
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
             }
 
-            // Draw foreground
             ctx.drawImage(fgImg, 0, 0);
 
             canvas.toBlob(blob => {
                 if (blob) resolve(blob);
-                else reject(new Error('Canvas toBlob failed'));
+                else reject(new Error('Canvas export failed'));
             }, 'image/png');
         };
-        fgImg.onerror = () => reject(new Error('Failed to load foreground'));
+        fgImg.onerror = () => reject(new Error('Failed to load result'));
         fgImg.src = URL.createObjectURL(fgBlob);
     });
 }
 
-function renderResults() {
-    resultsGrid.innerHTML = results.map((r, i) => `
-        <div class="result-thumb" onclick="window._previewResult(${i})">
-            <img src="${r.url}" alt="${r.name}">
-            <div class="result-name">${r.name}</div>
+function addResultCard(name, url, index) {
+    const card = document.createElement('div');
+    card.className = 'result-card';
+    card.innerHTML = `
+        <img class="result-card-img" src="${url}" alt="${name}">
+        <div class="result-card-footer">
+            <span class="result-card-name">${name}</span>
+            <button class="result-card-dl" data-idx="${index}">Download</button>
         </div>
-    `).join('');
+    `;
+    card.querySelector('.result-card-dl').addEventListener('click', () => {
+        const r = results[index];
+        const a = document.createElement('a');
+        a.href = r.url;
+        a.download = r.name;
+        a.click();
+    });
+    resultsFeed.appendChild(card);
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-// Preview
-window._previewResult = function(i) {
-    previewCurrent = results[i];
-    previewImg.src = previewCurrent.url;
-    previewOverlay.classList.add('active');
-};
-previewClose.addEventListener('click', () => previewOverlay.classList.remove('active'));
-previewOverlay.addEventListener('click', e => {
-    if (e.target === previewOverlay) previewOverlay.classList.remove('active');
-});
-previewDownload.addEventListener('click', () => {
-    if (!previewCurrent) return;
-    const a = document.createElement('a');
-    a.href = previewCurrent.url;
-    a.download = previewCurrent.name;
-    a.click();
-});
+function addErrorCard(fileName, errMsg) {
+    const card = document.createElement('div');
+    card.className = 'result-card';
+    card.style.borderColor = '#ef4444';
+    card.innerHTML = `
+        <div class="result-card-footer" style="padding:14px">
+            <span class="result-card-name" style="color:#fca5a5">${fileName} — failed: ${errMsg}</span>
+        </div>
+    `;
+    resultsFeed.appendChild(card);
+}
 
 // Download all as ZIP
 downloadAllBtn.addEventListener('click', async () => {
-    if (results.length === 0) return;
-
-    if (results.length === 1) {
-        // Single file — just download directly
-        const a = document.createElement('a');
-        a.href = results[0].url;
-        a.download = results[0].name;
-        a.click();
-        return;
-    }
-
+    if (results.length < 2) return;
     downloadAllBtn.disabled = true;
     downloadAllBtn.textContent = 'Creating ZIP...';
 
@@ -463,7 +415,7 @@ downloadAllBtn.addEventListener('click', async () => {
     a.click();
 
     downloadAllBtn.disabled = false;
-    downloadAllBtn.textContent = 'Download All as ZIP';
+    downloadAllBtn.textContent = `Download All ${results.length} as ZIP`;
 });
 
 // Reset
@@ -476,11 +428,11 @@ resetBtn.addEventListener('click', () => {
     uploadArea.classList.remove('has-files');
     processBtn.disabled = true;
     processBtn.style.display = '';
-    queueSection.classList.remove('active');
-    resultsSection.classList.remove('active');
-    queueList.innerHTML = '';
-    resultsGrid.innerHTML = '';
-    overallBar.style.width = '0%';
+    progressSection.classList.remove('active');
+    progressBar.style.width = '0%';
+    resultsFeed.innerHTML = '';
+    bulkActions.classList.remove('active');
+    downloadAllBtn.style.display = '';
     hideError();
 });
 
