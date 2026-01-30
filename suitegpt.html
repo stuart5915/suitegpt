@@ -22335,9 +22335,23 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
                 return;
             }
 
+            // Copy prompt to clipboard
+            try {
+                await navigator.clipboard.writeText(prompt);
+            } catch (e) {
+                // Fallback for older browsers
+                var ta = document.createElement('textarea');
+                ta.value = prompt;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+            }
+
+            // Update status in Supabase
             btn.disabled = true;
-            btn.textContent = 'Sending...';
-            btn.style.background = '#3b82f6';
+            btn.textContent = 'Copied! Paste into Claude terminal';
+            btn.style.background = '#22c55e';
 
             try {
                 var resp = await fetch(SUPABASE_URL + '/rest/v1/factory_proposals?id=eq.' + id, {
@@ -22358,9 +22372,12 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
                     throw new Error('HTTP ' + resp.status + ': ' + errText);
                 }
 
-                btn.textContent = 'Approved — terminal opening on desktop...';
-                btn.style.background = '#f59e0b';
-                pollClientRequestStatus(id, btn);
+                // Reset button after a few seconds
+                setTimeout(function() {
+                    btn.textContent = 'Copied — paste into terminal';
+                    btn.style.background = '#3b82f6';
+                    btn.disabled = false;
+                }, 3000);
             } catch (e) {
                 btn.textContent = 'Failed — try again';
                 btn.style.background = '#ef4444';
