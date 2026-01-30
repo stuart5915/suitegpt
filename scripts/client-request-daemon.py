@@ -289,7 +289,7 @@ Set-Location "{cwd}"
 Write-Host "Running Claude CLI..." -ForegroundColor Yellow
 Write-Host ""
 
-Get-Content "{prompt_file}" | claude --dangerously-skip-permissions
+Get-Content "{prompt_file}" | claude --print --dangerously-skip-permissions
 $exitCode = $LASTEXITCODE
 
 Write-Host ""
