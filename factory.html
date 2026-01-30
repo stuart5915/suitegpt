@@ -7405,7 +7405,7 @@
             btn.style.background = '#3b82f6';
 
             try {
-                await fetch(`${SUPABASE_URL}/rest/v1/factory_proposals?id=eq.${id}`, {
+                const resp = await fetch(`${SUPABASE_URL}/rest/v1/factory_proposals?id=eq.${id}`, {
                     method: 'PATCH',
                     headers: {
                         'apikey': SUPABASE_ANON_KEY,
@@ -7415,10 +7415,14 @@
                     },
                     body: JSON.stringify({
                         status: 'approved',
-                        claude_prompt: prompt,
-                        notes: notes || null
+                        claude_prompt: prompt
                     })
                 });
+
+                if (!resp.ok) {
+                    const errText = await resp.text();
+                    throw new Error(`HTTP ${resp.status}: ${errText}`);
+                }
 
                 btn.textContent = 'Sent to Claude!';
                 btn.style.background = '#22c55e';
@@ -7427,7 +7431,8 @@
                 btn.textContent = 'Failed — try again';
                 btn.style.background = '#ef4444';
                 btn.disabled = false;
-                console.error(e);
+                console.error('Approve error:', e);
+                alert('Failed to approve: ' + e.message);
             }
         }
 
