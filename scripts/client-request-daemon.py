@@ -140,12 +140,43 @@ def get_approved_requests() -> list:
     )
 
 
+def get_operator_context(client_app: str) -> str:
+    """Look up project_context from suite_operators by matching name or app_key."""
+    if not client_app:
+        return ''
+    # Try matching by app_key or name (case-insensitive)
+    rows = supabase_get(
+        f'suite_operators?select=project_context,name&or=(app_key.eq.{client_app},name.ilike.*{client_app}*)&limit=1'
+    )
+    if rows and len(rows) > 0 and rows[0].get('project_context'):
+        log(f"Found project context for {client_app} ({rows[0].get('name', 'unknown')})")
+        return rows[0]['project_context']
+    return ''
+
+
 def process_request(item: dict) -> bool:
     record_id = item['id']
     title = item.get('title', 'Untitled')
     client_app = item.get('client_app', 'unknown')
     project_dir = item.get('client_project_dir', '')
     claude_prompt = item.get('claude_prompt') or item.get('content', '')
+
+    # Look up operator project context and prepend to prompt
+    project_context = get_operator_context(client_app)
+    if project_context:
+        claude_prompt = f"""PROJECT CONTEXT:
+{project_context}
+
+WORKING DIRECTORY: {project_dir or 'repo root'}
+
+---
+
+CLIENT REQUEST:
+{claude_prompt}"""
+    elif project_dir:
+        claude_prompt = f"""WORKING DIRECTORY: {project_dir}
+
+{claude_prompt}"""
 
     log(f"Processing [{client_app}]: {title}")
 

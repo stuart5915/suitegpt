@@ -19874,6 +19874,51 @@
     </div>
 
     <!-- Add Operator Modal -->
+    <!-- Project Context Modal -->
+    <div class="operator-modal-overlay" id="projectContextModal" style="display: none;">
+        <div class="operator-modal-content" style="max-width: 700px;">
+            <div class="operator-modal-header">
+                <h3 id="pcModalTitle">Project Context for Claude</h3>
+                <button class="operator-modal-close" onclick="hideProjectContextModal()">&times;</button>
+            </div>
+            <div style="padding: 20px;">
+                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 16px;">
+                    This context is prepended to every Claude prompt for this client's requests. Describe the project, tech stack, file structure, and any conventions so Claude knows how to make changes correctly.
+                </p>
+                <textarea id="pcContextInput" rows="16" placeholder="## Project Overview
+[Company name] - [what they do]
+
+## Tech Stack
+- Static HTML/CSS/JS site
+- Supabase for data
+- Hosted on Vercel
+
+## Key Files
+- index.html — main landing page
+- admin/dashboard.html — admin panel
+- assets/ — images and static files
+
+## Database Tables
+- products — product catalog
+- orders — customer orders
+
+## Conventions
+- Use Outfit font family
+- Dark theme with ink/paper color vars
+- Mobile-first responsive design
+
+## Important Notes
+- Don't modify the nav component
+- Always test on mobile viewport" style="width: 100%; padding: 14px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text); font-family: monospace; font-size: 0.85rem; resize: vertical; line-height: 1.5;"></textarea>
+                <input type="hidden" id="pcOperatorId">
+                <div style="display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end;">
+                    <button onclick="hideProjectContextModal()" style="padding: 10px 20px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: var(--text-secondary); cursor: pointer; font-weight: 600;">Cancel</button>
+                    <button onclick="saveProjectContext()" id="pcSaveBtn" style="padding: 10px 24px; border-radius: 8px; border: none; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: white; cursor: pointer; font-weight: 600;">Save Context</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="operator-modal-overlay" id="addOperatorModal" style="display: none;">
         <div class="operator-modal-content">
             <div class="operator-modal-header">
@@ -22449,8 +22494,17 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
                         </div>
                     ` : ''}
 
+                    ${op.project_context ? `
+                        <div style="margin: 12px 0; padding: 10px 14px; background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.2); border-radius: 8px; font-size: 0.8rem; color: #22c55e;">
+                            Claude context configured (${op.project_context.length} chars)
+                        </div>
+                    ` : ''}
+
                     <div class="operator-card-actions">
                         ${linkedApp ? `<button class="operator-action-btn operator-action-primary" onclick="openMobileAppView('${op.app_key}', '${linkedApp.url}', '${linkedApp.name}')">📱 Open App</button>` : ''}
+                        <button class="operator-action-btn" onclick="showProjectContextModal('${op.id}')" style="${op.project_context ? '' : 'background: rgba(99,102,241,0.15); color: #818cf8;'}">
+                            ${op.project_context ? 'Edit Context' : 'Set Up Claude Context'}
+                        </button>
                         <button class="operator-action-btn" onclick="editOperator('${op.id}')">Edit</button>
                         <button class="operator-action-btn" onclick="updateOperatorStatus('${op.id}')">Update Status</button>
                         <button class="operator-action-btn" onclick="deleteOperator('${op.id}')">Delete</button>
@@ -22632,6 +22686,57 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
             } catch (err) {
                 console.error('Error deleting operator:', err);
                 showToast('Failed to delete operator.');
+            }
+        }
+
+        // ===== Project Context Modal =====
+        function showProjectContextModal(operatorId) {
+            var op = operatorsData.find(function(o) { return o.id === operatorId; });
+            if (!op) return;
+
+            document.getElementById('pcModalTitle').textContent = 'Claude Context — ' + (op.name || 'Operator');
+            document.getElementById('pcContextInput').value = op.project_context || '';
+            document.getElementById('pcOperatorId').value = operatorId;
+            document.getElementById('projectContextModal').style.display = 'flex';
+        }
+
+        function hideProjectContextModal() {
+            document.getElementById('projectContextModal').style.display = 'none';
+        }
+
+        async function saveProjectContext() {
+            var id = document.getElementById('pcOperatorId').value;
+            var context = document.getElementById('pcContextInput').value;
+            var btn = document.getElementById('pcSaveBtn');
+
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            try {
+                var resp = await fetch(SUPABASE_URL + '/rest/v1/suite_operators?id=eq.' + id, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({ project_context: context })
+                });
+
+                if (!resp.ok) throw new Error('Failed to save');
+
+                btn.textContent = 'Saved!';
+                setTimeout(function() {
+                    hideProjectContextModal();
+                    btn.disabled = false;
+                    btn.textContent = 'Save Context';
+                    loadOperators();
+                }, 800);
+            } catch (e) {
+                btn.textContent = 'Failed — try again';
+                btn.disabled = false;
+                console.error('Save project context error:', e);
             }
         }
 
