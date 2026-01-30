@@ -171,6 +171,12 @@ function renderProduct() {
                     <button class="carousel-arrow carousel-next" id="carouselNext" onclick="nextImage()">&rsaquo;</button>
                 </div>
                 <div class="carousel-dots" id="carouselDots"></div>
+
+                ${specsHtml ? `
+                <div class="modal-specs">
+                    <h4>Specifications</h4>
+                    ${specsHtml}
+                </div>` : ''}
             </div>
 
             <!-- Details -->
@@ -248,14 +254,6 @@ function renderProduct() {
             </div>
         </div>
 
-        <!-- Specs (full width below grid) -->
-        ${specsHtml ? `
-        <div class="product-specs-section">
-            <div class="modal-specs">
-                <h4>Specifications</h4>
-                ${specsHtml}
-            </div>
-        </div>` : ''}
     `;
 
     // Update stock status for non-coming-soon products
