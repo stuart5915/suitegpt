@@ -21229,15 +21229,16 @@
             const content = document.getElementById('dashboardAppsContent');
             const listEl = document.getElementById('dashboardUnifiedList');
             const countBadge = document.getElementById('dashboardAppsCountBadge');
+            const factoryUser = getFactoryCurrentUser();
 
             // Fetch user-created apps from Supabase
             let userCreatedApps = [];
-            if (supabase && currentUser) {
+            if (supabaseClient && factoryUser) {
                 try {
-                    const { data, error } = await supabase
+                    const { data, error } = await supabaseClient
                         .from('user_apps')
                         .select('id, name, description, icon_bg, code, updated_at, created_at')
-                        .eq('user_id', currentUser.id)
+                        .eq('user_id', factoryUser.id)
                         .order('updated_at', { ascending: false })
                         .limit(50);
                     if (!error && data) userCreatedApps = data;
@@ -28990,12 +28991,13 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
 
             // Fetch user-created apps from Supabase
             let userCreatedApps = [];
-            if (supabase && currentUser) {
+            const sidebarUser = getFactoryCurrentUser();
+            if (supabaseClient && sidebarUser) {
                 try {
-                    const { data, error } = await supabase
+                    const { data, error } = await supabaseClient
                         .from('user_apps')
                         .select('id, name, icon_bg, code')
-                        .eq('user_id', currentUser.id)
+                        .eq('user_id', sidebarUser.id)
                         .order('created_at', { ascending: false })
                         .limit(20);
                     if (!error && data) userCreatedApps = data;
@@ -30725,13 +30727,14 @@ Output ONLY the COMPLETE updated HTML (with all existing + new code), starting w
                 if (iframe) iframe.srcdoc = html;
 
                 // Auto-save to user_apps (insert after step 1, update on subsequent steps)
-                if (supabase && currentUser) {
+                const autoSaveUser = getFactoryCurrentUser();
+                if (supabaseClient && autoSaveUser) {
                     try {
                         if (stepIndex === 0 && !window.quickAppResult.savedAppId) {
-                            const { data: savedApp, error } = await supabase
+                            const { data: savedApp, error } = await supabaseClient
                                 .from('user_apps')
                                 .insert({
-                                    user_id: currentUser.id,
+                                    user_id: autoSaveUser.id,
                                     name: window.quickAppResult.name,
                                     description: window.quickAppResult.idea,
                                     code: html,
@@ -30747,7 +30750,7 @@ Output ONLY the COMPLETE updated HTML (with all existing + new code), starting w
                                 createAutoProposal(savedApp.id, window.quickAppResult.name, window.quickAppResult.idea);
                             }
                         } else if (window.quickAppResult.savedAppId) {
-                            await supabase
+                            await supabaseClient
                                 .from('user_apps')
                                 .update({ code: html })
                                 .eq('id', window.quickAppResult.savedAppId);
