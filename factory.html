@@ -6575,6 +6575,25 @@
 
                 <!-- Main View: Client Requests -->
                 <div class="main-view" id="clientRequestsMainView">
+                    <!-- Daemon status bar -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; margin-bottom: 20px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div id="crDaemonDot" style="width: 10px; height: 10px; border-radius: 50%; background: #888;"></div>
+                            <div>
+                                <span id="crDaemonLabel" style="font-weight: 600; font-size: 0.95rem;">Client Request Daemon</span>
+                                <span id="crDaemonDetail" style="font-size: 0.8rem; color: var(--text-dim); margin-left: 8px;">Checking...</span>
+                            </div>
+                        </div>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
+                            <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-dim);" id="crToggleLabel">Processing</span>
+                            <div style="position: relative; width: 44px; height: 24px;">
+                                <input type="checkbox" id="crDaemonToggle" onchange="toggleClientDaemon(this.checked)" style="opacity: 0; width: 0; height: 0; position: absolute;">
+                                <div id="crToggleTrack" onclick="document.getElementById('crDaemonToggle').click()" style="position: absolute; inset: 0; background: #444; border-radius: 12px; cursor: pointer; transition: background 0.2s;"></div>
+                                <div id="crToggleThumb" onclick="document.getElementById('crDaemonToggle').click()" style="position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: white; border-radius: 50%; transition: transform 0.2s; cursor: pointer;"></div>
+                            </div>
+                        </label>
+                    </div>
+
                     <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
                         <select id="crAppFilter" onchange="loadClientRequests()" style="padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-surface); color: var(--text); font-size: 0.9rem;">
                             <option value="">All Apps</option>
@@ -7259,6 +7278,15 @@
             // Load client requests when switching to that view
             if (viewName === 'clientRequests') {
                 loadClientRequests();
+                checkClientDaemonStatus();
+                if (!crDaemonCheckInterval) {
+                    crDaemonCheckInterval = setInterval(checkClientDaemonStatus, 10000);
+                }
+            } else {
+                if (crDaemonCheckInterval) {
+                    clearInterval(crDaemonCheckInterval);
+                    crDaemonCheckInterval = null;
+                }
             }
         }
 
@@ -7411,6 +7439,81 @@
                 alert('Failed to reject request.');
                 console.error(e);
             }
+        }
+
+        // ===== Client Daemon Status & Toggle =====
+        let crDaemonCheckInterval = null;
+
+        async function checkClientDaemonStatus() {
+            try {
+                const resp = await fetch(
+                    `${SUPABASE_URL}/rest/v1/daemon_heartbeat?id=eq.client-request-daemon&select=last_heartbeat,hostname,enabled`,
+                    { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
+                );
+                const data = await resp.json();
+
+                const dot = document.getElementById('crDaemonDot');
+                const detail = document.getElementById('crDaemonDetail');
+                const toggle = document.getElementById('crDaemonToggle');
+                const track = document.getElementById('crToggleTrack');
+                const thumb = document.getElementById('crToggleThumb');
+                const label = document.getElementById('crToggleLabel');
+
+                if (data && data.length > 0) {
+                    const age = (Date.now() - new Date(data[0].last_heartbeat).getTime()) / 1000;
+                    const enabled = data[0].enabled !== false;
+                    const online = age < 60;
+
+                    toggle.checked = enabled;
+                    track.style.background = enabled ? '#22c55e' : '#444';
+                    thumb.style.transform = enabled ? 'translateX(20px)' : 'translateX(0)';
+                    label.textContent = enabled ? 'Processing' : 'Paused';
+
+                    if (online && enabled) {
+                        dot.style.background = '#22c55e';
+                        detail.textContent = `Online — ${data[0].hostname || 'unknown host'}`;
+                    } else if (online && !enabled) {
+                        dot.style.background = '#f59e0b';
+                        detail.textContent = `Paused — daemon running but not processing`;
+                    } else {
+                        dot.style.background = '#888';
+                        detail.textContent = `Offline — last seen ${Math.round(age)}s ago`;
+                    }
+                } else {
+                    document.getElementById('crDaemonDot').style.background = '#888';
+                    document.getElementById('crDaemonDetail').textContent = 'Not started — run: python scripts/client-request-daemon.py';
+                }
+            } catch (e) {
+                console.error('Client daemon status check error:', e);
+            }
+        }
+
+        async function toggleClientDaemon(enabled) {
+            const track = document.getElementById('crToggleTrack');
+            const thumb = document.getElementById('crToggleThumb');
+            const label = document.getElementById('crToggleLabel');
+
+            track.style.background = enabled ? '#22c55e' : '#444';
+            thumb.style.transform = enabled ? 'translateX(20px)' : 'translateX(0)';
+            label.textContent = enabled ? 'Processing' : 'Paused';
+
+            try {
+                await fetch(`${SUPABASE_URL}/rest/v1/daemon_heartbeat?id=eq.client-request-daemon`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({ enabled: enabled })
+                });
+            } catch (e) {
+                console.error('Toggle daemon error:', e);
+            }
+
+            // Refresh status after a beat
+            setTimeout(checkClientDaemonStatus, 1000);
         }
 
         // ===== Marketing View Functions =====

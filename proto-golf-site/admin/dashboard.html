@@ -1036,6 +1036,10 @@
             <div class="content-section" id="section-requests">
                 <div class="main-header">
                     <h1>Change Requests</h1>
+                    <div id="requestDaemonStatus" style="display: flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 100px; font-size: 0.8rem; font-weight: 600; background: var(--color-mist); color: var(--color-steel);">
+                        <span id="reqDaemonDot" style="width: 8px; height: 8px; border-radius: 50%; background: var(--color-silver);"></span>
+                        <span id="reqDaemonText">Checking...</span>
+                    </div>
                 </div>
 
                 <div class="section-card">
@@ -2477,11 +2481,55 @@
             return div.innerHTML;
         }
 
+        async function checkRequestDaemonStatus() {
+            const dot = document.getElementById('reqDaemonDot');
+            const text = document.getElementById('reqDaemonText');
+            if (!dot || !text) return;
+
+            try {
+                const resp = await supabaseQuery('daemon_heartbeat', 'GET', null,
+                    '?id=eq.client-request-daemon&select=last_heartbeat,enabled');
+                if (resp && resp.length > 0) {
+                    const age = (Date.now() - new Date(resp[0].last_heartbeat).getTime()) / 1000;
+                    const enabled = resp[0].enabled !== false;
+                    if (age < 60 && enabled) {
+                        dot.style.background = 'var(--color-success)';
+                        text.textContent = 'Requests Active';
+                        document.getElementById('requestDaemonStatus').style.background = 'rgba(34, 197, 94, 0.1)';
+                        document.getElementById('requestDaemonStatus').style.color = 'var(--color-success)';
+                    } else if (age < 60 && !enabled) {
+                        dot.style.background = 'var(--color-warning)';
+                        text.textContent = 'Requests Paused';
+                        document.getElementById('requestDaemonStatus').style.background = 'rgba(245, 158, 11, 0.1)';
+                        document.getElementById('requestDaemonStatus').style.color = 'var(--color-warning)';
+                    } else {
+                        dot.style.background = 'var(--color-silver)';
+                        text.textContent = 'Requests Offline';
+                        document.getElementById('requestDaemonStatus').style.background = 'var(--color-mist)';
+                        document.getElementById('requestDaemonStatus').style.color = 'var(--color-steel)';
+                    }
+                } else {
+                    dot.style.background = 'var(--color-silver)';
+                    text.textContent = 'Requests Offline';
+                }
+            } catch (e) {
+                console.error('Daemon status check failed:', e);
+            }
+        }
+
+        let reqDaemonInterval = null;
+
         // Load requests when section is shown
         const origShowSection = showSection;
         showSection = function(sectionId, event) {
             origShowSection(sectionId, event);
-            if (sectionId === 'requests') loadRequests();
+            if (sectionId === 'requests') {
+                loadRequests();
+                checkRequestDaemonStatus();
+                if (!reqDaemonInterval) reqDaemonInterval = setInterval(checkRequestDaemonStatus, 15000);
+            } else {
+                if (reqDaemonInterval) { clearInterval(reqDaemonInterval); reqDaemonInterval = null; }
+            }
         };
     </script>
 </body>

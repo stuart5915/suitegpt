@@ -14,6 +14,7 @@ import time
 import os
 import sys
 import json
+import socket
 import urllib.request
 import urllib.error
 from datetime import datetime
@@ -93,6 +94,40 @@ def supabase_patch(record_id: str, data: dict):
     except urllib.error.HTTPError as e:
         log(f"PATCH error {e.code}: {e.read().decode('utf-8')}")
         return False
+
+
+DAEMON_ID = 'client-request-daemon'
+
+
+def send_heartbeat():
+    """Upsert a heartbeat row so UIs know daemon is alive."""
+    url = f"{SUPABASE_URL}/rest/v1/daemon_heartbeat"
+    headers = {
+        'apikey': SUPABASE_KEY,
+        'Authorization': f'Bearer {SUPABASE_KEY}',
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
+    }
+    data = {
+        'id': DAEMON_ID,
+        'last_heartbeat': datetime.utcnow().isoformat() + 'Z',
+        'hostname': socket.gethostname()
+    }
+    body = json.dumps(data).encode('utf-8')
+    req = urllib.request.Request(url, data=body, headers=headers, method='POST')
+    try:
+        with urllib.request.urlopen(req) as response:
+            pass
+    except urllib.error.HTTPError as e:
+        log(f"Heartbeat error: {e.code}")
+
+
+def is_enabled() -> bool:
+    """Check if daemon is enabled via daemon_heartbeat.enabled flag."""
+    rows = supabase_get(f'daemon_heartbeat?id=eq.{DAEMON_ID}&select=enabled')
+    if rows and len(rows) > 0:
+        return rows[0].get('enabled', True) is not False
+    return True  # default to enabled if no row exists yet
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -203,6 +238,12 @@ def process_request(item: dict) -> bool:
 
 def check_and_process():
     try:
+        send_heartbeat()
+
+        if not is_enabled():
+            log("Daemon paused (disabled via toggle)")
+            return
+
         items = get_approved_requests()
         if items:
             log(f"Found {len(items)} approved client request(s)")
