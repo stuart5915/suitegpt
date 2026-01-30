@@ -229,6 +229,38 @@ CLIENT REQUEST:
             log(f"Claude stderr: {result.stderr[:300]}")
 
         if result.returncode == 0:
+            log(f"Claude finished: {title}")
+
+            # Auto-commit and push if there are changes
+            git_status = subprocess.run(
+                ['git', 'status', '--porcelain'],
+                capture_output=True, text=True, cwd=str(REPO_PATH)
+            )
+            changed_files = git_status.stdout.strip()
+
+            if changed_files:
+                log(f"Changes detected, committing:\n{changed_files[:500]}")
+                commit_msg = f"[Client Request] {title}\n\nApp: {client_app}\nRequest ID: {record_id}"
+                subprocess.run(
+                    ['git', 'add', '-A'],
+                    cwd=str(REPO_PATH)
+                )
+                subprocess.run(
+                    ['git', 'commit', '-m', commit_msg],
+                    capture_output=True, text=True, cwd=str(REPO_PATH)
+                )
+                push_result = subprocess.run(
+                    ['git', 'push'],
+                    capture_output=True, text=True, cwd=str(REPO_PATH),
+                    timeout=60
+                )
+                if push_result.returncode == 0:
+                    log(f"Pushed to remote")
+                else:
+                    log(f"Push failed: {push_result.stderr[:300]}")
+            else:
+                log(f"No file changes detected")
+
             log(f"SUCCESS: {title}")
             supabase_patch(record_id, {
                 'status': 'completed',
