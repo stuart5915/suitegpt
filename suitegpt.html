@@ -33465,7 +33465,8 @@ Return as JSON array. No markdown, no code blocks.`,
                             body: JSON.stringify({
                                 model: geminiModel,
                                 contents: geminiContents,
-                                systemInstruction: systemInstruction
+                                systemInstruction: systemInstruction,
+                                enableSearch: true
                             })
                         });
 
@@ -33473,6 +33474,17 @@ Return as JSON array. No markdown, no code blocks.`,
 
                         const data = await response.json();
                         aiResponse = data.text || 'Sorry, I could not generate a response.';
+
+                        // Append source links if Google Search grounding was used
+                        if (data.groundingChunks && data.groundingChunks.length > 0) {
+                            const sources = data.groundingChunks
+                                .filter(c => c.web)
+                                .map(c => `[${c.web.title || c.web.uri}](${c.web.uri})`)
+                                .slice(0, 3);
+                            if (sources.length > 0) {
+                                aiResponse += `\n\n**Sources:**\n${sources.join('\n')}`;
+                            }
+                        }
 
                     } else if (currentModel === 'sonnet' || currentModel === 'opus') {
                         // Claude models - call Anthropic via edge function

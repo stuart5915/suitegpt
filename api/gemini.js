@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { prompt, model = 'gemini-2.0-flash', contents, generationConfig, systemInstruction } = req.body;
+        const { prompt, model = 'gemini-2.0-flash', contents, generationConfig, systemInstruction, enableSearch } = req.body;
 
         // Build request body - support both simple prompt and full contents structure
         let requestBody;
@@ -45,6 +45,11 @@ export default async function handler(req, res) {
             requestBody.systemInstruction = { parts: [{ text: systemInstruction }] };
         }
 
+        // Enable Google Search grounding for real-time info
+        if (enableSearch !== false) {
+            requestBody.tools = [{ googleSearch: {} }];
+        }
+
         const response = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
             {
@@ -61,7 +66,10 @@ export default async function handler(req, res) {
         }
 
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        return res.status(200).json({ text, candidates: data.candidates });
+        const groundingMetadata = data.candidates?.[0]?.groundingMetadata;
+        const searchQueries = groundingMetadata?.searchEntryPoint?.renderedContent;
+        const groundingChunks = groundingMetadata?.groundingChunks;
+        return res.status(200).json({ text, candidates: data.candidates, groundingMetadata, groundingChunks, searchQueries });
 
     } catch (error) {
         console.error('Gemini API error:', error);
