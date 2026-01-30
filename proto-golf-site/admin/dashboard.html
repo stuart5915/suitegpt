@@ -1841,7 +1841,7 @@
                 const data = await supabaseQuery('proto_golf_product_images', 'GET', null,
                     `?product_id=eq.${encodeURIComponent(productId)}&variant_key=eq.${encodeURIComponent(variantKey)}&order=sort_order`
                 );
-                currentPhotos = data || [];
+                currentPhotos = Array.isArray(data) ? data : [];
                 renderPhotoGrid();
             } catch (e) {
                 console.error('Failed to load images:', e);
@@ -1899,34 +1899,41 @@
                 btn.textContent = `Uploading ${i + 1}/${total}...`;
 
                 try {
-                    const base64 = await new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = () => resolve(reader.result);
-                        reader.onerror = reject;
-                        reader.readAsDataURL(file);
-                    });
+                    // Upload directly to Supabase Storage
+                    const ext = file.name.split('.').pop() || 'jpg';
+                    const storagePath = `${productId}/${variantKey.replace(/\|/g, '-').replace(/\s/g, '_')}/${Date.now()}_${i}.${ext}`;
 
-                    const token = sessionStorage.getItem('proto_admin_auth');
-                    const response = await fetch('/api/proto-upload-image', {
+                    const uploadResp = await fetch(`${SUPABASE_URL}/storage/v1/object/proto-golf-images/${storagePath}`, {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
+                            'apikey': SUPABASE_KEY,
+                            'Authorization': `Bearer ${SUPABASE_KEY}`,
+                            'Content-Type': file.type || 'image/jpeg'
                         },
-                        body: JSON.stringify({
-                            image_base64: base64,
-                            product_id: productId,
-                            variant_key: variantKey,
-                            sort_order: currentPhotos.length + uploaded
-                        })
+                        body: file
                     });
 
-                    const data = await response.json();
-                    if (data.success) {
+                    if (!uploadResp.ok) {
+                        const errText = await uploadResp.text();
+                        throw new Error('Storage upload failed: ' + errText);
+                    }
+
+                    // Get public URL
+                    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/proto-golf-images/${storagePath}`;
+
+                    // Insert DB record
+                    const ok = await supabaseQuery('proto_golf_product_images', 'POST', {
+                        product_id: productId,
+                        variant_key: variantKey,
+                        image_url: publicUrl,
+                        sort_order: currentPhotos.length + uploaded
+                    });
+
+                    if (ok) {
                         uploaded++;
                     } else {
                         failed++;
-                        console.error('Upload failed for', file.name, data.error);
+                        console.error('DB insert failed for', file.name);
                     }
                 } catch (e) {
                     failed++;
@@ -1952,23 +1959,25 @@
             if (!confirm('Delete this image? This cannot be undone.')) return;
 
             try {
-                const token = sessionStorage.getItem('proto_admin_auth');
-                const response = await fetch('/api/proto-upload-image', {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ image_id: imageId })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    await loadProductImages();
-                } else {
-                    alert('Delete failed: ' + (data.error || 'Unknown error'));
+                // Find the photo to get the storage path
+                const photo = currentPhotos.find(p => p.id === imageId);
+                if (photo && photo.image_url) {
+                    const urlParts = photo.image_url.split('/proto-golf-images/');
+                    if (urlParts.length === 2) {
+                        const storagePath = decodeURIComponent(urlParts[1]);
+                        await fetch(`${SUPABASE_URL}/storage/v1/object/proto-golf-images/${storagePath}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'apikey': SUPABASE_KEY,
+                                'Authorization': `Bearer ${SUPABASE_KEY}`
+                            }
+                        });
+                    }
                 }
+
+                // Delete DB record
+                await supabaseQuery('proto_golf_product_images', 'DELETE', null, `?id=eq.${imageId}`);
+                await loadProductImages();
             } catch (e) {
                 console.error('Delete error:', e);
                 alert('Delete failed: ' + e.message);
