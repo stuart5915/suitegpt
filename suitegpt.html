@@ -33572,19 +33572,14 @@ Return as JSON array. No markdown, no code blocks.`,
 
             } catch (error) {
                 removeTypingIndicator();
-                const fallback = getLocalResponse(message);
-                addMessage(fallback.response, 'assistant', fallback.recommendedApp, userQuery);
-                conversationHistory.push({ role: 'assistant', content: fallback.response });
+                console.error('[Chat] API error:', error.message);
 
-                // Track app recommendation as insight (fallback)
-                if (fallback.recommendedApp && SUITE_APPS[fallback.recommendedApp]) {
-                    const app = SUITE_APPS[fallback.recommendedApp];
-                    addInsight('app', {
-                        appKey: fallback.recommendedApp,
-                        appName: app.name,
-                        appUrl: app.url
-                    });
-                }
+                // Show the actual error to the user instead of a silent fallback
+                const errorMsg = error.message.includes('Rate limit')
+                    ? error.message
+                    : `Something went wrong (${error.message}). Please try again or switch to a different model.`;
+                addMessage(errorMsg, 'assistant', null, userQuery);
+                conversationHistory.push({ role: 'assistant', content: errorMsg });
             }
 
             isLoading = false;
