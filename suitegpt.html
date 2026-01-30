@@ -12468,6 +12468,31 @@
             line-height: 1.3;
         }
 
+        .insights-thinking {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 12px;
+            font-size: 0.8rem;
+            color: rgba(34, 197, 94, 0.7);
+        }
+
+        .insights-thinking-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: rgba(34, 197, 94, 0.6);
+            animation: insightPulse 1.2s ease-in-out infinite;
+        }
+
+        .insights-thinking-dot:nth-child(2) { animation-delay: 0.2s; }
+        .insights-thinking-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes insightPulse {
+            0%, 100% { opacity: 0.3; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
         .insight-actions {
             display: flex;
             gap: 8px;
@@ -32773,6 +32798,18 @@ Return as JSON array. No markdown, no code blocks.`,
             if (conversationHistory.length <= insightsState.lastAnalyzedIndex) return;
             insightsState.lastAnalyzedIndex = conversationHistory.length;
 
+            // Show thinking indicator in insights panel
+            if (insightsContent) {
+                const thinkingEl = document.createElement('div');
+                thinkingEl.className = 'insights-thinking';
+                thinkingEl.id = 'insightsThinking';
+                thinkingEl.innerHTML = '<span class="insights-thinking-dot"></span><span class="insights-thinking-dot"></span><span class="insights-thinking-dot"></span> Analyzing conversation...';
+                // Remove empty state if present
+                const emptyState = insightsContent.querySelector('.insights-empty-state');
+                if (emptyState) emptyState.remove();
+                insightsContent.appendChild(thinkingEl);
+            }
+
             try {
                 const response = await fetch('/api/gemini', {
                     method: 'POST',
@@ -32849,6 +32886,10 @@ Rules:
 
             } catch (e) {
                 console.debug('[Insights] Analysis failed:', e.message);
+            } finally {
+                // Remove thinking indicator
+                const thinking = document.getElementById('insightsThinking');
+                if (thinking) thinking.remove();
             }
         }
 
@@ -33598,8 +33639,9 @@ Rules:
                     addMessage(aiResponse, 'assistant', null, userQuery);
                     conversationHistory.push({ role: 'assistant', content: aiResponse });
 
-                    // Analyze message for app suggestions in background (for Insights panel)
-                    analyzeForAppSuggestions(message, aiResponse);
+                    // Analyze message for app suggestions in background (fire-and-forget)
+                    // Uses setTimeout to ensure the chat response renders first
+                    setTimeout(() => analyzeForAppSuggestions(message, aiResponse), 100);
                 }
 
             } catch (error) {
