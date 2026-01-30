@@ -161,12 +161,16 @@ function renderProduct() {
     const content = document.getElementById('productPageContent');
     content.innerHTML = `
         <div class="product-page-grid">
-            <!-- Gallery -->
+            <!-- Gallery (carousel) -->
             <div class="product-gallery">
-                <div class="product-main-image" id="mainImage">
-                    <img src="${heroImg}" alt="${escapeAttr(product.name)} Putter" id="mainImg">
+                <div class="product-carousel" id="productCarousel">
+                    <div class="product-main-image" id="mainImage">
+                        <img src="${heroImg}" alt="${escapeAttr(product.name)} Putter" id="mainImg">
+                    </div>
+                    <button class="carousel-arrow carousel-prev" id="carouselPrev" onclick="prevImage()">&lsaquo;</button>
+                    <button class="carousel-arrow carousel-next" id="carouselNext" onclick="nextImage()">&rsaquo;</button>
                 </div>
-                <div class="product-thumbnails" id="thumbnails"></div>
+                <div class="carousel-dots" id="carouselDots"></div>
             </div>
 
             <!-- Details -->
@@ -176,12 +180,6 @@ function renderProduct() {
                 <div class="product-page-price" id="productPrice">$${product.base_price}</div>
 
                 <p class="product-description">${escapeHtml(product.description || '')}</p>
-
-                <!-- Specs -->
-                <div class="modal-specs">
-                    <h4>Specifications</h4>
-                    ${specsHtml}
-                </div>
 
                 ${!isComingSoon && finishes.length > 0 ? `
                 <!-- Variants -->
@@ -249,6 +247,15 @@ function renderProduct() {
                 </div>`}
             </div>
         </div>
+
+        <!-- Specs (full width below grid) -->
+        ${specsHtml ? `
+        <div class="product-specs-section">
+            <div class="modal-specs">
+                <h4>Specifications</h4>
+                ${specsHtml}
+            </div>
+        </div>` : ''}
     `;
 
     // Update stock status for non-coming-soon products
@@ -257,12 +264,17 @@ function renderProduct() {
     }
 }
 
+let currentImageIndex = 0;
+
 function updateGallery() {
     const key = selectedFinish.name + '|' + selectedShaft;
     currentGallery = dbImages[key] || [];
+    currentImageIndex = 0;
 
     const mainImg = document.getElementById('mainImg');
-    const thumbContainer = document.getElementById('thumbnails');
+    const dotsContainer = document.getElementById('carouselDots');
+    const prevBtn = document.getElementById('carouselPrev');
+    const nextBtn = document.getElementById('carouselNext');
 
     if (currentGallery.length === 0) {
         // Show placeholder when no images exist for this variant
@@ -288,7 +300,9 @@ function updateGallery() {
                 placeholder.querySelector('span:last-child').textContent = `${selectedFinish.name} · ${selectedShaft}`;
             }
         }
-        if (thumbContainer) thumbContainer.innerHTML = '';
+        if (dotsContainer) dotsContainer.innerHTML = '';
+        if (prevBtn) prevBtn.style.display = 'none';
+        if (nextBtn) nextBtn.style.display = 'none';
         return;
     }
 
@@ -300,11 +314,69 @@ function updateGallery() {
         mainImg.src = currentGallery[0];
     }
 
-    if (thumbContainer) {
-        thumbContainer.innerHTML = currentGallery.map((src, i) =>
-            `<div class="product-thumbnail${i === 0 ? ' active' : ''}" onclick="selectThumb(this, ${i})" style="background: url('${src}') center/cover;"></div>`
-        ).join('');
+    // Show/hide arrows based on image count
+    const showArrows = currentGallery.length > 1;
+    if (prevBtn) prevBtn.style.display = showArrows ? '' : 'none';
+    if (nextBtn) nextBtn.style.display = showArrows ? '' : 'none';
+
+    // Render dots
+    if (dotsContainer) {
+        if (currentGallery.length > 1) {
+            dotsContainer.innerHTML = currentGallery.map((_, i) =>
+                `<button class="carousel-dot${i === 0 ? ' active' : ''}" onclick="goToImage(${i})"></button>`
+            ).join('');
+        } else {
+            dotsContainer.innerHTML = '';
+        }
     }
+
+    // Set up touch/swipe on carousel
+    setupCarouselTouch();
+}
+
+function goToImage(index) {
+    if (index < 0 || index >= currentGallery.length) return;
+    currentImageIndex = index;
+    const mainImg = document.getElementById('mainImg');
+    if (mainImg) mainImg.src = currentGallery[index];
+
+    // Update dots
+    document.querySelectorAll('.carousel-dot').forEach((dot, i) => {
+        dot.classList.toggle('active', i === index);
+    });
+}
+
+function prevImage() {
+    const newIndex = currentImageIndex <= 0 ? currentGallery.length - 1 : currentImageIndex - 1;
+    goToImage(newIndex);
+}
+
+function nextImage() {
+    const newIndex = currentImageIndex >= currentGallery.length - 1 ? 0 : currentImageIndex + 1;
+    goToImage(newIndex);
+}
+
+function setupCarouselTouch() {
+    const carousel = document.getElementById('productCarousel');
+    if (!carousel || carousel._touchSetup) return;
+    carousel._touchSetup = true;
+
+    let startX = 0;
+    let startY = 0;
+    carousel.addEventListener('touchstart', (e) => {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+    }, { passive: true });
+
+    carousel.addEventListener('touchend', (e) => {
+        const dx = e.changedTouches[0].clientX - startX;
+        const dy = e.changedTouches[0].clientY - startY;
+        // Only trigger if horizontal swipe is dominant and > 50px
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+            if (dx < 0) nextImage();
+            else prevImage();
+        }
+    }, { passive: true });
 }
 
 function selectFinish(btn, name, price) {
@@ -330,12 +402,6 @@ function selectShipping(el, type, price) {
     updatePrice();
 }
 
-function selectThumb(thumb, index) {
-    document.querySelectorAll('.product-thumbnail').forEach(t => t.classList.remove('active'));
-    thumb.classList.add('active');
-    const mainImg = document.getElementById('mainImg');
-    if (mainImg && currentGallery[index]) mainImg.src = currentGallery[index];
-}
 
 function updatePrice() {
     if (!product) return;
