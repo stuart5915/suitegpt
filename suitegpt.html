@@ -22277,7 +22277,7 @@ CRITICAL: You MUST return ONLY a raw JSON array. No markdown, no \`\`\` code fen
 [{"index":1,"angle":"specific angle description","imagePrompt":"detailed image generation prompt"},{"index":2,"angle":"...","imagePrompt":"..."}]`;
 
             try {
-                const response = await callCopilotAI(prompt, { maxTokens: 2048 });
+                const response = await callCopilotAI(prompt, { maxTokens: 2048, model: 'gemini-2.5-pro' });
                 console.log('[Daily Brief] Raw AI response:', response.substring(0, 500));
                 const parsed = parseJSONResponse(response);
 
@@ -22439,7 +22439,7 @@ CRITICAL: You MUST return ONLY a raw JSON array. No markdown, no \`\`\` code fen
 [{"index":1,"text":"post text here"},{"index":2,"text":"post text here"}]`;
 
             try {
-                const response = await callCopilotAI(prompt, { maxTokens: 2048 });
+                const response = await callCopilotAI(prompt, { maxTokens: 2048, model: 'gemini-2.5-pro' });
                 console.log('[Daily Brief] Raw post response:', response.substring(0, 500));
                 const parsed = parseJSONResponse(response);
 
@@ -23103,6 +23103,7 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     prompt: userMessage,
+                    model: options.model || 'gemini-2.5-flash',
                     systemInstruction: systemPrompt,
                     generationConfig: {
                         temperature: options.temperature ?? 0.8,
