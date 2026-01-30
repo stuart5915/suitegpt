@@ -22205,7 +22205,10 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
             var el = document.getElementById('relayStatus');
             if (!el) return;
             try {
-                var resp = await fetch(RELAY_URL + '/health', { signal: AbortSignal.timeout(2000) });
+                var controller = new AbortController();
+                var timer = setTimeout(function() { controller.abort(); }, 3000);
+                var resp = await fetch(RELAY_URL + '/health', { signal: controller.signal });
+                clearTimeout(timer);
                 if (resp.ok) {
                     el.textContent = 'Relay: connected';
                     el.style.background = 'rgba(34,197,94,0.15)';
@@ -22214,6 +22217,7 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
                     throw new Error('not ok');
                 }
             } catch (e) {
+                console.warn('Relay check failed:', e.message);
                 el.textContent = 'Relay: offline (will use daemon)';
                 el.style.background = 'rgba(239,68,68,0.15)';
                 el.style.color = '#ef4444';
@@ -22309,7 +22313,7 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
             '</div>';
         }
 
-        var RELAY_URL = 'http://localhost:5111';
+        var RELAY_URL = 'http://127.0.0.1:5111';
         var _clientRequestsData = {}; // store request data by id for relay
 
         async function approveClientRequest(id) {
