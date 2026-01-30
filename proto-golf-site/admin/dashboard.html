@@ -105,6 +105,15 @@
             border-color: var(--color-ink);
         }
 
+        textarea.form-input {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        select.form-input {
+            cursor: pointer;
+        }
+
         .btn {
             display: inline-flex;
             align-items: center;
@@ -647,6 +656,8 @@
                     <li><a href="#" onclick="showSection('orders', event)">Orders</a></li>
                     <li><a href="#" onclick="showSection('inventory', event)">Inventory</a></li>
                     <li><a href="#" onclick="showSection('analytics', event)">Analytics</a></li>
+                    <li><a href="#" onclick="showSection('products', event)">Products</a></li>
+                    <li><a href="#" onclick="showSection('variants', event)">Variants</a></li>
                     <li><a href="#" onclick="showSection('photos', event)">Photos</a></li>
                     <li style="margin-top: 24px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.1);">
                         <a href="../index.html" target="_blank">View Site ↗</a>
@@ -843,6 +854,75 @@
                     </div>
                 </div>
             </div>
+            <!-- Products Section -->
+            <div class="content-section" id="section-products">
+                <div class="main-header">
+                    <h1>Products</h1>
+                    <button class="btn btn-primary btn-sm" onclick="openProductModal()">Add Product</button>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-header">
+                        <h3 class="section-title">All Products</h3>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>ID/Slug</th>
+                                <th>Base Price</th>
+                                <th>Status</th>
+                                <th>Badge</th>
+                                <th>Sort</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productsTable">
+                            <tr>
+                                <td colspan="7" style="text-align: center; color: var(--color-steel); padding: 40px;">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Variants Section -->
+            <div class="content-section" id="section-variants">
+                <div class="main-header">
+                    <h1>Variants</h1>
+                    <button class="btn btn-primary btn-sm" onclick="openVariantModal()">Add Variant</button>
+                </div>
+
+                <div style="margin-bottom: 24px;">
+                    <label class="form-label">Select Product</label>
+                    <select class="form-input" id="variantProductSelect" onchange="loadVariantsForProduct()" style="max-width: 300px;">
+                    </select>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-header">
+                        <h3 class="section-title">Product Variants</h3>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Finish</th>
+                                <th>Shaft</th>
+                                <th>Price Addon</th>
+                                <th>Sort Order</th>
+                                <th>Default</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="variantsTable">
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: var(--color-steel); padding: 40px;">Select a product above</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- Photos Section -->
             <div class="content-section" id="section-photos">
                 <div class="main-header">
@@ -858,9 +938,7 @@
                             <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
                                 <label class="form-label">Product</label>
                                 <select class="form-input" id="photoProduct" onchange="onPhotoProductChange()">
-                                    <option value="rough-mill">Rough Mill</option>
-                                    <option value="centre-blade">Centre Blade</option>
-                                    <option value="long-neck-blade">Long Neck Blade</option>
+                                    <!-- Populated from DB -->
                                 </select>
                             </div>
                             <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
@@ -906,6 +984,109 @@
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="closeOrderModal()">Close</button>
                 <button class="btn btn-primary" onclick="printOrderForm()">Print Order Form</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Modal -->
+    <div class="modal-overlay" id="productModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="productModalTitle">Add Product</h3>
+                <button class="modal-close" onclick="closeProductModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="productEditId">
+                <div class="form-group">
+                    <label class="form-label">Name</label>
+                    <input type="text" class="form-input" id="productName" placeholder="e.g. Rough Mill">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">ID / Slug</label>
+                    <input type="text" class="form-input" id="productSlug" placeholder="e.g. rough-mill">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Base Price ($)</label>
+                    <input type="number" class="form-input" id="productBasePrice" placeholder="399" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Material</label>
+                    <input type="text" class="form-input" id="productMaterial" placeholder="e.g. 304 Stainless Steel">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-input" id="productDescription" rows="3" placeholder="Full product description"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Short Description</label>
+                    <input type="text" class="form-input" id="productShortDesc" placeholder="Brief tagline for shop cards">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Icon (single character)</label>
+                    <input type="text" class="form-input" id="productIcon" placeholder="R" maxlength="2">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Badge</label>
+                    <input type="text" class="form-input" id="productBadge" placeholder="e.g. In Stock, New, Coming Soon">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Status</label>
+                    <select class="form-input" id="productStatus">
+                        <option value="active">Active</option>
+                        <option value="coming_soon">Coming Soon</option>
+                        <option value="discontinued">Discontinued</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Sort Order</label>
+                    <input type="number" class="form-input" id="productSortOrder" placeholder="1" value="0">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Specs (JSON key/value pairs)</label>
+                    <div id="specsContainer"></div>
+                    <button class="btn btn-secondary btn-sm" onclick="addSpecRow()" style="margin-top: 8px;">+ Add Spec</button>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeProductModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveProduct()">Save Product</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Variant Modal -->
+    <div class="modal-overlay" id="variantModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="variantModalTitle">Add Variant</h3>
+                <button class="modal-close" onclick="closeVariantModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="variantEditId">
+                <div class="form-group">
+                    <label class="form-label">Finish Name</label>
+                    <input type="text" class="form-input" id="variantFinish" placeholder="e.g. Raw, Brushed, Black DLC">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Shaft Color</label>
+                    <input type="text" class="form-input" id="variantShaft" placeholder="e.g. Chrome, Black">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Price Addon ($)</label>
+                    <input type="number" class="form-input" id="variantPriceAddon" placeholder="0" step="0.01" value="0">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Sort Order</label>
+                    <input type="number" class="form-input" id="variantSortOrder" placeholder="1" value="0">
+                </div>
+                <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" id="variantIsDefault">
+                    <label class="form-label" for="variantIsDefault" style="margin: 0;">Default variant (loads first)</label>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeVariantModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveVariant()">Save Variant</button>
             </div>
         </div>
     </div>
@@ -992,10 +1173,11 @@
             document.getElementById('setupBanner').style.display = 'none';
 
             // Fetch data from Supabase
-            await fetchInventory();
-            await fetchOrders();
+            await Promise.all([fetchInventory(), fetchOrders(), fetchProducts()]);
             renderInventory();
             renderOrders();
+            renderProductsTable();
+            populateProductDropdowns();
             updateStats();
         }
 
@@ -1302,14 +1484,305 @@
         }
 
         // ============================================
-        // PHOTOS MANAGEMENT
+        // PRODUCTS MANAGEMENT
         // ============================================
-        const productVariants = {
-            'rough-mill': ['Raw|Chrome', 'Raw|Black', 'Brushed|Chrome', 'Brushed|Black', 'Black DLC|Chrome', 'Black DLC|Black', 'Chrome|Chrome', 'Chrome|Black'],
-            'centre-blade': ['Gun Blue|Black', 'Gun Blue|Chrome'],
-            'long-neck-blade': ['Stainless|Chrome', 'Stainless|Black']
-        };
+        let allProducts = [];
+        let allVariants = [];
 
+        async function fetchProducts() {
+            try {
+                allProducts = await supabaseQuery('proto_golf_products', 'GET', null, '?order=sort_order,name');
+            } catch (e) {
+                console.error('Failed to fetch products:', e);
+                allProducts = [];
+            }
+        }
+
+        function renderProductsTable() {
+            const table = document.getElementById('productsTable');
+            if (!allProducts || allProducts.length === 0) {
+                table.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--color-steel); padding: 40px;">No products</td></tr>';
+                return;
+            }
+            table.innerHTML = allProducts.map(p => {
+                const statusBadge = p.status === 'active' ? 'badge-success' :
+                    p.status === 'coming_soon' ? 'badge-neutral' : 'badge-error';
+                return `
+                    <tr>
+                        <td><strong>${p.name}</strong></td>
+                        <td style="font-family: 'Space Mono', monospace; font-size: 0.85rem;">${p.id}</td>
+                        <td>$${parseFloat(p.base_price).toFixed(0)}</td>
+                        <td><span class="badge ${statusBadge}">${p.status}</span></td>
+                        <td>${p.badge || '-'}</td>
+                        <td>${p.sort_order || 0}</td>
+                        <td>
+                            <button class="btn btn-secondary btn-sm" onclick="editProduct('${p.id}')">Edit</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function openProductModal(productId) {
+            document.getElementById('productEditId').value = '';
+            document.getElementById('productName').value = '';
+            document.getElementById('productSlug').value = '';
+            document.getElementById('productBasePrice').value = '';
+            document.getElementById('productMaterial').value = '';
+            document.getElementById('productDescription').value = '';
+            document.getElementById('productShortDesc').value = '';
+            document.getElementById('productIcon').value = '';
+            document.getElementById('productBadge').value = '';
+            document.getElementById('productStatus').value = 'active';
+            document.getElementById('productSortOrder').value = '0';
+            document.getElementById('specsContainer').innerHTML = '';
+            document.getElementById('productModalTitle').textContent = 'Add Product';
+
+            // Add a few empty spec rows
+            addSpecRow(); addSpecRow(); addSpecRow();
+
+            document.getElementById('productModal').classList.add('active');
+        }
+
+        function editProduct(productId) {
+            const p = allProducts.find(x => x.id === productId);
+            if (!p) return;
+
+            document.getElementById('productEditId').value = p.id;
+            document.getElementById('productName').value = p.name || '';
+            document.getElementById('productSlug').value = p.id;
+            document.getElementById('productSlug').disabled = true;
+            document.getElementById('productBasePrice').value = parseFloat(p.base_price) || '';
+            document.getElementById('productMaterial').value = p.material || '';
+            document.getElementById('productDescription').value = p.description || '';
+            document.getElementById('productShortDesc').value = p.short_description || '';
+            document.getElementById('productIcon').value = p.icon || '';
+            document.getElementById('productBadge').value = p.badge || '';
+            document.getElementById('productStatus').value = p.status || 'active';
+            document.getElementById('productSortOrder').value = p.sort_order || 0;
+            document.getElementById('productModalTitle').textContent = 'Edit Product';
+
+            // Populate specs
+            const container = document.getElementById('specsContainer');
+            container.innerHTML = '';
+            const specs = p.specs || {};
+            Object.entries(specs).forEach(([key, val]) => addSpecRow(key, val));
+            if (Object.keys(specs).length === 0) { addSpecRow(); addSpecRow(); }
+
+            document.getElementById('productModal').classList.add('active');
+        }
+
+        function closeProductModal() {
+            document.getElementById('productModal').classList.remove('active');
+            document.getElementById('productSlug').disabled = false;
+        }
+
+        function addSpecRow(key, value) {
+            const container = document.getElementById('specsContainer');
+            const row = document.createElement('div');
+            row.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px;';
+            row.innerHTML = `
+                <input type="text" class="form-input spec-key" placeholder="Label (e.g. headWeight)" value="${key || ''}" style="flex:1;">
+                <input type="text" class="form-input spec-val" placeholder="Value (e.g. 370g)" value="${value || ''}" style="flex:1;">
+                <button class="btn btn-secondary btn-sm" onclick="this.parentElement.remove()" style="padding:8px 12px;">X</button>
+            `;
+            container.appendChild(row);
+        }
+
+        async function saveProduct() {
+            const editId = document.getElementById('productEditId').value;
+            const slug = document.getElementById('productSlug').value.trim();
+            const name = document.getElementById('productName').value.trim();
+            const basePrice = parseFloat(document.getElementById('productBasePrice').value);
+
+            if (!name || !slug || isNaN(basePrice)) {
+                alert('Name, slug, and base price are required');
+                return;
+            }
+
+            // Collect specs
+            const specs = {};
+            document.querySelectorAll('#specsContainer > div').forEach(row => {
+                const key = row.querySelector('.spec-key').value.trim();
+                const val = row.querySelector('.spec-val').value.trim();
+                if (key && val) specs[key] = val;
+            });
+
+            const body = {
+                name,
+                base_price: basePrice,
+                material: document.getElementById('productMaterial').value.trim() || null,
+                description: document.getElementById('productDescription').value.trim() || null,
+                short_description: document.getElementById('productShortDesc').value.trim() || null,
+                icon: document.getElementById('productIcon').value.trim() || null,
+                badge: document.getElementById('productBadge').value.trim() || null,
+                status: document.getElementById('productStatus').value,
+                sort_order: parseInt(document.getElementById('productSortOrder').value) || 0,
+                specs
+            };
+
+            try {
+                if (editId) {
+                    await supabaseQuery('proto_golf_products', 'PATCH', body, `?id=eq.${encodeURIComponent(editId)}`);
+                } else {
+                    body.id = slug;
+                    body.stock = 0;
+                    await supabaseQuery('proto_golf_products', 'POST', body);
+                }
+
+                closeProductModal();
+                await fetchProducts();
+                renderProductsTable();
+                populateProductDropdowns();
+                alert('Product saved!');
+            } catch (e) {
+                console.error('Save product error:', e);
+                alert('Failed to save product: ' + e.message);
+            }
+        }
+
+        // ============================================
+        // VARIANTS MANAGEMENT
+        // ============================================
+        let currentVariantProductId = null;
+        let currentVariants = [];
+
+        function populateProductDropdowns() {
+            // Variant product selector
+            const variantSelect = document.getElementById('variantProductSelect');
+            if (variantSelect) {
+                variantSelect.innerHTML = allProducts.map(p =>
+                    `<option value="${p.id}">${p.name}</option>`
+                ).join('');
+                if (allProducts.length > 0) {
+                    currentVariantProductId = allProducts[0].id;
+                }
+            }
+
+            // Photo product selector
+            const photoSelect = document.getElementById('photoProduct');
+            if (photoSelect) {
+                photoSelect.innerHTML = allProducts.map(p =>
+                    `<option value="${p.id}">${p.name}</option>`
+                ).join('');
+            }
+        }
+
+        async function loadVariantsForProduct() {
+            const productId = document.getElementById('variantProductSelect').value;
+            currentVariantProductId = productId;
+            if (!productId) return;
+
+            try {
+                currentVariants = await supabaseQuery('proto_golf_variants', 'GET', null,
+                    `?product_id=eq.${encodeURIComponent(productId)}&order=sort_order`);
+                renderVariantsTable();
+            } catch (e) {
+                console.error('Failed to load variants:', e);
+            }
+        }
+
+        function renderVariantsTable() {
+            const table = document.getElementById('variantsTable');
+            if (!currentVariants || currentVariants.length === 0) {
+                table.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--color-steel); padding: 40px;">No variants for this product</td></tr>';
+                return;
+            }
+            table.innerHTML = currentVariants.map(v => `
+                <tr>
+                    <td><strong>${v.finish_name}</strong></td>
+                    <td>${v.shaft_color}</td>
+                    <td>${parseFloat(v.price_addon) > 0 ? '+$' + parseFloat(v.price_addon).toFixed(0) : '-'}</td>
+                    <td>${v.sort_order}</td>
+                    <td>${v.is_default ? '<span class="badge badge-success">Default</span>' : ''}</td>
+                    <td>
+                        <button class="btn btn-secondary btn-sm" onclick="editVariant('${v.id}')" style="margin-right:4px;">Edit</button>
+                        <button class="btn btn-sm" style="background:var(--color-error);color:white;" onclick="deleteVariant('${v.id}')">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openVariantModal() {
+            if (!currentVariantProductId) {
+                alert('Select a product first');
+                return;
+            }
+            document.getElementById('variantEditId').value = '';
+            document.getElementById('variantFinish').value = '';
+            document.getElementById('variantShaft').value = '';
+            document.getElementById('variantPriceAddon').value = '0';
+            document.getElementById('variantSortOrder').value = '0';
+            document.getElementById('variantIsDefault').checked = false;
+            document.getElementById('variantModalTitle').textContent = 'Add Variant';
+            document.getElementById('variantModal').classList.add('active');
+        }
+
+        function editVariant(variantId) {
+            const v = currentVariants.find(x => x.id === variantId);
+            if (!v) return;
+            document.getElementById('variantEditId').value = v.id;
+            document.getElementById('variantFinish').value = v.finish_name;
+            document.getElementById('variantShaft').value = v.shaft_color;
+            document.getElementById('variantPriceAddon').value = parseFloat(v.price_addon) || 0;
+            document.getElementById('variantSortOrder').value = v.sort_order || 0;
+            document.getElementById('variantIsDefault').checked = v.is_default || false;
+            document.getElementById('variantModalTitle').textContent = 'Edit Variant';
+            document.getElementById('variantModal').classList.add('active');
+        }
+
+        function closeVariantModal() {
+            document.getElementById('variantModal').classList.remove('active');
+        }
+
+        async function saveVariant() {
+            const editId = document.getElementById('variantEditId').value;
+            const finish = document.getElementById('variantFinish').value.trim();
+            const shaft = document.getElementById('variantShaft').value.trim();
+
+            if (!finish || !shaft) {
+                alert('Finish name and shaft color are required');
+                return;
+            }
+
+            const body = {
+                finish_name: finish,
+                shaft_color: shaft,
+                price_addon: parseFloat(document.getElementById('variantPriceAddon').value) || 0,
+                sort_order: parseInt(document.getElementById('variantSortOrder').value) || 0,
+                is_default: document.getElementById('variantIsDefault').checked
+            };
+
+            try {
+                if (editId) {
+                    await supabaseQuery('proto_golf_variants', 'PATCH', body, `?id=eq.${editId}`);
+                } else {
+                    body.product_id = currentVariantProductId;
+                    await supabaseQuery('proto_golf_variants', 'POST', body);
+                }
+
+                closeVariantModal();
+                await loadVariantsForProduct();
+                alert('Variant saved!');
+            } catch (e) {
+                console.error('Save variant error:', e);
+                alert('Failed to save variant: ' + e.message);
+            }
+        }
+
+        async function deleteVariant(variantId) {
+            if (!confirm('Delete this variant?')) return;
+            try {
+                await supabaseQuery('proto_golf_variants', 'DELETE', null, `?id=eq.${variantId}`);
+                await loadVariantsForProduct();
+            } catch (e) {
+                alert('Delete failed: ' + e.message);
+            }
+        }
+
+        // ============================================
+        // PHOTOS MANAGEMENT (DB-driven)
+        // ============================================
         let currentPhotos = [];
 
         function updateFileLabel() {
@@ -1318,14 +1791,29 @@
             label.textContent = input.files && input.files[0] ? input.files[0].name : 'No file selected';
         }
 
-        function onPhotoProductChange() {
+        async function onPhotoProductChange() {
             const productId = document.getElementById('photoProduct').value;
             const variantSelect = document.getElementById('photoVariant');
-            const variants = productVariants[productId] || [];
 
-            variantSelect.innerHTML = variants.map(v =>
-                `<option value="${v}">${v}</option>`
-            ).join('');
+            if (!productId) {
+                variantSelect.innerHTML = '';
+                return;
+            }
+
+            // Fetch variants for this product from DB
+            try {
+                const variants = await supabaseQuery('proto_golf_variants', 'GET', null,
+                    `?product_id=eq.${encodeURIComponent(productId)}&order=sort_order`);
+                const variantKeys = variants.map(v => `${v.finish_name}|${v.shaft_color}`);
+                // Deduplicate
+                const unique = [...new Set(variantKeys)];
+                variantSelect.innerHTML = unique.map(v =>
+                    `<option value="${v}">${v}</option>`
+                ).join('');
+            } catch (e) {
+                console.error('Failed to load photo variants:', e);
+                variantSelect.innerHTML = '';
+            }
 
             loadProductImages();
         }
@@ -1475,10 +1963,7 @@
             }
         }
 
-        // Initialize variant dropdown on load
-        document.addEventListener('DOMContentLoaded', () => {
-            onPhotoProductChange();
-        });
+        // Photo/variant dropdowns are populated after initDashboard() via populateProductDropdowns()
 
         function exportOrders() {
             if (orders.length === 0) {

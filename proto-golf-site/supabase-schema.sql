@@ -10,15 +10,38 @@ CREATE TABLE proto_golf_products (
     base_price DECIMAL(10,2) NOT NULL,
     stock INTEGER NOT NULL DEFAULT 0,
     status TEXT DEFAULT 'active' CHECK (status IN ('active', 'discontinued', 'coming_soon')),
+    description TEXT,
+    short_description TEXT,
+    material TEXT,
+    specs JSONB DEFAULT '{}',
+    hero_image TEXT,
+    icon TEXT,
+    sort_order INTEGER DEFAULT 0,
+    badge TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Insert initial products
-INSERT INTO proto_golf_products (id, name, base_price, stock, status) VALUES
-    ('rough-mill', 'Rough Mill', 399.00, 20, 'active'),
-    ('centre-blade', 'Centre Blade', 449.00, 15, 'active'),
-    ('long-neck-blade', 'Long Neck Blade', 429.00, 0, 'coming_soon');
+INSERT INTO proto_golf_products (id, name, base_price, stock, status, description, short_description, material, specs, hero_image, icon, sort_order, badge) VALUES
+    ('rough-mill', 'Rough Mill', 399.00, 20, 'active',
+     'The Rough Mill is our signature putter, CNC-milled from solid 304 stainless steel stock. The raw machined texture provides a classic, industrial aesthetic while the precision engineering ensures consistent performance on the green.',
+     '304 Stainless Steel CNC milled. 370g head. Raw machined texture.',
+     '304 Stainless Steel',
+     '{"headWeight":"370g","shaftWeight":"110g chrome steel","lie":"72°","loft":"3°","length":"35\"","grip":"SuperStroke Pistol 2.0 Style"}'::jsonb,
+     'assets/putters/polished-rough-mill-1.png', 'R', 1, 'In Stock'),
+    ('centre-blade', 'Centre Blade', 449.00, 15, 'active',
+     'The Centre Blade features our zero torque design, CNC-milled from 1045 carbon steel. The gun blue finish provides a classic, refined look while the white sight line paint fill offers precise alignment. All-black shaft and grip for a sleek, unified appearance.',
+     '1045 Carbon Steel. 360g head. Zero torque design with gun blue finish.',
+     '1045 Carbon Steel',
+     '{"headWeight":"360g","shaftWeight":"110g chrome steel","lie":"71°","loft":"3°","length":"35\"","grip":"SuperStroke Pistol 2.0 Style (all black)","finish":"Gun Blue","paintFill":"White sight line","feature":"Zero torque design"}'::jsonb,
+     'assets/putters/polished-centre-blade-1.png', 'C', 2, 'New'),
+    ('long-neck-blade', 'Long Neck Blade', 429.00, 0, 'coming_soon',
+     'The Long Neck Blade features an extended hosel design optimized for players with an arc putting stroke. The extended neck provides improved balance and a more natural feel through the stroke. CNC-milled from premium materials for exceptional quality and consistency.',
+     'Extended hosel design for arc putting strokes. Premium construction.',
+     '304 Stainless Steel',
+     '{"headWeight":"365g","shaftWeight":"110g chrome steel","lie":"71°","loft":"3°","length":"35\"","grip":"SuperStroke Pistol 2.0 Style","feature":"Extended hosel for arc strokes"}'::jsonb,
+     'assets/putters/stainless-long-neck-blade-1.png', 'L', 3, 'Coming Soon');
 
 -- ============================================
 -- ORDERS TABLE
@@ -153,6 +176,44 @@ CREATE INDEX idx_product_images_product ON proto_golf_product_images(product_id)
 CREATE INDEX idx_product_images_variant ON proto_golf_product_images(product_id, variant_key);
 
 -- ============================================
+-- VARIANTS TABLE (Finish + Shaft combos per product)
+-- ============================================
+CREATE TABLE proto_golf_variants (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    product_id TEXT NOT NULL REFERENCES proto_golf_products(id),
+    finish_name TEXT NOT NULL,
+    shaft_color TEXT NOT NULL,
+    price_addon DECIMAL(10,2) DEFAULT 0,
+    sort_order INTEGER DEFAULT 0,
+    is_default BOOLEAN DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_variants_product ON proto_golf_variants(product_id);
+
+-- Seed variants for Rough Mill (4 finishes x 2 shafts = 8 variants)
+INSERT INTO proto_golf_variants (product_id, finish_name, shaft_color, price_addon, sort_order, is_default) VALUES
+    ('rough-mill', 'Raw', 'Chrome', 0, 1, true),
+    ('rough-mill', 'Raw', 'Black', 0, 2, false),
+    ('rough-mill', 'Brushed', 'Chrome', 50, 3, false),
+    ('rough-mill', 'Brushed', 'Black', 50, 4, false),
+    ('rough-mill', 'Black DLC', 'Chrome', 100, 5, false),
+    ('rough-mill', 'Black DLC', 'Black', 100, 6, false),
+    ('rough-mill', 'Chrome', 'Chrome', 75, 7, false),
+    ('rough-mill', 'Chrome', 'Black', 75, 8, false);
+
+-- Seed variants for Centre Blade (1 finish x 1 shaft = 1 variant)
+INSERT INTO proto_golf_variants (product_id, finish_name, shaft_color, price_addon, sort_order, is_default) VALUES
+    ('centre-blade', 'Gun Blue', 'Black', 0, 1, true);
+
+-- Seed variants for Long Neck Blade (2 finishes x 2 shafts = 4 variants)
+INSERT INTO proto_golf_variants (product_id, finish_name, shaft_color, price_addon, sort_order, is_default) VALUES
+    ('long-neck-blade', 'Raw', 'Chrome', 0, 1, true),
+    ('long-neck-blade', 'Raw', 'Black', 0, 2, false),
+    ('long-neck-blade', 'Brushed', 'Chrome', 25, 3, false),
+    ('long-neck-blade', 'Brushed', 'Black', 25, 4, false);
+
+-- ============================================
 -- ROW LEVEL SECURITY (RLS)
 -- ============================================
 
@@ -163,6 +224,7 @@ ALTER TABLE proto_golf_analytics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE proto_golf_pickup_slots ENABLE ROW LEVEL SECURITY;
 ALTER TABLE proto_golf_email_log ENABLE ROW LEVEL SECURITY;
 ALTER TABLE proto_golf_product_images ENABLE ROW LEVEL SECURITY;
+ALTER TABLE proto_golf_variants ENABLE ROW LEVEL SECURITY;
 
 -- Products: Anyone can read, only authenticated (admin) can modify
 CREATE POLICY "Products are viewable by everyone" ON proto_golf_products
@@ -200,6 +262,13 @@ CREATE POLICY "Pickup slots viewable by everyone" ON proto_golf_pickup_slots
     FOR SELECT USING (true);
 
 CREATE POLICY "Pickup slots editable by authenticated" ON proto_golf_pickup_slots
+    FOR ALL USING (auth.role() = 'authenticated');
+
+-- Variants: Anyone can read, authenticated can modify
+CREATE POLICY "Variants are viewable by everyone" ON proto_golf_variants
+    FOR SELECT USING (true);
+
+CREATE POLICY "Variants are editable by authenticated users" ON proto_golf_variants
     FOR ALL USING (auth.role() = 'authenticated');
 
 -- ============================================

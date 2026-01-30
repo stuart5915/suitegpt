@@ -52,53 +52,7 @@
     <!-- Products Grid -->
     <main class="shop-content">
         <div class="products-grid" id="productsGrid">
-            <!-- Rough Mill -->
-            <div class="product-card" onclick="location.href='products/rough-mill.html'">
-                <div class="product-image">
-                    <img src="assets/putters/polished-rough-mill-1.png" alt="Rough Mill Putter">
-                </div>
-                <div class="product-info">
-                    <div class="product-brand">Proto Golf</div>
-                    <h3 class="product-name">Rough Mill</h3>
-                    <p class="product-desc">304 Stainless Steel CNC milled. 370g head. Raw machined texture.</p>
-                    <div class="product-footer">
-                        <span class="product-price">$399</span>
-                        <span class="product-badge">In Stock</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Centre Blade -->
-            <div class="product-card" onclick="location.href='products/centre-blade.html'">
-                <div class="product-image">
-                    <img src="assets/putters/polished-centre-blade-1.png" alt="Centre Blade Putter">
-                </div>
-                <div class="product-info">
-                    <div class="product-brand">Proto Golf</div>
-                    <h3 class="product-name">Centre Blade</h3>
-                    <p class="product-desc">1045 Carbon Steel. 360g head. Zero torque design with gun blue finish.</p>
-                    <div class="product-footer">
-                        <span class="product-price">$449</span>
-                        <span class="product-badge">New</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Long Neck Blade -->
-            <div class="product-card" onclick="location.href='products/long-neck-blade.html'">
-                <div class="product-image">
-                    <img src="assets/putters/stainless-long-neck-blade-1.png" alt="Long Neck Blade Putter">
-                </div>
-                <div class="product-info">
-                    <div class="product-brand">Proto Golf</div>
-                    <h3 class="product-name">Long Neck Blade</h3>
-                    <p class="product-desc">Extended hosel design for arc putting strokes. Premium construction.</p>
-                    <div class="product-footer">
-                        <span class="product-price">$429</span>
-                        <span class="product-badge">Coming Soon</span>
-                    </div>
-                </div>
-            </div>
+            <div style="text-align: center; color: #999; padding: 40px; grid-column: 1 / -1;">Loading products...</div>
         </div>
     </main>
 
@@ -148,9 +102,9 @@
                     <h4>Shop</h4>
                     <ul class="footer-links">
                         <li><a href="shop.html">All Products</a></li>
-                        <li><a href="products/rough-mill.html">Rough Mill</a></li>
-                        <li><a href="products/centre-blade.html">Centre Blade</a></li>
-                        <li><a href="products/long-neck-blade.html">Long Neck Blade</a></li>
+                        <li><a href="products/product.html?id=rough-mill">Rough Mill</a></li>
+                        <li><a href="products/product.html?id=centre-blade">Centre Blade</a></li>
+                        <li><a href="products/product.html?id=long-neck-blade">Long Neck Blade</a></li>
                     </ul>
                 </div>
 
@@ -180,12 +134,17 @@
     </footer>
 
     <script>
+        // Supabase config
+        const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
+
         // Cart from localStorage
         let cart = JSON.parse(localStorage.getItem('proto_cart')) || [];
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             updateCartUI();
+            loadShopProducts();
 
             // Check for Stripe return
             const params = new URLSearchParams(window.location.search);
@@ -196,6 +155,46 @@
                 showToast('Order confirmed! Thank you for your purchase.');
             }
         });
+
+        async function loadShopProducts() {
+            const grid = document.getElementById('productsGrid');
+            try {
+                const resp = await fetch(`${SUPABASE_URL}/rest/v1/proto_golf_products?status=neq.discontinued&order=sort_order,name`, {
+                    headers: { 'apikey': SUPABASE_KEY }
+                });
+                const products = await resp.json();
+
+                if (!Array.isArray(products) || products.length === 0) {
+                    grid.innerHTML = '<div style="text-align: center; color: #999; padding: 40px; grid-column: 1 / -1;">No products available</div>';
+                    return;
+                }
+
+                grid.innerHTML = products.map(p => {
+                    const heroImg = p.hero_image || 'assets/putters/polished-rough-mill-1.png';
+                    const badge = p.badge || (p.status === 'coming_soon' ? 'Coming Soon' : 'In Stock');
+                    const shortDesc = p.short_description || '';
+                    return `
+                        <div class="product-card" onclick="location.href='products/product.html?id=${encodeURIComponent(p.id)}'">
+                            <div class="product-image">
+                                <img src="${heroImg}" alt="${p.name} Putter">
+                            </div>
+                            <div class="product-info">
+                                <div class="product-brand">Proto Golf</div>
+                                <h3 class="product-name">${p.name}</h3>
+                                <p class="product-desc">${shortDesc}</p>
+                                <div class="product-footer">
+                                    <span class="product-price">$${parseFloat(p.base_price).toFixed(0)}</span>
+                                    <span class="product-badge">${badge}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (e) {
+                console.error('Failed to load products:', e);
+                grid.innerHTML = '<div style="text-align: center; color: #999; padding: 40px; grid-column: 1 / -1;">Failed to load products</div>';
+            }
+        }
 
         function removeFromCart(index) {
             cart.splice(index, 1);
