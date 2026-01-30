@@ -259,21 +259,48 @@ function renderProduct() {
 
 function updateGallery() {
     const key = selectedFinish.name + '|' + selectedShaft;
-    // Prefer DB images, then fallback to hero image
     currentGallery = dbImages[key] || [];
 
-    if (currentGallery.length === 0 && product.hero_image) {
-        const src = product.hero_image.startsWith('http') ? product.hero_image : `../${product.hero_image}`;
-        currentGallery = [src];
+    const mainImg = document.getElementById('mainImg');
+    const thumbContainer = document.getElementById('thumbnails');
+
+    if (currentGallery.length === 0) {
+        // Show placeholder when no images exist for this variant
+        if (mainImg) {
+            mainImg.style.display = 'none';
+            let placeholder = document.getElementById('noImagePlaceholder');
+            if (!placeholder) {
+                placeholder = document.createElement('div');
+                placeholder.id = 'noImagePlaceholder';
+                placeholder.style.cssText = 'width:100%;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#1a1a1a;border:2px dashed #333;border-radius:12px;color:#666;font-family:inherit;';
+                placeholder.innerHTML = `
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:12px">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <polyline points="21 15 16 10 5 21"/>
+                    </svg>
+                    <span style="font-size:14px;font-weight:600;color:#555">No images for this variant</span>
+                    <span style="font-size:12px;color:#444;margin-top:4px">${selectedFinish.name} · ${selectedShaft}</span>
+                `;
+                mainImg.parentNode.insertBefore(placeholder, mainImg);
+            } else {
+                placeholder.style.display = 'flex';
+                placeholder.querySelector('span:last-child').textContent = `${selectedFinish.name} · ${selectedShaft}`;
+            }
+        }
+        if (thumbContainer) thumbContainer.innerHTML = '';
+        return;
     }
 
-    const mainImg = document.getElementById('mainImg');
-    if (mainImg && currentGallery.length > 0) {
+    // Has images — hide placeholder, show main image
+    if (mainImg) {
+        mainImg.style.display = '';
+        const placeholder = document.getElementById('noImagePlaceholder');
+        if (placeholder) placeholder.style.display = 'none';
         mainImg.src = currentGallery[0];
     }
 
-    const thumbContainer = document.getElementById('thumbnails');
-    if (thumbContainer && currentGallery.length > 0) {
+    if (thumbContainer) {
         thumbContainer.innerHTML = currentGallery.map((src, i) =>
             `<div class="product-thumbnail${i === 0 ? ' active' : ''}" onclick="selectThumb(this, ${i})" style="background: url('${src}') center/cover;"></div>`
         ).join('');
