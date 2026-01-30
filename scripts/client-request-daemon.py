@@ -207,8 +207,8 @@ CLIENT REQUEST:
 
         log(f"Running Claude CLI in {cwd}")
 
-        # Pipe prompt to claude CLI
-        cmd = f'Get-Content "{prompt_file}" | claude'
+        # Pipe prompt to claude CLI (--print for non-interactive, --dangerously-skip-permissions to auto-approve tool use)
+        cmd = f'Get-Content "{prompt_file}" | claude --print --dangerously-skip-permissions'
         result = subprocess.run(
             ['powershell', '-Command', cmd],
             capture_output=True,
