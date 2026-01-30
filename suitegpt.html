@@ -22322,9 +22322,10 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
                     throw new Error('HTTP ' + resp.status + ': ' + errText);
                 }
 
-                btn.textContent = 'Sent to Claude!';
-                btn.style.background = '#22c55e';
-                setTimeout(loadClientRequests, 1500);
+                btn.textContent = 'Sent — waiting for daemon...';
+                btn.style.background = '#3b82f6';
+                // Start polling for status updates
+                pollClientRequestStatus(id, btn);
             } catch (e) {
                 btn.textContent = 'Failed — try again';
                 btn.style.background = '#ef4444';
@@ -22332,6 +22333,38 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
                 console.error('Approve error:', e);
                 alert('Failed to approve: ' + e.message);
             }
+        }
+
+        function pollClientRequestStatus(id, btn) {
+            var dots = 0;
+            var stages = {
+                'approved': { label: 'Queued — waiting for daemon', color: '#3b82f6' },
+                'processing': { label: 'Claude is working', color: '#f59e0b' },
+                'completed': { label: 'Done — changes pushed!', color: '#22c55e' },
+                'failed': { label: 'Failed', color: '#ef4444' }
+            };
+            var pollInterval = setInterval(async function() {
+                dots = (dots + 1) % 4;
+                try {
+                    var resp = await fetch(SUPABASE_URL + '/rest/v1/factory_proposals?id=eq.' + id + '&select=status,claude_output,error_message', {
+                        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY }
+                    });
+                    var rows = await resp.json();
+                    if (!rows || !rows.length) return;
+                    var r = rows[0];
+                    var stage = stages[r.status] || stages['approved'];
+                    btn.textContent = stage.label + '.'.repeat(dots);
+                    btn.style.background = stage.color;
+
+                    if (r.status === 'completed' || r.status === 'failed') {
+                        clearInterval(pollInterval);
+                        btn.textContent = stage.label;
+                        setTimeout(loadClientRequests, 2000);
+                    }
+                } catch (e) {
+                    // keep polling
+                }
+            }, 3000);
         }
 
         async function rejectClientRequest(id) {

@@ -241,8 +241,10 @@ CLIENT REQUEST:
             if changed_files:
                 log(f"Changes detected, committing:\n{changed_files[:500]}")
                 commit_msg = f"[Client Request] {title}\n\nApp: {client_app}\nRequest ID: {record_id}"
+                # Only stage the project directory (not the whole repo)
+                add_path = project_dir if project_dir else '.'
                 subprocess.run(
-                    ['git', 'add', '-A'],
+                    ['git', 'add', add_path],
                     cwd=str(REPO_PATH)
                 )
                 subprocess.run(
