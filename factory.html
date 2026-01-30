@@ -7361,8 +7361,8 @@
                     <input type="text" id="crNotes-${r.id}" placeholder="Add notes..." style="width: 100%; padding: 8px 10px; background: var(--bg-deep); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 0.85rem;">
                 </div>
                 <div style="display: flex; gap: 8px;">
-                    <button onclick="approveClientRequest('${r.id}')" style="padding: 8px 20px; border-radius: 8px; border: none; background: #22c55e; color: white; font-weight: 600; cursor: pointer;">Approve</button>
-                    <button onclick="rejectClientRequest('${r.id}')" style="padding: 8px 20px; border-radius: 8px; border: none; background: #ef4444; color: white; font-weight: 600; cursor: pointer;">Reject</button>
+                    <button id="crApproveBtn-${r.id}" onclick="approveClientRequest('${r.id}')" style="padding: 10px 24px; border-radius: 8px; border: none; background: #22c55e; color: white; font-weight: 600; cursor: pointer; font-size: 0.9rem;">Send to Claude</button>
+                    <button onclick="rejectClientRequest('${r.id}')" style="padding: 10px 24px; border-radius: 8px; border: none; background: rgba(239,68,68,0.15); color: #ef4444; font-weight: 600; cursor: pointer; font-size: 0.9rem;">Reject</button>
                 </div>
                 ` : ''}
 
@@ -7391,6 +7391,7 @@
         async function approveClientRequest(id) {
             const promptEl = document.getElementById(`crPrompt-${id}`);
             const notesEl = document.getElementById(`crNotes-${id}`);
+            const btn = document.getElementById(`crApproveBtn-${id}`);
             const prompt = promptEl ? promptEl.value : '';
             const notes = notesEl ? notesEl.value : '';
 
@@ -7398,6 +7399,10 @@
                 alert('Prompt cannot be empty.');
                 return;
             }
+
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+            btn.style.background = '#3b82f6';
 
             try {
                 await fetch(`${SUPABASE_URL}/rest/v1/factory_proposals?id=eq.${id}`, {
@@ -7414,9 +7419,14 @@
                         notes: notes || null
                     })
                 });
-                loadClientRequests();
+
+                btn.textContent = 'Sent to Claude!';
+                btn.style.background = '#22c55e';
+                setTimeout(() => loadClientRequests(), 1500);
             } catch (e) {
-                alert('Failed to approve request.');
+                btn.textContent = 'Failed — try again';
+                btn.style.background = '#ef4444';
+                btn.disabled = false;
                 console.error(e);
             }
         }
