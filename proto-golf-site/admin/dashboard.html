@@ -950,7 +950,7 @@
 
                         <div style="margin-bottom: 24px;">
                             <label class="form-label">Upload New Image</label>
-                            <input type="file" accept="image/*" id="photoFileInput" style="display: none;" onchange="updateFileLabel()">
+                            <input type="file" accept="image/*" id="photoFileInput" style="display: none;" onchange="updateFileLabel()" multiple>
                             <div style="display: flex; gap: 12px; align-items: center;">
                                 <button class="btn btn-secondary btn-sm" onclick="document.getElementById('photoFileInput').click()" style="white-space: nowrap;" id="chooseFileBtn">Choose File</button>
                                 <span style="color: var(--color-steel); font-size: 0.875rem; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" id="fileLabel">No file selected</span>
@@ -1789,7 +1789,13 @@
         function updateFileLabel() {
             const input = document.getElementById('photoFileInput');
             const label = document.getElementById('fileLabel');
-            label.textContent = input.files && input.files[0] ? input.files[0].name : 'No file selected';
+            if (!input.files || input.files.length === 0) {
+                label.textContent = 'No file selected';
+            } else if (input.files.length === 1) {
+                label.textContent = input.files[0].name;
+            } else {
+                label.textContent = input.files.length + ' files selected';
+            }
         }
 
         async function onPhotoProductChange() {
@@ -1870,8 +1876,8 @@
             const variantKey = document.getElementById('photoVariant').value;
             const btn = document.getElementById('uploadPhotoBtn');
 
-            if (!fileInput.files || !fileInput.files[0]) {
-                alert('Please select an image file');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Please select image file(s)');
                 return;
             }
 
@@ -1880,46 +1886,62 @@
                 return;
             }
 
-            const file = fileInput.files[0];
-            btn.textContent = 'Uploading...';
+            const files = Array.from(fileInput.files);
+            const total = files.length;
+            btn.textContent = `Uploading 0/${total}...`;
             btn.disabled = true;
 
-            try {
-                // Convert to base64
-                const base64 = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
-                });
+            let uploaded = 0;
+            let failed = 0;
 
-                const token = sessionStorage.getItem('proto_admin_auth');
-                const response = await fetch('/api/proto-upload-image', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        image_base64: base64,
-                        product_id: productId,
-                        variant_key: variantKey,
-                        sort_order: currentPhotos.length
-                    })
-                });
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                btn.textContent = `Uploading ${i + 1}/${total}...`;
 
-                const data = await response.json();
+                try {
+                    const base64 = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                    });
 
-                if (data.success) {
-                    fileInput.value = '';
-                    await loadProductImages();
-                    alert('Image uploaded successfully!');
-                } else {
-                    alert('Upload failed: ' + (data.error || 'Unknown error'));
+                    const token = sessionStorage.getItem('proto_admin_auth');
+                    const response = await fetch('/api/proto-upload-image', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            image_base64: base64,
+                            product_id: productId,
+                            variant_key: variantKey,
+                            sort_order: currentPhotos.length + uploaded
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        uploaded++;
+                    } else {
+                        failed++;
+                        console.error('Upload failed for', file.name, data.error);
+                    }
+                } catch (e) {
+                    failed++;
+                    console.error('Upload error for', file.name, e);
                 }
-            } catch (e) {
-                console.error('Upload error:', e);
-                alert('Upload failed: ' + e.message);
+            }
+
+            fileInput.value = '';
+            document.getElementById('fileLabel').textContent = 'No file selected';
+            await loadProductImages();
+
+            if (failed === 0) {
+                alert(`${uploaded} image${uploaded !== 1 ? 's' : ''} uploaded successfully!`);
+            } else {
+                alert(`${uploaded} uploaded, ${failed} failed.`);
             }
 
             btn.textContent = 'Upload';
