@@ -28206,7 +28206,7 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
             openMobileAppView(pendingAppLaunch.key, pendingAppLaunch.url, pendingAppLaunch.name);
         }
 
-        function openMobileAppView(appKey, url, name) {
+        async function openMobileAppView(appKey, url, name) {
             const app = SUITE_APPS[appKey];
             const container = document.getElementById('mobileAppContainer');
             const frame = document.getElementById('mobileAppFrame');
@@ -28237,8 +28237,24 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
             container.style.left = '50%';
             container.style.transform = 'translate(-50%, -50%)';
 
+            // Build URL with auth tokens for same-domain apps
+            let finalUrl = url;
+            if (supabaseClient) {
+                try {
+                    const { data: { session } } = await supabaseClient.auth.getSession();
+                    if (session?.access_token) {
+                        const fullUrl = new URL(url, window.location.origin);
+                        fullUrl.searchParams.set('suite_token', session.access_token);
+                        fullUrl.searchParams.set('suite_refresh', session.refresh_token);
+                        finalUrl = fullUrl.toString();
+                    }
+                } catch (e) {
+                    console.log('Could not get session for app:', e);
+                }
+            }
+
             // Load the app
-            frame.src = url;
+            frame.src = finalUrl;
             container.classList.add('active');
 
             // Initialize dragging
@@ -28595,13 +28611,13 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
                 addBtn.classList.remove('added');
             }
 
-            // Build URL with auth token for cross-domain apps
+            // Build URL with auth token for apps
             let finalUrl = appUrl;
-            if (appUrl.startsWith('http') && supabaseClient) {
+            if (supabaseClient) {
                 try {
                     const { data: { session } } = await supabaseClient.auth.getSession();
                     if (session?.access_token) {
-                        const url = new URL(appUrl);
+                        const url = new URL(appUrl, window.location.origin);
                         url.searchParams.set('suite_token', session.access_token);
                         url.searchParams.set('suite_refresh', session.refresh_token);
                         finalUrl = url.toString();
