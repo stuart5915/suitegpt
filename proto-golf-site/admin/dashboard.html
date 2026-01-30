@@ -659,6 +659,7 @@
                     <li><a href="#" onclick="showSection('products', event)">Products</a></li>
                     <li><a href="#" onclick="showSection('variants', event)">Variants</a></li>
                     <li><a href="#" onclick="showSection('photos', event)">Photos</a></li>
+                    <li><a href="#" onclick="showSection('bgremover', event)">BG Remover</a></li>
                     <li style="margin-top: 24px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.1);">
                         <a href="../index.html" target="_blank">View Site ↗</a>
                     </li>
@@ -965,6 +966,68 @@
                         </div>
                     </div>
                 </div>
+            <!-- BG Remover Section -->
+            <div class="content-section" id="section-bgremover">
+                <div class="main-header">
+                    <h1>Background Remover</h1>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-header">
+                        <h3 class="section-title">Remove & Replace Backgrounds</h3>
+                        <button class="btn btn-secondary btn-sm" id="bgResetBtn" style="display:none;" onclick="bgReset()">Start Over</button>
+                    </div>
+                    <div style="padding: 24px; max-width: 600px;">
+                        <!-- Step 1: Background color -->
+                        <div style="margin-bottom: 24px;">
+                            <label class="form-label">Background Color</label>
+                            <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;" id="bgSwatches">
+                                <div class="bg-swatch active" data-bg="#ffffff" style="background:#ffffff; width:40px; height:40px; border-radius:8px; border:2px solid var(--color-ash); cursor:pointer;" title="White"></div>
+                                <div class="bg-swatch" data-bg="#111111" style="background:#111111; width:40px; height:40px; border-radius:8px; border:2px solid var(--color-ash); cursor:pointer;" title="Black"></div>
+                                <div class="bg-swatch" data-bg="transparent" style="background:repeating-conic-gradient(#d4d4d4 0% 25%,#fff 0% 50%) 0 0/8px 8px; width:40px; height:40px; border-radius:8px; border:2px solid var(--color-ash); cursor:pointer;" title="Transparent"></div>
+                                <div class="bg-swatch" data-bg="#d4d4d8" style="background:#d4d4d8; width:40px; height:40px; border-radius:8px; border:2px solid var(--color-ash); cursor:pointer;" title="Light Gray"></div>
+                                <div class="bg-swatch" data-bg="#fef3c7" style="background:#fef3c7; width:40px; height:40px; border-radius:8px; border:2px solid var(--color-ash); cursor:pointer;" title="Warm Cream"></div>
+                                <div style="position:relative; width:40px; height:40px; border-radius:8px; border:2px solid var(--color-ash); overflow:hidden; cursor:pointer;" title="Custom">
+                                    <input type="color" id="bgCustomColor" value="#6d28d9" style="position:absolute; inset:-4px; width:calc(100% + 8px); height:calc(100% + 8px); border:none; cursor:pointer;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Upload -->
+                        <div style="margin-bottom: 24px;">
+                            <label class="form-label">Upload Photos</label>
+                            <input type="file" accept="image/jpeg,image/png,image/webp" multiple id="bgFileInput" style="display:none;" onchange="bgHandleFiles(this.files)">
+                            <div id="bgUploadArea" style="border: 2px dashed var(--color-ash); border-radius: 12px; padding: 32px 20px; text-align: center; cursor: pointer; transition: all 0.2s;" onclick="document.getElementById('bgFileInput').click()">
+                                <div style="font-size: 24px; margin-bottom: 8px; opacity: 0.5;">+</div>
+                                <div style="font-size: 14px; font-weight: 600; color: var(--color-steel);">Drop photos here or click to upload</div>
+                                <div style="font-size: 12px; color: var(--color-silver); margin-top: 4px;">JPG, PNG, or WebP — select multiple for batch</div>
+                                <div style="font-size: 13px; font-weight: 600; color: var(--color-ink); margin-top: 8px;" id="bgFileCount"></div>
+                            </div>
+                        </div>
+
+                        <!-- Process button -->
+                        <button class="btn btn-primary" style="width: 100%;" id="bgProcessBtn" disabled onclick="bgProcess()">Remove Backgrounds</button>
+
+                        <!-- Progress -->
+                        <div id="bgProgress" style="display: none; margin-top: 20px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                                <span style="font-size: 13px; font-weight: 600;" id="bgProgressLabel">Processing...</span>
+                            </div>
+                            <div style="height: 6px; background: var(--color-mist); border-radius: 3px; overflow: hidden;">
+                                <div id="bgProgressBar" style="height: 100%; width: 0%; background: var(--color-ink); border-radius: 3px; transition: width 0.3s;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Results -->
+                        <div id="bgResults" style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px;"></div>
+
+                        <!-- Download All -->
+                        <div id="bgBulkActions" style="display: none; margin-top: 16px;">
+                            <button class="btn btn-primary" style="width: 100%;" id="bgDownloadAllBtn" onclick="bgDownloadAll()">Download All as ZIP</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
             </div>
         </main>
     </div>
@@ -2085,6 +2148,185 @@
             a.href = url;
             a.download = `proto-golf-orders-${new Date().toISOString().split('T')[0]}.csv`;
             a.click();
+        }
+
+        // ============================================
+        // BG REMOVER
+        // ============================================
+        let bgSelectedFiles = [];
+        let bgCurrentBg = '#ffffff';
+        let bgResultsList = [];
+
+        // Swatch clicks
+        document.getElementById('bgSwatches').addEventListener('click', e => {
+            const swatch = e.target.closest('[data-bg]');
+            if (!swatch) return;
+            document.querySelectorAll('#bgSwatches .bg-swatch, #bgSwatches [data-bg]').forEach(s => s.style.borderColor = 'var(--color-ash)');
+            swatch.style.borderColor = 'var(--color-ink)';
+            bgCurrentBg = swatch.dataset.bg;
+        });
+
+        document.getElementById('bgCustomColor').addEventListener('input', function() {
+            document.querySelectorAll('#bgSwatches .bg-swatch').forEach(s => s.style.borderColor = 'var(--color-ash)');
+            this.parentElement.style.borderColor = 'var(--color-ink)';
+            bgCurrentBg = this.value;
+        });
+
+        // Drag and drop
+        const bgUploadArea = document.getElementById('bgUploadArea');
+        bgUploadArea.addEventListener('dragover', e => { e.preventDefault(); bgUploadArea.style.borderColor = 'var(--color-ink)'; });
+        bgUploadArea.addEventListener('dragleave', () => { bgUploadArea.style.borderColor = 'var(--color-ash)'; });
+        bgUploadArea.addEventListener('drop', e => {
+            e.preventDefault();
+            bgUploadArea.style.borderColor = 'var(--color-ash)';
+            bgHandleFiles(e.dataTransfer.files);
+        });
+
+        function bgHandleFiles(fileList) {
+            const valid = [];
+            for (const f of fileList) {
+                if (f.type.match(/^image\/(jpeg|png|webp)$/)) valid.push(f);
+            }
+            if (valid.length === 0) return;
+            bgSelectedFiles = valid;
+            document.getElementById('bgFileCount').textContent = valid.length === 1 ? '1 photo selected' : valid.length + ' photos selected';
+            bgUploadArea.style.borderColor = 'var(--color-ink)';
+            bgUploadArea.style.borderStyle = 'solid';
+            document.getElementById('bgProcessBtn').disabled = false;
+        }
+
+        function bgFileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(new Error('Failed to read file'));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function bgProcess() {
+            if (bgSelectedFiles.length === 0) return;
+
+            const btn = document.getElementById('bgProcessBtn');
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+            document.getElementById('bgProgress').style.display = 'block';
+            document.getElementById('bgResults').innerHTML = '';
+            document.getElementById('bgBulkActions').style.display = 'none';
+            document.getElementById('bgResetBtn').style.display = '';
+            bgResultsList = [];
+
+            const total = bgSelectedFiles.length;
+            let completed = 0;
+            let failed = 0;
+
+            for (let i = 0; i < total; i++) {
+                const file = bgSelectedFiles[i];
+                const baseName = file.name.replace(/\.[^.]+$/, '');
+
+                document.getElementById('bgProgressLabel').textContent = `Processing ${i + 1} of ${total}: ${file.name}`;
+                document.getElementById('bgProgressBar').style.width = Math.round((i / total) * 100) + '%';
+
+                try {
+                    const base64 = await bgFileToBase64(file);
+                    const resp = await fetch('/api/remove-bg', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ image: base64, background: bgCurrentBg })
+                    });
+
+                    if (!resp.ok) {
+                        const err = await resp.json().catch(() => ({}));
+                        throw new Error(err.error || 'Server error ' + resp.status);
+                    }
+
+                    const data = await resp.json();
+                    const name = baseName + '.png';
+                    bgResultsList.push({ name, dataUrl: data.image });
+                    bgAddResultCard(name, data.image, bgResultsList.length - 1);
+                    completed++;
+                } catch (err) {
+                    failed++;
+                    bgAddErrorCard(file.name, err.message);
+                }
+
+                document.getElementById('bgProgressBar').style.width = Math.round(((completed + failed) / total) * 100) + '%';
+            }
+
+            document.getElementById('bgProgressLabel').textContent = `Done — ${completed} of ${total} succeeded` + (failed > 0 ? ` (${failed} failed)` : '');
+            document.getElementById('bgProgressBar').style.width = '100%';
+            btn.textContent = 'Remove Backgrounds';
+            btn.disabled = false;
+
+            if (bgResultsList.length > 1) {
+                document.getElementById('bgBulkActions').style.display = 'block';
+            }
+        }
+
+        function bgAddResultCard(name, dataUrl, index) {
+            const card = document.createElement('div');
+            card.className = 'section-card';
+            card.innerHTML = `
+                <img src="${dataUrl}" alt="${name}" style="width: 100%; max-height: 300px; object-fit: contain; display: block; background: repeating-conic-gradient(var(--color-mist) 0% 25%, var(--color-paper) 0% 50%) 0 0/16px 16px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-top: 1px solid var(--color-ash);">
+                    <span style="font-size: 13px; font-weight: 600; color: var(--color-steel); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; margin-right: 12px;">${name}</span>
+                    <button class="btn btn-primary btn-sm" onclick="bgDownloadOne(${index})">Download</button>
+                </div>
+            `;
+            document.getElementById('bgResults').appendChild(card);
+        }
+
+        function bgAddErrorCard(fileName, errMsg) {
+            const card = document.createElement('div');
+            card.className = 'section-card';
+            card.style.borderColor = 'var(--color-error)';
+            card.innerHTML = `<div style="padding: 16px; color: var(--color-error); font-size: 13px;">${fileName} — failed: ${errMsg}</div>`;
+            document.getElementById('bgResults').appendChild(card);
+        }
+
+        function bgDownloadOne(index) {
+            const r = bgResultsList[index];
+            const a = document.createElement('a');
+            a.href = r.dataUrl;
+            a.download = r.name;
+            a.click();
+        }
+
+        async function bgDownloadAll() {
+            if (bgResultsList.length < 2) return;
+            const btn = document.getElementById('bgDownloadAllBtn');
+            btn.disabled = true;
+            btn.textContent = 'Creating ZIP...';
+
+            const { default: JSZip } = await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm');
+            const zip = new JSZip();
+            for (const r of bgResultsList) {
+                const base64 = r.dataUrl.split(',')[1];
+                zip.file(r.name, base64, { base64: true });
+            }
+            const zipBlob = await zip.generateAsync({ type: 'blob' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(zipBlob);
+            a.download = 'background-removed.zip';
+            a.click();
+
+            btn.disabled = false;
+            btn.textContent = 'Download All as ZIP';
+        }
+
+        function bgReset() {
+            bgSelectedFiles = [];
+            bgResultsList = [];
+            document.getElementById('bgFileInput').value = '';
+            document.getElementById('bgFileCount').textContent = '';
+            document.getElementById('bgUploadArea').style.borderColor = 'var(--color-ash)';
+            document.getElementById('bgUploadArea').style.borderStyle = 'dashed';
+            document.getElementById('bgProcessBtn').disabled = true;
+            document.getElementById('bgProgress').style.display = 'none';
+            document.getElementById('bgProgressBar').style.width = '0%';
+            document.getElementById('bgResults').innerHTML = '';
+            document.getElementById('bgBulkActions').style.display = 'none';
+            document.getElementById('bgResetBtn').style.display = 'none';
         }
     </script>
 </body>
