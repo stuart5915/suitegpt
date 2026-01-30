@@ -18646,9 +18646,6 @@
                             <button class="factory-main-tab" data-view="operators" onclick="switchFactoryMainView('operators')">
                                 Operators
                             </button>
-                            <button class="factory-main-tab" data-view="clients" onclick="switchFactoryMainView('clients')">
-                                Clients
-                            </button>
                         </div>
                     </div>
 
@@ -18827,10 +18824,36 @@
                                         <button class="factory-section-tab" data-section="social" onclick="switchFactorySection('social')">
                                              Social <span class="section-count" id="factorySocialCount">0</span>
                                         </button>
+                                        <button class="factory-section-tab" data-section="client_requests" onclick="switchFactorySection('client_requests')">
+                                             Clients <span class="section-count" id="factoryClientsCount">0</span>
+                                        </button>
                                     </div>
                                 </div>
 
-                                <div class="factory-governance-layout">
+                                <!-- Client Requests (shown when Clients tab active) -->
+                                <div id="clientRequestsPanel" style="display: none; max-width: 900px; padding: 0 20px;">
+                                    <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
+                                        <select id="crAppFilter" onchange="loadClientRequests()" style="padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: var(--text); font-size: 0.9rem;">
+                                            <option value="">All Apps</option>
+                                            <option value="proto-golf">Proto Golf</option>
+                                        </select>
+                                        <select id="crStatusFilter" onchange="loadClientRequests()" style="padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: var(--text); font-size: 0.9rem;">
+                                            <option value="">All Statuses</option>
+                                            <option value="submitted">Submitted</option>
+                                            <option value="approved">Approved</option>
+                                            <option value="processing">Processing</option>
+                                            <option value="completed">Completed</option>
+                                            <option value="failed">Failed</option>
+                                            <option value="rejected">Rejected</option>
+                                        </select>
+                                        <button onclick="loadClientRequests()" style="padding: 8px 16px; border-radius: 8px; border: none; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: white; cursor: pointer; font-weight: 600; font-size: 0.9rem;">Refresh</button>
+                                    </div>
+                                    <div id="clientRequestsList" style="display: flex; flex-direction: column; gap: 16px;">
+                                        <p style="color: var(--text-secondary); text-align: center; padding: 40px;">Loading...</p>
+                                    </div>
+                                </div>
+
+                                <div class="factory-governance-layout" id="factoryGovernanceLayout">
                                     <!-- Sidebar Filter -->
                                     <aside class="factory-app-filter" id="factoryAppFilterSidebar">
                                         <div class="factory-new-proposal-row">
@@ -19843,40 +19866,6 @@
                                 </div>
                             </div>
 
-                            <!-- Clients View (Client Requests) -->
-                            <div class="factory-main-view" id="factoryClientsView" style="display: none;">
-                                <div style="max-width: 1200px; margin: 0 auto; padding: 40px 20px;">
-                                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
-                                        <div>
-                                            <h2 style="font-size: 1.75rem; font-weight: 800; margin: 0;">Client Requests</h2>
-                                            <p style="color: var(--text-secondary); margin: 4px 0 0;">Review, refine, and send client requests to Claude</p>
-                                        </div>
-                                    </div>
-
-                                    <!-- Filters -->
-                                    <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
-                                        <select id="crAppFilter" onchange="loadClientRequests()" style="padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: var(--text); font-size: 0.9rem;">
-                                            <option value="">All Apps</option>
-                                            <option value="proto-golf">Proto Golf</option>
-                                        </select>
-                                        <select id="crStatusFilter" onchange="loadClientRequests()" style="padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: var(--text); font-size: 0.9rem;">
-                                            <option value="">All Statuses</option>
-                                            <option value="submitted">Submitted</option>
-                                            <option value="approved">Approved</option>
-                                            <option value="processing">Processing</option>
-                                            <option value="completed">Completed</option>
-                                            <option value="failed">Failed</option>
-                                            <option value="rejected">Rejected</option>
-                                        </select>
-                                        <button onclick="loadClientRequests()" style="padding: 8px 16px; border-radius: 8px; border: none; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: white; cursor: pointer; font-weight: 600;">Refresh</button>
-                                    </div>
-
-                                    <!-- Request Cards -->
-                                    <div id="clientRequestsList" style="display: flex; flex-direction: column; gap: 16px;">
-                                        <p style="color: var(--text-secondary); text-align: center; padding: 40px;">Loading...</p>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </section>
@@ -21687,7 +21676,7 @@
                 openFactory(true);
                 // Check for sub-tab
                 const subPath = path.replace('/governance', '').replace('/', '');
-                if (subPath && ['telos', 'marketing', 'stream', 'howitworks', 'leaderboard', 'rewards', 'agents', 'operators', 'clients'].includes(subPath)) {
+                if (subPath && ['telos', 'marketing', 'stream', 'howitworks', 'leaderboard', 'rewards', 'agents', 'operators'].includes(subPath)) {
                     switchFactoryMainView(subPath, true);
                 }
             } else if (path === '/creator-dashboard') {
@@ -21751,7 +21740,7 @@
                 openFactory(true);
                 // Check for sub-tab
                 const subPath = path.replace('/governance', '').replace('/', '');
-                if (subPath && ['telos', 'marketing', 'stream', 'howitworks', 'leaderboard', 'rewards', 'agents', 'operators', 'clients'].includes(subPath)) {
+                if (subPath && ['telos', 'marketing', 'stream', 'howitworks', 'leaderboard', 'rewards', 'agents', 'operators'].includes(subPath)) {
                     switchFactoryMainView(subPath, true);
                 }
             } else if (path === '/creator-dashboard') {
@@ -21943,7 +21932,6 @@
             document.getElementById('factoryStreamView').style.display = view === 'stream' ? 'block' : 'none';
             document.getElementById('factoryLeaderboardView').style.display = view === 'leaderboard' ? 'block' : 'none';
             document.getElementById('factoryOperatorsView').style.display = view === 'operators' ? 'block' : 'none';
-            document.getElementById('factoryClientsView').style.display = view === 'clients' ? 'block' : 'none';
 
             // Update URL based on view
             if (!skipPushState) {
@@ -21973,11 +21961,6 @@
                 if (!opDaemonInterval) opDaemonInterval = setInterval(checkOpDaemonStatus, 10000);
             } else {
                 if (opDaemonInterval) { clearInterval(opDaemonInterval); opDaemonInterval = null; }
-            }
-
-            // Load client requests when switching to clients view
-            if (view === 'clients') {
-                loadClientRequests();
             }
 
             // Initialize Telos chat
@@ -22160,6 +22143,17 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
         let operatorsFilter = 'all';
 
         // ===== Client Requests Functions =====
+        async function updateClientRequestsCount() {
+            try {
+                var resp = await fetch(SUPABASE_URL + '/rest/v1/factory_proposals?category=eq.client_request&select=id', {
+                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY }
+                });
+                var data = await resp.json();
+                var el = document.getElementById('factoryClientsCount');
+                if (el) el.textContent = data ? data.length : 0;
+            } catch (e) { /* ignore */ }
+        }
+
         async function loadClientRequests() {
             const container = document.getElementById('clientRequestsList');
             const appFilter = document.getElementById('crAppFilter').value;
@@ -25004,8 +24998,18 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
                 tab.classList.toggle('active', tab.dataset.section === section);
             });
 
-            // Re-render proposals
-            renderFactoryProposals();
+            // Toggle between governance layout and client requests panel
+            var govLayout = document.getElementById('factoryGovernanceLayout');
+            var crPanel = document.getElementById('clientRequestsPanel');
+            if (section === 'client_requests') {
+                if (govLayout) govLayout.style.display = 'none';
+                if (crPanel) crPanel.style.display = 'block';
+                loadClientRequests();
+            } else {
+                if (govLayout) govLayout.style.display = '';
+                if (crPanel) crPanel.style.display = 'none';
+                renderFactoryProposals();
+            }
         }
 
         async function loadFactoryProposals() {
@@ -25153,6 +25157,9 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
                 factoryProposals.filter(p => p.section === 'content').length;
             document.getElementById('factorySocialCount').textContent =
                 factoryProposals.filter(p => p.section === 'social').length;
+
+            // Client requests count (async, separate query)
+            updateClientRequestsCount();
 
             // Agent count
             const agentCount = factoryProposals.filter(p => p.from_agent === true).length;
