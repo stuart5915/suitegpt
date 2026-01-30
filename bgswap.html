@@ -24,7 +24,6 @@ h1{font-size:22px;font-weight:800;text-align:center;background:linear-gradient(1
 .bg-swatch.active{border-color:#ec4899;box-shadow:0 0 0 2px rgba(236,72,153,.4)}
 .bg-swatch.custom-color{overflow:hidden}
 .bg-swatch.custom-color input[type="color"]{position:absolute;inset:-4px;width:calc(100% + 8px);height:calc(100% + 8px);border:none;cursor:pointer;background:none}
-.bg-swatch.upload-bg{display:flex;align-items:center;justify-content:center;background:#1a1a22;font-size:18px}
 
 /* Upload area */
 .upload-area{border:2px dashed #3f3f46;border-radius:16px;padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s}
@@ -59,15 +58,6 @@ input[type="file"]{display:none}
 .result-card-dl{padding:8px 16px;border:none;border-radius:8px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;flex-shrink:0}
 .result-card-dl:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(34,197,94,.3)}
 
-/* Waiting item in queue */
-.queue-item{display:flex;align-items:center;gap:10px;background:#1a1a22;border:1px solid #27272a;border-radius:10px;padding:8px 12px}
-.queue-item.processing{border-color:#ec4899}
-.queue-thumb{width:36px;height:36px;border-radius:6px;object-fit:cover;flex-shrink:0;background:#27272a}
-.queue-info{flex:1;min-width:0}
-.queue-name{font-size:12px;font-weight:600;color:#d4d4d8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.queue-status{font-size:11px;color:#71717a;margin-top:1px}
-.queue-status.active{color:#f472b6}
-
 /* Bulk download / reset */
 .bulk-actions{display:none;flex-direction:column;gap:8px}
 .bulk-actions.active{display:flex}
@@ -89,7 +79,7 @@ input[type="file"]{display:none}
 <body>
 <div class="container">
     <h1>Background Swap</h1>
-    <p class="subtitle">Remove & replace photo backgrounds with AI — runs in your browser</p>
+    <p class="subtitle">Remove & replace photo backgrounds with AI</p>
 
     <!-- Step 1: Background -->
     <div class="bg-picker" id="step1">
@@ -105,8 +95,6 @@ input[type="file"]{display:none}
             <div class="bg-swatch custom-color" title="Custom Color">
                 <input type="color" id="customColor" value="#6d28d9">
             </div>
-            <div class="bg-swatch upload-bg" id="uploadBgBtn" title="Upload Background Image">+</div>
-            <input type="file" id="bgFileInput" accept="image/jpeg,image/png,image/webp" style="display:none">
         </div>
     </div>
 
@@ -146,34 +134,7 @@ input[type="file"]{display:none}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script type="module">
-// Try multiple CDNs for reliability
-let imglyRemoveBackground;
-const cdnUrls = [
-    'https://esm.sh/@imgly/background-removal@1.5.8',
-    'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.8/+esm'
-];
-
-for (const url of cdnUrls) {
-    try {
-        console.log('[BgSwap] Trying:', url);
-        const mod = await import(url);
-        imglyRemoveBackground = mod.default || mod.removeBackground;
-        if (imglyRemoveBackground) {
-            console.log('[BgSwap] Loaded from:', url);
-            break;
-        }
-    } catch (e) {
-        console.warn('[BgSwap] Failed:', url, e.message);
-    }
-}
-
-if (!imglyRemoveBackground) {
-    document.getElementById('errorMsg').textContent = 'Failed to load AI library. Please refresh the page.';
-    document.getElementById('errorMsg').classList.add('active');
-    document.getElementById('processBtn').disabled = true;
-}
-
+<script>
 const uploadArea = document.getElementById('uploadArea');
 const fileInput = document.getElementById('fileInput');
 const fileCount = document.getElementById('fileCount');
@@ -181,8 +142,6 @@ const processBtn = document.getElementById('processBtn');
 const errorMsg = document.getElementById('errorMsg');
 const bgOptions = document.getElementById('bgOptions');
 const customColor = document.getElementById('customColor');
-const uploadBgBtn = document.getElementById('uploadBgBtn');
-const bgFileInput = document.getElementById('bgFileInput');
 const progressSection = document.getElementById('progressSection');
 const progressLabel = document.getElementById('progressLabel');
 const progressBar = document.getElementById('progressBar');
@@ -194,39 +153,21 @@ const resetBtn = document.getElementById('resetBtn');
 
 let selectedFiles = [];
 let currentBg = '#ffffff';
-let customBgImage = null;
-let results = []; // { name, blob, url }
+let results = []; // { name, dataUrl }
 
 // Background swatch clicks
 bgOptions.addEventListener('click', e => {
     const swatch = e.target.closest('.bg-swatch');
-    if (!swatch || swatch.classList.contains('custom-color') || swatch.id === 'uploadBgBtn') return;
+    if (!swatch || swatch.classList.contains('custom-color')) return;
     bgOptions.querySelectorAll('.bg-swatch').forEach(s => s.classList.remove('active'));
     swatch.classList.add('active');
     currentBg = swatch.dataset.bg;
-    customBgImage = null;
 });
 
 customColor.addEventListener('input', () => {
     bgOptions.querySelectorAll('.bg-swatch').forEach(s => s.classList.remove('active'));
     customColor.closest('.bg-swatch').classList.add('active');
     currentBg = customColor.value;
-    customBgImage = null;
-});
-
-uploadBgBtn.addEventListener('click', () => bgFileInput.click());
-bgFileInput.addEventListener('change', () => {
-    if (!bgFileInput.files.length) return;
-    const file = bgFileInput.files[0];
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-        customBgImage = img;
-        currentBg = 'custom-image';
-        bgOptions.querySelectorAll('.bg-swatch').forEach(s => s.classList.remove('active'));
-        uploadBgBtn.classList.add('active');
-    };
-    img.src = url;
 });
 
 // Upload area
@@ -256,9 +197,18 @@ function handleFiles(fileList) {
     hideError();
 }
 
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+    });
+}
+
 // Process
 processBtn.addEventListener('click', async () => {
-    if (!imglyRemoveBackground || selectedFiles.length === 0) return;
+    if (selectedFiles.length === 0) return;
 
     processBtn.disabled = true;
     processBtn.style.display = 'none';
@@ -271,42 +221,35 @@ processBtn.addEventListener('click', async () => {
     const total = selectedFiles.length;
     let completed = 0;
     let failed = 0;
-    let modelLoaded = false;
 
     for (let i = 0; i < total; i++) {
         const file = selectedFiles[i];
         const baseName = file.name.replace(/\.[^.]+$/, '');
 
         progressLabel.textContent = `Processing ${i + 1} of ${total}: ${file.name}`;
-        progressStatus.textContent = modelLoaded ? 'Removing background...' : 'Loading AI model (first image is slowest)...';
+        progressStatus.textContent = 'Removing background...';
         progressBar.style.width = Math.round((i / total) * 100) + '%';
 
         try {
-            const fgBlob = await imglyRemoveBackground(file, {
-                debug: true,
-                model: 'isnet_quint8',
-                progress(key, current, tot) {
-                    console.log(`[BgSwap] ${key}: ${current}/${tot}`);
-                    if (key.startsWith('fetch:')) {
-                        progressStatus.textContent = tot > 0
-                            ? `Downloading model... ${Math.round(current / 1024 / 1024)}/${Math.round(tot / 1024 / 1024)} MB`
-                            : 'Downloading AI model...';
-                    } else {
-                        progressStatus.textContent = 'AI removing background...';
-                    }
-                }
+            const base64 = await fileToBase64(file);
+
+            const resp = await fetch('/api/remove-bg', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: base64, background: currentBg })
             });
 
-            modelLoaded = true;
+            if (!resp.ok) {
+                const err = await resp.json().catch(() => ({}));
+                throw new Error(err.error || `Server error ${resp.status}`);
+            }
 
-            // Composite with chosen background
-            const compositeBlob = await compositeImage(fgBlob);
-            const url = URL.createObjectURL(compositeBlob);
+            const data = await resp.json();
+            const dataUrl = data.image;
             const name = baseName + '.png';
-            results.push({ name, blob: compositeBlob, url });
+            results.push({ name, dataUrl });
 
-            // Add result card immediately
-            addResultCard(name, url, results.length - 1);
+            addResultCard(name, dataUrl, results.length - 1);
             completed++;
         } catch (err) {
             console.error('[BgSwap] Failed:', file.name, err);
@@ -326,50 +269,17 @@ processBtn.addEventListener('click', async () => {
         bulkActions.classList.add('active');
         downloadAllBtn.textContent = `Download All ${results.length} as ZIP`;
     } else if (results.length === 1) {
-        // Still show reset
         bulkActions.classList.add('active');
         downloadAllBtn.style.display = 'none';
     }
-    // Always show reset
     bulkActions.classList.add('active');
 });
 
-function compositeImage(fgBlob) {
-    return new Promise((resolve, reject) => {
-        const fgImg = new Image();
-        fgImg.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = fgImg.naturalWidth;
-            canvas.height = fgImg.naturalHeight;
-            const ctx = canvas.getContext('2d');
-
-            if (customBgImage) {
-                const scale = Math.max(canvas.width / customBgImage.naturalWidth, canvas.height / customBgImage.naturalHeight);
-                const w = customBgImage.naturalWidth * scale;
-                const h = customBgImage.naturalHeight * scale;
-                ctx.drawImage(customBgImage, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
-            } else if (currentBg !== 'transparent') {
-                ctx.fillStyle = currentBg;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-            }
-
-            ctx.drawImage(fgImg, 0, 0);
-
-            canvas.toBlob(blob => {
-                if (blob) resolve(blob);
-                else reject(new Error('Canvas export failed'));
-            }, 'image/png');
-        };
-        fgImg.onerror = () => reject(new Error('Failed to load result'));
-        fgImg.src = URL.createObjectURL(fgBlob);
-    });
-}
-
-function addResultCard(name, url, index) {
+function addResultCard(name, dataUrl, index) {
     const card = document.createElement('div');
     card.className = 'result-card';
     card.innerHTML = `
-        <img class="result-card-img" src="${url}" alt="${name}">
+        <img class="result-card-img" src="${dataUrl}" alt="${name}">
         <div class="result-card-footer">
             <span class="result-card-name">${name}</span>
             <button class="result-card-dl" data-idx="${index}">Download</button>
@@ -378,7 +288,7 @@ function addResultCard(name, url, index) {
     card.querySelector('.result-card-dl').addEventListener('click', () => {
         const r = results[index];
         const a = document.createElement('a');
-        a.href = r.url;
+        a.href = r.dataUrl;
         a.download = r.name;
         a.click();
     });
@@ -406,7 +316,9 @@ downloadAllBtn.addEventListener('click', async () => {
 
     const zip = new JSZip();
     for (const r of results) {
-        zip.file(r.name, r.blob);
+        // Convert data URL to binary
+        const base64 = r.dataUrl.split(',')[1];
+        zip.file(r.name, base64, { base64: true });
     }
     const zipBlob = await zip.generateAsync({ type: 'blob' });
     const a = document.createElement('a');
@@ -422,7 +334,6 @@ downloadAllBtn.addEventListener('click', async () => {
 resetBtn.addEventListener('click', () => {
     selectedFiles = [];
     results = [];
-    customBgImage = null;
     fileInput.value = '';
     fileCount.textContent = '';
     uploadArea.classList.remove('has-files');
