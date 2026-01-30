@@ -12461,6 +12461,13 @@
             line-height: 1.5;
         }
 
+        .insight-reason {
+            font-size: 0.8rem !important;
+            color: rgba(255, 255, 255, 0.55) !important;
+            margin: 2px 0 6px 0 !important;
+            line-height: 1.3;
+        }
+
         .insight-actions {
             display: flex;
             gap: 8px;
@@ -27227,6 +27234,11 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
             }
         };
 
+        // Compact app catalog for AI insights analysis
+        const SUITE_APPS_COMPACT = Object.entries(SUITE_APPS)
+            .map(([key, app]) => `${key}: ${app.description}`)
+            .join('\n');
+
         // ========================
         // APPS PANEL FUNCTIONALITY
         // ========================
@@ -32293,7 +32305,9 @@ Return as JSON array. No markdown, no code blocks.`,
             isMinimized: false,
             pendingInsights: [],
             shownInsights: [],
-            badgeCount: 0
+            badgeCount: 0,
+            suggestedAppKeys: new Set(),
+            lastAnalyzedIndex: 0
         };
 
         // ========================
@@ -32571,6 +32585,8 @@ Return as JSON array. No markdown, no code blocks.`,
                 // Italic (*text* or _text_)
                 .replace(/\*([^*]+)\*/g, '<em>$1</em>')
                 .replace(/_([^_]+)_/g, '<em>$1</em>')
+                // Markdown links [text](url)
+                .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
                 // Headers (## text)
                 .replace(/^### (.+)$/gm, '<h4>$1</h4>')
                 .replace(/^## (.+)$/gm, '<h3>$1</h3>')
@@ -32751,97 +32767,89 @@ Return as JSON array. No markdown, no code blocks.`,
             }
         }
 
-        // Analyze user message for relevant app suggestions (runs in background)
-        function analyzeForAppSuggestions(userMessage, aiResponse) {
-            const message = userMessage.toLowerCase();
-            const response = (aiResponse || '').toLowerCase();
+        // Analyze conversation for relevant app suggestions using AI (runs in background)
+        async function analyzeForAppSuggestions(userMessage, aiResponse) {
+            // Skip if conversation hasn't grown since last analysis
+            if (conversationHistory.length <= insightsState.lastAnalyzedIndex) return;
+            insightsState.lastAnalyzedIndex = conversationHistory.length;
 
-            // App keyword mappings
-            const appKeywords = {
-                'foodvitals': ['nutrition', 'diet', 'calories', 'food', 'meals', 'weight', 'eating', 'healthy eating'],
-                'trueform': ['back pain', 'posture', 'stretching', 'physical therapy', 'mobility', 'pain', 'sitting'],
-                'opticrep': ['workout', 'gym', 'fitness', 'exercise', 'training', 'muscle', 'strength', 'reps'],
-                'cheshbon': ['money', 'finance', 'budget', 'spending', 'savings', 'financial'],
-                'remcast': ['reminder', 'routine', 'morning', 'habits', 'schedule', 'notification'],
-                'hydrotrack': ['water', 'hydration', 'thirsty', 'drink', 'dehydrated'],
-                'sleepwell': ['sleep', 'insomnia', 'tired', 'rest', 'bedtime', 'fatigue'],
-                'moodlog': ['mood', 'anxiety', 'stressed', 'mental health', 'depression', 'emotions', 'feelings'],
-                'focusflow': ['focus', 'pomodoro', 'productivity', 'concentration', 'distracted'],
-                'quickbudget': ['expenses', 'spending tracker', 'money management'],
-                'flashmind': ['study', 'flashcards', 'learning', 'memorize', 'exam'],
-                'bookshelf': ['reading', 'books', 'book tracker'],
-                'habitstack': ['habit', 'routine', 'daily habits', 'streak']
-            };
+            try {
+                const response = await fetch('/api/gemini', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: `You are an app recommendation engine. Analyze this chat exchange and determine if any existing apps could address the user's underlying need, OR suggest a custom app idea.
 
-            // Check for keyword matches
-            let foundApp = false;
-            for (const [appId, keywords] of Object.entries(appKeywords)) {
-                for (const keyword of keywords) {
-                    if (message.includes(keyword)) {
-                        const app = SUITE_APPS[appId];
-                        if (app) {
-                            const alreadySuggested = insightsState.pendingInsights.some(
-                                i => i.type === 'app' && i.data.appKey === appId
-                            );
-                            if (!alreadySuggested) {
-                                addInsight('app', {
-                                    appKey: appId,
-                                    appName: app.name,
-                                    appUrl: app.url
-                                });
-                                foundApp = true;
-                            }
-                            break;
+USER: ${userMessage}
+
+ASSISTANT: ${(aiResponse || '').substring(0, 500)}
+
+AVAILABLE APPS:
+${SUITE_APPS_COMPACT}
+
+ALREADY SUGGESTED (do not repeat): ${[...insightsState.suggestedAppKeys].join(', ') || 'none'}
+
+Respond with ONLY valid JSON, no markdown fences:
+{"matched_apps": [{"slug": "exact-key-from-list", "reason": "one sentence why this helps"}], "build_suggestion": null}
+
+If no existing app matches, set matched_apps to [] and provide:
+{"matched_apps": [], "build_suggestion": {"name": "AppName", "description": "what it would do for the user"}}
+
+Rules:
+- Only match apps that genuinely address the user's underlying need
+- Maximum 2 matched apps
+- If the conversation is casual (greetings, jokes, small talk), return: {"matched_apps": [], "build_suggestion": null}
+- Use exact slug keys from the AVAILABLE APPS list`,
+                        model: 'gemini-2.0-flash',
+                        enableSearch: false,
+                        generationConfig: {
+                            temperature: 0.3,
+                            maxOutputTokens: 256
+                        }
+                    })
+                });
+
+                if (!response.ok) return;
+
+                const data = await response.json();
+                const text = (data.text || '').trim();
+
+                // Parse JSON — strip markdown code fences if present
+                const jsonStr = text.replace(/^```json?\s*/, '').replace(/\s*```$/, '');
+                const result = JSON.parse(jsonStr);
+
+                // Process matched apps
+                if (result.matched_apps && Array.isArray(result.matched_apps)) {
+                    for (const match of result.matched_apps) {
+                        const app = SUITE_APPS[match.slug];
+                        if (app && !insightsState.suggestedAppKeys.has(match.slug)) {
+                            insightsState.suggestedAppKeys.add(match.slug);
+                            addInsight('app', {
+                                appKey: match.slug,
+                                appName: app.name,
+                                appUrl: app.url,
+                                reason: match.reason
+                            });
                         }
                     }
                 }
-                if (foundApp) break;
-            }
 
-            // If no app match and conversation is getting interesting, suggest building something
-            if (!foundApp && conversationHistory.length >= 2) {
-                // Check if we haven't already suggested building
-                const alreadySuggestedBuild = insightsState.pendingInsights.some(
-                    i => i.type === 'build'
-                );
+                // Process build suggestion (only if no apps matched)
+                if (result.build_suggestion && (!result.matched_apps || result.matched_apps.length === 0)) {
+                    const alreadySuggestedBuild = insightsState.pendingInsights.some(i => i.type === 'build')
+                        || insightsState.shownInsights.some(i => i.type === 'build');
 
-                if (!alreadySuggestedBuild) {
-                    // Detect actionable/interesting topics
-                    const buildableTopics = [
-                        'track', 'manage', 'organize', 'plan', 'schedule', 'remind', 'calculate',
-                        'analyze', 'monitor', 'log', 'record', 'compare', 'find', 'search',
-                        'learn', 'practice', 'improve', 'optimize', 'automate', 'simplify'
-                    ];
-
-                    const hasBuildableTopic = buildableTopics.some(topic =>
-                        message.includes(topic) || response.includes(topic)
-                    );
-
-                    // Also check for question patterns that could become tools
-                    const isToolableQuestion = /how (?:do i|can i|to)|what(?:'s| is) the best way|help me/i.test(userMessage);
-
-                    if (hasBuildableTopic || isToolableQuestion) {
-                        // Extract a topic from the message for the suggestion
-                        const topic = extractTopic(userMessage);
-                        addInsight('build', { topic: topic || 'this' });
+                    if (!alreadySuggestedBuild) {
+                        addInsight('build', {
+                            topic: result.build_suggestion.name,
+                            description: result.build_suggestion.description
+                        });
                     }
                 }
-            }
-        }
 
-        // Extract main topic from a message for build suggestions
-        function extractTopic(message) {
-            // Remove common question words and extract the core topic
-            const cleaned = message
-                .replace(/^(how|what|where|when|why|can|could|would|should|is|are|do|does|help me|tell me|i want to|i need to)\s+/gi, '')
-                .replace(/\?/g, '')
-                .trim();
-
-            // Take first 30 chars as topic
-            if (cleaned.length > 30) {
-                return cleaned.substring(0, 30) + '...';
+            } catch (e) {
+                console.debug('[Insights] Analysis failed:', e.message);
             }
-            return cleaned || null;
         }
 
         function renderSingleInsight(insight) {
@@ -32851,6 +32859,9 @@ Return as JSON array. No markdown, no code blocks.`,
             insightEl.className = 'insight-item';
 
             if (insight.type === 'app') {
+                const reason = insight.data.reason
+                    ? `<p class="insight-reason">${insight.data.reason}</p>`
+                    : '';
                 insightEl.innerHTML = `
                     <div class="insight-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
@@ -32861,7 +32872,8 @@ Return as JSON array. No markdown, no code blocks.`,
                         </svg>
                     </div>
                     <div class="insight-text">
-                        <p>${insight.data.appName} could help with this.</p>
+                        <p><strong>${insight.data.appName}</strong> could help with this.</p>
+                        ${reason}
                         <div class="insight-actions">
                             <button class="insight-btn primary" onclick="previewApp('${insight.data.appKey}', '${insight.data.appUrl}', '${insight.data.appName}')">Try it</button>
                             <button class="insight-btn-dismiss" onclick="dismissInsight(this)">Dismiss</button>
@@ -32885,6 +32897,10 @@ Return as JSON array. No markdown, no code blocks.`,
                     </div>
                 `;
             } else if (insight.type === 'build') {
+                const buildTitle = insight.data.topic || 'a custom app';
+                const buildDesc = insight.data.description
+                    ? `<p class="insight-reason">${insight.data.description}</p>`
+                    : '';
                 insightEl.innerHTML = `
                     <div class="insight-icon build-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
@@ -32894,9 +32910,10 @@ Return as JSON array. No markdown, no code blocks.`,
                         </svg>
                     </div>
                     <div class="insight-text">
-                        <p>Want to turn this into an app? SuiteGPT can build custom tools.</p>
+                        <p>Idea: <strong>${buildTitle}</strong></p>
+                        ${buildDesc}
                         <div class="insight-actions">
-                            <button class="insight-btn build-btn" onclick="openBuilderFromInsight()">Build an App</button>
+                            <button class="insight-btn build-btn" onclick="openBuilderFromInsight()">Build it</button>
                             <button class="insight-btn-dismiss" onclick="dismissInsight(this)">Not now</button>
                         </div>
                     </div>
@@ -33017,6 +33034,8 @@ Return as JSON array. No markdown, no code blocks.`,
             insightsState.pendingInsights = [];
             insightsState.shownInsights = [];
             insightsState.badgeCount = 0;
+            insightsState.suggestedAppKeys = new Set();
+            insightsState.lastAnalyzedIndex = 0;
             updateInsightsBadge();
             if (insightsContent) insightsContent.innerHTML = '<div class="insights-empty-state"><p>Insights will appear here as you chat. I\'ll suggest relevant SUITE apps based on your conversation.</p></div>';
             if (suiteInsights) suiteInsights.classList.remove('active');
