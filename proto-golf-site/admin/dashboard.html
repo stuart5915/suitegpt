@@ -872,9 +872,11 @@
 
                         <div style="margin-bottom: 24px;">
                             <label class="form-label">Upload New Image</label>
+                            <input type="file" accept="image/*" id="photoFileInput" style="display: none;" onchange="updateFileLabel()">
                             <div style="display: flex; gap: 12px; align-items: center;">
-                                <input type="file" accept="image/*" id="photoFileInput" class="form-input" style="flex: 1;">
-                                <button class="btn btn-primary btn-sm" onclick="uploadPhoto()" id="uploadPhotoBtn">Upload</button>
+                                <button class="btn btn-secondary btn-sm" onclick="document.getElementById('photoFileInput').click()" style="white-space: nowrap;" id="chooseFileBtn">Choose File</button>
+                                <span style="color: var(--color-steel); font-size: 0.875rem; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" id="fileLabel">No file selected</span>
+                                <button class="btn btn-sm" style="background: var(--color-ink); color: var(--color-paper); white-space: nowrap; width: auto;" onclick="uploadPhoto()" id="uploadPhotoBtn">Upload</button>
                             </div>
                         </div>
 
@@ -1309,6 +1311,12 @@
         };
 
         let currentPhotos = [];
+
+        function updateFileLabel() {
+            const input = document.getElementById('photoFileInput');
+            const label = document.getElementById('fileLabel');
+            label.textContent = input.files && input.files[0] ? input.files[0].name : 'No file selected';
+        }
 
         function onPhotoProductChange() {
             const productId = document.getElementById('photoProduct').value;
