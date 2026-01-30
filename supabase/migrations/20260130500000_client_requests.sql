@@ -26,22 +26,25 @@ CREATE INDEX IF NOT EXISTS idx_factory_proposals_client_requests
     WHERE category = 'client_request';
 
 -- RLS: allow anon to insert client requests (from admin dashboards)
-CREATE POLICY IF NOT EXISTS "Allow anon insert client requests"
-    ON factory_proposals
-    FOR INSERT
-    TO anon
-    WITH CHECK (category = 'client_request');
+DO $$ BEGIN
+    CREATE POLICY "Allow anon insert client requests"
+        ON factory_proposals FOR INSERT TO anon
+        WITH CHECK (category = 'client_request');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- RLS: allow anon to read client requests for their app
-CREATE POLICY IF NOT EXISTS "Allow anon read client requests"
-    ON factory_proposals
-    FOR SELECT
-    TO anon
-    USING (category = 'client_request');
+DO $$ BEGIN
+    CREATE POLICY "Allow anon read client requests"
+        ON factory_proposals FOR SELECT TO anon
+        USING (category = 'client_request');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- RLS: allow anon to update status on client requests (for daemon)
-CREATE POLICY IF NOT EXISTS "Allow anon update client requests"
-    ON factory_proposals
-    FOR UPDATE
-    TO anon
-    USING (category = 'client_request');
+DO $$ BEGIN
+    CREATE POLICY "Allow anon update client requests"
+        ON factory_proposals FOR UPDATE TO anon
+        USING (category = 'client_request');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
