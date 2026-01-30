@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import { Platform } from 'react-native';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase, getProfile, getHealthProfile, getPainContext, HealthProfile } from '../services/supabase';
 
@@ -50,16 +51,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const lastLoadedUserId = useRef<string | null>(null);
 
     useEffect(() => {
-        // Get initial session
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        const initAuth = async () => {
+            // Check for SUITE shell tokens passed via URL
+            if (Platform.OS === 'web') {
+                const params = new URLSearchParams(window.location.search);
+                const suiteToken = params.get('suite_token');
+                const suiteRefresh = params.get('suite_refresh');
+
+                if (suiteToken && suiteRefresh) {
+                    console.log('[AuthContext] Found SUITE shell tokens, setting session...');
+                    const { data, error } = await supabase.auth.setSession({
+                        access_token: suiteToken,
+                        refresh_token: suiteRefresh,
+                    });
+
+                    // Clean tokens from URL
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('suite_token');
+                    url.searchParams.delete('suite_refresh');
+                    window.history.replaceState({}, '', url.toString());
+
+                    if (data?.session) {
+                        console.log('[AuthContext] SUITE shell session established');
+                        setSession(data.session);
+                        setUser(data.session.user);
+                        await loadAllData(data.session.user.id);
+                        return;
+                    }
+                    if (error) {
+                        console.error('[AuthContext] Failed to set SUITE shell session:', error);
+                    }
+                }
+            }
+
+            // Normal session check
+            const { data: { session } } = await supabase.auth.getSession();
             setSession(session);
             setUser(session?.user ?? null);
             if (session?.user) {
-                loadAllData(session.user.id);
+                await loadAllData(session.user.id);
             } else {
                 setLoading(false);
             }
-        });
+        };
+
+        initAuth();
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
