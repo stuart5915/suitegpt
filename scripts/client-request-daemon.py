@@ -205,94 +205,114 @@ CLIENT REQUEST:
         with open(prompt_file, 'w', encoding='utf-8') as f:
             f.write(claude_prompt)
 
-        log(f"Running Claude CLI in {cwd}")
+        log(f"Opening visible terminal for Claude...")
 
-        # Pipe prompt to claude CLI (--print for non-interactive, --dangerously-skip-permissions to auto-approve tool use)
-        cmd = f'Get-Content "{prompt_file}" | claude --print --dangerously-skip-permissions'
-        result = subprocess.run(
-            ['powershell', '-Command', cmd],
-            capture_output=True,
-            text=True,
-            cwd=str(cwd),
-            timeout=CLAUDE_TIMEOUT
+        # Write a status-updater script that runs after Claude finishes
+        updater_file = REPO_PATH / 'scripts' / f'.update-status-{record_id[:8]}.py'
+        safe_title = title.replace("'", "\\'").replace('"', '\\"')
+        with open(updater_file, 'w', encoding='utf-8') as f:
+            f.write(f'''import json, urllib.request, urllib.error, sys, subprocess
+from datetime import datetime
+from pathlib import Path
+
+SUPABASE_URL = "{SUPABASE_URL}"
+SUPABASE_KEY = "{SUPABASE_KEY}"
+REPO_PATH = r"{REPO_PATH}"
+RECORD_ID = "{record_id}"
+PROJECT_DIR = r"{project_dir}"
+TITLE = """{safe_title}"""
+
+def patch(data):
+    url = f"{{SUPABASE_URL}}/rest/v1/factory_proposals?id=eq.{{RECORD_ID}}"
+    headers = {{
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {{SUPABASE_KEY}}",
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal"
+    }}
+    body = json.dumps(data).encode("utf-8")
+    req = urllib.request.Request(url, data=body, headers=headers, method="PATCH")
+    try:
+        with urllib.request.urlopen(req) as resp:
+            pass
+    except Exception as e:
+        print(f"Status update error: {{e}}")
+
+exit_code = int(sys.argv[1]) if len(sys.argv) > 1 else 1
+
+if exit_code == 0:
+    # Check for changes and commit
+    result = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True, cwd=REPO_PATH)
+    changed = result.stdout.strip()
+    if changed:
+        print()
+        print("--- Committing changes ---")
+        add_path = PROJECT_DIR if PROJECT_DIR else "."
+        subprocess.run(["git", "add", add_path], cwd=REPO_PATH)
+        msg = f"[Client Request] {{TITLE}}"
+        subprocess.run(["git", "commit", "-m", msg], cwd=REPO_PATH)
+        push = subprocess.run(["git", "push"], capture_output=True, text=True, cwd=REPO_PATH, timeout=60)
+        if push.returncode == 0:
+            print("Pushed to remote!")
+        else:
+            print(f"Push failed: {{push.stderr[:300]}}")
+    else:
+        print()
+        print("No file changes detected.")
+
+    patch({{"status": "completed", "processed_at": datetime.now().isoformat()}})
+    print()
+    print("=== COMPLETED ===")
+else:
+    patch({{"status": "failed", "error_message": f"Claude exited with code {{exit_code}}", "processed_at": datetime.now().isoformat()}})
+    print()
+    print(f"=== FAILED (exit code {{exit_code}}) ===")
+
+print()
+print("Press Enter to close this window...")
+input()
+''')
+
+        # Write a PowerShell wrapper that runs Claude visibly
+        wrapper_file = REPO_PATH / 'scripts' / f'.claude-runner-{record_id[:8]}.ps1'
+        with open(wrapper_file, 'w', encoding='utf-8') as f:
+            f.write(f'''$Host.UI.RawUI.WindowTitle = "Claude - {safe_title[:50]}"
+Write-Host ""
+Write-Host "{'='*60}" -ForegroundColor Cyan
+Write-Host "  CLIENT REQUEST: {safe_title[:80]}" -ForegroundColor Cyan
+Write-Host "  App: {client_app} | Dir: {project_dir or 'repo root'}" -ForegroundColor DarkCyan
+Write-Host "{'='*60}" -ForegroundColor Cyan
+Write-Host ""
+
+Set-Location "{cwd}"
+
+Write-Host "Running Claude CLI..." -ForegroundColor Yellow
+Write-Host ""
+
+Get-Content "{prompt_file}" | claude --dangerously-skip-permissions
+$exitCode = $LASTEXITCODE
+
+Write-Host ""
+Write-Host "{'='*60}" -ForegroundColor Cyan
+Write-Host "  Claude finished (exit code: $exitCode)" -ForegroundColor Cyan
+Write-Host "  Updating status + committing..." -ForegroundColor DarkCyan
+Write-Host "{'='*60}" -ForegroundColor Cyan
+
+python "{updater_file}" $exitCode
+''')
+
+        # Open Claude in a new visible PowerShell window
+        subprocess.Popen(
+            ['powershell', '-ExecutionPolicy', 'Bypass', '-File', str(wrapper_file)],
+            creationflags=subprocess.CREATE_NEW_CONSOLE
         )
 
-        # Clean up temp file
-        try:
-            prompt_file.unlink()
-        except:
-            pass
-
-        if result.stdout:
-            log(f"Claude stdout (first 500): {result.stdout[:500]}")
-        if result.stderr:
-            log(f"Claude stderr: {result.stderr[:300]}")
-
-        if result.returncode == 0:
-            log(f"Claude finished: {title}")
-
-            # Auto-commit and push if there are changes
-            git_status = subprocess.run(
-                ['git', 'status', '--porcelain'],
-                capture_output=True, text=True, cwd=str(REPO_PATH)
-            )
-            changed_files = git_status.stdout.strip()
-
-            if changed_files:
-                log(f"Changes detected, committing:\n{changed_files[:500]}")
-                commit_msg = f"[Client Request] {title}\n\nApp: {client_app}\nRequest ID: {record_id}"
-                # Only stage the project directory (not the whole repo)
-                add_path = project_dir if project_dir else '.'
-                subprocess.run(
-                    ['git', 'add', add_path],
-                    cwd=str(REPO_PATH)
-                )
-                subprocess.run(
-                    ['git', 'commit', '-m', commit_msg],
-                    capture_output=True, text=True, cwd=str(REPO_PATH)
-                )
-                push_result = subprocess.run(
-                    ['git', 'push'],
-                    capture_output=True, text=True, cwd=str(REPO_PATH),
-                    timeout=60
-                )
-                if push_result.returncode == 0:
-                    log(f"Pushed to remote")
-                else:
-                    log(f"Push failed: {push_result.stderr[:300]}")
-            else:
-                log(f"No file changes detected")
-
-            log(f"SUCCESS: {title}")
-            supabase_patch(record_id, {
-                'status': 'completed',
-                'claude_output': (result.stdout or '')[:5000],
-                'processed_at': datetime.now().isoformat()
-            })
-            return True
-        else:
-            error_msg = (result.stderr or 'Unknown error')[:1000]
-            log(f"FAILED: {title} — {error_msg[:200]}")
-            supabase_patch(record_id, {
-                'status': 'failed',
-                'error_message': error_msg,
-                'claude_output': (result.stdout or '')[:5000],
-                'processed_at': datetime.now().isoformat()
-            })
-            return False
-
-    except subprocess.TimeoutExpired:
-        log(f"TIMEOUT: {title}")
-        supabase_patch(record_id, {
-            'status': 'failed',
-            'error_message': f'Timed out after {CLAUDE_TIMEOUT}s',
-            'processed_at': datetime.now().isoformat()
-        })
-        return False
+        log(f"Terminal opened for: {title}")
+        return True
 
     except Exception as e:
         error_msg = str(e)[:1000]
-        log(f"ERROR: {title} — {error_msg}")
+        log(f"ERROR launching terminal: {title} — {error_msg}")
         supabase_patch(record_id, {
             'status': 'failed',
             'error_message': error_msg,
