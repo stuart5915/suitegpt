@@ -48,13 +48,13 @@
             <!-- Gallery -->
             <div class="product-gallery">
                 <div class="product-main-image" id="mainImage">
-                    <img src="../assets/putters/polished-centre-blade-1.jpg" alt="Centre Blade Putter" id="mainImg">
+                    <img src="../assets/putters/polished-centre-blade-1.png" alt="Centre Blade Putter" id="mainImg">
                 </div>
                 <div class="product-thumbnails">
-                    <div class="product-thumbnail active" onclick="selectThumb(this, 0)" style="background: url('../assets/putters/polished-centre-blade-1.jpg') center/cover;"></div>
-                    <div class="product-thumbnail" onclick="selectThumb(this, 1)" style="background: url('../assets/putters/polished-centre-blade-2.jpg') center/cover;"></div>
-                    <div class="product-thumbnail" onclick="selectThumb(this, 2)" style="background: url('../assets/putters/polished-centre-blade-3.jpg') center/cover;"></div>
-                    <div class="product-thumbnail" onclick="selectThumb(this, 3)" style="background: url('../assets/putters/black-centre-blade-1.jpg') center/cover;"></div>
+                    <div class="product-thumbnail active" onclick="selectThumb(this, 0)" style="background: url('../assets/putters/polished-centre-blade-1.png') center/cover;"></div>
+                    <div class="product-thumbnail" onclick="selectThumb(this, 1)" style="background: url('../assets/putters/polished-centre-blade-2.png') center/cover;"></div>
+                    <div class="product-thumbnail" onclick="selectThumb(this, 2)" style="background: url('../assets/putters/polished-centre-blade-3.png') center/cover;"></div>
+                    <div class="product-thumbnail" onclick="selectThumb(this, 3)" style="background: url('../assets/putters/black-centre-blade-1.png') center/cover;"></div>
                 </div>
             </div>
 
@@ -216,24 +216,27 @@
         // Image sets per finish + shaft combo
         const finishImages = {
             'Gun Blue|Black': [
-                '../assets/putters/black-centre-blade-1.jpg',
-                '../assets/putters/black-centre-blade-2.jpg',
-                '../assets/putters/black-centre-blade-3.jpg',
-                '../assets/putters/black-centre-blade-4.jpg'
+                '../assets/putters/black-centre-blade-1.png',
+                '../assets/putters/black-centre-blade-2.png',
+                '../assets/putters/black-centre-blade-3.png',
+                '../assets/putters/black-centre-blade-4.png'
             ],
             'Gun Blue|Chrome': [
-                '../assets/putters/polished-centre-blade-1.jpg',
-                '../assets/putters/polished-centre-blade-2.jpg',
-                '../assets/putters/polished-centre-blade-3.jpg',
-                '../assets/putters/polished-centre-blade-4.jpg'
+                '../assets/putters/polished-centre-blade-1.png',
+                '../assets/putters/polished-centre-blade-2.png',
+                '../assets/putters/polished-centre-blade-3.png',
+                '../assets/putters/polished-centre-blade-4.png'
             ]
         };
+
+        // DB-loaded images override (keyed by variant)
+        let dbImages = {};
 
         let currentGallery = finishImages['Gun Blue|Black'];
 
         function updateGallery() {
             const key = selectedFinish.name + '|' + selectedShaft;
-            currentGallery = finishImages[key] || finishImages['Gun Blue|Black'];
+            currentGallery = dbImages[key] || finishImages[key] || finishImages['Gun Blue|Black'];
 
             const mainImg = document.getElementById('mainImg');
             if (mainImg) mainImg.src = currentGallery[0];
@@ -249,11 +252,36 @@
         // Cart from localStorage
         let cart = JSON.parse(localStorage.getItem('proto_cart')) || [];
 
+        // Load DB images then initialize
+        async function loadDbImages() {
+            try {
+                const resp = await fetch(
+                    'https://rdsmdywbdiskxknluiym.supabase.co/rest/v1/proto_golf_product_images?product_id=eq.centre-blade&order=sort_order',
+                    {
+                        headers: {
+                            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM'
+                        }
+                    }
+                );
+                const images = await resp.json();
+                if (Array.isArray(images) && images.length > 0) {
+                    images.forEach(img => {
+                        if (!dbImages[img.variant_key]) dbImages[img.variant_key] = [];
+                        dbImages[img.variant_key].push(img.image_url);
+                    });
+                    updateGallery();
+                }
+            } catch (e) {
+                console.log('DB images not available, using defaults');
+            }
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             updatePrice();
             updateCartUI();
             updateStockStatus();
+            loadDbImages();
         });
 
         function selectFinish(btn, name, price) {

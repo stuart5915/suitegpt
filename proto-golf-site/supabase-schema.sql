@@ -138,6 +138,21 @@ CREATE TABLE proto_golf_email_log (
 );
 
 -- ============================================
+-- PRODUCT IMAGES TABLE (Admin-managed photos)
+-- ============================================
+CREATE TABLE proto_golf_product_images (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    product_id TEXT NOT NULL REFERENCES proto_golf_products(id),
+    variant_key TEXT NOT NULL, -- e.g. 'Raw|Chrome', 'Gun Blue|Black'
+    image_url TEXT NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_product_images_product ON proto_golf_product_images(product_id);
+CREATE INDEX idx_product_images_variant ON proto_golf_product_images(product_id, variant_key);
+
+-- ============================================
 -- ROW LEVEL SECURITY (RLS)
 -- ============================================
 
@@ -147,6 +162,7 @@ ALTER TABLE proto_golf_orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE proto_golf_analytics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE proto_golf_pickup_slots ENABLE ROW LEVEL SECURITY;
 ALTER TABLE proto_golf_email_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE proto_golf_product_images ENABLE ROW LEVEL SECURITY;
 
 -- Products: Anyone can read, only authenticated (admin) can modify
 CREATE POLICY "Products are viewable by everyone" ON proto_golf_products
@@ -171,6 +187,13 @@ CREATE POLICY "Anyone can log analytics" ON proto_golf_analytics
 
 CREATE POLICY "Analytics viewable by authenticated" ON proto_golf_analytics
     FOR SELECT USING (auth.role() = 'authenticated');
+
+-- Product images: Anyone can read, authenticated can modify
+CREATE POLICY "Product images viewable by everyone" ON proto_golf_product_images
+    FOR SELECT USING (true);
+
+CREATE POLICY "Product images editable by authenticated" ON proto_golf_product_images
+    FOR ALL USING (auth.role() = 'authenticated');
 
 -- Pickup slots: Anyone can read, authenticated can modify
 CREATE POLICY "Pickup slots viewable by everyone" ON proto_golf_pickup_slots

@@ -48,13 +48,13 @@
             <!-- Gallery -->
             <div class="product-gallery">
                 <div class="product-main-image" id="mainImage">
-                    <img src="../assets/putters/stainless-long-neck-blade-1.jpg" alt="Long Neck Blade Putter" id="mainImg">
+                    <img src="../assets/putters/stainless-long-neck-blade-1.png" alt="Long Neck Blade Putter" id="mainImg">
                 </div>
                 <div class="product-thumbnails">
-                    <div class="product-thumbnail active" onclick="selectThumb(this, 0)" style="background: url('../assets/putters/stainless-long-neck-blade-1.jpg') center/cover;"></div>
-                    <div class="product-thumbnail" onclick="selectThumb(this, 1)" style="background: url('../assets/putters/stainless-long-neck-blade-2.jpg') center/cover;"></div>
-                    <div class="product-thumbnail" onclick="selectThumb(this, 2)" style="background: url('../assets/putters/long-neck-blade-hosels-1.jpg') center/cover;"></div>
-                    <div class="product-thumbnail" onclick="selectThumb(this, 3)" style="background: url('../assets/putters/long-neck-blade-hosels-2.jpg') center/cover;"></div>
+                    <div class="product-thumbnail active" onclick="selectThumb(this, 0)" style="background: url('../assets/putters/stainless-long-neck-blade-1.png') center/cover;"></div>
+                    <div class="product-thumbnail" onclick="selectThumb(this, 1)" style="background: url('../assets/putters/stainless-long-neck-blade-2.png') center/cover;"></div>
+                    <div class="product-thumbnail" onclick="selectThumb(this, 2)" style="background: url('../assets/putters/long-neck-blade-hosels-1.png') center/cover;"></div>
+                    <div class="product-thumbnail" onclick="selectThumb(this, 3)" style="background: url('../assets/putters/long-neck-blade-hosels-2.png') center/cover;"></div>
                 </div>
             </div>
 
@@ -175,14 +175,44 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             updateCartUI();
+            loadDbImages();
         });
 
-        const galleryImages = [
-            '../assets/putters/stainless-long-neck-blade-1.jpg',
-            '../assets/putters/stainless-long-neck-blade-2.jpg',
-            '../assets/putters/long-neck-blade-hosels-1.jpg',
-            '../assets/putters/long-neck-blade-hosels-2.jpg'
+        let galleryImages = [
+            '../assets/putters/stainless-long-neck-blade-1.png',
+            '../assets/putters/stainless-long-neck-blade-2.png',
+            '../assets/putters/long-neck-blade-hosels-1.png',
+            '../assets/putters/long-neck-blade-hosels-2.png'
         ];
+
+        // Load DB images if available
+        async function loadDbImages() {
+            try {
+                const resp = await fetch(
+                    'https://rdsmdywbdiskxknluiym.supabase.co/rest/v1/proto_golf_product_images?product_id=eq.long-neck-blade&order=sort_order',
+                    {
+                        headers: {
+                            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM'
+                        }
+                    }
+                );
+                const images = await resp.json();
+                if (Array.isArray(images) && images.length > 0) {
+                    galleryImages = images.map(img => img.image_url);
+                    // Rebuild thumbnails
+                    const mainImg = document.getElementById('mainImg');
+                    if (mainImg) mainImg.src = galleryImages[0];
+                    const thumbContainer = document.querySelector('.product-thumbnails');
+                    if (thumbContainer) {
+                        thumbContainer.innerHTML = galleryImages.map((src, i) =>
+                            `<div class="product-thumbnail${i === 0 ? ' active' : ''}" onclick="selectThumb(this, ${i})" style="background: url('${src}') center/cover;"></div>`
+                        ).join('');
+                    }
+                }
+            } catch (e) {
+                console.log('DB images not available, using defaults');
+            }
+        }
 
         function selectThumb(thumb, index) {
             document.querySelectorAll('.product-thumbnail').forEach(t => t.classList.remove('active'));
