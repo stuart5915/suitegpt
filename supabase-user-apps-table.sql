@@ -25,6 +25,10 @@ CREATE TABLE IF NOT EXISTS user_apps (
     is_public BOOLEAN DEFAULT false,     -- Can others see/use this app?
     is_listed BOOLEAN DEFAULT false,     -- Show in Community Apps directory?
 
+    -- Builder earnings
+    builder_markup DECIMAL(12, 4) DEFAULT 0,   -- Credits builder charges on top of base cost
+    total_earnings DECIMAL(12, 4) DEFAULT 0,   -- Total credits earned from markup
+
     -- Stats
     uses INTEGER DEFAULT 0,
     forks INTEGER DEFAULT 0,

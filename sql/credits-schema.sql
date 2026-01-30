@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS credit_transactions (
     wallet_address TEXT,
     telegram_id TEXT,
     amount DECIMAL(12, 4) NOT NULL,
-    type TEXT NOT NULL CHECK (type IN ('deposit', 'usage', 'refund', 'bonus')),
+    type TEXT NOT NULL CHECK (type IN ('deposit', 'usage', 'refund', 'bonus', 'builder_earning')),
     feature TEXT,
     app_id TEXT,  -- Can be UUID or slug
     description TEXT,
@@ -297,7 +297,104 @@ END;
 $$ LANGUAGE plpgsql;
 
 
--- 8. VIEWS FOR ANALYTICS
+-- 8. DEDUCT APP CREDITS (with builder markup)
+-- Deducts (base_cost + builder_markup) from user, pays builder the markup
+-- Returns JSON: { success, total_charged, builder_earned }
+-- =====================================================
+
+CREATE OR REPLACE FUNCTION deduct_app_credits(
+    p_wallet TEXT,
+    p_base_cost DECIMAL,
+    p_user_app_id UUID
+) RETURNS JSONB AS $$
+DECLARE
+    v_wallet_lower TEXT;
+    v_builder_markup DECIMAL;
+    v_total_cost DECIMAL;
+    v_current_balance DECIMAL;
+    v_builder_user_id UUID;
+    v_builder_wallet TEXT;
+BEGIN
+    v_wallet_lower := LOWER(p_wallet);
+
+    -- Look up builder markup and owner
+    SELECT COALESCE(builder_markup, 0), user_id
+    INTO v_builder_markup, v_builder_user_id
+    FROM user_apps
+    WHERE id = p_user_app_id;
+
+    IF v_builder_user_id IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'error', 'App not found');
+    END IF;
+
+    v_total_cost := p_base_cost + v_builder_markup;
+
+    -- Check user balance
+    SELECT balance INTO v_current_balance
+    FROM suite_credits
+    WHERE wallet_address = v_wallet_lower;
+
+    IF v_current_balance IS NULL THEN
+        INSERT INTO suite_credits (wallet_address, balance) VALUES (v_wallet_lower, 0);
+        v_current_balance := 0;
+    END IF;
+
+    IF v_current_balance < v_total_cost THEN
+        RETURN jsonb_build_object('success', false, 'error', 'Insufficient credits', 'required', v_total_cost, 'balance', v_current_balance);
+    END IF;
+
+    -- Deduct total from user
+    UPDATE suite_credits
+    SET balance = balance - v_total_cost,
+        total_used = COALESCE(total_used, 0) + v_total_cost,
+        updated_at = NOW()
+    WHERE wallet_address = v_wallet_lower;
+
+    -- Log user's usage transaction
+    INSERT INTO credit_transactions (wallet_address, amount, type, feature, app_id, description)
+    VALUES (v_wallet_lower, -v_total_cost, 'usage', 'ai_action', p_user_app_id::TEXT,
+            'AI action: ' || p_base_cost || ' base + ' || v_builder_markup || ' markup');
+
+    -- Pay builder their markup (if any)
+    IF v_builder_markup > 0 THEN
+        -- Find builder's wallet (from suite_operators or auth metadata)
+        -- We use the user_id to find their wallet in suite_credits
+        SELECT wallet_address INTO v_builder_wallet
+        FROM suite_credits
+        WHERE wallet_address = (
+            SELECT LOWER(raw_user_meta_data->>'wallet_address')
+            FROM auth.users WHERE id = v_builder_user_id
+        )
+        LIMIT 1;
+
+        IF v_builder_wallet IS NOT NULL THEN
+            UPDATE suite_credits
+            SET balance = balance + v_builder_markup,
+                updated_at = NOW()
+            WHERE wallet_address = v_builder_wallet;
+
+            -- Log builder earning
+            INSERT INTO credit_transactions (wallet_address, amount, type, feature, app_id, description)
+            VALUES (v_builder_wallet, v_builder_markup, 'builder_earning', 'ai_action', p_user_app_id::TEXT,
+                    'Builder markup earned from app usage');
+        END IF;
+
+        -- Update app total_earnings
+        UPDATE user_apps
+        SET total_earnings = COALESCE(total_earnings, 0) + v_builder_markup
+        WHERE id = p_user_app_id;
+    END IF;
+
+    -- Log usage event
+    INSERT INTO app_usage (app_id, wallet_address, feature, credits_used)
+    VALUES (p_user_app_id, v_wallet_lower, 'ai_action', v_total_cost);
+
+    RETURN jsonb_build_object('success', true, 'total_charged', v_total_cost, 'builder_earned', v_builder_markup);
+END;
+$$ LANGUAGE plpgsql;
+
+
+-- 9. VIEWS FOR ANALYTICS
 -- =====================================================
 
 -- App revenue leaderboard

@@ -5355,6 +5355,133 @@
             padding: 24px;
         }
 
+        /* App Settings Modal */
+        .app-settings-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 1001;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .app-settings-overlay.active { display: flex; }
+        .app-settings-modal {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 480px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .app-settings-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .app-settings-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+        .app-settings-body { padding: 24px; }
+        .app-settings-group { margin-bottom: 20px; }
+        .app-settings-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .app-settings-value {
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+        .app-settings-pricing {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 16px;
+        }
+        .app-settings-pricing-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        .app-settings-pricing-row + .app-settings-pricing-row {
+            border-top: 1px solid var(--border-subtle);
+        }
+        .app-settings-pricing-row.total {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        .app-settings-cost-badge {
+            background: rgba(99,102,241,0.15);
+            color: #818cf8;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .app-settings-total-cost {
+            color: #22c55e;
+            font-weight: 700;
+            font-size: 1rem;
+        }
+        .app-settings-markup-input {
+            width: 80px;
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        .app-settings-earnings {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #22c55e;
+        }
+        .app-settings-toggles { display: flex; flex-direction: column; gap: 10px; }
+        .app-settings-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .app-settings-toggle input[type="checkbox"] {
+            width: 18px; height: 18px;
+            accent-color: #6366f1;
+        }
+        .app-settings-save-btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            margin-top: 8px;
+        }
+        .app-settings-save-btn:hover { opacity: 0.9; }
+
         .proposal-modal-app {
             display: flex;
             align-items: center;
@@ -18286,6 +18413,23 @@
                     </div>
                 </section>
 
+                <!-- App Settings Modal -->
+                <div class="app-settings-overlay" id="appSettingsOverlay" onclick="closeAppSettings(event)">
+                    <div class="app-settings-modal" onclick="event.stopPropagation()">
+                        <div class="app-settings-header">
+                            <h3 class="app-settings-title">App Settings</h3>
+                            <button class="proposal-modal-close" onclick="closeAppSettings()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="app-settings-body" id="appSettingsBody">
+                            <!-- Populated dynamically by openAppSettings() -->
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Proposal Modal -->
                 <div class="proposal-modal-overlay" id="proposalModalOverlay" onclick="closeProposalModal(event)">
                     <div class="proposal-modal" onclick="event.stopPropagation()">
@@ -20456,6 +20600,7 @@
         const BASE_CHAIN_ID = 8453;
         const BASE_RPC = 'https://mainnet.base.org';
         const CREDITS_PER_USDC = 1000;
+        const BASE_AI_COST = 5; // credits per AI action — SUITE's floor cost
         // StakingRewards contract — decentralized reward pool on Base
         const STAKING_REWARDS_ADDRESS = '0x4e4B34DDAdd4e92c75a2446a26dba2a020dA02f7';
         const STAKING_REWARDS_ABI = [
@@ -21042,6 +21187,7 @@
                         <div class="project-section-content">
                             <button class="project-section-btn primary" onclick="event.stopPropagation(); launchCommunityApp('${app.id}')">Launch</button>
                             <button class="project-section-btn" onclick="event.stopPropagation(); editUserApp('${app.id}')">Edit</button>
+                            <button class="project-section-btn" onclick="event.stopPropagation(); openAppSettings('${app.id}')">Settings</button>
                             <button class="project-section-btn" onclick="event.stopPropagation(); removeUserApp('${app.id}')">Delete</button>
                         </div>
                     </div>
@@ -27990,8 +28136,9 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
                     .eq('id', appId)
                     .then(() => {});
 
-                // Open the app in a blob URL
-                const blob = new Blob([app.code], { type: 'text/html' });
+                // Inject Credit SDK and open the app in a blob URL
+                const appCode = injectCreditSDK(app.code, appId);
+                const blob = new Blob([appCode], { type: 'text/html' });
                 const blobUrl = URL.createObjectURL(blob);
 
                 closeAppsPanel();
@@ -29258,6 +29405,7 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
 
                 if (data) {
                     ensureOperatorEntry(data.id, name, description || '');
+                    createAutoProposal(data.id, name, description || '');
                 }
 
                 showToast(`"${name}" imported to your projects!`);
@@ -29791,6 +29939,17 @@ AVAILABLE APIs (use these in the generated code if the idea calls for AI feature
      })
    }).then(r => r.json()).then(data => data.text)
 
+IMPORTANT - Credit Charging for AI Actions:
+Before ANY AI API call (Gemini or Groq), you MUST charge credits using the SUITE SDK:
+   window.SUITE.chargeCredits('ai_action', function(result) {
+     if (result.success) {
+       // proceed with the AI API call
+     } else {
+       // show error: result.error (e.g. "Insufficient credits")
+     }
+   });
+This is required. Do NOT call AI APIs without charging credits first. The SUITE SDK is automatically available in all apps.
+
 Use localStorage for data persistence. All browser APIs are available (Canvas, Audio, Speech, etc).`;
 
         async function buildQuickApp() {
@@ -30128,6 +30287,7 @@ Output ONLY the COMPLETE updated HTML (with all existing + new code), starting w
                                 window.quickAppResult.savedAppId = savedApp.id;
                                 renderSidebarApps(); // Show in sidebar immediately
                                 ensureOperatorEntry(savedApp.id, window.quickAppResult.name, window.quickAppResult.idea);
+                                createAutoProposal(savedApp.id, window.quickAppResult.name, window.quickAppResult.idea);
                             }
                         } else if (window.quickAppResult.savedAppId) {
                             await supabase
@@ -30528,6 +30688,229 @@ Return as JSON array. No markdown, no code blocks.`,
             }
         }
 
+        // ===== AUTO-PROPOSAL ON BUILD =====
+        async function createAutoProposal(userAppId, name, description) {
+            const currentUser = getFactoryCurrentUser();
+            if (!supabaseClient || !currentUser) return;
+            try {
+                // Check if proposal already exists for this user_app
+                const { data: existing } = await supabaseClient
+                    .from('factory_proposals')
+                    .select('id')
+                    .eq('user_app_id', userAppId)
+                    .maybeSingle();
+                if (existing) return; // Already has a proposal
+
+                await supabaseClient
+                    .from('factory_proposals')
+                    .insert({
+                        user_id: currentUser.id,
+                        name: name,
+                        description: description || 'Community-built app submitted for governance review.',
+                        status: 'idea',
+                        type: 'new',
+                        user_app_id: userAppId
+                    });
+                console.log('Auto-proposal created for app:', name);
+            } catch (e) {
+                console.error('createAutoProposal failed (non-blocking):', e);
+            }
+        }
+
+        // ===== CREDIT SDK INJECTION =====
+        function injectCreditSDK(html, appId) {
+            const sdkScript = `
+<script>
+// SUITE Credit SDK — injected by SuiteGPT
+window.SUITE = window.SUITE || {};
+window.SUITE._pendingCharges = {};
+window.SUITE._chargeCounter = 0;
+window.SUITE.chargeCredits = function(feature, callback) {
+    var id = 'charge_' + (++window.SUITE._chargeCounter) + '_' + Date.now();
+    window.SUITE._pendingCharges[id] = callback || function() {};
+    window.parent.postMessage({
+        type: 'suite-charge-credits',
+        appId: '${appId}',
+        feature: feature || 'ai_action',
+        chargeId: id
+    }, '*');
+};
+window.addEventListener('message', function(e) {
+    if (e.data && e.data.type === 'suite-charge-result' && e.data.chargeId) {
+        var cb = window.SUITE._pendingCharges[e.data.chargeId];
+        if (cb) {
+            cb({ success: e.data.success, error: e.data.error, totalCharged: e.data.totalCharged });
+            delete window.SUITE._pendingCharges[e.data.chargeId];
+        }
+    }
+});
+</script>`;
+            // Inject before </head> or at the start of <body>
+            if (html.includes('</head>')) {
+                return html.replace('</head>', sdkScript + '\n</head>');
+            } else if (html.includes('<body')) {
+                return html.replace(/<body[^>]*>/, (match) => match + sdkScript);
+            }
+            return sdkScript + html;
+        }
+
+        // ===== PARENT CREDIT CHARGE LISTENER =====
+        window.addEventListener('message', async function(e) {
+            if (!e.data || e.data.type !== 'suite-charge-credits') return;
+            const { appId, feature, chargeId } = e.data;
+            if (!appId || !chargeId) return;
+
+            const currentUser = getFactoryCurrentUser();
+            if (!supabaseClient || !currentUser) {
+                e.source?.postMessage({ type: 'suite-charge-result', chargeId, success: false, error: 'Not signed in' }, '*');
+                return;
+            }
+
+            try {
+                // Get user wallet
+                const walletAddress = currentUser.user_metadata?.wallet_address || currentUser.email;
+                if (!walletAddress) {
+                    e.source?.postMessage({ type: 'suite-charge-result', chargeId, success: false, error: 'No wallet found' }, '*');
+                    return;
+                }
+
+                // Call the deduct_app_credits RPC
+                const { data, error } = await supabaseClient.rpc('deduct_app_credits', {
+                    p_wallet: walletAddress.toLowerCase(),
+                    p_base_cost: BASE_AI_COST,
+                    p_user_app_id: appId
+                });
+
+                if (error) throw error;
+
+                const result = typeof data === 'string' ? JSON.parse(data) : data;
+                e.source?.postMessage({
+                    type: 'suite-charge-result',
+                    chargeId,
+                    success: result.success,
+                    error: result.error || null,
+                    totalCharged: result.total_charged || 0
+                }, '*');
+            } catch (err) {
+                console.error('Credit charge failed:', err);
+                e.source?.postMessage({ type: 'suite-charge-result', chargeId, success: false, error: err.message }, '*');
+            }
+        });
+
+        // ===== APP SETTINGS MODAL =====
+        async function openAppSettings(appId) {
+            if (!supabaseClient) return;
+
+            try {
+                const { data: app, error } = await supabaseClient
+                    .from('user_apps')
+                    .select('id, name, description, builder_markup, total_earnings, is_public, is_listed')
+                    .eq('id', appId)
+                    .single();
+
+                if (error) throw error;
+
+                const markup = parseFloat(app.builder_markup) || 0;
+                const earnings = parseFloat(app.total_earnings) || 0;
+                const totalCost = BASE_AI_COST + markup;
+
+                const overlay = document.getElementById('appSettingsOverlay');
+                const body = document.getElementById('appSettingsBody');
+                if (!overlay || !body) return;
+
+                body.innerHTML = `
+                    <input type="hidden" id="appSettingsId" value="${app.id}">
+                    <div class="app-settings-group">
+                        <label class="app-settings-label">App Name</label>
+                        <div class="app-settings-value">${app.name || 'Untitled'}</div>
+                    </div>
+                    <div class="app-settings-group">
+                        <label class="app-settings-label">Credit Pricing</label>
+                        <div class="app-settings-pricing">
+                            <div class="app-settings-pricing-row">
+                                <span>Base API Cost (SUITE)</span>
+                                <span class="app-settings-cost-badge">${BASE_AI_COST} credits</span>
+                            </div>
+                            <div class="app-settings-pricing-row">
+                                <span>Your Markup</span>
+                                <input type="number" id="appSettingsMarkup" class="app-settings-markup-input" min="0" max="100" step="1" value="${markup}" onchange="updateAppSettingsCostPreview()" oninput="updateAppSettingsCostPreview()">
+                            </div>
+                            <div class="app-settings-pricing-row total">
+                                <span>User Pays</span>
+                                <span id="appSettingsTotalCost" class="app-settings-total-cost">${totalCost} credits</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="app-settings-group">
+                        <label class="app-settings-label">Your Earnings</label>
+                        <div class="app-settings-earnings">${earnings.toFixed(2)} credits earned</div>
+                    </div>
+                    <div class="app-settings-group">
+                        <label class="app-settings-label">Visibility</label>
+                        <div class="app-settings-toggles">
+                            <label class="app-settings-toggle">
+                                <input type="checkbox" id="appSettingsPublic" ${app.is_public ? 'checked' : ''}>
+                                <span>Public (others can use)</span>
+                            </label>
+                            <label class="app-settings-toggle">
+                                <input type="checkbox" id="appSettingsListed" ${app.is_listed ? 'checked' : ''}>
+                                <span>Listed (show in app store)</span>
+                            </label>
+                        </div>
+                    </div>
+                    <button class="app-settings-save-btn" onclick="saveAppSettings()">Save Settings</button>
+                `;
+
+                overlay.classList.add('active');
+            } catch (err) {
+                console.error('Failed to load app settings:', err);
+                alert('Failed to load app settings.');
+            }
+        }
+
+        function updateAppSettingsCostPreview() {
+            const markupInput = document.getElementById('appSettingsMarkup');
+            const totalEl = document.getElementById('appSettingsTotalCost');
+            if (!markupInput || !totalEl) return;
+            const markup = parseFloat(markupInput.value) || 0;
+            totalEl.textContent = (BASE_AI_COST + markup) + ' credits';
+        }
+
+        async function saveAppSettings() {
+            const appId = document.getElementById('appSettingsId')?.value;
+            const markup = parseFloat(document.getElementById('appSettingsMarkup')?.value) || 0;
+            const isPublic = document.getElementById('appSettingsPublic')?.checked || false;
+            const isListed = document.getElementById('appSettingsListed')?.checked || false;
+
+            if (!supabaseClient || !appId) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('user_apps')
+                    .update({
+                        builder_markup: markup,
+                        is_public: isPublic,
+                        is_listed: isListed
+                    })
+                    .eq('id', appId);
+
+                if (error) throw error;
+
+                showToast('App settings saved!');
+                closeAppSettings();
+                renderDashboardApps();
+            } catch (err) {
+                console.error('Failed to save app settings:', err);
+                alert('Failed to save settings: ' + err.message);
+            }
+        }
+
+        function closeAppSettings(event) {
+            if (event && event.target !== event.currentTarget) return;
+            const overlay = document.getElementById('appSettingsOverlay');
+            if (overlay) overlay.classList.remove('active');
+        }
+
         async function saveQuickApp() {
             if (!window.quickAppResult) return;
 
@@ -30548,6 +30931,7 @@ Return as JSON array. No markdown, no code blocks.`,
                         .eq('id', window.quickAppResult.savedAppId);
                     if (error) throw error;
                     ensureOperatorEntry(window.quickAppResult.savedAppId, name, idea);
+                    createAutoProposal(window.quickAppResult.savedAppId, name, idea);
                 } else {
                     // Not yet saved - insert new
                     const { data, error } = await supabaseClient
@@ -30566,6 +30950,7 @@ Return as JSON array. No markdown, no code blocks.`,
                     if (data) {
                         window.quickAppResult.savedAppId = data.id;
                         ensureOperatorEntry(data.id, name, idea);
+                        createAutoProposal(data.id, name, idea);
                     }
                 }
 
