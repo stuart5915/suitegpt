@@ -912,6 +912,8 @@
                                 <th>Shaft</th>
                                 <th>Finish Addon</th>
                                 <th>Shaft Addon</th>
+                                <th>Hosel</th>
+                                <th>Hosel Addon</th>
                                 <th>Sort Order</th>
                                 <th>Default</th>
                                 <th>Actions</th>
@@ -1195,6 +1197,26 @@
                 <div class="form-group">
                     <label class="form-label">Shaft Price Addon ($)</label>
                     <input type="number" class="form-input" id="variantShaftPriceAddon" placeholder="0" step="0.01" value="0">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Hosel Type</label>
+                    <select class="form-input" id="variantHoselType">
+                        <option value="">None</option>
+                        <option value="Brass">Brass</option>
+                        <option value="Stainless">Stainless</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Hosel Finish</label>
+                    <select class="form-input" id="variantHoselFinish">
+                        <option value="">None</option>
+                        <option value="Blasted">Blasted</option>
+                        <option value="Black Oxide">Black Oxide</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Hosel Price Addon ($)</label>
+                    <input type="number" class="form-input" id="variantHoselPriceAddon" placeholder="0" step="0.01" value="0">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Sort Order</label>
@@ -1859,7 +1881,7 @@
         function renderVariantsTable() {
             const table = document.getElementById('variantsTable');
             if (!currentVariants || currentVariants.length === 0) {
-                table.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--color-steel); padding: 40px;">No variants for this product</td></tr>';
+                table.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--color-steel); padding: 40px;">No variants for this product</td></tr>';
                 return;
             }
             table.innerHTML = currentVariants.map(v => `
@@ -1868,6 +1890,8 @@
                     <td>${v.shaft_color}</td>
                     <td>${parseFloat(v.price_addon) > 0 ? '+$' + parseFloat(v.price_addon).toFixed(0) : '-'}</td>
                     <td>${parseFloat(v.shaft_price_addon) > 0 ? '+$' + parseFloat(v.shaft_price_addon).toFixed(0) : '-'}</td>
+                    <td>${v.hosel_type ? v.hosel_type + (v.hosel_finish ? ' / ' + v.hosel_finish : '') : '-'}</td>
+                    <td>${parseFloat(v.hosel_price_addon) > 0 ? '+$' + parseFloat(v.hosel_price_addon).toFixed(0) : '-'}</td>
                     <td>${v.sort_order}</td>
                     <td>${v.is_default ? '<span class="badge badge-success">Default</span>' : ''}</td>
                     <td>
@@ -1888,6 +1912,9 @@
             document.getElementById('variantShaft').value = '';
             document.getElementById('variantPriceAddon').value = '0';
             document.getElementById('variantShaftPriceAddon').value = '0';
+            document.getElementById('variantHoselType').value = '';
+            document.getElementById('variantHoselFinish').value = '';
+            document.getElementById('variantHoselPriceAddon').value = '0';
             document.getElementById('variantSortOrder').value = '0';
             document.getElementById('variantIsDefault').checked = false;
             document.getElementById('variantModalTitle').textContent = 'Add Variant';
@@ -1902,6 +1929,9 @@
             document.getElementById('variantShaft').value = v.shaft_color;
             document.getElementById('variantPriceAddon').value = parseFloat(v.price_addon) || 0;
             document.getElementById('variantShaftPriceAddon').value = parseFloat(v.shaft_price_addon) || 0;
+            document.getElementById('variantHoselType').value = v.hosel_type || '';
+            document.getElementById('variantHoselFinish').value = v.hosel_finish || '';
+            document.getElementById('variantHoselPriceAddon').value = parseFloat(v.hosel_price_addon) || 0;
             document.getElementById('variantSortOrder').value = v.sort_order || 0;
             document.getElementById('variantIsDefault').checked = v.is_default || false;
             document.getElementById('variantModalTitle').textContent = 'Edit Variant';
@@ -1927,6 +1957,9 @@
                 shaft_color: shaft,
                 price_addon: parseFloat(document.getElementById('variantPriceAddon').value) || 0,
                 shaft_price_addon: parseFloat(document.getElementById('variantShaftPriceAddon').value) || 0,
+                hosel_type: document.getElementById('variantHoselType').value || null,
+                hosel_finish: document.getElementById('variantHoselFinish').value || null,
+                hosel_price_addon: parseFloat(document.getElementById('variantHoselPriceAddon').value) || 0,
                 sort_order: parseInt(document.getElementById('variantSortOrder').value) || 0,
                 is_default: document.getElementById('variantIsDefault').checked
             };
