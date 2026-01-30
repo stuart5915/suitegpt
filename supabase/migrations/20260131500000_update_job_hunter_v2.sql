@@ -611,6 +611,25 @@ UPDATE user_apps SET code = '<!DOCTYPE html>
                 <button class="btn btn-secondary btn-sm" onclick="openBoardExternal()">Open in New Tab</button>
                 <button class="btn btn-primary btn-sm" onclick="showLogApplication()">Log Application</button>
             </div>
+
+            <!-- Job Fit Analyzer -->
+            <div class="resume-section" style="margin-top:20px;">
+                <div class="resume-header">
+                    <h3>Job Fit Analyzer</h3>
+                    <button class="btn btn-primary btn-sm" onclick="analyzeJobFit()">Analyze Fit</button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Paste job description</label>
+                    <textarea class="textarea-sm" id="fitJobDescription" placeholder="Copy a job posting from the board above and paste it here to get an AI analysis of how well you match..."></textarea>
+                </div>
+                <div class="ai-output-wrap">
+                    <div class="ai-output" id="fitOutput"></div>
+                    <button class="copy-btn" onclick="copyFitOutput()" style="display:none" id="fitCopyBtn">Copy</button>
+                </div>
+                <div id="fitAddPipeline" style="display:none;margin-top:12px;">
+                    <button class="btn btn-secondary btn-sm" onclick="addFitToPipeline()">Add to Pipeline</button>
+                </div>
+            </div>
         </div>
 
         <!-- Log Application Modal -->
@@ -1145,6 +1164,114 @@ Be genuine, not salesy. Show you know the company. Reference specific things bui
             }
             localStorage.setItem(''jh_checklist'', JSON.stringify(checked));
             renderChecklist();
+        }
+
+        // ===== JOB FIT ANALYZER =====
+        let lastFitCompany = '''';
+        let lastFitRole = '''';
+
+        async function analyzeJobFit() {
+            const jobDesc = document.getElementById(''fitJobDescription'').value.trim();
+            const bg = document.getElementById(''resumeBackground'')?.value.trim() || '''';
+            const output = document.getElementById(''fitOutput'');
+            const copyBtn = document.getElementById(''fitCopyBtn'');
+            const pipelineBtn = document.getElementById(''fitAddPipeline'');
+
+            if (!jobDesc) { alert(''Paste a job description first.''); return; }
+            if (!bg) { alert(''Add your background in the Resume Lab tab first.''); return; }
+
+            output.textContent = '''';
+            copyBtn.style.display = ''none'';
+            pipelineBtn.style.display = ''none'';
+            output.innerHTML = ''<span class="spinner"></span> Analyzing job fit...'';
+
+            const prompt = `You are a career advisor. Analyze how well this candidate fits this job posting.
+
+CANDIDATE BACKGROUND:
+${bg}
+
+JOB POSTING:
+${jobDesc}
+
+Provide a structured analysis in this exact format:
+
+FIT SCORE: [1-10]/10 — [Strong Fit / Good Fit / Moderate Fit / Weak Fit]
+
+WHY IT''S A FIT:
+• [Specific match between candidate background and job requirements]
+• [Another match]
+• [Continue as needed]
+
+GAPS TO ADDRESS:
+• [What''s missing and how to frame it positively]
+• [Continue as needed]
+
+APPLICATION APPROACH:
+• [How to position yourself for this specific role]
+• [What to emphasize in resume/cover letter]
+• [Any specific angle or story to lead with]
+
+EXTRACTED INFO:
+Company: [company name from the posting]
+Role: [job title from the posting]
+
+Be specific — reference actual skills, projects, and experience from the candidate''s background. Don''t be generic.`;
+
+            try {
+                const resp = await fetch(''/api/gemini'', {
+                    method: ''POST'',
+                    headers: { ''Content-Type'': ''application/json'' },
+                    body: JSON.stringify({
+                        prompt,
+                        model: ''gemini-3-flash-preview'',
+                        generationConfig: { temperature: 0.7, maxOutputTokens: 3000 }
+                    })
+                });
+                const data = await resp.json();
+                const text = data.text || ''No output generated.'';
+                output.textContent = text;
+                copyBtn.style.display = ''block'';
+
+                // Try to extract company and role for pipeline
+                const companyMatch = text.match(/Company:\s*(.+)/i);
+                const roleMatch = text.match(/Role:\s*(.+)/i);
+                lastFitCompany = companyMatch ? companyMatch[1].trim() : '''';
+                lastFitRole = roleMatch ? roleMatch[1].trim() : '''';
+                if (lastFitCompany && lastFitRole) {
+                    pipelineBtn.style.display = ''block'';
+                }
+            } catch (e) {
+                output.textContent = ''Error: '' + e.message;
+            }
+        }
+
+        function copyFitOutput() {
+            const text = document.getElementById(''fitOutput'').textContent;
+            navigator.clipboard.writeText(text);
+            const btn = document.getElementById(''fitCopyBtn'');
+            btn.textContent = ''Copied!'';
+            setTimeout(() => btn.textContent = ''Copy'', 1500);
+        }
+
+        function addFitToPipeline() {
+            if (!lastFitCompany || !lastFitRole) return;
+            const apps = getApps();
+            if (apps.some(a => a.company === lastFitCompany && a.role === lastFitRole)) {
+                alert(''Already in your pipeline.'');
+                return;
+            }
+            apps.push({
+                id: Date.now().toString(),
+                company: lastFitCompany,
+                role: lastFitRole,
+                link: activeBoardIndex >= 0 ? JOB_BOARDS[activeBoardIndex].url : '''',
+                stage: ''applied'',
+                date: new Date().toLocaleDateString()
+            });
+            saveApps(apps);
+            renderPipeline();
+            document.getElementById(''fitAddPipeline'').style.display = ''none'';
+            alert(`Added ${lastFitCompany} — ${lastFitRole} to Pipeline!`);
         }
 
         // ===== INIT =====
