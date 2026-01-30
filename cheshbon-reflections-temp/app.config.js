@@ -53,7 +53,8 @@ export default {
             "@react-native-community/datetimepicker"
         ],
         experiments: {
-            typedRoutes: true
+            typedRoutes: true,
+            baseUrl: "/cheshbon"
         },
         extra: {
             router: {},
