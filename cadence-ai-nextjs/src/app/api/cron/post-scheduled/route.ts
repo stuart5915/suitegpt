@@ -21,11 +21,11 @@ export async function POST(req: NextRequest) {
         const supabase = await createClient()
         const now = new Date().toISOString()
 
-        // Find approved posts that are due to be posted
+        // Find scheduled posts that are due to be posted
         const { data: posts, error } = await supabase
             .from('scheduled_posts')
             .select('*')
-            .eq('status', 'approved')
+            .eq('status', 'scheduled')
             .lte('scheduled_for', now)
             .order('scheduled_for', { ascending: true })
             .limit(5) // Process up to 5 posts per run
