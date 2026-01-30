@@ -3384,6 +3384,151 @@
             display: flex;
         }
 
+        /* === APP DETAIL VIEW === */
+        .app-detail-view {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            box-sizing: border-box;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow-y: auto;
+            z-index: 20;
+            background: var(--bg-dark);
+        }
+        .app-detail-view.active {
+            display: flex;
+        }
+        .app-detail-back {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 14px;
+            cursor: pointer;
+            padding: 8px 0;
+            align-self: flex-start;
+            margin-bottom: 32px;
+            transition: color 0.2s;
+        }
+        .app-detail-back:hover {
+            color: var(--text-primary);
+        }
+        .app-detail-icon {
+            width: 96px;
+            height: 96px;
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        .app-detail-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .app-detail-name {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin: 0 0 12px 0;
+            text-align: center;
+        }
+        .app-detail-category {
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: rgba(255,255,255,0.08);
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+        .app-detail-description {
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            text-align: center;
+            margin: 0 0 32px 0;
+        }
+        .app-detail-actions {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+        }
+        .app-detail-btn-primary {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            background: var(--accent-primary);
+            color: #fff;
+            transition: opacity 0.2s;
+        }
+        .app-detail-btn-primary:hover {
+            opacity: 0.9;
+        }
+        .app-detail-btn-secondary {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            border: 2px solid rgba(255,255,255,0.15);
+            cursor: pointer;
+            background: transparent;
+            color: var(--text-primary);
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .app-detail-btn-secondary:hover {
+            border-color: rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.05);
+        }
+        .app-detail-btn-secondary.added {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+        @media (max-width: 600px) {
+            .app-detail-view {
+                padding: 24px 16px;
+            }
+            .app-detail-icon {
+                width: 72px;
+                height: 72px;
+                border-radius: 18px;
+            }
+            .app-detail-name {
+                font-size: 22px;
+            }
+            .app-detail-actions {
+                flex-direction: column;
+            }
+        }
+
         /* Apps Source Toggle (SUITE / Community) */
         .apps-source-toggle {
             display: flex;
@@ -17384,6 +17529,28 @@
                     </div>
                 </section>
 
+                <!-- App Detail View -->
+                <section class="app-detail-view" id="appDetailView">
+                    <button class="app-detail-back" onclick="closeAppDetail()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+                        Back to Apps
+                    </button>
+                    <div class="app-detail-icon" id="appDetailIcon"></div>
+                    <h1 class="app-detail-name" id="appDetailName"></h1>
+                    <span class="app-detail-category" id="appDetailCategory"></span>
+                    <p class="app-detail-description" id="appDetailDescription"></p>
+                    <div class="app-detail-actions">
+                        <button class="app-detail-btn-primary" id="appDetailOpenBtn" onclick="openAppFromDetail()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                            Open App
+                        </button>
+                        <button class="app-detail-btn-secondary" id="appDetailAddBtn" onclick="addAppToProfileFromDetail()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                            Add to Profile
+                        </button>
+                    </div>
+                </section>
+
                 <!-- Inline Learn View -->
                 <section class="learn-view" id="learnView">
                     <div class="learn-view-header">
@@ -21150,6 +21317,18 @@
             } else if (path === '/creator-dashboard') {
                 exitBuilderMode();
                 openCreatorDashboard('your-apps', true);
+            } else if (path.match(/^\/apps\/([^/]+)\/open$/)) {
+                const slug = path.match(/^\/apps\/([^/]+)\/open$/)[1];
+                exitBuilderMode();
+                openAppDetail(slug, true);
+                setTimeout(() => {
+                    const app = SUITE_APPS[slug];
+                    if (app) previewApp(slug, app.url, app.name);
+                }, 100);
+            } else if (path.match(/^\/apps\/([^/]+)$/) && path !== '/apps/community') {
+                const slug = path.match(/^\/apps\/([^/]+)$/)[1];
+                exitBuilderMode();
+                openAppDetail(slug, true);
             } else if (path === '/apps/community') {
                 exitBuilderMode();
                 openAppsPanel(true);
@@ -21193,6 +21372,16 @@
                 }
             } else if (path === '/creator-dashboard') {
                 openCreatorDashboard('your-apps', true);
+            } else if (path.match(/^\/apps\/([^/]+)\/open$/)) {
+                const slug = path.match(/^\/apps\/([^/]+)\/open$/)[1];
+                openAppDetail(slug, true);
+                setTimeout(() => {
+                    const app = SUITE_APPS[slug];
+                    if (app) previewApp(slug, app.url, app.name);
+                }, 200);
+            } else if (path.match(/^\/apps\/([^/]+)$/) && path !== '/apps/community') {
+                const slug = path.match(/^\/apps\/([^/]+)$/)[1];
+                openAppDetail(slug, true);
             } else if (path === '/apps/community') {
                 openAppsPanel(true);
                 switchAppsSource('community', true);
@@ -27278,6 +27467,7 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
             // Show inline apps view instead of modal
             const welcomeState = document.getElementById('welcomeState');
             const appsView = document.getElementById('appsView');
+            const appDetailView = document.getElementById('appDetailView');
             const creatorDashboard = document.getElementById('creatorDashboard');
             const factoryView = document.getElementById('factoryView');
             const useCasesSection = document.getElementById('useCasesSection');
@@ -27292,7 +27482,9 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
             if (factoryView) factoryView.classList.remove('active');
             if (learnView) learnView.classList.remove('active');
             if (connectionsView) connectionsView.classList.remove('active');
+            if (appDetailView) appDetailView.classList.remove('active');
             if (appsView) appsView.classList.add('active');
+            currentDetailAppKey = null;
 
             // Also hide article reader if open
             hideArticle();
@@ -27405,17 +27597,20 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
         function closeAppsView(skipPushState = false) {
             const welcomeState = document.getElementById('welcomeState');
             const appsView = document.getElementById('appsView');
+            const appDetailView = document.getElementById('appDetailView');
             const useCasesSection = document.getElementById('useCasesSection');
             const searchInput = document.getElementById('appsViewSearch');
 
-            // Show welcome state, hide apps view
+            // Show welcome state, hide apps view and detail view
             if (welcomeState) welcomeState.style.display = '';
             if (useCasesSection) useCasesSection.style.display = '';
             if (appsView) appsView.classList.remove('active');
+            if (appDetailView) appDetailView.classList.remove('active');
             if (searchInput) searchInput.value = '';
 
             // Reset category to all
             currentAppsCategory = 'all';
+            currentDetailAppKey = null;
 
             // Update URL back to root
             if (!skipPushState) {
@@ -27668,8 +27863,133 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
         // Current previewing app key
         let currentPreviewApp = null;
 
+        // Current detail page app key
+        let currentDetailAppKey = null;
+
         // Pending app launch info (for modal)
         let pendingAppLaunch = { key: null, url: null, name: null };
+
+        function openAppDetail(appKey, skipPushState) {
+            const app = SUITE_APPS[appKey];
+            if (!app) {
+                // Unknown app slug - fall back to apps grid
+                openAppsPanel(skipPushState);
+                return;
+            }
+
+            currentDetailAppKey = appKey;
+
+            // Exit builder mode
+            exitBuilderMode();
+
+            // Hide all other views
+            const welcomeState = document.getElementById('welcomeState');
+            const appsView = document.getElementById('appsView');
+            const creatorDashboard = document.getElementById('creatorDashboard');
+            const factoryView = document.getElementById('factoryView');
+            const useCasesSection = document.getElementById('useCasesSection');
+            const learnView = document.getElementById('learnView');
+            const connectionsView = document.getElementById('connectionsView');
+            const detailView = document.getElementById('appDetailView');
+
+            if (welcomeState) welcomeState.style.display = 'none';
+            if (useCasesSection) useCasesSection.style.display = 'none';
+            if (creatorDashboard) creatorDashboard.classList.remove('active');
+            if (factoryView) factoryView.classList.remove('active');
+            if (learnView) learnView.classList.remove('active');
+            if (connectionsView) connectionsView.classList.remove('active');
+            if (appsView) appsView.classList.remove('active');
+            hideArticle();
+
+            // Populate detail view
+            const iconEl = document.getElementById('appDetailIcon');
+            const nameEl = document.getElementById('appDetailName');
+            const categoryEl = document.getElementById('appDetailCategory');
+            const descEl = document.getElementById('appDetailDescription');
+            const addBtn = document.getElementById('appDetailAddBtn');
+
+            if (app.iconUrl) {
+                iconEl.innerHTML = `<img src="${app.iconUrl}" alt="${app.name}">`;
+                iconEl.style.background = app.iconBg || 'var(--bg-card)';
+            } else {
+                iconEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="40" height="40"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`;
+                iconEl.style.background = app.iconBg || 'var(--bg-card)';
+            }
+
+            nameEl.textContent = app.name;
+            const category = APP_CATEGORY_MAP[appKey] || 'lifestyle';
+            categoryEl.textContent = category;
+            descEl.textContent = app.description;
+
+            // Update add button state
+            const savedApps = JSON.parse(localStorage.getItem('savedApps') || '[]');
+            if (savedApps.includes(appKey)) {
+                addBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> Added!`;
+                addBtn.classList.add('added');
+            } else {
+                addBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Add to Profile`;
+                addBtn.classList.remove('added');
+            }
+
+            // Show detail view
+            if (detailView) detailView.classList.add('active');
+
+            // Push URL
+            if (!skipPushState) {
+                history.pushState({ view: 'appDetail', appKey: appKey }, '', '/apps/' + appKey);
+            }
+
+            closeMobileSidebar();
+        }
+
+        function closeAppDetail() {
+            const detailView = document.getElementById('appDetailView');
+            if (detailView) detailView.classList.remove('active');
+            currentDetailAppKey = null;
+            openAppsPanel();
+        }
+
+        function openAppFromDetail() {
+            if (!currentDetailAppKey) return;
+            const app = SUITE_APPS[currentDetailAppKey];
+            if (!app) return;
+
+            // Extensions open in new tab
+            if (app.isExtension) {
+                window.open(app.url, '_blank');
+                return;
+            }
+
+            // Push the /open URL
+            history.pushState({ view: 'appOpen', appKey: currentDetailAppKey }, '', '/apps/' + currentDetailAppKey + '/open');
+
+            // Launch fullscreen preview
+            previewApp(currentDetailAppKey, app.url, app.name);
+        }
+
+        function addAppToProfileFromDetail() {
+            if (!currentDetailAppKey) return;
+
+            const addBtn = document.getElementById('appDetailAddBtn');
+            const savedApps = JSON.parse(localStorage.getItem('savedApps') || '[]');
+
+            if (savedApps.includes(currentDetailAppKey)) {
+                // Remove
+                const idx = savedApps.indexOf(currentDetailAppKey);
+                savedApps.splice(idx, 1);
+                localStorage.setItem('savedApps', JSON.stringify(savedApps));
+                addBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Add to Profile`;
+                addBtn.classList.remove('added');
+                showToast(`${SUITE_APPS[currentDetailAppKey]?.name || 'App'} removed from your profile`);
+            } else {
+                // Add
+                savedApps.push(currentDetailAppKey);
+                localStorage.setItem('savedApps', JSON.stringify(savedApps));
+                addBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> Added!`;
+                addBtn.classList.add('added');
+                showToast(`${SUITE_APPS[currentDetailAppKey]?.name || 'App'} added to your profile!`);
+            }
+        }
 
         function launchApp(appKey, url, name) {
             const app = SUITE_APPS[appKey];
@@ -27681,17 +28001,8 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
                 return;
             }
 
-            closeAppsPanel();
-
-            // Check if on mobile device - launch directly in fullscreen
-            if (window.innerWidth < 768) {
-                closeAppsView();
-                previewApp(appKey, url, name);
-                return;
-            }
-
-            // On desktop, open directly in mobile view (popup sits on top, no need to close apps view)
-            openMobileAppView(appKey, url, name);
+            // All other apps go to detail page
+            openAppDetail(appKey);
         }
 
         function showAppLaunchModal(appKey, url, name) {
@@ -28147,6 +28458,7 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
         function closeAppPreview() {
             const overlay = document.getElementById('appPreviewOverlay');
             const frame = document.getElementById('appPreviewFrame');
+            const returningToApp = currentPreviewApp;
 
             if (overlay) {
                 overlay.classList.remove('active');
@@ -28159,6 +28471,11 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
 
             document.body.style.overflow = '';
             currentPreviewApp = null;
+
+            // Navigate back to detail page if we came from one
+            if (returningToApp && SUITE_APPS[returningToApp]) {
+                openAppDetail(returningToApp);
+            }
         }
 
         function addAppToProfile() {
