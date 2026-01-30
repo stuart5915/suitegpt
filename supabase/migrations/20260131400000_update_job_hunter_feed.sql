@@ -1,0 +1,1850 @@
+UPDATE user_apps SET code = $APPHTML$
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Hunter | SUITE</title>
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #0a0a0a;
+            --bg-card: #141414;
+            --bg-card-hover: #1a1a1a;
+            --bg-input: #111;
+            --border: #222;
+            --border-hover: #333;
+            --text: #f0f0f0;
+            --text-dim: #888;
+            --text-muted: #555;
+            --accent: #6366f1;
+            --accent-soft: rgba(99,102,241,0.12);
+            --green: #22c55e;
+            --green-soft: rgba(34,197,94,0.12);
+            --orange: #f59e0b;
+            --orange-soft: rgba(245,158,11,0.12);
+            --red: #ef4444;
+            --red-soft: rgba(239,68,68,0.12);
+            --blue: #3b82f6;
+            --blue-soft: rgba(59,130,246,0.12);
+            --purple: #a855f7;
+            --purple-soft: rgba(168,85,247,0.12);
+        }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* Top Nav */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            background: var(--bg);
+            z-index: 100;
+        }
+        .top-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .top-bar-logo {
+            font-size: 1.3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .top-bar-divider {
+            width: 1px;
+            height: 20px;
+            background: var(--border);
+        }
+        .top-bar-title {
+            font-size: 0.95rem;
+            color: var(--text-dim);
+            font-weight: 600;
+        }
+
+        /* Tab Nav */
+        .tab-nav {
+            display: flex;
+            gap: 4px;
+            padding: 12px 24px;
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .tab-btn {
+            padding: 8px 18px;
+            border-radius: 10px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--text-dim);
+            font-family: inherit;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .tab-btn:hover { background: var(--bg-card); color: var(--text); }
+        .tab-btn.active {
+            background: var(--accent-soft);
+            color: var(--accent);
+            border-color: rgba(99,102,241,0.2);
+        }
+
+        /* Main Content */
+        .main { padding: 24px; max-width: 1200px; margin: 0 auto; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* Section Headers */
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-title .count {
+            font-size: 0.75rem;
+            background: var(--accent-soft);
+            color: var(--accent);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+        }
+
+        /* Job Board Cards */
+        .boards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        .board-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            transition: all 0.2s;
+        }
+        .board-card:hover { border-color: var(--border-hover); background: var(--bg-card-hover); }
+        .board-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        .board-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        .board-name {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+        .board-desc {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-top: 2px;
+        }
+        .board-links {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .board-link {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border);
+            text-decoration: none;
+            color: var(--text);
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.15s;
+        }
+        .board-link:hover { background: var(--accent-soft); border-color: rgba(99,102,241,0.3); }
+        .board-link-tag {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+        }
+        .tag-hot { background: var(--red-soft); color: var(--red); }
+        .tag-good { background: var(--green-soft); color: var(--green); }
+        .tag-new { background: var(--blue-soft); color: var(--blue); }
+        .tag-niche { background: var(--purple-soft); color: var(--purple); }
+
+        /* Resume Section */
+        .resume-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .resume-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        .resume-header h3 {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+        textarea, input[type="text"], input[type="url"] {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--bg-input);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.9rem;
+            resize: vertical;
+            transition: border-color 0.2s;
+        }
+        textarea:focus, input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .textarea-large { min-height: 200px; }
+        .textarea-sm { min-height: 100px; }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: none;
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 0.88rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), var(--purple));
+            color: white;
+        }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover { border-color: var(--border-hover); }
+        .btn-sm { padding: 6px 14px; font-size: 0.8rem; }
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-dim);
+            border: none;
+            padding: 6px 12px;
+        }
+        .btn-ghost:hover { color: var(--text); }
+
+        .form-group { margin-bottom: 16px; }
+        .form-label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-dim);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        /* AI Output */
+        .ai-output {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            min-height: 150px;
+            font-size: 0.9rem;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            color: var(--text);
+            margin-top: 12px;
+        }
+        .ai-output:empty::before {
+            content: 'AI output will appear here...';
+            color: var(--text-muted);
+        }
+
+        /* Pipeline / Tracker */
+        .pipeline-cols {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+        .pipeline-col {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px;
+            min-height: 200px;
+        }
+        .pipeline-col-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+        .pipeline-col-title {
+            font-size: 0.82rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .pipeline-col-count {
+            font-size: 0.72rem;
+            padding: 2px 7px;
+            border-radius: 6px;
+            font-weight: 700;
+        }
+        .pipeline-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: default;
+        }
+        .pipeline-card-company {
+            font-weight: 700;
+            font-size: 0.88rem;
+            margin-bottom: 2px;
+        }
+        .pipeline-card-role {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            margin-bottom: 6px;
+        }
+        .pipeline-card-date {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+        .pipeline-card-actions {
+            display: flex;
+            gap: 4px;
+            margin-top: 8px;
+        }
+        .pipeline-card-actions button {
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-dim);
+            font-family: inherit;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .pipeline-card-actions button:hover { background: var(--accent-soft); color: var(--accent); }
+
+        /* Add Application Form */
+        .add-app-form {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .add-app-form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 10px;
+            align-items: end;
+        }
+
+        /* Checklist */
+        .checklist {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .checklist-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .checklist-item:hover { border-color: var(--border-hover); }
+        .checklist-item.done { opacity: 0.5; }
+        .checklist-item.done .checklist-title { text-decoration: line-through; }
+        .checklist-check {
+            width: 22px;
+            height: 22px;
+            border-radius: 7px;
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 1px;
+            transition: all 0.2s;
+        }
+        .checklist-item.done .checklist-check {
+            background: var(--green);
+            border-color: var(--green);
+        }
+        .checklist-check svg { display: none; }
+        .checklist-item.done .checklist-check svg { display: block; }
+        .checklist-title {
+            font-weight: 700;
+            font-size: 0.92rem;
+            margin-bottom: 2px;
+        }
+        .checklist-desc {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            line-height: 1.4;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+        .stat-label {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Copy button */
+        .copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            color: var(--text-dim);
+            font-size: 0.72rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .copy-btn:hover { color: var(--text); }
+        .ai-output-wrap { position: relative; }
+
+        /* Role cards for resume */
+        .role-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .role-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .role-card:hover { border-color: var(--accent); background: var(--bg-card-hover); }
+        .role-card.selected { border-color: var(--accent); background: var(--accent-soft); }
+        .role-card-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
+        .role-card-desc { font-size: 0.8rem; color: var(--text-dim); line-height: 1.4; }
+        .role-card-fit {
+            display: inline-block;
+            margin-top: 8px;
+            font-size: 0.72rem;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+        }
+
+        /* ===== JOB FEED STYLES ===== */
+        .feed-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .feed-status {
+            font-size: 0.82rem;
+            color: var(--text-dim);
+            font-weight: 600;
+        }
+        .feed-filters {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .feed-filter-btn {
+            padding: 6px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-dim);
+            font-family: inherit;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .feed-filter-btn:hover { border-color: var(--border-hover); color: var(--text); }
+        .feed-filter-btn.active { background: var(--accent-soft); color: var(--accent); border-color: rgba(99,102,241,0.3); }
+
+        .feed-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .feed-job {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px;
+            transition: all 0.2s;
+        }
+        .feed-job:hover { border-color: var(--border-hover); background: var(--bg-card-hover); }
+        .feed-job-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+        .feed-job-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+        .feed-job-title a {
+            color: var(--text);
+            text-decoration: none;
+        }
+        .feed-job-title a:hover { color: var(--accent); }
+        .feed-job-company {
+            font-size: 0.82rem;
+            color: var(--text-dim);
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .feed-job-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .feed-job-tag {
+            font-size: 0.7rem;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+        }
+        .feed-job-date {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+        }
+        .feed-job-source {
+            font-size: 0.7rem;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+            background: rgba(255,255,255,0.05);
+            color: var(--text-dim);
+        }
+        .feed-job-actions {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .feed-job-actions button {
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-dim);
+            font-family: inherit;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .feed-job-actions button:hover { background: var(--accent-soft); color: var(--accent); }
+
+        .feed-empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+        .feed-empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
+        .feed-empty-title { font-size: 1.1rem; font-weight: 700; color: var(--text-dim); margin-bottom: 6px; }
+        .feed-empty-desc { font-size: 0.85rem; }
+
+        .feed-progress {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .feed-progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        .feed-progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, var(--accent), var(--purple));
+            border-radius: 3px;
+            transition: width 0.3s;
+            width: 0%;
+        }
+        .feed-progress-status {
+            font-size: 0.82rem;
+            color: var(--text-dim);
+            font-weight: 600;
+        }
+        .feed-progress-log {
+            margin-top: 10px;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            max-height: 120px;
+            overflow-y: auto;
+            line-height: 1.6;
+        }
+
+        .feed-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .feed-dismissed { opacity: 0.4; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .boards-grid { grid-template-columns: 1fr; }
+            .pipeline-cols { grid-template-columns: 1fr 1fr; }
+            .stats-bar { grid-template-columns: 1fr 1fr; }
+            .add-app-form-row { grid-template-columns: 1fr; }
+            .main { padding: 16px; }
+            .feed-stats { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 480px) {
+            .pipeline-cols { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <div class="top-bar-left">
+            <div class="top-bar-logo">SUITE</div>
+            <div class="top-bar-divider"></div>
+            <div class="top-bar-title">Job Hunter</div>
+        </div>
+    </div>
+
+    <div class="tab-nav">
+        <button class="tab-btn active" onclick="switchTab('feed')">Job Feed</button>
+        <button class="tab-btn" onclick="switchTab('boards')">Job Boards</button>
+        <button class="tab-btn" onclick="switchTab('resume')">Resume Lab</button>
+        <button class="tab-btn" onclick="switchTab('tracker')">Pipeline</button>
+        <button class="tab-btn" onclick="switchTab('checklist')">Pre-Apply Checklist</button>
+    </div>
+
+    <div class="main">
+
+        <!-- ======= JOB FEED TAB ======= -->
+        <div class="tab-panel active" id="tab-feed">
+
+            <div class="feed-controls">
+                <button class="btn btn-primary" onclick="fetchAllJobs()" id="fetchBtn">
+                    Fetch Jobs
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="clearDismissed()">Reset Dismissed</button>
+                <span class="feed-status" id="feedStatus"></span>
+            </div>
+
+            <div class="feed-filters" id="feedFilters" style="margin-bottom:16px; display:none;">
+                <button class="feed-filter-btn active" onclick="filterFeed('all')">All</button>
+                <button class="feed-filter-btn" onclick="filterFeed('crypto')">Crypto/Web3</button>
+                <button class="feed-filter-btn" onclick="filterFeed('ai')">AI/ML</button>
+                <button class="feed-filter-btn" onclick="filterFeed('devrel')">DevRel</button>
+                <button class="feed-filter-btn" onclick="filterFeed('engineering')">Engineering</button>
+                <button class="feed-filter-btn" onclick="filterFeed('remote')">Remote</button>
+            </div>
+
+            <div id="feedProgress" style="display:none">
+                <div class="feed-progress">
+                    <div class="feed-progress-status" id="progressStatus">Fetching jobs...</div>
+                    <div class="feed-progress-bar"><div class="feed-progress-fill" id="progressFill"></div></div>
+                    <div class="feed-progress-log" id="progressLog"></div>
+                </div>
+            </div>
+
+            <div class="feed-stats" id="feedStats" style="display:none">
+                <div class="stat-card">
+                    <div class="stat-value" style="color:var(--accent)" id="feedTotalCount">0</div>
+                    <div class="stat-label">Jobs Found</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color:var(--green)" id="feedNewCount">0</div>
+                    <div class="stat-label">New Today</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color:var(--purple)" id="feedSourceCount">0</div>
+                    <div class="stat-label">Sources</div>
+                </div>
+            </div>
+
+            <div class="feed-list" id="feedList">
+                <div class="feed-empty">
+                    <div class="feed-empty-icon">&#x1F50D;</div>
+                    <div class="feed-empty-title">No jobs fetched yet</div>
+                    <div class="feed-empty-desc">Click "Fetch Jobs" to scan crypto, Web3, and AI job boards</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======= JOB BOARDS TAB ======= -->
+        <div class="tab-panel" id="tab-boards">
+            <div class="section-title">AI & Tech Companies <span class="count">5</span></div>
+            <div class="boards-grid">
+
+                <div class="board-card">
+                    <div class="board-header">
+                        <div class="board-icon" style="background: var(--blue-soft); color: var(--blue);">in</div>
+                        <div>
+                            <div class="board-name">LinkedIn Jobs</div>
+                            <div class="board-desc">Largest job board. Most AI companies post here.</div>
+                        </div>
+                    </div>
+                    <div class="board-links">
+                        <a href="https://www.linkedin.com/jobs/search/?keywords=developer%20relations%20AI&f_TPR=r604800" target="_blank" class="board-link">
+                            Developer Relations / DevRel
+                            <span class="board-link-tag tag-hot">Best Fit</span>
+                        </a>
+                        <a href="https://www.linkedin.com/jobs/search/?keywords=solutions%20engineer%20AI&f_TPR=r604800" target="_blank" class="board-link">
+                            Solutions Engineer
+                            <span class="board-link-tag tag-good">Good Fit</span>
+                        </a>
+                        <a href="https://www.linkedin.com/jobs/search/?keywords=applied%20AI%20engineer&f_TPR=r604800" target="_blank" class="board-link">
+                            Applied AI Engineer
+                            <span class="board-link-tag tag-good">Good Fit</span>
+                        </a>
+                        <a href="https://www.linkedin.com/jobs/search/?keywords=AI%20product%20engineer&f_TPR=r604800" target="_blank" class="board-link">
+                            Product Engineer (AI)
+                            <span class="board-link-tag tag-good">Good Fit</span>
+                        </a>
+                        <a href="https://www.linkedin.com/jobs/search/?keywords=technical%20PM%20AI&f_TPR=r604800" target="_blank" class="board-link">
+                            Technical Product Manager
+                            <span class="board-link-tag tag-new">Stretch</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="board-card">
+                    <div class="board-header">
+                        <div class="board-icon" style="background: var(--orange-soft); color: var(--orange);">YC</div>
+                        <div>
+                            <div class="board-name">Y Combinator — Work at a Startup</div>
+                            <div class="board-desc">Top-tier startups. Less bureaucracy, more building.</div>
+                        </div>
+                    </div>
+                    <div class="board-links">
+                        <a href="https://www.workatastartup.com/jobs?role=eng&demographic=any&query=AI+developer+relations" target="_blank" class="board-link">
+                            DevRel at YC Startups
+                            <span class="board-link-tag tag-hot">Best Fit</span>
+                        </a>
+                        <a href="https://www.workatastartup.com/jobs?role=eng&demographic=any&query=full+stack+AI" target="_blank" class="board-link">
+                            Full Stack / AI Engineer
+                            <span class="board-link-tag tag-good">Good Fit</span>
+                        </a>
+                        <a href="https://www.workatastartup.com/jobs?role=eng&demographic=any&query=crypto+AI" target="_blank" class="board-link">
+                            Crypto + AI Crossover
+                            <span class="board-link-tag tag-niche">Niche</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="board-card">
+                    <div class="board-header">
+                        <div class="board-icon" style="background: var(--green-soft); color: var(--green);">WF</div>
+                        <div>
+                            <div class="board-name">Wellfound (AngelList)</div>
+                            <div class="board-desc">Startup jobs. Equity-heavy. Good for early-stage.</div>
+                        </div>
+                    </div>
+                    <div class="board-links">
+                        <a href="https://wellfound.com/jobs?query=developer+relations+AI" target="_blank" class="board-link">
+                            DevRel / Developer Advocacy
+                            <span class="board-link-tag tag-hot">Best Fit</span>
+                        </a>
+                        <a href="https://wellfound.com/jobs?query=AI+engineer" target="_blank" class="board-link">
+                            AI Engineer
+                            <span class="board-link-tag tag-good">Good Fit</span>
+                        </a>
+                        <a href="https://wellfound.com/jobs?query=solutions+engineer" target="_blank" class="board-link">
+                            Solutions Engineer
+                            <span class="board-link-tag tag-good">Good Fit</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="board-card">
+                    <div class="board-header">
+                        <div class="board-icon" style="background: var(--purple-soft); color: var(--purple);">AI</div>
+                        <div>
+                            <div class="board-name">AI-Specific Boards</div>
+                            <div class="board-desc">Niche boards focused on AI/ML roles.</div>
+                        </div>
+                    </div>
+                    <div class="board-links">
+                        <a href="https://ai-jobs.net/" target="_blank" class="board-link">
+                            ai-jobs.net
+                            <span class="board-link-tag tag-niche">Niche</span>
+                        </a>
+                        <a href="https://aijobs.app/" target="_blank" class="board-link">
+                            aijobs.app
+                            <span class="board-link-tag tag-niche">Niche</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="board-card">
+                    <div class="board-header">
+                        <div class="board-icon" style="background: var(--red-soft); color: var(--red);">W3</div>
+                        <div>
+                            <div class="board-name">Web3 + AI Crossover</div>
+                            <div class="board-desc">Your DeFi background is a differentiator here.</div>
+                        </div>
+                    </div>
+                    <div class="board-links">
+                        <a href="https://cryptocurrencyjobs.co/?query=AI" target="_blank" class="board-link">
+                            CryptocurrencyJobs — AI roles
+                            <span class="board-link-tag tag-niche">Niche</span>
+                        </a>
+                        <a href="https://web3.career/ai-jobs" target="_blank" class="board-link">
+                            Web3.career — AI category
+                            <span class="board-link-tag tag-niche">Niche</span>
+                        </a>
+                        <a href="https://www.linkedin.com/jobs/search/?keywords=AI%20web3%20crypto&f_TPR=r604800" target="_blank" class="board-link">
+                            LinkedIn — AI + Web3
+                            <span class="board-link-tag tag-niche">Niche</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-title">Direct Company Career Pages <span class="count">8</span></div>
+            <div class="boards-grid">
+                <div class="board-card">
+                    <div class="board-header">
+                        <div class="board-icon" style="background: var(--accent-soft); color: var(--accent);">A</div>
+                        <div>
+                            <div class="board-name">Anthropic</div>
+                            <div class="board-desc">Makers of Claude. Strong safety culture.</div>
+                        </div>
+                    </div>
+                    <div class="board-links">
+                        <a href="https://www.anthropic.com/careers" target="_blank" class="board-link">All Openings</a>
+                    </div>
+                </div>
+                <div class="board-card">
+                    <div class="board-header">
+                        <div class="board-icon" style="background: var(--green-soft); color: var(--green);">O</div>
+                        <div>
+                            <div class="board-name">OpenAI</div>
+                            <div class="board-desc">ChatGPT, GPT APIs. Massive scale.</div>
+                        </div>
+                    </div>
+                    <div class="board-links">
+                        <a href="https://openai.com/careers/search" target="_blank" class="board-link">All Openings</a>
+                    </div>
+                </div>
+                <div class="board-card">
+                    <div class="board-header">
+                        <div class="board-icon" style="background: var(--blue-soft); color: var(--blue);">G</div>
+                        <div>
+                            <div class="board-name">Google DeepMind</div>
+                            <div class="board-desc">Gemini, research-heavy but hiring applied roles.</div>
+                        </div>
+                    </div>
+                    <div class="board-links">
+                        <a href="https://deepmind.google/about/careers/" target="_blank" class="board-link">All Openings</a>
+                    </div>
+                </div>
+                <div class="board-card">
+                    <div class="board-header">
+                        <div class="board-icon" style="background: var(--orange-soft); color: var(--orange);">R</div>
+                        <div>
+                            <div class="board-name">Replicate</div>
+                            <div class="board-desc">Run ML models via API. Dev-focused.</div>
+                        </div>
+                    </div>
+                    <div class="board-links">
+                        <a href="https://replicate.com/about#careers" target="_blank" class="board-link">All Openings</a>
+                    </div>
+                </div>
+                <div class="board-card">
+                    <div class="board-header">
+                        <div class="board-icon" style="background: var(--purple-soft); color: var(--purple);">H</div>
+                        <div>
+                            <div class="board-name">Hugging Face</div>
+                            <div class="board-desc">Open-source AI. Community-driven. DevRel-heavy.</div>
+                        </div>
+                    </div>
+                    <div class="board-links">
+                        <a href="https://huggingface.co/jobs" target="_blank" class="board-link">All Openings</a>
+                    </div>
+                </div>
+                <div class="board-card">
+                    <div class="board-header">
+                        <div class="board-icon" style="background: var(--red-soft); color: var(--red);">C</div>
+                        <div>
+                            <div class="board-name">Cohere</div>
+                            <div class="board-desc">Enterprise AI. Strong applied engineering team.</div>
+                        </div>
+                    </div>
+                    <div class="board-links">
+                        <a href="https://cohere.com/careers" target="_blank" class="board-link">All Openings</a>
+                    </div>
+                </div>
+                <div class="board-card">
+                    <div class="board-header">
+                        <div class="board-icon" style="background: var(--green-soft); color: var(--green);">V</div>
+                        <div>
+                            <div class="board-name">Vercel</div>
+                            <div class="board-desc">v0, AI SDK. You already deploy on Vercel.</div>
+                        </div>
+                    </div>
+                    <div class="board-links">
+                        <a href="https://vercel.com/careers" target="_blank" class="board-link">All Openings</a>
+                    </div>
+                </div>
+                <div class="board-card">
+                    <div class="board-header">
+                        <div class="board-icon" style="background: var(--blue-soft); color: var(--blue);">S</div>
+                        <div>
+                            <div class="board-name">Supabase</div>
+                            <div class="board-desc">You use Supabase daily. Strong product fit.</div>
+                        </div>
+                    </div>
+                    <div class="board-links">
+                        <a href="https://supabase.com/careers" target="_blank" class="board-link">All Openings</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======= RESUME LAB TAB ======= -->
+        <div class="tab-panel" id="tab-resume">
+
+            <div class="section-title">Target Role</div>
+            <div class="role-cards" id="roleCards">
+                <div class="role-card selected" onclick="selectRole(this, 'devrel')" data-role="devrel">
+                    <div class="role-card-title">Developer Relations</div>
+                    <div class="role-card-desc">Build demos, write docs, give talks, grow community. Your SuiteGPT work is the perfect portfolio piece.</div>
+                    <span class="role-card-fit tag-hot">Best Fit</span>
+                </div>
+                <div class="role-card" onclick="selectRole(this, 'solutions')" data-role="solutions">
+                    <div class="role-card-title">Solutions Engineer</div>
+                    <div class="role-card-desc">Pre-sales technical work. Understand customer needs, build integrations, demo products.</div>
+                    <span class="role-card-fit tag-good" style="background:var(--green-soft);color:var(--green)">Good Fit</span>
+                </div>
+                <div class="role-card" onclick="selectRole(this, 'applied')" data-role="applied">
+                    <div class="role-card-title">Applied AI Engineer</div>
+                    <div class="role-card-desc">Build products with AI APIs. Not ML research — making AI useful in real apps.</div>
+                    <span class="role-card-fit tag-good" style="background:var(--green-soft);color:var(--green)">Good Fit</span>
+                </div>
+                <div class="role-card" onclick="selectRole(this, 'product')" data-role="product">
+                    <div class="role-card-title">Product Engineer</div>
+                    <div class="role-card-desc">Full-stack with product sense. Ship features end-to-end. Startup-oriented.</div>
+                    <span class="role-card-fit tag-good" style="background:var(--green-soft);color:var(--green)">Good Fit</span>
+                </div>
+            </div>
+
+            <div class="resume-section">
+                <div class="resume-header">
+                    <h3>Generate Resume for Role</h3>
+                    <button class="btn btn-primary btn-sm" onclick="generateResume()">
+                        Generate Resume
+                    </button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Your Background (edit to personalize)</label>
+                    <textarea class="textarea-sm" id="resumeBackground">Built SuiteGPT — an AI-native app ecosystem (getsuite.app) with 30k+ lines of code. Features: app builder with AI code generation, credit system with on-chain staking, iframe-sandboxed apps with postMessage bridges, Supabase backend, Vercel deployment, governance/proposal system, builder earnings via credit markup.
+
+7 years in DeFi/crypto — built smart contracts (Solidity), token systems, staking rewards, treasury management on Base/Ethereum.
+
+Prior: CNC engineering and woodworking — precision manufacturing, systems thinking.
+
+Tech: JavaScript, HTML/CSS, Solidity, Supabase (Postgres/RPC/Auth), Vercel, REST APIs, Gemini/Groq/Claude API integration, ethers.js, Git.</textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Specific Job Posting (optional — paste the job description to tailor)</label>
+                    <textarea class="textarea-sm" id="jobPosting" placeholder="Paste a specific job posting here to get a resume tailored to that exact role and company..."></textarea>
+                </div>
+                <div class="ai-output-wrap">
+                    <div class="ai-output" id="resumeOutput"></div>
+                    <button class="copy-btn" onclick="copyOutput('resumeOutput')" style="display:none" id="resumeCopyBtn">Copy</button>
+                </div>
+            </div>
+
+            <div class="resume-section">
+                <div class="resume-header">
+                    <h3>Cover Letter / Cold Outreach</h3>
+                    <button class="btn btn-primary btn-sm" onclick="generateOutreach()">
+                        Generate Outreach
+                    </button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Company Name</label>
+                    <input type="text" id="outreachCompany" placeholder="e.g. Anthropic, Vercel, Supabase...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">What to emphasize</label>
+                    <input type="text" id="outreachAngle" placeholder="e.g. I built an entire ecosystem using their product...">
+                </div>
+                <div class="ai-output-wrap">
+                    <div class="ai-output" id="outreachOutput"></div>
+                    <button class="copy-btn" onclick="copyOutput('outreachOutput')" style="display:none" id="outreachCopyBtn">Copy</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======= PIPELINE TAB ======= -->
+        <div class="tab-panel" id="tab-tracker">
+            <div class="stats-bar" id="statsBar">
+                <div class="stat-card">
+                    <div class="stat-value" id="statApplied" style="color:var(--blue)">0</div>
+                    <div class="stat-label">Applied</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statResponded" style="color:var(--orange)">0</div>
+                    <div class="stat-label">Responded</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statInterview" style="color:var(--purple)">0</div>
+                    <div class="stat-label">Interviewing</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statOffer" style="color:var(--green)">0</div>
+                    <div class="stat-label">Offers</div>
+                </div>
+            </div>
+
+            <div class="add-app-form">
+                <div style="font-weight:700; margin-bottom:12px; font-size:0.95rem;">Add Application</div>
+                <div class="add-app-form-row">
+                    <div class="form-group" style="margin:0">
+                        <label class="form-label">Company</label>
+                        <input type="text" id="addCompany" placeholder="Anthropic">
+                    </div>
+                    <div class="form-group" style="margin:0">
+                        <label class="form-label">Role</label>
+                        <input type="text" id="addRole" placeholder="Developer Relations">
+                    </div>
+                    <div class="form-group" style="margin:0">
+                        <label class="form-label">Link</label>
+                        <input type="url" id="addLink" placeholder="https://...">
+                    </div>
+                    <button class="btn btn-primary" onclick="addApplication()" style="height:42px;">Add</button>
+                </div>
+            </div>
+
+            <div class="pipeline-cols" id="pipelineCols">
+                <div class="pipeline-col">
+                    <div class="pipeline-col-header">
+                        <span class="pipeline-col-title" style="color:var(--blue)">Applied</span>
+                        <span class="pipeline-col-count" style="background:var(--blue-soft);color:var(--blue)" id="colCountApplied">0</span>
+                    </div>
+                    <div id="colApplied"></div>
+                </div>
+                <div class="pipeline-col">
+                    <div class="pipeline-col-header">
+                        <span class="pipeline-col-title" style="color:var(--orange)">Responded</span>
+                        <span class="pipeline-col-count" style="background:var(--orange-soft);color:var(--orange)" id="colCountResponded">0</span>
+                    </div>
+                    <div id="colResponded"></div>
+                </div>
+                <div class="pipeline-col">
+                    <div class="pipeline-col-header">
+                        <span class="pipeline-col-title" style="color:var(--purple)">Interviewing</span>
+                        <span class="pipeline-col-count" style="background:var(--purple-soft);color:var(--purple)" id="colCountInterview">0</span>
+                    </div>
+                    <div id="colInterview"></div>
+                </div>
+                <div class="pipeline-col">
+                    <div class="pipeline-col-header">
+                        <span class="pipeline-col-title" style="color:var(--green)">Offer</span>
+                        <span class="pipeline-col-count" style="background:var(--green-soft);color:var(--green)" id="colCountOffer">0</span>
+                    </div>
+                    <div id="colOffer"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======= CHECKLIST TAB ======= -->
+        <div class="tab-panel" id="tab-checklist">
+            <div class="section-title">Before You Apply Anywhere</div>
+            <div class="checklist" id="checklistContainer"></div>
+        </div>
+
+    </div>
+
+    <script>
+        // ===== TAB SWITCHING =====
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + tab)?.classList.add('active');
+            const tabs = ['feed', 'boards', 'resume', 'tracker', 'checklist'];
+            const idx = tabs.indexOf(tab);
+            document.querySelectorAll('.tab-btn')[idx]?.classList.add('active');
+        }
+
+        // ===== ROLE SELECTION =====
+        let selectedRole = 'devrel';
+        function selectRole(el, role) {
+            document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedRole = role;
+        }
+
+        // ================================================================
+        // ===== JOB FEED — Fetch from multiple crypto/web3/AI boards =====
+        // ================================================================
+
+        const RSS2JSON_BASE = 'https://api.rss2json.com/v1/api.json?rss_url=';
+
+        // All job sources we'll query
+        const JOB_SOURCES = [
+            {
+                name: 'Web3.career',
+                type: 'json',
+                url: 'https://web3.career/api/v1?page=1&limit=50',
+                tags: ['crypto', 'engineering'],
+                parse: (data) => {
+                    const jobs = Array.isArray(data) ? data : (data.jobs || data.data || []);
+                    return jobs.map(j => ({
+                        title: j.title || j.position || '',
+                        company: j.company || j.company_name || 'Unknown',
+                        url: j.url || j.apply_url || j.link || '#',
+                        location: j.location || j.city || 'Remote',
+                        date: j.date || j.created_at || j.published || '',
+                        source: 'Web3.career',
+                        tags: ['crypto']
+                    }));
+                }
+            },
+            {
+                name: 'CryptoJobsList',
+                type: 'rss',
+                url: 'https://cryptojobslist.com/rss',
+                tags: ['crypto'],
+                parse: (items) => items.map(i => ({
+                    title: i.title || '',
+                    company: extractCompany(i.title, i.content),
+                    url: i.link || '#',
+                    location: 'Remote / Various',
+                    date: i.pubDate || '',
+                    source: 'CryptoJobsList',
+                    tags: ['crypto']
+                }))
+            },
+            {
+                name: 'CryptocurrencyJobs',
+                type: 'rss',
+                url: 'https://cryptocurrencyjobs.co/feed/',
+                tags: ['crypto'],
+                parse: (items) => items.map(i => ({
+                    title: i.title || '',
+                    company: extractCompany(i.title, i.content),
+                    url: i.link || '#',
+                    location: 'Remote / Various',
+                    date: i.pubDate || '',
+                    source: 'CryptocurrencyJobs',
+                    tags: ['crypto']
+                }))
+            },
+            {
+                name: 'Remote3',
+                type: 'rss',
+                url: 'https://remote3.co/rss/all',
+                tags: ['crypto', 'remote'],
+                parse: (items) => items.map(i => ({
+                    title: i.title || '',
+                    company: extractCompany(i.title, i.content),
+                    url: i.link || '#',
+                    location: 'Remote',
+                    date: i.pubDate || '',
+                    source: 'Remote3',
+                    tags: ['crypto', 'remote']
+                }))
+            },
+            {
+                name: 'Remotive (Web3)',
+                type: 'json',
+                url: 'https://remotive.com/api/remote-jobs?category=software-dev&search=web3+crypto+blockchain',
+                tags: ['crypto', 'remote', 'engineering'],
+                parse: (data) => {
+                    const jobs = data.jobs || [];
+                    return jobs.map(j => ({
+                        title: j.title || '',
+                        company: j.company_name || 'Unknown',
+                        url: j.url || '#',
+                        location: j.candidate_required_location || 'Remote',
+                        date: j.publication_date || '',
+                        source: 'Remotive',
+                        tags: ['crypto', 'remote']
+                    }));
+                }
+            },
+            {
+                name: 'Remotive (AI)',
+                type: 'json',
+                url: 'https://remotive.com/api/remote-jobs?category=software-dev&search=AI+machine+learning+LLM',
+                tags: ['ai', 'remote', 'engineering'],
+                parse: (data) => {
+                    const jobs = data.jobs || [];
+                    return jobs.map(j => ({
+                        title: j.title || '',
+                        company: j.company_name || 'Unknown',
+                        url: j.url || '#',
+                        location: j.candidate_required_location || 'Remote',
+                        date: j.publication_date || '',
+                        source: 'Remotive',
+                        tags: ['ai', 'remote']
+                    }));
+                }
+            },
+            {
+                name: 'Arbeitnow (Crypto)',
+                type: 'json',
+                url: 'https://www.arbeitnow.com/api/job-board-api?search=crypto+web3+blockchain',
+                tags: ['crypto', 'engineering'],
+                parse: (data) => {
+                    const jobs = data.data || [];
+                    return jobs.map(j => ({
+                        title: j.title || '',
+                        company: j.company_name || 'Unknown',
+                        url: j.url || '#',
+                        location: j.location || 'Remote',
+                        date: j.created_at || '',
+                        source: 'Arbeitnow',
+                        tags: ['crypto']
+                    }));
+                }
+            },
+            {
+                name: 'Arbeitnow (AI)',
+                type: 'json',
+                url: 'https://www.arbeitnow.com/api/job-board-api?search=AI+artificial+intelligence+LLM',
+                tags: ['ai', 'engineering'],
+                parse: (data) => {
+                    const jobs = data.data || [];
+                    return jobs.map(j => ({
+                        title: j.title || '',
+                        company: j.company_name || 'Unknown',
+                        url: j.url || '#',
+                        location: j.location || 'Remote',
+                        date: j.created_at || '',
+                        source: 'Arbeitnow',
+                        tags: ['ai']
+                    }));
+                }
+            }
+        ];
+
+        function extractCompany(title, content) {
+            // Try to extract company from "Role at Company" pattern
+            const atMatch = (title || '').match(/\bat\s+(.+?)(?:\s*[-–—|]|$)/i);
+            if (atMatch) return atMatch[1].trim();
+            // Try from content
+            if (content) {
+                const m = content.match(/company[:\s]+([^<\n]+)/i);
+                if (m) return m[1].trim().substring(0, 40);
+            }
+            return 'Unknown';
+        }
+
+        let allFeedJobs = [];
+        let currentFilter = 'all';
+        let isFetching = false;
+
+        function getDismissed() {
+            return JSON.parse(localStorage.getItem('jh_dismissed') || '[]');
+        }
+        function saveDismissed(ids) {
+            localStorage.setItem('jh_dismissed', JSON.stringify(ids));
+        }
+        function clearDismissed() {
+            localStorage.removeItem('jh_dismissed');
+            renderFeed();
+        }
+
+        function addLog(msg) {
+            const log = document.getElementById('progressLog');
+            log.innerHTML += msg + '<br>';
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function setProgress(pct, status) {
+            document.getElementById('progressFill').style.width = pct + '%';
+            if (status) document.getElementById('progressStatus').textContent = status;
+        }
+
+        async function fetchAllJobs() {
+            if (isFetching) return;
+            isFetching = true;
+
+            const btn = document.getElementById('fetchBtn');
+            btn.innerHTML = '<span class="spinner"></span> Fetching...';
+            btn.disabled = true;
+
+            document.getElementById('feedProgress').style.display = 'block';
+            document.getElementById('progressLog').innerHTML = '';
+            setProgress(0, 'Starting job search...');
+
+            allFeedJobs = [];
+            const totalSources = JOB_SOURCES.length;
+            let completed = 0;
+            let sourceSet = new Set();
+
+            for (const source of JOB_SOURCES) {
+                try {
+                    addLog(`Scanning ${source.name}...`);
+                    let jobs = [];
+
+                    if (source.type === 'rss') {
+                        const rssUrl = RSS2JSON_BASE + encodeURIComponent(source.url);
+                        const resp = await fetch(rssUrl);
+                        const data = await resp.json();
+                        if (data.status === 'ok' && data.items) {
+                            jobs = source.parse(data.items);
+                        } else {
+                            addLog(`  ${source.name}: No results or feed unavailable`);
+                        }
+                    } else {
+                        const resp = await fetch(source.url);
+                        if (resp.ok) {
+                            const data = await resp.json();
+                            jobs = source.parse(data);
+                        } else {
+                            addLog(`  ${source.name}: HTTP ${resp.status}`);
+                        }
+                    }
+
+                    // Tag classification
+                    jobs = jobs.filter(j => j.title).map(j => {
+                        j.tags = classifyJob(j.title, j.company, source.tags);
+                        return j;
+                    });
+
+                    if (jobs.length > 0) {
+                        sourceSet.add(source.name);
+                        addLog(`  Found ${jobs.length} jobs from ${source.name}`);
+                    } else {
+                        addLog(`  ${source.name}: 0 jobs returned`);
+                    }
+
+                    allFeedJobs = allFeedJobs.concat(jobs);
+                } catch (e) {
+                    addLog(`  ${source.name}: Error — ${e.message}`);
+                }
+
+                completed++;
+                setProgress(Math.round((completed / totalSources) * 100), `Scanned ${completed}/${totalSources} sources...`);
+            }
+
+            // Deduplicate by title+company
+            const seen = new Set();
+            allFeedJobs = allFeedJobs.filter(j => {
+                const key = (j.title + '|' + j.company).toLowerCase();
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+
+            // Sort by date (newest first)
+            allFeedJobs.sort((a, b) => {
+                const da = new Date(a.date || 0);
+                const db = new Date(b.date || 0);
+                return db - da;
+            });
+
+            // Cache results
+            localStorage.setItem('jh_feed_cache', JSON.stringify(allFeedJobs));
+            localStorage.setItem('jh_feed_date', new Date().toISOString());
+
+            setProgress(100, `Done! Found ${allFeedJobs.length} jobs from ${sourceSet.size} sources.`);
+
+            // Update stats
+            document.getElementById('feedStats').style.display = 'grid';
+            document.getElementById('feedTotalCount').textContent = allFeedJobs.length;
+            document.getElementById('feedSourceCount').textContent = sourceSet.size;
+
+            // Count jobs from last 24h
+            const dayAgo = Date.now() - 86400000;
+            const newCount = allFeedJobs.filter(j => new Date(j.date || 0).getTime() > dayAgo).length;
+            document.getElementById('feedNewCount').textContent = newCount;
+
+            document.getElementById('feedFilters').style.display = 'flex';
+
+            renderFeed();
+
+            btn.innerHTML = 'Fetch Jobs';
+            btn.disabled = false;
+            isFetching = false;
+
+            // Hide progress after a moment
+            setTimeout(() => {
+                document.getElementById('feedProgress').style.display = 'none';
+            }, 3000);
+        }
+
+        function classifyJob(title, company, baseTags) {
+            const tags = [...baseTags];
+            const t = (title + ' ' + company).toLowerCase();
+
+            if (/\b(devrel|developer\s*relations|developer\s*advocate|developer\s*experience|dx\s*engineer)\b/.test(t)) {
+                tags.push('devrel');
+            }
+            if (/\b(ai|artificial\s*intelligence|machine\s*learning|ml\b|llm|gpt|generative|nlp|deep\s*learning)\b/.test(t)) {
+                tags.push('ai');
+            }
+            if (/\b(crypto|web3|blockchain|defi|solidity|smart\s*contract|token|dao|nft)\b/.test(t)) {
+                tags.push('crypto');
+            }
+            if (/\b(remote|anywhere|distributed)\b/.test(t)) {
+                tags.push('remote');
+            }
+            if (/\b(engineer|developer|full\s*stack|frontend|backend|software)\b/.test(t)) {
+                tags.push('engineering');
+            }
+
+            return [...new Set(tags)];
+        }
+
+        function filterFeed(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.feed-filter-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            renderFeed();
+        }
+
+        function renderFeed() {
+            const list = document.getElementById('feedList');
+            const dismissed = getDismissed();
+
+            let jobs = allFeedJobs;
+            if (currentFilter !== 'all') {
+                jobs = jobs.filter(j => j.tags && j.tags.includes(currentFilter));
+            }
+
+            if (jobs.length === 0) {
+                list.innerHTML = `
+                    <div class="feed-empty">
+                        <div class="feed-empty-icon">&#x1F50D;</div>
+                        <div class="feed-empty-title">${allFeedJobs.length > 0 ? 'No jobs match this filter' : 'No jobs fetched yet'}</div>
+                        <div class="feed-empty-desc">${allFeedJobs.length > 0 ? 'Try a different filter' : 'Click "Fetch Jobs" to scan crypto, Web3, and AI job boards'}</div>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = jobs.map((j, i) => {
+                const isDismissed = dismissed.includes(j.title + '|' + j.company);
+                const dateStr = j.date ? new Date(j.date).toLocaleDateString() : '';
+                const tagHTML = j.tags.map(t => {
+                    const cls = t === 'crypto' ? 'tag-niche' : t === 'ai' ? 'tag-hot' : t === 'devrel' ? 'tag-good' : t === 'remote' ? 'tag-new' : '';
+                    return `<span class="feed-job-tag ${cls}">${t}</span>`;
+                }).join('');
+
+                return `
+                    <div class="feed-job ${isDismissed ? 'feed-dismissed' : ''}" id="feed-job-${i}">
+                        <div class="feed-job-top">
+                            <div>
+                                <div class="feed-job-title"><a href="${escHtml(j.url)}" target="_blank">${escHtml(j.title)}</a></div>
+                                <div class="feed-job-company">${escHtml(j.company)} ${j.location ? '· ' + escHtml(j.location) : ''}</div>
+                                <div class="feed-job-meta">
+                                    ${tagHTML}
+                                    <span class="feed-job-source">${escHtml(j.source)}</span>
+                                    ${dateStr ? `<span class="feed-job-date">${dateStr}</span>` : ''}
+                                </div>
+                            </div>
+                            <div class="feed-job-actions">
+                                <button onclick="addToPipeline(${i})">+ Pipeline</button>
+                                <button onclick="dismissJob(${i})">Dismiss</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function escHtml(str) {
+            const d = document.createElement('div');
+            d.textContent = str || '';
+            return d.innerHTML;
+        }
+
+        function dismissJob(idx) {
+            const j = allFeedJobs[idx];
+            if (!j) return;
+            const dismissed = getDismissed();
+            const key = j.title + '|' + j.company;
+            if (!dismissed.includes(key)) {
+                dismissed.push(key);
+                saveDismissed(dismissed);
+            }
+            const el = document.getElementById('feed-job-' + idx);
+            if (el) el.classList.add('feed-dismissed');
+        }
+
+        function addToPipeline(idx) {
+            const j = allFeedJobs[idx];
+            if (!j) return;
+            const apps = getApps();
+            // Check dupe
+            if (apps.some(a => a.company === j.company && a.role === j.title)) {
+                alert('Already in your pipeline.');
+                return;
+            }
+            apps.push({
+                id: Date.now().toString(),
+                company: j.company,
+                role: j.title,
+                link: j.url,
+                stage: 'applied',
+                date: new Date().toLocaleDateString()
+            });
+            saveApps(apps);
+            renderPipeline();
+            alert(`Added ${j.company} — ${j.title} to Pipeline!`);
+        }
+
+        // Load cached feed on start
+        function loadCachedFeed() {
+            const cached = localStorage.getItem('jh_feed_cache');
+            const cacheDate = localStorage.getItem('jh_feed_date');
+            if (cached) {
+                try {
+                    allFeedJobs = JSON.parse(cached);
+                    if (allFeedJobs.length > 0) {
+                        document.getElementById('feedFilters').style.display = 'flex';
+                        document.getElementById('feedStats').style.display = 'grid';
+                        document.getElementById('feedTotalCount').textContent = allFeedJobs.length;
+
+                        const sources = new Set(allFeedJobs.map(j => j.source));
+                        document.getElementById('feedSourceCount').textContent = sources.size;
+
+                        const dayAgo = Date.now() - 86400000;
+                        const newCount = allFeedJobs.filter(j => new Date(j.date || 0).getTime() > dayAgo).length;
+                        document.getElementById('feedNewCount').textContent = newCount;
+
+                        if (cacheDate) {
+                            document.getElementById('feedStatus').textContent = 'Last fetched: ' + new Date(cacheDate).toLocaleString();
+                        }
+                        renderFeed();
+                    }
+                } catch(e) {}
+            }
+        }
+
+
+        // ===== RESUME GENERATION =====
+        const ROLE_PROMPTS = {
+            devrel: 'Developer Relations / Developer Advocacy — emphasize: community building, creating demos and sample apps, writing technical content, public speaking potential, deep product knowledge, ability to translate complex technical concepts for developers',
+            solutions: 'Solutions Engineer — emphasize: technical pre-sales, customer-facing communication, building integrations and POCs, understanding business requirements, full-stack technical breadth',
+            applied: 'Applied AI Engineer — emphasize: building products with AI APIs (Gemini, Groq, Claude), prompt engineering, AI-powered features, full-stack development, shipping AI products to real users',
+            product: 'Product Engineer — emphasize: end-to-end feature ownership, shipping fast, product intuition, full-stack development, user-facing features, startup mentality'
+        };
+
+        async function generateResume() {
+            const bg = document.getElementById('resumeBackground').value.trim();
+            const posting = document.getElementById('jobPosting').value.trim();
+            const output = document.getElementById('resumeOutput');
+            const copyBtn = document.getElementById('resumeCopyBtn');
+
+            if (!bg) { alert('Add your background info first.'); return; }
+
+            output.textContent = '';
+            copyBtn.style.display = 'none';
+            output.innerHTML = '<span class="spinner"></span> Generating resume...';
+
+            const roleContext = ROLE_PROMPTS[selectedRole] || ROLE_PROMPTS.devrel;
+            let prompt = `You are an expert resume writer. Create a professional, ATS-friendly resume for someone applying to this type of role:
+
+TARGET ROLE: ${roleContext}
+
+CANDIDATE BACKGROUND:
+${bg}
+
+${posting ? `SPECIFIC JOB POSTING TO TAILOR TO:\n${posting}\n\nTailor the resume specifically to match this job posting's requirements and language.` : ''}
+
+Format the resume as clean plain text with clear sections:
+- HEADER (name placeholder, contact placeholder)
+- SUMMARY (3-4 lines, compelling, specific to the target role)
+- EXPERIENCE (frame the SuiteGPT work as a real product role, quantify where possible; frame the DeFi work as relevant technical experience; frame CNC as systems/engineering background)
+- PROJECTS (SuiteGPT as the headline project with specific technical details)
+- SKILLS (organized by category)
+
+Be specific and use strong action verbs. Don't be generic. Make every line count.`;
+
+            try {
+                const resp = await fetch('/api/gemini', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt,
+                        model: 'gemini-3-flash-preview',
+                        generationConfig: { temperature: 0.7, maxOutputTokens: 4000 }
+                    })
+                });
+                const data = await resp.json();
+                output.textContent = data.text || 'No output generated.';
+                copyBtn.style.display = 'block';
+            } catch (e) {
+                output.textContent = 'Error: ' + e.message;
+            }
+        }
+
+        // ===== OUTREACH GENERATION =====
+        async function generateOutreach() {
+            const bg = document.getElementById('resumeBackground').value.trim();
+            const company = document.getElementById('outreachCompany').value.trim();
+            const angle = document.getElementById('outreachAngle').value.trim();
+            const output = document.getElementById('outreachOutput');
+            const copyBtn = document.getElementById('outreachCopyBtn');
+
+            if (!company) { alert('Enter a company name.'); return; }
+
+            output.textContent = '';
+            copyBtn.style.display = 'none';
+            output.innerHTML = '<span class="spinner"></span> Generating outreach...';
+
+            const prompt = `Write a cold outreach email/LinkedIn message for someone reaching out to ${company} about a role.
+
+CANDIDATE BACKGROUND:
+${bg || 'Built SuiteGPT, an AI app ecosystem. 7 years in DeFi/crypto. Prior CNC engineering.'}
+
+COMPANY: ${company}
+${angle ? `ANGLE TO EMPHASIZE: ${angle}` : ''}
+
+Write TWO versions:
+1. SHORT LINKEDIN MESSAGE (under 300 chars, casual but professional, gets attention)
+2. EMAIL (3-4 paragraphs, specific about why this person + this company is a good fit, mentions specific things they've built, ends with a clear ask)
+
+Be genuine, not salesy. Show you know the company. Reference specific things built (SuiteGPT, credit systems, smart contracts, etc).`;
+
+            try {
+                const resp = await fetch('/api/gemini', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt,
+                        model: 'gemini-3-flash-preview',
+                        generationConfig: { temperature: 0.8, maxOutputTokens: 3000 }
+                    })
+                });
+                const data = await resp.json();
+                output.textContent = data.text || 'No output generated.';
+                copyBtn.style.display = 'block';
+            } catch (e) {
+                output.textContent = 'Error: ' + e.message;
+            }
+        }
+
+        function copyOutput(id) {
+            const text = document.getElementById(id).textContent;
+            navigator.clipboard.writeText(text);
+            const btn = document.getElementById(id === 'resumeOutput' ? 'resumeCopyBtn' : 'outreachCopyBtn');
+            btn.textContent = 'Copied!';
+            setTimeout(() => btn.textContent = 'Copy', 1500);
+        }
+
+        // ===== APPLICATION TRACKER =====
+        function getApps() {
+            return JSON.parse(localStorage.getItem('jh_applications') || '[]');
+        }
+        function saveApps(apps) {
+            localStorage.setItem('jh_applications', JSON.stringify(apps));
+        }
+
+        function addApplication() {
+            const company = document.getElementById('addCompany').value.trim();
+            const role = document.getElementById('addRole').value.trim();
+            const link = document.getElementById('addLink').value.trim();
+            if (!company || !role) { alert('Company and role required.'); return; }
+
+            const apps = getApps();
+            apps.push({
+                id: Date.now().toString(),
+                company, role, link,
+                stage: 'applied',
+                date: new Date().toLocaleDateString()
+            });
+            saveApps(apps);
+            document.getElementById('addCompany').value = '';
+            document.getElementById('addRole').value = '';
+            document.getElementById('addLink').value = '';
+            renderPipeline();
+        }
+
+        function moveApp(id, newStage) {
+            const apps = getApps();
+            const app = apps.find(a => a.id === id);
+            if (app) app.stage = newStage;
+            saveApps(apps);
+            renderPipeline();
+        }
+
+        function removeApp(id) {
+            saveApps(getApps().filter(a => a.id !== id));
+            renderPipeline();
+        }
+
+        function renderPipeline() {
+            const apps = getApps();
+            const stages = ['applied', 'responded', 'interview', 'offer'];
+            const colIds = ['colApplied', 'colResponded', 'colInterview', 'colOffer'];
+            const countIds = ['colCountApplied', 'colCountResponded', 'colCountInterview', 'colCountOffer'];
+            const statIds = ['statApplied', 'statResponded', 'statInterview', 'statOffer'];
+            const nextStage = { applied: 'responded', responded: 'interview', interview: 'offer' };
+            const nextLabel = { applied: 'Responded', responded: 'Interview', interview: 'Offer' };
+
+            stages.forEach((stage, i) => {
+                const col = document.getElementById(colIds[i]);
+                const stageApps = apps.filter(a => a.stage === stage);
+                document.getElementById(countIds[i]).textContent = stageApps.length;
+                document.getElementById(statIds[i]).textContent = stageApps.length;
+
+                col.innerHTML = stageApps.map(a => `
+                    <div class="pipeline-card">
+                        <div class="pipeline-card-company">${a.company}</div>
+                        <div class="pipeline-card-role">${a.role}</div>
+                        <div class="pipeline-card-date">${a.date}${a.link ? ` · <a href="${a.link}" target="_blank" style="color:var(--accent)">Link</a>` : ''}</div>
+                        <div class="pipeline-card-actions">
+                            ${nextStage[stage] ? `<button onclick="moveApp('${a.id}','${nextStage[stage]}')">${nextLabel[stage]} &rarr;</button>` : ''}
+                            <button onclick="removeApp('${a.id}')">Remove</button>
+                        </div>
+                    </div>
+                `).join('');
+            });
+        }
+
+        // ===== CHECKLIST =====
+        const CHECKLIST_ITEMS = [
+            { id: 'linkedin', title: 'Update LinkedIn Profile', desc: 'Headline should say what you build, not a job title. Add SuiteGPT as your current project. Update skills.' },
+            { id: 'portfolio', title: 'Prepare Portfolio / Demo', desc: 'Record a 2-3 min Loom walking through SuiteGPT. Show the builder, credit system, and a live app.' },
+            { id: 'github', title: 'Clean Up GitHub', desc: 'Pin your best repos. Add READMEs. Make sure commit history tells a story of consistent shipping.' },
+            { id: 'resume_base', title: 'Create Base Resume', desc: 'Use the Resume Lab tab to generate a base resume. Save it as a Google Doc you can fork per application.' },
+            { id: 'case_studies', title: 'Write 2-3 Case Studies', desc: 'Short write-ups: (1) Credit system architecture, (2) Iframe sandbox + postMessage bridge, (3) Builder earnings flow.' },
+            { id: 'target_list', title: 'Build Target Company List', desc: 'Pick 15-20 companies. Mix of dream companies (Anthropic, OpenAI) and realistic ones (Series A startups).' },
+            { id: 'network', title: 'Identify People to Reach Out To', desc: 'Find DevRel leads, engineering managers, or founders at target companies. LinkedIn connections > cold applications.' },
+            { id: 'twitter', title: 'Start Posting About What You Build', desc: 'Tweet about SuiteGPT, share technical decisions, build in public. DevRel teams notice builders who share.' },
+            { id: 'practice', title: 'Practice Talking About Your Work', desc: 'Can you explain what SuiteGPT does in 30 seconds? Can you walk through a technical decision in 5 min? Practice.' },
+            { id: 'apply', title: 'Start Applying (Aim for 5/week)', desc: 'Don\'t overthink it. Apply, track in the Pipeline tab, follow up after 5 business days if no response.' },
+        ];
+
+        function getChecked() {
+            return JSON.parse(localStorage.getItem('jh_checklist') || '[]');
+        }
+
+        function renderChecklist() {
+            const checked = getChecked();
+            const container = document.getElementById('checklistContainer');
+            container.innerHTML = CHECKLIST_ITEMS.map(item => `
+                <div class="checklist-item ${checked.includes(item.id) ? 'done' : ''}" onclick="toggleCheck('${item.id}')">
+                    <div class="checklist-check">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+                    </div>
+                    <div>
+                        <div class="checklist-title">${item.title}</div>
+                        <div class="checklist-desc">${item.desc}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleCheck(id) {
+            let checked = getChecked();
+            if (checked.includes(id)) {
+                checked = checked.filter(c => c !== id);
+            } else {
+                checked.push(id);
+            }
+            localStorage.setItem('jh_checklist', JSON.stringify(checked));
+            renderChecklist();
+        }
+
+        // ===== INIT =====
+        renderPipeline();
+        renderChecklist();
+        loadCachedFeed();
+    </script>
+</body>
+</html>
+
+$APPHTML$, updated_at = NOW() WHERE id = '11262151-cf35-4105-a886-4422dd7879b8';
