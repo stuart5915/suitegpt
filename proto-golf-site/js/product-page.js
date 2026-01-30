@@ -97,7 +97,9 @@ async function initProductPage() {
 function renderProduct() {
     const specs = product.specs || {};
     const isComingSoon = product.status === 'coming_soon';
-    const heroImg = product.hero_image ? `../${product.hero_image}` : '../assets/putters/polished-rough-mill-1.png';
+    const heroImg = product.hero_image
+        ? (product.hero_image.startsWith('http') ? product.hero_image : `../${product.hero_image}`)
+        : '../assets/putters/polished-rough-mill-1.png';
 
     // Get unique finishes and shafts from variants
     const finishes = [];
@@ -261,7 +263,8 @@ function updateGallery() {
     currentGallery = dbImages[key] || [];
 
     if (currentGallery.length === 0 && product.hero_image) {
-        currentGallery = [`../${product.hero_image}`];
+        const src = product.hero_image.startsWith('http') ? product.hero_image : `../${product.hero_image}`;
+        currentGallery = [src];
     }
 
     const mainImg = document.getElementById('mainImg');

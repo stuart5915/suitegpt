@@ -1042,6 +1042,15 @@
                     <input type="number" class="form-input" id="productSortOrder" placeholder="1" value="0">
                 </div>
                 <div class="form-group">
+                    <label class="form-label">Hero Image (shown on shop cards)</label>
+                    <div id="heroImagePreview" style="margin-bottom: 8px;"></div>
+                    <input type="file" accept="image/*" id="heroImageFile" style="display: none;" onchange="previewHeroImage()">
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <button class="btn btn-secondary btn-sm" type="button" onclick="document.getElementById('heroImageFile').click()">Choose Image</button>
+                        <span style="color: var(--color-steel); font-size: 0.875rem;" id="heroImageLabel">No file selected</span>
+                    </div>
+                </div>
+                <div class="form-group">
                     <label class="form-label">Specs (JSON key/value pairs)</label>
                     <div id="specsContainer"></div>
                     <button class="btn btn-secondary btn-sm" onclick="addSpecRow()" style="margin-top: 8px;">+ Add Spec</button>
@@ -1562,6 +1571,18 @@
             document.getElementById('productSortOrder').value = p.sort_order || 0;
             document.getElementById('productModalTitle').textContent = 'Edit Product';
 
+            // Show current hero image
+            const preview = document.getElementById('heroImagePreview');
+            const heroLabel = document.getElementById('heroImageLabel');
+            document.getElementById('heroImageFile').value = '';
+            if (p.hero_image) {
+                preview.innerHTML = `<img src="../${p.hero_image}" style="max-width: 200px; max-height: 120px; border-radius: 8px; border: 1px solid var(--color-ash);">`;
+                heroLabel.textContent = 'Current: ' + p.hero_image.split('/').pop();
+            } else {
+                preview.innerHTML = '';
+                heroLabel.textContent = 'No image set';
+            }
+
             // Populate specs
             const container = document.getElementById('specsContainer');
             container.innerHTML = '';
@@ -1572,9 +1593,23 @@
             document.getElementById('productModal').classList.add('active');
         }
 
+        function previewHeroImage() {
+            const input = document.getElementById('heroImageFile');
+            const preview = document.getElementById('heroImagePreview');
+            const label = document.getElementById('heroImageLabel');
+            if (input.files && input.files[0]) {
+                label.textContent = input.files[0].name;
+                const url = URL.createObjectURL(input.files[0]);
+                preview.innerHTML = `<img src="${url}" style="max-width: 200px; max-height: 120px; border-radius: 8px; border: 1px solid var(--color-ash);">`;
+            }
+        }
+
         function closeProductModal() {
             document.getElementById('productModal').classList.remove('active');
             document.getElementById('productSlug').disabled = false;
+            document.getElementById('heroImageFile').value = '';
+            document.getElementById('heroImagePreview').innerHTML = '';
+            document.getElementById('heroImageLabel').textContent = 'No file selected';
         }
 
         function addSpecRow(key, value) {
@@ -1620,6 +1655,32 @@
                 sort_order: parseInt(document.getElementById('productSortOrder').value) || 0,
                 specs
             };
+
+            // Upload hero image if a new one was selected
+            const heroFile = document.getElementById('heroImageFile').files[0];
+            if (heroFile) {
+                try {
+                    const ext = heroFile.name.split('.').pop() || 'jpg';
+                    const storagePath = `heroes/${slug}.${ext}`;
+                    const uploadResp = await fetch(`${SUPABASE_URL}/storage/v1/object/proto-golf-images/${storagePath}`, {
+                        method: 'POST',
+                        headers: {
+                            'apikey': SUPABASE_KEY,
+                            'Authorization': `Bearer ${SUPABASE_KEY}`,
+                            'Content-Type': heroFile.type || 'image/jpeg',
+                            'x-upsert': 'true'
+                        },
+                        body: heroFile
+                    });
+                    if (uploadResp.ok) {
+                        body.hero_image = `${SUPABASE_URL}/storage/v1/object/public/proto-golf-images/${storagePath}`;
+                    } else {
+                        console.error('Hero upload failed:', await uploadResp.text());
+                    }
+                } catch (e) {
+                    console.error('Hero upload error:', e);
+                }
+            }
 
             try {
                 if (editId) {
