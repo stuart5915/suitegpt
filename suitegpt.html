@@ -21317,13 +21317,21 @@
             } else if (path === '/creator-dashboard') {
                 exitBuilderMode();
                 openCreatorDashboard('your-apps', true);
-            } else if (path.match(/^\/apps\/([^/]+)\/open$/)) {
-                const slug = path.match(/^\/apps\/([^/]+)\/open$/)[1];
+            } else if (path.match(/^\/apps\/([^/]+)\/(open|fullscreen)$/)) {
+                const m = path.match(/^\/apps\/([^/]+)\/(open|fullscreen)$/);
+                const slug = m[1];
+                const mode = m[2];
                 exitBuilderMode();
                 openAppDetail(slug, true);
                 setTimeout(() => {
                     const app = SUITE_APPS[slug];
-                    if (app) previewApp(slug, app.url, app.name);
+                    if (app) {
+                        if (mode === 'fullscreen') {
+                            previewApp(slug, app.url, app.name);
+                        } else {
+                            openMobileAppView(slug, app.url, app.name);
+                        }
+                    }
                 }, 100);
             } else if (path.match(/^\/apps\/([^/]+)$/) && path !== '/apps/community') {
                 const slug = path.match(/^\/apps\/([^/]+)$/)[1];
@@ -21372,12 +21380,20 @@
                 }
             } else if (path === '/creator-dashboard') {
                 openCreatorDashboard('your-apps', true);
-            } else if (path.match(/^\/apps\/([^/]+)\/open$/)) {
-                const slug = path.match(/^\/apps\/([^/]+)\/open$/)[1];
+            } else if (path.match(/^\/apps\/([^/]+)\/(open|fullscreen)$/)) {
+                const m = path.match(/^\/apps\/([^/]+)\/(open|fullscreen)$/);
+                const slug = m[1];
+                const mode = m[2];
                 openAppDetail(slug, true);
                 setTimeout(() => {
                     const app = SUITE_APPS[slug];
-                    if (app) previewApp(slug, app.url, app.name);
+                    if (app) {
+                        if (mode === 'fullscreen') {
+                            previewApp(slug, app.url, app.name);
+                        } else {
+                            openMobileAppView(slug, app.url, app.name);
+                        }
+                    }
                 }, 200);
             } else if (path.match(/^\/apps\/([^/]+)$/) && path !== '/apps/community') {
                 const slug = path.match(/^\/apps\/([^/]+)$/)[1];
@@ -27960,11 +27976,15 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
                 return;
             }
 
-            // Push the /open URL
-            history.pushState({ view: 'appOpen', appKey: currentDetailAppKey }, '', '/apps/' + currentDetailAppKey + '/open');
-
-            // Launch fullscreen preview
-            previewApp(currentDetailAppKey, app.url, app.name);
+            if (window.innerWidth < 768) {
+                // Mobile: fullscreen iframe
+                history.pushState({ view: 'appFullscreen', appKey: currentDetailAppKey }, '', '/apps/' + currentDetailAppKey + '/fullscreen');
+                previewApp(currentDetailAppKey, app.url, app.name);
+            } else {
+                // Desktop: mobile view popup
+                history.pushState({ view: 'appOpen', appKey: currentDetailAppKey }, '', '/apps/' + currentDetailAppKey + '/open');
+                openMobileAppView(currentDetailAppKey, app.url, app.name);
+            }
         }
 
         function addAppToProfileFromDetail() {
@@ -27989,6 +28009,10 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
                 addBtn.classList.add('added');
                 showToast(`${SUITE_APPS[currentDetailAppKey]?.name || 'App'} added to your profile!`);
             }
+
+            // Live-update sidebar and Your Apps list
+            renderSidebarApps();
+            renderDashboardApps();
         }
 
         function launchApp(appKey, url, name) {
@@ -28105,6 +28129,7 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
         function closeMobileApp() {
             const container = document.getElementById('mobileAppContainer');
             const frame = document.getElementById('mobileAppFrame');
+            const returningToApp = currentPreviewApp;
 
             if (container) {
                 container.classList.remove('active');
@@ -28116,6 +28141,11 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
 
             // Clear sidebar active state
             updateSidebarActiveApp(null);
+
+            // Navigate back to detail page if we came from one
+            if (returningToApp && SUITE_APPS[returningToApp]) {
+                openAppDetail(returningToApp);
+            }
         }
 
         // Minimize app to sidebar (save + close)
