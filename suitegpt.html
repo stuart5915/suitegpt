@@ -22120,6 +22120,17 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
             return isAdmin;
         };
 
+        // Daily theme definitions (matches Cadence AI strategy)
+        const DAY_THEMES = {
+            0: { id: 'motivation', label: 'Motivation', emoji: '🎯', color: '#f97316' },
+            1: { id: 'motivation', label: 'Motivation', emoji: '🎯', color: '#f97316' },
+            2: { id: 'tips', label: 'Tips & Tutorials', emoji: '📚', color: '#3b82f6' },
+            3: { id: 'behind', label: 'Behind Scenes', emoji: '🎬', color: '#8b5cf6' },
+            4: { id: 'thought', label: 'Thought Leadership', emoji: '💡', color: '#eab308' },
+            5: { id: 'community', label: 'Community', emoji: '👥', color: '#22c55e' },
+            6: { id: 'lifestyle', label: 'Lifestyle', emoji: '✨', color: '#06b6d4' }
+        };
+
         // Cadence definitions
         const CADENCES = {
             'x-posts': { name: 'X Posts', icon: '𝕏', times: ['10:00', '15:00', '20:00'], days: [0,1,2,3,4,5,6] },
@@ -22302,8 +22313,11 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
 
                 const rowClass = isBriefDay ? ' class="weekly-overview-today"' : '';
                 const dayLabel = dayNames[dow] + (isToday ? ' ●' : '');
+                const theme = DAY_THEMES[dow];
+                const themeTag = theme ? `<span style="color:${theme.color};font-weight:700;">${theme.emoji} ${theme.label}</span>` : '—';
                 rows += `<tr${rowClass}>
                     <td>${dayLabel}</td>
+                    <td>${themeTag}</td>
                     <td>${xCount > 0 ? '𝕏 ' + xCount : '—'}</td>
                     <td>${appCount > 0 ? '📱 ' + appCount : '—'}</td>
                     <td>${ecoCount > 0 ? '🌐 ' + ecoCount : '—'}</td>
@@ -22314,7 +22328,7 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
 
             body.innerHTML = `
                 <table>
-                    <thead><tr><th>Day</th><th>X</th><th>App</th><th>Eco</th><th>LI</th><th>Total</th></tr></thead>
+                    <thead><tr><th>Day</th><th>Theme</th><th>X</th><th>App</th><th>Eco</th><th>LI</th><th>Total</th></tr></thead>
                     <tbody>${rows}</tbody>
                 </table>
                 <div class="weekly-overview-total">
