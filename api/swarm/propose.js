@@ -109,7 +109,7 @@ export default async function handler(req, res) {
 
         if (error) {
             console.error('Proposal insert error:', error);
-            return res.status(500).json({ error: 'Failed to submit' });
+            return res.status(500).json({ error: 'Failed to submit', detail: error.message || error.code || JSON.stringify(error) });
         }
 
         // Update agent status based on submission type
