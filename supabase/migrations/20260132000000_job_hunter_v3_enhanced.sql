@@ -1967,6 +1967,8 @@ Be specific — reference actual skills, projects, and experience from the candi
         }
 
         // ===== BULK FIT SCANNER =====
+        let bulkFitResults = [];
+
         async function bulkFitScan() {
             const raw = document.getElementById(''bulkFitTitles'').value.trim();
             const bg = document.getElementById(''resumeBackground'')?.value.trim() || '''';
@@ -1991,12 +1993,12 @@ INSTRUCTIONS:
 3. Rate how well the candidate fits each job (1-10).
 
 Return your response as a JSON array (and nothing else — no markdown fences, no explanation). Each element must have these exact keys:
-- "title": the job title (cleaned up)
-- "company": the company name
+- "title": the job title (cleaned up, ASCII only)
+- "company": the company name (ASCII only)
 - "salary": salary range as string, or "" if not listed
 - "location": location or "Remote", or "" if not listed
 - "score": number 1-10
-- "why": one sentence on why it''s a fit (max 15 words)
+- "why": one sentence on why it is a fit (max 15 words)
 - "gap": one sentence on the biggest gap (max 15 words)
 
 Sort the array from highest score to lowest. Return ONLY valid JSON.`;
@@ -2020,66 +2022,62 @@ Sort the array from highest score to lowest. Return ONLY valid JSON.`;
                 try {
                     results = JSON.parse(cleaned);
                 } catch (e) {
-                    resultsDiv.innerHTML = ''<div class="ai-output">' + text.replace(/</g, ''&lt;'') + ''</div>'';
+                    resultsDiv.innerHTML = `<div class="ai-output">${text.replace(/</g, ''&lt;'')}</div>`;
                     return;
                 }
 
                 // Sort by score descending
                 results.sort((a, b) => b.score - a.score);
+                bulkFitResults = results;
 
                 // Render table
                 let html = `<div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:8px;">${results.length} jobs found and ranked</div>`;
-                html += ''<table class="fit-table"><thead><tr>'';
-                html += ''<th>#</th><th>Job Title</th><th>Company</th><th>Salary</th><th>Score</th><th>Why</th><th>Gap</th><th></th>'';
-                html += ''</tr></thead><tbody>'';
+                html += `<table class="fit-table"><thead><tr>`;
+                html += `<th>#</th><th>Job Title</th><th>Company</th><th>Salary</th><th>Score</th><th>Why</th><th>Gap</th><th></th>`;
+                html += `</tr></thead><tbody>`;
+
+                const esc = (s) => (s || '''').replace(/</g, ''&lt;'').replace(/>/g, ''&gt;'').replace(/"/g, ''&quot;'');
 
                 results.forEach((r, i) => {
                     const scoreClass = r.score >= 7 ? ''fit-score-high'' : r.score >= 4 ? ''fit-score-mid'' : ''fit-score-low'';
-                    const esc = (s) => (s || '''').replace(/</g, ''&lt;'').replace(/>/g, ''&gt;'');
-                    const safeTitle = esc(r.title);
-                    const safeCompany = esc(r.company);
-                    const safeSalary = esc(r.salary);
-                    const safeWhy = esc(r.why);
-                    const safeGap = esc(r.gap);
-                    const pipelineData = btoa(JSON.stringify({ title: r.title || '''', company: r.company || '''' }));
                     html += `<tr>
                         <td class="fit-rank">${i + 1}</td>
-                        <td class="fit-title-cell">${safeTitle}</td>
-                        <td style="color:var(--text-dim);font-size:0.82rem;">${safeCompany}</td>
-                        <td style="color:var(--green);font-size:0.78rem;white-space:nowrap;">${safeSalary}</td>
+                        <td class="fit-title-cell">${esc(r.title)}</td>
+                        <td style="color:var(--text-dim);font-size:0.82rem;">${esc(r.company)}</td>
+                        <td style="color:var(--green);font-size:0.78rem;white-space:nowrap;">${esc(r.salary)}</td>
                         <td><span class="fit-score-badge ${scoreClass}">${r.score}</span></td>
-                        <td class="fit-why">${safeWhy}</td>
-                        <td class="fit-gap">${safeGap}</td>
-                        <td><button class="fit-add-btn" onclick="addBulkToPipeline(''${pipelineData}'')">&plus; Pipeline</button></td>
+                        <td class="fit-why">${esc(r.why)}</td>
+                        <td class="fit-gap">${esc(r.gap)}</td>
+                        <td><button class="fit-add-btn" onclick="addBulkToPipeline(${i})">&plus; Pipeline</button></td>
                     </tr>`;
                 });
 
-                html += ''</tbody></table>'';
+                html += `</tbody></table>`;
                 resultsDiv.innerHTML = html;
             } catch (e) {
-                resultsDiv.innerHTML = ''<div class="ai-output">Error: '' + e.message + ''</div>'';
+                resultsDiv.innerHTML = `<div class="ai-output">Error: ${e.message}</div>`;
             }
         }
 
-        function addBulkToPipeline(b64data) {
-            let info;
-            try { info = JSON.parse(atob(b64data)); } catch(e) { return; }
+        function addBulkToPipeline(index) {
+            const r = bulkFitResults[index];
+            if (!r) return;
             const apps = getApps();
-            if (apps.some(a => a.role === info.title && a.company === info.company)) {
+            if (apps.some(a => a.role === r.title && a.company === r.company)) {
                 alert(''Already in your pipeline.'');
                 return;
             }
             apps.push({
                 id: Date.now().toString(),
-                company: info.company || ''—'',
-                role: info.title,
+                company: r.company || ''—'',
+                role: r.title,
                 link: '''',
                 stage: ''applied'',
                 date: new Date().toLocaleDateString()
             });
             saveApps(apps);
             renderPipeline();
-            alert(`Added ${info.company} — ${info.title} to Pipeline!`);
+            alert(`Added ${r.company} — ${r.title} to Pipeline!`);
         }
 
         // ===== INIT =====
