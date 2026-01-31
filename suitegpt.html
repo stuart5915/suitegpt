@@ -21393,7 +21393,11 @@ Prior: CNC machining &amp; woodworking — precision manufacturing, process opti
 Skills: Technical writing, content strategy, project management, community building, SEO, social media management, JavaScript, HTML/CSS, Supabase, Vercel, REST APIs, AI API integration (Gemini/Groq/Claude), Git.</textarea></div>
                                                     <div class="jh-form-group"><label class="jh-form-label">Specific Job Posting (optional)</label><textarea class="jh-textarea" id="jhJobPosting" rows="4" placeholder="Paste a job description to tailor the resume..."></textarea></div>
                                                     <div class="jh-ai-output" id="jhResumeOutput"></div>
-                                                    <button class="jh-btn-ghost" id="jhResumeCopyBtn" style="display:none;margin-top:6px;" onclick="jhCopyOutput('jhResumeOutput')">Copy</button>
+                                                    <div id="jhResumeActions" style="display:none;margin-top:10px;display:none;gap:8px;flex-wrap:wrap;">
+                                                        <button class="jh-btn jh-btn-primary jh-btn-sm" onclick="jhDownloadResumePDF()">Download PDF</button>
+                                                        <button class="jh-btn-ghost" onclick="jhDownloadResumeTXT()">Download TXT</button>
+                                                        <button class="jh-btn-ghost" id="jhResumeCopyBtn" onclick="jhCopyOutput('jhResumeOutput')">Copy</button>
+                                                    </div>
                                                 </div>
                                                 <div class="jh-resume-box" style="cursor:pointer;" onclick="const b=this.querySelector('.jh-outreach-body');const c=this.querySelector('.jh-outreach-chevron');if(b.style.display==='none'){b.style.display='block';c.style.transform='rotate(180deg)';}else{b.style.display='none';c.style.transform='rotate(0)';}">
                                                     <div class="jh-resume-header" style="margin-bottom:0;"><h4>Cold Outreach Generator</h4><span class="jh-outreach-chevron" style="font-size:1.1rem;color:var(--text-secondary);transition:transform 0.2s;">▼</span></div>
@@ -25436,9 +25440,102 @@ Output the resume now using the section markers above. Plain text only, no markd
             try {
                 const resp = await fetch('/api/gemini', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt, model: 'gemini-3-flash-preview', generationConfig: { temperature: 0.7, maxOutputTokens: 4000 } }) });
                 const data = await resp.json();
-                output.textContent = data.text || 'No output generated.';
-                copyBtn.style.display = 'inline-flex';
+                const raw = data.text || 'No output generated.';
+                jhLastResumeRaw = raw;
+                jhRenderFormattedResume(raw, output);
+                const actions = document.getElementById('jhResumeActions');
+                if (actions) actions.style.display = 'flex';
             } catch (e) { output.textContent = 'Error: ' + e.message; }
+        }
+        let jhLastResumeRaw = '';
+        function jhRenderFormattedResume(raw, container) {
+            const sections = {};
+            let current = null;
+            raw.split('\n').forEach(line => {
+                const m = line.match(/^===(\w+)===$/);
+                if (m) { current = m[1]; sections[current] = []; }
+                else if (current) sections[current].push(line);
+            });
+            if (!sections.CONTACT) { container.textContent = raw; return; }
+            const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            const contactLine = (sections.CONTACT || []).join(' ').trim();
+            const parts = contactLine.split('|').map(s => s.trim());
+            const name = parts[0] || 'Stuart Hollinger';
+            const details = parts.slice(1).join(' · ');
+            let html = '<div style="font-family:inherit;">';
+            html += '<div style="text-align:center;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.1);">';
+            html += '<div style="font-size:1.3rem;font-weight:800;letter-spacing:0.5px;">' + esc(name) + '</div>';
+            html += '<div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px;">' + esc(details) + '</div>';
+            html += '</div>';
+            const sectionOrder = ['SUMMARY','EXPERIENCE','PROJECTS','SKILLS'];
+            const sectionLabels = {SUMMARY:'Professional Summary',EXPERIENCE:'Experience',PROJECTS:'Projects',SKILLS:'Skills'};
+            sectionOrder.forEach(key => {
+                if (!sections[key]) return;
+                const lines = sections[key];
+                html += '<div style="margin-bottom:14px;">';
+                html += '<div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#6366f1;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid rgba(99,102,241,0.15);">' + (sectionLabels[key]||key) + '</div>';
+                lines.forEach(line => {
+                    const trimmed = line.trimStart();
+                    if (!trimmed) { html += '<div style="height:6px;"></div>'; return; }
+                    if (trimmed.startsWith('- ')) {
+                        html += '<div style="padding-left:14px;position:relative;font-size:0.86rem;line-height:1.6;margin-bottom:2px;"><span style="position:absolute;left:0;color:var(--text-secondary);">•</span>' + esc(trimmed.slice(2)) + '</div>';
+                    } else if (key === 'EXPERIENCE' && /^[A-Z]/.test(trimmed) && (trimmed.includes('|') || trimmed.includes(' - '))) {
+                        html += '<div style="font-weight:700;font-size:0.92rem;margin-top:8px;">' + esc(trimmed) + '</div>';
+                    } else if (key === 'EXPERIENCE' && /^(SUITE|TVVIN|MV Global|SophiaVerse|MELD|Axis|DeFi Knowledge|Telos|Confio|Juggernaut|Lavaswap|Jigstack|BlockWallet|YSL|SingularityDAO|LKI)/.test(trimmed)) {
+                        html += '<div style="font-size:0.84rem;color:var(--text-secondary);margin-bottom:4px;">' + esc(trimmed) + '</div>';
+                    } else {
+                        html += '<div style="font-size:0.86rem;line-height:1.6;margin-bottom:2px;">' + esc(trimmed) + '</div>';
+                    }
+                });
+                html += '</div>';
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+        function jhDownloadResumeTXT() {
+            if (!jhLastResumeRaw) return;
+            const clean = jhLastResumeRaw.replace(/===\w+===/g, '').replace(/\n{3,}/g, '\n\n').trim();
+            const blob = new Blob([clean], {type:'text/plain'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'Stuart_Hollinger_Resume.txt';
+            a.click();
+            URL.revokeObjectURL(a.href);
+        }
+        function jhDownloadResumePDF() {
+            if (!jhLastResumeRaw) return;
+            const sections = {};
+            let current = null;
+            jhLastResumeRaw.split('\n').forEach(line => {
+                const m = line.match(/^===(\w+)===$/);
+                if (m) { current = m[1]; sections[current] = []; }
+                else if (current) sections[current].push(line);
+            });
+            const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            const contactLine = (sections.CONTACT || []).join(' ').trim();
+            const parts = contactLine.split('|').map(s => s.trim());
+            const name = parts[0] || 'Stuart Hollinger';
+            const details = parts.slice(1).join(' &middot; ');
+            let body = '<div style="text-align:center;margin-bottom:18px;padding-bottom:12px;border-bottom:2px solid #333;"><div style="font-size:22px;font-weight:bold;">' + esc(name) + '</div><div style="font-size:11px;color:#555;margin-top:4px;">' + details + '</div></div>';
+            const order = ['SUMMARY','EXPERIENCE','PROJECTS','SKILLS'];
+            const labels = {SUMMARY:'Professional Summary',EXPERIENCE:'Experience',PROJECTS:'Projects',SKILLS:'Skills'};
+            order.forEach(key => {
+                if (!sections[key]) return;
+                body += '<div style="margin-bottom:12px;"><div style="font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:0.5px;color:#333;border-bottom:1px solid #ccc;padding-bottom:3px;margin-bottom:6px;">' + (labels[key]||key) + '</div>';
+                sections[key].forEach(line => {
+                    const t = line.trimStart();
+                    if (!t) return;
+                    if (t.startsWith('- ')) body += '<div style="padding-left:14px;font-size:11px;line-height:1.5;margin-bottom:1px;">&bull; ' + esc(t.slice(2)) + '</div>';
+                    else if (key==='EXPERIENCE' && /^[A-Z]/.test(t) && (t.includes('|')||t.includes(' - '))) body += '<div style="font-weight:bold;font-size:12px;margin-top:8px;">' + esc(t) + '</div>';
+                    else body += '<div style="font-size:11px;line-height:1.5;">' + esc(t) + '</div>';
+                });
+                body += '</div>';
+            });
+            const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Georgia,serif;max-width:700px;margin:30px auto;color:#111;line-height:1.4;}</style></head><body>' + body + '</body></html>';
+            const w = window.open('', '_blank');
+            w.document.write(html);
+            w.document.close();
+            setTimeout(() => { w.print(); }, 500);
         }
         async function jhGenerateOutreach() {
             const bg = document.getElementById('jhResumeBackground').value.trim();
