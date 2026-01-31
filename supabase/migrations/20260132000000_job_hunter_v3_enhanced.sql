@@ -726,6 +726,7 @@ UPDATE user_apps SET code = '<!DOCTYPE html>
 
     <div class="tab-nav">
         <button class="tab-btn active" onclick="switchTab(''feed'')">Job Feed</button>
+        <button class="tab-btn" onclick="switchTab(''profile'')">My Profile</button>
         <button class="tab-btn" onclick="switchTab(''resume'')">Resume Lab</button>
         <button class="tab-btn" onclick="switchTab(''tracker'')">Pipeline</button>
         <button class="tab-btn" onclick="switchTab(''checklist'')">Pre-Apply Checklist</button>
@@ -818,6 +819,48 @@ The AI will parse out the job titles, companies, and salaries automatically."></
             </div>
         </div>
 
+        <!-- ======= MY PROFILE TAB ======= -->
+        <div class="tab-panel" id="tab-profile">
+            <div class="section-title">My Profile</div>
+
+            <div class="resume-section">
+                <div class="resume-header">
+                    <h3>Dump Everything About You</h3>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <span id="profileSaveStatus" style="font-size:0.78rem;color:var(--text-muted);"></span>
+                        <button class="btn btn-primary btn-sm" onclick="parseProfile()">Save &amp; Parse Profile</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Paste your LinkedIn, Indeed resume, project notes, anything</label>
+                    <textarea id="profileRawDump" style="min-height:350px;width:100%;padding:14px;border-radius:12px;border:1px solid var(--border);background:var(--bg-input);color:var(--text);font-family:inherit;font-size:0.88rem;resize:vertical;line-height:1.6;" placeholder="Paste EVERYTHING here. Examples of what to include:
+
+- Your full LinkedIn profile (copy the text from your profile page)
+- Your Indeed or other resume (just paste the raw text)
+- Job titles, companies, dates for every role you have had
+- Descriptions of projects you have built (the more detail the better)
+- Technical skills, tools, languages, frameworks
+- Education, certifications, courses
+- Side projects, open source contributions
+- Achievements with numbers (grew X by Y%, built Z with N users)
+- Anything unique about your background
+- Links to portfolio, GitHub, personal site
+
+Do not worry about formatting. Just dump it all in. The AI will parse and structure everything."></textarea>
+                </div>
+            </div>
+
+            <!-- Parsed Profile Preview -->
+            <div class="resume-section" id="profileParsedSection" style="display:none;">
+                <div class="resume-header">
+                    <h3>Your Parsed Profile</h3>
+                    <button class="btn btn-secondary btn-sm" onclick="parseProfile()">Re-parse</button>
+                </div>
+                <div id="profileParsedPreview" class="ai-output" style="white-space:pre-wrap;line-height:1.7;"></div>
+                <div id="profileTimestamp" style="font-size:0.72rem;color:var(--text-muted);margin-top:8px;"></div>
+            </div>
+        </div>
+
         <!-- ======= RESUME LAB TAB ======= -->
         <div class="tab-panel" id="tab-resume">
 
@@ -854,14 +897,9 @@ The AI will parse out the job titles, companies, and salaries automatically."></
                     </button>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Your Background (edit to personalize)</label>
-                    <textarea class="textarea-sm" id="resumeBackground">Built SuiteGPT — an AI-native app ecosystem (getsuite.app) with 30k+ lines of code. Features: app builder with AI code generation, credit system with on-chain staking, iframe-sandboxed apps with postMessage bridges, Supabase backend, Vercel deployment, governance/proposal system, builder earnings via credit markup.
-
-7 years in DeFi/crypto — built smart contracts (Solidity), token systems, staking rewards, treasury management on Base/Ethereum.
-
-Prior: CNC engineering and woodworking — precision manufacturing, systems thinking.
-
-Tech: JavaScript, HTML/CSS, Solidity, Supabase (Postgres/RPC/Auth), Vercel, REST APIs, Gemini/Groq/Claude API integration, ethers.js, Git.</textarea>
+                    <label class="form-label">Your Profile</label>
+                    <div id="resumeProfileStatus"></div>
+                    <textarea class="textarea-sm" id="resumeBackground" style="display:none;"></textarea>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Specific Job Posting (optional — paste the job description to tailor)</label>
@@ -1046,9 +1084,153 @@ Tech: JavaScript, HTML/CSS, Solidity, Supabase (Postgres/RPC/Auth), Vercel, REST
             document.querySelectorAll(''.tab-panel'').forEach(p => p.classList.remove(''active''));
             document.querySelectorAll(''.tab-btn'').forEach(b => b.classList.remove(''active''));
             document.getElementById(''tab-'' + tab)?.classList.add(''active'');
-            const tabs = [''feed'', ''resume'', ''tracker'', ''checklist''];
+            const tabs = [''feed'', ''profile'', ''resume'', ''tracker'', ''checklist''];
             const idx = tabs.indexOf(tab);
             document.querySelectorAll(''.tab-btn'')[idx]?.classList.add(''active'');
+        }
+
+        // ===== PROFILE SYSTEM =====
+        function getProfileBg() {
+            return localStorage.getItem(''jh_profile_parsed'') || localStorage.getItem(''jh_profile_raw'') || '''';
+        }
+
+        function initProfile() {
+            // Load saved raw dump
+            const raw = localStorage.getItem(''jh_profile_raw'') || '''';
+            const parsed = localStorage.getItem(''jh_profile_parsed'') || '''';
+            const updated = localStorage.getItem(''jh_profile_updated'') || '''';
+            const dumpEl = document.getElementById(''profileRawDump'');
+
+            if (raw && dumpEl) dumpEl.value = raw;
+
+            // Show parsed preview if exists
+            if (parsed) {
+                document.getElementById(''profileParsedSection'').style.display = ''block'';
+                document.getElementById(''profileParsedPreview'').textContent = parsed;
+                if (updated) {
+                    document.getElementById(''profileTimestamp'').textContent = ''Last parsed: '' + new Date(updated).toLocaleString();
+                }
+            }
+
+            // Auto-save raw text on input (debounced)
+            if (dumpEl) {
+                let saveTimer;
+                dumpEl.addEventListener(''input'', () => {
+                    clearTimeout(saveTimer);
+                    saveTimer = setTimeout(() => {
+                        localStorage.setItem(''jh_profile_raw'', dumpEl.value);
+                        const status = document.getElementById(''profileSaveStatus'');
+                        if (status) {
+                            status.textContent = ''Draft saved'';
+                            setTimeout(() => status.textContent = '''', 2000);
+                        }
+                    }, 1000);
+                });
+            }
+
+            // Update Resume Lab profile status
+            updateResumeLabProfile();
+        }
+
+        function updateResumeLabProfile() {
+            const parsed = getProfileBg();
+            const statusEl = document.getElementById(''resumeProfileStatus'');
+            const bgEl = document.getElementById(''resumeBackground'');
+            if (!statusEl) return;
+
+            if (parsed) {
+                const preview = parsed.length > 300 ? parsed.substring(0, 300) + ''...'' : parsed;
+                statusEl.innerHTML = `<div style="background:var(--bg-input);border:1px solid var(--border);border-radius:12px;padding:14px;font-size:0.85rem;color:var(--text-dim);line-height:1.5;max-height:120px;overflow:hidden;white-space:pre-wrap;">${preview.replace(/</g, ''&lt;'')}</div><div style="margin-top:6px;"><button class="btn btn-ghost btn-sm" onclick="switchTab(''profile'')" style="padding-left:0;">Edit in My Profile tab</button></div>`;
+                if (bgEl) bgEl.value = parsed;
+            } else {
+                statusEl.innerHTML = `<div style="background:var(--bg-input);border:1px solid var(--border);border-radius:12px;padding:24px;text-align:center;"><div style="color:var(--text-dim);font-size:0.9rem;margin-bottom:8px;">No profile set up yet</div><button class="btn btn-primary btn-sm" onclick="switchTab(''profile'')">Set Up My Profile</button></div>`;
+            }
+        }
+
+        async function parseProfile() {
+            const raw = document.getElementById(''profileRawDump'').value.trim();
+            if (!raw) { alert(''Paste your background info first.''); return; }
+
+            // Save raw immediately
+            localStorage.setItem(''jh_profile_raw'', raw);
+
+            const statusEl = document.getElementById(''profileSaveStatus'');
+            const previewEl = document.getElementById(''profileParsedPreview'');
+            const sectionEl = document.getElementById(''profileParsedSection'');
+
+            statusEl.innerHTML = ''<span class="spinner"></span> Parsing...'';
+
+            const prompt = `You are a professional resume writer. The user has dumped their entire background below as raw text — it may include LinkedIn profile text, Indeed resume, project descriptions, notes, or random info. Parse and structure it.
+
+RAW INPUT:
+${raw}
+
+Extract and organize into this EXACT format (use these markers):
+
+===NAME===
+[Full name]
+
+===CONTACT===
+[email] | [phone] | [location] | [LinkedIn URL] | [GitHub URL] | [portfolio URL]
+(Include only what was provided. Use placeholders for missing critical info.)
+
+===SUMMARY===
+[Write a compelling 3-4 sentence professional summary based on their strongest qualifications. Make it specific, not generic.]
+
+===EXPERIENCE===
+**[Job Title] — [Company]** | [Start Date] - [End Date or Present]
+- [Achievement or responsibility — quantify with numbers where possible]
+- [Another achievement]
+
+(List ALL positions found. If dates are not provided, note the role anyway.)
+
+===PROJECTS===
+**[Project Name]** — [Brief description]
+- [Technical detail, tech stack used]
+- [Impact, metrics, or notable feature]
+
+(List ALL projects mentioned.)
+
+===SKILLS===
+Languages: [list]
+Frameworks & Tools: [list]
+Platforms: [list]
+Other: [list]
+
+===EDUCATION===
+[Degree/Cert] — [Institution] | [Year]
+
+IMPORTANT: Extract EVERYTHING mentioned. Do not skip or summarize away details — the more detail preserved, the better the resumes will be. If something does not fit a category, add it to the closest one.`;
+
+            try {
+                const resp = await fetch(''https://suitegpt.app/api/gemini'', {
+                    method: ''POST'',
+                    headers: { ''Content-Type'': ''application/json'' },
+                    body: JSON.stringify({
+                        prompt,
+                        model: ''gemini-3-flash-preview'',
+                        generationConfig: { temperature: 0.3, maxOutputTokens: 8000 }
+                    })
+                });
+                const data = await resp.json();
+                const text = data.text || ''Could not parse profile.'';
+
+                // Save parsed profile
+                localStorage.setItem(''jh_profile_parsed'', text);
+                localStorage.setItem(''jh_profile_updated'', new Date().toISOString());
+
+                // Show preview
+                sectionEl.style.display = ''block'';
+                previewEl.textContent = text;
+                document.getElementById(''profileTimestamp'').textContent = ''Last parsed: '' + new Date().toLocaleString();
+                statusEl.textContent = ''Profile saved!'';
+                setTimeout(() => statusEl.textContent = '''', 3000);
+
+                // Update Resume Lab
+                updateResumeLabProfile();
+            } catch (e) {
+                statusEl.textContent = ''Error: '' + e.message;
+            }
         }
 
         // ===== ROLE SELECTION =====
@@ -1179,12 +1361,12 @@ Tech: JavaScript, HTML/CSS, Solidity, Supabase (Postgres/RPC/Auth), Vercel, REST
         let lastResumeText = '''';
 
         async function generateResume() {
-            const bg = document.getElementById(''resumeBackground'').value.trim();
+            const bg = getProfileBg();
             const posting = document.getElementById(''jobPosting'').value.trim();
             const output = document.getElementById(''resumeOutput'');
             const copyBtn = document.getElementById(''resumeCopyBtn'');
 
-            if (!bg) { alert(''Add your background info first.''); return; }
+            if (!bg) { alert(''Set up your profile in the My Profile tab first.''); return; }
 
             output.textContent = '''';
             copyBtn.style.display = ''none'';
@@ -1574,7 +1756,7 @@ Be specific and use strong action verbs. Don''t be generic. Make every line coun
 
         // ===== COVER LETTER GENERATOR =====
         async function generateCoverLetter() {
-            const bg = document.getElementById(''resumeBackground'').value.trim();
+            const bg = getProfileBg();
             const company = document.getElementById(''coverCompany'').value.trim();
             const role = document.getElementById(''coverRole'').value.trim();
             const jobDesc = document.getElementById(''coverJobDesc'').value.trim();
@@ -1591,7 +1773,7 @@ Be specific and use strong action verbs. Don''t be generic. Make every line coun
             const prompt = `You are an expert career coach. Write a professional, compelling cover letter for the following:
 
 CANDIDATE BACKGROUND:
-${bg || ''Built SuiteGPT, an AI app ecosystem. 7 years in DeFi/crypto. Prior CNC engineering.''}
+${bg}
 
 COMPANY: ${company}
 ROLE: ${role}
@@ -1661,7 +1843,7 @@ Guidelines:
 
         // ===== OUTREACH GENERATION =====
         async function generateOutreach() {
-            const bg = document.getElementById(''resumeBackground'').value.trim();
+            const bg = getProfileBg();
             const company = document.getElementById(''outreachCompany'').value.trim();
             const angle = document.getElementById(''outreachAngle'').value.trim();
             const output = document.getElementById(''outreachOutput'');
@@ -1676,7 +1858,7 @@ Guidelines:
             const prompt = `Write a cold outreach email/LinkedIn message for someone reaching out to ${company} about a role.
 
 CANDIDATE BACKGROUND:
-${bg || ''Built SuiteGPT, an AI app ecosystem. 7 years in DeFi/crypto. Prior CNC engineering.''}
+${bg}
 
 COMPANY: ${company}
 ${angle ? `ANGLE TO EMPHASIZE: ${angle}` : ''''}
@@ -1864,13 +2046,13 @@ Be genuine, not salesy. Show you know the company. Reference specific things bui
 
         async function analyzeJobFit() {
             const jobDesc = document.getElementById(''fitJobDescription'').value.trim();
-            const bg = document.getElementById(''resumeBackground'')?.value.trim() || '''';
+            const bg = getProfileBg();
             const output = document.getElementById(''fitOutput'');
             const copyBtn = document.getElementById(''fitCopyBtn'');
             const pipelineBtn = document.getElementById(''fitAddPipeline'');
 
             if (!jobDesc) { alert(''Paste a job description first.''); return; }
-            if (!bg) { alert(''Add your background in the Resume Lab tab first.''); return; }
+            if (!bg) { alert(''Set up your profile in the My Profile tab first.''); return; }
 
             output.textContent = '''';
             copyBtn.style.display = ''none'';
@@ -1971,11 +2153,11 @@ Be specific — reference actual skills, projects, and experience from the candi
 
         async function bulkFitScan() {
             const raw = document.getElementById(''bulkFitTitles'').value.trim();
-            const bg = document.getElementById(''resumeBackground'')?.value.trim() || '''';
+            const bg = getProfileBg();
             const resultsDiv = document.getElementById(''bulkFitResults'');
 
             if (!raw) { alert(''Paste some job listings first.''); return; }
-            if (!bg) { alert(''Add your background in the Resume Lab tab first.''); return; }
+            if (!bg) { alert(''Set up your profile in the My Profile tab first.''); return; }
 
             resultsDiv.innerHTML = ''<div style="padding:20px;text-align:center;"><span class="spinner"></span> Parsing and scanning job listings...</div>'';
 
@@ -2082,6 +2264,7 @@ Sort the array from highest score to lowest. Return ONLY valid JSON array.`;
         }
 
         // ===== INIT =====
+        initProfile();
         renderBoardTabs();
         selectBoard(0);
         renderPipeline();
