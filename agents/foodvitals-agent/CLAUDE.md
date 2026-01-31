@@ -119,6 +119,8 @@ Invoke-RestMethod -Uri "https://www.getsuite.app/api/swarm/propose" -Method POST
 | `assistance_request` | You're blocked | Operator gets notified, you stop |
 | `small_telos_proposal` | Proposing next objective | Operator approves/rejects, you stop |
 
+### IMPORTANT: Do NOT send a `category` field — the API sets it automatically. If you do send one, it MUST be one of: `feature`, `improvement`, `bug`, `app_idea`, `content`, `marketing`, `integration`. Any other value will cause a database error.
+
 ### For escalations (assistance_request), also include:
 - `escalation_type`: `needs_db_access`, `needs_api_key`, `needs_human_decision`, `needs_other_agent`, `blocked_by_error`, `needs_deployment`, `needs_credential`
 - `escalation_urgency`: `low`, `medium`, `high`, `critical`

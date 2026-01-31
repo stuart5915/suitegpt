@@ -89,7 +89,7 @@ export default async function handler(req, res) {
             content: description.trim(),
             author_id: agent.id,
             from_agent: true,
-            category: type === 'small_telos_proposal' ? 'small_telos' : (category || 'feature'),
+            category: (['feature','improvement','bug','app_idea','tokenomics','content','marketing','social','integration','client_request'].includes(category)) ? category : 'feature',
             status: 'submitted',
             submission_type: type
         };
