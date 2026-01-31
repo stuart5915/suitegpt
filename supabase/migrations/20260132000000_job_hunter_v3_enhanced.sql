@@ -620,6 +620,61 @@ UPDATE user_apps SET code = '<!DOCTYPE html>
             flex-wrap: wrap;
         }
 
+        /* ===== BULK FIT TABLE ===== */
+        .fit-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+            font-size: 0.85rem;
+        }
+        .fit-table th {
+            text-align: left;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-dim);
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .fit-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+        .fit-table tr:hover td {
+            background: var(--bg-card-hover);
+        }
+        .fit-score-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 8px;
+            font-weight: 800;
+            font-size: 0.82rem;
+            min-width: 38px;
+            text-align: center;
+        }
+        .fit-score-high { background: var(--green-soft); color: var(--green); }
+        .fit-score-mid { background: var(--orange-soft); color: var(--orange); }
+        .fit-score-low { background: var(--red-soft); color: var(--red); }
+        .fit-table .fit-why { color: var(--text); font-size: 0.82rem; }
+        .fit-table .fit-gap { color: var(--text-dim); font-size: 0.78rem; }
+        .fit-table .fit-rank { font-weight: 800; color: var(--text-dim); width: 36px; }
+        .fit-table .fit-title-cell { font-weight: 700; white-space: nowrap; }
+        .fit-add-btn {
+            padding: 3px 8px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-dim);
+            font-family: inherit;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .fit-add-btn:hover { background: var(--accent-soft); color: var(--accent); }
+
         /* ===== TEMPLATE SELECTOR ===== */
         .template-selector {
             display: grid;
@@ -716,6 +771,26 @@ UPDATE user_apps SET code = '<!DOCTYPE html>
                 <div id="fitAddPipeline" style="display:none;margin-top:12px;">
                     <button class="btn btn-secondary btn-sm" onclick="addFitToPipeline()">Add to Pipeline</button>
                 </div>
+            </div>
+
+            <!-- Bulk Fit Scanner -->
+            <div class="resume-section" style="margin-top:20px;">
+                <div class="resume-header">
+                    <h3>Bulk Fit Scanner</h3>
+                    <button class="btn btn-primary btn-sm" onclick="bulkFitScan()">Scan All</button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Job titles (one per line)</label>
+                    <textarea class="textarea-sm" id="bulkFitTitles" placeholder="Developer Relations Engineer
+Solutions Engineer
+Applied AI Engineer
+Product Engineer
+Technical Writer
+Developer Experience Engineer
+Sales Engineer
+..."></textarea>
+                </div>
+                <div id="bulkFitResults"></div>
             </div>
         </div>
 
@@ -1884,6 +1959,110 @@ Be specific — reference actual skills, projects, and experience from the candi
             renderPipeline();
             document.getElementById(''fitAddPipeline'').style.display = ''none'';
             alert(`Added ${lastFitCompany} — ${lastFitRole} to Pipeline!`);
+        }
+
+        // ===== BULK FIT SCANNER =====
+        async function bulkFitScan() {
+            const raw = document.getElementById(''bulkFitTitles'').value.trim();
+            const bg = document.getElementById(''resumeBackground'')?.value.trim() || '''';
+            const resultsDiv = document.getElementById(''bulkFitResults'');
+
+            if (!raw) { alert(''Enter at least one job title.''); return; }
+            if (!bg) { alert(''Add your background in the Resume Lab tab first.''); return; }
+
+            const titles = raw.split(''\n'').map(t => t.trim()).filter(t => t);
+            if (titles.length === 0) { alert(''Enter at least one job title.''); return; }
+
+            resultsDiv.innerHTML = ''<div style="padding:20px;text-align:center;"><span class="spinner"></span> Scanning '' + titles.length + '' roles...</div>'';
+
+            const titleList = titles.map((t, i) => `${i + 1}. ${t}`).join(''\n'');
+
+            const prompt = `You are a career advisor. Rate how well this candidate fits each of the following job titles.
+
+CANDIDATE BACKGROUND:
+${bg}
+
+JOB TITLES TO EVALUATE:
+${titleList}
+
+For EACH title, provide a rating. Return your response as a JSON array (and nothing else — no markdown fences, no extra text). Each element must have these exact keys:
+- "title": the job title exactly as given
+- "score": number 1-10
+- "why": one sentence on why it''s a fit (max 15 words)
+- "gap": one sentence on the biggest gap (max 15 words)
+
+Sort the array from highest score to lowest. Return ONLY valid JSON, no other text.`;
+
+            try {
+                const resp = await fetch(''https://suitegpt.app/api/gemini'', {
+                    method: ''POST'',
+                    headers: { ''Content-Type'': ''application/json'' },
+                    body: JSON.stringify({
+                        prompt,
+                        model: ''gemini-3-flash-preview'',
+                        generationConfig: { temperature: 0.4, maxOutputTokens: 4000 }
+                    })
+                });
+                const data = await resp.json();
+                const text = (data.text || '''').trim();
+
+                // Parse JSON — strip markdown fences if present
+                let cleaned = text.replace(/^```json?\s*/i, '''').replace(/```\s*$/, '''').trim();
+                let results;
+                try {
+                    results = JSON.parse(cleaned);
+                } catch (e) {
+                    resultsDiv.innerHTML = ''<div class="ai-output">' + text + ''</div>'';
+                    return;
+                }
+
+                // Sort by score descending
+                results.sort((a, b) => b.score - a.score);
+
+                // Render table
+                let html = ''<table class="fit-table"><thead><tr>'';
+                html += ''<th>#</th><th>Job Title</th><th>Score</th><th>Why</th><th>Gap</th><th></th>'';
+                html += ''</tr></thead><tbody>'';
+
+                results.forEach((r, i) => {
+                    const scoreClass = r.score >= 7 ? ''fit-score-high'' : r.score >= 4 ? ''fit-score-mid'' : ''fit-score-low'';
+                    const safeTitle = (r.title || '''').replace(/</g, ''&lt;'').replace(/>/g, ''&gt;'');
+                    const safeWhy = (r.why || '''').replace(/</g, ''&lt;'').replace(/>/g, ''&gt;'');
+                    const safeGap = (r.gap || '''').replace(/</g, ''&lt;'').replace(/>/g, ''&gt;'');
+                    html += `<tr>
+                        <td class="fit-rank">${i + 1}</td>
+                        <td class="fit-title-cell">${safeTitle}</td>
+                        <td><span class="fit-score-badge ${scoreClass}">${r.score}</span></td>
+                        <td class="fit-why">${safeWhy}</td>
+                        <td class="fit-gap">${safeGap}</td>
+                        <td><button class="fit-add-btn" onclick="addBulkToPipeline(''${safeTitle.replace(/'/g, "\\'")}'')">&plus; Pipeline</button></td>
+                    </tr>`;
+                });
+
+                html += ''</tbody></table>'';
+                resultsDiv.innerHTML = html;
+            } catch (e) {
+                resultsDiv.innerHTML = ''<div class="ai-output">Error: '' + e.message + ''</div>'';
+            }
+        }
+
+        function addBulkToPipeline(title) {
+            const apps = getApps();
+            if (apps.some(a => a.role === title)) {
+                alert(''Already in your pipeline.'');
+                return;
+            }
+            apps.push({
+                id: Date.now().toString(),
+                company: ''—'',
+                role: title,
+                link: '''',
+                stage: ''applied'',
+                date: new Date().toLocaleDateString()
+            });
+            saveApps(apps);
+            renderPipeline();
+            alert(`Added "${title}" to Pipeline!`);
         }
 
         // ===== INIT =====
