@@ -16,6 +16,16 @@
                     .catch(() => { document.documentElement.style.visibility = 'visible'; document.documentElement.style.opacity = '1'; });
                 return;
             }
+            // portfolio.suitegpt.app → load portfolio page
+            if (window.location.hostname === 'portfolio.suitegpt.app') {
+                document.documentElement.style.visibility = 'hidden';
+                document.documentElement.style.opacity = '0';
+                fetch('/portfolio/index.html')
+                    .then(r => r.text())
+                    .then(html => { document.open(); document.write(html); document.close(); })
+                    .catch(() => { document.documentElement.style.visibility = 'visible'; document.documentElement.style.opacity = '1'; });
+                return;
+            }
             const isSuiteGPT = window.location.hostname === 'suitegpt.app' || window.location.hostname === 'www.suitegpt.app';
             if (isSuiteGPT) {
                 // Immediately hide the page to prevent flash of getsuite.app content
