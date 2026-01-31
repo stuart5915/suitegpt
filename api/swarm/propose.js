@@ -91,7 +91,7 @@ export default async function handler(req, res) {
             from_agent: true,
             category: (['feature','improvement','bug','app_idea','tokenomics','content','marketing','social','integration','client_request'].includes(category)) ? category : 'feature',
             status: 'submitted',
-            submission_type: type
+            submission_type: (type === 'small_telos_proposal') ? 'proposal' : type
         };
 
         // Add escalation fields if present
