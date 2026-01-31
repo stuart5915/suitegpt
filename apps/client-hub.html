@@ -311,6 +311,101 @@
         }
         .quick-link-btn:hover { border-color: var(--border-hover); color: var(--text); }
 
+        /* Kanban Pipeline */
+        .kanban-channel-bar {
+            display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;
+        }
+        .channel-btn {
+            padding: 7px 16px; border-radius: 10px; border: 1px solid var(--border);
+            background: transparent; color: var(--text-dim); font-family: inherit;
+            font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .channel-btn:hover { background: var(--bg-card); color: var(--text); }
+        .channel-btn.active { background: var(--green-soft); color: var(--green); border-color: rgba(34,197,94,0.2); }
+        .channel-btn .ch-count {
+            background: rgba(255,255,255,0.08); padding: 1px 7px; border-radius: 6px;
+            font-size: 0.7rem; font-weight: 800;
+        }
+        .channel-btn.active .ch-count { background: rgba(34,197,94,0.2); }
+
+        .kanban-board {
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
+            min-height: 400px; align-items: start;
+        }
+        .kanban-col {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 14px; padding: 14px; min-height: 300px;
+            transition: border-color 0.2s;
+        }
+        .kanban-col.drag-over { border-color: var(--green); background: rgba(34,197,94,0.04); }
+        .kanban-col-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border);
+        }
+        .kanban-col-title {
+            font-size: 0.78rem; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;
+        }
+        .kanban-col-dot {
+            width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+        }
+        .kanban-col-count {
+            font-size: 0.72rem; font-weight: 800; color: var(--text-muted);
+            background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 6px;
+        }
+        .kanban-card {
+            background: var(--bg); border: 1px solid var(--border);
+            border-radius: 12px; padding: 14px; margin-bottom: 8px;
+            cursor: grab; transition: all 0.15s; position: relative;
+        }
+        .kanban-card:active { cursor: grabbing; }
+        .kanban-card:hover { border-color: var(--border-hover); transform: translateY(-1px); }
+        .kanban-card.dragging { opacity: 0.4; transform: scale(0.96); }
+        .kanban-card-name { font-weight: 700; font-size: 0.9rem; margin-bottom: 3px; }
+        .kanban-card-biz { font-size: 0.78rem; color: var(--text-dim); margin-bottom: 8px; }
+        .kanban-card-meta {
+            display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+        }
+        .kanban-card-tag {
+            padding: 2px 8px; border-radius: 6px; font-size: 0.68rem;
+            font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;
+        }
+        .kanban-card-date { font-size: 0.68rem; color: var(--text-muted); margin-left: auto; }
+        .kanban-card-rate { font-size: 0.78rem; font-weight: 700; color: var(--green); }
+        .kanban-card-need {
+            font-size: 0.76rem; color: var(--text-dim); margin-top: 8px;
+            padding-top: 8px; border-top: 1px solid var(--border);
+            line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical; overflow: hidden;
+        }
+        .kanban-empty {
+            text-align: center; padding: 24px 12px; color: var(--text-muted);
+            font-size: 0.8rem; font-weight: 600;
+        }
+        .kanban-stats-row {
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px;
+        }
+        .kanban-stat {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 14px; text-align: center;
+        }
+        .kanban-stat-val { font-size: 1.6rem; font-weight: 800; }
+        .kanban-stat-label { font-size: 0.72rem; color: var(--text-dim); font-weight: 600; margin-top: 2px; }
+
+        @media (max-width: 1100px) {
+            .kanban-board { grid-template-columns: repeat(3, 1fr); }
+            .kanban-stats-row { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .kanban-board { grid-template-columns: 1fr 1fr; }
+            .kanban-stats-row { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 500px) {
+            .kanban-board { grid-template-columns: 1fr; }
+            .kanban-stats-row { grid-template-columns: 1fr; }
+        }
+
         /* Modal */
         .modal-overlay {
             display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
@@ -354,6 +449,7 @@
         <button class="tab-btn" onclick="switchTab('clients')">Clients</button>
         <button class="tab-btn" onclick="switchTab('revenue')">Revenue</button>
         <button class="tab-btn" onclick="switchTab('ads')">Ads & Leads</button>
+        <button class="tab-btn" onclick="switchTab('pipeline')">Pipeline</button>
         <button class="tab-btn" onclick="switchTab('outreach')">Get Clients</button>
     </div>
 
@@ -650,6 +746,24 @@ More clients → more portfolio pieces → better demos → easier to close new 
             </div>
         </div>
 
+        <!-- ======= PIPELINE TAB ======= -->
+        <div class="tab-panel" id="tab-pipeline">
+            <!-- Channel selector -->
+            <div class="kanban-channel-bar" id="channelBar"></div>
+
+            <!-- Stats -->
+            <div class="kanban-stats-row" id="kanbanStats"></div>
+
+            <!-- Quick actions -->
+            <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+                <button class="btn btn-primary btn-sm" onclick="openLeadModal()">+ Add Lead</button>
+                <button class="btn btn-sm" style="background:var(--bg-card);color:var(--text-dim);border:1px solid var(--border)" onclick="switchTab('ads')">Manage Ads</button>
+            </div>
+
+            <!-- Kanban board -->
+            <div class="kanban-board" id="kanbanBoard"></div>
+        </div>
+
         <!-- ======= GET CLIENTS TAB ======= -->
         <div class="tab-panel" id="tab-outreach">
             <div class="section-title">Your Pitch</div>
@@ -865,10 +979,11 @@ Want to get started? I can have something for you to look at within a few days.<
             document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('tab-' + tab)?.classList.add('active');
-            const tabs = ['overview', 'clients', 'revenue', 'ads', 'outreach'];
+            const tabs = ['overview', 'clients', 'revenue', 'ads', 'pipeline', 'outreach'];
             document.querySelectorAll('.tab-btn')[tabs.indexOf(tab)]?.classList.add('active');
             if (tab === 'revenue') renderRevenue();
             if (tab === 'ads') loadAdsAndLeads();
+            if (tab === 'pipeline') loadPipeline();
         }
 
         // ===== DATA =====
@@ -1364,6 +1479,190 @@ Want to get started? I can have something for you to look at within a few days.<
                 renderLeads();
                 closeLeadModal();
             } catch (e) { alert('Failed to save lead: ' + e.message); }
+        }
+
+        // ===== PIPELINE KANBAN =====
+        const CHANNELS = [
+            { id: 'all', label: 'All Channels', sources: null },
+            { id: 'kijiji', label: 'Kijiji', sources: ['kijiji'], color: 'var(--green)' },
+            { id: 'fb', label: 'FB Marketplace', sources: ['fb-marketplace'], color: 'var(--blue)' },
+            { id: 'linkedin', label: 'LinkedIn', sources: ['linkedin'], color: 'var(--purple)' },
+            { id: 'email', label: 'Email', sources: ['email', 'direct'], color: 'var(--orange)' },
+            { id: 'instagram', label: 'Instagram', sources: ['instagram'], color: 'var(--red)' },
+            { id: 'social', label: 'Groups / Reddit', sources: ['reddit', 'facebook-group'], color: 'var(--accent)' },
+            { id: 'walkin', label: 'Walk-Ins', sources: ['walk-in'], color: 'var(--green)' },
+            { id: 'referral', label: 'Referrals', sources: ['referral'], color: 'var(--blue)' },
+        ];
+        const PIPELINE_STATUSES = [
+            { id: 'new', label: 'New', color: 'var(--blue)', dot: '#3b82f6' },
+            { id: 'contacted', label: 'Contacted', color: 'var(--orange)', dot: '#f59e0b' },
+            { id: 'trial', label: 'Trial', color: 'var(--purple)', dot: '#a855f7' },
+            { id: 'active', label: 'Active', color: 'var(--green)', dot: '#22c55e' },
+            { id: 'churned', label: 'Churned', color: 'var(--red)', dot: '#ef4444' },
+        ];
+        let currentChannel = 'all';
+        let pipelineLeads = [];
+
+        async function loadPipeline() {
+            try {
+                pipelineLeads = await sbGet('client_leads?order=created_at.desc');
+            } catch (e) {
+                pipelineLeads = cachedLeads.length ? cachedLeads : [];
+            }
+            renderChannelBar();
+            renderKanbanStats();
+            renderKanban();
+        }
+
+        function getFilteredLeads() {
+            const ch = CHANNELS.find(c => c.id === currentChannel);
+            if (!ch || !ch.sources) return pipelineLeads;
+            return pipelineLeads.filter(l => ch.sources.includes(l.source));
+        }
+
+        function renderChannelBar() {
+            const bar = document.getElementById('channelBar');
+            bar.innerHTML = CHANNELS.map(ch => {
+                const count = ch.sources
+                    ? pipelineLeads.filter(l => ch.sources.includes(l.source)).length
+                    : pipelineLeads.length;
+                return `<button class="channel-btn ${currentChannel === ch.id ? 'active' : ''}"
+                    onclick="selectChannel('${ch.id}')">
+                    ${ch.label} <span class="ch-count">${count}</span>
+                </button>`;
+            }).join('');
+        }
+
+        function selectChannel(id) {
+            currentChannel = id;
+            renderChannelBar();
+            renderKanbanStats();
+            renderKanban();
+        }
+
+        function renderKanbanStats() {
+            const leads = getFilteredLeads();
+            const stats = document.getElementById('kanbanStats');
+            stats.innerHTML = PIPELINE_STATUSES.map(s => {
+                const count = leads.filter(l => l.status === s.id).length;
+                return `<div class="kanban-stat">
+                    <div class="kanban-stat-val" style="color:${s.color}">${count}</div>
+                    <div class="kanban-stat-label">${s.label}</div>
+                </div>`;
+            }).join('');
+        }
+
+        function renderKanban() {
+            const leads = getFilteredLeads();
+            const board = document.getElementById('kanbanBoard');
+            const sourceColors = {
+                'kijiji': { bg: 'var(--green-soft)', color: 'var(--green)' },
+                'fb-marketplace': { bg: 'var(--blue-soft)', color: 'var(--blue)' },
+                'linkedin': { bg: 'var(--purple-soft)', color: 'var(--purple)' },
+                'instagram': { bg: 'var(--red-soft)', color: 'var(--red)' },
+                'walk-in': { bg: 'var(--green-soft)', color: 'var(--green)' },
+                'referral': { bg: 'var(--blue-soft)', color: 'var(--blue)' },
+                'direct': { bg: 'var(--orange-soft)', color: 'var(--orange)' },
+                'email': { bg: 'var(--orange-soft)', color: 'var(--orange)' },
+                'reddit': { bg: 'var(--accent-soft)', color: 'var(--accent)' },
+                'facebook-group': { bg: 'var(--accent-soft)', color: 'var(--accent)' },
+            };
+
+            board.innerHTML = PIPELINE_STATUSES.map(status => {
+                const colLeads = leads.filter(l => l.status === status.id);
+                return `<div class="kanban-col" data-status="${status.id}"
+                    ondragover="kanbanDragOver(event)" ondragleave="kanbanDragLeave(event)" ondrop="kanbanDrop(event)">
+                    <div class="kanban-col-header">
+                        <div class="kanban-col-title">
+                            <span class="kanban-col-dot" style="background:${status.dot}"></span>
+                            ${status.label}
+                        </div>
+                        <span class="kanban-col-count">${colLeads.length}</span>
+                    </div>
+                    <div class="kanban-col-cards">
+                        ${colLeads.length === 0
+                            ? `<div class="kanban-empty">No leads</div>`
+                            : colLeads.map(lead => {
+                                const src = lead.source || 'direct';
+                                const sc = sourceColors[src] || { bg: 'var(--accent-soft)', color: 'var(--accent)' };
+                                const created = new Date(lead.created_at).toLocaleDateString();
+                                const needSnippet = lead.what_they_need
+                                    ? `<div class="kanban-card-need">${lead.what_they_need}</div>` : '';
+                                return `<div class="kanban-card" draggable="true" data-lead-id="${lead.id}"
+                                    ondragstart="kanbanDragStart(event)" ondragend="kanbanDragEnd(event)">
+                                    <div class="kanban-card-name">${lead.name}</div>
+                                    <div class="kanban-card-biz">${lead.business_name || lead.business_type || 'No business'}</div>
+                                    <div class="kanban-card-meta">
+                                        <span class="kanban-card-tag" style="background:${sc.bg};color:${sc.color}">${src}</span>
+                                        ${lead.monthly_rate ? `<span class="kanban-card-rate">$${lead.monthly_rate}/mo</span>` : ''}
+                                        <span class="kanban-card-date">${created}</span>
+                                    </div>
+                                    ${needSnippet}
+                                </div>`;
+                            }).join('')
+                        }
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // Drag & Drop
+        let draggedLeadId = null;
+
+        function kanbanDragStart(e) {
+            draggedLeadId = e.target.dataset.leadId;
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', draggedLeadId);
+        }
+
+        function kanbanDragEnd(e) {
+            e.target.classList.remove('dragging');
+            document.querySelectorAll('.kanban-col').forEach(c => c.classList.remove('drag-over'));
+        }
+
+        function kanbanDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            const col = e.target.closest('.kanban-col');
+            if (col) col.classList.add('drag-over');
+        }
+
+        function kanbanDragLeave(e) {
+            const col = e.target.closest('.kanban-col');
+            if (col && !col.contains(e.relatedTarget)) col.classList.remove('drag-over');
+        }
+
+        async function kanbanDrop(e) {
+            e.preventDefault();
+            const col = e.target.closest('.kanban-col');
+            if (!col) return;
+            col.classList.remove('drag-over');
+
+            const newStatus = col.dataset.status;
+            const leadId = e.dataTransfer.getData('text/plain') || draggedLeadId;
+            if (!leadId || !newStatus) return;
+
+            const lead = pipelineLeads.find(l => l.id === leadId);
+            if (!lead || lead.status === newStatus) return;
+
+            // Optimistic update
+            lead.status = newStatus;
+            renderKanbanStats();
+            renderKanban();
+
+            // Persist to Supabase
+            try {
+                await sbPatch('client_leads', leadId, { status: newStatus, updated_at: new Date().toISOString() });
+                // Also update cachedLeads for the Ads & Leads tab
+                const cached = cachedLeads.find(l => l.id === leadId);
+                if (cached) cached.status = newStatus;
+            } catch (err) {
+                console.error('Failed to update lead status:', err);
+                // Reload to get correct state
+                loadPipeline();
+            }
+            draggedLeadId = null;
         }
 
         // Close modals on overlay click
