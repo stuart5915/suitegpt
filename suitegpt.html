@@ -21101,6 +21101,51 @@
         </main>
     </div>
 
+    <!-- Add Lead Modal (Client Hub) -->
+    <div class="ch-modal-overlay" id="chLeadModal">
+        <div class="ch-modal">
+            <div class="ch-modal-title">Add Lead</div>
+            <div class="ch-form-group"><label class="ch-form-label">Name *</label><input class="ch-form-input" type="text" id="chLeadName" placeholder="Jane Smith"></div>
+            <div class="ch-form-group"><label class="ch-form-label">Email</label><input class="ch-form-input" type="text" id="chLeadEmail" placeholder="jane@business.com"></div>
+            <div class="ch-form-group"><label class="ch-form-label">Phone</label><input class="ch-form-input" type="text" id="chLeadPhone" placeholder="(555) 123-4567"></div>
+            <div class="ch-form-group"><label class="ch-form-label">Business Name</label><input class="ch-form-input" type="text" id="chLeadBusiness" placeholder="Jane's Bakery"></div>
+            <div class="ch-form-group"><label class="ch-form-label">Source</label>
+                <select class="ch-form-select" id="chLeadSource">
+                    <option value="walk-in">Walk-in</option><option value="referral">Referral</option><option value="kijiji">Kijiji</option>
+                    <option value="fb-marketplace">Facebook Marketplace</option><option value="linkedin">LinkedIn</option>
+                    <option value="instagram">Instagram</option><option value="direct">Direct / Landing Page</option><option value="other">Other</option>
+                </select>
+            </div>
+            <div class="ch-form-group"><label class="ch-form-label">What They Need</label><textarea class="ch-form-textarea" id="chLeadNeed" placeholder="Website, dashboard, inventory system..."></textarea></div>
+            <div class="ch-form-group"><label class="ch-form-label">Notes</label><textarea class="ch-form-textarea" id="chLeadNotes" placeholder="Any notes..."></textarea></div>
+            <div class="ch-modal-actions">
+                <button style="padding:8px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:var(--text-secondary);font-family:inherit;font-weight:600;cursor:pointer;" onclick="hideAddLeadModal()">Cancel</button>
+                <button style="padding:8px 16px;border-radius:10px;border:none;background:linear-gradient(135deg,#22c55e,#10b981);color:white;font-family:inherit;font-weight:700;cursor:pointer;" onclick="chSaveLead()">Save Lead</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Ad Modal (Client Hub) -->
+    <div class="ch-modal-overlay" id="chAdModal">
+        <div class="ch-modal">
+            <div class="ch-modal-title">Add Ad Placement</div>
+            <div class="ch-form-group"><label class="ch-form-label">Platform</label>
+                <select class="ch-form-select" id="chAdPlatform">
+                    <option value="kijiji">Kijiji</option><option value="fb-marketplace">Facebook Marketplace</option>
+                    <option value="linkedin">LinkedIn</option><option value="instagram">Instagram</option>
+                    <option value="reddit">Reddit</option><option value="facebook-group">Facebook Group</option><option value="other">Other</option>
+                </select>
+            </div>
+            <div class="ch-form-group"><label class="ch-form-label">Title / Description</label><input class="ch-form-input" type="text" id="chAdTitle" placeholder="Free custom website for your business"></div>
+            <div class="ch-form-group"><label class="ch-form-label">Link to Ad (optional)</label><input class="ch-form-input" type="url" id="chAdUrl" placeholder="https://kijiji.ca/v-..."></div>
+            <div class="ch-form-group"><label class="ch-form-label">Budget ($)</label><input class="ch-form-input" type="number" id="chAdBudget" placeholder="0" min="0"></div>
+            <div class="ch-modal-actions">
+                <button style="padding:8px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:var(--text-secondary);font-family:inherit;font-weight:600;cursor:pointer;" onclick="hideAddAdModal()">Cancel</button>
+                <button style="padding:8px 16px;border-radius:10px;border:none;background:linear-gradient(135deg,#22c55e,#10b981);color:white;font-family:inherit;font-weight:700;cursor:pointer;" onclick="chSaveAd()">Save Ad</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Add Operator Modal -->
     <!-- Project Context Modal -->
     <div class="operator-modal-overlay" id="projectContextModal" style="display: none;">
@@ -21150,33 +21195,58 @@
     <div class="operator-modal-overlay" id="addOperatorModal" style="display: none;">
         <div class="operator-modal-content">
             <div class="operator-modal-header">
-                <h3>Add New Operator</h3>
+                <h3>Add New Client</h3>
                 <button class="operator-modal-close" onclick="hideAddOperatorModal()">&times;</button>
             </div>
             <form id="addOperatorForm" onsubmit="submitNewOperator(event)">
                 <div class="operator-form-group">
-                    <label>Company/App Name</label>
-                    <input type="text" id="operatorName" required placeholder="e.g., Galtwood Co">
+                    <label>Client / Company Name</label>
+                    <input type="text" id="operatorName" required placeholder="e.g., Jane's Bakery">
                 </div>
                 <div class="operator-form-group">
                     <label>Description</label>
-                    <textarea id="operatorDescription" rows="3" placeholder="What do they do?"></textarea>
+                    <textarea id="operatorDescription" rows="2" placeholder="What do they do?"></textarea>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div class="operator-form-group">
+                        <label>Contact Email</label>
+                        <input type="email" id="operatorEmail" placeholder="contact@example.com">
+                    </div>
+                    <div class="operator-form-group">
+                        <label>Phone</label>
+                        <input type="text" id="operatorPhone" placeholder="(555) 123-4567">
+                    </div>
                 </div>
                 <div class="operator-form-group">
-                    <label>Contact Email</label>
-                    <input type="email" id="operatorEmail" placeholder="contact@example.com">
+                    <label>Industry</label>
+                    <input type="text" id="operatorIndustry" placeholder="e.g., Restaurant, Gym, Retail">
                 </div>
                 <div class="operator-form-group">
                     <label>Website/URL</label>
                     <input type="url" id="operatorUrl" placeholder="https://...">
                 </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div class="operator-form-group">
+                        <label>Payment Type</label>
+                        <select id="operatorPaymentType" onchange="document.getElementById('operatorRateGroup').style.display = this.value === 'monthly' ? 'block' : 'none'">
+                            <option value="salary">Salary (Operator Role)</option>
+                            <option value="monthly">Monthly Fee (Local Business)</option>
+                        </select>
+                    </div>
+                    <div class="operator-form-group" id="operatorRateGroup" style="display:none">
+                        <label>Monthly Rate ($)</label>
+                        <input type="number" id="operatorRate" placeholder="500" min="0">
+                    </div>
+                </div>
                 <div class="operator-form-group">
                     <label>Status</label>
                     <select id="operatorStatus">
-                        <option value="pending">Pending - Initial Discussion</option>
-                        <option value="active">Active - In Development</option>
-                        <option value="completed">Completed - Live</option>
+                        <option value="lead">Lead</option>
+                        <option value="trial">Trial (30 days free)</option>
+                        <option value="active">Active</option>
                         <option value="paused">Paused</option>
+                        <option value="completed">Completed</option>
+                        <option value="churned">Churned</option>
                     </select>
                 </div>
                 <div class="operator-form-group">
@@ -21192,7 +21262,7 @@
                 </div>
                 <div class="operator-modal-actions">
                     <button type="button" class="operator-btn-cancel" onclick="hideAddOperatorModal()">Cancel</button>
-                    <button type="submit" class="operator-btn-submit">Add Operator</button>
+                    <button type="submit" class="operator-btn-submit">Add Client</button>
                 </div>
             </form>
         </div>
@@ -24455,15 +24525,24 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
         async function submitNewOperator(e) {
             e.preventDefault();
 
+            const paymentType = document.getElementById('operatorPaymentType').value;
             const operator = {
                 name: document.getElementById('operatorName').value.trim(),
                 description: document.getElementById('operatorDescription').value.trim(),
                 email: document.getElementById('operatorEmail').value.trim(),
+                phone: document.getElementById('operatorPhone').value.trim() || null,
+                industry: document.getElementById('operatorIndustry').value.trim() || null,
                 url: document.getElementById('operatorUrl').value.trim(),
                 status: document.getElementById('operatorStatus').value,
+                payment_type: paymentType,
+                monthly_rate: paymentType === 'monthly' ? (parseFloat(document.getElementById('operatorRate').value) || 0) : 0,
                 app_key: document.getElementById('operatorAppKey').value || null,
                 notes: document.getElementById('operatorNotes').value.trim()
             };
+            if (operator.status === 'trial') {
+                operator.trial_start = new Date().toISOString().split('T')[0];
+                operator.trial_end = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
+            }
 
             try {
                 const { data, error } = await supabaseClient
@@ -24493,8 +24572,13 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
             document.getElementById('operatorName').value = op.name || '';
             document.getElementById('operatorDescription').value = op.description || '';
             document.getElementById('operatorEmail').value = op.email || '';
+            document.getElementById('operatorPhone').value = op.phone || '';
+            document.getElementById('operatorIndustry').value = op.industry || '';
             document.getElementById('operatorUrl').value = op.url || '';
-            document.getElementById('operatorStatus').value = op.status || 'pending';
+            document.getElementById('operatorPaymentType').value = op.payment_type || 'salary';
+            document.getElementById('operatorRate').value = op.monthly_rate || '';
+            document.getElementById('operatorRateGroup').style.display = op.payment_type === 'monthly' ? 'block' : 'none';
+            document.getElementById('operatorStatus').value = op.status || 'active';
             document.getElementById('operatorNotes').value = op.notes || '';
 
             // Change form to edit mode
@@ -24502,7 +24586,7 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
             form.dataset.editId = id;
             form.onsubmit = (e) => updateOperator(e, id);
 
-            document.querySelector('.operator-modal-header h3').textContent = 'Edit Operator';
+            document.querySelector('.operator-modal-header h3').textContent = 'Edit Client';
             document.querySelector('.operator-btn-submit').textContent = 'Save Changes';
             document.getElementById('addOperatorModal').style.display = 'flex';
         }
@@ -24510,12 +24594,17 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
         async function updateOperator(e, id) {
             e.preventDefault();
 
+            const paymentType = document.getElementById('operatorPaymentType').value;
             const updates = {
                 name: document.getElementById('operatorName').value.trim(),
                 description: document.getElementById('operatorDescription').value.trim(),
                 email: document.getElementById('operatorEmail').value.trim(),
+                phone: document.getElementById('operatorPhone').value.trim() || null,
+                industry: document.getElementById('operatorIndustry').value.trim() || null,
                 url: document.getElementById('operatorUrl').value.trim(),
                 status: document.getElementById('operatorStatus').value,
+                payment_type: paymentType,
+                monthly_rate: paymentType === 'monthly' ? (parseFloat(document.getElementById('operatorRate').value) || 0) : 0,
                 app_key: document.getElementById('operatorAppKey').value || null,
                 notes: document.getElementById('operatorNotes').value.trim(),
                 updated_at: new Date().toISOString()
@@ -24635,8 +24724,9 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
             form.reset();
             delete form.dataset.editId;
             form.onsubmit = submitNewOperator;
-            document.querySelector('.operator-modal-header h3').textContent = 'Add New Operator';
-            document.querySelector('.operator-btn-submit').textContent = 'Add Operator';
+            document.querySelector('.operator-modal-header h3').textContent = 'Add New Client';
+            document.querySelector('.operator-btn-submit').textContent = 'Add Client';
+            document.getElementById('operatorRateGroup').style.display = 'none';
         }
 
         // Close modal when clicking overlay
@@ -24645,7 +24735,339 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
                 hideAddOperatorModal();
                 resetOperatorForm();
             }
+            if (e.target.classList.contains('ch-modal-overlay')) {
+                e.target.classList.remove('show');
+            }
         });
+
+        // ===== CLIENT HUB (Ported) =====
+        let chPipelineLeads = [];
+        let chAds = [];
+        let chLeads = [];
+        let chCurrentChannel = 'all';
+        let chLeadFilter = 'all';
+
+        const CH_CHANNELS = [
+            { id: 'all', label: 'All Channels', sources: null },
+            { id: 'kijiji', label: 'Kijiji', sources: ['kijiji'] },
+            { id: 'fb', label: 'FB Marketplace', sources: ['fb-marketplace'] },
+            { id: 'linkedin', label: 'LinkedIn', sources: ['linkedin'] },
+            { id: 'email', label: 'Email', sources: ['email', 'direct'] },
+            { id: 'instagram', label: 'Instagram', sources: ['instagram'] },
+            { id: 'social', label: 'Groups / Reddit', sources: ['reddit', 'facebook-group'] },
+            { id: 'walkin', label: 'Walk-Ins', sources: ['walk-in'] },
+            { id: 'referral', label: 'Referrals', sources: ['referral'] },
+        ];
+        const CH_STATUSES = [
+            { id: 'new', label: 'New', color: '#3b82f6' },
+            { id: 'contacted', label: 'Contacted', color: '#f59e0b' },
+            { id: 'trial', label: 'Trial', color: '#a855f7' },
+            { id: 'active', label: 'Active', color: '#22c55e' },
+            { id: 'churned', label: 'Churned', color: '#ef4444' },
+        ];
+        const CH_SOURCE_COLORS = {
+            'kijiji': { bg: 'rgba(34,197,94,0.1)', color: '#22c55e' },
+            'fb-marketplace': { bg: 'rgba(59,130,246,0.1)', color: '#3b82f6' },
+            'linkedin': { bg: 'rgba(168,85,247,0.1)', color: '#a855f7' },
+            'instagram': { bg: 'rgba(239,68,68,0.1)', color: '#ef4444' },
+            'walk-in': { bg: 'rgba(34,197,94,0.1)', color: '#22c55e' },
+            'referral': { bg: 'rgba(59,130,246,0.1)', color: '#3b82f6' },
+            'direct': { bg: 'rgba(245,158,11,0.1)', color: '#f59e0b' },
+            'email': { bg: 'rgba(245,158,11,0.1)', color: '#f59e0b' },
+            'reddit': { bg: 'rgba(99,102,241,0.1)', color: '#6366f1' },
+            'facebook-group': { bg: 'rgba(99,102,241,0.1)', color: '#6366f1' },
+        };
+
+        function switchClientsTab(tab) {
+            document.querySelectorAll('.clients-sub-tab').forEach(b => b.classList.toggle('active', b.dataset.ctab === tab));
+            document.querySelectorAll('.clients-sub-panel').forEach(p => p.classList.remove('active'));
+            const panelMap = { 'my-clients': 'clientsMyClientsPanel', 'pipeline': 'clientsPipelinePanel', 'revenue': 'clientsRevenuePanel', 'ads': 'clientsAdsPanel', 'outreach': 'clientsOutreachPanel', 'overview': 'clientsOverviewPanel' };
+            const panel = document.getElementById(panelMap[tab]);
+            if (panel) panel.classList.add('active');
+            if (tab === 'pipeline') chLoadPipeline();
+            if (tab === 'revenue') chLoadRevenue();
+            if (tab === 'ads') chLoadAdsAndLeads();
+            if (tab === 'outreach') chRenderOutreach();
+            if (tab === 'overview') chRenderOverview();
+        }
+
+        // ---- Pipeline ----
+        async function chLoadPipeline() {
+            try {
+                const { data, error } = await supabaseClient.from('client_leads').select('*').order('created_at', { ascending: false });
+                if (error) throw error;
+                chPipelineLeads = data || [];
+            } catch (e) { chPipelineLeads = []; }
+            chRenderChannelBar();
+            chRenderKanbanStats();
+            chRenderKanban();
+        }
+
+        function chGetFiltered() {
+            const ch = CH_CHANNELS.find(c => c.id === chCurrentChannel);
+            if (!ch || !ch.sources) return chPipelineLeads;
+            return chPipelineLeads.filter(l => ch.sources.includes(l.source));
+        }
+
+        function chRenderChannelBar() {
+            document.getElementById('chChannelBar').innerHTML = CH_CHANNELS.map(ch => {
+                const count = ch.sources ? chPipelineLeads.filter(l => ch.sources.includes(l.source)).length : chPipelineLeads.length;
+                return `<button class="ch-channel-btn ${chCurrentChannel === ch.id ? 'active' : ''}" onclick="chSelectChannel('${ch.id}')">${ch.label} <span class="ch-count">${count}</span></button>`;
+            }).join('');
+        }
+
+        function chSelectChannel(id) { chCurrentChannel = id; chRenderChannelBar(); chRenderKanbanStats(); chRenderKanban(); }
+
+        function chRenderKanbanStats() {
+            const leads = chGetFiltered();
+            document.getElementById('chKanbanStats').innerHTML = CH_STATUSES.map(s => {
+                const count = leads.filter(l => l.status === s.id).length;
+                return `<div class="ch-kanban-stat"><div class="ch-kanban-stat-val" style="color:${s.color}">${count}</div><div class="ch-kanban-stat-label">${s.label}</div></div>`;
+            }).join('');
+        }
+
+        function chRenderKanban() {
+            const leads = chGetFiltered();
+            document.getElementById('chKanbanBoard').innerHTML = CH_STATUSES.map(status => {
+                const colLeads = leads.filter(l => l.status === status.id);
+                return `<div class="ch-kanban-col" data-status="${status.id}" ondragover="chDragOver(event)" ondragleave="chDragLeave(event)" ondrop="chDrop(event)">
+                    <div class="ch-kanban-col-header">
+                        <div class="ch-kanban-col-title"><span class="ch-kanban-col-dot" style="background:${status.color}"></span>${status.label}</div>
+                        <span class="ch-kanban-col-count">${colLeads.length}</span>
+                    </div>
+                    ${colLeads.length === 0 ? '<div class="ch-kanban-empty">No leads</div>' : colLeads.map(lead => {
+                        const src = lead.source || 'direct';
+                        const sc = CH_SOURCE_COLORS[src] || { bg: 'rgba(99,102,241,0.1)', color: '#6366f1' };
+                        const created = new Date(lead.created_at).toLocaleDateString();
+                        return `<div class="ch-kanban-card" draggable="true" data-lead-id="${lead.id}" ondragstart="chDragStart(event)" ondragend="chDragEnd(event)">
+                            <div class="ch-kanban-card-name">${escapeHtml(lead.name)}</div>
+                            <div class="ch-kanban-card-biz">${escapeHtml(lead.business_name || lead.business_type || 'No business')}</div>
+                            <div class="ch-kanban-card-meta">
+                                <span class="ch-kanban-card-tag" style="background:${sc.bg};color:${sc.color}">${src}</span>
+                                ${lead.monthly_rate ? `<span class="ch-kanban-card-rate">$${lead.monthly_rate}/mo</span>` : ''}
+                                <span class="ch-kanban-card-date">${created}</span>
+                            </div>
+                            ${lead.what_they_need ? `<div class="ch-kanban-card-need">${escapeHtml(lead.what_they_need)}</div>` : ''}
+                        </div>`;
+                    }).join('')}
+                </div>`;
+            }).join('');
+        }
+
+        let chDraggedId = null;
+        function chDragStart(e) { chDraggedId = e.target.dataset.leadId; e.target.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', chDraggedId); }
+        function chDragEnd(e) { e.target.classList.remove('dragging'); document.querySelectorAll('.ch-kanban-col').forEach(c => c.classList.remove('drag-over')); }
+        function chDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; const col = e.target.closest('.ch-kanban-col'); if (col) col.classList.add('drag-over'); }
+        function chDragLeave(e) { const col = e.target.closest('.ch-kanban-col'); if (col && !col.contains(e.relatedTarget)) col.classList.remove('drag-over'); }
+        async function chDrop(e) {
+            e.preventDefault();
+            const col = e.target.closest('.ch-kanban-col');
+            if (!col) return;
+            col.classList.remove('drag-over');
+            const newStatus = col.dataset.status;
+            const leadId = e.dataTransfer.getData('text/plain') || chDraggedId;
+            if (!leadId || !newStatus) return;
+            const lead = chPipelineLeads.find(l => l.id === leadId);
+            if (!lead || lead.status === newStatus) return;
+            lead.status = newStatus;
+            chRenderKanbanStats(); chRenderKanban();
+            try {
+                await supabaseClient.from('client_leads').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', leadId);
+            } catch (err) { console.error('Failed to update lead:', err); chLoadPipeline(); }
+            chDraggedId = null;
+        }
+
+        // ---- Revenue ----
+        async function chLoadRevenue() {
+            try {
+                const { data: clients } = await supabaseClient.from('suite_operators').select('*').order('created_at', { ascending: false });
+                const allClients = clients || [];
+                const monthlyActive = allClients.filter(c => c.payment_type === 'monthly' && c.status === 'active');
+                const monthlyTrial = allClients.filter(c => c.payment_type === 'monthly' && c.status === 'trial');
+                const mrr = monthlyActive.reduce((s, c) => s + (parseFloat(c.monthly_rate) || 0), 0);
+                const pipeline = monthlyTrial.reduce((s, c) => s + (parseFloat(c.monthly_rate) || 0), 0);
+
+                document.getElementById('chRevenueCards').innerHTML = `
+                    <div class="ch-revenue-card"><div class="ch-revenue-card-label">Monthly Recurring (MRR)</div><div class="ch-revenue-card-value" style="color:#22c55e">$${mrr.toLocaleString()}</div></div>
+                    <div class="ch-revenue-card"><div class="ch-revenue-card-label">Annualized (ARR)</div><div class="ch-revenue-card-value" style="color:#6366f1">$${(mrr * 12).toLocaleString()}</div></div>
+                    <div class="ch-revenue-card"><div class="ch-revenue-card-label">Pipeline (Trials)</div><div class="ch-revenue-card-value" style="color:#3b82f6">$${pipeline.toLocaleString()}/mo</div></div>
+                    <div class="ch-revenue-card"><div class="ch-revenue-card-label">Total Clients</div><div class="ch-revenue-card-value">${allClients.filter(c => !['churned'].includes(c.status)).length}</div></div>
+                `;
+
+                document.getElementById('chRevenueTableBody').innerHTML = allClients.map(c => {
+                    const statusColors = { lead: '#f59e0b', trial: '#3b82f6', active: '#22c55e', paused: '#888', completed: '#22c55e', churned: '#ef4444', pending: '#f59e0b' };
+                    const typeLabel = c.payment_type === 'monthly' ? 'Monthly' : 'Salary';
+                    const rate = c.payment_type === 'monthly' ? `$${c.monthly_rate || 0}/mo` : '\u2014';
+                    return `<tr>
+                        <td style="font-weight:700">${escapeHtml(c.name)}</td>
+                        <td><span style="padding:2px 8px;border-radius:5px;font-size:0.72rem;font-weight:700;background:${c.payment_type === 'monthly' ? 'rgba(34,197,94,0.1)' : 'rgba(99,102,241,0.1)'};color:${c.payment_type === 'monthly' ? '#22c55e' : '#818cf8'}">${typeLabel}</span></td>
+                        <td><span style="color:${statusColors[c.status] || '#888'};font-weight:600">${formatOperatorStatus(c.status)}</span></td>
+                        <td>${rate}</td>
+                        <td style="font-size:0.78rem;color:var(--text-secondary)">${formatDate(c.created_at)}</td>
+                    </tr>`;
+                }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);padding:24px;">No clients yet.</td></tr>';
+            } catch (e) { console.error('Revenue load error:', e); }
+        }
+
+        // ---- Ads & Leads ----
+        async function chLoadAdsAndLeads() {
+            try {
+                const [leadsRes, adsRes] = await Promise.all([
+                    supabaseClient.from('client_leads').select('*').order('created_at', { ascending: false }),
+                    supabaseClient.from('client_ads').select('*').order('created_at', { ascending: false })
+                ]);
+                chLeads = leadsRes.data || [];
+                chAds = adsRes.data || [];
+            } catch (e) { chLeads = []; chAds = []; }
+            chRenderAdsStats();
+            chRenderAds();
+            chRenderLeadFilters();
+            chRenderLeadsTable();
+        }
+
+        function chRenderAdsStats() {
+            const total = chLeads.length;
+            const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+            const newThisWeek = chLeads.filter(l => l.created_at >= weekAgo).length;
+            const inTrial = chLeads.filter(l => l.status === 'trial').length;
+            const active = chLeads.filter(l => l.status === 'active').length;
+            const conversion = total > 0 ? Math.round((active / total) * 100) : 0;
+            document.getElementById('chAdsStats').innerHTML = `
+                <div class="ch-kanban-stat"><div class="ch-kanban-stat-val" style="color:#22c55e">${total}</div><div class="ch-kanban-stat-label">Total Leads</div></div>
+                <div class="ch-kanban-stat"><div class="ch-kanban-stat-val" style="color:#3b82f6">${newThisWeek}</div><div class="ch-kanban-stat-label">New This Week</div></div>
+                <div class="ch-kanban-stat"><div class="ch-kanban-stat-val" style="color:#f59e0b">${inTrial}</div><div class="ch-kanban-stat-label">In Trial</div></div>
+                <div class="ch-kanban-stat"><div class="ch-kanban-stat-val" style="color:#6366f1">${conversion}%</div><div class="ch-kanban-stat-label">Conversion</div></div>
+            `;
+        }
+
+        function chRenderAds() {
+            const grid = document.getElementById('chAdsGrid');
+            if (chAds.length === 0) { grid.innerHTML = '<div style="color:var(--text-secondary);font-size:0.88rem;padding:12px;">No ads yet. Click "+ Add Ad" to track your first placement.</div>'; return; }
+            const platformColors = { 'kijiji': '#22c55e', 'fb-marketplace': '#3b82f6', 'linkedin': '#a855f7', 'instagram': '#ef4444', 'reddit': '#f59e0b', 'facebook-group': '#3b82f6' };
+            grid.innerHTML = chAds.map(ad => {
+                const pc = platformColors[ad.platform] || '#6366f1';
+                const statusColors = { active: '#22c55e', paused: '#f59e0b', draft: '#888', expired: '#ef4444' };
+                const leadsForAd = chLeads.filter(l => l.ad_id === ad.id).length;
+                return `<div class="ch-ad-card">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                        <span style="padding:3px 8px;border-radius:5px;font-size:0.72rem;font-weight:700;background:${pc}22;color:${pc}">${ad.platform}</span>
+                        <span style="font-size:0.72rem;font-weight:700;color:${statusColors[ad.status] || '#888'}">${ad.status}</span>
+                    </div>
+                    <div style="font-weight:700;font-size:0.92rem;margin-bottom:6px;">${escapeHtml(ad.title)}</div>
+                    <div style="font-size:0.78rem;color:var(--text-secondary);display:flex;gap:14px;">
+                        <span>Leads: <strong>${leadsForAd}</strong></span><span>Budget: $${ad.budget || 0}</span>
+                    </div>
+                    ${ad.url ? `<a href="${ad.url}" target="_blank" style="color:#3b82f6;font-size:0.76rem;font-weight:600;margin-top:6px;display:inline-block;">View Ad</a>` : ''}
+                    <div style="display:flex;gap:6px;margin-top:10px;">
+                        <button style="padding:4px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:var(--text-secondary);font-family:inherit;font-size:0.72rem;font-weight:600;cursor:pointer;" onclick="chToggleAd('${ad.id}','${ad.status === 'active' ? 'paused' : 'active'}')">${ad.status === 'active' ? 'Pause' : 'Activate'}</button>
+                        <button style="padding:4px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:var(--text-secondary);font-family:inherit;font-size:0.72rem;font-weight:600;cursor:pointer;" onclick="chToggleAd('${ad.id}','expired')">Expire</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        async function chToggleAd(id, newStatus) {
+            try { await supabaseClient.from('client_ads').update({ status: newStatus }).eq('id', id); const ad = chAds.find(a => a.id === id); if (ad) ad.status = newStatus; chRenderAds(); } catch (e) { alert('Failed: ' + e.message); }
+        }
+
+        function chRenderLeadFilters() {
+            document.getElementById('chLeadFilters').innerHTML = ['all', 'new', 'contacted', 'trial', 'active', 'churned'].map(s =>
+                `<button class="ch-lead-filter-btn ${chLeadFilter === s ? 'active' : ''}" onclick="chFilterLeads('${s}')">${s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}</button>`
+            ).join('');
+        }
+
+        function chFilterLeads(f) { chLeadFilter = f; chRenderLeadFilters(); chRenderLeadsTable(); }
+
+        function chRenderLeadsTable() {
+            let filtered = chLeadFilter === 'all' ? chLeads : chLeads.filter(l => l.status === chLeadFilter);
+            const tbody = document.getElementById('chLeadsTableBody');
+            if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-secondary);padding:24px;">No leads' + (chLeadFilter !== 'all' ? ' with status "' + chLeadFilter + '"' : '') + ' yet.</td></tr>'; return; }
+            tbody.innerHTML = filtered.map(l => {
+                const statusColors = { 'new': '#3b82f6', contacted: '#f59e0b', trial: '#a855f7', active: '#22c55e', churned: '#ef4444' };
+                return `<tr>
+                    <td style="font-weight:700">${escapeHtml(l.name)}</td>
+                    <td>${escapeHtml(l.business_name || '\u2014')}</td>
+                    <td style="font-size:0.78rem;color:var(--text-secondary)">${l.source || 'direct'}</td>
+                    <td><select style="padding:3px 8px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.03);color:${statusColors[l.status] || '#888'};font-family:inherit;font-size:0.78rem;font-weight:600;cursor:pointer;" onchange="chUpdateLeadStatus('${l.id}',this.value)">
+                        ${['new','contacted','trial','active','churned'].map(s => '<option value="' + s + '"' + (l.status === s ? ' selected' : '') + '>' + s.charAt(0).toUpperCase() + s.slice(1) + '</option>').join('')}
+                    </select></td>
+                    <td>${l.monthly_rate ? '$' + l.monthly_rate : '\u2014'}</td>
+                    <td style="font-size:0.78rem;color:var(--text-secondary)">${new Date(l.created_at).toLocaleDateString()}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        async function chUpdateLeadStatus(id, status) {
+            try { await supabaseClient.from('client_leads').update({ status, updated_at: new Date().toISOString() }).eq('id', id); const l = chLeads.find(x => x.id === id); if (l) l.status = status; chRenderAdsStats(); } catch (e) { alert('Failed: ' + e.message); }
+        }
+
+        function chCopyLandingLink(ref) {
+            const base = 'https://clients.suitegpt.app';
+            const url = ref ? base + '?ref=' + ref : base;
+            navigator.clipboard.writeText(url);
+            event.target.textContent = 'Copied!';
+            setTimeout(() => { event.target.textContent = ref ? 'Copy Link (' + ref.charAt(0).toUpperCase() + ref.slice(1) + ')' : 'Copy Link (Direct)'; }, 1500);
+        }
+
+        // ---- Add Lead Modal ----
+        function showAddLeadModal() { document.getElementById('chLeadModal').classList.add('show'); }
+        function hideAddLeadModal() { document.getElementById('chLeadModal').classList.remove('show'); }
+        async function chSaveLead() {
+            const name = document.getElementById('chLeadName').value.trim();
+            if (!name) { alert('Name required.'); return; }
+            try {
+                const data = { name, email: document.getElementById('chLeadEmail').value.trim() || null, phone: document.getElementById('chLeadPhone').value.trim() || null, business_name: document.getElementById('chLeadBusiness').value.trim() || null, source: document.getElementById('chLeadSource').value, what_they_need: document.getElementById('chLeadNeed').value.trim() || null, notes: document.getElementById('chLeadNotes').value.trim() || null, status: 'new' };
+                await supabaseClient.from('client_leads').insert([data]);
+                hideAddLeadModal();
+                ['chLeadName','chLeadEmail','chLeadPhone','chLeadBusiness','chLeadNeed','chLeadNotes'].forEach(id => { document.getElementById(id).value = ''; });
+                if (document.getElementById('clientsPipelinePanel').classList.contains('active')) chLoadPipeline();
+                if (document.getElementById('clientsAdsPanel').classList.contains('active')) chLoadAdsAndLeads();
+            } catch (e) { alert('Failed: ' + e.message); }
+        }
+
+        // ---- Add Ad Modal ----
+        function showAddAdModal() { document.getElementById('chAdModal').classList.add('show'); }
+        function hideAddAdModal() { document.getElementById('chAdModal').classList.remove('show'); }
+        async function chSaveAd() {
+            const title = document.getElementById('chAdTitle').value.trim();
+            if (!title) { alert('Title required.'); return; }
+            try {
+                const data = { platform: document.getElementById('chAdPlatform').value, title, url: document.getElementById('chAdUrl').value.trim() || null, budget: parseFloat(document.getElementById('chAdBudget').value) || 0, status: 'active', posted_at: new Date().toISOString() };
+                await supabaseClient.from('client_ads').insert([data]);
+                hideAddAdModal();
+                ['chAdTitle','chAdUrl','chAdBudget'].forEach(id => { document.getElementById(id).value = ''; });
+                chLoadAdsAndLeads();
+            } catch (e) { alert('Failed: ' + e.message); }
+        }
+
+        // ---- Outreach (static content) ----
+        function chRenderOutreach() {
+            const el = document.getElementById('chOutreachContent');
+            if (el.innerHTML) return;
+            el.innerHTML = '<h3 style="font-size:1rem;font-weight:700;margin-bottom:12px;">Your Pitch</h3>' +
+                '<div class="ch-outreach-card"><div class="ch-outreach-title">Elevator Pitch</div><div class="ch-outreach-body" id="chPitch1">I build custom AI-powered dashboards for small businesses. You get a website, an admin panel, and a chat interface where you can request changes and manage everything yourself.\n\nFree setup. Free for 30 days. Then a flat monthly fee to keep it running and make updates whenever you need them.\n\nYou don\'t need to know anything technical. You just tell me what you need, I build it, and you\'re running.</div><button class="ch-copy-btn" onclick="chCopyEl(\'chPitch1\')">Copy</button></div>' +
+                '<div class="ch-outreach-card"><div class="ch-outreach-title">DM / Cold Message</div><div class="ch-outreach-body" id="chPitch2">Hey \u2014 I build custom websites + admin dashboards for small businesses, powered by AI so you can manage everything through a simple chat interface. Free setup, free first month. Would you be open to a quick look at what I built for a golf putter company? Happy to show you.</div><button class="ch-copy-btn" onclick="chCopyEl(\'chPitch2\')">Copy</button></div>' +
+                '<div class="ch-outreach-card"><div class="ch-outreach-title">In-Person Script</div><div class="ch-outreach-body" id="chPitch3">Hey, I\'m Stuart. I help small businesses get set up with a custom website and a dashboard where you can manage inventory, update content, and handle customer stuff \u2014 all through a chat interface, no tech skills needed.\n\nI just did this for a custom putter company \u2014 built their whole site, inventory system, and now they just type what they need and it happens.\n\nI do free setup and the first month is free. After that it\'s a flat monthly fee. Want me to show you what it looks like?</div><button class="ch-copy-btn" onclick="chCopyEl(\'chPitch3\')">Copy</button></div>' +
+                '<h3 style="font-size:1rem;font-weight:700;margin:24px 0 12px;">Outreach Channels (Ranked by Priority)</h3>' +
+                '<div class="ch-outreach-card" style="border-left:3px solid #22c55e"><div class="ch-outreach-title" style="color:#22c55e">1. Kijiji / Facebook Marketplace</div><div style="font-size:0.84rem;color:var(--text-secondary);line-height:1.6;">Local, high intent. Business owners posting services but have no website. Search for businesses in services categories, send a message offering free custom website + dashboard.</div></div>' +
+                '<div class="ch-outreach-card" style="border-left:3px solid #3b82f6"><div class="ch-outreach-title" style="color:#3b82f6">2. Landing Page (Inbound)</div><div style="font-size:0.84rem;color:var(--text-secondary);line-height:1.6;">clients.suitegpt.app \u2014 all outreach should point here. Professional page that converts warm leads 24/7.</div></div>' +
+                '<div class="ch-outreach-card" style="border-left:3px solid #a855f7"><div class="ch-outreach-title" style="color:#a855f7">3. LinkedIn Outreach</div><div style="font-size:0.84rem;color:var(--text-secondary);line-height:1.6;">B2B, highest value clients. Connect with business owners/founders, post content showing builds.</div></div>' +
+                '<div class="ch-outreach-card" style="border-left:3px solid #f59e0b"><div class="ch-outreach-title" style="color:#f59e0b">4. Direct Email</div><div style="font-size:0.84rem;color:var(--text-secondary);line-height:1.6;">Most scalable. Scrape Google Maps/Yelp for businesses with bad/no websites, send personalized cold emails.</div></div>' +
+                '<div class="ch-outreach-card" style="border-left:3px solid #ef4444"><div class="ch-outreach-title" style="color:#ef4444">5. Instagram / Content</div><div style="font-size:0.84rem;color:var(--text-secondary);line-height:1.6;">Brand building. Time-lapse reels, before/after, client spotlights. Post 3-5x/week.</div></div>' +
+                '<div class="ch-outreach-card" style="border-left:3px solid #6366f1"><div class="ch-outreach-title" style="color:#6366f1">6. Facebook Groups + Reddit</div><div style="font-size:0.84rem;color:var(--text-secondary);line-height:1.6;">Community outreach. Answer questions, provide value, mention your offer when relevant. 80% value, 20% pitch.</div></div>' +
+                '<div class="ch-outreach-card" style="border-left:3px solid #22c55e"><div class="ch-outreach-title" style="color:#22c55e">7. Walk-Ins</div><div style="font-size:0.84rem;color:var(--text-secondary);line-height:1.6;">Highest conversion, lowest scale. Show Proto Golf demo on your phone. Target shops without websites.</div></div>' +
+                '<div class="ch-outreach-card" style="border-left:3px solid #3b82f6"><div class="ch-outreach-title" style="color:#3b82f6">8. Referrals</div><div style="font-size:0.84rem;color:var(--text-secondary);line-height:1.6;">Best ROI once rolling. Ask every happy client: "Know anyone else who could use this?" Offer incentives.</div></div>';
+        }
+        function chCopyEl(id) { const text = document.getElementById(id).textContent; navigator.clipboard.writeText(text); }
+
+        // ---- Overview (static content) ----
+        function chRenderOverview() {
+            const el = document.getElementById('chOverviewContent');
+            if (el.innerHTML) return;
+            el.innerHTML = '<div class="ch-outreach-card" style="border-left:3px solid #22c55e;margin-bottom:24px;">' +
+                '<div class="ch-outreach-title" style="font-size:1.1rem;">Client Hub \u2014 The Business Model</div>' +
+                '<div class="ch-outreach-body" style="font-size:0.9rem;line-height:1.8;"><strong>What you\'re selling:</strong> Custom AI-powered websites, dashboards, admin panels \u2014 anything Claude can build. You\'re a one-man agency powered by AI.\n\n<strong>The offer:</strong> Everything FREE for 30 days. Free setup, free build, free everything. No risk for the client.\n\n<strong>The conversion (Day 30):</strong> By the end of the free month, they\'re using the system daily. Their business runs on it. Now you say: "$X/month to keep it running and maintained."\n\n<strong>Why it works:</strong>\n1. Zero risk = easy yes\n2. By day 30 they\'re dependent on the system\n3. The chat UI creates a direct relationship\n4. Your cost to fulfill is near-zero (Claude does the work)\n5. Each client is recurring revenue\n\n<strong>Revenue targets:</strong>\n- 5 clients @ $500/mo = $2,500/mo\n- 10 clients @ $500/mo = $5,000/mo\n- 20 clients @ $750/mo = $15,000/mo</div></div>';
+        }
 
         // ===== Marketing View Functions =====
         let marketingSchedule = {};
