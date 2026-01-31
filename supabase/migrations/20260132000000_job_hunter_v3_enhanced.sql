@@ -1998,10 +1998,11 @@ Return your response as a JSON array (and nothing else — no markdown fences, n
 - "salary": salary range as string, or "" if not listed
 - "location": location or "Remote", or "" if not listed
 - "score": number 1-10
-- "why": one sentence on why it is a fit (max 15 words)
-- "gap": one sentence on the biggest gap (max 15 words)
+- "why": short reason it fits (max 10 words)
+- "gap": biggest gap (max 10 words)
 
-Sort the array from highest score to lowest. Return ONLY valid JSON.`;
+CRITICAL: You MUST include EVERY job from the input. Do NOT skip any. Do NOT truncate. I expect 20-30+ results. Keep "why" and "gap" very short to save space.
+Sort the array from highest score to lowest. Return ONLY valid JSON array.`;
 
             try {
                 const resp = await fetch(''https://suitegpt.app/api/gemini'', {
@@ -2010,7 +2011,7 @@ Sort the array from highest score to lowest. Return ONLY valid JSON.`;
                     body: JSON.stringify({
                         prompt,
                         model: ''gemini-3-flash-preview'',
-                        generationConfig: { temperature: 0.3, maxOutputTokens: 6000 }
+                        generationConfig: { temperature: 0.3, maxOutputTokens: 16000 }
                     })
                 });
                 const data = await resp.json();
