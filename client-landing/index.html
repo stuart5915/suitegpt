@@ -1176,6 +1176,21 @@
             form.style.display = 'none';
             errorEl.style.display = 'none';
             successEl.classList.add('show');
+            // Send email notification (fire-and-forget, don't block success)
+            fetch('/api/notify-lead', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: body.name,
+                    email: body.email,
+                    phone: body.phone,
+                    business_name: body.business_name,
+                    business_type: body.business_type,
+                    message: body.what_they_need,
+                    source: body.source,
+                    ad_id: adId || null
+                })
+            }).catch(function() {});
         })
         .catch(function(err) {
             errorEl.textContent = 'Something went wrong. Please try again or email us directly.';
