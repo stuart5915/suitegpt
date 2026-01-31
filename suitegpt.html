@@ -23641,7 +23641,7 @@
                 const sb = window.supabaseClient || supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 const { data: proposals } = await sb
                     .from('factory_proposals')
-                    .select('id, title, description, status, created_at, escalation_type, escalation_urgency, what_agent_needs')
+                    .select('id, title, content, status, created_at, submission_type, escalation_type, escalation_urgency, what_agent_needs')
                     .eq('author_id', agentId)
                     .eq('from_agent', true)
                     .order('created_at', { ascending: false })
@@ -23660,7 +23660,7 @@
                     pendingEl.innerHTML = pending.map(p => `
                         <div class="swarm-telos-pending-header">&#9888; Pending Approval</div>
                         <div class="swarm-telos-pending-title">${escapeHtml(p.title)}</div>
-                        <div class="swarm-telos-pending-desc">${escapeHtml(p.description || '')}</div>
+                        <div class="swarm-telos-pending-desc">${escapeHtml(p.content || '')}</div>
                         ${p.escalation_type ? `<div style="margin-bottom:10px;font-size:0.78rem;color:#fbbf24;">Escalation: ${p.escalation_type} (${p.escalation_urgency || 'medium'})${p.what_agent_needs ? ' — ' + escapeHtml(p.what_agent_needs) : ''}</div>` : ''}
                         <textarea class="swarm-telos-pending-feedback" id="pendingFeedback_${p.id}" placeholder="Optional feedback for the agent..."></textarea>
                         <div class="swarm-telos-pending-actions" id="pendingActions_${p.id}">
@@ -23676,7 +23676,7 @@
                 objEl.innerHTML = `
                     <h4>Current Objective</h4>
                     <p style="font-weight:600;margin-bottom:6px">${escapeHtml(latest.title)}</p>
-                    <p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.5">${escapeHtml(latest.description || '').substring(0, 400)}${(latest.description || '').length > 400 ? '...' : ''}</p>
+                    <p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.5">${escapeHtml(latest.content || '').substring(0, 400)}${(latest.content || '').length > 400 ? '...' : ''}</p>
                 `;
 
                 // Show recent activity

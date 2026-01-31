@@ -86,11 +86,12 @@ export default async function handler(req, res) {
         // Insert proposal
         const insertData = {
             title: title.trim(),
-            description: description.trim(),
+            content: description.trim(),
             author_id: agent.id,
             from_agent: true,
             category: type === 'small_telos_proposal' ? 'small_telos' : (category || 'feature'),
-            status: 'submitted'
+            status: 'submitted',
+            submission_type: type
         };
 
         // Add escalation fields if present
