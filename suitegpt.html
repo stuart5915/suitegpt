@@ -8992,6 +8992,100 @@
             border-radius: 2px;
         }
 
+        .swarm-telos-pending {
+            background: rgba(251, 191, 36, 0.08);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 16px;
+        }
+
+        .swarm-telos-pending-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #fbbf24;
+        }
+
+        .swarm-telos-pending-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 6px;
+            color: var(--text-primary);
+        }
+
+        .swarm-telos-pending-desc {
+            font-size: 0.84rem;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .swarm-telos-pending-feedback {
+            width: 100%;
+            background: var(--bg-main, #0d0d14);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            color: var(--text-primary);
+            padding: 10px 12px;
+            font-size: 0.82rem;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 60px;
+            margin-bottom: 12px;
+        }
+
+        .swarm-telos-pending-feedback::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .swarm-telos-pending-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .swarm-telos-approve-btn {
+            padding: 8px 20px;
+            border-radius: 8px;
+            border: none;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #22c55e;
+            color: #fff;
+        }
+
+        .swarm-telos-approve-btn:hover {
+            background: #16a34a;
+        }
+
+        .swarm-telos-reject-btn {
+            padding: 8px 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: transparent;
+            color: #ef4444;
+        }
+
+        .swarm-telos-reject-btn:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .swarm-telos-pending-actions .done-msg {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border-radius: 8px;
+        }
+
         .swarm-telos-modal-header {
             display: flex;
             justify-content: space-between;
@@ -23523,6 +23617,10 @@
                 <span class="swarm-telos-tag swarm-telos-tag-status">${status}</span>
             `;
 
+            const pendingEl = document.getElementById('agentTelosPending');
+            pendingEl.style.display = 'none';
+            pendingEl.innerHTML = '';
+
             objEl.innerHTML = '<h4>Current Objective</h4><p style="color:var(--text-tertiary)">Loading...</p>';
             updatesEl.innerHTML = '<h4>Recent Activity</h4><p style="color:var(--text-tertiary);font-size:0.82rem">Loading...</p>';
             docsEl.innerHTML = '<p style="color:var(--text-tertiary)">Loading telos documents...</p>';
@@ -23555,8 +23653,26 @@
                     return;
                 }
 
-                // Show the most recent proposal as the current objective
-                const latest = proposals[0];
+                // Check for pending proposals needing approval
+                const pending = proposals.filter(p => p.status === 'submitted');
+                if (pending.length > 0) {
+                    pendingEl.style.display = 'block';
+                    pendingEl.innerHTML = pending.map(p => `
+                        <div class="swarm-telos-pending-header">&#9888; Pending Approval</div>
+                        <div class="swarm-telos-pending-title">${escapeHtml(p.title)}</div>
+                        <div class="swarm-telos-pending-desc">${escapeHtml(p.description || '')}</div>
+                        ${p.escalation_type ? `<div style="margin-bottom:10px;font-size:0.78rem;color:#fbbf24;">Escalation: ${p.escalation_type} (${p.escalation_urgency || 'medium'})${p.what_agent_needs ? ' — ' + escapeHtml(p.what_agent_needs) : ''}</div>` : ''}
+                        <textarea class="swarm-telos-pending-feedback" id="pendingFeedback_${p.id}" placeholder="Optional feedback for the agent..."></textarea>
+                        <div class="swarm-telos-pending-actions" id="pendingActions_${p.id}">
+                            <button class="swarm-telos-approve-btn" onclick="resolveProposal('${p.id}', '${agentId}', 'passed')">Approve</button>
+                            <button class="swarm-telos-reject-btn" onclick="resolveProposal('${p.id}', '${agentId}', 'rejected')">Reject</button>
+                        </div>
+                    `).join('<hr style="border:none;border-top:1px solid rgba(251,191,36,0.2);margin:16px 0;">');
+                }
+
+                // Show the most recent non-pending proposal as the current objective
+                const approved = proposals.find(p => p.status === 'passed');
+                const latest = approved || proposals[0];
                 objEl.innerHTML = `
                     <h4>Current Objective</h4>
                     <p style="font-weight:600;margin-bottom:6px">${escapeHtml(latest.title)}</p>
@@ -23673,6 +23789,64 @@
 
         function closeAgentTelos() {
             document.getElementById('agentTelosModal').style.display = 'none';
+        }
+
+        async function resolveProposal(proposalId, agentId, decision) {
+            const actionsEl = document.getElementById('pendingActions_' + proposalId);
+            const feedbackEl = document.getElementById('pendingFeedback_' + proposalId);
+            const feedback = feedbackEl ? feedbackEl.value.trim() : '';
+
+            // Disable buttons
+            actionsEl.innerHTML = '<span class="done-msg" style="color:var(--text-tertiary)">Processing...</span>';
+
+            try {
+                const sb = window.supabaseClient || supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+                // Update proposal status
+                const updateData = {
+                    status: decision,
+                    feedback_at: new Date().toISOString()
+                };
+                if (feedback) {
+                    updateData.agent_feedback = feedback;
+                }
+                if (decision === 'passed') {
+                    updateData.resolved_at = new Date().toISOString();
+                }
+
+                const { error: propError } = await sb
+                    .from('factory_proposals')
+                    .update(updateData)
+                    .eq('id', proposalId);
+
+                if (propError) throw propError;
+
+                // Update agent status
+                const newStatus = decision === 'passed' ? 'working' : 'idle';
+                await sb
+                    .from('factory_users')
+                    .update({
+                        agent_status: newStatus,
+                        last_active_at: new Date().toISOString()
+                    })
+                    .eq('id', agentId);
+
+                if (decision === 'passed') {
+                    actionsEl.innerHTML = '<span class="done-msg" style="color:#22c55e;background:rgba(34,197,94,0.1);">&#10003; Approved — agent unblocked</span>';
+                } else {
+                    actionsEl.innerHTML = '<span class="done-msg" style="color:#ef4444;background:rgba(239,68,68,0.1);">&#10005; Rejected' + (feedback ? ' — feedback sent' : '') + '</span>';
+                }
+
+                if (feedbackEl) feedbackEl.disabled = true;
+
+                // Refresh fleet stats
+                if (typeof loadFleetAgentStats === 'function') loadFleetAgentStats();
+                if (typeof loadAgentRoleStatus === 'function') loadAgentRoleStatus();
+
+            } catch (e) {
+                console.error('Resolve proposal error:', e);
+                actionsEl.innerHTML = '<span class="done-msg" style="color:#ef4444;">Failed to update — try again</span>';
+            }
         }
 
         async function loadSwarmActivity() {
@@ -38340,6 +38514,8 @@ Rules:
             <div class="swarm-telos-objective" id="agentTelosObjective">
                 <h4>Current Objective</h4>
                 <p>Loading...</p>
+            </div>
+            <div class="swarm-telos-pending" id="agentTelosPending" style="display:none;">
             </div>
             <div class="swarm-telos-updates" id="agentTelosUpdates">
                 <h4>Recent Activity</h4>

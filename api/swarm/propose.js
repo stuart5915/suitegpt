@@ -69,7 +69,7 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Description is required (min 20 characters)' });
         }
 
-        const validSubmissionTypes = ['proposal', 'work_update', 'assistance_request', 'completion'];
+        const validSubmissionTypes = ['proposal', 'small_telos_proposal', 'work_update', 'assistance_request', 'completion'];
         const type = validSubmissionTypes.includes(submission_type) ? submission_type : 'proposal';
 
         // Validate escalation fields if this is an assistance request
@@ -89,7 +89,7 @@ export default async function handler(req, res) {
             description: description.trim(),
             author_id: agent.id,
             from_agent: true,
-            category: category || 'feature',
+            category: type === 'small_telos_proposal' ? 'small_telos' : (category || 'feature'),
             status: 'submitted'
         };
 
@@ -140,6 +140,7 @@ export default async function handler(req, res) {
 
         const messages = {
             proposal: 'Proposal submitted for governance review',
+            small_telos_proposal: 'Small Telos proposal submitted — waiting for approval',
             work_update: 'Work update logged',
             assistance_request: 'Escalation submitted — waiting for help',
             completion: 'Task marked complete'
