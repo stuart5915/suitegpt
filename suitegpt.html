@@ -9220,6 +9220,108 @@
             color: #fbbf24;
         }
 
+        .swarm-inbox {
+            display: grid;
+            gap: 10px;
+        }
+
+        .swarm-inbox-badge {
+            background: #ef4444;
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 10px;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        .swarm-inbox-item {
+            background: var(--bg-main, #0d0d14);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 14px 18px;
+            transition: border-color 0.2s;
+        }
+
+        .swarm-inbox-item.needs-action {
+            border-color: rgba(251, 191, 36, 0.4);
+        }
+
+        .swarm-inbox-item.escalation {
+            border-color: rgba(239, 68, 68, 0.4);
+        }
+
+        .swarm-inbox-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 6px;
+        }
+
+        .swarm-inbox-item-type {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 2px 8px;
+            border-radius: 6px;
+        }
+
+        .swarm-inbox-type-escalation { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+        .swarm-inbox-type-proposal { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+        .swarm-inbox-type-completion { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+        .swarm-inbox-type-telos { background: rgba(99, 102, 241, 0.15); color: #6366f1; }
+
+        .swarm-inbox-item-agent {
+            font-size: 0.78rem;
+            color: var(--text-tertiary);
+        }
+
+        .swarm-inbox-item-title {
+            font-weight: 600;
+            font-size: 0.92rem;
+            margin-bottom: 4px;
+        }
+
+        .swarm-inbox-item-desc {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+
+        .swarm-inbox-item-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .swarm-inbox-item-time {
+            font-size: 0.72rem;
+            color: var(--text-tertiary);
+            margin-left: auto;
+        }
+
+        .swarm-inbox-resolve-btn {
+            padding: 5px 14px;
+            border-radius: 6px;
+            border: none;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .swarm-inbox-approve { background: #22c55e; color: #fff; }
+        .swarm-inbox-approve:hover { background: #16a34a; }
+        .swarm-inbox-reject { background: transparent; border: 1px solid rgba(239, 68, 68, 0.4); color: #ef4444; }
+        .swarm-inbox-reject:hover { background: rgba(239, 68, 68, 0.1); }
+        .swarm-inbox-resolve { background: rgba(99, 102, 241, 0.15); color: #6366f1; border: none; }
+        .swarm-inbox-resolve:hover { background: rgba(99, 102, 241, 0.25); }
+        .swarm-inbox-ack { background: rgba(34, 197, 94, 0.15); color: #22c55e; border: none; }
+        .swarm-inbox-ack:hover { background: rgba(34, 197, 94, 0.25); }
+
         .swarm-activity-feed {
             display: grid;
             gap: 8px;
@@ -20852,11 +20954,19 @@
                                         </div>
                                     </div>
 
+                                    <!-- Governance Inbox -->
+                                    <div class="swarm-section" style="margin-bottom:20px;">
+                                        <h3 class="swarm-section-title">Governance Inbox <span class="swarm-inbox-badge" id="inboxBadge" style="display:none;">0</span></h3>
+                                        <div class="swarm-inbox" id="swarmInbox">
+                                            <div class="swarm-empty">No items needing attention</div>
+                                        </div>
+                                    </div>
+
                                     <!-- Two-column: Activity + Leaderboard -->
                                     <div class="swarm-two-col">
-                                        <!-- Agent Activity Feed -->
+                                        <!-- Agent Activity Log -->
                                         <div class="swarm-section">
-                                            <h3 class="swarm-section-title">Agent Activity</h3>
+                                            <h3 class="swarm-section-title">Activity Log</h3>
                                             <div class="swarm-activity-feed" id="swarmActivityFeed">
                                                 <div class="swarm-empty">No activity yet</div>
                                             </div>
@@ -23419,6 +23529,7 @@
             swarmPortalInitialized = true;
             loadSwarmApps();
             loadSwarmStats();
+            loadGovernanceInbox();
             loadSwarmActivity();
             loadSwarmLeaderboard();
             loadAgentRoleStatus();
@@ -23847,6 +23958,69 @@
                 console.error('Resolve proposal error:', e);
                 actionsEl.innerHTML = '<span class="done-msg" style="color:#ef4444;">Failed to update — try again</span>';
             }
+        }
+
+        async function loadGovernanceInbox() {
+            const inbox = document.getElementById('swarmInbox');
+            const badge = document.getElementById('inboxBadge');
+            if (!inbox) return;
+            try {
+                const sb = window.supabaseClient || supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                const { data: items } = await sb
+                    .from('factory_proposals')
+                    .select('id, title, content, status, created_at, submission_type, escalation_type, escalation_urgency, what_agent_needs, author_id, factory_users!author_id(display_name, agent_slug)')
+                    .eq('from_agent', true)
+                    .eq('status', 'submitted')
+                    .order('created_at', { ascending: false })
+                    .limit(20);
+                if (!items || items.length === 0) {
+                    inbox.innerHTML = '<div class="swarm-empty">All clear — no items needing attention</div>';
+                    badge.style.display = 'none';
+                    return;
+                }
+                badge.style.display = 'inline';
+                badge.textContent = items.length;
+                inbox.innerHTML = items.map(item => {
+                    const agent = item.factory_users?.display_name || item.factory_users?.agent_slug || 'Unknown';
+                    const type = item.submission_type || 'proposal';
+                    const isEscalation = type === 'assistance_request';
+                    const isTelos = type === 'small_telos_proposal';
+                    const isCompletion = type === 'completion';
+                    let typeLabel, typeClass;
+                    if (isEscalation) { typeLabel = 'Escalation'; typeClass = 'escalation'; }
+                    else if (isTelos) { typeLabel = 'Telos Proposal'; typeClass = 'telos'; }
+                    else if (isCompletion) { typeLabel = 'Completion'; typeClass = 'completion'; }
+                    else { typeLabel = 'Proposal'; typeClass = 'proposal'; }
+                    const itemClass = isEscalation ? 'escalation' : (isTelos || type === 'proposal' ? 'needs-action' : '');
+                    let actions = '';
+                    if (isEscalation) {
+                        actions = '<button class="swarm-inbox-resolve-btn swarm-inbox-resolve" onclick="inboxResolve(\'' + item.id + '\',\'' + item.author_id + '\')">Resolve</button>';
+                    } else if (isCompletion) {
+                        actions = '<button class="swarm-inbox-resolve-btn swarm-inbox-ack" onclick="inboxAck(\'' + item.id + '\')">Acknowledge</button>';
+                    } else {
+                        actions = '<button class="swarm-inbox-resolve-btn swarm-inbox-approve" onclick="inboxApprove(\'' + item.id + '\',\'' + item.author_id + '\')">Approve</button><button class="swarm-inbox-resolve-btn swarm-inbox-reject" onclick="inboxReject(\'' + item.id + '\',\'' + item.author_id + '\')">Reject</button>';
+                    }
+                    return '<div class="swarm-inbox-item ' + itemClass + '"><div class="swarm-inbox-item-header"><span class="swarm-inbox-item-type swarm-inbox-type-' + typeClass + '">' + typeLabel + '</span><span class="swarm-inbox-item-agent">' + escapeHtml(agent) + '</span></div><div class="swarm-inbox-item-title">' + escapeHtml(item.title) + '</div><div class="swarm-inbox-item-desc">' + escapeHtml((item.content || '').substring(0, 300)) + ((item.content || '').length > 300 ? '...' : '') + '</div>' + (isEscalation && item.escalation_type ? '<div style="font-size:0.78rem;color:#ef4444;margin-bottom:8px;">' + item.escalation_type + ' (' + (item.escalation_urgency || 'medium') + ')' + (item.what_agent_needs ? ' — ' + escapeHtml(item.what_agent_needs) : '') + '</div>' : '') + '<div class="swarm-inbox-item-actions">' + actions + '<span class="swarm-inbox-item-time">' + timeAgo(new Date(item.created_at)) + '</span></div></div>';
+                }).join('');
+            } catch (e) { console.error('Inbox error:', e); }
+        }
+        async function inboxApprove(pid, aid) { await inboxAction(pid, aid, 'passed', 'working'); }
+        async function inboxReject(pid, aid) { await inboxAction(pid, aid, 'rejected', 'idle'); }
+        async function inboxResolve(pid, aid) { await inboxAction(pid, aid, 'passed', 'working'); }
+        async function inboxAck(pid) {
+            const sb = window.supabaseClient || supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            await sb.from('factory_proposals').update({ status: 'passed', feedback_at: new Date().toISOString() }).eq('id', pid);
+            loadGovernanceInbox(); loadSwarmActivity();
+        }
+        async function inboxAction(pid, aid, status, agentStatus) {
+            try {
+                const sb = window.supabaseClient || supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                await sb.from('factory_proposals').update({ status: status, feedback_at: new Date().toISOString(), resolved_at: status === 'passed' ? new Date().toISOString() : null }).eq('id', pid);
+                if (aid) { await sb.from('factory_users').update({ agent_status: agentStatus, last_active_at: new Date().toISOString() }).eq('id', aid); }
+                loadGovernanceInbox(); loadSwarmActivity();
+                if (typeof loadFleetAgentStats === 'function') loadFleetAgentStats();
+                if (typeof loadAgentRoleStatus === 'function') loadAgentRoleStatus();
+            } catch (e) { console.error('Inbox action error:', e); }
         }
 
         async function loadSwarmActivity() {
