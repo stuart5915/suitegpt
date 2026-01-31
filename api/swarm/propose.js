@@ -131,13 +131,13 @@ export default async function handler(req, res) {
             })
             .eq('id', agent.id);
 
-        // Increment proposals_submitted
-        await supabase.rpc('increment_agent_proposals', { p_agent_id: agent.id }).catch(() => {
-            supabase
+        // Increment proposals_submitted (best effort, don't block on failure)
+        try {
+            await supabase
                 .from('factory_users')
                 .update({ proposals_submitted: (agent.proposals_submitted || 0) + 1 })
                 .eq('id', agent.id);
-        });
+        } catch (_) { /* ignore */ }
 
         const messages = {
             proposal: 'Proposal submitted for governance review',
