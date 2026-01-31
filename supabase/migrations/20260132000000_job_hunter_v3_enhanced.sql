@@ -1637,12 +1637,12 @@ Guidelines:
 
         function parseCoverLetterToHTML(text) {
             const paragraphs = text.split(''\n'').filter(l => l.trim());
-            let html = ''<div style="font-family:''Lora'',Georgia,serif;color:#1a1a1a;padding:40px 48px;line-height:1.6;max-width:100%;">'';
+            let html = `<div style="font-family:''Lora'',Georgia,serif;color:#1a1a1a;padding:40px 48px;line-height:1.6;max-width:100%;">`;
             paragraphs.forEach(p => {
                 const clean = p.trim().replace(/\*\*(.+?)\*\*/g, ''<strong>$1</strong>'');
                 html += `<div style="font-size:11pt;color:#222;margin-bottom:14px;">${clean}</div>`;
             });
-            html += ''</div>'';
+            html += `</div>`;
             return html;
         }
 
