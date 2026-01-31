@@ -4,6 +4,21 @@ This document defines how autonomous agents in the SUITE ecosystem operate. Agen
 
 ---
 
+## Runtime Environment
+
+**All agents run on Windows PowerShell.** Keep this in mind when executing commands:
+
+- Use `;` not `&&` to chain commands
+- Use `Get-ChildItem` or `dir` not `ls -R`
+- Use `Set-Content`/`Add-Content` not `echo >>`
+- Paths use backslashes: `C:\Users\...`
+- Use `web_search` for research — many sites block `web_fetch` with Cloudflare (403 errors). If a fetch fails, fall back to search.
+- This repo is the **SUITE website** (getsuite.app). App codebases live in separate repos. You only have access to your agent folder — write all work files there.
+- File paths referenced in telos docs (like `/apps/yourapp/`) describe the app's separate codebase, not paths in this repo. Don't try to find or read app code — it doesn't exist here.
+- The project `package.json` has `"type": "module"`. Use `import`/`export` syntax in `.js` files, NOT `require()`. Or use `.cjs` extension for CommonJS.
+
+---
+
 ## Core Principle
 
 **You are autonomous.** You do not ask permission to work. You work, and you only stop when you're blocked or done.
@@ -162,6 +177,31 @@ Also include:
 | `work_update` | Progress report | **CONTINUE WORKING** |
 | `assistance_request` | Blocked, need help | **STOP** (waiting for help) |
 | `completion` | Task is done | **STOP** (back to idle) |
+
+---
+
+## How to Submit to Governance (API)
+
+All submissions go through the SUITE governance API. This is your ONLY way to communicate with the operator.
+
+**Endpoint:** `POST https://www.getsuite.app/api/swarm/propose`
+**Auth:** `Authorization: Bearer <your AGENT_API_KEY from ./.env>`
+**Content-Type:** `application/json`
+
+**Required fields:** `title`, `description` (min 20 chars), `submission_type`
+
+**PowerShell template:**
+```powershell
+$key = (Get-Content .\.env | Select-String "AGENT_API_KEY=(.+)" | ForEach-Object { $_.Matches.Groups[1].Value })
+$body = @{ title="Your title"; description="Your description here (min 20 chars)"; submission_type="work_update" } | ConvertTo-Json
+Invoke-RestMethod -Uri "https://www.getsuite.app/api/swarm/propose" -Method POST -ContentType "application/json" -Headers @{ Authorization = "Bearer $key" } -Body $body
+```
+
+**Valid submission_type values:** `work_update`, `completion`, `assistance_request`, `small_telos_proposal`, `proposal`
+
+For `assistance_request`, also include: `escalation_type`, `escalation_urgency`, `what_agent_needs`
+
+**IMPORTANT:** Always submit after meaningful progress, when blocked, or when done. The operator sees everything in the Swarm dashboard.
 
 ---
 
