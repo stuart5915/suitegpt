@@ -6,6 +6,8 @@ UPDATE user_apps SET code = '<!DOCTYPE html>
     <title>Job Hunter | SUITE</title>
     <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -618,25 +620,30 @@ UPDATE user_apps SET code = '<!DOCTYPE html>
             flex-wrap: wrap;
         }
 
-        /* ===== PRINT STYLES ===== */
-        @media print {
-            body * { visibility: hidden; }
-            .resume-preview, .resume-preview * {
-                visibility: visible !important;
-            }
-            .resume-preview {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                border: none;
-                border-radius: 0;
-                padding: 40px 60px;
-                box-shadow: none;
-                max-width: none;
-            }
-            .resume-preview-actions { display: none !important; }
+        /* ===== TEMPLATE SELECTOR ===== */
+        .template-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 16px 0;
         }
+        .template-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .template-card:hover { border-color: var(--accent); background: var(--bg-card-hover); }
+        .template-card.selected { border-color: var(--accent); background: var(--accent-soft); }
+        .template-card-icon {
+            font-size: 1.6rem;
+            margin-bottom: 8px;
+        }
+        .template-card-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
+        .template-card-desc { font-size: 0.78rem; color: var(--text-dim); line-height: 1.4; }
 
         /* Responsive */
         @media (max-width: 768px) {
@@ -646,6 +653,7 @@ UPDATE user_apps SET code = '<!DOCTYPE html>
             .main { padding: 16px; }
             .board-iframe { height: 55vh; }
             .resume-preview { padding: 24px 20px; }
+            .template-selector { grid-template-columns: 1fr; }
         }
         @media (max-width: 480px) {
             .pipeline-cols { grid-template-columns: 1fr; }
@@ -784,10 +792,30 @@ Tech: JavaScript, HTML/CSS, Solidity, Supabase (Postgres/RPC/Auth), Vercel, REST
                     <button class="copy-btn" onclick="copyOutput(''resumeOutput'')" style="display:none" id="resumeCopyBtn">Copy</button>
                 </div>
 
-                <!-- Designed Resume Preview (hidden until generated) -->
+                <!-- Template Selector + Designed Resume Preview (hidden until generated) -->
                 <div id="resumePreviewSection" style="display:none;">
-                    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:24px;margin-bottom:8px;">
-                        <h3 style="font-size:1rem;font-weight:700;">Designed Resume Preview</h3>
+                    <div style="margin-top:24px;margin-bottom:8px;">
+                        <h3 style="font-size:1rem;font-weight:700;margin-bottom:4px;">Resume Template</h3>
+                        <div class="template-selector">
+                            <div class="template-card selected" onclick="selectTemplate(''classic'', this)">
+                                <div class="template-card-icon">&#x1F4DC;</div>
+                                <div class="template-card-title">Classic</div>
+                                <div class="template-card-desc">Single-column, serif font, traditional layout with centered header</div>
+                            </div>
+                            <div class="template-card" onclick="selectTemplate(''modern'', this)">
+                                <div class="template-card-icon">&#x1F4CA;</div>
+                                <div class="template-card-title">Modern</div>
+                                <div class="template-card-desc">Two-column sidebar with dark left panel and clean right side</div>
+                            </div>
+                            <div class="template-card" onclick="selectTemplate(''minimal'', this)">
+                                <div class="template-card-icon">&#x2728;</div>
+                                <div class="template-card-title">Minimal</div>
+                                <div class="template-card-desc">Sans-serif, generous whitespace, subtle accent color</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                        <h3 style="font-size:1rem;font-weight:700;">Preview</h3>
                         <div class="resume-preview-actions">
                             <button class="btn btn-secondary btn-sm" onclick="toggleResumeView()">Toggle Plain / Designed</button>
                             <button class="btn btn-primary btn-sm" onclick="downloadResumePDF()">Download PDF</button>
@@ -1093,14 +1121,35 @@ ${bg}
 
 ${posting ? `SPECIFIC JOB POSTING TO TAILOR TO:\n${posting}\n\nTailor the resume specifically to match this job posting''s requirements and language.` : ''''}
 
-Format the resume as clean plain text with clear sections:
-- HEADER (name placeholder, contact placeholder)
-- SUMMARY (3-4 lines, compelling, specific to the target role)
-- EXPERIENCE (frame the SuiteGPT work as a real product role, quantify where possible; frame the DeFi work as relevant technical experience; frame CNC as systems/engineering background)
-- PROJECTS (SuiteGPT as the headline project with specific technical details)
-- SKILLS (organized by category)
+CRITICAL: You MUST format the resume using these EXACT section markers. Each marker must be on its own line:
 
-Be specific and use strong action verbs. Don''t be generic. Make every line count.`;
+===NAME===
+[Full Name — use "Stuart Hollinger" or the name from the background]
+
+===CONTACT===
+[email] | [phone] | [city, state] | [linkedin] | [github]
+(Use placeholders like your.email@example.com, (555) 555-5555, City, ST if not provided)
+
+===SUMMARY===
+[3-4 compelling lines specific to the target role]
+
+===EXPERIENCE===
+**[Job Title] — [Company/Project]** | [Date Range]
+- [Achievement with metrics if possible]
+- [Another achievement]
+
+(Frame SuiteGPT work as a real product role. Frame DeFi work as relevant technical experience. Frame CNC as systems/engineering background. Include 2-4 positions.)
+
+===PROJECTS===
+**[Project Name]** — [One-line description]
+- [Technical detail or achievement]
+- [Another detail]
+
+===SKILLS===
+[Category]: [skill1, skill2, skill3]
+[Category]: [skill1, skill2, skill3]
+
+Be specific and use strong action verbs. Don''t be generic. Make every line count. Use bullet points (starting with -) for all list items.`;
 
             try {
                 const resp = await fetch(''https://suitegpt.app/api/gemini'', {
@@ -1118,85 +1167,304 @@ Be specific and use strong action verbs. Don''t be generic. Make every line coun
                 copyBtn.style.display = ''block'';
                 lastResumeText = text;
 
-                // Render designed preview
-                const previewHTML = parseResumeToHTML(text);
-                document.getElementById(''resumePreviewContent'').innerHTML = previewHTML;
+                // Render designed preview using selected template
+                const resumeData = parseResumeData(text);
+                document.getElementById(''resumePreviewContent'').innerHTML = renderResumeTemplate(resumeData, selectedTemplate);
                 document.getElementById(''resumePreviewSection'').style.display = ''block'';
             } catch (e) {
                 output.textContent = ''Error: '' + e.message;
             }
         }
 
-        // ===== PARSE RESUME TO DESIGNED HTML =====
-        function parseResumeToHTML(text) {
+        // ===== TEMPLATE SYSTEM =====
+        let selectedTemplate = ''classic'';
+
+        function selectTemplate(template, el) {
+            document.querySelectorAll(''.template-card'').forEach(c => c.classList.remove(''selected''));
+            el.classList.add(''selected'');
+            selectedTemplate = template;
+            // Re-render if we have resume text
+            if (lastResumeText) {
+                const data = parseResumeData(lastResumeText);
+                document.getElementById(''resumePreviewContent'').innerHTML = renderResumeTemplate(data, template);
+            }
+        }
+
+        // ===== PARSE RESUME TEXT INTO STRUCTURED DATA =====
+        function parseResumeData(text) {
+            const data = { name: '''', contact: '''', summary: '''', experience: [], projects: [], skills: [], education: [] };
+
+            // Try structured markers first
+            const nameMatch = text.match(/===NAME===\s*\n([^\n=]+)/);
+            const contactMatch = text.match(/===CONTACT===\s*\n([^\n=]+)/);
+            const summaryMatch = text.match(/===SUMMARY===\s*\n([\s\S]*?)(?=\n===|$)/);
+            const expMatch = text.match(/===EXPERIENCE===\s*\n([\s\S]*?)(?=\n===|$)/);
+            const projMatch = text.match(/===PROJECTS===\s*\n([\s\S]*?)(?=\n===|$)/);
+            const skillsMatch = text.match(/===SKILLS===\s*\n([\s\S]*?)(?=\n===|$)/);
+
+            if (nameMatch) data.name = nameMatch[1].trim().replace(/\*\*/g, '''');
+            if (contactMatch) data.contact = contactMatch[1].trim().replace(/\*\*/g, '''');
+            if (summaryMatch) data.summary = summaryMatch[1].trim().replace(/\*\*/g, '''');
+
+            // Parse experience entries
+            if (expMatch) {
+                const expText = expMatch[1].trim();
+                const entries = expText.split(/\n(?=\*\*)/);
+                entries.forEach(entry => {
+                    const lines = entry.split(''\n'').filter(l => l.trim());
+                    if (!lines.length) return;
+                    const titleLine = lines[0].replace(/\*\*/g, '''').trim();
+                    const bullets = lines.slice(1).filter(l => /^[\-\u2022\*]\s/.test(l.trim())).map(l => l.trim().replace(/^[\-\u2022\*]\s*/, ''''));
+                    if (titleLine) data.experience.push({ title: titleLine, bullets });
+                });
+            }
+
+            // Parse projects
+            if (projMatch) {
+                const projText = projMatch[1].trim();
+                const entries = projText.split(/\n(?=\*\*)/);
+                entries.forEach(entry => {
+                    const lines = entry.split(''\n'').filter(l => l.trim());
+                    if (!lines.length) return;
+                    const titleLine = lines[0].replace(/\*\*/g, '''').trim();
+                    const bullets = lines.slice(1).filter(l => /^[\-\u2022\*]\s/.test(l.trim())).map(l => l.trim().replace(/^[\-\u2022\*]\s*/, ''''));
+                    if (titleLine) data.projects.push({ title: titleLine, bullets });
+                });
+            }
+
+            // Parse skills
+            if (skillsMatch) {
+                const skillLines = skillsMatch[1].trim().split(''\n'').filter(l => l.trim());
+                skillLines.forEach(line => {
+                    const clean = line.replace(/\*\*/g, '''').replace(/^[\-\u2022\*]\s*/, '''').trim();
+                    if (clean) data.skills.push(clean);
+                });
+            }
+
+            // Fallback: if no markers found, use legacy parsing
+            if (!nameMatch && !summaryMatch) {
+                return parseResumeDataFallback(text);
+            }
+
+            return data;
+        }
+
+        function parseResumeDataFallback(text) {
+            const data = { name: '''', contact: '''', summary: '''', experience: [], projects: [], skills: [], education: [] };
             const lines = text.split(''\n'');
-            let html = '''';
             let currentSection = '''';
-            let nameFound = false;
+            let currentEntry = null;
 
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
                 if (!line) continue;
-
-                // Detect section headers (ALL CAPS lines or lines with ** markers)
                 const cleanLine = line.replace(/\*\*/g, '''').replace(/^#+\s*/, '''');
-                const isSectionHeader = /^[A-Z][A-Z\s\/&]{3,}$/.test(cleanLine) ||
-                    /^(SUMMARY|EXPERIENCE|PROJECTS|SKILLS|EDUCATION|HEADER|CONTACT|PROFESSIONAL EXPERIENCE|TECHNICAL SKILLS|KEY PROJECTS|PROFESSIONAL SUMMARY)/i.test(cleanLine);
 
-                if (isSectionHeader) {
-                    currentSection = cleanLine;
-                    if (/HEADER|^[A-Z\s]+$/.test(cleanLine) && cleanLine.length < 30 && !nameFound) {
-                        // Skip "HEADER" label
-                        if (cleanLine === ''HEADER'') continue;
-                    }
-                    html += `<div class="rp-section-title">${cleanLine}</div>`;
+                // Detect section headers
+                if (/^(SUMMARY|PROFESSIONAL SUMMARY)/i.test(cleanLine)) { currentSection = ''summary''; continue; }
+                if (/^(EXPERIENCE|PROFESSIONAL EXPERIENCE|WORK EXPERIENCE)/i.test(cleanLine)) { currentSection = ''experience''; currentEntry = null; continue; }
+                if (/^(PROJECTS|KEY PROJECTS)/i.test(cleanLine)) { currentSection = ''projects''; currentEntry = null; continue; }
+                if (/^(SKILLS|TECHNICAL SKILLS)/i.test(cleanLine)) { currentSection = ''skills''; continue; }
+                if (/^(EDUCATION)/i.test(cleanLine)) { currentSection = ''education''; continue; }
+                if (/^(HEADER|CONTACT)/i.test(cleanLine)) { currentSection = ''header''; continue; }
+
+                // Name detection (first meaningful line)
+                if (!data.name && !currentSection && cleanLine.length < 60) {
+                    data.name = cleanLine;
                     continue;
                 }
-
-                // First non-empty, non-section line could be the name
-                if (!nameFound && !currentSection && line.length < 60) {
-                    const maybeName = cleanLine;
-                    // Check if next line looks like contact info
-                    const nextLine = (lines[i + 1] || '''').trim();
-                    if (nextLine && (nextLine.includes(''@'') || nextLine.includes(''|'') || nextLine.includes(''linkedin'') || nextLine.includes(''github'') || nextLine.includes(''phone'') || /\d{3}/.test(nextLine) || nextLine.includes('','') || nextLine.length < 100)) {
-                        html += `<div class="rp-name">${maybeName}</div>`;
-                        nameFound = true;
-                        // Collect contact lines
-                        let contactLines = [];
-                        let j = i + 1;
-                        while (j < lines.length) {
-                            const cl = lines[j].trim().replace(/\*\*/g, '''');
-                            if (!cl) { j++; continue; }
-                            const isSection = /^[A-Z][A-Z\s\/&]{3,}$/.test(cl) || /^(SUMMARY|EXPERIENCE|PROJECTS|SKILLS)/i.test(cl);
-                            if (isSection) break;
-                            if (cl.includes(''@'') || cl.includes(''|'') || cl.includes(''linkedin'') || cl.includes(''github'') || cl.includes(''phone'') || /\d{3}/.test(cl) || cl.includes('','')) {
-                                contactLines.push(cl);
-                                j++;
-                            } else {
-                                break;
-                            }
-                        }
-                        if (contactLines.length) {
-                            html += `<div class="rp-contact">${contactLines.join('' | '')}</div>`;
-                            i = j - 1;
-                        }
-                        continue;
-                    }
-                }
-
-                // Bullet points
-                if (/^[\-\u2022\*]\s/.test(line)) {
-                    const bulletText = line.replace(/^[\-\u2022\*]\s*/, '''').replace(/\*\*(.+?)\*\*/g, ''<strong>$1</strong>'');
-                    html += `<div class="rp-bullet">&bull; ${bulletText}</div>`;
+                if (data.name && !currentSection && (cleanLine.includes(''@'') || cleanLine.includes(''|'') || cleanLine.includes(''linkedin''))) {
+                    data.contact = cleanLine;
                     continue;
                 }
+                if (currentSection === ''header'' && !data.name) { data.name = cleanLine; continue; }
+                if (currentSection === ''header'' && data.name) { data.contact = cleanLine; currentSection = ''''; continue; }
 
-                // Regular text
-                const formatted = cleanLine.replace(/\*\*(.+?)\*\*/g, ''<strong>$1</strong>'');
-                html += `<div class="rp-text">${formatted}</div>`;
+                if (currentSection === ''summary'') {
+                    data.summary += (data.summary ? '' '' : '''') + cleanLine;
+                } else if (currentSection === ''experience'') {
+                    if (/^[\-\u2022\*]\s/.test(line) && currentEntry) {
+                        currentEntry.bullets.push(line.replace(/^[\-\u2022\*]\s*/, ''''));
+                    } else if (cleanLine.length > 5) {
+                        currentEntry = { title: cleanLine, bullets: [] };
+                        data.experience.push(currentEntry);
+                    }
+                } else if (currentSection === ''projects'') {
+                    if (/^[\-\u2022\*]\s/.test(line) && currentEntry) {
+                        currentEntry.bullets.push(line.replace(/^[\-\u2022\*]\s*/, ''''));
+                    } else if (cleanLine.length > 5) {
+                        currentEntry = { title: cleanLine, bullets: [] };
+                        data.projects.push(currentEntry);
+                    }
+                } else if (currentSection === ''skills'') {
+                    const clean = line.replace(/^[\-\u2022\*]\s*/, '''').replace(/\*\*/g, '''').trim();
+                    if (clean) data.skills.push(clean);
+                }
+            }
+            return data;
+        }
+
+        // ===== TEMPLATE RENDERERS =====
+        function renderResumeTemplate(data, template) {
+            if (template === ''modern'') return renderModernTemplate(data);
+            if (template === ''minimal'') return renderMinimalTemplate(data);
+            return renderClassicTemplate(data);
+        }
+
+        function renderClassicTemplate(data) {
+            const esc = (s) => s.replace(/</g, ''&lt;'').replace(/>/g, ''&gt;'');
+            let html = `<div style="font-family:''Lora'',Georgia,''Times New Roman'',serif;color:#1a1a1a;padding:40px 48px;line-height:1.45;max-width:100%;">`;
+
+            // Name
+            html += `<div style="text-align:center;font-size:24pt;font-weight:700;color:#111;margin-bottom:4px;letter-spacing:-0.5px;">${esc(data.name || ''Your Name'')}</div>`;
+
+            // Contact
+            if (data.contact) {
+                html += `<div style="text-align:center;font-size:10pt;color:#555;font-family:''Nunito'',sans-serif;margin-bottom:20px;">${esc(data.contact)}</div>`;
             }
 
-            return html || ''<div class="rp-text">Could not parse resume. Check the plain text above.</div>'';
+            // Summary
+            if (data.summary) {
+                html += `<div style="font-size:10pt;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#333;border-bottom:1.5px solid #333;padding-bottom:4px;margin:20px 0 10px;font-family:''Nunito'',sans-serif;">SUMMARY</div>`;
+                html += `<div style="font-size:11pt;color:#222;margin-bottom:8px;">${esc(data.summary)}</div>`;
+            }
+
+            // Experience
+            if (data.experience.length) {
+                html += `<div style="font-size:10pt;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#333;border-bottom:1.5px solid #333;padding-bottom:4px;margin:20px 0 10px;font-family:''Nunito'',sans-serif;">EXPERIENCE</div>`;
+                data.experience.forEach(exp => {
+                    html += `<div style="font-size:11pt;font-weight:700;color:#111;margin-bottom:3px;margin-top:10px;">${esc(exp.title)}</div>`;
+                    exp.bullets.forEach(b => {
+                        html += `<div style="margin-left:20px;font-size:10.5pt;color:#333;margin-bottom:3px;">&ndash; ${esc(b)}</div>`;
+                    });
+                });
+            }
+
+            // Projects
+            if (data.projects.length) {
+                html += `<div style="font-size:10pt;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#333;border-bottom:1.5px solid #333;padding-bottom:4px;margin:20px 0 10px;font-family:''Nunito'',sans-serif;">PROJECTS</div>`;
+                data.projects.forEach(proj => {
+                    html += `<div style="font-size:11pt;font-weight:700;color:#111;margin-bottom:3px;margin-top:10px;">${esc(proj.title)}</div>`;
+                    proj.bullets.forEach(b => {
+                        html += `<div style="margin-left:20px;font-size:10.5pt;color:#333;margin-bottom:3px;">&ndash; ${esc(b)}</div>`;
+                    });
+                });
+            }
+
+            // Skills
+            if (data.skills.length) {
+                html += `<div style="font-size:10pt;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#333;border-bottom:1.5px solid #333;padding-bottom:4px;margin:20px 0 10px;font-family:''Nunito'',sans-serif;">SKILLS</div>`;
+                data.skills.forEach(s => {
+                    html += `<div style="font-size:10.5pt;color:#222;margin-bottom:4px;">${esc(s)}</div>`;
+                });
+            }
+
+            html += ''</div>'';
+            return html;
+        }
+
+        function renderModernTemplate(data) {
+            const esc = (s) => s.replace(/</g, ''&lt;'').replace(/>/g, ''&gt;'');
+
+            let sidebar = '''';
+            let main = '''';
+
+            // Sidebar: name, contact, skills
+            sidebar += `<div style="font-size:18pt;font-weight:800;color:#fff;margin-bottom:12px;font-family:''Nunito'',sans-serif;">${esc(data.name || ''Your Name'')}</div>`;
+            if (data.contact) {
+                const parts = data.contact.split(/\s*\|\s*/);
+                parts.forEach(p => {
+                    sidebar += `<div style="font-size:9pt;color:rgba(255,255,255,0.8);margin-bottom:4px;">${esc(p.trim())}</div>`;
+                });
+            }
+            if (data.skills.length) {
+                sidebar += `<div style="font-size:9pt;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.6);margin:24px 0 10px;border-bottom:1px solid rgba(255,255,255,0.15);padding-bottom:4px;">SKILLS</div>`;
+                data.skills.forEach(s => {
+                    sidebar += `<div style="font-size:9pt;color:rgba(255,255,255,0.85);margin-bottom:5px;">${esc(s)}</div>`;
+                });
+            }
+
+            // Main: summary, experience, projects
+            if (data.summary) {
+                main += `<div style="font-size:10pt;font-weight:700;color:#6366f1;text-transform:uppercase;letter-spacing:1.5px;border-left:3px solid #6366f1;padding-left:10px;margin-bottom:8px;font-family:''Nunito'',sans-serif;">SUMMARY</div>`;
+                main += `<div style="font-size:10.5pt;color:#333;margin-bottom:16px;line-height:1.5;">${esc(data.summary)}</div>`;
+            }
+            if (data.experience.length) {
+                main += `<div style="font-size:10pt;font-weight:700;color:#6366f1;text-transform:uppercase;letter-spacing:1.5px;border-left:3px solid #6366f1;padding-left:10px;margin-bottom:8px;font-family:''Nunito'',sans-serif;">EXPERIENCE</div>`;
+                data.experience.forEach(exp => {
+                    main += `<div style="font-size:10.5pt;font-weight:700;color:#111;margin-bottom:3px;margin-top:8px;">${esc(exp.title)}</div>`;
+                    exp.bullets.forEach(b => {
+                        main += `<div style="margin-left:14px;font-size:10pt;color:#444;margin-bottom:3px;">&bull; ${esc(b)}</div>`;
+                    });
+                });
+            }
+            if (data.projects.length) {
+                main += `<div style="font-size:10pt;font-weight:700;color:#6366f1;text-transform:uppercase;letter-spacing:1.5px;border-left:3px solid #6366f1;padding-left:10px;margin:16px 0 8px;font-family:''Nunito'',sans-serif;">PROJECTS</div>`;
+                data.projects.forEach(proj => {
+                    main += `<div style="font-size:10.5pt;font-weight:700;color:#111;margin-bottom:3px;margin-top:8px;">${esc(proj.title)}</div>`;
+                    proj.bullets.forEach(b => {
+                        main += `<div style="margin-left:14px;font-size:10pt;color:#444;margin-bottom:3px;">&bull; ${esc(b)}</div>`;
+                    });
+                });
+            }
+
+            return `<div style="display:flex;font-family:''Nunito'',sans-serif;color:#1a1a1a;line-height:1.45;max-width:100%;min-height:600px;">
+                <div style="width:32%;background:#1a1a2e;color:#fff;padding:32px 22px;border-radius:12px 0 0 12px;">${sidebar}</div>
+                <div style="width:68%;padding:32px 28px;">${main}</div>
+            </div>`;
+        }
+
+        function renderMinimalTemplate(data) {
+            const esc = (s) => s.replace(/</g, ''&lt;'').replace(/>/g, ''&gt;'');
+            let html = `<div style="font-family:''Nunito'',sans-serif;color:#1a1a1a;padding:44px 48px;line-height:1.55;max-width:100%;">`;
+
+            // Name
+            html += `<div style="font-size:28pt;font-weight:800;color:#111;margin-bottom:2px;letter-spacing:-0.5px;">${esc(data.name || ''Your Name'')}</div>`;
+            html += `<div style="width:50px;height:3px;background:#6366f1;border-radius:2px;margin:6px 0 12px;"></div>`;
+
+            // Contact
+            if (data.contact) {
+                html += `<div style="font-size:9.5pt;color:#888;margin-bottom:24px;letter-spacing:0.3px;">${esc(data.contact)}</div>`;
+            }
+
+            // Summary
+            if (data.summary) {
+                html += `<div style="font-size:9pt;font-weight:700;text-transform:uppercase;letter-spacing:2.5px;color:#999;margin:24px 0 8px;">SUMMARY</div>`;
+                html += `<div style="font-size:10.5pt;color:#333;margin-bottom:10px;line-height:1.6;">${esc(data.summary)}</div>`;
+            }
+
+            // Experience
+            if (data.experience.length) {
+                html += `<div style="font-size:9pt;font-weight:700;text-transform:uppercase;letter-spacing:2.5px;color:#999;margin:24px 0 8px;">EXPERIENCE</div>`;
+                data.experience.forEach(exp => {
+                    html += `<div style="font-size:10.5pt;font-weight:700;color:#111;margin-bottom:3px;margin-top:10px;">${esc(exp.title)}</div>`;
+                    exp.bullets.forEach(b => {
+                        html += `<div style="margin-left:16px;font-size:10pt;color:#555;margin-bottom:3px;">&bull; ${esc(b)}</div>`;
+                    });
+                });
+            }
+
+            // Projects
+            if (data.projects.length) {
+                html += `<div style="font-size:9pt;font-weight:700;text-transform:uppercase;letter-spacing:2.5px;color:#999;margin:24px 0 8px;">PROJECTS</div>`;
+                data.projects.forEach(proj => {
+                    html += `<div style="font-size:10.5pt;font-weight:700;color:#111;margin-bottom:3px;margin-top:10px;">${esc(proj.title)}</div>`;
+                    proj.bullets.forEach(b => {
+                        html += `<div style="margin-left:16px;font-size:10pt;color:#555;margin-bottom:3px;">&bull; ${esc(b)}</div>`;
+                    });
+                });
+            }
+
+            // Skills
+            if (data.skills.length) {
+                html += `<div style="font-size:9pt;font-weight:700;text-transform:uppercase;letter-spacing:2.5px;color:#999;margin:24px 0 8px;">SKILLS</div>`;
+                data.skills.forEach(s => {
+                    html += `<div style="font-size:10pt;color:#444;margin-bottom:4px;">${esc(s)}</div>`;
+                });
+            }
+
+            html += ''</div>'';
+            return html;
         }
 
         function toggleResumeView() {
@@ -1212,7 +1480,16 @@ Be specific and use strong action verbs. Don''t be generic. Make every line coun
         }
 
         function downloadResumePDF() {
-            window.print();
+            const element = document.getElementById(''resumePreviewContent'');
+            const name = (parseResumeData(lastResumeText).name || ''resume'').replace(/\s+/g, ''_'').toLowerCase();
+            html2pdf().set({
+                margin: [10, 12, 10, 12],
+                filename: name + ''_resume.pdf'',
+                image: { type: ''jpeg'', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { format: ''letter'', orientation: ''portrait'' },
+                pagebreak: { mode: ''avoid-all'' }
+            }).from(element).save();
         }
 
         // ===== COVER LETTER GENERATOR =====
@@ -1280,26 +1557,26 @@ Guidelines:
 
         function parseCoverLetterToHTML(text) {
             const paragraphs = text.split(''\n'').filter(l => l.trim());
-            return paragraphs.map(p => {
+            let html = ''<div style="font-family:''Lora'',Georgia,serif;color:#1a1a1a;padding:40px 48px;line-height:1.6;max-width:100%;">'';
+            paragraphs.forEach(p => {
                 const clean = p.trim().replace(/\*\*(.+?)\*\*/g, ''<strong>$1</strong>'');
-                return `<div class="rp-text" style="margin-bottom:14px;">${clean}</div>`;
-            }).join('''');
+                html += `<div style="font-size:11pt;color:#222;margin-bottom:14px;">${clean}</div>`;
+            });
+            html += ''</div>'';
+            return html;
         }
 
         function downloadCoverLetterPDF() {
-            // Temporarily swap which preview is visible for print
-            const resumePreview = document.getElementById(''resumePreviewContent'');
-            const coverPreview = document.getElementById(''coverPreviewContent'');
-            const resumeWasVisible = resumePreview.closest(''.resume-preview'');
-
-            // Hide resume preview, ensure cover letter preview has the print class
-            if (resumeWasVisible) resumeWasVisible.style.display = ''none'';
-            coverPreview.closest(''.resume-preview'').style.display = ''block'';
-
-            window.print();
-
-            // Restore
-            if (resumeWasVisible) resumeWasVisible.style.display = '''';
+            const element = document.getElementById(''coverPreviewContent'');
+            const company = (document.getElementById(''coverCompany'').value || ''cover_letter'').replace(/\s+/g, ''_'').toLowerCase();
+            html2pdf().set({
+                margin: [10, 12, 10, 12],
+                filename: company + ''_cover_letter.pdf'',
+                image: { type: ''jpeg'', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { format: ''letter'', orientation: ''portrait'' },
+                pagebreak: { mode: ''avoid-all'' }
+            }).from(element).save();
         }
 
         // ===== OUTREACH GENERATION =====
