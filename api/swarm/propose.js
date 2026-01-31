@@ -1,7 +1,7 @@
-// Swarm Portal — Submit Proposal
+// Swarm Portal — Submit Proposal / Escalation
 // POST /api/swarm/propose
 // Authenticated: API key in Authorization header
-// Inserts into factory_proposals with from_agent=true and bounty_id
+// Supports: proposals, work updates, escalations, completions
 
 import { createClient } from '@supabase/supabase-js';
 
@@ -27,7 +27,7 @@ async function authenticateAgent(req) {
     const apiKey = authHeader.replace('Bearer ', '');
     const { data } = await supabase
         .from('factory_users')
-        .select('id, display_name, agent_slug, is_agent')
+        .select('id, display_name, agent_slug, is_agent, agent_role')
         .eq('agent_api_key', apiKey)
         .eq('is_agent', true)
         .single();
@@ -51,7 +51,15 @@ export default async function handler(req, res) {
             return res.status(401).json({ error: 'Invalid or missing API key' });
         }
 
-        const { title, description, bounty_id, category } = req.body;
+        const {
+            title,
+            description,
+            category,
+            submission_type,
+            escalation_type,
+            escalation_urgency,
+            what_agent_needs
+        } = req.body;
 
         if (!title || title.trim().length < 5) {
             return res.status(400).json({ error: 'Title is required (min 5 characters)' });
@@ -61,75 +69,87 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Description is required (min 20 characters)' });
         }
 
-        // If bounty_id provided, verify it exists and is claimed by this agent
-        if (bounty_id) {
-            const { data: bounty } = await supabase
-                .from('swarm_bounties')
-                .select('id, status, claimed_by')
-                .eq('id', bounty_id)
-                .single();
+        const validSubmissionTypes = ['proposal', 'work_update', 'assistance_request', 'completion'];
+        const type = validSubmissionTypes.includes(submission_type) ? submission_type : 'proposal';
 
-            if (!bounty) {
-                return res.status(400).json({ error: 'Bounty not found' });
-            }
-
-            if (bounty.claimed_by !== agent.id) {
-                return res.status(403).json({ error: 'Bounty is not claimed by your agent' });
+        // Validate escalation fields if this is an assistance request
+        if (type === 'assistance_request') {
+            const validEscalationTypes = [
+                'needs_db_access', 'needs_api_key', 'needs_human_decision',
+                'needs_other_agent', 'blocked_by_error', 'needs_deployment', 'needs_credential'
+            ];
+            if (escalation_type && !validEscalationTypes.includes(escalation_type)) {
+                return res.status(400).json({ error: 'Invalid escalation_type' });
             }
         }
 
         // Insert proposal
+        const insertData = {
+            title: title.trim(),
+            description: description.trim(),
+            author_id: agent.id,
+            from_agent: true,
+            category: category || 'feature',
+            status: 'submitted'
+        };
+
+        // Add escalation fields if present
+        if (type === 'assistance_request') {
+            insertData.escalation_type = escalation_type || 'needs_human_decision';
+            insertData.escalation_urgency = escalation_urgency || 'medium';
+            insertData.what_agent_needs = what_agent_needs || null;
+        }
+
         const { data: proposal, error } = await supabase
             .from('factory_proposals')
-            .insert({
-                title: title.trim(),
-                description: description.trim(),
-                author_id: agent.id,
-                from_agent: true,
-                bounty_id: bounty_id || null,
-                category: category || 'feature',
-                status: 'active'
-            })
+            .insert(insertData)
             .select()
             .single();
 
         if (error) {
             console.error('Proposal insert error:', error);
-            return res.status(500).json({ error: 'Failed to submit proposal' });
+            return res.status(500).json({ error: 'Failed to submit' });
         }
 
-        // Update agent stats
+        // Update agent status based on submission type
+        let newAgentStatus = 'waiting';
+        if (type === 'work_update') {
+            newAgentStatus = 'working';
+        } else if (type === 'completion') {
+            newAgentStatus = 'idle';
+        } else if (type === 'assistance_request') {
+            newAgentStatus = 'blocked';
+        }
+
         await supabase
             .from('factory_users')
             .update({
-                proposals_submitted: supabase.rpc ? undefined : undefined,
                 last_proposal_id: proposal.id,
-                agent_status: 'waiting',
+                agent_status: newAgentStatus,
                 last_active_at: new Date().toISOString()
             })
             .eq('id', agent.id);
 
         // Increment proposals_submitted
         await supabase.rpc('increment_agent_proposals', { p_agent_id: agent.id }).catch(() => {
-            // Fallback: direct update if RPC doesn't exist
             supabase
                 .from('factory_users')
                 .update({ proposals_submitted: (agent.proposals_submitted || 0) + 1 })
                 .eq('id', agent.id);
         });
 
-        // Update bounty status to review if linked
-        if (bounty_id) {
-            await supabase
-                .from('swarm_bounties')
-                .update({ status: 'review', updated_at: new Date().toISOString() })
-                .eq('id', bounty_id);
-        }
+        const messages = {
+            proposal: 'Proposal submitted for governance review',
+            work_update: 'Work update logged',
+            assistance_request: 'Escalation submitted — waiting for help',
+            completion: 'Task marked complete'
+        };
 
         return res.status(200).json({
             success: true,
             proposal_id: proposal.id,
-            message: 'Proposal submitted for governance review'
+            submission_type: type,
+            message: messages[type]
         });
 
     } catch (error) {
