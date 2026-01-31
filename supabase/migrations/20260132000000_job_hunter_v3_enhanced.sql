@@ -780,15 +780,20 @@ UPDATE user_apps SET code = '<!DOCTYPE html>
                     <button class="btn btn-primary btn-sm" onclick="bulkFitScan()">Scan All</button>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Job titles (one per line)</label>
-                    <textarea class="textarea-sm" id="bulkFitTitles" placeholder="Developer Relations Engineer
-Solutions Engineer
-Applied AI Engineer
-Product Engineer
-Technical Writer
-Developer Experience Engineer
-Sales Engineer
-..."></textarea>
+                    <label class="form-label">Paste job listings (raw copy-paste from any job board)</label>
+                    <textarea class="textarea-large" id="bulkFitTitles" placeholder="Just paste raw listings from web3.career, LinkedIn, etc. — messy formatting is fine. Example:
+
+Staff Backend Engineer Historical APIs
+Helius
+3h United States
+$88k - $150k
+
+Senior Software Engineer I API
+Zinnia
+4d Remote
+$130k - $150k
+
+The AI will parse out the job titles, companies, and salaries automatically."></textarea>
                 </div>
                 <div id="bulkFitResults"></div>
             </div>
@@ -1967,31 +1972,34 @@ Be specific — reference actual skills, projects, and experience from the candi
             const bg = document.getElementById(''resumeBackground'')?.value.trim() || '''';
             const resultsDiv = document.getElementById(''bulkFitResults'');
 
-            if (!raw) { alert(''Enter at least one job title.''); return; }
+            if (!raw) { alert(''Paste some job listings first.''); return; }
             if (!bg) { alert(''Add your background in the Resume Lab tab first.''); return; }
 
-            const titles = raw.split(''\n'').map(t => t.trim()).filter(t => t);
-            if (titles.length === 0) { alert(''Enter at least one job title.''); return; }
+            resultsDiv.innerHTML = ''<div style="padding:20px;text-align:center;"><span class="spinner"></span> Parsing and scanning job listings...</div>'';
 
-            resultsDiv.innerHTML = ''<div style="padding:20px;text-align:center;"><span class="spinner"></span> Scanning '' + titles.length + '' roles...</div>'';
-
-            const titleList = titles.map((t, i) => `${i + 1}. ${t}`).join(''\n'');
-
-            const prompt = `You are a career advisor. Rate how well this candidate fits each of the following job titles.
+            const prompt = `You are a career advisor. The user has copy-pasted raw job listings from a job board. The formatting is messy — job titles, company names, salaries, locations, and tags are all mixed together.
 
 CANDIDATE BACKGROUND:
 ${bg}
 
-JOB TITLES TO EVALUATE:
-${titleList}
+RAW PASTED JOB LISTINGS:
+${raw}
 
-For EACH title, provide a rating. Return your response as a JSON array (and nothing else — no markdown fences, no extra text). Each element must have these exact keys:
-- "title": the job title exactly as given
+INSTRUCTIONS:
+1. Parse the raw text to extract individual job listings. Ignore ads, bootcamp promos, and non-job content.
+2. For each real job listing, extract: title, company, salary range (if present), and location (if present).
+3. Rate how well the candidate fits each job (1-10).
+
+Return your response as a JSON array (and nothing else — no markdown fences, no explanation). Each element must have these exact keys:
+- "title": the job title (cleaned up)
+- "company": the company name
+- "salary": salary range as string, or "" if not listed
+- "location": location or "Remote", or "" if not listed
 - "score": number 1-10
 - "why": one sentence on why it''s a fit (max 15 words)
 - "gap": one sentence on the biggest gap (max 15 words)
 
-Sort the array from highest score to lowest. Return ONLY valid JSON, no other text.`;
+Sort the array from highest score to lowest. Return ONLY valid JSON.`;
 
             try {
                 const resp = await fetch(''https://suitegpt.app/api/gemini'', {
@@ -2000,7 +2008,7 @@ Sort the array from highest score to lowest. Return ONLY valid JSON, no other te
                     body: JSON.stringify({
                         prompt,
                         model: ''gemini-3-flash-preview'',
-                        generationConfig: { temperature: 0.4, maxOutputTokens: 4000 }
+                        generationConfig: { temperature: 0.3, maxOutputTokens: 6000 }
                     })
                 });
                 const data = await resp.json();
@@ -2012,7 +2020,7 @@ Sort the array from highest score to lowest. Return ONLY valid JSON, no other te
                 try {
                     results = JSON.parse(cleaned);
                 } catch (e) {
-                    resultsDiv.innerHTML = ''<div class="ai-output">' + text + ''</div>'';
+                    resultsDiv.innerHTML = ''<div class="ai-output">' + text.replace(/</g, ''&lt;'') + ''</div>'';
                     return;
                 }
 
@@ -2020,22 +2028,29 @@ Sort the array from highest score to lowest. Return ONLY valid JSON, no other te
                 results.sort((a, b) => b.score - a.score);
 
                 // Render table
-                let html = ''<table class="fit-table"><thead><tr>'';
-                html += ''<th>#</th><th>Job Title</th><th>Score</th><th>Why</th><th>Gap</th><th></th>'';
+                let html = `<div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:8px;">${results.length} jobs found and ranked</div>`;
+                html += ''<table class="fit-table"><thead><tr>'';
+                html += ''<th>#</th><th>Job Title</th><th>Company</th><th>Salary</th><th>Score</th><th>Why</th><th>Gap</th><th></th>'';
                 html += ''</tr></thead><tbody>'';
 
                 results.forEach((r, i) => {
                     const scoreClass = r.score >= 7 ? ''fit-score-high'' : r.score >= 4 ? ''fit-score-mid'' : ''fit-score-low'';
-                    const safeTitle = (r.title || '''').replace(/</g, ''&lt;'').replace(/>/g, ''&gt;'');
-                    const safeWhy = (r.why || '''').replace(/</g, ''&lt;'').replace(/>/g, ''&gt;'');
-                    const safeGap = (r.gap || '''').replace(/</g, ''&lt;'').replace(/>/g, ''&gt;'');
+                    const esc = (s) => (s || '''').replace(/</g, ''&lt;'').replace(/>/g, ''&gt;'');
+                    const safeTitle = esc(r.title);
+                    const safeCompany = esc(r.company);
+                    const safeSalary = esc(r.salary);
+                    const safeWhy = esc(r.why);
+                    const safeGap = esc(r.gap);
+                    const pipelineData = btoa(JSON.stringify({ title: r.title || '''', company: r.company || '''' }));
                     html += `<tr>
                         <td class="fit-rank">${i + 1}</td>
                         <td class="fit-title-cell">${safeTitle}</td>
+                        <td style="color:var(--text-dim);font-size:0.82rem;">${safeCompany}</td>
+                        <td style="color:var(--green);font-size:0.78rem;white-space:nowrap;">${safeSalary}</td>
                         <td><span class="fit-score-badge ${scoreClass}">${r.score}</span></td>
                         <td class="fit-why">${safeWhy}</td>
                         <td class="fit-gap">${safeGap}</td>
-                        <td><button class="fit-add-btn" onclick="addBulkToPipeline(''${safeTitle.replace(/'/g, "\\'")}'')">&plus; Pipeline</button></td>
+                        <td><button class="fit-add-btn" onclick="addBulkToPipeline(''${pipelineData}'')">&plus; Pipeline</button></td>
                     </tr>`;
                 });
 
@@ -2046,23 +2061,25 @@ Sort the array from highest score to lowest. Return ONLY valid JSON, no other te
             }
         }
 
-        function addBulkToPipeline(title) {
+        function addBulkToPipeline(b64data) {
+            let info;
+            try { info = JSON.parse(atob(b64data)); } catch(e) { return; }
             const apps = getApps();
-            if (apps.some(a => a.role === title)) {
+            if (apps.some(a => a.role === info.title && a.company === info.company)) {
                 alert(''Already in your pipeline.'');
                 return;
             }
             apps.push({
                 id: Date.now().toString(),
-                company: ''—'',
-                role: title,
+                company: info.company || ''—'',
+                role: info.title,
                 link: '''',
                 stage: ''applied'',
                 date: new Date().toLocaleDateString()
             });
             saveApps(apps);
             renderPipeline();
-            alert(`Added "${title}" to Pipeline!`);
+            alert(`Added ${info.company} — ${info.title} to Pipeline!`);
         }
 
         // ===== INIT =====
