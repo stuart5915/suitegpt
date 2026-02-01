@@ -8483,6 +8483,11 @@
         .jh-btn-ghost { background: transparent; color: var(--text-secondary); border: 1px solid rgba(255,255,255,0.08); padding: 4px 10px; font-size: 0.72rem; }
         .jh-btn-ghost:hover { color: var(--text-primary); }
         /* Role pills */
+        .jh-role-toggle { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); transition: background 0.15s; }
+        .jh-role-toggle:hover { background: rgba(255,255,255,0.06); }
+        .jh-role-selected { font-size: 0.78rem; color: #6366f1; font-weight: 600; margin-left: auto; }
+        .jh-role-chevron { color: var(--text-secondary); transition: transform 0.2s; flex-shrink: 0; }
+        .jh-role-chevron.open { transform: rotate(180deg); }
         .jh-role-divider { font-size: 0.68rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin: 8px 0 4px; width: 100%; }
         .jh-role-divider:first-child { margin-top: 0; }
         .jh-role-cards { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; align-items: center; }
@@ -21436,8 +21441,13 @@ Published author of 4 books (Amazon). Active on Medium (@defiknowledge, 1.6k fol
 Prior: CNC machining &amp; precision manufacturing — process optimization, quality control, 5+ years.
 
 Technical: JavaScript, HTML/CSS, React/React Native, Supabase (Postgres, Auth, Storage, RLS), Vercel, REST APIs, AI API integration (Claude/Gemini/Groq), Solidity smart contracts, Git, serverless functions. Full-stack capable — frontend to database to deployment.</textarea></div>
-                                                <div class="jh-form-group"><label class="jh-form-label">Target Role</label>
-                                                    <div class="jh-role-cards">
+                                                <div class="jh-form-group">
+                                                    <div class="jh-role-toggle" onclick="jhToggleRoles()">
+                                                        <label class="jh-form-label" style="cursor:pointer;margin:0;">Target Role</label>
+                                                        <span class="jh-role-selected" id="jhRoleSelected">Developer Relations</span>
+                                                        <svg class="jh-role-chevron" id="jhRoleChevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                                                    </div>
+                                                    <div class="jh-role-cards" id="jhRoleCards" style="display:none;">
                                                         <div class="jh-role-divider">Best Fit</div>
                                                         <div class="jh-role-card selected" onclick="jhSelectRole(this,'devrel')"><div class="jh-role-card-title">Developer Relations</div></div>
                                                         <div class="jh-role-card" onclick="jhSelectRole(this,'devadvocate')"><div class="jh-role-card-title">Developer Advocate</div></div>
@@ -25511,6 +25521,21 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
             document.querySelectorAll('.jh-role-card').forEach(c => c.classList.remove('selected'));
             el.classList.add('selected');
             jhSelectedRole = role;
+            const lbl = document.getElementById('jhRoleSelected');
+            if (lbl) lbl.textContent = el.querySelector('.jh-role-card-title').textContent;
+            // Collapse after selection
+            const cards = document.getElementById('jhRoleCards');
+            const chev = document.getElementById('jhRoleChevron');
+            if (cards) cards.style.display = 'none';
+            if (chev) chev.classList.remove('open');
+        }
+        function jhToggleRoles() {
+            const cards = document.getElementById('jhRoleCards');
+            const chev = document.getElementById('jhRoleChevron');
+            if (!cards) return;
+            const open = cards.style.display !== 'none';
+            cards.style.display = open ? 'none' : 'flex';
+            if (chev) chev.classList.toggle('open', !open);
         }
         const JH_ROLE_PROMPTS = {
             devrel: 'Developer Relations — emphasize: built 30k+ LOC AI platform solo, deep API integration experience (Claude/Gemini/Groq), technical writing (whitepapers, docs), community management (500+ ambassador program), shipped 20+ apps, can bridge engineering and developer community',
