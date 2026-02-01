@@ -21516,17 +21516,12 @@ Technical: JavaScript, HTML/CSS, React/React Native, Supabase (Postgres, Auth, S
                                                         <button class="jh-btn-ghost" id="jhResumeCopyBtn" onclick="jhCopyOutput('jhResumeOutput')">Copy</button>
                                                     </div>
                                                 </div>
-                                                <div class="jh-resume-box" style="cursor:pointer;" onclick="const b=this.querySelector('.jh-outreach-body');const c=this.querySelector('.jh-outreach-chevron');if(b.style.display==='none'){b.style.display='block';c.style.transform='rotate(180deg)';}else{b.style.display='none';c.style.transform='rotate(0)';}">
-                                                    <div class="jh-resume-header" style="margin-bottom:0;"><h4>Cold Outreach Generator</h4><span class="jh-outreach-chevron" style="font-size:1.1rem;color:var(--text-secondary);transition:transform 0.2s;">▼</span></div>
-                                                    <div class="jh-outreach-body" style="display:none;" onclick="event.stopPropagation();">
-                                                        <div style="margin-top:14px;">
-                                                        <div class="jh-form-group"><label class="jh-form-label">Company Name</label><input class="jh-input" type="text" id="jhOutreachCompany" placeholder="e.g. Anthropic, Vercel, Supabase..."></div>
-                                                        <div class="jh-form-group"><label class="jh-form-label">What to Emphasize</label><input class="jh-input" type="text" id="jhOutreachAngle" placeholder="e.g. I built an entire ecosystem using their product..."></div>
-                                                        <button class="jh-btn jh-btn-primary jh-btn-sm" onclick="jhGenerateOutreach()" style="margin-bottom:10px;">Generate</button>
-                                                        <div class="jh-ai-output" id="jhOutreachOutput"></div>
-                                                        <button class="jh-btn-ghost" id="jhOutreachCopyBtn" style="display:none;margin-top:6px;" onclick="jhCopyOutput('jhOutreachOutput')">Copy</button>
-                                                        </div>
-                                                    </div>
+                                                <div class="jh-resume-box">
+                                                    <div class="jh-resume-header"><h4>Application Q&A</h4><button class="jh-btn jh-btn-primary jh-btn-sm" onclick="jhGenerateAnswer()">Generate Answer</button></div>
+                                                    <div class="jh-form-group"><label class="jh-form-label">Application Question</label><textarea class="jh-textarea" id="jhAppQuestion" rows="3" placeholder="Paste an application question, e.g. &quot;Tell us about your interest and knowledge in blockchain/crypto?&quot; or &quot;Why do you want to work at Anthropic?&quot;"></textarea></div>
+                                                    <div class="jh-form-group"><label class="jh-form-label">Extra Context (optional)</label><input class="jh-input" type="text" id="jhAppContext" placeholder="e.g. Applying to Anthropic for DevRel, emphasize Claude usage..."></div>
+                                                    <div class="jh-ai-output" id="jhAppAnswerOutput"></div>
+                                                    <button class="jh-btn-ghost" id="jhAppAnswerCopyBtn" style="display:none;margin-top:6px;" onclick="jhCopyOutput('jhAppAnswerOutput')">Copy</button>
                                                 </div>
                                             </div>
 
@@ -25685,18 +25680,36 @@ Output the resume now using the section markers above. Plain text only, no markd
             const w = window.open(url, '_blank');
             w.onload = function() { URL.revokeObjectURL(url); w.document.title = pdfTitle; setTimeout(() => w.print(), 300); };
         }
-        async function jhGenerateOutreach() {
+        async function jhGenerateAnswer() {
             const bg = document.getElementById('jhResumeBackground').value.trim();
-            const company = document.getElementById('jhOutreachCompany').value.trim();
-            const angle = document.getElementById('jhOutreachAngle').value.trim();
-            const output = document.getElementById('jhOutreachOutput');
-            const copyBtn = document.getElementById('jhOutreachCopyBtn');
-            if (!company) { alert('Enter a company name.'); return; }
+            const question = document.getElementById('jhAppQuestion').value.trim();
+            const context = document.getElementById('jhAppContext').value.trim();
+            const output = document.getElementById('jhAppAnswerOutput');
+            const copyBtn = document.getElementById('jhAppAnswerCopyBtn');
+            if (!question) { alert('Paste an application question first.'); return; }
             output.textContent = ''; copyBtn.style.display = 'none';
-            output.innerHTML = '<span class="jh-spinner"></span> Generating outreach...';
-            const prompt = `Write cold outreach for someone reaching out to ${company}.\n\nBACKGROUND:\n${bg || 'Built SuiteGPT, an AI app ecosystem. 7 years in DeFi/crypto.'}\n\nCOMPANY: ${company}\n${angle ? 'ANGLE: ' + angle : ''}\n\nWrite TWO versions:\n1. SHORT LINKEDIN MESSAGE (under 300 chars)\n2. EMAIL (3-4 paragraphs, specific, genuine)\n\nReference specific things built (SuiteGPT, credit systems, smart contracts).`;
+            output.innerHTML = '<span class="jh-spinner"></span> Generating answer...';
+            const roleCtx = JH_ROLE_PROMPTS[jhSelectedRole] || '';
+            const prompt = `You are helping Stuart Hollinger answer a job application question. Write a compelling, authentic, first-person answer.
+
+STRICT RULES:
+- ONLY use facts from the CANDIDATE BACKGROUND below. NEVER invent achievements, companies, metrics, or skills not stated.
+- Write in first person as Stuart. Be genuine, specific, and confident — not generic or boilerplate.
+- Reference specific projects and experiences from the background.
+- Keep it concise but thorough — aim for 150-300 words unless the question calls for more.
+- Do NOT use markdown formatting. Plain text only.
+- Sound like a real person, not a corporate template.
+
+CANDIDATE BACKGROUND:
+${bg || 'Built SuiteGPT, an AI app ecosystem with 20+ apps, 30k+ LOC. 7 years in DeFi/crypto. Published author.'}
+
+${roleCtx ? 'TARGET ROLE CONTEXT: ' + roleCtx + '\n' : ''}${context ? 'EXTRA CONTEXT: ' + context + '\n' : ''}
+APPLICATION QUESTION:
+${question}
+
+Write the answer now. Plain text, first person, authentic.`;
             try {
-                const resp = await fetch('/api/gemini', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt, model: 'gemini-3-flash-preview', generationConfig: { temperature: 0.8, maxOutputTokens: 3000 } }) });
+                const resp = await fetch('/api/gemini', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt, model: 'gemini-3-flash-preview', generationConfig: { temperature: 0.7, maxOutputTokens: 3000 } }) });
                 const data = await resp.json();
                 output.textContent = data.text || 'No output generated.';
                 copyBtn.style.display = 'inline-flex';
@@ -25705,7 +25718,8 @@ Output the resume now using the section markers above. Plain text only, no markd
         function jhCopyOutput(id) {
             const text = document.getElementById(id).textContent;
             navigator.clipboard.writeText(text);
-            const btn = document.getElementById(id === 'jhResumeOutput' ? 'jhResumeCopyBtn' : 'jhOutreachCopyBtn');
+            const btnMap = { jhResumeOutput: 'jhResumeCopyBtn', jhAppAnswerOutput: 'jhAppAnswerCopyBtn' };
+            const btn = document.getElementById(btnMap[id] || 'jhAppAnswerCopyBtn');
             btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 1500);
         }
         // JH Pipeline (localStorage)
