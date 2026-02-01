@@ -21436,6 +21436,12 @@
 
                                             <!-- JH: Resume Lab -->
                                             <div class="jh-panel" id="jhResumePanel">
+                                                <div class="jh-resume-box" style="margin-bottom:16px;">
+                                                    <div class="jh-resume-header"><h4>Analyze Job Listings</h4><button class="jh-btn jh-btn-primary jh-btn-sm" onclick="jhAnalyzeListings()">Analyze</button></div>
+                                                    <div class="jh-form-group"><label class="jh-form-label">Paste listings from any job board</label><textarea class="jh-textarea" id="jhListingsInput" rows="8" placeholder="Paste job listings here — copy/paste straight from web3.career, LinkedIn, Indeed, etc. Any format works. Paste as many as you want."></textarea></div>
+                                                    <div class="jh-ai-output" id="jhAnalyzeOutput"></div>
+                                                    <button class="jh-btn-ghost" id="jhAnalyzeCopyBtn" style="display:none;margin-top:6px;" onclick="jhCopyOutput('jhAnalyzeOutput')">Copy</button>
+                                                </div>
                                                 <div class="jh-subsection open" onclick="this.classList.toggle('open')">
                                                     <div class="jh-subsection-header"><div class="jh-subsection-title">Best Fit — Core Strengths <span class="jh-count">8</span></div><span class="jh-subsection-chevron">▼</span></div>
                                                     <div class="jh-subsection-body" onclick="event.stopPropagation()">
@@ -25715,11 +25721,46 @@ Write the answer now. Plain text, first person, authentic.`;
                 copyBtn.style.display = 'inline-flex';
             } catch (e) { output.textContent = 'Error: ' + e.message; }
         }
+        async function jhAnalyzeListings() {
+            const bg = document.getElementById('jhResumeBackground').value.trim();
+            const listings = document.getElementById('jhListingsInput').value.trim();
+            const output = document.getElementById('jhAnalyzeOutput');
+            const copyBtn = document.getElementById('jhAnalyzeCopyBtn');
+            if (!listings) { alert('Paste some job listings first.'); return; }
+            output.textContent = ''; copyBtn.style.display = 'none';
+            output.innerHTML = '<span class="jh-spinner"></span> Analyzing listings...';
+            const prompt = `You are a career advisor analyzing job listings for Stuart Hollinger. Review each listing and rate how good a fit it is.
+
+CANDIDATE BACKGROUND:
+${bg || 'Built SuiteGPT (suitegpt.app), a 30k+ LOC AI-native platform with 20+ apps. Multi-model AI integration (Claude/Gemini/Groq). 7 years DeFi/blockchain — wrote MELD whitepaper. Published author. Full-stack: JS, Supabase, Vercel, React. Runs SUITE Clients building apps for local businesses. Based in Canada.'}
+
+JOB LISTINGS:
+${listings}
+
+For EACH listing, output ONE line in this format:
+[APPLY] or [SKIP] or [MAYBE] — Job Title @ Company — Brief reason (1 sentence)
+
+Rules:
+- APPLY = strong fit based on actual skills and experience
+- MAYBE = partial fit, worth applying if tailored right
+- SKIP = poor fit, missing core requirements, or too senior/unrelated
+- Consider: his strengths are DevRel, technical writing, content, product management, AI integration, full-stack JS, community, DeFi/blockchain knowledge
+- He does NOT have: Java, Rust, Angular, iOS/Android native, DevOps/cloud infrastructure, data engineering, or formal CS degree
+- Be honest and practical. Don't recommend roles he'd clearly be unqualified for.
+- After all listings, add a blank line then: "SUMMARY: X worth applying, X maybe, X skip"
+- Keep it concise. No fluff.`;
+            try {
+                const resp = await fetch('/api/gemini', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt, model: 'gemini-3-flash-preview', generationConfig: { temperature: 0.4, maxOutputTokens: 4000 } }) });
+                const data = await resp.json();
+                output.textContent = data.text || 'No output generated.';
+                copyBtn.style.display = 'inline-flex';
+            } catch (e) { output.textContent = 'Error: ' + e.message; }
+        }
         function jhCopyOutput(id) {
             const text = document.getElementById(id).textContent;
             navigator.clipboard.writeText(text);
-            const btnMap = { jhResumeOutput: 'jhResumeCopyBtn', jhAppAnswerOutput: 'jhAppAnswerCopyBtn' };
-            const btn = document.getElementById(btnMap[id] || 'jhAppAnswerCopyBtn');
+            const btnMap = { jhResumeOutput: 'jhResumeCopyBtn', jhAppAnswerOutput: 'jhAppAnswerCopyBtn', jhAnalyzeOutput: 'jhAnalyzeCopyBtn' };
+            const btn = document.getElementById(btnMap[id] || 'jhAnalyzeCopyBtn');
             btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 1500);
         }
         // JH Pipeline (localStorage)
