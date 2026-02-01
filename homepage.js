@@ -65,9 +65,9 @@ async function loadFleetLatestApp() {
         // Update UI
         if (iconEl) {
             if (latestApp.icon_url && !latestApp.icon_url.includes('example.com')) {
-                iconEl.innerHTML = `<a href="suite-shell.html" class="fleet-icon-link"><img src="${latestApp.icon_url}" alt="${latestApp.name}"></a>`;
+                iconEl.innerHTML = `<a href="https://suitegpt.app/apps" class="fleet-icon-link"><img src="${latestApp.icon_url}" alt="${latestApp.name}"></a>`;
             } else {
-                iconEl.innerHTML = `<a href="suite-shell.html" class="fleet-icon-link">${latestApp.icon || latestApp.icon_emoji || '📱'}</a>`;
+                iconEl.innerHTML = `<a href="https://suitegpt.app/apps" class="fleet-icon-link">${latestApp.icon || latestApp.icon_emoji || '📱'}</a>`;
             }
         }
 

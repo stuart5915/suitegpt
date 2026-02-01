@@ -9,21 +9,21 @@
     // GitHub username and repos to track
     const GITHUB_USER = 'stuart5915';
     const REPOS = [
-        { repo: 'cadence-ai-nextjs', appName: 'Cadence AI', emoji: 'clay-sparkles.png', link: 'suite-shell.html' },
-        { repo: 'foodvitals-expo-source', appName: 'FoodVitals', emoji: 'clay-rocket.png', link: 'suite-shell.html' },
-        { repo: 'foodvitals-flutter', appName: 'FoodVitals', emoji: 'clay-rocket.png', link: 'suite-shell.html' },
+        { repo: 'cadence-ai-nextjs', appName: 'Cadence AI', emoji: 'clay-sparkles.png', link: 'https://suitegpt.app/apps' },
+        { repo: 'foodvitals-expo-source', appName: 'FoodVitals', emoji: 'clay-rocket.png', link: 'https://suitegpt.app/apps' },
+        { repo: 'foodvitals-flutter', appName: 'FoodVitals', emoji: 'clay-rocket.png', link: 'https://suitegpt.app/apps' },
     ];
 
     // Map app names to site links
     const APP_LINKS = {
-        'Cadence AI': 'suite-shell.html',
-        'FoodVitals': 'suite-shell.html',
-        'OpticRep': 'suite-shell.html',
-        'TrueForm': 'suite-shell.html',
-        'Cheshbon': 'suite-shell.html',
-        'RemCast': 'suite-shell.html',
+        'Cadence AI': 'https://suitegpt.app/apps',
+        'FoodVitals': 'https://suitegpt.app/apps',
+        'OpticRep': 'https://suitegpt.app/apps',
+        'TrueForm': 'https://suitegpt.app/apps',
+        'Cheshbon': 'https://suitegpt.app/apps',
+        'RemCast': 'https://suitegpt.app/apps',
         'SUITE Platform': 'index.html',
-        'default': 'suite-shell.html'
+        'default': 'https://suitegpt.app/apps'
     };
 
     // Map commit message keywords to display formats
@@ -109,7 +109,7 @@
     }
 
     // Create ticker item HTML
-    function createTickerItem(formatted, link = 'suite-shell.html') {
+    function createTickerItem(formatted, link = 'https://suitegpt.app/apps') {
         return `
             <a href="${link}" class="ticker-item">
                 <img src="assets/emojis/${formatted.emoji}" alt="" class="ticker-emoji">

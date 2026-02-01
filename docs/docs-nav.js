@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         SUITE
                     </a>
                     <div class="nav-links">
-                        <a href="../suite-shell.html">Apps</a>
+                        <a href="https://suitegpt.app/apps">Apps</a>
                         <a href="index.html" class="active">Docs</a>
                         <a href="../learn.html">Learn</a>
                         <a href="../factory.html">Governance</a>

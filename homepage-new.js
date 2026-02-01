@@ -91,7 +91,7 @@
                     <span class="featured-category">${formatCategory(app.category)}</span>
                     <span class="featured-rating">★ 4.8</span>
                 </div>
-                <a href="suite-shell.html?app=${app.slug}" class="btn btn-primary">Open App</a>
+                <a href="https://suitegpt.app/apps/${app.slug}" class="btn btn-primary">Open App</a>
             </div>
         `;
     }
@@ -354,7 +354,7 @@
 
     // Expose globals
     window.openApp = function(slug) {
-        window.location.href = `suite-shell.html?app=${slug}`;
+        window.location.href = `https://suitegpt.app/apps/${slug}`;
     };
 })();
 
