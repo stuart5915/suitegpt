@@ -1,23 +1,18 @@
 # Current Objective (Small Telos)
 
-This file defines your current working objective. It should be:
-- **Specific**: One clear, achievable goal
-- **Timeboxed**: Completable in 1-5 days
-- **Measurable**: Has clear success criteria
-
----
-
 ## What I'm Working On
 
-_No objective set. Awaiting first small telos proposal._
+Enhance food database coverage for store brands by integrating with an additional public food database or implementing a user-contribution mechanism, aiming to reduce 'doesn't recognize store brands' complaints by 50%.
 
 ---
 
 ## Success Criteria
 
-- [ ] (To be defined when objective is proposed)
-- [ ]
-- [ ]
+- [ ] Research and identify at least one additional public food database (e.g., Open Food Facts, USDA FoodData Central) that includes a good variety of store brand products.
+- [ ] Develop a plan for integrating data from the selected database(s) into FoodVitals' existing nutrition database.
+- [ ] Propose a simple mechanism for users to contribute missing store brand products (e.g., submitting photos/details for manual review).
+- [ ] Outline the technical steps required for integration and user contribution.
+- [ ] Estimate the expected reduction in "doesn't recognize store brands" complaints after implementation.
 
 When ALL criteria are checked, this objective is complete.
 
@@ -27,10 +22,10 @@ When ALL criteria are checked, this objective is complete.
 
 | Field | Value |
 |-------|-------|
-| **State** | `needs_proposal` |
-| **Proposed** | - |
-| **Approved** | - |
-| **Target** | - |
+| **State** | `proposed` |
+| **Proposed** | 2026-02-01 |
+| **Approved** | N/A |
+| **Target** | 2026-02-08 |
 
 ---
 
@@ -38,10 +33,7 @@ When ALL criteria are checked, this objective is complete.
 
 Why this objective matters right now:
 
-_No objective set yet. When woken, I should:_
-1. _Review my FOODVITALS_TELOS.md for strategic priorities_
-2. _Consider user feedback (barcode scanning issues, UI simplification needs)_
-3. _Propose a focused 1-5 day objective that advances my metrics_
+"Doesn't recognize store brands" is a significant user complaint (18% of negative feedback) and a known technical debt. Improving data coverage will directly enhance the core meal tracking experience, reduce user friction, and contribute to improving 30-day retention from ~25% to 40% (Strategic Priority #1). This follows the successful implementation of barcode scanning fallback by addressing another key barrier to accurate and easy meal logging.
 
 ---
 
@@ -49,27 +41,4 @@ _No objective set yet. When woken, I should:_
 
 | Date | Update |
 |------|--------|
-| - | Initial state - awaiting first proposal |
-
----
-
-## Suggested First Objectives
-
-Based on my Large/Medium telos, good first small telos options include:
-
-1. **Improve Barcode Scanning Reliability**
-   - Top user complaint is 15% scan failure rate
-   - Could implement fallback to UPC database
-   - Directly improves retention
-
-2. **Create Onboarding Tutorial Flow**
-   - New users don't understand weekly tracking concept
-   - Simple 3-step tutorial would reduce drop-off
-   - Improves first-week retention
-
-3. **Draft Social Content Series**
-   - No marketing content exists yet
-   - "Did You Know" nutrient fact series
-   - Builds awareness for growth
-
-_Will propose one of these (or something better) on first wake._
+| 2026-02-01 | New objective proposed. Awaiting approval. |

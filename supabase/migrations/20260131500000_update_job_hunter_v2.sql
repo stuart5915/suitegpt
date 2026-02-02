@@ -980,7 +980,7 @@ Format the resume as clean plain text with clear sections:
 Be specific and use strong action verbs. Don''t be generic. Make every line count.`;
 
             try {
-                const resp = await fetch(''/api/gemini'', {
+                const resp = await fetch(''https://suitegpt.app/api/gemini'', {
                     method: ''POST'',
                     headers: { ''Content-Type'': ''application/json'' },
                     body: JSON.stringify({
@@ -1026,7 +1026,7 @@ Write TWO versions:
 Be genuine, not salesy. Show you know the company. Reference specific things built (SuiteGPT, credit systems, smart contracts, etc).`;
 
             try {
-                const resp = await fetch(''/api/gemini'', {
+                const resp = await fetch(''https://suitegpt.app/api/gemini'', {
                     method: ''POST'',
                     headers: { ''Content-Type'': ''application/json'' },
                     body: JSON.stringify({
@@ -1218,7 +1218,7 @@ Role: [job title from the posting]
 Be specific — reference actual skills, projects, and experience from the candidate''s background. Don''t be generic.`;
 
             try {
-                const resp = await fetch(''/api/gemini'', {
+                const resp = await fetch(''https://suitegpt.app/api/gemini'', {
                     method: ''POST'',
                     headers: { ''Content-Type'': ''application/json'' },
                     body: JSON.stringify({

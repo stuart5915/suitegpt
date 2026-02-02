@@ -866,24 +866,24 @@ Do not worry about formatting. Just dump it all in. The AI will parse and struct
 
             <div class="section-title">Target Role</div>
             <div class="role-cards" id="roleCards">
-                <div class="role-card selected" onclick="selectRole(this, ''devrel'')" data-role="devrel">
-                    <div class="role-card-title">Developer Relations</div>
-                    <div class="role-card-desc">Build demos, write docs, give talks, grow community. Your SuiteGPT work is the perfect portfolio piece.</div>
+                <div class="role-card selected" onclick="selectRole(this, ''techwriter'')" data-role="techwriter">
+                    <div class="role-card-title">Technical Writer</div>
+                    <div class="role-card-desc">Whitepapers, docs, API guides, how-to content. Your core skillset with 10+ whitepapers.</div>
                     <span class="role-card-fit tag-hot">Best Fit</span>
                 </div>
-                <div class="role-card" onclick="selectRole(this, ''solutions'')" data-role="solutions">
-                    <div class="role-card-title">Solutions Engineer</div>
-                    <div class="role-card-desc">Pre-sales technical work. Understand customer needs, build integrations, demo products.</div>
+                <div class="role-card" onclick="selectRole(this, ''marketing'')" data-role="marketing">
+                    <div class="role-card-title">Marketing Manager</div>
+                    <div class="role-card-desc">Content strategy, SEO, social media, community building, AMAs, brand voice.</div>
                     <span class="role-card-fit tag-good" style="background:var(--green-soft);color:var(--green)">Good Fit</span>
                 </div>
-                <div class="role-card" onclick="selectRole(this, ''applied'')" data-role="applied">
-                    <div class="role-card-title">Applied AI Engineer</div>
-                    <div class="role-card-desc">Build products with AI APIs. Not ML research — making AI useful in real apps.</div>
+                <div class="role-card" onclick="selectRole(this, ''content'')" data-role="content">
+                    <div class="role-card-title">Content Strategist</div>
+                    <div class="role-card-desc">Content planning, editorial calendars, audience growth, cross-platform strategy.</div>
                     <span class="role-card-fit tag-good" style="background:var(--green-soft);color:var(--green)">Good Fit</span>
                 </div>
-                <div class="role-card" onclick="selectRole(this, ''product'')" data-role="product">
-                    <div class="role-card-title">Product Engineer</div>
-                    <div class="role-card-desc">Full-stack with product sense. Ship features end-to-end. Startup-oriented.</div>
+                <div class="role-card" onclick="selectRole(this, ''operations'')" data-role="operations">
+                    <div class="role-card-title">Operations / General</div>
+                    <div class="role-card-desc">Ops director, project management, cross-functional leadership. Flexible for any role.</div>
                     <span class="role-card-fit tag-good" style="background:var(--green-soft);color:var(--green)">Good Fit</span>
                 </div>
             </div>
@@ -1234,7 +1234,7 @@ IMPORTANT: Extract EVERYTHING mentioned. Do not skip or summarize away details �
         }
 
         // ===== ROLE SELECTION =====
-        let selectedRole = ''devrel'';
+        let selectedRole = ''techwriter'';
         function selectRole(el, role) {
             document.querySelectorAll(''.role-card'').forEach(c => c.classList.remove(''selected''));
             el.classList.add(''selected'');
@@ -1352,10 +1352,10 @@ IMPORTANT: Extract EVERYTHING mentioned. Do not skip or summarize away details �
 
         // ===== RESUME GENERATION =====
         const ROLE_PROMPTS = {
-            devrel: ''Developer Relations / Developer Advocacy — emphasize: community building, creating demos and sample apps, writing technical content, public speaking potential, deep product knowledge, ability to translate complex technical concepts for developers'',
-            solutions: ''Solutions Engineer — emphasize: technical pre-sales, customer-facing communication, building integrations and POCs, understanding business requirements, full-stack technical breadth'',
-            applied: ''Applied AI Engineer — emphasize: building products with AI APIs (Gemini, Groq, Claude), prompt engineering, AI-powered features, full-stack development, shipping AI products to real users'',
-            product: ''Product Engineer — emphasize: end-to-end feature ownership, shipping fast, product intuition, full-stack development, user-facing features, startup mentality''
+            techwriter: ''Technical Writer — emphasize: whitepapers, documentation (GitBook, API docs), audit reports, press releases, translating complex technical concepts into accessible content, DeFi/blockchain/AI domain expertise, published author'',
+            marketing: ''Marketing Manager — emphasize: content strategy, SEO, social media management, community building, brand voice, AMAs, Twitter Spaces, ambassador programs, content calendars, cross-platform campaigns'',
+            content: ''Content Strategist — emphasize: editorial planning, audience growth, content lifecycle management, multi-channel strategy, thought leadership, long-form and short-form content, analytics-driven decisions'',
+            operations: ''Operations Director / General — emphasize: cross-functional leadership, project management, strategic planning, team coordination, process optimization, stakeholder communication. Adapt freely to the specific job posting if provided''
         };
 
         let lastResumeText = '''';
@@ -1373,45 +1373,50 @@ IMPORTANT: Extract EVERYTHING mentioned. Do not skip or summarize away details �
             document.getElementById(''resumePreviewSection'').style.display = ''none'';
             output.innerHTML = ''<span class="spinner"></span> Generating resume...'';
 
-            const roleContext = ROLE_PROMPTS[selectedRole] || ROLE_PROMPTS.devrel;
-            let prompt = `You are an expert resume writer. Create a professional, ATS-friendly resume for someone applying to this type of role:
+            const roleContext = ROLE_PROMPTS[selectedRole] || ROLE_PROMPTS.techwriter;
+            let prompt = `You are an expert resume writer. Create a professional, ATS-friendly resume.
 
-TARGET ROLE: ${roleContext}
+IMPORTANT RULES:
+1. ONLY use facts from the CANDIDATE BACKGROUND below. NEVER invent skills, tools, companies, or achievements that are not mentioned.
+2. The candidate''s name is Stuart Hollinger. Email: stuart@suitegpt.app. Location: Cambridge, ON, Canada. LinkedIn: linkedin.com/in/stuart-hollinger. Portfolio: portfolio.suitegpt.app. Telegram: t.me/StuartDeFi.
+3. Do NOT include a phone number.
+4. Do NOT use markdown formatting (no #, ##, ###, **, *, etc). Use ONLY plain text with the section markers below.
+
+TARGET ROLE TYPE: ${roleContext}
 
 CANDIDATE BACKGROUND:
 ${bg}
 
-${posting ? `SPECIFIC JOB POSTING TO TAILOR TO:\n${posting}\n\nTailor the resume specifically to match this job posting''s requirements and language.` : ''''}
+${posting ? `SPECIFIC JOB POSTING TO TAILOR TO:\n${posting}\n\nTailor the resume to match this posting. Emphasize relevant experience from the background. Do NOT invent experience or skills not in the background.` : ''''}
 
-CRITICAL: You MUST format the resume using these EXACT section markers. Each marker must be on its own line:
+OUTPUT FORMAT — You MUST use these EXACT markers. Each marker on its own line. No markdown. Plain text only:
 
 ===NAME===
-[Full Name — use "Stuart Hollinger" or the name from the background]
+Stuart Hollinger
 
 ===CONTACT===
-[email] | [phone] | [city, state] | [linkedin] | [github]
-(Use placeholders like your.email@example.com, (555) 555-5555, City, ST if not provided)
+stuart@suitegpt.app | Cambridge, ON, Canada | linkedin.com/in/stuart-hollinger | portfolio.suitegpt.app
 
 ===SUMMARY===
-[3-4 compelling lines specific to the target role]
+3-4 lines tailored to the target role. Use facts from the background only.
 
 ===EXPERIENCE===
-**[Job Title] — [Company/Project]** | [Date Range]
-- [Achievement with metrics if possible]
-- [Another achievement]
+Job Title — Company | Date Range
+- Achievement bullet point
+- Another bullet point
 
-(Frame SuiteGPT work as a real product role. Frame DeFi work as relevant technical experience. Frame CNC as systems/engineering background. Include 2-4 positions.)
+(Include all relevant positions from the background. Do not invent companies or roles.)
 
 ===PROJECTS===
-**[Project Name]** — [One-line description]
-- [Technical detail or achievement]
-- [Another detail]
+Project Name — One-line description
+- Detail or achievement
+- Another detail
 
 ===SKILLS===
-[Category]: [skill1, skill2, skill3]
-[Category]: [skill1, skill2, skill3]
+Category: skill1, skill2, skill3
+Category: skill1, skill2, skill3
 
-Be specific and use strong action verbs. Don''t be generic. Make every line count. Use bullet points (starting with -) for all list items.`;
+Use strong action verbs. Every bullet must be based on real experience from the background. No filler.`;
 
             try {
                 const resp = await fetch(''https://suitegpt.app/api/gemini'', {
