@@ -966,10 +966,11 @@
                 </div>
             </div>
             <div class="inline-preview-actions" id="inlinePreviewActions" style="display:none;">
-                <button class="btn-main" id="editPublishBtn">
-                    Edit & Publish
+                <button class="btn-main" id="inlinePublishBtn">
+                    Get this site
                     <svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </button>
+                <button class="btn-ghost" id="editFirstBtn">Edit first</button>
                 <button class="btn-ghost" id="regenerateBtn">Regenerate</button>
             </div>
         </div>
@@ -1745,8 +1746,31 @@
         }
     }
 
-    // ── Edit & Publish button (inline → fullscreen) ──
-    document.getElementById('editPublishBtn').addEventListener('click', function() {
+    // ── "Get this site" button (inline → publish modal directly) ──
+    document.getElementById('inlinePublishBtn').addEventListener('click', function() {
+        if (!pState.currentHtml) return;
+        // Pre-fill email if already captured
+        if (pState.email) {
+            document.getElementById('publishEmail').value = pState.email;
+            document.getElementById('publishEmailGroup').style.display = 'none';
+        }
+        // Auto-generate slug from business description if slug is empty
+        var slugEl = document.getElementById('publishSlug');
+        if (!slugEl.value && pState.businessDesc) {
+            var autoSlug = pState.businessDesc.trim().toLowerCase()
+                .replace(/[^a-z0-9\s-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-|-$/g, '')
+                .substring(0, 63);
+            slugEl.value = autoSlug;
+            checkSlugAvailability(autoSlug);
+        }
+        document.getElementById('publishModal').classList.add('active');
+    });
+
+    // ── "Edit first" button (inline → fullscreen refine mode) ──
+    document.getElementById('editFirstBtn').addEventListener('click', function() {
         if (pState.currentHtml) showPreview(pState.currentHtml, pState.businessDesc);
     });
 
