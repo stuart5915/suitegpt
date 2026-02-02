@@ -930,7 +930,7 @@
             </div>
         </div>
         <div class="preview-bottom-bar">
-            <button class="btn-main" id="startTrialBtn">Start 30-Day Free Trial <svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <button class="btn-main" id="publishBtn">Publish Site <svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
             <button class="btn-ghost" id="downloadHtmlBtn">Download HTML</button>
         </div>
     </div>
@@ -965,31 +965,44 @@
     </div>
 </div>
 
-<!-- ════════ TRIAL SIGNUP MODAL ════════ -->
-<div class="preview-modal-overlay" id="trialModal">
+<!-- ════════ PUBLISH MODAL ════════ -->
+<div class="preview-modal-overlay" id="publishModal">
     <div class="preview-modal">
-        <h3>Start your free trial</h3>
-        <p>Get a live URL, unlimited changes, and 24-hour support for 30 days — completely free.</p>
-        <form id="trialSignupForm">
-            <div class="form-group">
-                <label class="form-label">Your Name *</label>
-                <input class="form-input" type="text" id="trialName" placeholder="Jane Smith" required>
-            </div>
-            <div class="form-group">
+        <h3>Publish your website</h3>
+        <p>Choose a subdomain and your site goes live instantly.</p>
+        <form id="publishForm">
+            <div class="form-group" id="publishEmailGroup">
                 <label class="form-label">Email *</label>
-                <input class="form-input" type="email" id="trialEmail" placeholder="jane@business.com" required>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Phone (optional)</label>
-                <input class="form-input" type="tel" id="trialPhone" placeholder="(555) 123-4567">
+                <input class="form-input" type="email" id="publishEmail" placeholder="you@business.com" required>
             </div>
             <div class="form-group">
                 <label class="form-label">Business Name</label>
-                <input class="form-input" type="text" id="trialBusiness" placeholder="Jane's Bakery">
+                <input class="form-input" type="text" id="publishName" placeholder="Jane's Bakery">
             </div>
-            <button type="submit" class="preview-modal-submit">Start Free Trial</button>
+            <div class="form-group">
+                <label class="form-label">Your URL</label>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <input class="form-input" type="text" id="publishSlug" placeholder="janes-bakery" style="flex:1;" required>
+                    <span style="color:rgba(255,255,255,0.35);font-size:0.85rem;white-space:nowrap;">.suitegpt.app</span>
+                </div>
+                <div id="slugStatus" style="font-size:0.78rem;margin-top:6px;min-height:1.2em;"></div>
+            </div>
+            <button type="submit" class="preview-modal-submit" id="publishSubmitBtn">Publish</button>
         </form>
-        <button class="preview-modal-skip" id="trialModalSkip">Not yet</button>
+        <button class="preview-modal-skip" id="publishModalSkip">Not yet</button>
+    </div>
+</div>
+
+<!-- ════════ PUBLISH SUCCESS MODAL ════════ -->
+<div class="preview-modal-overlay" id="publishSuccessModal">
+    <div class="preview-modal" style="text-align:center;">
+        <div style="width:64px;height:64px;border-radius:50%;background:rgba(62,168,120,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+            <svg width="28" height="28" fill="none" viewBox="0 0 28 28"><path d="M7 14l5 5L21 9" stroke="#3ea878" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h3>Your site is live!</h3>
+        <p id="publishedUrlText" style="font-size:1.05rem;color:var(--ember);margin:12px 0 20px;word-break:break-all;"></p>
+        <a id="publishedLink" href="#" target="_blank" class="preview-modal-submit" style="display:inline-block;text-decoration:none;text-align:center;">Visit Your Site</a>
+        <button class="preview-modal-skip" id="successModalClose" style="margin-top:12px;">Keep Editing</button>
     </div>
 </div>
 
@@ -1399,7 +1412,8 @@
         currentHtml: '',
         refinementCount: 0,
         email: null,
-        trialStarted: false
+        trialStarted: false,
+        publishedSlug: null
     };
 
     function saveState() {
@@ -1660,7 +1674,7 @@
             if (!pState.email) {
                 document.getElementById('emailModal').classList.add('active');
             } else if (!pState.trialStarted) {
-                document.getElementById('trialModal').classList.add('active');
+                document.getElementById('publishModal').classList.add('active');
             }
             return;
         }
@@ -1691,7 +1705,7 @@
                     }, 1000);
                 } else {
                     setTimeout(function() {
-                        addChat('assistant', 'You\'ve used all your refinements. Start your free trial for unlimited changes!');
+                        addChat('assistant', 'You\'ve used all your refinements. Publish your site to unlock unlimited changes!');
                     }, 1000);
                 }
             }
@@ -1737,10 +1751,10 @@
         document.getElementById('previewChatPanel').classList.toggle('expanded');
     });
 
-    // ── Download (requires trial) ──
+    // ── Download (requires publish or email) ──
     document.getElementById('downloadHtmlBtn').addEventListener('click', function() {
-        if (!pState.trialStarted) {
-            document.getElementById('trialModal').classList.add('active');
+        if (!pState.email) {
+            document.getElementById('publishModal').classList.add('active');
             return;
         }
         var blob = new Blob([pState.currentHtml], { type: 'text/html' });
@@ -1750,10 +1764,23 @@
         a.click();
     });
 
-    // ── Start Trial button ──
-    document.getElementById('startTrialBtn').addEventListener('click', function() {
-        document.getElementById('trialModal').classList.add('active');
+    // ── Publish button ──
+    var publishBtnEl = document.getElementById('publishBtn');
+    publishBtnEl.addEventListener('click', function() {
+        // Pre-fill email if already captured
+        if (pState.email) {
+            document.getElementById('publishEmail').value = pState.email;
+            document.getElementById('publishEmailGroup').style.display = 'none';
+        }
+        document.getElementById('publishModal').classList.add('active');
     });
+
+    // Update publish button text if already published
+    function updatePublishBtn() {
+        if (pState.publishedSlug) {
+            publishBtnEl.innerHTML = 'Update Site <svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        }
+    }
 
     // ── Email Capture Modal ──
     document.getElementById('emailCaptureForm').addEventListener('submit', function(e) {
@@ -1766,7 +1793,6 @@
         updateCounter();
         addChat('assistant', 'Email saved! You have ' + (EMAIL_REFINEMENTS - pState.refinementCount) + ' more refinements.');
 
-        // Save lead to supabase
         fetch(SB_URL + '/rest/v1/client_leads', {
             method: 'POST',
             headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
@@ -1777,56 +1803,117 @@
         document.getElementById('emailModal').classList.remove('active');
     });
 
-    // ── Trial Signup Modal ──
-    document.getElementById('trialSignupForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        var name = document.getElementById('trialName').value.trim();
-        var email = document.getElementById('trialEmail').value.trim();
-        var phone = document.getElementById('trialPhone').value.trim();
-        var biz = document.getElementById('trialBusiness').value.trim();
-        if (!name || !email) return;
-
-        pState.email = email;
-        pState.trialStarted = true;
-        saveState();
-        document.getElementById('trialModal').classList.remove('active');
-        updateCounter();
-        addChat('assistant', 'Welcome to your 30-day trial! You now have unlimited refinements. We\'ll reach out within 24 hours to set up your live site.');
-
-        // Save to supabase
-        fetch(SB_URL + '/rest/v1/client_leads', {
-            method: 'POST',
-            headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-            body: JSON.stringify({
-                name: name, email: email, phone: phone || null, business_name: biz || null,
-                what_they_need: pState.businessDesc, source: source + '-preview-trial', status: 'trial'
-            })
-        }).catch(function() {});
-
-        // Notify Stuart
-        fetch('/api/notify-lead', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: name, email: email, phone: phone, business_name: biz, message: 'TRIAL SIGNUP from preview: ' + pState.businessDesc, source: source + '-preview-trial' })
-        }).catch(function() {});
-    });
-    document.getElementById('trialModalSkip').addEventListener('click', function() {
-        document.getElementById('trialModal').classList.remove('active');
+    // ── Publish Modal: Auto-generate slug from business name ──
+    document.getElementById('publishName').addEventListener('input', function() {
+        var slug = this.value.trim().toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-|-$/g, '')
+            .substring(0, 63);
+        document.getElementById('publishSlug').value = slug;
+        checkSlugAvailability(slug);
     });
 
-    // ── Pre-fill trial email if captured ──
-    document.getElementById('emailModal').addEventListener('transitionend', function() {});
-    // If email already captured, pre-fill trial form
-    function prefillTrial() {
-        if (pState.email) document.getElementById('trialEmail').value = pState.email;
+    // Manual slug edits also trigger check
+    document.getElementById('publishSlug').addEventListener('input', function() {
+        var slug = this.value.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').substring(0, 63);
+        this.value = slug;
+        checkSlugAvailability(slug);
+    });
+
+    var slugCheckTimer = null;
+    function checkSlugAvailability(slug) {
+        clearTimeout(slugCheckTimer);
+        var el = document.getElementById('slugStatus');
+        if (slug.length < 2) { el.textContent = ''; return; }
+        el.textContent = 'Checking...';
+        el.style.color = 'rgba(255,255,255,0.4)';
+        slugCheckTimer = setTimeout(async function() {
+            try {
+                var resp = await fetch('/api/publish-site?check=' + encodeURIComponent(slug));
+                var data = await resp.json();
+                if (pState.publishedSlug === slug) {
+                    el.textContent = slug + '.suitegpt.app — your current site';
+                    el.style.color = '#4a90d9';
+                } else if (data.available) {
+                    el.textContent = slug + '.suitegpt.app is available!';
+                    el.style.color = '#3ea878';
+                } else {
+                    el.textContent = 'Already taken. Try another name.';
+                    el.style.color = '#e8613a';
+                }
+            } catch(e) { el.textContent = ''; }
+        }, 400);
     }
-    var trialModalEl = document.getElementById('trialModal');
-    var origTrialShow = trialModalEl.classList;
-    new MutationObserver(function() {
-        if (trialModalEl.classList.contains('active')) prefillTrial();
-    }).observe(trialModalEl, { attributes: true, attributeFilter: ['class'] });
+
+    // ── Publish Form Submit ──
+    document.getElementById('publishForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        var email = pState.email || document.getElementById('publishEmail').value.trim();
+        var name = document.getElementById('publishName').value.trim();
+        var slug = document.getElementById('publishSlug').value.trim().toLowerCase();
+        var btn = document.getElementById('publishSubmitBtn');
+
+        if (!email || !slug) return;
+        if (!pState.currentHtml) { alert('No site to publish. Generate a preview first.'); return; }
+
+        btn.disabled = true;
+        btn.textContent = 'Publishing...';
+
+        try {
+            var isUpdate = pState.publishedSlug === slug;
+            var resp = await fetch('/api/publish-site', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: name || slug,
+                    slug: slug,
+                    description: pState.businessDesc || '',
+                    code: pState.currentHtml,
+                    email: email,
+                    source: source + '-publish',
+                    update: isUpdate
+                })
+            });
+            var data = await resp.json();
+            if (!data.success) throw new Error(data.error || 'Publish failed');
+
+            // Save state
+            pState.email = email;
+            pState.publishedSlug = slug;
+            pState.trialStarted = true; // Unlock unlimited refinements
+            saveState();
+
+            // Close publish modal, show success
+            document.getElementById('publishModal').classList.remove('active');
+            var url = 'https://' + slug + '.suitegpt.app';
+            document.getElementById('publishedUrlText').textContent = url;
+            document.getElementById('publishedLink').href = url;
+            document.getElementById('publishSuccessModal').classList.add('active');
+
+            updateCounter();
+            updatePublishBtn();
+            addChat('assistant', (isUpdate ? 'Site updated!' : 'Your site is live!') + ' Visit it at ' + url);
+
+        } catch(err) {
+            alert(err.message || 'Failed to publish. Please try again.');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Publish';
+        }
+    });
+
+    document.getElementById('publishModalSkip').addEventListener('click', function() {
+        document.getElementById('publishModal').classList.remove('active');
+    });
+    document.getElementById('successModalClose').addEventListener('click', function() {
+        document.getElementById('publishSuccessModal').classList.remove('active');
+    });
 
     // ── Load saved state on init ──
     loadState();
+    updatePublishBtn();
 })();
 </script>
 </body>
