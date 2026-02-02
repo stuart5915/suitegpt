@@ -345,6 +345,21 @@
             transition: opacity 0.4s;
         }
         .inline-preview-loading.done { opacity: 0; pointer-events: none; }
+        .inline-preview-progress {
+            position: absolute; top: 0; left: 0; height: 3px; z-index: 5;
+            background: linear-gradient(90deg, var(--ember), #e8a44a, var(--ember));
+            background-size: 200% 100%;
+            animation: progressShimmer 1.2s linear infinite;
+            width: 0; opacity: 0; transition: opacity 0.3s;
+            border-radius: 0 0 2px 2px;
+        }
+        .inline-preview-progress.active { width: 100%; opacity: 1; }
+        @keyframes progressShimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .inline-preview-body.updating { opacity: 0.6; transition: opacity 0.3s; }
+        .inline-preview-body:not(.updating) { transition: opacity 0.3s; }
         .inline-preview-actions {
             display: flex; gap: 10px; justify-content: center; margin-top: 16px;
         }
@@ -1001,7 +1016,8 @@
                     <span class="mockup-dot"></span>
                     <span class="inline-preview-url" id="inlinePreviewUrl">suitegpt.app/s/your-site</span>
                 </div>
-                <div class="inline-preview-body">
+                <div class="inline-preview-body" id="inlinePreviewBody">
+                    <div class="inline-preview-progress" id="inlineProgress"></div>
                     <iframe id="inlinePreviewIframe" sandbox="allow-scripts"></iframe>
                     <div class="inline-preview-loading" id="inlinePreviewLoading">
                         <div class="preview-loading-spinner"></div>
@@ -1871,12 +1887,19 @@
         }
     });
 
+    var inlineProgressEl = document.getElementById('inlineProgress');
+    var inlineBodyEl = document.getElementById('inlinePreviewBody');
+
     async function inlineRefine(request) {
         if (!pState.currentHtml) return;
         feedbackSendBtn.disabled = true;
         feedbackStatus.textContent = 'Applying changes...';
         feedbackStatus.style.color = 'rgba(255,255,255,0.5)';
-        inlineLoadingEl.classList.remove('done');
+        // Don't show loading overlay — keep current site visible
+        inlineProgressEl.classList.add('active');
+        inlineBodyEl.classList.add('updating');
+        // Disable chips while updating
+        document.querySelectorAll('.inline-feedback-chip').forEach(function(c) { c.disabled = true; });
 
         try {
             pState.refinementCount++;
@@ -1887,19 +1910,22 @@
             pState.currentHtml = html;
             saveState();
             inlineIframeEl.srcdoc = html;
-            inlineLoadingEl.classList.add('done');
+            inlineProgressEl.classList.remove('active');
+            inlineBodyEl.classList.remove('updating');
             feedbackStatus.textContent = 'Changes applied!';
             feedbackStatus.style.color = '#3ea878';
             feedbackInput.value = '';
             setTimeout(function() { feedbackStatus.textContent = ''; }, 3000);
         } catch(err) {
-            inlineLoadingEl.classList.add('done');
+            inlineProgressEl.classList.remove('active');
+            inlineBodyEl.classList.remove('updating');
             feedbackStatus.textContent = 'Something went wrong. Try again.';
             feedbackStatus.style.color = '#e8613a';
             pState.refinementCount--;
             console.error(err);
         } finally {
             feedbackSendBtn.disabled = false;
+            document.querySelectorAll('.inline-feedback-chip').forEach(function(c) { c.disabled = false; });
         }
     }
 
