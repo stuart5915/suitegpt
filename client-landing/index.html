@@ -385,6 +385,24 @@
         .inline-feedback-chip:hover {
             border-color: var(--ember); color: white; background: rgba(232,97,58,0.15);
         }
+        .color-preset-row {
+            display: flex; align-items: center; gap: 10px; justify-content: center;
+            margin-bottom: 14px; flex-wrap: wrap;
+        }
+        .color-preset-label {
+            font-size: 0.78rem; color: rgba(255,255,255,0.4); font-weight: 500;
+        }
+        .color-dot {
+            width: 28px; height: 28px; border-radius: 50%; border: 2.5px solid rgba(255,255,255,0.12);
+            cursor: pointer; transition: all 0.2s; padding: 0;
+        }
+        .color-dot:hover {
+            transform: scale(1.2); border-color: rgba(255,255,255,0.5);
+        }
+        .color-dot.active {
+            border-color: white; box-shadow: 0 0 0 2px rgba(255,255,255,0.3);
+            transform: scale(1.15);
+        }
         .inline-feedback-input {
             display: flex; gap: 8px; margin-bottom: 14px;
         }
@@ -431,6 +449,8 @@
             .inline-feedback { padding: 16px; }
             .inline-feedback-chips { gap: 6px; }
             .inline-feedback-chip { font-size: 0.78rem; padding: 7px 12px; }
+            .color-dot { width: 24px; height: 24px; }
+            .color-preset-row { gap: 7px; }
         }
 
         /* Keep old loading overlay hidden — replaced by inline */
@@ -1042,6 +1062,17 @@
                     <button class="inline-feedback-chip" data-feedback="Make it more modern and bold">Bolder design</button>
                     <button class="inline-feedback-chip" data-feedback="Change the layout completely">New layout</button>
                 </div>
+                <div class="color-preset-row" id="colorPresetRow" style="display:none;">
+                    <span class="color-preset-label">Quick palette:</span>
+                    <button class="color-dot" data-preset="warm" title="Warm" style="background:linear-gradient(135deg,#e8613a,#e8a44a)"></button>
+                    <button class="color-dot" data-preset="cool" title="Cool" style="background:linear-gradient(135deg,#3b82f6,#06b6d4)"></button>
+                    <button class="color-dot" data-preset="dark" title="Dark" style="background:linear-gradient(135deg,#a78bfa,#f472b6)"></button>
+                    <button class="color-dot" data-preset="forest" title="Forest" style="background:linear-gradient(135deg,#22c55e,#a3e635)"></button>
+                    <button class="color-dot" data-preset="pastel" title="Pastel" style="background:linear-gradient(135deg,#c4b5fd,#f9a8d4)"></button>
+                    <button class="color-dot" data-preset="earth" title="Earth" style="background:linear-gradient(135deg,#b45309,#65a30d)"></button>
+                    <button class="color-dot" data-preset="ocean" title="Ocean" style="background:linear-gradient(135deg,#0891b2,#2dd4bf)"></button>
+                    <button class="color-dot" data-preset="rose" title="Rose" style="background:linear-gradient(135deg,#e11d48,#f472b6)"></button>
+                </div>
                 <div class="inline-feedback-input">
                     <input type="text" id="feedbackInput" placeholder="Or type what you'd change..." maxlength="300">
                     <button id="feedbackSendBtn">Send</button>
@@ -1556,10 +1587,615 @@
     var FREE_REFINEMENTS = 2;
     var EMAIL_REFINEMENTS = 5;
 
+    // ══════════════════════════════════════════════════════
+    // ── TEMPLATES & MERGE ENGINE ──
+    // ══════════════════════════════════════════════════════
+
+    var ICON_SVG = {
+        star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+        check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>',
+        mail: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 4L12 13 2 4"/></svg>',
+        phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>',
+        mappin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+        clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+        grid: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>',
+        users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>',
+        zap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+        shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+        heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>',
+        camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>',
+        cart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>',
+        layout: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>',
+        bar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>',
+        calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+        dollar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>',
+        tool: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>'
+    };
+
+    var COLOR_PRESETS = {
+        warm:   { primary: '#e8613a', primaryLight: '#f0845e', secondary: '#1a1a1a', bg: '#fefefe', text: '#1a1a1a', textSoft: '#666', accent: '#e8a44a' },
+        cool:   { primary: '#3b82f6', primaryLight: '#60a5fa', secondary: '#0f172a', bg: '#f8fafc', text: '#0f172a', textSoft: '#64748b', accent: '#06b6d4' },
+        dark:   { primary: '#a78bfa', primaryLight: '#c4b5fd', secondary: '#0f0f0f', bg: '#111111', text: '#f1f1f1', textSoft: '#999', accent: '#f472b6' },
+        forest: { primary: '#22c55e', primaryLight: '#4ade80', secondary: '#14532d', bg: '#f0fdf4', text: '#14532d', textSoft: '#4d7c5f', accent: '#a3e635' },
+        pastel: { primary: '#a78bfa', primaryLight: '#c4b5fd', secondary: '#2e1065', bg: '#faf5ff', text: '#2e1065', textSoft: '#7c6b9e', accent: '#f9a8d4' },
+        earth:  { primary: '#b45309', primaryLight: '#d97706', secondary: '#292524', bg: '#faf7f2', text: '#292524', textSoft: '#78716c', accent: '#65a30d' },
+        ocean:  { primary: '#0891b2', primaryLight: '#22d3ee', secondary: '#164e63', bg: '#f0fdfa', text: '#134e4a', textSoft: '#5f8a8b', accent: '#2dd4bf' },
+        rose:   { primary: '#e11d48', primaryLight: '#fb7185', secondary: '#1c1917', bg: '#fff1f2', text: '#1c1917', textSoft: '#78716c', accent: '#f472b6' }
+    };
+
+    var TEMPLATES = {};
+
+    // ── LANDING TEMPLATE ──
+    TEMPLATES.landing = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{businessName}}</title>
+<link href="https://fonts.googleapis.com/css2?family={{fontFamily}}&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:{{primaryColor}};--primary-light:{{primaryLight}};--secondary:{{secondaryColor}};--bg:{{bgColor}};--text:{{textColor}};--text-soft:{{textSoft}};--accent:{{accentColor}}}
+html{scroll-behavior:smooth}
+body{font-family:'{{fontName}}', -apple-system, system-ui, sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:var(--primary);text-decoration:none}
+.nav{position:fixed;top:0;width:100%;z-index:100;padding:16px 24px;background:rgba(255,255,255,0.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,0.06);transition:all 0.3s}
+.nav-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.nav-brand{font-weight:800;font-size:1.1rem;color:var(--text);letter-spacing:-0.02em}
+.nav-links{display:flex;gap:28px;list-style:none}
+.nav-links a{color:var(--text-soft);font-size:0.88rem;font-weight:500;transition:color 0.2s}
+.nav-links a:hover{color:var(--primary)}
+.nav-cta{padding:10px 22px;background:var(--primary);color:#fff;border-radius:10px;font-weight:600;font-size:0.85rem;transition:all 0.3s}
+.nav-cta:hover{background:var(--primary-light);transform:translateY(-1px)}
+.hamburger{display:none;background:none;border:none;cursor:pointer;padding:4px}
+.hamburger svg{width:24px;height:24px;stroke:var(--text);stroke-width:2}
+@media(max-width:768px){
+.nav-links,.nav-cta{display:none}
+.hamburger{display:block}
+.nav-links.open{display:flex;flex-direction:column;position:absolute;top:100%;left:0;right:0;background:white;padding:20px 24px;box-shadow:0 8px 24px rgba(0,0,0,0.08);gap:16px}
+.nav-links.open+.nav-cta{display:inline-block;margin:0 24px 20px}
+}
+.hero{padding:140px 24px 80px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 20%,rgba(var(--primary-rgb,232,97,58),0.06),transparent);pointer-events:none}
+.hero h1{font-size:3.2rem;font-weight:800;letter-spacing:-0.03em;line-height:1.15;margin-bottom:20px;max-width:720px;margin-left:auto;margin-right:auto}
+.hero p{font-size:1.15rem;color:var(--text-soft);max-width:560px;margin:0 auto 36px;line-height:1.7}
+.cta-btn{display:inline-block;padding:16px 36px;background:var(--primary);color:#fff;border-radius:14px;font-weight:700;font-size:1rem;transition:all 0.3s;box-shadow:0 4px 16px rgba(var(--primary-rgb,232,97,58),0.3)}
+.cta-btn:hover{background:var(--primary-light);transform:translateY(-2px);box-shadow:0 8px 24px rgba(var(--primary-rgb,232,97,58),0.35)}
+.section{padding:80px 24px}
+.section-inner{max-width:1100px;margin:0 auto}
+.section-label{text-transform:uppercase;font-size:0.75rem;font-weight:700;letter-spacing:0.1em;color:var(--primary);margin-bottom:12px}
+.section h2{font-size:2rem;font-weight:800;letter-spacing:-0.02em;margin-bottom:16px}
+.section .desc{color:var(--text-soft);max-width:560px;margin-bottom:48px;font-size:1.02rem}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+@media(max-width:768px){.grid-3{grid-template-columns:1fr}.hero h1{font-size:2.2rem}.section{padding:60px 20px}}
+.card{background:white;border-radius:16px;padding:32px;border:1px solid rgba(0,0,0,0.06);transition:all 0.3s}
+.card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,0.08)}
+.card-icon{width:48px;height:48px;border-radius:14px;background:rgba(var(--primary-rgb,232,97,58),0.08);display:flex;align-items:center;justify-content:center;margin-bottom:18px;color:var(--primary)}
+.card-icon svg{width:22px;height:22px}
+.card h3{font-size:1.05rem;font-weight:700;margin-bottom:8px}
+.card p{font-size:0.9rem;color:var(--text-soft);line-height:1.65}
+.about-section{background:var(--secondary);color:#fff;border-radius:24px;max-width:1100px;margin:0 auto;padding:64px 48px}
+.about-section h2{color:#fff}
+.about-section .desc{color:rgba(255,255,255,0.7)}
+.testimonials{text-align:center}
+.testimonial-card{background:white;border-radius:16px;padding:28px;border:1px solid rgba(0,0,0,0.06)}
+.testimonial-card blockquote{font-size:1rem;font-style:italic;color:var(--text);margin-bottom:16px;line-height:1.7}
+.testimonial-card cite{font-size:0.85rem;color:var(--text-soft);font-style:normal;font-weight:600}
+.contact-section{text-align:center}
+.contact-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;max-width:700px;margin:0 auto 40px}
+@media(max-width:600px){.contact-grid{grid-template-columns:1fr}}
+.contact-item{display:flex;align-items:center;gap:12px;padding:16px;border-radius:12px;background:rgba(var(--primary-rgb,232,97,58),0.04)}
+.contact-item svg{width:20px;height:20px;color:var(--primary);flex-shrink:0}
+.contact-item span{font-size:0.88rem;color:var(--text-soft)}
+.contact-form{max-width:480px;margin:0 auto}
+.contact-form input,.contact-form textarea{width:100%;padding:14px 18px;border:1.5px solid rgba(0,0,0,0.1);border-radius:12px;font-family:inherit;font-size:0.92rem;margin-bottom:12px;transition:border-color 0.2s;outline:none;background:white;color:var(--text)}
+.contact-form input:focus,.contact-form textarea:focus{border-color:var(--primary)}
+.contact-form textarea{height:100px;resize:vertical}
+.contact-form button{width:100%;padding:16px;background:var(--primary);color:#fff;border:none;border-radius:12px;font-family:inherit;font-weight:700;font-size:0.95rem;cursor:pointer;transition:all 0.3s}
+.contact-form button:hover{background:var(--primary-light)}
+.footer{text-align:center;padding:40px 24px;border-top:1px solid rgba(0,0,0,0.06);color:var(--text-soft);font-size:0.82rem}
+[data-reveal]{opacity:0;transform:translateY(24px);transition:all 0.6s cubic-bezier(0.16,1,0.3,1)}
+[data-reveal].visible{opacity:1;transform:none}
+</style>
+</head>
+<body>
+<nav class="nav"><div class="nav-inner">
+<div class="nav-brand">{{businessName}}</div>
+<button class="hamburger" onclick="this.nextElementSibling.classList.toggle('open')"><svg fill="none" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/></svg></button>
+<div class="nav-links"><a href="#services">Services</a><a href="#about">About</a><a href="#contact">Contact</a></div>
+<a href="#contact" class="nav-cta">{{ctaText}}</a>
+</div></nav>
+<section class="hero">
+<h1>{{heroHeadline}}</h1>
+<p>{{heroSubtext}}</p>
+<a href="#contact" class="cta-btn">{{ctaText}}</a>
+</section>
+{{sectionsHtml}}
+<footer class="footer"><p>{{footerText}}</p></footer>
+<script>
+document.querySelectorAll('[data-reveal]').forEach(function(el){
+var o=new IntersectionObserver(function(e){e[0].isIntersecting&&(el.classList.add('visible'),o.disconnect())},{threshold:0.15});
+o.observe(el)});
+</script>
+</body>
+</html>`;
+
+    // ── PORTFOLIO TEMPLATE ──
+    TEMPLATES.portfolio = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{businessName}}</title>
+<link href="https://fonts.googleapis.com/css2?family={{fontFamily}}&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:{{primaryColor}};--primary-light:{{primaryLight}};--secondary:{{secondaryColor}};--bg:{{bgColor}};--text:{{textColor}};--text-soft:{{textSoft}};--accent:{{accentColor}}}
+html{scroll-behavior:smooth}
+body{font-family:'{{fontName}}', -apple-system, system-ui, sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:var(--primary);text-decoration:none}
+.nav{position:fixed;top:0;width:100%;z-index:100;padding:16px 24px;background:rgba(255,255,255,0.85);backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,0.06)}
+.nav-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.nav-brand{font-weight:800;font-size:1.1rem;letter-spacing:-0.02em}
+.nav-links{display:flex;gap:28px;list-style:none}
+.nav-links a{color:var(--text-soft);font-size:0.88rem;font-weight:500;transition:color 0.2s}
+.nav-links a:hover{color:var(--primary)}
+.hamburger{display:none;background:none;border:none;cursor:pointer;padding:4px}
+.hamburger svg{width:24px;height:24px;stroke:var(--text);stroke-width:2}
+@media(max-width:768px){.nav-links{display:none}.hamburger{display:block}.nav-links.open{display:flex;flex-direction:column;position:absolute;top:100%;left:0;right:0;background:white;padding:20px 24px;box-shadow:0 8px 24px rgba(0,0,0,0.08)}}
+.hero{padding:140px 24px 60px;text-align:center}
+.hero h1{font-size:3rem;font-weight:800;letter-spacing:-0.03em;margin-bottom:16px}
+.hero p{font-size:1.15rem;color:var(--text-soft);max-width:500px;margin:0 auto 32px}
+.section{padding:60px 24px}
+.section-inner{max-width:1100px;margin:0 auto}
+.section h2{font-size:1.8rem;font-weight:800;letter-spacing:-0.02em;margin-bottom:40px;text-align:center}
+.gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:768px){.gallery{grid-template-columns:repeat(2,1fr)}.hero h1{font-size:2.2rem}}
+@media(max-width:480px){.gallery{grid-template-columns:1fr}}
+.gallery-item{aspect-ratio:4/3;border-radius:14px;overflow:hidden;position:relative;cursor:pointer}
+.gallery-item .thumb{width:100%;height:100%;object-fit:cover;transition:transform 0.4s}
+.gallery-item:hover .thumb{transform:scale(1.05)}
+.gallery-item .overlay{position:absolute;inset:0;background:linear-gradient(transparent 40%,rgba(0,0,0,0.7));display:flex;flex-direction:column;justify-content:flex-end;padding:20px;opacity:0;transition:opacity 0.3s}
+.gallery-item:hover .overlay{opacity:1}
+.gallery-item .overlay h3{color:#fff;font-size:0.95rem;font-weight:700}
+.gallery-item .overlay p{color:rgba(255,255,255,0.7);font-size:0.8rem}
+.placeholder-img{width:100%;height:100%;background:linear-gradient(135deg,var(--primary),var(--accent))}
+.bio{display:flex;gap:48px;align-items:center;max-width:900px;margin:0 auto;padding:60px 24px}
+@media(max-width:768px){.bio{flex-direction:column;text-align:center}}
+.bio-photo{width:200px;height:200px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,var(--primary),var(--accent));display:flex;align-items:center;justify-content:center;color:#fff;font-size:3rem;font-weight:800}
+.bio-text h2{font-size:1.6rem;font-weight:800;margin-bottom:12px;text-align:left}
+.bio-text p{color:var(--text-soft);font-size:0.95rem;line-height:1.75}
+@media(max-width:768px){.bio-text h2{text-align:center}}
+.contact-section{text-align:center;padding:60px 24px}
+.cta-btn{display:inline-block;padding:16px 36px;background:var(--primary);color:#fff;border-radius:14px;font-weight:700;font-size:1rem;transition:all 0.3s}
+.cta-btn:hover{background:var(--primary-light);transform:translateY(-2px)}
+.footer{text-align:center;padding:40px 24px;border-top:1px solid rgba(0,0,0,0.06);color:var(--text-soft);font-size:0.82rem}
+[data-reveal]{opacity:0;transform:translateY(24px);transition:all 0.6s cubic-bezier(0.16,1,0.3,1)}
+[data-reveal].visible{opacity:1;transform:none}
+</style>
+</head>
+<body>
+<nav class="nav"><div class="nav-inner">
+<div class="nav-brand">{{businessName}}</div>
+<button class="hamburger" onclick="this.nextElementSibling.classList.toggle('open')"><svg fill="none" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/></svg></button>
+<div class="nav-links"><a href="#work">Work</a><a href="#about">About</a><a href="#contact">Contact</a></div>
+</div></nav>
+<section class="hero">
+<h1>{{heroHeadline}}</h1>
+<p>{{heroSubtext}}</p>
+</section>
+{{sectionsHtml}}
+<footer class="footer"><p>{{footerText}}</p></footer>
+<script>
+document.querySelectorAll('[data-reveal]').forEach(function(el){
+var o=new IntersectionObserver(function(e){e[0].isIntersecting&&(el.classList.add('visible'),o.disconnect())},{threshold:0.15});
+o.observe(el)});
+</script>
+</body>
+</html>`;
+
+    // ── BOOKING TEMPLATE ──
+    TEMPLATES.booking = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{businessName}}</title>
+<link href="https://fonts.googleapis.com/css2?family={{fontFamily}}&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:{{primaryColor}};--primary-light:{{primaryLight}};--secondary:{{secondaryColor}};--bg:{{bgColor}};--text:{{textColor}};--text-soft:{{textSoft}};--accent:{{accentColor}}}
+html{scroll-behavior:smooth}
+body{font-family:'{{fontName}}', -apple-system, system-ui, sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:var(--primary);text-decoration:none}
+.nav{position:fixed;top:0;width:100%;z-index:100;padding:16px 24px;background:rgba(255,255,255,0.85);backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,0.06)}
+.nav-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.nav-brand{font-weight:800;font-size:1.1rem}
+.nav-links{display:flex;gap:28px;list-style:none}
+.nav-links a{color:var(--text-soft);font-size:0.88rem;font-weight:500;transition:color 0.2s}
+.nav-links a:hover{color:var(--primary)}
+.nav-cta{padding:10px 22px;background:var(--primary);color:#fff;border-radius:10px;font-weight:600;font-size:0.85rem;transition:all 0.3s}
+.nav-cta:hover{background:var(--primary-light)}
+.hamburger{display:none;background:none;border:none;cursor:pointer;padding:4px}
+.hamburger svg{width:24px;height:24px;stroke:var(--text);stroke-width:2}
+@media(max-width:768px){.nav-links,.nav-cta{display:none}.hamburger{display:block}.nav-links.open{display:flex;flex-direction:column;position:absolute;top:100%;left:0;right:0;background:white;padding:20px 24px;box-shadow:0 8px 24px rgba(0,0,0,0.08)}}
+.hero{padding:140px 24px 80px;text-align:center}
+.hero h1{font-size:3rem;font-weight:800;letter-spacing:-0.03em;margin-bottom:16px}
+.hero p{font-size:1.15rem;color:var(--text-soft);max-width:520px;margin:0 auto 32px}
+.cta-btn{display:inline-block;padding:16px 36px;background:var(--primary);color:#fff;border-radius:14px;font-weight:700;font-size:1rem;transition:all 0.3s}
+.cta-btn:hover{background:var(--primary-light);transform:translateY(-2px)}
+.section{padding:80px 24px}
+.section-inner{max-width:1100px;margin:0 auto}
+.section h2{font-size:2rem;font-weight:800;text-align:center;margin-bottom:40px}
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+@media(max-width:768px){.pricing-grid{grid-template-columns:1fr}.hero h1{font-size:2.2rem}}
+.price-card{background:white;border-radius:16px;padding:36px 28px;border:1.5px solid rgba(0,0,0,0.06);text-align:center;transition:all 0.3s;position:relative}
+.price-card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,0.08)}
+.price-card.featured{border-color:var(--primary);box-shadow:0 8px 30px rgba(var(--primary-rgb,232,97,58),0.15)}
+.price-card .badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);padding:4px 16px;background:var(--primary);color:#fff;border-radius:20px;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em}
+.price-card h3{font-size:1.1rem;font-weight:700;margin-bottom:8px}
+.price-card .price{font-size:2.4rem;font-weight:800;color:var(--primary);margin-bottom:4px}
+.price-card .price span{font-size:0.85rem;font-weight:400;color:var(--text-soft)}
+.price-card .desc{color:var(--text-soft);font-size:0.88rem;margin-bottom:20px}
+.price-card ul{list-style:none;margin-bottom:24px;text-align:left}
+.price-card ul li{padding:6px 0;font-size:0.88rem;color:var(--text-soft);display:flex;align-items:center;gap:8px}
+.price-card ul li::before{content:'✓';color:var(--primary);font-weight:700}
+.price-card .card-cta{display:block;padding:14px;background:var(--primary);color:#fff;border-radius:12px;font-weight:700;font-size:0.9rem;transition:all 0.3s;text-align:center}
+.price-card .card-cta:hover{background:var(--primary-light)}
+.testimonials{text-align:center}
+.test-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+@media(max-width:768px){.test-grid{grid-template-columns:1fr}}
+.test-card{background:white;border-radius:16px;padding:28px;border:1px solid rgba(0,0,0,0.06);text-align:left}
+.test-card blockquote{font-size:0.95rem;font-style:italic;line-height:1.7;margin-bottom:16px;color:var(--text)}
+.test-card cite{font-size:0.82rem;color:var(--text-soft);font-style:normal;font-weight:600}
+.contact-section{text-align:center}
+.footer{text-align:center;padding:40px 24px;border-top:1px solid rgba(0,0,0,0.06);color:var(--text-soft);font-size:0.82rem}
+[data-reveal]{opacity:0;transform:translateY(24px);transition:all 0.6s cubic-bezier(0.16,1,0.3,1)}
+[data-reveal].visible{opacity:1;transform:none}
+</style>
+</head>
+<body>
+<nav class="nav"><div class="nav-inner">
+<div class="nav-brand">{{businessName}}</div>
+<button class="hamburger" onclick="this.nextElementSibling.classList.toggle('open')"><svg fill="none" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/></svg></button>
+<div class="nav-links"><a href="#services">Services</a><a href="#pricing">Pricing</a><a href="#reviews">Reviews</a><a href="#contact">Contact</a></div>
+<a href="#contact" class="nav-cta">Book Now</a>
+</div></nav>
+<section class="hero">
+<h1>{{heroHeadline}}</h1>
+<p>{{heroSubtext}}</p>
+<a href="#contact" class="cta-btn">{{ctaText}}</a>
+</section>
+{{sectionsHtml}}
+<footer class="footer"><p>{{footerText}}</p></footer>
+<script>
+document.querySelectorAll('[data-reveal]').forEach(function(el){
+var o=new IntersectionObserver(function(e){e[0].isIntersecting&&(el.classList.add('visible'),o.disconnect())},{threshold:0.15});
+o.observe(el)});
+</script>
+</body>
+</html>`;
+
+    // ── STORE TEMPLATE ──
+    TEMPLATES.store = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{businessName}}</title>
+<link href="https://fonts.googleapis.com/css2?family={{fontFamily}}&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:{{primaryColor}};--primary-light:{{primaryLight}};--secondary:{{secondaryColor}};--bg:{{bgColor}};--text:{{textColor}};--text-soft:{{textSoft}};--accent:{{accentColor}}}
+html{scroll-behavior:smooth}
+body{font-family:'{{fontName}}', -apple-system, system-ui, sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:var(--primary);text-decoration:none}
+.nav{position:fixed;top:0;width:100%;z-index:100;padding:16px 24px;background:rgba(255,255,255,0.85);backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,0.06)}
+.nav-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.nav-brand{font-weight:800;font-size:1.1rem}
+.nav-links{display:flex;gap:28px;list-style:none}
+.nav-links a{color:var(--text-soft);font-size:0.88rem;font-weight:500;transition:color 0.2s}
+.nav-links a:hover{color:var(--primary)}
+.hamburger{display:none;background:none;border:none;cursor:pointer;padding:4px}
+.hamburger svg{width:24px;height:24px;stroke:var(--text);stroke-width:2}
+@media(max-width:768px){.nav-links{display:none}.hamburger{display:block}.nav-links.open{display:flex;flex-direction:column;position:absolute;top:100%;left:0;right:0;background:white;padding:20px 24px;box-shadow:0 8px 24px rgba(0,0,0,0.08)}}
+.hero{padding:140px 24px 60px;text-align:center;background:linear-gradient(180deg,rgba(var(--primary-rgb,232,97,58),0.04),transparent)}
+.hero h1{font-size:3rem;font-weight:800;letter-spacing:-0.03em;margin-bottom:16px}
+.hero p{font-size:1.15rem;color:var(--text-soft);max-width:520px;margin:0 auto 32px}
+.cta-btn{display:inline-block;padding:16px 36px;background:var(--primary);color:#fff;border-radius:14px;font-weight:700;font-size:1rem;transition:all 0.3s}
+.cta-btn:hover{background:var(--primary-light);transform:translateY(-2px)}
+.section{padding:80px 24px}
+.section-inner{max-width:1100px;margin:0 auto}
+.section h2{font-size:2rem;font-weight:800;text-align:center;margin-bottom:40px}
+.product-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+@media(max-width:768px){.product-grid{grid-template-columns:repeat(2,1fr)}.hero h1{font-size:2.2rem}}
+@media(max-width:480px){.product-grid{grid-template-columns:1fr}}
+.product-card{background:white;border-radius:16px;overflow:hidden;border:1px solid rgba(0,0,0,0.06);transition:all 0.3s}
+.product-card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,0.08)}
+.product-img{aspect-ratio:4/3;background:linear-gradient(135deg,var(--primary),var(--accent));display:flex;align-items:center;justify-content:center}
+.product-img svg{width:40px;height:40px;color:rgba(255,255,255,0.6)}
+.product-info{padding:20px}
+.product-info h3{font-size:1rem;font-weight:700;margin-bottom:6px}
+.product-info .price{font-size:1.15rem;font-weight:800;color:var(--primary);margin-bottom:8px}
+.product-info p{font-size:0.85rem;color:var(--text-soft);margin-bottom:14px}
+.product-info .add-btn{display:block;text-align:center;padding:12px;background:var(--primary);color:#fff;border-radius:10px;font-weight:600;font-size:0.85rem;transition:all 0.2s}
+.product-info .add-btn:hover{background:var(--primary-light)}
+.features-strip{display:flex;justify-content:center;gap:48px;flex-wrap:wrap;padding:40px 24px;border-top:1px solid rgba(0,0,0,0.06)}
+.features-strip .feat{display:flex;align-items:center;gap:10px;font-size:0.88rem;color:var(--text-soft);font-weight:500}
+.features-strip .feat svg{width:20px;height:20px;color:var(--primary)}
+.footer{text-align:center;padding:40px 24px;border-top:1px solid rgba(0,0,0,0.06);color:var(--text-soft);font-size:0.82rem}
+[data-reveal]{opacity:0;transform:translateY(24px);transition:all 0.6s cubic-bezier(0.16,1,0.3,1)}
+[data-reveal].visible{opacity:1;transform:none}
+</style>
+</head>
+<body>
+<nav class="nav"><div class="nav-inner">
+<div class="nav-brand">{{businessName}}</div>
+<button class="hamburger" onclick="this.nextElementSibling.classList.toggle('open')"><svg fill="none" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/></svg></button>
+<div class="nav-links"><a href="#products">Products</a><a href="#about">About</a><a href="#contact">Contact</a></div>
+</div></nav>
+<section class="hero">
+<h1>{{heroHeadline}}</h1>
+<p>{{heroSubtext}}</p>
+<a href="#products" class="cta-btn">{{ctaText}}</a>
+</section>
+{{sectionsHtml}}
+<footer class="footer"><p>{{footerText}}</p></footer>
+<script>
+document.querySelectorAll('[data-reveal]').forEach(function(el){
+var o=new IntersectionObserver(function(e){e[0].isIntersecting&&(el.classList.add('visible'),o.disconnect())},{threshold:0.15});
+o.observe(el)});
+</script>
+</body>
+</html>`;
+
+    // ── DASHBOARD TEMPLATE ──
+    TEMPLATES.dashboard = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{businessName}}</title>
+<link href="https://fonts.googleapis.com/css2?family={{fontFamily}}&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:{{primaryColor}};--primary-light:{{primaryLight}};--secondary:{{secondaryColor}};--bg:{{bgColor}};--text:{{textColor}};--text-soft:{{textSoft}};--accent:{{accentColor}}}
+body{font-family:'{{fontName}}', -apple-system, system-ui, sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;display:flex;min-height:100vh}
+a{color:var(--primary);text-decoration:none}
+.sidebar{width:240px;background:var(--secondary);color:#fff;padding:24px 0;flex-shrink:0;position:fixed;top:0;bottom:0;left:0;overflow-y:auto}
+.sidebar-brand{padding:0 24px 28px;font-weight:800;font-size:1.1rem;border-bottom:1px solid rgba(255,255,255,0.08)}
+.sidebar-nav{list-style:none;padding:16px 12px}
+.sidebar-nav li{margin-bottom:2px}
+.sidebar-nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:rgba(255,255,255,0.6);font-size:0.88rem;font-weight:500;transition:all 0.2s}
+.sidebar-nav a:hover,.sidebar-nav a.active{background:rgba(255,255,255,0.08);color:#fff}
+.sidebar-nav svg{width:18px;height:18px}
+.main{margin-left:240px;flex:1;padding:28px 32px}
+@media(max-width:768px){.sidebar{display:none}.main{margin-left:0}}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
+.topbar h1{font-size:1.6rem;font-weight:800;letter-spacing:-0.02em}
+.topbar-actions{display:flex;gap:10px}
+.topbar-btn{padding:10px 20px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-family:inherit;font-weight:600;font-size:0.85rem;cursor:pointer;transition:all 0.2s}
+.topbar-btn:hover{background:var(--primary-light)}
+.topbar-btn.ghost{background:transparent;border:1.5px solid rgba(0,0,0,0.1);color:var(--text)}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+@media(max-width:900px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+.stat-card{background:white;border-radius:14px;padding:20px;border:1px solid rgba(0,0,0,0.06)}
+.stat-card .label{font-size:0.78rem;color:var(--text-soft);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px}
+.stat-card .value{font-size:1.8rem;font-weight:800;letter-spacing:-0.02em}
+.stat-card .change{font-size:0.78rem;margin-top:4px;font-weight:600}
+.stat-card .change.up{color:#22c55e}
+.stat-card .change.down{color:#ef4444}
+.panel{background:white;border-radius:16px;border:1px solid rgba(0,0,0,0.06);margin-bottom:20px}
+.panel-header{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid rgba(0,0,0,0.06)}
+.panel-header h2{font-size:1.05rem;font-weight:700}
+.panel-body{padding:20px 22px}
+table{width:100%;border-collapse:collapse}
+table th{text-align:left;font-size:0.78rem;font-weight:700;color:var(--text-soft);text-transform:uppercase;letter-spacing:0.05em;padding:10px 0;border-bottom:1px solid rgba(0,0,0,0.06)}
+table td{padding:12px 0;font-size:0.9rem;border-bottom:1px solid rgba(0,0,0,0.03)}
+.status{display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:600}
+.status.active{background:rgba(34,197,94,0.1);color:#16a34a}
+.status.pending{background:rgba(234,179,8,0.1);color:#ca8a04}
+.status.done{background:rgba(59,130,246,0.1);color:#2563eb}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+<div class="sidebar-brand">{{businessName}}</div>
+<ul class="sidebar-nav">
+{{sidebarHtml}}
+</ul>
+</aside>
+<div class="main">
+<div class="topbar">
+<h1>{{heroHeadline}}</h1>
+<div class="topbar-actions"><button class="topbar-btn">{{ctaText}}</button></div>
+</div>
+{{sectionsHtml}}
+</div>
+</body>
+</html>`;
+
+    // ══════════════════════════════════════════════════════
+    // ── SECTION RENDERERS ──
+    // ══════════════════════════════════════════════════════
+
+    function escHtml(s) {
+        if (!s) return '';
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function iconHtml(name) {
+        return ICON_SVG[name] || ICON_SVG.star;
+    }
+
+    var SECTION_RENDERERS = {
+        services: function(s) {
+            var cards = (s.items || []).map(function(item) {
+                return '<div class="card" data-reveal><div class="card-icon">' + iconHtml(item.icon) + '</div><h3>' + escHtml(item.title) + '</h3><p>' + escHtml(item.desc) + '</p></div>';
+            }).join('');
+            return '<section class="section" id="services" data-reveal><div class="section-inner"><div class="section-label">' + escHtml(s.label || 'Services') + '</div><h2>' + escHtml(s.title) + '</h2>' + (s.text ? '<p class="desc">' + escHtml(s.text) + '</p>' : '') + '<div class="grid-3">' + cards + '</div></div></section>';
+        },
+        about: function(s) {
+            return '<section class="section" data-reveal><div class="about-section"><h2>' + escHtml(s.title) + '</h2><p class="desc">' + escHtml(s.text) + '</p></div></section>';
+        },
+        testimonials: function(s) {
+            var cards = (s.items || []).map(function(item) {
+                return '<div class="test-card" data-reveal><blockquote>"' + escHtml(item.quote) + '"</blockquote><cite>' + escHtml(item.author) + '</cite></div>';
+            }).join('');
+            return '<section class="section testimonials" id="reviews" data-reveal><div class="section-inner"><h2>' + escHtml(s.title) + '</h2><div class="test-grid">' + cards + '</div></div></section>';
+        },
+        contact: function(s) {
+            var infoHtml = '';
+            if (s.address || s.phone || s.hours) {
+                var items = [];
+                if (s.address) items.push('<div class="contact-item">' + iconHtml('mappin') + '<span>' + escHtml(s.address) + '</span></div>');
+                if (s.phone) items.push('<div class="contact-item">' + iconHtml('phone') + '<span>' + escHtml(s.phone) + '</span></div>');
+                if (s.hours) items.push('<div class="contact-item">' + iconHtml('clock') + '<span>' + escHtml(s.hours) + '</span></div>');
+                infoHtml = '<div class="contact-grid">' + items.join('') + '</div>';
+            }
+            var formHtml = s.showForm !== false ? '<div class="contact-form"><input type="text" placeholder="Your name"><input type="email" placeholder="Your email"><textarea placeholder="Your message"></textarea><button type="button">Send Message</button></div>' : '';
+            return '<section class="section contact-section" id="contact" data-reveal><div class="section-inner"><h2>' + escHtml(s.title) + '</h2>' + infoHtml + formHtml + '</div></section>';
+        },
+        pricing: function(s) {
+            var cards = (s.items || []).map(function(item, i) {
+                var featured = item.featured || i === 1;
+                var feats = (item.features || []).map(function(f) { return '<li>' + escHtml(f) + '</li>'; }).join('');
+                return '<div class="price-card' + (featured ? ' featured' : '') + '" data-reveal>' +
+                    (featured ? '<div class="badge">Popular</div>' : '') +
+                    '<h3>' + escHtml(item.title) + '</h3>' +
+                    '<div class="price">' + escHtml(item.price) + (item.period ? '<span>/' + escHtml(item.period) + '</span>' : '') + '</div>' +
+                    (item.desc ? '<p class="desc">' + escHtml(item.desc) + '</p>' : '') +
+                    '<ul>' + feats + '</ul>' +
+                    '<a href="#contact" class="card-cta">' + escHtml(item.cta || 'Get Started') + '</a></div>';
+            }).join('');
+            return '<section class="section" id="pricing" data-reveal><div class="section-inner"><h2>' + escHtml(s.title) + '</h2><div class="pricing-grid">' + cards + '</div></div></section>';
+        },
+        gallery: function(s) {
+            var items = (s.items || []).map(function(item) {
+                return '<div class="gallery-item" data-reveal><div class="placeholder-img thumb"></div><div class="overlay"><h3>' + escHtml(item.title) + '</h3><p>' + escHtml(item.desc) + '</p></div></div>';
+            }).join('');
+            return '<section class="section" id="work" data-reveal><div class="section-inner"><h2>' + escHtml(s.title) + '</h2><div class="gallery">' + items + '</div></div></section>';
+        },
+        bio: function(s) {
+            var initials = (s.name || '').split(' ').map(function(w) { return w[0] || ''; }).join('').toUpperCase();
+            return '<section class="bio" id="about" data-reveal><div class="bio-photo">' + escHtml(initials) + '</div><div class="bio-text"><h2>' + escHtml(s.title || 'About') + '</h2><p>' + escHtml(s.text) + '</p></div></section>';
+        },
+        products: function(s) {
+            var cards = (s.items || []).map(function(item) {
+                return '<div class="product-card" data-reveal><div class="product-img">' + iconHtml(item.icon || 'cart') + '</div><div class="product-info"><h3>' + escHtml(item.title) + '</h3>' + (item.price ? '<div class="price">' + escHtml(item.price) + '</div>' : '') + '<p>' + escHtml(item.desc) + '</p><a href="#" class="add-btn">Add to Cart</a></div></div>';
+            }).join('');
+            return '<section class="section" id="products" data-reveal><div class="section-inner"><h2>' + escHtml(s.title) + '</h2><div class="product-grid">' + cards + '</div></div></section>';
+        },
+        features: function(s) {
+            var items = (s.items || []).map(function(item) {
+                return '<div class="feat">' + iconHtml(item.icon) + '<span>' + escHtml(item.title) + '</span></div>';
+            }).join('');
+            return '<div class="features-strip" data-reveal>' + items + '</div>';
+        },
+        stats: function(s) {
+            var cards = (s.items || []).map(function(item) {
+                return '<div class="stat-card"><div class="label">' + escHtml(item.title) + '</div><div class="value">' + escHtml(item.value) + '</div>' + (item.change ? '<div class="change ' + (item.change.startsWith('+') ? 'up' : item.change.startsWith('-') ? 'down' : '') + '">' + escHtml(item.change) + '</div>' : '') + '</div>';
+            }).join('');
+            return '<div class="stats-grid">' + cards + '</div>';
+        },
+        table: function(s) {
+            var cols = s.columns || [];
+            var rows = s.rows || [];
+            var thead = '<tr>' + cols.map(function(c) { return '<th>' + escHtml(c) + '</th>'; }).join('') + '</tr>';
+            var tbody = rows.map(function(row) {
+                return '<tr>' + row.map(function(cell, i) {
+                    if (i === cols.length - 1 && /active|pending|done|completed/i.test(cell)) {
+                        var cls = /active/i.test(cell) ? 'active' : /pending/i.test(cell) ? 'pending' : 'done';
+                        return '<td><span class="status ' + cls + '">' + escHtml(cell) + '</span></td>';
+                    }
+                    return '<td>' + escHtml(cell) + '</td>';
+                }).join('') + '</tr>';
+            }).join('');
+            return '<div class="panel"><div class="panel-header"><h2>' + escHtml(s.title) + '</h2></div><div class="panel-body"><table><thead>' + thead + '</thead><tbody>' + tbody + '</tbody></table></div></div>';
+        }
+    };
+
+    // ── MERGE ENGINE ──
+
+    function mergeTemplate(config) {
+        var tpl = TEMPLATES[config.template] || TEMPLATES.landing;
+        var fontName = (config.font || 'Inter:wght@400;600;700;800').split(':')[0].replace(/\+/g, ' ');
+        var html = tpl;
+
+        var replacements = {
+            '{{businessName}}': escHtml(config.businessName || 'My Business'),
+            '{{tagline}}': escHtml(config.tagline || ''),
+            '{{primaryColor}}': config.colors.primary,
+            '{{primaryLight}}': config.colors.primaryLight,
+            '{{secondaryColor}}': config.colors.secondary,
+            '{{bgColor}}': config.colors.bg,
+            '{{textColor}}': config.colors.text,
+            '{{textSoft}}': config.colors.textSoft,
+            '{{accentColor}}': config.colors.accent,
+            '{{fontFamily}}': config.font || 'Inter:wght@400;600;700;800',
+            '{{fontName}}': fontName,
+            '{{heroHeadline}}': escHtml(config.hero.headline),
+            '{{heroSubtext}}': escHtml(config.hero.subtext),
+            '{{ctaText}}': escHtml(config.hero.cta || 'Get Started'),
+            '{{footerText}}': config.footer || ''
+        };
+
+        for (var key in replacements) {
+            html = html.split(key).join(replacements[key]);
+        }
+
+        // Build sections
+        var sectionsHtml = (config.sections || []).map(function(s) {
+            var renderer = SECTION_RENDERERS[s.id];
+            if (renderer) return renderer(s);
+            // Default: simple text section
+            return '<section class="section" data-reveal><div class="section-inner"><h2>' + escHtml(s.title) + '</h2><p class="desc">' + escHtml(s.text || '') + '</p></div></section>';
+        }).join('\n');
+
+        html = html.split('{{sectionsHtml}}').join(sectionsHtml);
+
+        // Dashboard sidebar
+        if (config.template === 'dashboard' && config.sidebar) {
+            var sidebarHtml = (config.sidebar || []).map(function(item, i) {
+                return '<li><a href="#" class="' + (i === 0 ? 'active' : '') + '">' + iconHtml(item.icon) + ' ' + escHtml(item.label) + '</a></li>';
+            }).join('');
+            html = html.split('{{sidebarHtml}}').join(sidebarHtml);
+        } else {
+            html = html.split('{{sidebarHtml}}').join('<li><a href="#" class="active">' + iconHtml('layout') + ' Dashboard</a></li>');
+        }
+
+        return html;
+    }
+
+    function deepMerge(target, delta) {
+        var result = {};
+        for (var k in target) result[k] = target[k];
+        for (var k in delta) {
+            if (delta[k] && typeof delta[k] === 'object' && !Array.isArray(delta[k]) && target[k] && typeof target[k] === 'object' && !Array.isArray(target[k])) {
+                result[k] = deepMerge(target[k], delta[k]);
+            } else {
+                result[k] = delta[k];
+            }
+        }
+        return result;
+    }
+
+    function extractJson(text) {
+        try { return JSON.parse(text); } catch(e) {}
+        var m = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        if (m) try { return JSON.parse(m[1]); } catch(e) {}
+        var start = text.indexOf('{');
+        var end = text.lastIndexOf('}');
+        if (start >= 0 && end > start) try { return JSON.parse(text.substring(start, end + 1)); } catch(e) {}
+        return null;
+    }
+
+
     // ── Preview State ──
     var pState = {
         businessDesc: '',
         currentHtml: '',
+        currentConfig: null,
         refinementCount: 0,
         email: null,
         trialStarted: false,
@@ -1676,37 +2312,49 @@
         generatePreview(desc);
     });
 
-    function buildPrompt(desc) {
-        return 'You are generating a professional single-page business landing website.\n\n' +
-            'BUSINESS DESCRIPTION: "' + desc + '"\n\n' +
-            'Requirements:\n' +
-            '- Complete self-contained HTML file with inline CSS and JavaScript\n' +
-            '- Modern, professional design with clean typography\n' +
-            '- Responsive mobile-first layout\n' +
-            '- Include these sections: hero with compelling headline, services/features, about, contact form\n' +
-            '- Infer appropriate color scheme from business type\n' +
-            '- Use a text-based logo placeholder with the business name\n' +
-            '- Add subtle hover effects and scroll animations\n' +
-            '- Professional call-to-action buttons\n' +
-            '- Working contact form with inline validation (no backend needed)\n' +
-            '- Use Google Fonts (1-2 fonts max, import via link tag)\n' +
-            '- NO external JavaScript dependencies\n' +
-            '- Make it look like a real, professional business website\n' +
-            '- Use high-quality placeholder images via gradient backgrounds or CSS shapes\n\n' +
-            'Style Guidelines:\n' +
-            '- Generous whitespace and clear visual hierarchy\n' +
-            '- Subtle gradients, shadows, and rounded corners\n' +
-            '- Mobile-friendly navigation with hamburger on small screens\n' +
-            '- Semantic HTML with accessibility in mind\n\n' +
-            'Output ONLY the complete HTML code. Start with <!DOCTYPE html> and end with </html>.\n' +
-            'No markdown, no explanations, no code fences.';
+    // ── Template-based prompt (single call, returns JSON) ──
+    function buildTemplatePrompt(desc) {
+        var tplKeys = Object.keys(TEMPLATES).join(', ');
+        var iconKeys = Object.keys(ICON_SVG).join(', ');
+        return 'You are a website configuration engine. Given a business description (which may be vague, a rant, or a clear spec), output a JSON object to configure a website template.\n\n' +
+            'BUSINESS: "' + desc + '"\n\n' +
+            'Available templates: ' + tplKeys + '\n' +
+            '- landing: hero + services grid + about + contact (restaurants, salons, agencies, freelancers, general businesses)\n' +
+            '- portfolio: gallery grid + project cards + bio (photographers, designers, artists)\n' +
+            '- booking: service list + pricing cards + booking CTA + testimonials (gyms, clinics, coaches)\n' +
+            '- store: product grid + featured items (bakeries, shops, boutiques)\n' +
+            '- dashboard: sidebar + stats cards + data tables (inventory, scheduling, tools)\n\n' +
+            'Available icon names: ' + iconKeys + '\n\n' +
+            'Section id values that have renderers: services, about, testimonials, contact, pricing, gallery, bio, products, features, stats, table\n\n' +
+            'Choose the best template. Infer business name, colors, and all content from the description.\n\n' +
+            'Output ONLY valid JSON:\n' +
+            '{"template":"landing","businessName":"string","tagline":"string","colors":{"primary":"#hex","primaryLight":"#hex","secondary":"#hex","bg":"#hex","text":"#hex","textSoft":"#hex","accent":"#hex"},"font":"Google+Font:wght@400;700","hero":{"headline":"string","subtext":"string","cta":"string"},"sections":[{"id":"services","title":"string","label":"string","text":"string","items":[{"icon":"iconname","title":"string","desc":"string"}]},{"id":"about","title":"string","text":"string"},{"id":"contact","title":"string","address":"string","phone":"string","hours":"string","showForm":true}],"footer":"string"}\n\n' +
+            'For pricing sections: items need {title, price, period, desc, features:["..."], cta}\n' +
+            'For gallery sections: items need {title, desc}\n' +
+            'For bio sections: include {name, title, text}\n' +
+            'For products: items need {icon, title, price, desc}\n' +
+            'For stats: items need {title, value, change}\n' +
+            'For table: include {columns:["..."], rows:[["..."]...]}\n' +
+            'For dashboard template, also include: "sidebar":[{"icon":"iconname","label":"string"}]\n\n' +
+            'No markdown, no explanation, no code fences. Output raw JSON only.';
     }
 
-    function buildRefinementPrompt(html, request) {
-        return 'Here is a business website HTML:\n\n' + html + '\n\n' +
+    // ── Delta refinement prompt ──
+    function buildRefinementPromptNew(config, request) {
+        return 'Current website config:\n' + JSON.stringify(config, null, 2) + '\n\n' +
             'USER REQUEST: "' + request + '"\n\n' +
-            'Modify the HTML according to the user\'s request. Maintain all existing functionality and content unless specifically asked to change it. Keep the same overall structure and quality.\n\n' +
-            'Output ONLY the complete modified HTML, starting with <!DOCTYPE html> and ending with </html>. No markdown, no explanations, no code fences.';
+            'Output ONLY a JSON delta — include ONLY the fields that need to change.\n' +
+            'Examples:\n' +
+            '- Change headline: {"hero":{"headline":"New Headline"}}\n' +
+            '- Change colors: {"colors":{"primary":"#3498db","accent":"#e74c3c"}}\n' +
+            '- Update sections: {"sections":[...full updated sections array...]}\n' +
+            '- Switch template: {"template":"portfolio",...all fields needed...}\n\n' +
+            'Output raw JSON only. No markdown, no explanation.';
+    }
+
+    // ── Legacy full-HTML prompt (fallback) ──
+    function buildPromptLegacy(desc) {
+        return 'You are generating a professional single-page business landing website.\n\nBUSINESS DESCRIPTION: "' + desc + '"\n\nRequirements:\n- Complete self-contained HTML file with inline CSS and JavaScript\n- Modern, professional design with clean typography\n- Responsive mobile-first layout\n- Include: hero, services, about, contact form\n- Infer appropriate color scheme\n- Use Google Fonts\n- NO external JS dependencies\n\nOutput ONLY the complete HTML code. Start with <!DOCTYPE html> and end with </html>. No markdown, no explanations, no code fences.';
     }
 
     function extractHtml(text) {
@@ -1717,14 +2365,15 @@
         return null;
     }
 
-    async function callGemini(prompt) {
+    async function callGemini(prompt, opts) {
+        var config = Object.assign({ temperature: 0.7, maxOutputTokens: 1024 }, opts || {});
         var resp = await fetch('/api/gemini', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 prompt: prompt,
                 model: 'gemini-2.0-flash',
-                generationConfig: { temperature: 0.8, maxOutputTokens: 16000 },
+                generationConfig: config,
                 enableSearch: false
             })
         });
@@ -1733,23 +2382,7 @@
         return data.text || '';
     }
 
-    var hints = ['Analyzing your business', 'Choosing colors and layout', 'Writing content', 'Adding final touches'];
-
-    // Detect if input is vague/rant vs a clear site description, and refine if needed
-    async function clarifyInput(raw) {
-        // Short, direct descriptions (under 80 chars with business-y keywords) skip clarification
-        if (raw.length < 80 && /\b(shop|store|restaurant|salon|bakery|gym|studio|clinic|agency|freelance|photographer|plumber|landscap|consult|coach)\b/i.test(raw)) {
-            return raw;
-        }
-        // If it's clearly a rant, problem statement, or vague — refine it
-        var resp = await callGemini(
-            'The user typed the following into a website builder. Your job is to interpret what they need and output a SHORT, clear business site description (1-2 sentences max). Extract: what the business is, what it does, location if mentioned, and key features they need.\n\n' +
-            'If the input is already a clear business description, output it as-is. Only rewrite if the input is vague, emotional, a rant, or a problem statement.\n\n' +
-            'IMPORTANT: Output ONLY the refined description, nothing else. No quotes, no explanation.\n\n' +
-            'User input: "' + raw + '"'
-        );
-        return (resp || '').trim() || raw;
-    }
+    var hints = ['Choosing the best layout', 'Picking colors and fonts', 'Writing your content', 'Almost ready'];
 
     // Inline preview elements
     var inlinePreviewEl = document.getElementById('inlinePreview');
@@ -1762,47 +2395,59 @@
     async function generatePreview(desc) {
         pState.refinementCount = 0;
         pState.currentHtml = '';
+        pState.currentConfig = null;
 
         // Show inline preview card with loading state
         inlinePreviewEl.classList.add('active');
         inlineLoadingEl.classList.remove('done');
         inlineActionsEl.style.display = 'none';
         document.getElementById('inlineFeedback').style.display = 'none';
+        document.getElementById('colorPresetRow').style.display = 'none';
         inlineUrlEl.textContent = 'generating...';
 
         // Scroll to the inline preview
         inlinePreviewEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
         var hi = 0;
-        inlineHintEl.textContent = 'Understanding what you need';
+        inlineHintEl.textContent = hints[0];
         var hintTimer = setInterval(function() {
             hi++;
             if (hi < hints.length) inlineHintEl.textContent = hints[hi];
-        }, 3000);
+        }, 2000);
 
         try {
-            // Clarify vague/rant input into a proper site description
-            desc = await clarifyInput(desc);
-            pState.businessDesc = desc;
-            inlineHintEl.textContent = hints[0];
+            // Single Gemini call: template selection + content (replaces clarifyInput + buildPrompt)
+            var text = await callGemini(buildTemplatePrompt(desc), { maxOutputTokens: 1500 });
+            var config = extractJson(text);
 
-            var text = await callGemini(buildPrompt(desc));
-            var html = extractHtml(text);
-            if (!html) throw new Error('No HTML generated');
+            if (config && config.template && config.hero) {
+                // Template path — fast!
+                pState.currentConfig = config;
+                pState.businessDesc = config.businessName || desc;
+                pState.currentHtml = mergeTemplate(config);
+            } else {
+                // Fallback: full HTML generation (slower but reliable)
+                console.warn('Template JSON parse failed, falling back to full HTML generation');
+                var fallbackText = await callGemini(buildPromptLegacy(desc), { maxOutputTokens: 16000 });
+                var html = extractHtml(fallbackText);
+                if (!html) throw new Error('No HTML generated');
+                pState.businessDesc = desc;
+                pState.currentHtml = html;
+            }
 
-            pState.currentHtml = html;
             saveState();
             clearInterval(hintTimer);
 
             // Show the generated site in the inline iframe
-            inlineIframeEl.srcdoc = html;
-            var slug = desc.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-').substring(0, 30);
+            inlineIframeEl.srcdoc = pState.currentHtml;
+            var slug = (pState.businessDesc || desc).toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-').substring(0, 30);
             inlineUrlEl.textContent = 'suitegpt.app/s/' + slug;
 
             // Fade out loading, show actions + feedback
             inlineLoadingEl.classList.add('done');
             inlineActionsEl.style.display = 'flex';
             document.getElementById('inlineFeedback').style.display = 'block';
+            document.getElementById('colorPresetRow').style.display = pState.currentConfig ? 'flex' : 'none';
 
             // Log lead to supabase (fire-and-forget)
             fetch(SB_URL + '/rest/v1/client_leads', {
@@ -1876,6 +2521,23 @@
         });
     });
 
+    // ── Color dot clicks: instant palette swap ──
+    document.querySelectorAll('.color-dot').forEach(function(dot) {
+        dot.addEventListener('click', function() {
+            var preset = dot.getAttribute('data-preset');
+            if (!pState.currentConfig || !COLOR_PRESETS[preset]) return;
+            pState.currentConfig.colors = COLOR_PRESETS[preset];
+            pState.currentHtml = mergeTemplate(pState.currentConfig);
+            saveState();
+            inlineIframeEl.srcdoc = pState.currentHtml;
+            document.querySelectorAll('.color-dot').forEach(function(d) { d.classList.remove('active'); });
+            dot.classList.add('active');
+            feedbackStatus.textContent = 'Colors updated!';
+            feedbackStatus.style.color = '#3ea878';
+            setTimeout(function() { feedbackStatus.textContent = ''; }, 2000);
+        });
+    });
+
     feedbackSendBtn.addEventListener('click', function() {
         var val = feedbackInput.value.trim();
         if (val) inlineRefine(val);
@@ -1890,26 +2552,72 @@
     var inlineProgressEl = document.getElementById('inlineProgress');
     var inlineBodyEl = document.getElementById('inlinePreviewBody');
 
+    // ── Color preset names mapped to keywords ──
+    var COLOR_KEYWORDS = {
+        red: 'rose', blue: 'cool', green: 'forest', purple: 'pastel',
+        orange: 'warm', dark: 'dark', light: 'warm', teal: 'ocean',
+        pink: 'rose', navy: 'cool', brown: 'earth', warm: 'warm',
+        cool: 'cool', pastel: 'pastel', earth: 'earth', ocean: 'ocean',
+        forest: 'forest', rose: 'rose'
+    };
+
     async function inlineRefine(request) {
         if (!pState.currentHtml) return;
+
+        // ── Instant: color changes (no AI call) ──
+        if (pState.currentConfig) {
+            var isColorRequest = /\b(color|colours?|theme|scheme|palette)\b/i.test(request);
+            if (isColorRequest) {
+                var lower = request.toLowerCase();
+                for (var kw in COLOR_KEYWORDS) {
+                    if (lower.indexOf(kw) !== -1 && COLOR_PRESETS[COLOR_KEYWORDS[kw]]) {
+                        pState.currentConfig.colors = COLOR_PRESETS[COLOR_KEYWORDS[kw]];
+                        pState.currentHtml = mergeTemplate(pState.currentConfig);
+                        saveState();
+                        inlineIframeEl.srcdoc = pState.currentHtml;
+                        feedbackStatus.textContent = 'Colors updated!';
+                        feedbackStatus.style.color = '#3ea878';
+                        feedbackInput.value = '';
+                        setTimeout(function() { feedbackStatus.textContent = ''; }, 2000);
+                        return;
+                    }
+                }
+            }
+        }
+
         feedbackSendBtn.disabled = true;
         feedbackStatus.textContent = 'Applying changes...';
         feedbackStatus.style.color = 'rgba(255,255,255,0.5)';
-        // Don't show loading overlay — keep current site visible
         inlineProgressEl.classList.add('active');
         inlineBodyEl.classList.add('updating');
-        // Disable chips while updating
         document.querySelectorAll('.inline-feedback-chip').forEach(function(c) { c.disabled = true; });
 
         try {
             pState.refinementCount++;
-            var text = await callGemini(buildRefinementPrompt(pState.currentHtml, request));
-            var html = extractHtml(text);
-            if (!html) throw new Error('No HTML');
 
-            pState.currentHtml = html;
+            if (pState.currentConfig) {
+                // Template path: delta JSON refinement
+                var text = await callGemini(buildRefinementPromptNew(pState.currentConfig, request), { maxOutputTokens: 1500 });
+                var delta = extractJson(text);
+                if (delta) {
+                    pState.currentConfig = deepMerge(pState.currentConfig, delta);
+                    pState.currentHtml = mergeTemplate(pState.currentConfig);
+                } else {
+                    throw new Error('Delta parse failed');
+                }
+            } else {
+                // Legacy path: full HTML refinement
+                var text = await callGemini(
+                    'Here is a business website HTML:\n\n' + pState.currentHtml + '\n\nUSER REQUEST: "' + request + '"\n\nModify the HTML. Output ONLY the complete modified HTML.',
+                    { maxOutputTokens: 16000 }
+                );
+                var html = extractHtml(text);
+                if (!html) throw new Error('No HTML');
+                pState.currentHtml = html;
+            }
+
             saveState();
-            inlineIframeEl.srcdoc = html;
+            inlineIframeEl.srcdoc = pState.currentHtml;
             inlineProgressEl.classList.remove('active');
             inlineBodyEl.classList.remove('updating');
             feedbackStatus.textContent = 'Changes applied!';
@@ -1974,11 +2682,24 @@
         sendBtn.disabled = true;
 
         try {
-            var text = await callGemini(buildRefinementPrompt(pState.currentHtml, request));
-            var html = extractHtml(text);
-            if (!html) throw new Error('No HTML');
-
-            pState.currentHtml = html;
+            if (pState.currentConfig) {
+                var text = await callGemini(buildRefinementPromptNew(pState.currentConfig, request), { maxOutputTokens: 1500 });
+                var delta = extractJson(text);
+                if (delta) {
+                    pState.currentConfig = deepMerge(pState.currentConfig, delta);
+                    pState.currentHtml = mergeTemplate(pState.currentConfig);
+                } else {
+                    throw new Error('Delta parse failed');
+                }
+            } else {
+                var text = await callGemini(
+                    'Here is a business website HTML:\n\n' + pState.currentHtml + '\n\nUSER REQUEST: "' + request + '"\n\nModify the HTML. Output ONLY the complete modified HTML.',
+                    { maxOutputTokens: 16000 }
+                );
+                var html = extractHtml(text);
+                if (!html) throw new Error('No HTML');
+                pState.currentHtml = html;
+            }
             saveState();
             iframeEl.srcdoc = html;
             iframeLoading.classList.remove('active');
