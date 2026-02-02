@@ -351,6 +351,47 @@
         .inline-preview-actions .btn-main { padding: 14px 28px; }
         .inline-preview-actions .btn-ghost { padding: 14px 20px; }
 
+        .inline-feedback {
+            margin-top: 16px; background: var(--ink); border-radius: 16px;
+            padding: 20px; text-align: center;
+        }
+        .inline-feedback-question {
+            color: white; font-weight: 600; font-size: 0.95rem; margin-bottom: 12px;
+        }
+        .inline-feedback-chips {
+            display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 14px;
+        }
+        .inline-feedback-chip {
+            padding: 8px 16px; border-radius: 20px; border: 1.5px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.8);
+            font-family: inherit; font-size: 0.82rem; font-weight: 500;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .inline-feedback-chip:hover {
+            border-color: var(--ember); color: white; background: rgba(232,97,58,0.15);
+        }
+        .inline-feedback-input {
+            display: flex; gap: 8px; margin-bottom: 14px;
+        }
+        .inline-feedback-input input {
+            flex: 1; padding: 12px 16px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.06); color: white; font-family: inherit; font-size: 0.88rem;
+            outline: none; transition: border-color 0.2s;
+        }
+        .inline-feedback-input input::placeholder { color: rgba(255,255,255,0.3); }
+        .inline-feedback-input input:focus { border-color: var(--ember); }
+        .inline-feedback-input button {
+            padding: 12px 20px; border-radius: 12px; border: none;
+            background: var(--ember); color: white; font-family: inherit;
+            font-weight: 700; font-size: 0.85rem; cursor: pointer; white-space: nowrap;
+            transition: opacity 0.2s;
+        }
+        .inline-feedback-input button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .inline-feedback-input button:hover:not(:disabled) { opacity: 0.9; }
+        .inline-feedback-status {
+            font-size: 0.8rem; color: rgba(255,255,255,0.4); min-height: 1.2em; margin-bottom: 10px;
+        }
+
         .preview-loading-spinner {
             width: 40px; height: 40px; border-radius: 50%;
             border: 3px solid rgba(255,255,255,0.08);
@@ -372,6 +413,9 @@
             .inline-preview-actions { flex-direction: column; }
             .inline-preview-actions .btn-main,
             .inline-preview-actions .btn-ghost { width: 100%; justify-content: center; text-align: center; }
+            .inline-feedback { padding: 16px; }
+            .inline-feedback-chips { gap: 6px; }
+            .inline-feedback-chip { font-size: 0.78rem; padding: 7px 12px; }
         }
 
         /* Keep old loading overlay hidden — replaced by inline */
@@ -971,8 +1015,22 @@
                     Get this site
                     <svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </button>
-                <button class="btn-ghost" id="editFirstBtn">Edit first</button>
-                <button class="btn-ghost" id="regenerateBtn">Regenerate</button>
+            </div>
+            <div class="inline-feedback" id="inlineFeedback" style="display:none;">
+                <div class="inline-feedback-question">Want any changes?</div>
+                <div class="inline-feedback-chips" id="feedbackChips">
+                    <button class="inline-feedback-chip" data-feedback="Different colors">Different colors</button>
+                    <button class="inline-feedback-chip" data-feedback="Make it simpler and cleaner">Simpler</button>
+                    <button class="inline-feedback-chip" data-feedback="Make it look more professional and corporate">More professional</button>
+                    <button class="inline-feedback-chip" data-feedback="Add more sections and content">More content</button>
+                    <button class="inline-feedback-chip" data-feedback="Make it more modern and bold">Bolder design</button>
+                    <button class="inline-feedback-chip" data-feedback="Change the layout completely">New layout</button>
+                </div>
+                <div class="inline-feedback-input">
+                    <input type="text" id="feedbackInput" placeholder="Or type what you'd change..." maxlength="300">
+                    <button id="feedbackSendBtn">Send</button>
+                </div>
+                <div class="inline-feedback-status" id="feedbackStatus"></div>
             </div>
         </div>
     </div>
@@ -1693,6 +1751,7 @@
         inlinePreviewEl.classList.add('active');
         inlineLoadingEl.classList.remove('done');
         inlineActionsEl.style.display = 'none';
+        document.getElementById('inlineFeedback').style.display = 'none';
         inlineUrlEl.textContent = 'generating...';
 
         // Scroll to the inline preview
@@ -1724,9 +1783,10 @@
             var slug = desc.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-').substring(0, 30);
             inlineUrlEl.textContent = 'suitegpt.app/s/' + slug;
 
-            // Fade out loading, show actions
+            // Fade out loading, show actions + feedback
             inlineLoadingEl.classList.add('done');
             inlineActionsEl.style.display = 'flex';
+            document.getElementById('inlineFeedback').style.display = 'block';
 
             // Log lead to supabase (fire-and-forget)
             fetch(SB_URL + '/rest/v1/client_leads', {
@@ -1770,12 +1830,10 @@
     // ── "Get this site" button (inline → publish modal directly) ──
     document.getElementById('inlinePublishBtn').addEventListener('click', function() {
         if (!pState.currentHtml) return;
-        // Pre-fill email if already captured
         if (pState.email) {
             document.getElementById('publishEmail').value = pState.email;
             document.getElementById('publishEmailGroup').style.display = 'none';
         }
-        // Auto-generate slug from business description if slug is empty
         var slugEl = document.getElementById('publishSlug');
         if (!slugEl.value && pState.businessDesc) {
             var autoSlug = pState.businessDesc.trim().toLowerCase()
@@ -1790,15 +1848,60 @@
         document.getElementById('publishModal').classList.add('active');
     });
 
-    // ── "Edit first" button (inline → fullscreen refine mode) ──
-    document.getElementById('editFirstBtn').addEventListener('click', function() {
-        if (pState.currentHtml) showPreview(pState.currentHtml, pState.businessDesc);
+    // ── Inline feedback: quick chips ──
+    var feedbackEl = document.getElementById('inlineFeedback');
+    var feedbackInput = document.getElementById('feedbackInput');
+    var feedbackSendBtn = document.getElementById('feedbackSendBtn');
+    var feedbackStatus = document.getElementById('feedbackStatus');
+
+    document.querySelectorAll('.inline-feedback-chip').forEach(function(chip) {
+        chip.addEventListener('click', function() {
+            inlineRefine(chip.getAttribute('data-feedback'));
+        });
     });
 
-    // ── Regenerate button ──
-    document.getElementById('regenerateBtn').addEventListener('click', function() {
-        if (pState.businessDesc) generatePreview(pState.businessDesc);
+    feedbackSendBtn.addEventListener('click', function() {
+        var val = feedbackInput.value.trim();
+        if (val) inlineRefine(val);
     });
+    feedbackInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            var val = feedbackInput.value.trim();
+            if (val) inlineRefine(val);
+        }
+    });
+
+    async function inlineRefine(request) {
+        if (!pState.currentHtml) return;
+        feedbackSendBtn.disabled = true;
+        feedbackStatus.textContent = 'Applying changes...';
+        feedbackStatus.style.color = 'rgba(255,255,255,0.5)';
+        inlineLoadingEl.classList.remove('done');
+
+        try {
+            pState.refinementCount++;
+            var text = await callGemini(buildRefinementPrompt(pState.currentHtml, request));
+            var html = extractHtml(text);
+            if (!html) throw new Error('No HTML');
+
+            pState.currentHtml = html;
+            saveState();
+            inlineIframeEl.srcdoc = html;
+            inlineLoadingEl.classList.add('done');
+            feedbackStatus.textContent = 'Changes applied!';
+            feedbackStatus.style.color = '#3ea878';
+            feedbackInput.value = '';
+            setTimeout(function() { feedbackStatus.textContent = ''; }, 3000);
+        } catch(err) {
+            inlineLoadingEl.classList.add('done');
+            feedbackStatus.textContent = 'Something went wrong. Try again.';
+            feedbackStatus.style.color = '#e8613a';
+            pState.refinementCount--;
+            console.error(err);
+        } finally {
+            feedbackSendBtn.disabled = false;
+        }
+    }
 
     function updateCounter() {
         var limit = getLimit();
