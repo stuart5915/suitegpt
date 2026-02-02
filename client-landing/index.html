@@ -11,6 +11,10 @@
     <meta property="og:description" content="Describe any business problem in plain English. Get a custom working solution within 24 hours. Free dashboard, unlimited chat support.">
     <meta property="og:image" content="https://clients.suitegpt.app/assets/og-clients.png">
     <meta property="og:site_name" content="SUITE Clients">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="SUITE Clients | Your AI Dev Team — $40/mo">
+    <meta name="twitter:description" content="Describe any business problem in plain English. Get a custom working solution within 24 hours.">
+    <meta name="twitter:image" content="https://clients.suitegpt.app/assets/og-clients.png">
     <link rel="icon" type="image/png" href="/suitegpt-logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=General+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -99,7 +103,34 @@
             cursor: pointer; transition: all 0.25s; text-decoration: none;
         }
         .nav-cta:hover { background: var(--ember); transform: translateY(-1px); box-shadow: var(--shadow-glow); }
-        @media (max-width: 768px) { .nav-links { display: none; } }
+        .nav-hamburger {
+            display: none; width: 40px; height: 40px; border-radius: 10px;
+            border: 1px solid var(--border); background: var(--glass);
+            backdrop-filter: blur(8px); cursor: pointer;
+            align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .nav-hamburger svg { width: 18px; height: 18px; color: var(--text); }
+        .nav-hamburger .icon-close { display: none; }
+        .nav-hamburger.open .icon-menu { display: none; }
+        .nav-hamburger.open .icon-close { display: block; }
+        @media (max-width: 768px) {
+            .nav-hamburger { display: flex; }
+            .nav-links {
+                display: none; position: absolute; top: 100%; left: 16px; right: 16px;
+                background: rgba(250,248,244,0.96); backdrop-filter: blur(24px);
+                -webkit-backdrop-filter: blur(24px);
+                border: 1px solid var(--border); border-radius: 14px;
+                padding: 12px 0; flex-direction: column; gap: 0;
+                box-shadow: var(--shadow-med); margin-top: 8px;
+            }
+            .nav-links.open { display: flex; }
+            .nav-links a {
+                padding: 12px 24px; font-size: 0.92rem;
+                border-bottom: 1px solid var(--border);
+            }
+            .nav-links a:last-child { border-bottom: none; }
+            .nav-links a:hover { background: rgba(0,0,0,0.02); }
+        }
 
         /* ════════════ HERO ════════════ */
         .hero {
@@ -782,6 +813,10 @@
             <a href="#showcase">Work</a>
             <a href="#pricing">Pricing</a>
         </div>
+        <button class="nav-hamburger" id="navHamburger" aria-label="Toggle menu">
+            <svg class="icon-menu" fill="none" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <svg class="icon-close" fill="none" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
         <a href="#form" class="nav-cta">Start Free</a>
     </div>
 </nav>
@@ -1358,6 +1393,7 @@
                 <textarea class="form-textarea" id="whatTheyNeed" name="whatTheyNeed" required placeholder="Tell us about your business and what kind of app, website, or tool would help you..."></textarea>
             </div>
             <button type="submit" class="form-submit" id="submitBtn">Send My Request</button>
+            <p style="text-align:center;margin-top:12px;font-size:0.78rem;color:rgba(255,255,255,0.3);">By submitting, you agree to our <a href="/client-landing/privacy.html" style="color:rgba(255,255,255,0.5);text-decoration:underline;">Privacy Policy</a>.</p>
         </form>
 
         <div id="formSuccess" class="form-success">
@@ -1372,6 +1408,7 @@
 
 <footer class="footer">
     <p>Powered by <a href="https://suitegpt.app" target="_blank" style="color:rgba(255,255,255,0.6);text-decoration:none;font-weight:700;transition:color .2s">SUITE</a> &mdash; Anyone Can Build. Everyone Gets Paid.</p>
+    <p style="margin-top:8px;"><a href="/client-landing/privacy.html" style="color:rgba(255,255,255,0.35);text-decoration:none;font-size:0.78rem;">Privacy Policy</a></p>
 </footer>
 
 <script>
@@ -1390,6 +1427,20 @@
     var nav = document.getElementById('nav');
     window.addEventListener('scroll', function() {
         nav.classList.toggle('scrolled', window.scrollY > 40);
+    });
+
+    // ── Mobile hamburger ──
+    var hamburger = document.getElementById('navHamburger');
+    var navLinks = document.querySelector('.nav-links');
+    hamburger.addEventListener('click', function() {
+        hamburger.classList.toggle('open');
+        navLinks.classList.toggle('open');
+    });
+    navLinks.querySelectorAll('a').forEach(function(link) {
+        link.addEventListener('click', function() {
+            hamburger.classList.remove('open');
+            navLinks.classList.remove('open');
+        });
     });
 
 
