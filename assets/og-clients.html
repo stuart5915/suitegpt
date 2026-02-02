@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    width: 1200px; height: 630px; overflow: hidden;
+    font-family: 'General Sans', -apple-system, sans-serif;
+    background: #faf8f4;
+    position: relative;
+}
+
+/* Grain */
+body::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 100;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.03'/%3E%3C/svg%3E");
+    background-size: 256px;
+}
+
+/* Orbs */
+.orb {
+    position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.35;
+}
+.orb-1 {
+    width: 500px; height: 500px; top: -120px; right: -60px;
+    background: radial-gradient(circle, rgba(232,97,58,0.4), transparent 70%);
+}
+.orb-2 {
+    width: 400px; height: 400px; bottom: -100px; left: -80px;
+    background: radial-gradient(circle, rgba(232,164,74,0.35), transparent 70%);
+}
+.orb-3 {
+    width: 300px; height: 300px; top: 200px; left: 500px;
+    background: radial-gradient(circle, rgba(139,108,193,0.2), transparent 70%);
+}
+
+/* Grid */
+.grid-bg {
+    position: absolute; inset: 0;
+    background-image:
+        linear-gradient(rgba(0,0,0,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,0,0,0.025) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black, transparent);
+    -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black, transparent);
+}
+
+.content {
+    position: relative; z-index: 10;
+    width: 100%; height: 100%;
+    display: flex; padding: 56px 64px;
+    gap: 56px;
+}
+
+/* Left side */
+.left {
+    flex: 1; display: flex; flex-direction: column; justify-content: center;
+}
+.brand {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 32px;
+}
+.brand-mark {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: linear-gradient(135deg, #e8613a, #e8a44a);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.02em;
+}
+.brand-text {
+    font-weight: 700; font-size: 0.95rem; color: #1a1a1a; letter-spacing: -0.01em;
+}
+h1 {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 3.4rem; line-height: 1.05; letter-spacing: -0.03em;
+    color: #0f0f0f; margin-bottom: 20px;
+}
+h1 em {
+    font-style: italic; color: #e8613a;
+}
+.sub {
+    font-size: 1.15rem; color: #555; line-height: 1.6; max-width: 400px; margin-bottom: 32px;
+}
+.pills {
+    display: flex; gap: 10px;
+}
+.pill {
+    padding: 8px 18px; border-radius: 100px;
+    font-size: 0.82rem; font-weight: 600;
+    background: rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.07);
+    color: #555;
+}
+.pill-green {
+    background: rgba(62,168,120,0.1); border-color: rgba(62,168,120,0.2);
+    color: #2d8a5e;
+}
+
+/* Right side — mini mockups */
+.right {
+    width: 440px; display: flex; flex-direction: column; justify-content: center; gap: 14px;
+}
+.mock {
+    border-radius: 12px; overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.04);
+}
+.mock-bar {
+    display: flex; align-items: center; gap: 5px;
+    padding: 8px 12px; background: #1a1a1a;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.dot { width: 7px; height: 7px; border-radius: 50%; }
+.dot:nth-child(1) { background: #ff5f57; }
+.dot:nth-child(2) { background: #ffbd2e; }
+.dot:nth-child(3) { background: #28c840; }
+.mock-url {
+    margin-left: 10px; font-size: 0.58rem; color: #666;
+    font-family: 'SF Mono', monospace; letter-spacing: 0.02em;
+}
+.mock-body { padding: 12px; background: #0f0f0f; }
+
+/* Dashboard mock */
+.dash-row { display: flex; gap: 6px; margin-bottom: 8px; }
+.dash-stat {
+    flex: 1; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 6px; padding: 8px 10px;
+}
+.dash-val { font-size: 0.9rem; font-weight: 700; }
+.dash-lbl { font-size: 0.45rem; color: #555; font-weight: 500; margin-top: 1px; }
+.dash-bars { display: flex; align-items: flex-end; gap: 4px; height: 36px; }
+.dash-bar { flex: 1; border-radius: 2px 2px 0 0; }
+
+/* Booking mock */
+.book-slots { display: flex; flex-direction: column; gap: 3px; }
+.book-slot {
+    border-radius: 0 5px 5px 0; padding: 4px 8px;
+}
+.book-slot-n { font-size: 0.48rem; font-weight: 700; }
+.book-slot-d { font-size: 0.36rem; opacity: 0.6; }
+
+/* Store mock */
+.store-body { padding: 10px; background: #f5f4f0; display: flex; gap: 6px; }
+.store-card {
+    flex: 1; background: #fff; border-radius: 4px; border: 1px solid #e8e6e2;
+    overflow: hidden;
+}
+.store-img { height: 40px; background: #eae8e3; }
+.store-info { padding: 5px 6px; }
+.store-brand { font-size: 0.26rem; color: #999; font-weight: 600; letter-spacing: 0.08em; }
+.store-name { font-size: 0.4rem; font-weight: 800; color: #111; margin-top: 1px; }
+.store-price { font-size: 0.42rem; font-weight: 700; color: #111; margin-top: 3px; }
+
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=General+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="grid-bg"></div>
+
+    <div class="content">
+        <div class="left">
+            <div class="brand">
+                <div class="brand-mark">S</div>
+                <div class="brand-text">SUITE Clients</div>
+            </div>
+            <h1>Your own <em>AI dev team</em><br>for <em>$40/month</em></h1>
+            <p class="sub">Describe any business problem in plain English. Get a custom working solution within 24 hours.</p>
+            <div class="pills">
+                <span class="pill pill-green">Free 30-day trial</span>
+                <span class="pill">&lt;24h turnaround</span>
+                <span class="pill">Unlimited changes</span>
+            </div>
+        </div>
+
+        <div class="right">
+            <!-- Dashboard -->
+            <div class="mock">
+                <div class="mock-bar">
+                    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                    <span class="mock-url">yourbusiness.suitegpt.app/dashboard</span>
+                </div>
+                <div class="mock-body">
+                    <div class="dash-row">
+                        <div class="dash-stat"><div class="dash-val" style="color:#3ea878;">$12,840</div><div class="dash-lbl">Revenue</div></div>
+                        <div class="dash-stat"><div class="dash-val" style="color:#4a90d9;">284</div><div class="dash-lbl">Orders</div></div>
+                        <div class="dash-stat"><div class="dash-val" style="color:#e8a44a;">96.2%</div><div class="dash-lbl">Satisfaction</div></div>
+                    </div>
+                    <div class="dash-bars">
+                        <div class="dash-bar" style="height:45%;background:#e8613a;"></div>
+                        <div class="dash-bar" style="height:65%;background:#e8a44a;"></div>
+                        <div class="dash-bar" style="height:55%;background:#e8613a;"></div>
+                        <div class="dash-bar" style="height:80%;background:#3ea878;"></div>
+                        <div class="dash-bar" style="height:70%;background:#4a90d9;"></div>
+                        <div class="dash-bar" style="height:90%;background:#e8613a;"></div>
+                        <div class="dash-bar" style="height:60%;background:#8b6cc1;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Booking -->
+            <div class="mock">
+                <div class="mock-bar">
+                    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                    <span class="mock-url">glowstudio.suitegpt.app/bookings</span>
+                </div>
+                <div class="mock-body">
+                    <div class="book-slots">
+                        <div class="book-slot" style="background:linear-gradient(90deg,rgba(217,70,219,0.12),rgba(217,70,219,0.03));border-left:2px solid #d946db;"><div class="book-slot-n" style="color:#d946db;">Sarah K.</div><div class="book-slot-d" style="color:#889;">Color + Cut — 90min</div></div>
+                        <div class="book-slot" style="background:linear-gradient(90deg,rgba(244,114,182,0.12),rgba(244,114,182,0.03));border-left:2px solid #f472b6;"><div class="book-slot-n" style="color:#f472b6;">Maria L.</div><div class="book-slot-d" style="color:#889;">Balayage — 120min</div></div>
+                        <div class="book-slot" style="background:linear-gradient(90deg,rgba(167,139,250,0.12),rgba(167,139,250,0.03));border-left:2px solid #a78bfa;"><div class="book-slot-n" style="color:#a78bfa;">Jess W.</div><div class="book-slot-d" style="color:#889;">Blowout — 45min</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Store -->
+            <div class="mock">
+                <div class="mock-bar">
+                    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                    <span class="mock-url">protogolf.suitegpt.app/shop</span>
+                </div>
+                <div class="store-body">
+                    <div class="store-card">
+                        <div class="store-img"></div>
+                        <div class="store-info">
+                            <div class="store-brand">PROTO GOLF</div>
+                            <div class="store-name">ROUGH MILL</div>
+                            <div class="store-price">$105</div>
+                        </div>
+                    </div>
+                    <div class="store-card">
+                        <div class="store-img"></div>
+                        <div class="store-info">
+                            <div class="store-brand">PROTO GOLF</div>
+                            <div class="store-name">CENTRE BLADE</div>
+                            <div class="store-price">$105</div>
+                        </div>
+                    </div>
+                    <div class="store-card">
+                        <div class="store-img"></div>
+                        <div class="store-info">
+                            <div class="store-brand">PROTO GOLF</div>
+                            <div class="store-name">LONG NECK</div>
+                            <div class="store-price">$110</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
