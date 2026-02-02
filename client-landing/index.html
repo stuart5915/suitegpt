@@ -954,7 +954,7 @@
                     <span class="mockup-dot"></span>
                     <span class="mockup-dot"></span>
                     <span class="mockup-dot"></span>
-                    <span class="inline-preview-url" id="inlinePreviewUrl">your-site.suitegpt.app</span>
+                    <span class="inline-preview-url" id="inlinePreviewUrl">suitegpt.app/s/your-site</span>
                 </div>
                 <div class="inline-preview-body">
                     <iframe id="inlinePreviewIframe" sandbox="allow-scripts"></iframe>
@@ -1043,7 +1043,7 @@
 <div class="preview-modal-overlay" id="publishModal">
     <div class="preview-modal">
         <h3>Publish your website</h3>
-        <p>Choose a subdomain and your site goes live instantly.</p>
+        <p>Pick a name and your site goes live instantly.</p>
         <form id="publishForm">
             <div class="form-group" id="publishEmailGroup">
                 <label class="form-label">Email *</label>
@@ -1056,8 +1056,8 @@
             <div class="form-group">
                 <label class="form-label">Your URL</label>
                 <div style="display:flex;align-items:center;gap:6px;">
+                    <span style="color:rgba(255,255,255,0.35);font-size:0.85rem;white-space:nowrap;">suitegpt.app/s/</span>
                     <input class="form-input" type="text" id="publishSlug" placeholder="janes-bakery" style="flex:1;" required>
-                    <span style="color:rgba(255,255,255,0.35);font-size:0.85rem;white-space:nowrap;">.suitegpt.app</span>
                 </div>
                 <div id="slugStatus" style="font-size:0.78rem;margin-top:6px;min-height:1.2em;"></div>
             </div>
@@ -1700,7 +1700,7 @@
             // Show the generated site in the inline iframe
             inlineIframeEl.srcdoc = html;
             var slug = desc.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-').substring(0, 30);
-            inlineUrlEl.textContent = slug + '.suitegpt.app';
+            inlineUrlEl.textContent = 'suitegpt.app/s/' + slug;
 
             // Fade out loading, show actions
             inlineLoadingEl.classList.add('done');
@@ -1945,10 +1945,10 @@
                 var resp = await fetch('/api/publish-site?check=' + encodeURIComponent(slug));
                 var data = await resp.json();
                 if (pState.publishedSlug === slug) {
-                    el.textContent = slug + '.suitegpt.app — your current site';
+                    el.textContent = 'suitegpt.app/s/' + slug + ' — your current site';
                     el.style.color = '#4a90d9';
                 } else if (data.available) {
-                    el.textContent = slug + '.suitegpt.app is available!';
+                    el.textContent = 'suitegpt.app/s/' + slug + ' is available!';
                     el.style.color = '#3ea878';
                 } else {
                     el.textContent = 'Already taken. Try another name.';
@@ -1998,7 +1998,7 @@
 
             // Close publish modal, show success
             document.getElementById('publishModal').classList.remove('active');
-            var url = 'https://' + slug + '.suitegpt.app';
+            var url = 'https://suitegpt.app/s/' + slug;
             document.getElementById('publishedUrlText').textContent = url;
             document.getElementById('publishedLink').href = url;
             document.getElementById('publishSuccessModal').classList.add('active');

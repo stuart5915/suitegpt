@@ -1,27 +1,14 @@
-// Wildcard subdomain handler — serves published sites from Supabase user_apps table
-// Requested via [name].suitegpt.app → vercel.json rewrite → this function
+// Path-based site handler — serves published sites from Supabase user_apps table
+// Requested via suitegpt.app/s/[slug] → vercel.json rewrite → this function?slug=[slug]
 
 import { createClient } from '@supabase/supabase-js';
 
-const RESERVED = new Set([
-    'clients', 'portfolio', 'www', 'api', 'admin', 'app', 'mail', 'ftp',
-    'staging', 'dev', 'test', 'suitegpt', 'suite',
-    'trueform', 'opticrep', 'cheshbon', 'remcast-app',
-]);
+const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]?$/;
 
 const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_KEY
 );
-
-function getSubdomain(host) {
-    if (!host) return null;
-    // Remove port if present
-    host = host.split(':')[0];
-    // Extract subdomain from [name].suitegpt.app
-    const match = host.match(/^([a-z0-9][a-z0-9-]{0,61}[a-z0-9]?)\.suitegpt\.app$/i);
-    return match ? match[1].toLowerCase() : null;
-}
 
 function notFoundPage() {
     return `<!DOCTYPE html>
@@ -43,7 +30,7 @@ a:hover { background: #e8613a; }
 <body>
 <div class="c">
 <h1>Site not found</h1>
-<p>This subdomain hasn't been published yet.</p>
+<p>This site hasn't been published yet.</p>
 <a href="https://clients.suitegpt.app">Build your own site</a>
 </div>
 </body>
@@ -55,9 +42,9 @@ export default async function handler(req, res) {
         return res.status(405).end();
     }
 
-    const subdomain = getSubdomain(req.headers.host);
+    const slug = (req.query.slug || '').toLowerCase().trim();
 
-    if (!subdomain || RESERVED.has(subdomain)) {
+    if (!slug || !SLUG_RE.test(slug)) {
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         return res.status(404).send(notFoundPage());
     }
@@ -66,7 +53,7 @@ export default async function handler(req, res) {
         const { data, error } = await supabase
             .from('user_apps')
             .select('code')
-            .eq('slug', subdomain)
+            .eq('slug', slug)
             .eq('is_public', true)
             .single();
 
