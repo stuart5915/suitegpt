@@ -304,29 +304,77 @@
             .preview-form button { margin: 0 6px 6px; justify-content: center; }
         }
 
-        /* Loading Overlay */
-        .preview-loading {
-            position: fixed; inset: 0; z-index: 9998;
-            background: var(--ink);
-            display: none; align-items: center; justify-content: center;
-            flex-direction: column; gap: 24px;
+        /* Inline Preview Card (replaces fullscreen loading) */
+        .inline-preview {
+            display: none; max-width: 720px; width: 100%; margin: 36px auto 0;
+            animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
-        .preview-loading.active { display: flex; }
+        .inline-preview.active { display: block; }
+        .inline-preview-browser {
+            background: var(--ink); border-radius: 16px; overflow: hidden;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(255,255,255,0.04);
+        }
+        .inline-preview-bar {
+            display: flex; align-items: center; gap: 6px;
+            padding: 10px 16px; background: var(--ink-soft);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .inline-preview-bar .mockup-dot { width: 9px; height: 9px; border-radius: 50%; }
+        .inline-preview-bar .mockup-dot:nth-child(1) { background: #ff5f57; }
+        .inline-preview-bar .mockup-dot:nth-child(2) { background: #ffbd2e; }
+        .inline-preview-bar .mockup-dot:nth-child(3) { background: #28c840; }
+        .inline-preview-url {
+            flex: 1; margin-left: 12px; padding: 5px 14px;
+            background: rgba(255,255,255,0.06); border-radius: 8px;
+            font-size: 0.7rem; color: rgba(255,255,255,0.3); font-family: 'SF Mono', monospace;
+        }
+        .inline-preview-body {
+            position: relative; height: 420px; overflow: hidden;
+            background: #0a0a0a;
+        }
+        .inline-preview-body iframe {
+            width: 100%; height: 100%; border: none;
+            transform-origin: top left;
+        }
+        .inline-preview-loading {
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            flex-direction: column; gap: 16px;
+            background: var(--ink); z-index: 2;
+            transition: opacity 0.4s;
+        }
+        .inline-preview-loading.done { opacity: 0; pointer-events: none; }
+        .inline-preview-actions {
+            display: flex; gap: 10px; justify-content: center; margin-top: 16px;
+        }
+        .inline-preview-actions .btn-main { padding: 14px 28px; }
+        .inline-preview-actions .btn-ghost { padding: 14px 20px; }
+
         .preview-loading-spinner {
-            width: 48px; height: 48px; border-radius: 50%;
+            width: 40px; height: 40px; border-radius: 50%;
             border: 3px solid rgba(255,255,255,0.08);
             border-top-color: var(--ember);
             animation: spin 0.8s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .preview-loading h3 { color: white; font-size: 1.3rem; font-weight: 700; }
-        .preview-loading p { color: rgba(255,255,255,0.4); font-size: 0.9rem; }
+        .inline-preview-loading h3 { color: white; font-size: 1.1rem; font-weight: 700; margin: 0; }
+        .inline-preview-loading p { color: rgba(255,255,255,0.4); font-size: 0.82rem; margin: 0; }
         .preview-loading-dots::after {
             content: ''; animation: dots 1.5s steps(4, end) infinite;
         }
         @keyframes dots {
             0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; }
         }
+
+        @media (max-width: 600px) {
+            .inline-preview-body { height: 320px; }
+            .inline-preview-actions { flex-direction: column; }
+            .inline-preview-actions .btn-main,
+            .inline-preview-actions .btn-ghost { width: 100%; justify-content: center; text-align: center; }
+        }
+
+        /* Keep old loading overlay hidden — replaced by inline */
+        .preview-loading { display: none !important; }
 
         /* Full-Screen Preview */
         .preview-screen {
@@ -899,10 +947,36 @@
                 </div>
             </div>
         </div>
+        <!-- Inline Preview Card -->
+        <div class="inline-preview" id="inlinePreview">
+            <div class="inline-preview-browser">
+                <div class="inline-preview-bar">
+                    <span class="mockup-dot"></span>
+                    <span class="mockup-dot"></span>
+                    <span class="mockup-dot"></span>
+                    <span class="inline-preview-url" id="inlinePreviewUrl">your-site.suitegpt.app</span>
+                </div>
+                <div class="inline-preview-body">
+                    <iframe id="inlinePreviewIframe" sandbox="allow-scripts"></iframe>
+                    <div class="inline-preview-loading" id="inlinePreviewLoading">
+                        <div class="preview-loading-spinner"></div>
+                        <h3>Building your website<span class="preview-loading-dots"></span></h3>
+                        <p id="inlineLoadingHint">Analyzing your business</p>
+                    </div>
+                </div>
+            </div>
+            <div class="inline-preview-actions" id="inlinePreviewActions" style="display:none;">
+                <button class="btn-main" id="editPublishBtn">
+                    Edit & Publish
+                    <svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <button class="btn-ghost" id="regenerateBtn">Regenerate</button>
+            </div>
+        </div>
     </div>
 </section>
 
-<!-- ════════ LOADING OVERLAY ════════ -->
+<!-- ════════ LOADING OVERLAY (legacy, hidden) ════════ -->
 <div class="preview-loading" id="previewLoading">
     <div class="preview-loading-spinner"></div>
     <h3 id="loadingTitle">Building your website<span class="preview-loading-dots"></span></h3>
@@ -1585,19 +1659,33 @@
 
     var hints = ['Analyzing your business', 'Choosing colors and layout', 'Writing content', 'Adding final touches'];
 
+    // Inline preview elements
+    var inlinePreviewEl = document.getElementById('inlinePreview');
+    var inlineIframeEl = document.getElementById('inlinePreviewIframe');
+    var inlineLoadingEl = document.getElementById('inlinePreviewLoading');
+    var inlineHintEl = document.getElementById('inlineLoadingHint');
+    var inlineActionsEl = document.getElementById('inlinePreviewActions');
+    var inlineUrlEl = document.getElementById('inlinePreviewUrl');
+
     async function generatePreview(desc) {
         pState.businessDesc = desc;
         pState.refinementCount = 0;
         pState.currentHtml = '';
 
-        // Show loading
-        loadingEl.classList.add('active');
-        document.body.style.overflow = 'hidden';
+        // Show inline preview card with loading state
+        inlinePreviewEl.classList.add('active');
+        inlineLoadingEl.classList.remove('done');
+        inlineActionsEl.style.display = 'none';
+        inlineUrlEl.textContent = 'generating...';
+
+        // Scroll to the inline preview
+        inlinePreviewEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
         var hi = 0;
-        loadingHint.textContent = hints[0];
+        inlineHintEl.textContent = hints[0];
         var hintTimer = setInterval(function() {
             hi++;
-            if (hi < hints.length) loadingHint.textContent = hints[hi];
+            if (hi < hints.length) inlineHintEl.textContent = hints[hi];
         }, 3000);
 
         try {
@@ -1608,8 +1696,15 @@
             pState.currentHtml = html;
             saveState();
             clearInterval(hintTimer);
-            loadingEl.classList.remove('active');
-            showPreview(html, desc);
+
+            // Show the generated site in the inline iframe
+            inlineIframeEl.srcdoc = html;
+            var slug = desc.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-').substring(0, 30);
+            inlineUrlEl.textContent = slug + '.suitegpt.app';
+
+            // Fade out loading, show actions
+            inlineLoadingEl.classList.add('done');
+            inlineActionsEl.style.display = 'flex';
 
             // Log lead to supabase (fire-and-forget)
             fetch(SB_URL + '/rest/v1/client_leads', {
@@ -1620,8 +1715,7 @@
 
         } catch(err) {
             clearInterval(hintTimer);
-            loadingEl.classList.remove('active');
-            document.body.style.overflow = '';
+            inlinePreviewEl.classList.remove('active');
             alert('Failed to generate preview. Please try again.');
             console.error(err);
         }
@@ -1629,17 +1723,37 @@
 
     function showPreview(html, desc) {
         iframeEl.srcdoc = html;
-        titleEl.textContent = desc;
+        titleEl.textContent = desc || pState.businessDesc;
         screenEl.classList.add('active');
+        document.body.style.overflow = 'hidden';
         updateCounter();
         chatMessages.innerHTML = '';
-        addChat('assistant', 'Here\'s your website preview! Want to change anything? You have ' + FREE_REFINEMENTS + ' free refinements.');
+        var remaining = getLimit() - pState.refinementCount;
+        if (pState.trialStarted) {
+            addChat('assistant', 'Here\'s your website. Make any changes you like — unlimited refinements.');
+        } else {
+            addChat('assistant', 'Here\'s your website preview! Want to change anything? You have ' + remaining + ' free refinement' + (remaining !== 1 ? 's' : '') + '.');
+        }
     }
 
     function hidePreview() {
         screenEl.classList.remove('active');
         document.body.style.overflow = '';
+        // Sync inline preview with latest HTML from refinements
+        if (pState.currentHtml && inlineIframeEl) {
+            inlineIframeEl.srcdoc = pState.currentHtml;
+        }
     }
+
+    // ── Edit & Publish button (inline → fullscreen) ──
+    document.getElementById('editPublishBtn').addEventListener('click', function() {
+        if (pState.currentHtml) showPreview(pState.currentHtml, pState.businessDesc);
+    });
+
+    // ── Regenerate button ──
+    document.getElementById('regenerateBtn').addEventListener('click', function() {
+        if (pState.businessDesc) generatePreview(pState.businessDesc);
+    });
 
     function updateCounter() {
         var limit = getLimit();
