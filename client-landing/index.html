@@ -266,12 +266,13 @@
         .preview-form:focus-within {
             box-shadow: 0 8px 48px rgba(232,97,58,0.15), 0 0 0 2px var(--ember);
         }
-        .preview-form input {
+        .preview-form textarea {
             flex: 1; padding: 20px 24px; border: none; outline: none;
             font-family: inherit; font-size: 1.05rem; color: var(--text);
-            background: transparent; min-width: 0;
+            background: transparent; min-width: 0; resize: none;
+            line-height: 1.5;
         }
-        .preview-form input::placeholder { color: var(--text-soft); }
+        .preview-form textarea::placeholder { color: var(--text-soft); }
         .preview-form button {
             padding: 14px 28px; margin: 6px; border-radius: 12px; border: none;
             background: var(--ink); color: white;
@@ -300,7 +301,7 @@
 
         @media (max-width: 540px) {
             .preview-form { flex-direction: column; }
-            .preview-form input { padding: 18px 20px; }
+            .preview-form textarea { padding: 18px 20px; }
             .preview-form button { margin: 0 6px 6px; justify-content: center; }
         }
 
@@ -932,10 +933,10 @@
                 See it before you commit
             </div>
             <h1>Describe your business.<br><em>Get a website in seconds.</em></h1>
-            <p class="hero-sub">Type one sentence about what you do. Our AI builds a full preview — free, no signup required.</p>
+            <p class="hero-sub">Describe your business, explain a problem, or just tell us what you need — we'll build it.</p>
             <div class="hero-preview-input">
                 <form class="preview-form" id="previewForm">
-                    <input type="text" id="businessDesc" placeholder="e.g. barbershop in Calgary, classic cuts, online booking" maxlength="200" required>
+                    <textarea id="businessDesc" placeholder="e.g. &quot;barbershop in Calgary, online booking&quot; or &quot;I run a small bakery and I'm losing customers because I have no website and don't know where to start...&quot;" maxlength="1000" rows="2" required></textarea>
                     <button type="submit" id="previewBtn">Generate Preview</button>
                 </form>
                 <p class="preview-hint">Free preview, no signup required</p>
@@ -1660,6 +1661,22 @@
 
     var hints = ['Analyzing your business', 'Choosing colors and layout', 'Writing content', 'Adding final touches'];
 
+    // Detect if input is vague/rant vs a clear site description, and refine if needed
+    async function clarifyInput(raw) {
+        // Short, direct descriptions (under 80 chars with business-y keywords) skip clarification
+        if (raw.length < 80 && /\b(shop|store|restaurant|salon|bakery|gym|studio|clinic|agency|freelance|photographer|plumber|landscap|consult|coach)\b/i.test(raw)) {
+            return raw;
+        }
+        // If it's clearly a rant, problem statement, or vague — refine it
+        var resp = await callGemini(
+            'The user typed the following into a website builder. Your job is to interpret what they need and output a SHORT, clear business site description (1-2 sentences max). Extract: what the business is, what it does, location if mentioned, and key features they need.\n\n' +
+            'If the input is already a clear business description, output it as-is. Only rewrite if the input is vague, emotional, a rant, or a problem statement.\n\n' +
+            'IMPORTANT: Output ONLY the refined description, nothing else. No quotes, no explanation.\n\n' +
+            'User input: "' + raw + '"'
+        );
+        return (resp || '').trim() || raw;
+    }
+
     // Inline preview elements
     var inlinePreviewEl = document.getElementById('inlinePreview');
     var inlineIframeEl = document.getElementById('inlinePreviewIframe');
@@ -1669,7 +1686,6 @@
     var inlineUrlEl = document.getElementById('inlinePreviewUrl');
 
     async function generatePreview(desc) {
-        pState.businessDesc = desc;
         pState.refinementCount = 0;
         pState.currentHtml = '';
 
@@ -1683,13 +1699,18 @@
         inlinePreviewEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
         var hi = 0;
-        inlineHintEl.textContent = hints[0];
+        inlineHintEl.textContent = 'Understanding what you need';
         var hintTimer = setInterval(function() {
             hi++;
             if (hi < hints.length) inlineHintEl.textContent = hints[hi];
         }, 3000);
 
         try {
+            // Clarify vague/rant input into a proper site description
+            desc = await clarifyInput(desc);
+            pState.businessDesc = desc;
+            inlineHintEl.textContent = hints[0];
+
             var text = await callGemini(buildPrompt(desc));
             var html = extractHtml(text);
             if (!html) throw new Error('No HTML generated');
