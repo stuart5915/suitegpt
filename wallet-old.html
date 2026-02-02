@@ -1298,9 +1298,9 @@
         }
 
         /* Connect Buttons Hover Effects */
-        #discordLoginBtn2:hover {
+        #googleLoginBtn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(88, 101, 242, 0.4);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
         }
 
         #connectWalletBtn2:hover {
@@ -6296,174 +6296,29 @@
             };
         }
 
-        // ========== DISCORD BRIDGE FUNCTIONS ==========
+        // ========== BRIDGE FUNCTIONS ==========
 
         const BRIDGE_ADDRESS = '0x0000000000000000000000000000000000000000'; // TODO: Deploy and update
-        const DISCORD_CLIENT_ID = '1457474266390986865';
-        const BRIDGE_REDIRECT_URI = window.location.origin + '/wallet.html';
 
         const BRIDGE_ABI = [
-            "function deposit(string calldata discordId, uint256 amount) external",
+            "function deposit(string calldata userId, uint256 amount) external",
             "function bridgeBalance() view returns (uint256)"
         ];
 
         // ERC20_ABI already declared above - reuse it for bridge
 
-        // Check Discord connection for bridge on page load
         document.addEventListener('DOMContentLoaded', () => {
-            checkBridgeDiscordConnection();
             loadBridgeBalances();
         });
 
-        function checkBridgeDiscordConnection() {
-            const savedUser = localStorage.getItem('suiteUser');
-            const statusEl = document.getElementById('bridgeDiscordStatus');
-            const connectBtn = document.getElementById('bridgeConnectDiscord');
-            const userEl = document.getElementById('bridgeDiscordUser');
-
-            if (savedUser) {
-                const user = JSON.parse(savedUser);
-                if (statusEl) statusEl.style.display = 'block';
-                if (userEl) userEl.textContent = `? Connected as ${user.username}`;
-                if (connectBtn) connectBtn.style.display = 'none';
-            } else {
-                if (statusEl) statusEl.style.display = 'none';
-                if (connectBtn) connectBtn.style.display = 'flex';
-            }
-        }
-
-        function connectDiscordForBridge() {
-            const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(BRIDGE_REDIRECT_URI)}&response_type=token&scope=identify`;
-            window.location.href = authUrl;
-        }
-
         async function loadBridgeBalances() {
-            // Load wallet SUITE balance (will be updated when wallet connects)
             const walletBalanceEl = document.getElementById('bridgeWalletBalance');
-            const discordBalanceEl = document.getElementById('bridgeDiscordBalance');
 
-            // Wallet balance (from existing availableBalance element)
             const availableBal = document.getElementById('availableBalance');
             if (availableBal && walletBalanceEl) {
                 walletBalanceEl.textContent = availableBal.textContent || '0';
             }
-
-            // Discord balance from Supabase
-            const savedUser = localStorage.getItem('suiteUser');
-            if (savedUser && discordBalanceEl) {
-                const user = JSON.parse(savedUser);
-                try {
-                    const response = await fetch(`${SUPABASE_URL}/rest/v1/user_balances?discord_id=eq.${user.id}&select=balance`, {
-                        headers: {
-                            'apikey': SUPABASE_ANON_KEY,
-                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-                        }
-                    });
-                    const data = await response.json();
-                    if (data && data[0]) {
-                        discordBalanceEl.textContent = Number(data[0].balance).toLocaleString();
-                    }
-                } catch (error) {
-                    console.error('Error loading Discord balance:', error);
-                }
-            }
         }
-
-        async function depositToDiscord() {
-            const amountInput = document.getElementById('bridgeAmount');
-            const amount = amountInput?.value;
-
-            if (!amount || amount <= 0) {
-                alert('Please enter an amount');
-                return;
-            }
-
-            // Check Discord connection
-            const savedUser = localStorage.getItem('suiteUser');
-            if (!savedUser) {
-                alert('Please connect Discord first');
-                return;
-            }
-            const user = JSON.parse(savedUser);
-
-            // Check wallet connection
-            if (!window.ethereum) {
-                alert('Please install MetaMask');
-                return;
-            }
-
-            try {
-                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-                if (accounts.length === 0) {
-                    alert('Please connect your wallet first');
-                    return;
-                }
-
-                const provider = new ethers.BrowserProvider(window.ethereum);
-                const signer = await provider.getSigner();
-                const amountWei = ethers.parseEther(amount.toString());
-
-                // Get SUITE token address from treasury
-                const suiteToken = new ethers.Contract(SUITE_TOKEN_ADDRESS, ERC20_ABI, signer);
-
-                // Check allowance
-                const allowance = await suiteToken.allowance(accounts[0], BRIDGE_ADDRESS);
-                if (allowance < amountWei) {
-                    showNotification('?', 'Approving', 'Please approve SUITE spending...');
-                    const approveTx = await suiteToken.approve(BRIDGE_ADDRESS, ethers.MaxUint256);
-                    await approveTx.wait();
-                }
-
-                // Deposit to bridge
-                showNotification('?', 'Depositing', 'Please confirm the deposit...');
-                const bridgeContract = new ethers.Contract(BRIDGE_ADDRESS, BRIDGE_ABI, signer);
-                const depositTx = await bridgeContract.deposit(user.id, amountWei);
-                await depositTx.wait();
-
-                showNotification('?', 'Success!', `Deposited ${amount} SUITE to Discord. It will appear in your balance shortly.`);
-                amountInput.value = '';
-
-                // Reload balances after a short delay
-                setTimeout(loadBridgeBalances, 5000);
-
-            } catch (error) {
-                console.error('Deposit error:', error);
-                if (error.code === 4001) {
-                    showNotification('?', 'Cancelled', 'Transaction cancelled');
-                } else {
-                    showNotification('?', 'Error', error.message || 'Deposit failed');
-                }
-            }
-        }
-
-        // Handle OAuth callback for bridge
-        (function handleBridgeOAuth() {
-            const hash = window.location.hash.substring(1);
-            if (!hash) return;
-
-            const params = new URLSearchParams(hash);
-            const accessToken = params.get('access_token');
-
-            if (accessToken) {
-                fetch('https://discord.com/api/users/@me', {
-                    headers: { 'Authorization': `Bearer ${accessToken}` }
-                })
-                    .then(res => res.json())
-                    .then(user => {
-                        const userData = {
-                            id: user.id,
-                            username: user.username,
-                            avatar: user.avatar
-                                ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
-                                : `https://cdn.discordapp.com/embed/avatars/${parseInt(user.discriminator || '0') % 5}.png`
-                        };
-                        localStorage.setItem('suiteUser', JSON.stringify(userData));
-                        window.history.replaceState(null, '', window.location.pathname);
-                        checkBridgeDiscordConnection();
-                        loadBridgeBalances();
-                    });
-            }
-        })();
 
         // Tab Switching Logic
         window.switchTab = function (tabId) {
@@ -6524,7 +6379,7 @@
         async function claimCredits(amount) {
             if (!amount || amount <= 0) { alert('No credits to claim!'); return; }
             const currentUser = JSON.parse(localStorage.getItem('suiteDev') || 'null');
-            if (!currentUser) { alert('Please log in via Discord first.'); return; }
+            if (!currentUser) { alert('Please sign in first.'); return; }
             if (!userAddress) { alert('Please connect your wallet first.'); return; }
 
             if (!confirm(`Claim ${amount} credits?\n\nWill send ${amount} SUITE to ${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`)) return;
@@ -6548,143 +6403,15 @@
         document.addEventListener('DOMContentLoaded', loadUserCredits);
         window.loadUserCredits = loadUserCredits;
 
-        // ========== DISCORD LOGIN ==========
-        function loginWithDiscord() {
-            // Discord OAuth2 URL - using the same flow as developer portal
-            const DISCORD_CLIENT_ID = '1457474266390986865'; // Your Discord App Client ID
-            const REDIRECT_URI = encodeURIComponent(window.location.origin + '/oauth-callback.html');
-            const SCOPE = encodeURIComponent('identify email');
-
-            const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=${SCOPE}`;
-
-            // Open Discord auth in a popup
-            const popup = window.open(authUrl, 'Discord Login', 'width=500,height=700');
-
-            // Listen for the callback
-            window.addEventListener('message', function handleAuthMessage(event) {
-                if (event.origin !== window.location.origin) return;
-                if (event.data && event.data.type === 'discord-auth-success') {
-                    const user = event.data.user;
-                    localStorage.setItem('suiteDev', JSON.stringify(user));
-                    updateAuthUI(user);
-                    popup.close();
-                    window.removeEventListener('message', handleAuthMessage);
-                }
-            });
-        }
-
-        function updateAuthUI(user) {
-            const discordBtn = document.getElementById('discordLoginBtn');
-            if (discordBtn && user) {
-                discordBtn.innerHTML = `<img src="${user.avatar ? 'https://cdn.discordapp.com/avatars/' + user.id + '/' + user.avatar + '.png' : 'https://cdn.discordapp.com/embed/avatars/0.png'}" style="width: 24px; height: 24px; border-radius: 50%;"> ${user.username}`;
-                discordBtn.onclick = () => {
-                    if (confirm('Log out of Discord?')) {
-                        localStorage.removeItem('suiteDev');
-                        location.reload();
-                    }
-                };
-            }
-        }
-
-        // Check if already logged in on page load
-        document.addEventListener('DOMContentLoaded', async function () {
-            const currentUser = JSON.parse(localStorage.getItem('suiteDev') || 'null');
-            if (currentUser) {
-                updateAuthUI(currentUser);
-                // Check for pending wallet link (after Discord OAuth redirect)
-                await checkPendingWalletLink();
-            }
-        });
+        // ========== AUTH (removed Discord, using nav Google/wallet/TG auth) ==========
 
         // ========== WALLET CONNECTION ==========
 
-        // Link wallet address to Discord account in Supabase
-        async function linkWalletToDiscord(walletAddress, discordId) {
-            try {
-                // Upsert to user_credits - links wallet to Discord
-                const response = await fetch(`${ADMIN_SUPABASE_URL}/rest/v1/user_credits`, {
-                    method: 'POST',
-                    headers: {
-                        'apikey': ADMIN_SUPABASE_KEY,
-                        'Authorization': `Bearer ${ADMIN_SUPABASE_KEY}`,
-                        'Content-Type': 'application/json',
-                        'Prefer': 'resolution=merge-duplicates'
-                    },
-                    body: JSON.stringify({
-                        discord_id: discordId,
-                        wallet_address: walletAddress.toLowerCase(),
-                        updated_at: new Date().toISOString()
-                    })
-                });
+        // Wallet linking (Discord removed - wallet links via Supabase auth now)
 
-                if (response.ok) {
-                    console.log(`Linked wallet ${walletAddress.slice(0,8)}... to Discord ${discordId}`);
-                    showNotification('🔗', 'Wallet Linked', 'Your wallet is now linked to your Discord account');
-                }
-            } catch (error) {
-                console.error('Failed to link wallet to Discord:', error);
-            }
-        }
-
-        // Show prompt to link Discord after deposit (if not logged in)
+        // Discord link prompt removed - no-op stub for existing callers
         function showDiscordLinkPrompt(walletAddress) {
-            const existing = document.getElementById('discordLinkPrompt');
-            if (existing) existing.remove();
-
-            const prompt = document.createElement('div');
-            prompt.id = 'discordLinkPrompt';
-            prompt.innerHTML = `
-                <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-                            background: linear-gradient(135deg, #1a1225 0%, #2d1b4e 100%);
-                            padding: 32px; border-radius: 20px; z-index: 10000; max-width: 400px;
-                            border: 1px solid rgba(139, 92, 246, 0.3); box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
-                    <h3 style="color: white; margin: 0 0 12px 0; font-size: 1.3rem;">🎉 Deposit Successful!</h3>
-                    <p style="color: rgba(255,255,255,0.7); margin: 0 0 20px 0; line-height: 1.5;">
-                        Link your Discord to use credits in SUITE apps like FoodVitals, OpticRep, and more.
-                    </p>
-                    <button onclick="loginWithDiscordForLink('${walletAddress}')"
-                            style="width: 100%; padding: 14px; background: #5865F2; color: white;
-                                   border: none; border-radius: 12px; font-weight: 600; font-size: 1rem;
-                                   cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                        <svg width="20" height="20" viewBox="0 0 71 55" fill="white">
-                            <path d="M60.1 4.9A58.5 58.5 0 0045.4.2a.2.2 0 00-.2.1 40.8 40.8 0 00-1.8 3.7 54 54 0 00-16.2 0A37.4 37.4 0 0025.4.3a.2.2 0 00-.2-.1 58.4 58.4 0 00-14.7 4.6.2.2 0 00-.1 0A60 60 0 00.4 43.8a.2.2 0 000 .2 58.7 58.7 0 0017.7 9 .2.2 0 00.2-.1 42 42 0 003.6-5.9.2.2 0 00-.1-.3 38.7 38.7 0 01-5.5-2.6.2.2 0 010-.4l1.1-.9a.2.2 0 01.2 0 41.8 41.8 0 0035.6 0 .2.2 0 01.2 0l1.1.9a.2.2 0 010 .4 36.4 36.4 0 01-5.5 2.6.2.2 0 00-.1.3 47.2 47.2 0 003.6 5.9.2.2 0 00.3.1 58.5 58.5 0 0017.7-9 .2.2 0 000-.2c1.2-12.7-2-23.7-8.4-33.5a.2.2 0 00-.1 0zM23.7 35.9c-2.9 0-5.3-2.7-5.3-6s2.3-6 5.3-6 5.4 2.7 5.3 6-2.3 6-5.3 6zm19.6 0c-2.9 0-5.3-2.7-5.3-6s2.3-6 5.3-6 5.4 2.7 5.3 6-2.3 6-5.3 6z"/>
-                        </svg>
-                        Connect Discord
-                    </button>
-                    <button onclick="document.getElementById('discordLinkPrompt').remove()"
-                            style="width: 100%; padding: 12px; background: transparent; color: rgba(255,255,255,0.5);
-                                   border: none; margin-top: 12px; cursor: pointer; font-size: 0.9rem;">
-                        Skip for now
-                    </button>
-                </div>
-                <div onclick="document.getElementById('discordLinkPrompt').remove()"
-                     style="position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-                            background: rgba(0,0,0,0.7); z-index: 9999;"></div>
-            `;
-            document.body.appendChild(prompt);
-        }
-
-        // Login with Discord specifically for linking wallet
-        function loginWithDiscordForLink(walletAddress) {
-            // Store wallet address to link after OAuth
-            localStorage.setItem('pendingWalletLink', walletAddress);
-            // Trigger Discord OAuth
-            const DISCORD_CLIENT_ID = '1457474266390986865';
-            const REDIRECT_URI = window.location.origin + '/wallet.html';
-            const SCOPE = 'identify';
-            const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=${SCOPE}`;
-            window.location.href = authUrl;
-        }
-
-        // Check for pending wallet link after Discord OAuth
-        async function checkPendingWalletLink() {
-            const pendingWallet = localStorage.getItem('pendingWalletLink');
-            const currentUser = JSON.parse(localStorage.getItem('suiteDev') || 'null');
-
-            if (pendingWallet && currentUser?.id) {
-                await linkWalletToDiscord(pendingWallet, currentUser.id);
-                localStorage.removeItem('pendingWalletLink');
-            }
+            // No longer needed - auth handled via Google/wallet/Telegram
         }
 
         async function connectWallet() {
@@ -6762,11 +6489,7 @@
                 // Fetch USDC balance for deposit UI
                 fetchUSDCBalance();
 
-                // Auto-link wallet to Discord if logged in
-                const currentUser = JSON.parse(localStorage.getItem('suiteDev') || 'null');
-                if (currentUser?.id) {
-                    await linkWalletToDiscord(address, currentUser.id);
-                }
+                // Wallet linked via Supabase auth (Discord removed)
 
                 console.log('Connected wallet:', address);
             } catch (error) {

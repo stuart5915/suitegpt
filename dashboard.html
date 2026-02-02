@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="suite-styles.css">
     <link rel="stylesheet" href="nav.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         /* Critical nav styles inline */
         .nav {
@@ -485,7 +486,7 @@
 
         /* Login banner */
         .login-banner {
-            background: linear-gradient(135deg, #5865F2, #7289da);
+            background: linear-gradient(135deg, #ff9500, #ff6b00);
             padding: 16px 20px;
             border-radius: 16px;
             display: flex;
@@ -832,11 +833,11 @@
             padding: 80px 20px;
         }
 
-        .discord-btn {
-            background: #5865F2;
-            color: white;
+        .google-btn {
+            background: white;
+            color: #333;
             padding: 16px 32px;
-            border: none;
+            border: 1px solid #ddd;
             border-radius: 100px;
             font-size: 1.1rem;
             font-weight: 700;
@@ -844,6 +845,11 @@
             display: inline-flex;
             align-items: center;
             gap: 12px;
+        }
+
+        .google-btn:hover {
+            background: #f8f8f8;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         .empty-state {
@@ -1285,8 +1291,7 @@
                     </div>
                     <div id="appsList">
                         <div class="empty-state">
-                            <p>No apps found. <a href="start-building.html" style="color: #ff9500;">Start building</a>
-                                or submit via Discord!</p>
+                            <p>No apps found. <a href="start-building.html" style="color: #ff9500;">Start building</a>!</p>
                         </div>
                     </div>
                 </div>
@@ -3590,10 +3595,15 @@
 
         const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
-        const DISCORD_CLIENT_ID = '1457474266390986865';
-        const REDIRECT_URI = window.location.origin + '/dashboard.html';
+        const ADMIN_EMAIL = 'stuart5915@gmail.com';
 
         let currentUser = null;
+        let supabaseClient = null;
+
+        // Initialize Supabase client
+        if (window.supabase) {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
 
         // ========== COLLAPSIBLE SECTIONS ==========
         function toggleSection(sectionName) {
@@ -3633,51 +3643,53 @@
             });
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             // Initialize collapsible sections
             initSectionStates();
 
-            const hash = window.location.hash.substring(1);
-            const params = new URLSearchParams(hash);
-            const accessToken = params.get('access_token');
+            if (!supabaseClient) return;
 
-            if (accessToken) {
-                handleOAuthCallback(accessToken);
-            } else {
-                const savedUser = localStorage.getItem('suiteDev');
-                if (savedUser) {
-                    currentUser = JSON.parse(savedUser);
-                    showDashboard();
-                }
+            // Check for existing Supabase session
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                setCurrentUser(session.user);
+                showDashboard();
             }
+
+            // Listen for auth state changes (handles OAuth redirect)
+            supabaseClient.auth.onAuthStateChange((event, session) => {
+                if (event === 'SIGNED_IN' && session) {
+                    setCurrentUser(session.user);
+                    showDashboard();
+                } else if (event === 'SIGNED_OUT') {
+                    currentUser = null;
+                }
+            });
         });
 
-        function loginWithDiscord() {
-            const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=identify`;
-            window.location.href = authUrl;
+        function setCurrentUser(user) {
+            currentUser = {
+                id: user.id,
+                email: user.email,
+                username: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Developer',
+                avatar: user.user_metadata?.avatar_url || 'assets/suite-mascot.png'
+            };
         }
 
-        async function handleOAuthCallback(accessToken) {
-            try {
-                const response = await fetch('https://discord.com/api/users/@me', {
-                    headers: { 'Authorization': `Bearer ${accessToken}` }
-                });
-                const user = await response.json();
-
-                currentUser = {
-                    id: user.id,
-                    username: user.username,
-                    avatar: user.avatar
-                        ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
-                        : `https://cdn.discordapp.com/embed/avatars/${parseInt(user.discriminator || '0') % 5}.png`
-                };
-
-                localStorage.setItem('suiteDev', JSON.stringify(currentUser));
-                history.replaceState(null, '', window.location.pathname);
-                showDashboard();
-            } catch (error) {
-                console.error('OAuth error:', error);
-                alert('Login failed. Please try again.');
+        async function loginWithGoogle() {
+            if (!supabaseClient) {
+                alert('Auth system loading, please try again in a moment');
+                return;
+            }
+            const { data, error } = await supabaseClient.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.origin + '/dashboard.html'
+                }
+            });
+            if (error) {
+                console.error('Google OAuth error:', error);
+                alert('Failed to start Google sign-in: ' + error.message);
             }
         }
 
@@ -3889,17 +3901,24 @@
             }
         });
 
-        function logout() {
-            localStorage.removeItem('suiteDev');
+        async function logout() {
+            if (supabaseClient) {
+                await supabaseClient.auth.signOut();
+            }
             currentUser = null;
             // Show login banner, hide user pill, reset to dashes
-            document.getElementById('loginBanner').style.display = 'flex';
-            document.getElementById('userPill').style.display = 'none';
+            const loginBanner = document.getElementById('loginBanner');
+            const userPill = document.getElementById('userPill');
+            if (loginBanner) loginBanner.style.display = 'flex';
+            if (userPill) userPill.style.display = 'none';
             // Reset to dashes (not logged in state)
             document.getElementById('totalApps').textContent = '-';
             document.getElementById('totalCampaigns').textContent = '-';
             document.getElementById('totalClaims').textContent = '-';
             document.getElementById('suiteBalance').textContent = '-';
+            // Hide admin section
+            const adminSection = document.getElementById('adminSection');
+            if (adminSection) adminSection.style.display = 'none';
         }
 
         // ========== POWER-UP FUNCTIONS ==========
@@ -4244,18 +4263,11 @@
 
         // --- PC PROMPT SERVER FUNCTIONS (Owner Only) ---
         const PC_SERVER_URL = localStorage.getItem('pc_server_url') || 'http://10.0.0.142:3000';
-        const OWNER_DISCORD_ID = '1135315153824993402';  // Stuart's Discord ID
 
         // Show prompt server section only for owner
         function checkOwnerAccess() {
             const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-            const savedUser = localStorage.getItem('suiteDev');
-            let isOwner = false;
-
-            if (savedUser) {
-                const user = JSON.parse(savedUser);
-                isOwner = user.id === OWNER_DISCORD_ID;
-            }
+            const isOwner = currentUser?.email === ADMIN_EMAIL;
 
             // Show on localhost (for testing) OR if logged in as Stuart
             if (isLocalhost || isOwner) {
@@ -4377,18 +4389,12 @@
         }
 
         // --- CONTENT STUDIO FUNCTIONS ---
-        const OWNER_USER_ID = OWNER_DISCORD_ID;
         let isOwnerUser = false;
 
         // Check if user is owner for free access
         function checkContentStudioOwner() {
-            const savedUser = localStorage.getItem('suiteDev');
             const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-
-            if (savedUser) {
-                const user = JSON.parse(savedUser);
-                isOwnerUser = user.id === OWNER_USER_ID;
-            }
+            isOwnerUser = currentUser?.email === ADMIN_EMAIL;
 
             if (isLocalhost || isOwnerUser) {
                 // Show owner badge and set free pricing
@@ -4600,7 +4606,7 @@
                 document.getElementById('sidebarUserName').textContent = user.username || 'Developer';
 
                 // Show admin section for owner
-                const isOwner = user.id === OWNER_DISCORD_ID;
+                const isOwner = currentUser?.email === ADMIN_EMAIL;
                 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
                 if (isOwner || isLocalhost) {
                     document.getElementById('adminSection').style.display = 'block';
@@ -4623,10 +4629,8 @@
             }
 
             // Check if user is logged in and update sidebar
-            const savedUser = localStorage.getItem('suiteDev');
-            if (savedUser) {
-                const user = JSON.parse(savedUser);
-                updateSidebarUser(user);
+            if (currentUser) {
+                updateSidebarUser(currentUser);
             }
         }
 
@@ -4904,16 +4908,7 @@
 
         // Check if current user is the owner
         function checkIfOwner() {
-            // Check if logged in as owner via localStorage
-            const savedUser = localStorage.getItem('suite_user');
-            if (savedUser) {
-                try {
-                    const user = JSON.parse(savedUser);
-                    // Replace with your actual Discord ID
-                    const OWNER_ID = '287364619419049984';
-                    if (user.id === OWNER_ID) return true;
-                } catch (e) { }
-            }
+            if (currentUser?.email === ADMIN_EMAIL) return true;
 
             // Also allow on localhost for testing
             if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -5351,8 +5346,8 @@
             const costDisplay = document.getElementById('submissionCostDisplay');
             if (!costDisplay) return;
 
-            // Check if owner (same logic as rest of dashboard)
-            if (typeof isOwner !== 'undefined' && isOwner) {
+            // Check if owner
+            if (checkIfOwner()) {
                 costDisplay.innerHTML = '<span style="color: #22c55e; font-weight: 700;">FREE</span> <span style="font-size: 0.75rem; color: rgba(255,255,255,0.5);">(Admin)</span>';
             }
         }
