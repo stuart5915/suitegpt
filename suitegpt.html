@@ -21476,7 +21476,10 @@ Technical: JavaScript, HTML/CSS, React/React Native, Supabase (Postgres, Auth, S
                                                         <div class="jh-form-group"><label class="jh-form-label">Question</label><textarea class="jh-textarea" id="jhAppQuestion" rows="2" placeholder="e.g. Tell us about your blockchain knowledge..."></textarea></div>
                                                         <div class="jh-form-group"><label class="jh-form-label">Context (optional)</label><input class="jh-input" type="text" id="jhAppContext" placeholder="e.g. Applying to Anthropic for DevRel..."></div>
                                                         <div class="jh-ai-output" id="jhAppAnswerOutput"></div>
-                                                        <button class="jh-btn-ghost" id="jhAppAnswerCopyBtn" style="display:none;margin-top:6px;" onclick="jhCopyOutput('jhAppAnswerOutput')">Copy</button>
+                                                        <div style="display:none;margin-top:6px;gap:6px;" id="jhAppAnswerActions">
+                                                            <button class="jh-btn-ghost" onclick="jhCopyOutput('jhAppAnswerOutput')">Copy</button>
+                                                            <button class="jh-btn-ghost" onclick="jhDownloadAnswerPDF()">PDF</button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -25676,9 +25679,9 @@ Output the resume now using the section markers above. Plain text only, no markd
             const question = document.getElementById('jhAppQuestion').value.trim();
             const context = document.getElementById('jhAppContext').value.trim();
             const output = document.getElementById('jhAppAnswerOutput');
-            const copyBtn = document.getElementById('jhAppAnswerCopyBtn');
+            const actionsDiv = document.getElementById('jhAppAnswerActions');
             if (!question) { alert('Paste an application question first.'); return; }
-            output.textContent = ''; copyBtn.style.display = 'none';
+            output.textContent = ''; actionsDiv.style.display = 'none';
             output.innerHTML = '<span class="jh-spinner"></span> Generating answer...';
             const roleCtx = JH_ROLE_PROMPTS[jhSelectedRole] || '';
             const prompt = `You are helping Stuart Hollinger answer a job application question. Write a compelling, authentic, first-person answer.
@@ -25703,8 +25706,23 @@ Write the answer now. Plain text, first person, authentic.`;
                 const resp = await fetch('/api/gemini', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt, model: 'gemini-3-flash-preview', generationConfig: { temperature: 0.7, maxOutputTokens: 3000 } }) });
                 const data = await resp.json();
                 output.textContent = data.text || 'No output generated.';
-                copyBtn.style.display = 'inline-flex';
+                actionsDiv.style.display = 'flex';
             } catch (e) { output.textContent = 'Error: ' + e.message; }
+        }
+        function jhDownloadAnswerPDF() {
+            const text = document.getElementById('jhAppAnswerOutput').textContent;
+            if (!text) return;
+            const question = document.getElementById('jhAppQuestion').value.trim();
+            const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            const paragraphs = text.split('\n').filter(Boolean).map(p => '<p style="font-size:12px;line-height:1.6;margin:0 0 8px;">' + esc(p) + '</p>').join('');
+            const pdfTitle = 'Application Answer';
+            const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + pdfTitle + '</title><style>@page{margin:0;size:letter;}body{font-family:Georgia,serif;max-width:700px;margin:0 auto;padding:0.6in;color:#111;line-height:1.5;}</style></head><body>' +
+                (question ? '<div style="font-size:11px;color:#666;margin-bottom:4px;">Question:</div><div style="font-size:13px;font-weight:bold;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #ccc;">' + esc(question) + '</div>' : '') +
+                paragraphs + '</body></html>';
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const w = window.open(url, '_blank');
+            w.onload = function() { URL.revokeObjectURL(url); w.document.title = pdfTitle; setTimeout(() => w.print(), 300); };
         }
         async function jhAnalyzeListings() {
             const bg = document.getElementById('jhBackground').value.trim();
@@ -25745,9 +25763,11 @@ Rules:
         function jhCopyOutput(id) {
             const text = document.getElementById(id).textContent;
             navigator.clipboard.writeText(text);
-            const btnMap = { jhResumeOutput: 'jhResumeCopyBtn', jhAppAnswerOutput: 'jhAppAnswerCopyBtn', jhAnalyzeOutput: 'jhAnalyzeCopyBtn' };
-            const btn = document.getElementById(btnMap[id] || 'jhAnalyzeCopyBtn');
-            btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 1500);
+            const el = event && event.target;
+            if (el) { el.textContent = 'Copied!'; setTimeout(() => el.textContent = 'Copy', 1500); return; }
+            const btnMap = { jhResumeOutput: 'jhResumeCopyBtn', jhAnalyzeOutput: 'jhAnalyzeCopyBtn' };
+            const btn = document.getElementById(btnMap[id]);
+            if (btn) { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 1500); }
         }
         // JH Pipeline (Supabase with localStorage fallback)
         function jhGetCurrentUserId() {
