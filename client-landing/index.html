@@ -250,217 +250,268 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Hero Visual — Cycling Mockup */
-        .hero-visual {
-            width: 100%; max-width: 640px; margin-top: 48px;
-            animation: fadeUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.6s both;
+        /* (mockup styles removed — replaced by preview system) */
+
+        /* ════════════ PREVIEW SYSTEM ════════════ */
+        .hero-preview-input {
+            max-width: 620px; width: 100%; margin: 0 auto;
+            animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
         }
-        .mockup-browser {
-            background: var(--ink); border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 24px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(255,255,255,0.04);
+        .preview-form {
+            display: flex; gap: 0; position: relative;
+            background: white; border-radius: 16px;
+            box-shadow: 0 4px 32px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.04);
+            overflow: hidden; transition: box-shadow 0.3s;
         }
-        .mockup-bar {
-            display: flex; align-items: center; gap: 6px;
-            padding: 10px 16px; background: var(--ink-soft);
-            border-bottom: 1px solid var(--border-light);
+        .preview-form:focus-within {
+            box-shadow: 0 8px 48px rgba(232,97,58,0.15), 0 0 0 2px var(--ember);
         }
-        .mockup-dot { width: 9px; height: 9px; border-radius: 50%; }
-        .mockup-dot:nth-child(1) { background: #ff5f57; }
-        .mockup-dot:nth-child(2) { background: #ffbd2e; }
-        .mockup-dot:nth-child(3) { background: #28c840; }
-        .mockup-url {
-            flex: 1; margin-left: 12px; padding: 5px 14px;
-            background: rgba(255,255,255,0.06); border-radius: 8px;
-            font-size: 0.68rem; color: var(--text-faint); font-family: 'SF Mono', monospace;
-            transition: opacity 0.3s;
+        .preview-form input {
+            flex: 1; padding: 20px 24px; border: none; outline: none;
+            font-family: inherit; font-size: 1.05rem; color: var(--text);
+            background: transparent; min-width: 0;
+        }
+        .preview-form input::placeholder { color: var(--text-soft); }
+        .preview-form button {
+            padding: 14px 28px; margin: 6px; border-radius: 12px; border: none;
+            background: var(--ink); color: white;
+            font-family: inherit; font-weight: 700; font-size: 0.9rem;
+            cursor: pointer; transition: all 0.3s; white-space: nowrap;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .preview-form button:hover { background: var(--ember); }
+        .preview-form button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .preview-hint {
+            text-align: center; margin-top: 14px;
+            font-size: 0.82rem; color: var(--text-soft);
+            animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.45s both;
+        }
+        .preview-examples {
+            display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 16px;
+            animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.55s both;
+        }
+        .preview-example {
+            padding: 6px 14px; border-radius: 100px;
+            background: var(--glass); border: 1px solid var(--glass-border);
+            font-size: 0.76rem; color: var(--text-mid); font-weight: 500;
+            cursor: pointer; transition: all 0.25s; backdrop-filter: blur(8px);
+        }
+        .preview-example:hover { background: white; border-color: var(--ember); color: var(--ember); }
+
+        @media (max-width: 540px) {
+            .preview-form { flex-direction: column; }
+            .preview-form input { padding: 18px 20px; }
+            .preview-form button { margin: 0 6px 6px; justify-content: center; }
+        }
+
+        /* Loading Overlay */
+        .preview-loading {
+            position: fixed; inset: 0; z-index: 9998;
+            background: var(--ink);
+            display: none; align-items: center; justify-content: center;
+            flex-direction: column; gap: 24px;
+        }
+        .preview-loading.active { display: flex; }
+        .preview-loading-spinner {
+            width: 48px; height: 48px; border-radius: 50%;
+            border: 3px solid rgba(255,255,255,0.08);
+            border-top-color: var(--ember);
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .preview-loading h3 { color: white; font-size: 1.3rem; font-weight: 700; }
+        .preview-loading p { color: rgba(255,255,255,0.4); font-size: 0.9rem; }
+        .preview-loading-dots::after {
+            content: ''; animation: dots 1.5s steps(4, end) infinite;
+        }
+        @keyframes dots {
+            0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; }
+        }
+
+        /* Full-Screen Preview */
+        .preview-screen {
+            position: fixed; inset: 0; z-index: 9999;
+            background: var(--ink);
+            display: none; grid-template-columns: 1fr 380px;
+        }
+        .preview-screen.active { display: grid; }
+
+        .preview-left {
+            display: flex; flex-direction: column;
+            border-right: 1px solid rgba(255,255,255,0.08);
+        }
+        .preview-toolbar {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 20px;
+            background: var(--ink-soft);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .preview-back {
+            padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+            background: transparent; color: rgba(255,255,255,0.6);
+            font-family: inherit; font-weight: 600; font-size: 0.82rem;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .preview-back:hover { background: rgba(255,255,255,0.06); color: white; }
+        .preview-toolbar-title {
+            flex: 1; font-size: 0.82rem; color: rgba(255,255,255,0.4); font-weight: 500;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        .mockup-body {
-            position: relative; min-height: 300px; overflow: hidden;
+        .preview-device-btns {
+            display: flex; gap: 4px;
+        }
+        .preview-device-btn {
+            padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08);
+            background: transparent; color: rgba(255,255,255,0.35);
+            font-size: 0.72rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+        }
+        .preview-device-btn.active { background: rgba(255,255,255,0.08); color: white; border-color: rgba(255,255,255,0.15); }
+        .preview-device-btn:hover { color: rgba(255,255,255,0.7); }
+
+        .preview-iframe-wrap {
+            flex: 1; display: flex; align-items: center; justify-content: center;
+            padding: 24px; overflow: hidden;
             background: linear-gradient(180deg, #111 0%, #0a0a0a 100%);
         }
-        /* Cycling states */
-        .mock-state {
+        .preview-device-frame {
+            width: 375px; height: 100%; max-height: 700px;
+            border-radius: 36px; background: #000;
+            padding: 10px; box-shadow: 0 25px 80px rgba(0,0,0,0.4);
+            transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.4s;
+        }
+        .preview-device-frame.desktop { width: 100%; max-width: 1000px; border-radius: 12px; padding: 0; }
+        .preview-device-frame.tablet { width: 768px; border-radius: 20px; }
+        .preview-device-frame iframe {
+            width: 100%; height: 100%; border: none;
+            border-radius: 28px; background: white;
+        }
+        .preview-device-frame.desktop iframe { border-radius: 12px; }
+        .preview-device-frame.tablet iframe { border-radius: 14px; }
+        .preview-iframe-loading {
             position: absolute; inset: 0;
-            opacity: 0; transition: opacity 0.9s cubic-bezier(0.4, 0, 0.2, 1);
-            padding: 16px; display: flex; flex-direction: column;
-            font-family: 'General Sans', -apple-system, sans-serif;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.6); z-index: 2; border-radius: inherit;
         }
-        .mock-state.active { opacity: 1; }
+        .preview-iframe-loading.active { display: flex; }
 
-        /* Chat bubble overlay */
-        .mockup-chat {
-            position: absolute; bottom: 0; left: 0; right: 0; z-index: 10;
-            padding: 0 16px 14px;
-            background: linear-gradient(to top, rgba(10,10,10,0.97) 60%, transparent);
+        .preview-bottom-bar {
+            display: flex; align-items: center; gap: 12px; padding: 12px 20px;
+            background: var(--ink-soft); border-top: 1px solid rgba(255,255,255,0.06);
         }
-        .chat-bubble {
-            display: flex; align-items: center; gap: 10px;
-            background: rgba(255,255,255,0.06);
+        .preview-bottom-bar .btn-main { padding: 12px 24px; font-size: 0.88rem; }
+        .preview-bottom-bar .btn-ghost {
+            padding: 12px 24px; border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.12); background: transparent;
+            color: rgba(255,255,255,0.6); font-family: inherit; font-weight: 600;
+            font-size: 0.88rem; cursor: pointer; transition: all 0.2s; text-decoration: none;
+        }
+        .preview-bottom-bar .btn-ghost:hover { border-color: rgba(255,255,255,0.25); color: white; }
+
+        /* Chat Panel */
+        .preview-right {
+            display: flex; flex-direction: column;
+            background: var(--ink-soft);
+        }
+        .preview-chat-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .preview-chat-header h4 { color: white; font-size: 0.95rem; font-weight: 700; margin-bottom: 2px; }
+        .preview-chat-counter { font-size: 0.76rem; color: rgba(255,255,255,0.35); }
+        .preview-chat-messages {
+            flex: 1; overflow-y: auto; padding: 16px 20px;
+            display: flex; flex-direction: column; gap: 12px;
+        }
+        .pchat-msg {
+            max-width: 90%; padding: 12px 16px; border-radius: 14px;
+            font-size: 0.88rem; line-height: 1.5;
+        }
+        .pchat-msg.user {
+            align-self: flex-end;
+            background: var(--ember); color: white; border-bottom-right-radius: 4px;
+        }
+        .pchat-msg.assistant {
+            align-self: flex-start;
+            background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.8);
+            border: 1px solid rgba(255,255,255,0.06); border-bottom-left-radius: 4px;
+        }
+        .preview-chat-input-wrap {
+            padding: 12px 16px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            display: flex; gap: 8px; align-items: flex-end;
+        }
+        .preview-chat-input-wrap textarea {
+            flex: 1; padding: 12px 16px; border-radius: 12px;
             border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px; padding: 10px 16px;
-            backdrop-filter: blur(8px);
+            background: rgba(255,255,255,0.04); color: white;
+            font-family: inherit; font-size: 0.88rem;
+            resize: none; outline: none; min-height: 44px; max-height: 100px;
         }
-        .chat-avatar {
-            width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
-            background: linear-gradient(135deg, var(--ember), var(--amber));
+        .preview-chat-input-wrap textarea::placeholder { color: rgba(255,255,255,0.25); }
+        .preview-chat-input-wrap textarea:focus { border-color: var(--ember); }
+        .preview-chat-send {
+            width: 44px; height: 44px; border-radius: 12px; border: none;
+            background: var(--ember); color: white;
             display: flex; align-items: center; justify-content: center;
-            font-size: 0.6rem; font-weight: 700; color: white;
+            cursor: pointer; transition: all 0.2s; flex-shrink: 0;
         }
-        .chat-text {
-            font-size: 0.78rem; color: rgba(255,255,255,0.7); font-weight: 500;
-            white-space: nowrap; overflow: hidden;
-        }
-        .chat-cursor {
-            display: inline-block; width: 2px; height: 14px; background: var(--ember);
-            margin-left: 1px; vertical-align: middle;
-            animation: cursorBlink 0.8s step-end infinite;
-        }
-        @keyframes cursorBlink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0; }
-        }
-        .chat-send {
-            width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
-            background: var(--ember); display: flex; align-items: center; justify-content: center;
-            opacity: 0; transition: opacity 0.3s; margin-left: auto;
-        }
-        .chat-send.vis { opacity: 1; }
+        .preview-chat-send:hover { background: var(--ember-light); }
+        .preview-chat-send:disabled { opacity: 0.3; cursor: not-allowed; }
 
-        /* ── State: Dashboard ── */
-        .ms-dash { display: grid; grid-template-columns: 110px 1fr; gap: 10px; height: 100%; }
-        .ms-dash-side {
-            background: rgba(255,255,255,0.025); border-radius: 8px; padding: 10px;
-            border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; gap: 2px;
+        /* Modals */
+        .preview-modal-overlay {
+            position: fixed; inset: 0; z-index: 10001;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+            display: none; align-items: center; justify-content: center; padding: 24px;
         }
-        .ms-dash-nav {
-            padding: 5px 8px; border-radius: 5px; font-size: 0.55rem;
-            color: #555; font-weight: 500;
+        .preview-modal-overlay.active { display: flex; }
+        .preview-modal {
+            background: var(--ink-soft); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px; padding: 36px; width: 100%; max-width: 440px;
         }
-        .ms-dash-nav.on { background: rgba(232,97,58,0.12); color: var(--ember-light); }
-        .ms-dash-main { display: flex; flex-direction: column; gap: 8px; }
-        .ms-dash-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-        .ms-dash-card {
-            background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.06);
-            border-radius: 8px; padding: 10px;
+        .preview-modal h3 {
+            font-family: 'Instrument Serif', serif;
+            font-size: 1.5rem; color: white; margin-bottom: 8px;
         }
-        .ms-dash-val { font-size: 0.95rem; font-weight: 700; }
-        .ms-dash-lbl { font-size: 0.5rem; color: #555; font-weight: 500; margin-top: 1px; }
-        .ms-dash-chart {
-            flex: 1; background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.06);
-            border-radius: 8px; padding: 10px; display: flex; flex-direction: column;
+        .preview-modal p { color: rgba(255,255,255,0.5); font-size: 0.9rem; margin-bottom: 24px; line-height: 1.6; }
+        .preview-modal .form-group { margin-bottom: 14px; }
+        .preview-modal .form-label { display: block; font-size: 0.78rem; font-weight: 600; color: rgba(255,255,255,0.5); margin-bottom: 6px; }
+        .preview-modal .form-input {
+            width: 100%; padding: 13px 16px;
+            border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-xs);
+            background: rgba(255,255,255,0.04); color: white;
+            font-family: inherit; font-size: 0.92rem; outline: none;
         }
-        .ms-dash-chart-t { font-size: 0.5rem; color: #555; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
-        .ms-dash-bars { display: flex; align-items: flex-end; gap: 4px; flex: 1; padding-top: 4px; }
-        .ms-dash-bar { flex: 1; border-radius: 3px 3px 0 0; min-height: 4px; }
+        .preview-modal .form-input:focus { border-color: var(--ember); box-shadow: 0 0 0 3px rgba(232,97,58,0.15); }
+        .preview-modal .form-input::placeholder { color: rgba(255,255,255,0.2); }
+        .preview-modal-submit {
+            width: 100%; padding: 16px; border-radius: 12px; border: none;
+            background: linear-gradient(135deg, var(--ember), var(--amber));
+            color: white; font-family: inherit; font-weight: 700; font-size: 1rem;
+            cursor: pointer; transition: all 0.3s; margin-top: 8px;
+        }
+        .preview-modal-submit:hover { transform: translateY(-2px); box-shadow: var(--shadow-glow); }
+        .preview-modal-skip {
+            display: block; text-align: center; margin-top: 12px;
+            color: rgba(255,255,255,0.3); font-size: 0.82rem; cursor: pointer;
+            background: none; border: none; font-family: inherit;
+        }
+        .preview-modal-skip:hover { color: rgba(255,255,255,0.5); }
 
-        /* ── State: Booking ── */
-        .ms-book { display: flex; flex-direction: column; gap: 8px; height: 100%; }
-        .ms-book-head { display: flex; justify-content: space-between; align-items: center; }
-        .ms-book-brand { font-size: 0.6rem; font-weight: 800; color: #d946db; letter-spacing: 0.02em; }
-        .ms-book-date { font-size: 0.55rem; font-weight: 600; color: #888; }
-        .ms-book-stats { display: flex; gap: 5px; }
-        .ms-book-stat {
-            flex: 1; text-align: center; padding: 6px; border-radius: 6px;
-        }
-        .ms-book-stat-v { font-size: 0.75rem; font-weight: 800; }
-        .ms-book-stat-l { font-size: 0.42rem; color: #555; }
-        .ms-book-cal { flex: 1; display: grid; grid-template-columns: 28px 1fr; overflow: hidden; }
-        .ms-book-times { display: flex; flex-direction: column; gap: 1px; border-right: 1px solid rgba(255,255,255,0.04); padding-right: 4px; }
-        .ms-book-time { font-size: 0.42rem; color: #444; padding: 5px 0; text-align: right; }
-        .ms-book-slots { display: flex; flex-direction: column; gap: 3px; padding-left: 6px; }
-        .ms-book-slot {
-            border-radius: 0 5px 5px 0; padding: 4px 8px;
-        }
-        .ms-book-slot-n { font-size: 0.48rem; font-weight: 700; }
-        .ms-book-slot-d { font-size: 0.38rem; opacity: 0.6; }
-
-        /* ── State: Proto Golf Store ── */
-        .ms-proto { display: flex; flex-direction: column; height: 100%; background: #f5f4f0; border-radius: 4px; overflow: hidden; }
-        .ms-proto-nav {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 6px 10px; background: #fff; border-bottom: 1px solid #eee;
-        }
-        .ms-proto-logo { font-size: 0.45rem; letter-spacing: 0.04em; display: flex; align-items: center; }
-        .ms-proto-links { display: flex; gap: 8px; font-size: 0.32rem; font-weight: 600; color: #555; letter-spacing: 0.06em; }
-        .ms-proto-cart-btn { font-size: 0.3rem; font-weight: 700; color: #fff; background: #111; padding: 3px 8px; border-radius: 2px; letter-spacing: 0.06em; }
-        .ms-proto-header { text-align: center; padding: 8px 10px 6px; background: linear-gradient(180deg, #eae8e3, #f5f4f0); }
-        .ms-proto-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 6px 8px; flex: 1; }
-        .ms-proto-card { background: #fff; border-radius: 4px; border: 1px solid #e8e6e2; overflow: hidden; display: flex; flex-direction: column; }
-        .ms-proto-img { height: 56px; }
-        .ms-proto-info { padding: 5px 6px 6px; }
-        .ms-proto-brand { font-size: 0.28rem; color: #999; font-weight: 600; letter-spacing: 0.08em; }
-        .ms-proto-name { font-size: 0.42rem; font-weight: 800; color: #111; letter-spacing: 0.02em; margin-top: 1px; }
-        .ms-proto-desc { font-size: 0.3rem; color: #888; line-height: 1.3; margin-top: 1px; }
-        .ms-proto-row { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
-        .ms-proto-price { font-size: 0.48rem; font-weight: 700; color: #111; }
-        .ms-proto-badge {
-            font-size: 0.26rem; font-weight: 700; letter-spacing: 0.06em;
-            color: #111; background: #f0efe9; border: 1px solid #ddd;
-            padding: 1px 5px; border-radius: 2px;
-        }
-        .ms-proto-badge-new { background: #111; color: #fff; border-color: #111; }
-
-        /* ── State: Landing Page ── */
-        .ms-land { display: flex; flex-direction: column; height: 100%; }
-        .ms-land-nav {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 6px 0 10px; border-bottom: 1px solid rgba(255,255,255,0.04);
-        }
-        .ms-land-logo { font-size: 0.6rem; font-weight: 800; color: var(--sky); }
-        .ms-land-links { display: flex; gap: 10px; }
-        .ms-land-link { font-size: 0.4rem; color: #555; font-weight: 500; }
-        .ms-land-hero {
-            flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;
-            text-align: center; gap: 8px; padding: 12px 0;
-        }
-        .ms-land-h { font-family: 'Instrument Serif', serif; font-size: 1.3rem; color: white; line-height: 1.1; letter-spacing: -0.02em; }
-        .ms-land-p { font-size: 0.48rem; color: #666; max-width: 280px; line-height: 1.5; }
-        .ms-land-cta {
-            padding: 6px 20px; border-radius: 6px; font-size: 0.48rem; font-weight: 700;
-            color: white; background: var(--sky); display: inline-block;
-        }
-        .ms-land-cards { display: flex; gap: 6px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.04); }
-        .ms-land-card {
-            flex: 1; background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.06);
-            border-radius: 6px; padding: 8px;
-        }
-        .ms-land-card-t { font-size: 0.42rem; font-weight: 700; color: #aaa; margin-bottom: 2px; }
-        .ms-land-card-d { font-size: 0.36rem; color: #555; line-height: 1.4; }
-
-        /* ── State label ── */
-        .mock-state-label {
-            position: absolute; top: 10px; right: 12px; z-index: 5;
-            padding: 3px 10px; border-radius: 6px;
-            font-size: 0.5rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
-            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
-            color: #555; opacity: 0; transition: opacity 0.9s;
-        }
-        .mock-state.active .mock-state-label { opacity: 1; }
-
-        /* ── Mobile mockup ── */
-        @media (max-width: 900px) {
-            .hero-visual { max-width: 520px; }
-            .mockup-body { min-height: 260px; }
-            .ms-dash { grid-template-columns: 90px 1fr; }
-            .ms-dash-val { font-size: 0.8rem; }
-        }
-        @media (max-width: 600px) {
-            .hero-visual { max-width: 100%; margin-top: 36px; }
-            .mockup-body { min-height: 220px; }
-            .ms-dash { grid-template-columns: 1fr; }
-            .ms-dash-side { display: none; }
-            .ms-dash-val { font-size: 0.75rem; }
-            .ms-book-cal { grid-template-columns: 1fr; }
-            .ms-book-times { display: none; }
-            .ms-proto-grid { grid-template-columns: repeat(2, 1fr); }
-            .ms-proto-card:nth-child(3) { display: none; }
-            .ms-proto-links { display: none; }
-            .ms-land-h { font-size: 1rem; }
-            .ms-land-cards { display: none; }
-            .chat-bubble { padding: 8px 12px; }
-            .chat-text { font-size: 0.7rem; }
+        @media (max-width: 768px) {
+            .preview-screen { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+            .preview-left { border-right: none; }
+            .preview-right {
+                position: fixed; bottom: 0; left: 0; right: 0;
+                height: 50vh; border-top: 1px solid rgba(255,255,255,0.1);
+                z-index: 10000; transform: translateY(calc(100% - 56px)); transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            }
+            .preview-right.expanded { transform: translateY(0); }
+            .preview-chat-header { cursor: pointer; }
+            .preview-device-frame { width: 100%; border-radius: 0; padding: 0; max-height: none; }
+            .preview-device-frame iframe { border-radius: 0; }
+            .preview-device-btns { display: none; }
+            .preview-iframe-wrap { padding: 0; }
         }
 
         /* ════════════ SECTIONS ════════════ */
@@ -793,9 +844,6 @@
         /* ════════════ MOBILE GLOBAL ════════════ */
         @media (max-width: 480px) {
             .hero h1 { font-size: 2.2rem; }
-            .hero-actions { flex-direction: column; }
-            .btn-main, .btn-ghost { width: 100%; justify-content: center; text-align: center; }
-            .hero-proof { gap: 20px; }
             .section { padding: 70px 20px; }
         }
     </style>
@@ -817,7 +865,7 @@
             <svg class="icon-menu" fill="none" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
             <svg class="icon-close" fill="none" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         </button>
-        <a href="#form" class="nav-cta">Start Free</a>
+        <a href="#previewForm" class="nav-cta" onclick="document.getElementById('businessDesc').focus();return false;">Try It Free</a>
     </div>
 </nav>
 
@@ -833,196 +881,117 @@
         <div class="hero-text">
             <div class="hero-pill">
                 <span class="hero-pill-dot"></span>
-                Now accepting new clients
+                See it before you commit
             </div>
-            <h1>Your own <em>AI dev team</em><br>for <em>$50/month</em></h1>
-            <p class="hero-sub">Tell us what your business needs. We build it for free in 30 days. Keep it running with unlimited chat support.</p>
-            <div class="hero-actions">
-                <a href="#form" class="btn-main">
-                    Get started free
-                    <svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </a>
-                <a href="#how" class="btn-ghost">How it works</a>
-            </div>
-            <div class="hero-proof">
-                <div class="hero-proof-item">
-                    <div class="hero-proof-val">&lt;24h</div>
-                    <div class="hero-proof-label">Turnaround</div>
-                </div>
-                <div class="hero-proof-item">
-                    <div class="hero-proof-val">100%</div>
-                    <div class="hero-proof-label">Free to Start</div>
-                </div>
-                <div class="hero-proof-item">
-                    <div class="hero-proof-val">30 days</div>
-                    <div class="hero-proof-label">Free Trial</div>
-                </div>
-            </div>
-        </div>
-        <div class="hero-visual">
-            <div class="mockup-browser">
-                <div class="mockup-bar">
-                    <span class="mockup-dot"></span>
-                    <span class="mockup-dot"></span>
-                    <span class="mockup-dot"></span>
-                    <span class="mockup-url" id="mockUrl">yourbusiness.suitegpt.app/dashboard</span>
-                </div>
-                <div class="mockup-body" id="mockBody">
-
-                    <!-- State 0: Analytics Dashboard -->
-                    <div class="mock-state active" data-url="yourbusiness.suitegpt.app/dashboard">
-                        <div class="mock-state-label">Dashboard</div>
-                        <div class="ms-dash">
-                            <div class="ms-dash-side">
-                                <div class="ms-dash-nav on">Dashboard</div>
-                                <div class="ms-dash-nav">Orders</div>
-                                <div class="ms-dash-nav">Products</div>
-                                <div class="ms-dash-nav">Customers</div>
-                                <div class="ms-dash-nav">Analytics</div>
-                                <div class="ms-dash-nav">Settings</div>
-                            </div>
-                            <div class="ms-dash-main">
-                                <div class="ms-dash-row">
-                                    <div class="ms-dash-card"><div class="ms-dash-val" style="color:#3ea878;">$12,840</div><div class="ms-dash-lbl">Revenue</div></div>
-                                    <div class="ms-dash-card"><div class="ms-dash-val" style="color:#4a90d9;">284</div><div class="ms-dash-lbl">Orders</div></div>
-                                    <div class="ms-dash-card"><div class="ms-dash-val" style="color:#e8a44a;">96.2%</div><div class="ms-dash-lbl">Satisfaction</div></div>
-                                </div>
-                                <div class="ms-dash-chart">
-                                    <div class="ms-dash-chart-t">Revenue This Week</div>
-                                    <div class="ms-dash-bars" id="mockBars"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- State 1: Salon Booking -->
-                    <div class="mock-state" data-url="glowstudio.suitegpt.app/bookings">
-                        <div class="mock-state-label" style="color:#d946db;">Booking System</div>
-                        <div class="ms-book">
-                            <div class="ms-book-head">
-                                <div class="ms-book-brand">GLOW STUDIO</div>
-                                <div class="ms-book-date">Sat, Feb 1</div>
-                            </div>
-                            <div class="ms-book-stats">
-                                <div class="ms-book-stat" style="background:rgba(217,70,219,0.08);"><div class="ms-book-stat-v" style="color:#d946db;">14</div><div class="ms-book-stat-l">booked</div></div>
-                                <div class="ms-book-stat" style="background:rgba(244,114,182,0.08);"><div class="ms-book-stat-v" style="color:#f472b6;">$1.2k</div><div class="ms-book-stat-l">revenue</div></div>
-                                <div class="ms-book-stat" style="background:rgba(167,139,250,0.08);"><div class="ms-book-stat-v" style="color:#a78bfa;">2</div><div class="ms-book-stat-l">open</div></div>
-                            </div>
-                            <div class="ms-book-cal">
-                                <div class="ms-book-times">
-                                    <div class="ms-book-time">10:00</div>
-                                    <div class="ms-book-time">11:00</div>
-                                    <div class="ms-book-time">12:00</div>
-                                    <div class="ms-book-time">1:00</div>
-                                    <div class="ms-book-time">2:00</div>
-                                </div>
-                                <div class="ms-book-slots">
-                                    <div class="ms-book-slot" style="background:linear-gradient(90deg,rgba(217,70,219,0.12),rgba(217,70,219,0.03));border-left:2px solid #d946db;"><div class="ms-book-slot-n" style="color:#d946db;">Sarah K.</div><div class="ms-book-slot-d" style="color:#889;">Color + Cut &mdash; 90min</div></div>
-                                    <div class="ms-book-slot" style="background:linear-gradient(90deg,rgba(244,114,182,0.12),rgba(244,114,182,0.03));border-left:2px solid #f472b6;"><div class="ms-book-slot-n" style="color:#f472b6;">Maria L.</div><div class="ms-book-slot-d" style="color:#889;">Balayage &mdash; 120min</div></div>
-                                    <div class="ms-book-slot" style="background:rgba(255,255,255,0.015);border-left:2px solid rgba(255,255,255,0.08);opacity:0.45;"><div class="ms-book-slot-n" style="color:#667;">Open slot</div></div>
-                                    <div class="ms-book-slot" style="background:linear-gradient(90deg,rgba(167,139,250,0.12),rgba(167,139,250,0.03));border-left:2px solid #a78bfa;"><div class="ms-book-slot-n" style="color:#a78bfa;">Jess W.</div><div class="ms-book-slot-d" style="color:#889;">Blowout &mdash; 45min</div></div>
-                                    <div class="ms-book-slot" style="background:linear-gradient(90deg,rgba(244,114,182,0.12),rgba(244,114,182,0.03));border-left:2px solid #f472b6;"><div class="ms-book-slot-n" style="color:#f472b6;">Amy T.</div><div class="ms-book-slot-d" style="color:#889;">Extensions &mdash; 150min</div></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- State 2: E-commerce Store (Proto Golf) -->
-                    <div class="mock-state" data-url="protogolf.suitegpt.app/shop">
-                        <div class="mock-state-label" style="color:#222;background:rgba(255,255,255,0.9);border-color:rgba(0,0,0,0.08);">Online Store</div>
-                        <div class="ms-proto">
-                            <!-- Nav -->
-                            <div class="ms-proto-nav">
-                                <div class="ms-proto-logo"><span style="background:#111;color:#fff;padding:1px 4px;border-radius:2px;font-size:0.4rem;margin-right:3px;">P</span> <span style="font-weight:800;color:#111;">PROTO</span> <span style="font-weight:400;color:#111;">GOLF</span></div>
-                                <div class="ms-proto-links">
-                                    <span>HOME</span>
-                                    <span style="border-bottom:1.5px solid #111;">SHOP</span>
-                                    <span>LIMITED</span>
-                                    <span>ABOUT</span>
-                                    <span>FAQ</span>
-                                </div>
-                                <div class="ms-proto-cart-btn">SHOP NOW</div>
-                            </div>
-                            <!-- Header -->
-                            <div class="ms-proto-header">
-                                <div style="font-size:0.38rem;color:#888;letter-spacing:0.1em;font-weight:600;border:1px solid #ddd;display:inline-block;padding:1px 6px;border-radius:2px;">COLLECTION</div>
-                                <div style="font-family:'Instrument Serif',serif;font-size:1.1rem;color:#111;margin-top:3px;"><b>SHOP</b> <i>Putters</i></div>
-                                <div style="font-size:0.38rem;color:#888;">CNC-milled precision putters. Handcrafted in Canada.</div>
-                            </div>
-                            <!-- Products -->
-                            <div class="ms-proto-grid">
-                                <div class="ms-proto-card">
-                                    <div class="ms-proto-img" style="background:#f0efe9;"><img src="/proto-golf-site/assets/putters/polished-rough-mill-1.png" alt="Rough Mill" style="width:100%;height:100%;object-fit:contain;"></div>
-                                    <div class="ms-proto-info">
-                                        <div class="ms-proto-brand">PROTO GOLF</div>
-                                        <div class="ms-proto-name">ROUGH MILL</div>
-                                        <div class="ms-proto-desc">304 Stainless Steel CNC milled. 370g head.</div>
-                                        <div class="ms-proto-row"><div class="ms-proto-price">$105</div><div class="ms-proto-badge">IN STOCK</div></div>
-                                    </div>
-                                </div>
-                                <div class="ms-proto-card">
-                                    <div class="ms-proto-img" style="background:#f0efe9;"><img src="/proto-golf-site/assets/putters/polished-centre-blade-1.png" alt="Centre Blade" style="width:100%;height:100%;object-fit:contain;"></div>
-                                    <div class="ms-proto-info">
-                                        <div class="ms-proto-brand">PROTO GOLF</div>
-                                        <div class="ms-proto-name">CENTRE BLADE</div>
-                                        <div class="ms-proto-desc">1045 Carbon Steel. Zero torque design.</div>
-                                        <div class="ms-proto-row"><div class="ms-proto-price">$105</div><div class="ms-proto-badge ms-proto-badge-new">NEW</div></div>
-                                    </div>
-                                </div>
-                                <div class="ms-proto-card">
-                                    <div class="ms-proto-img" style="background:#f0efe9;"><img src="/proto-golf-site/assets/putters/stainless-long-neck-blade-1.png" alt="Long Neck Blade" style="width:100%;height:100%;object-fit:contain;"></div>
-                                    <div class="ms-proto-info">
-                                        <div class="ms-proto-brand">PROTO GOLF</div>
-                                        <div class="ms-proto-name">LONG NECK BLADE</div>
-                                        <div class="ms-proto-desc">Extended hosel for arc putting strokes.</div>
-                                        <div class="ms-proto-row"><div class="ms-proto-price">$110</div><div class="ms-proto-badge">IN STOCK</div></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- State 3: Landing Page -->
-                    <div class="mock-state" data-url="clearflow.suitegpt.app">
-                        <div class="mock-state-label" style="color:#4a90d9;">Website</div>
-                        <div class="ms-land">
-                            <div class="ms-land-nav">
-                                <div class="ms-land-logo">ClearFlow</div>
-                                <div class="ms-land-links">
-                                    <span class="ms-land-link">Services</span>
-                                    <span class="ms-land-link">About</span>
-                                    <span class="ms-land-link">Contact</span>
-                                </div>
-                            </div>
-                            <div class="ms-land-hero">
-                                <div class="ms-land-h">Plumbing done<br>right, every time.</div>
-                                <div class="ms-land-p">Licensed & insured residential plumbing. Same-day emergency service. Free estimates.</div>
-                                <div class="ms-land-cta">Book a Service</div>
-                            </div>
-                            <div class="ms-land-cards">
-                                <div class="ms-land-card"><div class="ms-land-card-t">Emergency</div><div class="ms-land-card-d">24/7 burst pipe & leak repair</div></div>
-                                <div class="ms-land-card"><div class="ms-land-card-t">Renovations</div><div class="ms-land-card-d">Full kitchen & bath remodels</div></div>
-                                <div class="ms-land-card"><div class="ms-land-card-t">Maintenance</div><div class="ms-land-card-d">Annual inspections & drain cleaning</div></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Chat overlay -->
-                    <div class="mockup-chat">
-                        <div class="chat-bubble">
-                            <div class="chat-avatar">You</div>
-                            <div class="chat-text" id="chatText"><span class="chat-cursor"></span></div>
-                            <div class="chat-send" id="chatSend">
-                                <svg width="12" height="12" fill="none" viewBox="0 0 12 12"><path d="M1 6h10M7 2l4 4-4 4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            </div>
-                        </div>
-                    </div>
-
+            <h1>Describe your business.<br><em>Get a website in seconds.</em></h1>
+            <p class="hero-sub">Type one sentence about what you do. Our AI builds a full preview — free, no signup required.</p>
+            <div class="hero-preview-input">
+                <form class="preview-form" id="previewForm">
+                    <input type="text" id="businessDesc" placeholder="e.g. barbershop in Calgary, classic cuts, online booking" maxlength="200" required>
+                    <button type="submit" id="previewBtn">Generate Preview</button>
+                </form>
+                <p class="preview-hint">Free preview, no signup required</p>
+                <div class="preview-examples">
+                    <span class="preview-example" data-desc="Italian restaurant in Toronto, family-owned, dinner reservations">Restaurant</span>
+                    <span class="preview-example" data-desc="freelance photographer in Vancouver, weddings and portraits">Photographer</span>
+                    <span class="preview-example" data-desc="CrossFit gym in Calgary, group classes, personal training">Gym</span>
+                    <span class="preview-example" data-desc="plumbing company in Edmonton, emergency repairs, residential">Plumber</span>
                 </div>
             </div>
         </div>
     </div>
 </section>
+
+<!-- ════════ LOADING OVERLAY ════════ -->
+<div class="preview-loading" id="previewLoading">
+    <div class="preview-loading-spinner"></div>
+    <h3 id="loadingTitle">Building your website<span class="preview-loading-dots"></span></h3>
+    <p id="loadingHint">Analyzing your business</p>
+</div>
+
+<!-- ════════ FULL-SCREEN PREVIEW ════════ -->
+<div class="preview-screen" id="previewScreen">
+    <div class="preview-left">
+        <div class="preview-toolbar">
+            <button class="preview-back" id="previewBack">&#8592; Back</button>
+            <div class="preview-toolbar-title" id="previewTitle">Preview</div>
+            <div class="preview-device-btns">
+                <button class="preview-device-btn active" data-device="mobile">Mobile</button>
+                <button class="preview-device-btn" data-device="tablet">Tablet</button>
+                <button class="preview-device-btn" data-device="desktop">Desktop</button>
+            </div>
+        </div>
+        <div class="preview-iframe-wrap">
+            <div class="preview-device-frame" id="previewFrame">
+                <iframe id="previewIframe" sandbox="allow-scripts"></iframe>
+                <div class="preview-iframe-loading" id="previewIframeLoading">
+                    <div class="preview-loading-spinner"></div>
+                </div>
+            </div>
+        </div>
+        <div class="preview-bottom-bar">
+            <button class="btn-main" id="startTrialBtn">Start 30-Day Free Trial <svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <button class="btn-ghost" id="downloadHtmlBtn">Download HTML</button>
+        </div>
+    </div>
+    <div class="preview-right" id="previewChatPanel">
+        <div class="preview-chat-header" id="previewChatToggle">
+            <h4>Refine Your Site</h4>
+            <div class="preview-chat-counter" id="refinementCounter">2 free refinements remaining</div>
+        </div>
+        <div class="preview-chat-messages" id="previewChatMessages"></div>
+        <div class="preview-chat-input-wrap">
+            <textarea id="previewChatInput" placeholder="e.g. make the colors warmer, add a pricing section..." rows="1"></textarea>
+            <button class="preview-chat-send" id="sendRefinement">
+                <svg width="18" height="18" fill="none" viewBox="0 0 18 18"><path d="M3 9h12M11 5l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ════════ EMAIL CAPTURE MODAL ════════ -->
+<div class="preview-modal-overlay" id="emailModal">
+    <div class="preview-modal">
+        <h3>Save your progress</h3>
+        <p>Enter your email to keep refining. We'll save your site so you can come back anytime.</p>
+        <form id="emailCaptureForm">
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input class="form-input" type="email" id="captureEmail" placeholder="you@business.com" required>
+            </div>
+            <button type="submit" class="preview-modal-submit">Continue Refining</button>
+        </form>
+        <button class="preview-modal-skip" id="emailModalSkip">Maybe later</button>
+    </div>
+</div>
+
+<!-- ════════ TRIAL SIGNUP MODAL ════════ -->
+<div class="preview-modal-overlay" id="trialModal">
+    <div class="preview-modal">
+        <h3>Start your free trial</h3>
+        <p>Get a live URL, unlimited changes, and 24-hour support for 30 days — completely free.</p>
+        <form id="trialSignupForm">
+            <div class="form-group">
+                <label class="form-label">Your Name *</label>
+                <input class="form-input" type="text" id="trialName" placeholder="Jane Smith" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Email *</label>
+                <input class="form-input" type="email" id="trialEmail" placeholder="jane@business.com" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Phone (optional)</label>
+                <input class="form-input" type="tel" id="trialPhone" placeholder="(555) 123-4567">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Business Name</label>
+                <input class="form-input" type="text" id="trialBusiness" placeholder="Jane's Bakery">
+            </div>
+            <button type="submit" class="preview-modal-submit">Start Free Trial</button>
+        </form>
+        <button class="preview-modal-skip" id="trialModalSkip">Not yet</button>
+    </div>
+</div>
 
 <!-- ════════ FEATURES ════════ -->
 <section class="section" id="features">
@@ -1413,186 +1382,451 @@
 
 <script>
 (function() {
-    // ── URL Params ──
+    // ── Config ──
     var params = new URLSearchParams(window.location.search);
     var refMap = { kijiji: 'kijiji', fb: 'fb-marketplace', linkedin: 'linkedin', ig: 'instagram', reddit: 'reddit' };
     var source = refMap[params.get('ref')] || params.get('ref') || 'direct';
     var adId = params.get('ad') || null;
 
-    // ── Supabase config ──
     var SB_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
     var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
+    var FREE_REFINEMENTS = 2;
+    var EMAIL_REFINEMENTS = 5;
 
-    // ── Nav scroll ──
+    // ── Preview State ──
+    var pState = {
+        businessDesc: '',
+        currentHtml: '',
+        refinementCount: 0,
+        email: null,
+        trialStarted: false
+    };
+
+    function saveState() {
+        try { localStorage.setItem('suitePreview', JSON.stringify(pState)); } catch(e) {}
+    }
+    function loadState() {
+        try {
+            var s = localStorage.getItem('suitePreview');
+            if (s) pState = JSON.parse(s);
+        } catch(e) {}
+    }
+
+    // ── Nav ──
     var nav = document.getElementById('nav');
     window.addEventListener('scroll', function() {
         nav.classList.toggle('scrolled', window.scrollY > 40);
     });
-
-    // ── Mobile hamburger ──
     var hamburger = document.getElementById('navHamburger');
-    var navLinks = document.querySelector('.nav-links');
+    var navLinksEl = document.querySelector('.nav-links');
     hamburger.addEventListener('click', function() {
         hamburger.classList.toggle('open');
-        navLinks.classList.toggle('open');
+        navLinksEl.classList.toggle('open');
     });
-    navLinks.querySelectorAll('a').forEach(function(link) {
+    navLinksEl.querySelectorAll('a').forEach(function(link) {
         link.addEventListener('click', function() {
             hamburger.classList.remove('open');
-            navLinks.classList.remove('open');
+            navLinksEl.classList.remove('open');
         });
     });
-
-
-    // ── Dashboard chart bars ──
-    var barsContainer = document.getElementById('mockBars');
-    if (barsContainer) {
-        var barHeights = [45, 65, 55, 80, 70, 90, 60];
-        var barColors = ['#e8613a', '#e8a44a', '#e8613a', '#3ea878', '#4a90d9', '#e8613a', '#8b6cc1'];
-        barHeights.forEach(function(h, i) {
-            var bar = document.createElement('div');
-            bar.className = 'ms-dash-bar';
-            bar.style.height = h + '%';
-            bar.style.background = barColors[i];
-            barsContainer.appendChild(bar);
-        });
-    }
-
-    // ── Cycling Mockup Engine ──
-    var states = document.querySelectorAll('.mock-state');
-    var urlEl = document.getElementById('mockUrl');
-    var chatTextEl = document.getElementById('chatText');
-    var chatSendEl = document.getElementById('chatSend');
-    var currentState = 0;
-
-    var chatMessages = [
-        'Show me my sales dashboard',
-        'I need a booking system for my salon',
-        'Build me an online store',
-        'Create a website for my plumbing business'
-    ];
-
-    var typeTimer = null;
-    var cycleTimer = null;
-
-    function typeMessage(msg, cb) {
-        var i = 0;
-        chatSendEl.classList.remove('vis');
-        chatTextEl.innerHTML = '<span class="chat-cursor"></span>';
-
-        typeTimer = setInterval(function() {
-            if (i < msg.length) {
-                chatTextEl.innerHTML = msg.substring(0, i + 1) + '<span class="chat-cursor"></span>';
-                i++;
-            } else {
-                clearInterval(typeTimer);
-                chatSendEl.classList.add('vis');
-                if (cb) setTimeout(cb, 1200);
-            }
-        }, 38);
-    }
-
-    function showState(idx) {
-        states.forEach(function(s) { s.classList.remove('active'); });
-        states[idx].classList.add('active');
-        urlEl.textContent = states[idx].getAttribute('data-url');
-    }
-
-    function cycleNext() {
-        var nextState = (currentState + 1) % states.length;
-        showState(nextState);
-        currentState = nextState;
-
-        // Start typing the message for the NEXT state after a pause
-        setTimeout(function() {
-            var nextMsg = (currentState + 1) % chatMessages.length;
-            typeMessage(chatMessages[nextMsg], function() {
-                cycleNext();
-            });
-        }, 800);
-    }
-
-    // Kick off: type message for state 1, then start cycling
-    setTimeout(function() {
-        typeMessage(chatMessages[1], function() {
-            cycleNext();
-        });
-    }, 2000);
 
     // ── Scroll Reveal ──
     var reveals = document.querySelectorAll('.reveal');
     var revealObserver = new IntersectionObserver(function(entries) {
         entries.forEach(function(e) {
-            if (e.isIntersecting) {
-                e.target.classList.add('vis');
-                revealObserver.unobserve(e.target);
-            }
+            if (e.isIntersecting) { e.target.classList.add('vis'); revealObserver.unobserve(e.target); }
         });
     }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
     reveals.forEach(function(el) { revealObserver.observe(el); });
 
-    // ── Form Submit ──
+    // ── Form Submit (bottom form) ──
     var form = document.getElementById('leadForm');
-    var btn = document.getElementById('submitBtn');
-    var errorEl = document.getElementById('formError');
-    var successEl = document.getElementById('formSuccess');
-
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        errorEl.classList.remove('show');
-        btn.disabled = true;
-        btn.textContent = 'Sending...';
-
-        var body = {
-            name: document.getElementById('name').value.trim(),
-            email: document.getElementById('email').value.trim(),
-            phone: document.getElementById('phone').value.trim() || null,
-            business_name: document.getElementById('businessName').value.trim() || null,
-            business_type: document.getElementById('businessType').value || null,
-            what_they_need: document.getElementById('whatTheyNeed').value.trim(),
-            source: source,
-            status: 'new'
-        };
-        if (adId) body.ad_id = adId;
-
-        fetch(SB_URL + '/rest/v1/client_leads', {
-            method: 'POST',
-            headers: {
-                'apikey': SB_KEY,
-                'Authorization': 'Bearer ' + SB_KEY,
-                'Content-Type': 'application/json',
-                'Prefer': 'return=minimal'
-            },
-            body: JSON.stringify(body)
-        })
-        .then(function(resp) {
-            if (!resp.ok) throw new Error('Server error (' + resp.status + ')');
-            form.style.display = 'none';
-            errorEl.style.display = 'none';
-            successEl.classList.add('show');
-            // Send email notification (fire-and-forget, don't block success)
-            fetch('/api/notify-lead', {
+    if (form) {
+        var btn = document.getElementById('submitBtn');
+        var errorEl = document.getElementById('formError');
+        var successEl = document.getElementById('formSuccess');
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            errorEl.classList.remove('show');
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+            var body = {
+                name: document.getElementById('name').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                phone: document.getElementById('phone').value.trim() || null,
+                business_name: document.getElementById('businessName').value.trim() || null,
+                business_type: document.getElementById('businessType').value || null,
+                what_they_need: document.getElementById('whatTheyNeed').value.trim(),
+                source: source, status: 'new'
+            };
+            if (adId) body.ad_id = adId;
+            fetch(SB_URL + '/rest/v1/client_leads', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: body.name,
-                    email: body.email,
-                    phone: body.phone,
-                    business_name: body.business_name,
-                    business_type: body.business_type,
-                    message: body.what_they_need,
-                    source: body.source,
-                    ad_id: adId || null
-                })
-            }).catch(function() {});
-        })
-        .catch(function(err) {
-            errorEl.textContent = 'Something went wrong. Please try again or email us at stuart5915@gmail.com.';
-            errorEl.classList.add('show');
-            btn.disabled = false;
-            btn.textContent = 'Send My Request';
+                headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+                body: JSON.stringify(body)
+            }).then(function(resp) {
+                if (!resp.ok) throw new Error('Server error');
+                form.style.display = 'none'; errorEl.style.display = 'none'; successEl.classList.add('show');
+                fetch('/api/notify-lead', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: body.name, email: body.email, phone: body.phone, business_name: body.business_name, business_type: body.business_type, message: body.what_they_need, source: body.source, ad_id: adId })
+                }).catch(function() {});
+            }).catch(function() {
+                errorEl.textContent = 'Something went wrong. Please try again.';
+                errorEl.classList.add('show'); btn.disabled = false; btn.textContent = 'Send My Request';
+            });
+        });
+    }
+
+    // ════════════════════════════════════════
+    // PREVIEW SYSTEM
+    // ════════════════════════════════════════
+
+    var previewForm = document.getElementById('previewForm');
+    var descInput = document.getElementById('businessDesc');
+    var previewBtn = document.getElementById('previewBtn');
+    var loadingEl = document.getElementById('previewLoading');
+    var loadingHint = document.getElementById('loadingHint');
+    var screenEl = document.getElementById('previewScreen');
+    var iframeEl = document.getElementById('previewIframe');
+    var frameEl = document.getElementById('previewFrame');
+    var iframeLoading = document.getElementById('previewIframeLoading');
+    var chatMessages = document.getElementById('previewChatMessages');
+    var chatInput = document.getElementById('previewChatInput');
+    var sendBtn = document.getElementById('sendRefinement');
+    var counterEl = document.getElementById('refinementCounter');
+    var titleEl = document.getElementById('previewTitle');
+
+    // ── Example chips ──
+    document.querySelectorAll('.preview-example').forEach(function(chip) {
+        chip.addEventListener('click', function() {
+            descInput.value = chip.getAttribute('data-desc');
+            descInput.focus();
         });
     });
+
+    // ── Generate ──
+    previewForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        var desc = descInput.value.trim();
+        if (desc.length < 5) return;
+        generatePreview(desc);
+    });
+
+    function buildPrompt(desc) {
+        return 'You are generating a professional single-page business landing website.\n\n' +
+            'BUSINESS DESCRIPTION: "' + desc + '"\n\n' +
+            'Requirements:\n' +
+            '- Complete self-contained HTML file with inline CSS and JavaScript\n' +
+            '- Modern, professional design with clean typography\n' +
+            '- Responsive mobile-first layout\n' +
+            '- Include these sections: hero with compelling headline, services/features, about, contact form\n' +
+            '- Infer appropriate color scheme from business type\n' +
+            '- Use a text-based logo placeholder with the business name\n' +
+            '- Add subtle hover effects and scroll animations\n' +
+            '- Professional call-to-action buttons\n' +
+            '- Working contact form with inline validation (no backend needed)\n' +
+            '- Use Google Fonts (1-2 fonts max, import via link tag)\n' +
+            '- NO external JavaScript dependencies\n' +
+            '- Make it look like a real, professional business website\n' +
+            '- Use high-quality placeholder images via gradient backgrounds or CSS shapes\n\n' +
+            'Style Guidelines:\n' +
+            '- Generous whitespace and clear visual hierarchy\n' +
+            '- Subtle gradients, shadows, and rounded corners\n' +
+            '- Mobile-friendly navigation with hamburger on small screens\n' +
+            '- Semantic HTML with accessibility in mind\n\n' +
+            'Output ONLY the complete HTML code. Start with <!DOCTYPE html> and end with </html>.\n' +
+            'No markdown, no explanations, no code fences.';
+    }
+
+    function buildRefinementPrompt(html, request) {
+        return 'Here is a business website HTML:\n\n' + html + '\n\n' +
+            'USER REQUEST: "' + request + '"\n\n' +
+            'Modify the HTML according to the user\'s request. Maintain all existing functionality and content unless specifically asked to change it. Keep the same overall structure and quality.\n\n' +
+            'Output ONLY the complete modified HTML, starting with <!DOCTYPE html> and ending with </html>. No markdown, no explanations, no code fences.';
+    }
+
+    function extractHtml(text) {
+        var m = text.match(/<!DOCTYPE html>[\s\S]*<\/html>/i);
+        if (m) return m[0];
+        var cb = text.match(/```(?:html)?\s*([\s\S]*?)\s*```/i);
+        if (cb && cb[1].includes('<!DOCTYPE')) return cb[1].match(/<!DOCTYPE html>[\s\S]*<\/html>/i)[0];
+        return null;
+    }
+
+    async function callGemini(prompt) {
+        var resp = await fetch('/api/gemini', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                prompt: prompt,
+                model: 'gemini-2.0-flash',
+                generationConfig: { temperature: 0.8, maxOutputTokens: 16000 },
+                enableSearch: false
+            })
+        });
+        if (!resp.ok) throw new Error('API error ' + resp.status);
+        var data = await resp.json();
+        return data.text || '';
+    }
+
+    var hints = ['Analyzing your business', 'Choosing colors and layout', 'Writing content', 'Adding final touches'];
+
+    async function generatePreview(desc) {
+        pState.businessDesc = desc;
+        pState.refinementCount = 0;
+        pState.currentHtml = '';
+
+        // Show loading
+        loadingEl.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        var hi = 0;
+        loadingHint.textContent = hints[0];
+        var hintTimer = setInterval(function() {
+            hi++;
+            if (hi < hints.length) loadingHint.textContent = hints[hi];
+        }, 3000);
+
+        try {
+            var text = await callGemini(buildPrompt(desc));
+            var html = extractHtml(text);
+            if (!html) throw new Error('No HTML generated');
+
+            pState.currentHtml = html;
+            saveState();
+            clearInterval(hintTimer);
+            loadingEl.classList.remove('active');
+            showPreview(html, desc);
+
+            // Log lead to supabase (fire-and-forget)
+            fetch(SB_URL + '/rest/v1/client_leads', {
+                method: 'POST',
+                headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+                body: JSON.stringify({ what_they_need: desc, source: source + '-preview', status: 'preview' })
+            }).catch(function() {});
+
+        } catch(err) {
+            clearInterval(hintTimer);
+            loadingEl.classList.remove('active');
+            document.body.style.overflow = '';
+            alert('Failed to generate preview. Please try again.');
+            console.error(err);
+        }
+    }
+
+    function showPreview(html, desc) {
+        iframeEl.srcdoc = html;
+        titleEl.textContent = desc;
+        screenEl.classList.add('active');
+        updateCounter();
+        chatMessages.innerHTML = '';
+        addChat('assistant', 'Here\'s your website preview! Want to change anything? You have ' + FREE_REFINEMENTS + ' free refinements.');
+    }
+
+    function hidePreview() {
+        screenEl.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    function updateCounter() {
+        var limit = getLimit();
+        var remaining = limit - pState.refinementCount;
+        if (remaining < 0) remaining = 0;
+        if (pState.trialStarted) {
+            counterEl.textContent = 'Unlimited refinements (trial active)';
+        } else if (pState.email) {
+            counterEl.textContent = remaining + ' refinement' + (remaining !== 1 ? 's' : '') + ' remaining';
+        } else {
+            counterEl.textContent = remaining + ' free refinement' + (remaining !== 1 ? 's' : '') + ' remaining';
+        }
+    }
+
+    function getLimit() {
+        if (pState.trialStarted) return 9999;
+        if (pState.email) return EMAIL_REFINEMENTS;
+        return FREE_REFINEMENTS;
+    }
+
+    function addChat(role, text) {
+        var div = document.createElement('div');
+        div.className = 'pchat-msg ' + role;
+        div.textContent = text;
+        chatMessages.appendChild(div);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // ── Refinement ──
+    async function refine(request) {
+        if (pState.refinementCount >= getLimit()) {
+            if (!pState.email) {
+                document.getElementById('emailModal').classList.add('active');
+            } else if (!pState.trialStarted) {
+                document.getElementById('trialModal').classList.add('active');
+            }
+            return;
+        }
+
+        pState.refinementCount++;
+        updateCounter();
+        addChat('user', request);
+        iframeLoading.classList.add('active');
+        sendBtn.disabled = true;
+
+        try {
+            var text = await callGemini(buildRefinementPrompt(pState.currentHtml, request));
+            var html = extractHtml(text);
+            if (!html) throw new Error('No HTML');
+
+            pState.currentHtml = html;
+            saveState();
+            iframeEl.srcdoc = html;
+            iframeLoading.classList.remove('active');
+            sendBtn.disabled = false;
+            addChat('assistant', 'Updated! Check out the changes.');
+
+            // Check if next refinement would hit wall
+            if (pState.refinementCount >= getLimit() && !pState.trialStarted) {
+                if (!pState.email) {
+                    setTimeout(function() {
+                        addChat('assistant', 'You\'ve used your free refinements. Enter your email to keep going!');
+                    }, 1000);
+                } else {
+                    setTimeout(function() {
+                        addChat('assistant', 'You\'ve used all your refinements. Start your free trial for unlimited changes!');
+                    }, 1000);
+                }
+            }
+        } catch(err) {
+            iframeLoading.classList.remove('active');
+            sendBtn.disabled = false;
+            addChat('assistant', 'Sorry, that didn\'t work. Please try again.');
+            pState.refinementCount--;
+            updateCounter();
+            console.error(err);
+        }
+    }
+
+    sendBtn.addEventListener('click', function() {
+        var val = chatInput.value.trim();
+        if (!val) return;
+        chatInput.value = '';
+        refine(val);
+    });
+
+    chatInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendBtn.click();
+        }
+    });
+
+    // ── Device toggle ──
+    document.querySelectorAll('.preview-device-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.preview-device-btn').forEach(function(b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            var device = btn.getAttribute('data-device');
+            frameEl.className = 'preview-device-frame' + (device !== 'mobile' ? ' ' + device : '');
+        });
+    });
+
+    // ── Back button ──
+    document.getElementById('previewBack').addEventListener('click', hidePreview);
+
+    // ── Mobile chat toggle ──
+    document.getElementById('previewChatToggle').addEventListener('click', function() {
+        document.getElementById('previewChatPanel').classList.toggle('expanded');
+    });
+
+    // ── Download (requires trial) ──
+    document.getElementById('downloadHtmlBtn').addEventListener('click', function() {
+        if (!pState.trialStarted) {
+            document.getElementById('trialModal').classList.add('active');
+            return;
+        }
+        var blob = new Blob([pState.currentHtml], { type: 'text/html' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'my-website.html';
+        a.click();
+    });
+
+    // ── Start Trial button ──
+    document.getElementById('startTrialBtn').addEventListener('click', function() {
+        document.getElementById('trialModal').classList.add('active');
+    });
+
+    // ── Email Capture Modal ──
+    document.getElementById('emailCaptureForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var email = document.getElementById('captureEmail').value.trim();
+        if (!email) return;
+        pState.email = email;
+        saveState();
+        document.getElementById('emailModal').classList.remove('active');
+        updateCounter();
+        addChat('assistant', 'Email saved! You have ' + (EMAIL_REFINEMENTS - pState.refinementCount) + ' more refinements.');
+
+        // Save lead to supabase
+        fetch(SB_URL + '/rest/v1/client_leads', {
+            method: 'POST',
+            headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ email: email, what_they_need: pState.businessDesc, source: source + '-preview-email', status: 'preview' })
+        }).catch(function() {});
+    });
+    document.getElementById('emailModalSkip').addEventListener('click', function() {
+        document.getElementById('emailModal').classList.remove('active');
+    });
+
+    // ── Trial Signup Modal ──
+    document.getElementById('trialSignupForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var name = document.getElementById('trialName').value.trim();
+        var email = document.getElementById('trialEmail').value.trim();
+        var phone = document.getElementById('trialPhone').value.trim();
+        var biz = document.getElementById('trialBusiness').value.trim();
+        if (!name || !email) return;
+
+        pState.email = email;
+        pState.trialStarted = true;
+        saveState();
+        document.getElementById('trialModal').classList.remove('active');
+        updateCounter();
+        addChat('assistant', 'Welcome to your 30-day trial! You now have unlimited refinements. We\'ll reach out within 24 hours to set up your live site.');
+
+        // Save to supabase
+        fetch(SB_URL + '/rest/v1/client_leads', {
+            method: 'POST',
+            headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+            body: JSON.stringify({
+                name: name, email: email, phone: phone || null, business_name: biz || null,
+                what_they_need: pState.businessDesc, source: source + '-preview-trial', status: 'trial'
+            })
+        }).catch(function() {});
+
+        // Notify Stuart
+        fetch('/api/notify-lead', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name, email: email, phone: phone, business_name: biz, message: 'TRIAL SIGNUP from preview: ' + pState.businessDesc, source: source + '-preview-trial' })
+        }).catch(function() {});
+    });
+    document.getElementById('trialModalSkip').addEventListener('click', function() {
+        document.getElementById('trialModal').classList.remove('active');
+    });
+
+    // ── Pre-fill trial email if captured ──
+    document.getElementById('emailModal').addEventListener('transitionend', function() {});
+    // If email already captured, pre-fill trial form
+    function prefillTrial() {
+        if (pState.email) document.getElementById('trialEmail').value = pState.email;
+    }
+    var trialModalEl = document.getElementById('trialModal');
+    var origTrialShow = trialModalEl.classList;
+    new MutationObserver(function() {
+        if (trialModalEl.classList.contains('active')) prefillTrial();
+    }).observe(trialModalEl, { attributes: true, attributeFilter: ['class'] });
+
+    // ── Load saved state on init ──
+    loadState();
 })();
 </script>
 </body>
