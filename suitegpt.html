@@ -25749,32 +25749,77 @@ Rules:
             const btn = document.getElementById(btnMap[id] || 'jhAnalyzeCopyBtn');
             btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 1500);
         }
-        // JH Pipeline (localStorage)
-        function jhGetApps() { return JSON.parse(localStorage.getItem('jh_applications') || '[]'); }
-        function jhSaveApps(apps) { localStorage.setItem('jh_applications', JSON.stringify(apps)); }
-        function jhAddApplication() {
+        // JH Pipeline (Supabase with localStorage fallback)
+        function jhGetCurrentUserId() {
+            const user = getFactoryCurrentUser();
+            return user?.supabase_id || user?.id || null;
+        }
+        async function jhGetApps() {
+            const userId = jhGetCurrentUserId();
+            if (userId && supabaseClient) {
+                try {
+                    const { data, error } = await supabaseClient.from('jh_applications').select('*').eq('user_id', userId).order('created_at', { ascending: true });
+                    if (!error && data) return data;
+                } catch (e) { console.error('[JH] Supabase fetch error:', e); }
+            }
+            return JSON.parse(localStorage.getItem('jh_applications') || '[]');
+        }
+        async function jhMigrateLocalToSupabase() {
+            const userId = jhGetCurrentUserId();
+            if (!userId || !supabaseClient) return;
+            const local = JSON.parse(localStorage.getItem('jh_applications') || '[]');
+            if (local.length === 0) return;
+            const rows = local.map(a => ({ id: a.id, user_id: userId, company: a.company, role: a.role, link: a.link || '', stage: a.stage, date: a.date }));
+            const { error } = await supabaseClient.from('jh_applications').upsert(rows, { onConflict: 'id' });
+            if (!error) {
+                localStorage.removeItem('jh_applications');
+                console.log('[JH] Migrated', rows.length, 'apps from localStorage to Supabase');
+            }
+        }
+        async function jhAddApplication() {
             const company = document.getElementById('jhAddCompany').value.trim();
             const role = document.getElementById('jhAddRole').value.trim();
             const link = document.getElementById('jhAddLink').value.trim();
             if (!company || !role) { alert('Company and role required.'); return; }
-            const apps = jhGetApps();
-            apps.push({ id: Date.now().toString(), company, role, link, stage: 'applied', date: new Date().toLocaleDateString() });
-            jhSaveApps(apps);
+            const newApp = { id: Date.now().toString(), company, role, link, stage: 'applied', date: new Date().toLocaleDateString() };
+            const userId = jhGetCurrentUserId();
+            if (userId && supabaseClient) {
+                const { error } = await supabaseClient.from('jh_applications').insert({ ...newApp, user_id: userId });
+                if (error) { console.error('[JH] Insert error:', error); alert('Failed to save. Please try again.'); return; }
+            } else {
+                const apps = JSON.parse(localStorage.getItem('jh_applications') || '[]');
+                apps.push(newApp);
+                localStorage.setItem('jh_applications', JSON.stringify(apps));
+            }
             document.getElementById('jhAddCompany').value = '';
             document.getElementById('jhAddRole').value = '';
             document.getElementById('jhAddLink').value = '';
-            jhRenderPipeline();
+            await jhRenderPipeline();
         }
-        function jhMoveApp(id, newStage) {
-            const apps = jhGetApps();
-            const app = apps.find(a => a.id === id);
-            if (app) app.stage = newStage;
-            jhSaveApps(apps);
-            jhRenderPipeline();
+        async function jhMoveApp(id, newStage) {
+            const userId = jhGetCurrentUserId();
+            if (userId && supabaseClient) {
+                await supabaseClient.from('jh_applications').update({ stage: newStage }).eq('id', id).eq('user_id', userId);
+            } else {
+                const apps = JSON.parse(localStorage.getItem('jh_applications') || '[]');
+                const app = apps.find(a => a.id === id);
+                if (app) app.stage = newStage;
+                localStorage.setItem('jh_applications', JSON.stringify(apps));
+            }
+            await jhRenderPipeline();
         }
-        function jhRemoveApp(id) { jhSaveApps(jhGetApps().filter(a => a.id !== id)); jhRenderPipeline(); }
-        function jhRenderPipeline() {
-            const apps = jhGetApps();
+        async function jhRemoveApp(id) {
+            const userId = jhGetCurrentUserId();
+            if (userId && supabaseClient) {
+                await supabaseClient.from('jh_applications').delete().eq('id', id).eq('user_id', userId);
+            } else {
+                const apps = JSON.parse(localStorage.getItem('jh_applications') || '[]').filter(a => a.id !== id);
+                localStorage.setItem('jh_applications', JSON.stringify(apps));
+            }
+            await jhRenderPipeline();
+        }
+        async function jhRenderPipeline() {
+            const apps = await jhGetApps();
             const stages = ['applied', 'responded', 'interview', 'offer'];
             const colIds = ['jhColApplied', 'jhColResponded', 'jhColInterview', 'jhColOffer'];
             const countIds = ['jhColCountApplied', 'jhColCountResponded', 'jhColCountInterview', 'jhColCountOffer'];
@@ -25825,7 +25870,7 @@ Rules:
             jhRenderChecklist();
         }
         // Init JH on load
-        try { jhRenderPipeline(); jhRenderChecklist(); jhUpdateStickyStats(); } catch(e) {}
+        (async () => { try { await jhMigrateLocalToSupabase(); await jhRenderPipeline(); jhRenderChecklist(); jhUpdateStickyStats(); } catch(e) { console.error('[JH] Init error:', e); } })();
 
         function switchClientsTab(tab) {
             document.querySelectorAll('.clients-sub-tab').forEach(b => b.classList.toggle('active', b.dataset.ctab === tab));
