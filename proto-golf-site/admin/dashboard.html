@@ -1547,13 +1547,24 @@
                     'apikey': SUPABASE_KEY,
                     'Authorization': `Bearer ${SUPABASE_KEY}`,
                     'Content-Type': 'application/json',
-                    'Prefer': method === 'POST' ? 'return=representation' : 'return=minimal'
+                    'Prefer': (method === 'POST' || method === 'PATCH') ? 'return=representation' : 'return=minimal'
                 }
             };
             if (body) options.body = JSON.stringify(body);
 
             const response = await fetch(url, options);
             if (method === 'GET') return response.json();
+            if (method === 'POST' || method === 'PATCH') {
+                // Return the inserted/updated data so we can get IDs
+                if (response.ok) {
+                    try {
+                        return await response.json();
+                    } catch {
+                        return true;
+                    }
+                }
+                return null;
+            }
             return response.ok;
         }
 
@@ -3343,16 +3354,20 @@ RULES:
 
                 updateEditorStatus(statusEl, 4, 5, 'Committed to GitHub!');
 
-                // Save to Supabase as a record (don't fail if this errors)
+                // Save to Supabase as 'pending' - will update to 'published' after verification
+                let requestRecordId = null;
                 try {
-                    await supabaseQuery('proto_golf_requests', 'POST', {
+                    const inserted = await supabaseQuery('proto_golf_requests', 'POST', {
                         page: siteEditorPendingRequest.page,
                         element_selector: siteEditorPendingRequest.element_selector,
                         element_text: siteEditorPendingRequest.element_text,
                         request_text: siteEditorPendingRequest.request_text,
                         input_type: 'ai_applied',
-                        status: 'published'
+                        status: 'pending'
                     });
+                    if (inserted && inserted[0]) {
+                        requestRecordId = inserted[0].id;
+                    }
                 } catch (dbErr) {
                     console.warn('Failed to save to database (non-critical):', dbErr);
                 }
@@ -3389,7 +3404,7 @@ RULES:
                         clearInterval(countdownInterval);
                         // Start verification
                         statusEl.innerHTML = '🔍 Verifying deployment...';
-                        await verifyDeployment(statusEl, liveUrl, verifyHtml);
+                        await verifyDeployment(statusEl, liveUrl, verifyHtml, requestRecordId);
                     } else {
                         const progress = Math.round((45 - countdown) / 45 * 100);
                         statusEl.innerHTML = `⏳ Deploying... <strong>${countdown}s</strong> <span style="opacity:0.6">(${progress}%)</span>`;
@@ -3403,7 +3418,7 @@ RULES:
             }
         }
 
-        async function verifyDeployment(statusEl, liveUrl, expectedHtml) {
+        async function verifyDeployment(statusEl, liveUrl, expectedHtml, requestRecordId = null) {
             // Extract a unique snippet from the new HTML to verify
             // Look for something that was likely changed
             const snippetMatch = expectedHtml.match(/<(?:h1|h2|h3|p|span|div)[^>]*>([^<]{10,50})</);
@@ -3411,6 +3426,22 @@ RULES:
 
             let attempts = 0;
             const maxAttempts = 6; // Try for 30 more seconds (5s intervals)
+
+            const markAsLive = async () => {
+                // Update the request status to 'published' in Supabase
+                if (requestRecordId) {
+                    try {
+                        await supabaseQuery('proto_golf_requests', 'PATCH',
+                            { status: 'published' },
+                            `?id=eq.${requestRecordId}`
+                        );
+                        // Refresh the history list to show updated status
+                        loadSiteEditorHistory();
+                    } catch (e) {
+                        console.warn('Failed to update request status:', e);
+                    }
+                }
+            };
 
             const checkLive = async () => {
                 attempts++;
@@ -3429,6 +3460,7 @@ RULES:
                         statusEl.innerHTML = '✅ <strong>Live!</strong> Changes verified on site. <a href="' + liveUrl + '" target="_blank" style="color:inherit;text-decoration:underline;">View page →</a>';
                         statusEl.style.background = 'rgba(34, 197, 94, 0.15)';
                         statusEl.style.color = 'var(--color-success)';
+                        await markAsLive();
                         return;
                     }
                 } catch (e) {
@@ -3443,6 +3475,7 @@ RULES:
                     statusEl.innerHTML = '✓ <strong>Published!</strong> May take a moment to appear. <a href="' + liveUrl + '" target="_blank" style="color:inherit;text-decoration:underline;">Check page →</a>';
                     statusEl.style.background = 'rgba(34, 197, 94, 0.1)';
                     statusEl.style.color = 'var(--color-success)';
+                    await markAsLive();
                 }
             };
 
