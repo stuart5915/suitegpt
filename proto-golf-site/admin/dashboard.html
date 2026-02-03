@@ -1354,12 +1354,20 @@
                         <div class="site-editor-page-select">
                             <label>Page to Edit</label>
                             <select id="siteEditorPageSelect" onchange="loadSiteEditorPage()">
-                                <option value="../index.html">Home</option>
-                                <option value="../shop.html">Shop</option>
-                                <option value="../about.html">About</option>
-                                <option value="../contact.html">Contact</option>
-                                <option value="../faq.html">FAQ</option>
-                                <option value="../limited.html">Limited Editions</option>
+                                <optgroup label="Main Pages">
+                                    <option value="../index.html">Home</option>
+                                    <option value="../shop.html">Shop</option>
+                                    <option value="../about.html">About</option>
+                                    <option value="../contact.html">Contact</option>
+                                    <option value="../faq.html">FAQ</option>
+                                    <option value="../limited.html">Limited Editions</option>
+                                    <option value="../checkout.html">Checkout</option>
+                                </optgroup>
+                                <optgroup label="Product Pages">
+                                    <option value="../products/rough-mill.html">Rough Mill</option>
+                                    <option value="../products/centre-blade.html">Centre Blade</option>
+                                    <option value="../products/long-neck-blade.html">Long Neck Blade</option>
+                                </optgroup>
                             </select>
                         </div>
 
@@ -2917,10 +2925,34 @@
             loadSiteEditorHistory();
         }
 
+        // Whitelist of allowed Proto Golf pages - ONLY these can be edited
+        const ALLOWED_PROTO_GOLF_PAGES = [
+            '../index.html',
+            '../shop.html',
+            '../about.html',
+            '../contact.html',
+            '../faq.html',
+            '../limited.html',
+            '../checkout.html',
+            '../products/product.html',
+            '../products/rough-mill.html',
+            '../products/centre-blade.html',
+            '../products/long-neck-blade.html'
+        ];
+
         function loadSiteEditorPage() {
             const iframe = document.getElementById('siteEditorIframe');
             const select = document.getElementById('siteEditorPageSelect');
-            iframe.src = select.value;
+            const selectedPage = select.value;
+
+            // Security: Only allow whitelisted Proto Golf pages
+            if (!ALLOWED_PROTO_GOLF_PAGES.includes(selectedPage)) {
+                alert('Invalid page selected. Only Proto Golf pages can be edited.');
+                select.value = '../index.html';
+                return;
+            }
+
+            iframe.src = selectedPage;
 
             // Reset selection
             siteEditorSelectedElement = null;
@@ -3136,13 +3168,18 @@ USER REQUEST: ${request}
 
 Return the COMPLETE modified HTML file. Only change what the user requested. Keep all CSS, JS, and other content intact.`;
 
-                // Call Gemini API
+                // Call Gemini API (using Pro model for best quality edits)
                 const response = await fetch('/api/gemini', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         prompt: prompt,
-                        model: 'gemini-2.0-flash'
+                        model: 'gemini-2.5-pro-preview-05-06',
+                        enableSearch: false,
+                        generationConfig: {
+                            temperature: 0.3,
+                            maxOutputTokens: 65536
+                        }
                     })
                 });
 
