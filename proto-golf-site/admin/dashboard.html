@@ -3374,10 +3374,12 @@ Return ONLY a valid JSON object in this exact format (no other text):
 RULES:
 - The "find" string must exist EXACTLY in the HTML (case-sensitive, whitespace-sensitive)
 - For text changes: find the existing text, replace with new text
+- For REMOVING elements: find the ENTIRE element including opening and closing tags, set "replace" to "" (empty string)
 - For adding content: find the element/text AFTER which to insert, include it in replace with the new content appended
 - Keep all HTML tags, classes, attributes intact - only change the specific text/content requested
 - If adding a new FAQ item, find the last </div> of the faq-list and insert before it
-- If an UPLOADED IMAGE URL is provided, use it for image src attributes`;
+- If an UPLOADED IMAGE URL is provided, use it for image src attributes
+- IMPORTANT: For removal requests, find the complete HTML element (e.g., the entire <div>...</div>) and replace with empty string`;
 
                 // Call Gemini API
                 const response = await fetch('/api/gemini', {
@@ -3418,7 +3420,7 @@ RULES:
                     throw new Error('Failed to parse AI response as JSON');
                 }
 
-                if (!editInstruction.find || !editInstruction.replace) {
+                if (!editInstruction.find || editInstruction.replace === undefined) {
                     throw new Error('AI response missing find/replace fields');
                 }
 
