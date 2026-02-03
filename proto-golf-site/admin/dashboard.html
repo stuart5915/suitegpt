@@ -757,6 +757,92 @@
             50% { opacity: 0.6; }
         }
 
+        .site-editor-input-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .site-editor-input-buttons .site-editor-voice-btn,
+        .site-editor-input-buttons .site-editor-image-btn {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .site-editor-image-btn {
+            padding: 14px;
+            border: 2px dashed var(--color-ash);
+            border-radius: 8px;
+            background: var(--color-bone);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: var(--color-steel);
+            transition: all 0.2s;
+        }
+
+        .site-editor-image-btn:hover {
+            border-color: var(--color-ink);
+            color: var(--color-ink);
+        }
+
+        .site-editor-image-btn.has-image {
+            border-color: var(--color-success);
+            background: rgba(34, 197, 94, 0.05);
+            color: var(--color-success);
+        }
+
+        .site-editor-image-preview {
+            position: relative;
+            margin-bottom: 12px;
+            padding: 12px;
+            background: var(--color-bone);
+            border-radius: 8px;
+            border: 1px solid var(--color-ash);
+        }
+
+        .site-editor-image-preview img {
+            max-width: 100%;
+            max-height: 120px;
+            border-radius: 4px;
+            display: block;
+        }
+
+        .site-editor-image-remove {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: var(--color-ink);
+            color: white;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .site-editor-image-remove:hover {
+            background: var(--color-error);
+        }
+
+        .site-editor-image-name {
+            display: block;
+            margin-top: 8px;
+            font-size: 0.8rem;
+            color: var(--color-steel);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
         .site-editor-text-input {
             width: 100%;
             padding: 12px;
@@ -1337,11 +1423,23 @@
 
                         <div class="site-editor-input-area">
                             <label>What would you like changed?</label>
-                            <button class="site-editor-voice-btn" id="siteEditorVoiceBtn" onclick="toggleSiteEditorVoice()">
-                                <span id="siteEditorVoiceIcon">🎤</span>
-                                <span id="siteEditorVoiceText">Click to speak</span>
-                            </button>
-                            <textarea class="site-editor-text-input" id="siteEditorTextInput" placeholder="Or type your change request here..."></textarea>
+                            <div class="site-editor-input-buttons">
+                                <button class="site-editor-voice-btn" id="siteEditorVoiceBtn" onclick="toggleSiteEditorVoice()">
+                                    <span id="siteEditorVoiceIcon">🎤</span>
+                                    <span id="siteEditorVoiceText">Click to speak</span>
+                                </button>
+                                <button class="site-editor-image-btn" id="siteEditorImageBtn" onclick="document.getElementById('siteEditorImageInput').click()">
+                                    <span>📷</span>
+                                    <span>Attach Image</span>
+                                </button>
+                                <input type="file" id="siteEditorImageInput" accept="image/*" style="display: none;" onchange="handleSiteEditorImage(event)">
+                            </div>
+                            <div class="site-editor-image-preview" id="siteEditorImagePreview" style="display: none;">
+                                <img id="siteEditorImagePreviewImg" src="" alt="Attached image">
+                                <button class="site-editor-image-remove" onclick="removeSiteEditorImage()">×</button>
+                                <span class="site-editor-image-name" id="siteEditorImageName"></span>
+                            </div>
+                            <textarea class="site-editor-text-input" id="siteEditorTextInput" placeholder="Describe your change... e.g. 'Replace this image with my uploaded photo'"></textarea>
                             <button class="site-editor-submit-btn" id="siteEditorSubmitBtn" onclick="applySiteEditorChange()">Apply Change</button>
                             <div class="site-editor-status" id="siteEditorStatus" style="display: none;"></div>
                         </div>
@@ -2892,6 +2990,7 @@
         let siteEditorRecognition = null;
         let siteEditorIsRecording = false;
         let siteEditorHistory = [];
+        let siteEditorAttachedImage = null; // { file: File, base64: string, name: string }
 
         function initSiteEditor() {
             loadSiteEditorPage();
@@ -3088,6 +3187,85 @@
             document.getElementById('siteEditorVoiceText').textContent = 'Click to speak';
         }
 
+        // Image attachment handling
+        function handleSiteEditorImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file.');
+                return;
+            }
+
+            // Validate file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Image must be under 5MB.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                siteEditorAttachedImage = {
+                    file: file,
+                    base64: e.target.result,
+                    name: file.name
+                };
+
+                // Show preview
+                document.getElementById('siteEditorImagePreview').style.display = 'block';
+                document.getElementById('siteEditorImagePreviewImg').src = e.target.result;
+                document.getElementById('siteEditorImageName').textContent = file.name;
+                document.getElementById('siteEditorImageBtn').classList.add('has-image');
+
+                // Auto-fill suggestion if they selected an image element
+                const textInput = document.getElementById('siteEditorTextInput');
+                if (!textInput.value && siteEditorSelectedElement?.tagName === 'IMG') {
+                    textInput.value = 'Replace this image with my uploaded photo';
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeSiteEditorImage() {
+            siteEditorAttachedImage = null;
+            document.getElementById('siteEditorImagePreview').style.display = 'none';
+            document.getElementById('siteEditorImagePreviewImg').src = '';
+            document.getElementById('siteEditorImageName').textContent = '';
+            document.getElementById('siteEditorImageInput').value = '';
+            document.getElementById('siteEditorImageBtn').classList.remove('has-image');
+        }
+
+        async function uploadImageToSupabase(file) {
+            // Generate unique filename
+            const ext = file.name.split('.').pop();
+            const filename = `site-editor-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${ext}`;
+            const path = `uploads/${filename}`;
+
+            // Upload to Supabase Storage
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const response = await fetch(
+                `${SUPABASE_URL}/storage/v1/object/proto-golf-images/${path}`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'x-upsert': 'true'
+                    },
+                    body: file
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error('Failed to upload image');
+            }
+
+            // Return public URL
+            return `${SUPABASE_URL}/storage/v1/object/public/proto-golf-images/${path}`;
+        }
+
         let siteEditorOriginalHtml = null;
         let siteEditorModifiedHtml = null;
         let siteEditorCurrentPage = null;
@@ -3119,10 +3297,29 @@
             btn.disabled = true;
             btn.textContent = 'Applying...';
 
-            updateEditorStatus(statusEl, 1, 5, 'Reading current page...');
+            const totalSteps = siteEditorAttachedImage ? 6 : 5;
+            let currentStep = 0;
+
+            updateEditorStatus(statusEl, ++currentStep, totalSteps, 'Reading current page...');
 
             const iframe = document.getElementById('siteEditorIframe');
             const page = document.getElementById('siteEditorPageSelect').value.replace('../', '');
+
+            // Upload attached image first if present
+            let uploadedImageUrl = null;
+            if (siteEditorAttachedImage) {
+                updateEditorStatus(statusEl, ++currentStep, totalSteps, 'Uploading image...');
+                try {
+                    uploadedImageUrl = await uploadImageToSupabase(siteEditorAttachedImage.file);
+                } catch (uploadErr) {
+                    console.error('Image upload failed:', uploadErr);
+                    statusEl.textContent = 'Failed to upload image. Please try again.';
+                    statusEl.className = 'site-editor-status error';
+                    btn.disabled = false;
+                    btn.textContent = 'Apply Change';
+                    return;
+                }
+            }
 
             try {
                 // Get current HTML from iframe
@@ -3133,7 +3330,7 @@
                 const pageUrl = new URL(iframe.src, window.location.href);
                 const baseUrl = pageUrl.href.substring(0, pageUrl.href.lastIndexOf('/') + 1);
 
-                updateEditorStatus(statusEl, 2, 5, 'Fetching original file...');
+                updateEditorStatus(statusEl, ++currentStep, totalSteps, 'Fetching original file...');
 
                 // Fetch the ORIGINAL HTML file from server (not iframe DOM which can be modified)
                 const originalFileUrl = iframe.src;
@@ -3147,15 +3344,19 @@
                     siteEditorCurrentPage = page;
                 }
 
-                updateEditorStatus(statusEl, 3, 5, 'AI is analyzing the change...');
+                updateEditorStatus(statusEl, ++currentStep, totalSteps, 'AI is analyzing the change...');
 
                 // Build prompt - ask AI for SURGICAL find/replace, not full regeneration
+                const imageInstructions = uploadedImageUrl
+                    ? `\n\nUPLOADED IMAGE URL: ${uploadedImageUrl}\nIf the user wants to add/replace an image, use this URL as the src attribute.`
+                    : '';
+
                 const prompt = `You are a surgical HTML editor. Analyze this change request and return ONLY a JSON object with the exact find/replace needed.
 
 USER REQUEST: "${request}"
 
 ${siteEditorSelectedSelector ? `SELECTED ELEMENT: ${siteEditorSelectedSelector}` : ''}
-${siteEditorSelectedText ? `SELECTED TEXT: "${siteEditorSelectedText}"` : ''}
+${siteEditorSelectedText ? `SELECTED TEXT: "${siteEditorSelectedText}"` : ''}${imageInstructions}
 
 ORIGINAL HTML FILE (this is what we're editing):
 ${originalHtml.substring(0, 15000)}
@@ -3171,7 +3372,8 @@ RULES:
 - For text changes: find the existing text, replace with new text
 - For adding content: find the element/text AFTER which to insert, include it in replace with the new content appended
 - Keep all HTML tags, classes, attributes intact - only change the specific text/content requested
-- If adding a new FAQ item, find the last </div> of the faq-list and insert before it`;
+- If adding a new FAQ item, find the last </div> of the faq-list and insert before it
+- If an UPLOADED IMAGE URL is provided, use it for image src attributes`;
 
                 // Call Gemini API
                 const response = await fetch('/api/gemini', {
@@ -3194,7 +3396,7 @@ RULES:
                     throw new Error(errData.error || 'Gemini API error');
                 }
 
-                updateEditorStatus(statusEl, 4, 5, 'Applying surgical edit...');
+                updateEditorStatus(statusEl, ++currentStep, totalSteps, 'Applying surgical edit...');
 
                 const data = await response.json();
                 let aiResponse = data.text || data.response || '';
@@ -3308,6 +3510,7 @@ RULES:
             document.getElementById('siteEditorSaveArea').style.display = 'none';
             document.getElementById('siteEditorStatus').style.display = 'none';
             document.getElementById('siteEditorTextInput').value = '';
+            removeSiteEditorImage(); // Clear attached image
         }
 
         async function saveSiteEditorChange() {
@@ -3386,6 +3589,7 @@ RULES:
 
                 // Clear form
                 document.getElementById('siteEditorTextInput').value = '';
+                removeSiteEditorImage(); // Clear attached image
                 siteEditorSelectedElement = null;
                 siteEditorSelectedSelector = null;
                 siteEditorSelectedText = null;
