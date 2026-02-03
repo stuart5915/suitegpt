@@ -3156,44 +3156,49 @@
                 const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
                 const currentHtml = '<!DOCTYPE html>\n' + iframeDoc.documentElement.outerHTML;
 
-                updateEditorStatus(statusEl, 2, 5, 'Analyzing your request...');
-
-                // Store original if not already stored
-                if (!siteEditorOriginalHtml || siteEditorCurrentPage !== page) {
-                    siteEditorOriginalHtml = currentHtml;
-                    siteEditorCurrentPage = page;
-                }
-
-                // Get the base URL for this page to fix relative paths later
+                // Get the base URL for this page
                 const pageUrl = new URL(iframe.src, window.location.href);
                 const baseUrl = pageUrl.href.substring(0, pageUrl.href.lastIndexOf('/') + 1);
 
-                // Build prompt for Gemini
-                const prompt = `You are a precise HTML editor. Your job is to make ONE small change to this HTML.
+                updateEditorStatus(statusEl, 2, 5, 'Fetching original file...');
 
-ABSOLUTE RULES - VIOLATION WILL BREAK THE SITE:
-1. DO NOT change ANY class="" attributes
-2. DO NOT change ANY id="" attributes
-3. DO NOT change ANY style="" attributes
-4. DO NOT change ANY <link>, <script>, <meta>, or <head> content
-5. DO NOT change ANY href="" or src="" paths
-6. DO NOT change indentation, whitespace, or formatting
-7. DO NOT remove or reorganize any elements
-8. ONLY add new content OR modify text inside existing tags
+                // Fetch the ORIGINAL HTML file from server (not iframe DOM which can be modified)
+                const originalFileUrl = iframe.src;
+                const fileResponse = await fetch(originalFileUrl);
+                if (!fileResponse.ok) throw new Error('Failed to fetch original file');
+                const originalHtml = await fileResponse.text();
 
-The HTML structure and CSS classes are SACRED. Only change the text content the user specifically requests.
+                // Store original for revert
+                if (!siteEditorOriginalHtml || siteEditorCurrentPage !== page) {
+                    siteEditorOriginalHtml = originalHtml;
+                    siteEditorCurrentPage = page;
+                }
 
-CURRENT HTML:
-${currentHtml}
+                updateEditorStatus(statusEl, 3, 5, 'AI is analyzing the change...');
 
-${siteEditorSelectedSelector ? `TARGET ELEMENT: ${siteEditorSelectedSelector}` : ''}
-${siteEditorSelectedText ? `CURRENT TEXT: "${siteEditorSelectedText}"` : ''}
+                // Build prompt - ask AI for SURGICAL find/replace, not full regeneration
+                const prompt = `You are a surgical HTML editor. Analyze this change request and return ONLY a JSON object with the exact find/replace needed.
 
-USER REQUEST: ${request}
+USER REQUEST: "${request}"
 
-Return the COMPLETE HTML with ONLY the minimal change requested. No explanations.`;
+${siteEditorSelectedSelector ? `SELECTED ELEMENT: ${siteEditorSelectedSelector}` : ''}
+${siteEditorSelectedText ? `SELECTED TEXT: "${siteEditorSelectedText}"` : ''}
 
-                updateEditorStatus(statusEl, 3, 5, 'AI is editing the page...');
+RELEVANT HTML CONTEXT (around the selected element):
+${currentHtml.substring(0, 15000)}
+
+Return ONLY a valid JSON object in this exact format (no other text):
+{
+  "find": "exact string to find in the HTML",
+  "replace": "exact string to replace it with"
+}
+
+RULES:
+- The "find" string must exist EXACTLY in the HTML (case-sensitive, whitespace-sensitive)
+- For text changes: find the existing text, replace with new text
+- For adding content: find the element/text AFTER which to insert, include it in replace with the new content appended
+- Keep all HTML tags, classes, attributes intact - only change the specific text/content requested
+- If adding a new FAQ item, find the last </div> of the faq-list and insert before it`;
 
                 // Call Gemini API
                 const response = await fetch('/api/gemini', {
@@ -3205,7 +3210,7 @@ Return the COMPLETE HTML with ONLY the minimal change requested. No explanations
                         enableSearch: false,
                         generationConfig: {
                             temperature: 0,
-                            maxOutputTokens: 32000
+                            maxOutputTokens: 4096
                         }
                     })
                 });
@@ -3216,25 +3221,39 @@ Return the COMPLETE HTML with ONLY the minimal change requested. No explanations
                     throw new Error(errData.error || 'Gemini API error');
                 }
 
-                updateEditorStatus(statusEl, 4, 5, 'Processing AI response...');
+                updateEditorStatus(statusEl, 4, 5, 'Applying surgical edit...');
 
                 const data = await response.json();
-                let newHtml = data.text || data.response || '';
+                let aiResponse = data.text || data.response || '';
 
-                // Extract HTML from response if wrapped in code blocks
-                const htmlMatch = newHtml.match(/```html\s*([\s\S]*?)\s*```/i) ||
-                                  newHtml.match(/(<!DOCTYPE html[\s\S]*<\/html>)/i);
-                if (htmlMatch) {
-                    newHtml = htmlMatch[1];
+                // Extract JSON from response
+                const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+                if (!jsonMatch) {
+                    throw new Error('AI did not return valid JSON');
                 }
 
-                if (!newHtml.includes('<!DOCTYPE') && !newHtml.includes('<html')) {
-                    throw new Error('Invalid HTML response');
+                let editInstruction;
+                try {
+                    editInstruction = JSON.parse(jsonMatch[0]);
+                } catch (e) {
+                    throw new Error('Failed to parse AI response as JSON');
                 }
 
-                // Fix relative paths for CSS, JS, and images so they work in iframe
-                newHtml = newHtml.replace(/href="(?!http|\/\/|#|mailto:|tel:)([^"]+)"/g, `href="${baseUrl}$1"`);
-                newHtml = newHtml.replace(/src="(?!http|\/\/|data:)([^"]+)"/g, `src="${baseUrl}$1"`);
+                if (!editInstruction.find || !editInstruction.replace) {
+                    throw new Error('AI response missing find/replace fields');
+                }
+
+                // Apply the surgical edit to the ORIGINAL HTML
+                if (!originalHtml.includes(editInstruction.find)) {
+                    console.error('Find string not found:', editInstruction.find);
+                    throw new Error('Could not locate the text to change. Try selecting a more specific element.');
+                }
+
+                let newHtml = originalHtml.replace(editInstruction.find, editInstruction.replace);
+
+                // For preview in iframe, convert relative paths to absolute
+                let previewHtml = newHtml.replace(/href="(?!http|\/\/|#|mailto:|tel:)([^"]+)"/g, `href="${baseUrl}$1"`);
+                previewHtml = previewHtml.replace(/src="(?!http|\/\/|data:)([^"]+)"/g, `src="${baseUrl}$1"`);
 
                 // Store modified HTML
                 siteEditorModifiedHtml = newHtml;
@@ -3247,9 +3266,9 @@ Return the COMPLETE HTML with ONLY the minimal change requested. No explanations
 
                 updateEditorStatus(statusEl, 5, 5, 'Updating preview...');
 
-                // Update iframe with new HTML
+                // Update iframe with preview HTML (has absolute URLs for resources)
                 iframeDoc.open();
-                iframeDoc.write(newHtml);
+                iframeDoc.write(previewHtml);
                 iframeDoc.close();
 
                 // Re-attach click handlers after a short delay
