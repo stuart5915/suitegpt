@@ -2616,6 +2616,9 @@
             }
         }
 
+        // Gray placeholder SVG as data URI (prevents onerror loops)
+        const PLACEHOLDER_IMG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='140' viewBox='0 0 200 140'%3E%3Crect fill='%23e5e5e5' width='200' height='140'/%3E%3Ctext x='100' y='70' text-anchor='middle' dominant-baseline='middle' fill='%23999' font-family='sans-serif' font-size='14'%3ENo Image%3C/text%3E%3C/svg%3E";
+
         // Render the hero images grid (shop card images)
         function renderHeroImagesGrid() {
             const grid = document.getElementById('heroImagesGrid');
@@ -2626,10 +2629,10 @@
             }
 
             grid.innerHTML = allSiteImages.products.map(product => {
-                const imgSrc = product.hero_image || '/proto-golf-site/assets/images/placeholder.jpg';
+                const imgSrc = product.hero_image || PLACEHOLDER_IMG;
                 return `
                     <div class="image-location-card">
-                        <img src="${imgSrc}" alt="${product.name}" loading="lazy" onerror="this.src='/proto-golf-site/assets/images/placeholder.jpg'">
+                        <img src="${imgSrc}" alt="${product.name}" loading="lazy" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src=PLACEHOLDER_IMG;}">
                         <div class="image-location-card-info">
                             <div class="image-location-card-title">${product.name}</div>
                             <div class="image-location-card-subtitle">Shop card image</div>
@@ -2698,7 +2701,7 @@
                             <div class="gallery-image-wrapper">
                                 <img src="${img.image_url}" alt="Gallery image" class="gallery-image-thumb"
                                      onclick="viewGalleryImage('${img.id}')" loading="lazy"
-                                     onerror="this.src='/proto-golf-site/assets/images/placeholder.jpg'">
+                                     onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src=PLACEHOLDER_IMG;}">
                                 <button class="gallery-image-delete" onclick="deleteGalleryImage('${img.id}')" title="Delete">×</button>
                             </div>
                         `).join('')}
