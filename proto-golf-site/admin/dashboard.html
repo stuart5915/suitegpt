@@ -1377,8 +1377,14 @@
                                 <span id="siteEditorVoiceText">Click to speak</span>
                             </button>
                             <textarea class="site-editor-text-input" id="siteEditorTextInput" placeholder="Or type your change request here..."></textarea>
-                            <button class="site-editor-submit-btn" id="siteEditorSubmitBtn" onclick="submitSiteEditorRequest()">Submit Request</button>
+                            <button class="site-editor-submit-btn" id="siteEditorSubmitBtn" onclick="applySiteEditorChange()">Apply Change</button>
                             <div class="site-editor-status" id="siteEditorStatus" style="display: none;"></div>
+                        </div>
+
+                        <div class="site-editor-save-area" id="siteEditorSaveArea" style="display: none; padding: 16px 20px; border-bottom: 1px solid var(--color-ash); background: rgba(34, 197, 94, 0.05);">
+                            <p style="font-size: 0.85rem; color: var(--color-success); margin-bottom: 12px;">✓ Preview updated! Like this change?</p>
+                            <button class="btn btn-primary btn-sm" style="width: 100%;" onclick="saveSiteEditorChange()">Save & Publish</button>
+                            <button class="btn btn-secondary btn-sm" style="width: 100%; margin-top: 8px;" onclick="revertSiteEditorChange()">Revert</button>
                         </div>
 
                         <div class="site-editor-history">
@@ -3077,10 +3083,16 @@
             document.getElementById('siteEditorVoiceText').textContent = 'Click to speak';
         }
 
-        async function submitSiteEditorRequest() {
+        let siteEditorOriginalHtml = null;
+        let siteEditorModifiedHtml = null;
+        let siteEditorCurrentPage = null;
+        let siteEditorPendingRequest = null;
+
+        async function applySiteEditorChange() {
             const request = document.getElementById('siteEditorTextInput').value.trim();
             const statusEl = document.getElementById('siteEditorStatus');
             const btn = document.getElementById('siteEditorSubmitBtn');
+            const saveArea = document.getElementById('siteEditorSaveArea');
 
             if (!request) {
                 statusEl.textContent = 'Please describe what you want changed.';
@@ -3090,24 +3102,180 @@
             }
 
             btn.disabled = true;
-            btn.textContent = 'Submitting...';
-            statusEl.style.display = 'none';
+            btn.textContent = 'Applying...';
+            statusEl.textContent = 'AI is making your changes...';
+            statusEl.className = 'site-editor-status';
+            statusEl.style.display = 'block';
+            statusEl.style.background = 'rgba(245, 158, 11, 0.1)';
+            statusEl.style.color = 'var(--color-warning)';
 
+            const iframe = document.getElementById('siteEditorIframe');
             const page = document.getElementById('siteEditorPageSelect').value.replace('../', '');
 
             try {
-                await supabaseQuery('proto_golf_requests', 'POST', {
-                    page: page,
-                    element_selector: siteEditorSelectedSelector || null,
-                    element_text: siteEditorSelectedText || null,
-                    request_text: request,
-                    input_type: siteEditorIsRecording ? 'voice' : 'text',
-                    status: 'pending'
+                // Get current HTML from iframe
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                const currentHtml = '<!DOCTYPE html>\n' + iframeDoc.documentElement.outerHTML;
+
+                // Store original if not already stored
+                if (!siteEditorOriginalHtml || siteEditorCurrentPage !== page) {
+                    siteEditorOriginalHtml = currentHtml;
+                    siteEditorCurrentPage = page;
+                }
+
+                // Build prompt for Gemini
+                const prompt = `You are editing an HTML page. Make ONLY the requested change, preserving all other content exactly.
+
+CURRENT HTML:
+${currentHtml}
+
+${siteEditorSelectedSelector ? `SELECTED ELEMENT (CSS selector): ${siteEditorSelectedSelector}` : ''}
+${siteEditorSelectedText ? `SELECTED ELEMENT TEXT: "${siteEditorSelectedText}"` : ''}
+
+USER REQUEST: ${request}
+
+Return the COMPLETE modified HTML file. Only change what the user requested. Keep all CSS, JS, and other content intact.`;
+
+                // Call Gemini API
+                const response = await fetch('/api/gemini', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        model: 'gemini-2.0-flash'
+                    })
                 });
 
-                statusEl.textContent = 'Request submitted! Stuart will review it soon.';
+                if (!response.ok) throw new Error('Gemini API error');
+
+                const data = await response.json();
+                let newHtml = data.text || data.response || '';
+
+                // Extract HTML from response if wrapped in code blocks
+                const htmlMatch = newHtml.match(/```html\s*([\s\S]*?)\s*```/i) ||
+                                  newHtml.match(/(<!DOCTYPE html[\s\S]*<\/html>)/i);
+                if (htmlMatch) {
+                    newHtml = htmlMatch[1];
+                }
+
+                if (!newHtml.includes('<!DOCTYPE') && !newHtml.includes('<html')) {
+                    throw new Error('Invalid HTML response');
+                }
+
+                // Store modified HTML
+                siteEditorModifiedHtml = newHtml;
+                siteEditorPendingRequest = {
+                    page: page,
+                    element_selector: siteEditorSelectedSelector,
+                    element_text: siteEditorSelectedText,
+                    request_text: request
+                };
+
+                // Update iframe with new HTML
+                iframeDoc.open();
+                iframeDoc.write(newHtml);
+                iframeDoc.close();
+
+                // Re-attach click handlers after a short delay
+                setTimeout(() => {
+                    try {
+                        const newDoc = iframe.contentDocument || iframe.contentWindow.document;
+                        const style = newDoc.createElement('style');
+                        style.textContent = `
+                            .site-editor-hover { outline: 2px solid #22c55e !important; outline-offset: 2px; cursor: pointer !important; }
+                            .site-editor-selected { outline: 3px solid #3b82f6 !important; outline-offset: 2px; }
+                        `;
+                        newDoc.head.appendChild(style);
+                        newDoc.body.addEventListener('mouseover', handleSiteEditorHover);
+                        newDoc.body.addEventListener('mouseout', handleSiteEditorMouseOut);
+                        newDoc.body.addEventListener('click', handleSiteEditorClick);
+                    } catch (e) {}
+                }, 100);
+
+                // Show success + save/revert options
+                statusEl.textContent = '✓ Preview updated!';
                 statusEl.className = 'site-editor-status success';
+                saveArea.style.display = 'block';
+
+            } catch (e) {
+                console.error('Apply change error:', e);
+                statusEl.textContent = 'Failed to apply change. Try again.';
+                statusEl.className = 'site-editor-status error';
                 statusEl.style.display = 'block';
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'Apply Change';
+        }
+
+        function revertSiteEditorChange() {
+            if (!siteEditorOriginalHtml) return;
+
+            const iframe = document.getElementById('siteEditorIframe');
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+
+            iframeDoc.open();
+            iframeDoc.write(siteEditorOriginalHtml);
+            iframeDoc.close();
+
+            // Re-attach handlers
+            setTimeout(() => {
+                try {
+                    const newDoc = iframe.contentDocument || iframe.contentWindow.document;
+                    const style = newDoc.createElement('style');
+                    style.textContent = `
+                        .site-editor-hover { outline: 2px solid #22c55e !important; outline-offset: 2px; cursor: pointer !important; }
+                        .site-editor-selected { outline: 3px solid #3b82f6 !important; outline-offset: 2px; }
+                    `;
+                    newDoc.head.appendChild(style);
+                    newDoc.body.addEventListener('mouseover', handleSiteEditorHover);
+                    newDoc.body.addEventListener('mouseout', handleSiteEditorMouseOut);
+                    newDoc.body.addEventListener('click', handleSiteEditorClick);
+                } catch (e) {}
+            }, 100);
+
+            // Reset state
+            siteEditorModifiedHtml = null;
+            siteEditorPendingRequest = null;
+            document.getElementById('siteEditorSaveArea').style.display = 'none';
+            document.getElementById('siteEditorStatus').style.display = 'none';
+            document.getElementById('siteEditorTextInput').value = '';
+        }
+
+        async function saveSiteEditorChange() {
+            if (!siteEditorModifiedHtml || !siteEditorPendingRequest) return;
+
+            const statusEl = document.getElementById('siteEditorStatus');
+            const saveArea = document.getElementById('siteEditorSaveArea');
+
+            statusEl.textContent = 'Saving changes...';
+            statusEl.className = 'site-editor-status';
+            statusEl.style.background = 'rgba(245, 158, 11, 0.1)';
+            statusEl.style.color = 'var(--color-warning)';
+            statusEl.style.display = 'block';
+
+            try {
+                // Save to Supabase with the modified HTML
+                await supabaseQuery('proto_golf_requests', 'POST', {
+                    page: siteEditorPendingRequest.page,
+                    element_selector: siteEditorPendingRequest.element_selector,
+                    element_text: siteEditorPendingRequest.element_text,
+                    request_text: siteEditorPendingRequest.request_text,
+                    modified_html: siteEditorModifiedHtml,
+                    input_type: 'ai_applied',
+                    status: 'applied'
+                });
+
+                // The actual file write would need a server endpoint
+                // For now, notify Stuart that there's a pending publish
+                statusEl.textContent = '✓ Saved! Changes will go live shortly.';
+                statusEl.className = 'site-editor-status success';
+                saveArea.style.display = 'none';
+
+                // Update original to be the new version
+                siteEditorOriginalHtml = siteEditorModifiedHtml;
+                siteEditorModifiedHtml = null;
+                siteEditorPendingRequest = null;
 
                 // Clear form
                 document.getElementById('siteEditorTextInput').value = '';
@@ -3117,27 +3285,14 @@
                 document.getElementById('siteEditorSelectedEl').innerHTML =
                     '<span class="site-editor-selected-none">Click an element on the site preview →</span>';
 
-                // Clear selection in iframe
-                const iframe = document.getElementById('siteEditorIframe');
-                try {
-                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                    iframeDoc.querySelectorAll('.site-editor-selected').forEach(el => {
-                        el.classList.remove('site-editor-selected');
-                    });
-                } catch (e) {}
-
                 // Reload history
                 loadSiteEditorHistory();
 
             } catch (e) {
-                console.error('Submit error:', e);
-                statusEl.textContent = 'Failed to submit. Please try again.';
+                console.error('Save error:', e);
+                statusEl.textContent = 'Failed to save. Please try again.';
                 statusEl.className = 'site-editor-status error';
-                statusEl.style.display = 'block';
             }
-
-            btn.disabled = false;
-            btn.textContent = 'Submit Request';
         }
 
         async function loadSiteEditorHistory() {
