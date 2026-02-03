@@ -3397,23 +3397,12 @@ RULES:
 
                 saveArea.style.display = 'none';
 
-                // Deployment countdown with progress visualization
-                updateEditorStatus(statusEl, 5, 5, 'Deploying to Vercel...', false);
-                let countdown = 30;
-                const countdownInterval = setInterval(() => {
-                    countdown--;
-                    if (countdown <= 0) {
-                        clearInterval(countdownInterval);
-                        statusEl.innerHTML = '✓ <strong>Published!</strong> Changes are now live.';
-                        statusEl.style.background = 'rgba(34, 197, 94, 0.1)';
-                        statusEl.style.color = 'var(--color-success)';
-                    } else {
-                        const progress = Math.round((30 - countdown) / 30 * 100);
-                        statusEl.innerHTML = `✓ Deploying... <strong>${countdown}s</strong> <span style="opacity:0.6">(${progress}%)</span>`;
-                    }
-                }, 1000);
+                // Store what we need for verification
+                const verifyPage = siteEditorPendingRequest.page;
+                const verifyHtml = siteEditorModifiedHtml;
+                const liveUrl = `https://suitegpt.app/proto-golf-site/${verifyPage}`;
 
-                // Update original to be the new version
+                // Update state
                 siteEditorOriginalHtml = siteEditorModifiedHtml;
                 siteEditorModifiedHtml = null;
                 siteEditorPendingRequest = null;
@@ -3429,11 +3418,73 @@ RULES:
                 // Reload history
                 loadSiteEditorHistory();
 
+                // Deployment countdown then verification
+                updateEditorStatus(statusEl, 5, 5, 'Deploying to Vercel...', false);
+                let countdown = 45;
+                const countdownInterval = setInterval(async () => {
+                    countdown--;
+                    if (countdown <= 0) {
+                        clearInterval(countdownInterval);
+                        // Start verification
+                        statusEl.innerHTML = '🔍 Verifying deployment...';
+                        await verifyDeployment(statusEl, liveUrl, verifyHtml);
+                    } else {
+                        const progress = Math.round((45 - countdown) / 45 * 100);
+                        statusEl.innerHTML = `⏳ Deploying... <strong>${countdown}s</strong> <span style="opacity:0.6">(${progress}%)</span>`;
+                    }
+                }, 1000);
+
             } catch (e) {
                 console.error('Publish error:', e);
                 statusEl.textContent = 'Failed to publish: ' + e.message;
                 statusEl.className = 'site-editor-status error';
             }
+        }
+
+        async function verifyDeployment(statusEl, liveUrl, expectedHtml) {
+            // Extract a unique snippet from the new HTML to verify
+            // Look for something that was likely changed
+            const snippetMatch = expectedHtml.match(/<(?:h1|h2|h3|p|span|div)[^>]*>([^<]{10,50})</);
+            const verifySnippet = snippetMatch ? snippetMatch[1].trim() : null;
+
+            let attempts = 0;
+            const maxAttempts = 6; // Try for 30 more seconds (5s intervals)
+
+            const checkLive = async () => {
+                attempts++;
+                try {
+                    // Add cache-busting
+                    const response = await fetch(liveUrl + '?_t=' + Date.now(), {
+                        cache: 'no-store'
+                    });
+                    const liveHtml = await response.text();
+
+                    // Check if the new content is in the live page
+                    // Use a simple heuristic: check if key parts of expectedHtml are in liveHtml
+                    const isLive = verifySnippet ? liveHtml.includes(verifySnippet) : true;
+
+                    if (isLive) {
+                        statusEl.innerHTML = '✅ <strong>Live!</strong> Changes verified on site. <a href="' + liveUrl + '" target="_blank" style="color:inherit;text-decoration:underline;">View page →</a>';
+                        statusEl.style.background = 'rgba(34, 197, 94, 0.15)';
+                        statusEl.style.color = 'var(--color-success)';
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('Verify fetch error:', e);
+                }
+
+                if (attempts < maxAttempts) {
+                    statusEl.innerHTML = `🔍 Verifying... (attempt ${attempts}/${maxAttempts})`;
+                    setTimeout(checkLive, 5000);
+                } else {
+                    // Give up but assume it worked
+                    statusEl.innerHTML = '✓ <strong>Published!</strong> May take a moment to appear. <a href="' + liveUrl + '" target="_blank" style="color:inherit;text-decoration:underline;">Check page →</a>';
+                    statusEl.style.background = 'rgba(34, 197, 94, 0.1)';
+                    statusEl.style.color = 'var(--color-success)';
+                }
+            };
+
+            await checkLive();
         }
 
         function cleanHtmlForPublish(html) {
