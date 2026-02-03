@@ -3155,29 +3155,39 @@
                     siteEditorCurrentPage = page;
                 }
 
+                // Get the base URL for this page to fix relative paths later
+                const pageUrl = new URL(iframe.src, window.location.href);
+                const baseUrl = pageUrl.href.substring(0, pageUrl.href.lastIndexOf('/') + 1);
+
                 // Build prompt for Gemini
-                const prompt = `You are editing an HTML page. Make ONLY the requested change, preserving all other content exactly.
+                const prompt = `You are editing an HTML page for Proto Golf website. Make ONLY the requested change.
+
+CRITICAL RULES:
+1. Keep ALL <link>, <script>, and <meta> tags EXACTLY as they are
+2. Keep ALL href and src attributes EXACTLY as they are (do not change paths)
+3. Only modify the specific content the user requested
+4. Return the COMPLETE HTML document
 
 CURRENT HTML:
 ${currentHtml}
 
-${siteEditorSelectedSelector ? `SELECTED ELEMENT (CSS selector): ${siteEditorSelectedSelector}` : ''}
-${siteEditorSelectedText ? `SELECTED ELEMENT TEXT: "${siteEditorSelectedText}"` : ''}
+${siteEditorSelectedSelector ? `SELECTED ELEMENT: ${siteEditorSelectedSelector}` : ''}
+${siteEditorSelectedText ? `ELEMENT TEXT: "${siteEditorSelectedText}"` : ''}
 
 USER REQUEST: ${request}
 
-Return the COMPLETE modified HTML file. Only change what the user requested. Keep all CSS, JS, and other content intact.`;
+Return ONLY the modified HTML, no explanations.`;
 
-                // Call Gemini API (using Pro model for best quality edits)
+                // Call Gemini API
                 const response = await fetch('/api/gemini', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         prompt: prompt,
-                        model: 'gemini-2.5-pro',
+                        model: 'gemini-3-flash-preview',
                         enableSearch: false,
                         generationConfig: {
-                            temperature: 0.3,
+                            temperature: 0.2,
                             maxOutputTokens: 32000
                         }
                     })
@@ -3202,6 +3212,10 @@ Return the COMPLETE modified HTML file. Only change what the user requested. Kee
                 if (!newHtml.includes('<!DOCTYPE') && !newHtml.includes('<html')) {
                     throw new Error('Invalid HTML response');
                 }
+
+                // Fix relative paths for CSS, JS, and images so they work in iframe
+                newHtml = newHtml.replace(/href="(?!http|\/\/|#|mailto:|tel:)([^"]+)"/g, `href="${baseUrl}$1"`);
+                newHtml = newHtml.replace(/src="(?!http|\/\/|data:)([^"]+)"/g, `src="${baseUrl}$1"`);
 
                 // Store modified HTML
                 siteEditorModifiedHtml = newHtml;
