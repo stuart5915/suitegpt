@@ -774,6 +774,142 @@
             border-radius: 10px;
         }
 
+        /* ===== Inventory & Pricing Styles ===== */
+        .shaft-inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+        }
+        .shaft-inventory-card {
+            background: var(--color-bone);
+            border: 1px solid var(--color-ash);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        .shaft-inventory-label {
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .shaft-stock-input {
+            width: 80px;
+            padding: 8px 12px;
+            font-size: 1.25rem;
+            font-family: 'Space Mono', monospace;
+            text-align: center;
+            border: 2px solid var(--color-ash);
+            border-radius: 8px;
+            background: var(--color-paper);
+        }
+        .shaft-stock-input:focus {
+            outline: none;
+            border-color: var(--color-ink);
+        }
+        .shaft-price {
+            margin-top: 8px;
+            font-family: 'Space Mono', monospace;
+            color: var(--color-steel);
+            font-size: 0.9rem;
+        }
+
+        .putter-pricing-card {
+            background: var(--color-paper);
+            border: 1px solid var(--color-ash);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .putter-pricing-card:last-child {
+            margin-bottom: 0;
+        }
+        .putter-pricing-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            background: var(--color-bone);
+            border-bottom: 1px solid var(--color-ash);
+        }
+        .putter-pricing-header h4 {
+            margin: 0;
+            font-size: 1rem;
+        }
+        .putter-stock-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .putter-stock-badge label {
+            font-size: 0.8rem;
+            color: var(--color-steel);
+        }
+        .putter-stock-badge input {
+            width: 60px;
+            padding: 6px 8px;
+            font-family: 'Space Mono', monospace;
+            text-align: center;
+            border: 1px solid var(--color-ash);
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        .putter-pricing-body {
+            padding: 16px 20px;
+        }
+        .finish-pricing-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px dashed var(--color-mist);
+        }
+        .finish-pricing-row:last-child {
+            border-bottom: none;
+        }
+        .finish-name {
+            font-weight: 500;
+        }
+        .finish-name .default-badge {
+            font-size: 0.7rem;
+            background: var(--color-ink);
+            color: var(--color-paper);
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 8px;
+            font-weight: 600;
+        }
+        .finish-price-input {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .finish-price-input span {
+            color: var(--color-steel);
+        }
+        .finish-price-input input {
+            width: 70px;
+            padding: 6px 8px;
+            font-family: 'Space Mono', monospace;
+            text-align: right;
+            border: 1px solid var(--color-ash);
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        .add-finish-btn {
+            margin-top: 12px;
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px dashed var(--color-ash);
+            border-radius: 6px;
+            color: var(--color-steel);
+            cursor: pointer;
+            font-size: 0.85rem;
+            width: 100%;
+        }
+        .add-finish-btn:hover {
+            border-color: var(--color-graphite);
+            color: var(--color-graphite);
+        }
+
         /* ===== Site Editor Styles ===== */
         .site-editor-layout {
             display: flex;
@@ -1314,38 +1450,81 @@
             <!-- Inventory Section -->
             <div class="content-section" id="section-inventory">
                 <div class="main-header">
-                    <h1>Inventory</h1>
-                    <button class="btn btn-primary btn-sm" onclick="saveInventory()">Save Changes</button>
+                    <h1>Inventory & Pricing</h1>
+                    <button class="btn btn-primary btn-sm" onclick="saveAllInventory()">Save All Changes</button>
                 </div>
 
+                <!-- Shared Shaft Inventory -->
                 <div class="section-card">
                     <div class="section-header">
-                        <h3 class="section-title">Product Stock</h3>
-                        <span style="color: var(--color-steel); font-size: 0.875rem;">Stock is tracked per model, not per variant</span>
+                        <h3 class="section-title">Shaft Inventory</h3>
+                        <span style="color: var(--color-steel); font-size: 0.8rem;">Shared across all putter models</span>
                     </div>
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Product</th>
-                                <th>Base Price</th>
-                                <th>Stock (Blanks)</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="inventoryTable">
-                            <!-- Populated by JS -->
-                        </tbody>
-                    </table>
+                    <div style="padding: 24px;">
+                        <div class="shaft-inventory-grid" id="shaftInventoryGrid">
+                            <div class="shaft-inventory-card">
+                                <div class="shaft-inventory-label">Chrome Shafts</div>
+                                <input type="number" class="shaft-stock-input" id="shaftStockChrome" value="0" min="0">
+                                <div class="shaft-price">+$0.00</div>
+                            </div>
+                            <div class="shaft-inventory-card">
+                                <div class="shaft-inventory-label">Black Shafts</div>
+                                <input type="number" class="shaft-stock-input" id="shaftStockBlack" value="0" min="0">
+                                <div class="shaft-price">+$12.00</div>
+                            </div>
+                        </div>
+                        <p style="margin-top: 16px; font-size: 0.8rem; color: var(--color-steel);">
+                            When a customer orders any putter with a black shaft, black shaft inventory decreases by 1 regardless of putter model.
+                        </p>
+                    </div>
                 </div>
 
+                <!-- Putter Head Inventory & Pricing -->
                 <div class="section-card">
                     <div class="section-header">
-                        <h3 class="section-title">Inventory Notes</h3>
+                        <h3 class="section-title">Putter Heads & Finish Pricing</h3>
+                        <span style="color: var(--color-steel); font-size: 0.8rem;">Stock per model, finishes are pricing options</span>
                     </div>
-                    <div style="padding: 24px; color: var(--color-steel);">
-                        <p><strong>Stock = 1:</strong> Product shows as "Sold Out" on the website</p>
-                        <p style="margin-top: 8px;"><strong>Stock = 0:</strong> Product is hidden from shop</p>
-                        <p style="margin-top: 8px;">Stock count represents unfinished blanks. All variants (finishes, shaft colors) draw from the same stock pool.</p>
+                    <div id="putterPricingGrid" style="padding: 24px;">
+                        <!-- Populated by JS -->
+                        <div style="text-align: center; color: var(--color-steel); padding: 40px;">Loading...</div>
+                    </div>
+                </div>
+
+                <!-- Custom Length Add-on -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <h3 class="section-title">Custom Length (35.5"+)</h3>
+                        <span style="color: var(--color-steel); font-size: 0.8rem;">3D printed customization add-on</span>
+                    </div>
+                    <div style="padding: 24px;">
+                        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+                            <span style="font-weight: 600;">Add-on Price:</span>
+                            <div style="display: flex; align-items: center; gap: 4px;">
+                                <span>$</span>
+                                <input type="number" class="form-input" id="lengthAddonPrice" value="15.00" step="0.01" min="0" style="width: 80px;">
+                            </div>
+                        </div>
+                        <p style="font-size: 0.8rem; color: var(--color-steel);">
+                            Length options dropdown coming soon (CEO to provide options).
+                        </p>
+                    </div>
+                </div>
+
+                <!-- How It Works -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <h3 class="section-title">How Inventory Works</h3>
+                    </div>
+                    <div style="padding: 24px; color: var(--color-steel); font-size: 0.9rem;">
+                        <p><strong>When a customer orders:</strong></p>
+                        <ol style="margin: 12px 0 0 20px; line-height: 1.8;">
+                            <li>Putter head stock decreases by 1 (e.g., Rough Mill: 12 → 11)</li>
+                            <li>Shaft stock decreases by 1 based on color choice (e.g., Black: 20 → 19)</li>
+                            <li>Finish selection affects price only (not inventory)</li>
+                            <li>Length 35.5+ adds custom charge (not inventory)</li>
+                        </ol>
+                        <p style="margin-top: 16px;"><strong>Stock = 0:</strong> Product shows as "Sold Out" on website</p>
                     </div>
                 </div>
             </div>
@@ -1963,9 +2142,15 @@
             document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
             document.getElementById('section-' + sectionId).classList.add('active');
 
-            // Load photos section data when shown
+            // Load section-specific data when shown
             if (sectionId === 'photos') {
                 loadAllSiteImages();
+            } else if (sectionId === 'inventory') {
+                loadShaftInventory();
+                renderPutterPricingGrid();
+                // Restore length addon price from localStorage
+                const lengthPrice = localStorage.getItem('protoGolfLengthAddon') || '15.00';
+                document.getElementById('lengthAddonPrice').value = lengthPrice;
             }
 
             document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
@@ -2033,6 +2218,206 @@
 
             alert(`Saved ${saved} item(s) to database!`);
             renderInventory();
+        }
+
+        // ============================================
+        // INVENTORY & PRICING (New Unified System)
+        // ============================================
+        let shaftInventory = {
+            chrome: { stock: 0, price: 0 },
+            black: { stock: 0, price: 12 }
+        };
+
+        // Default finish options per product (can be customized)
+        const defaultFinishOptions = {
+            'Rough Mill': [
+                { name: 'Polished', price: 105.00, isDefault: true },
+                { name: 'Black Oxide', price: 120.00 },
+                { name: 'Mineral Torch', price: 125.00 }
+            ],
+            'Centre Blade': [
+                { name: 'Polished', price: 105.00, isDefault: true },
+                { name: 'Black Oxide', price: 120.00 }
+            ],
+            'Long Neck Blade': [
+                { name: 'Blasted', price: 105.00, isDefault: true },
+                { name: 'Black Oxide', price: 120.00 }
+            ]
+        };
+
+        // Load shaft inventory from shared_inventory table
+        async function loadShaftInventory() {
+            try {
+                const data = await supabaseQuery('proto_golf_shared_inventory', 'GET', null,
+                    `?item_type=eq.shaft&order=sort_order`);
+
+                if (data && data.length > 0) {
+                    data.forEach(item => {
+                        if (item.item_name.toLowerCase() === 'chrome') {
+                            shaftInventory.chrome = { stock: item.stock, price: parseFloat(item.price_addon) || 0, id: item.id };
+                        } else if (item.item_name.toLowerCase() === 'black') {
+                            shaftInventory.black = { stock: item.stock, price: parseFloat(item.price_addon) || 12, id: item.id };
+                        }
+                    });
+                }
+
+                // Update UI
+                document.getElementById('shaftStockChrome').value = shaftInventory.chrome.stock;
+                document.getElementById('shaftStockBlack').value = shaftInventory.black.stock;
+            } catch (e) {
+                console.error('Failed to load shaft inventory:', e);
+                // Table might not exist yet - that's okay
+            }
+        }
+
+        // Render the putter pricing grid
+        function renderPutterPricingGrid() {
+            const grid = document.getElementById('putterPricingGrid');
+
+            if (!allProducts || allProducts.length === 0) {
+                grid.innerHTML = '<div style="text-align: center; color: var(--color-steel); padding: 40px;">No products found</div>';
+                return;
+            }
+
+            grid.innerHTML = allProducts.map(product => {
+                const finishes = defaultFinishOptions[product.name] || [
+                    { name: 'Standard', price: parseFloat(product.base_price) || 105.00, isDefault: true }
+                ];
+
+                const stockStatus = product.stock <= 0 ? 'badge-error' :
+                                   product.stock <= 3 ? 'badge-warning' : 'badge-success';
+                const stockText = product.stock <= 0 ? 'Out' : product.stock <= 3 ? 'Low' : 'OK';
+
+                return `
+                    <div class="putter-pricing-card" data-product-id="${product.id}">
+                        <div class="putter-pricing-header">
+                            <h4>${product.name}</h4>
+                            <div class="putter-stock-badge">
+                                <label>Head Stock:</label>
+                                <input type="number" value="${product.stock}" min="0"
+                                       onchange="updatePutterStock('${product.id}', this.value)">
+                                <span class="badge ${stockStatus}">${stockText}</span>
+                            </div>
+                        </div>
+                        <div class="putter-pricing-body">
+                            ${finishes.map(f => `
+                                <div class="finish-pricing-row">
+                                    <div class="finish-name">
+                                        ${f.name}
+                                        ${f.isDefault ? '<span class="default-badge">BASE</span>' : ''}
+                                    </div>
+                                    <div class="finish-price-input">
+                                        <span>$</span>
+                                        <input type="number" value="${f.price.toFixed(2)}" step="0.01" min="0"
+                                               data-product="${product.id}" data-finish="${f.name}">
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Update putter stock in memory
+        function updatePutterStock(productId, value) {
+            const product = allProducts.find(p => p.id === productId);
+            if (product) {
+                product.stock = parseInt(value) || 0;
+                product.stockChanged = true;
+            }
+            // Also update the inventory array for consistency
+            const invItem = inventory.find(i => i.id === productId);
+            if (invItem) {
+                invItem.stock = parseInt(value) || 0;
+                invItem.changed = true;
+            }
+        }
+
+        // Save all inventory changes (shafts + putter heads)
+        async function saveAllInventory() {
+            let savedCount = 0;
+            let errors = [];
+
+            // 1. Save shaft inventory
+            const chromeStock = parseInt(document.getElementById('shaftStockChrome').value) || 0;
+            const blackStock = parseInt(document.getElementById('shaftStockBlack').value) || 0;
+
+            try {
+                // Upsert chrome shaft
+                if (shaftInventory.chrome.id) {
+                    await supabaseQuery('proto_golf_shared_inventory', 'PATCH',
+                        { stock: chromeStock },
+                        `?id=eq.${shaftInventory.chrome.id}`
+                    );
+                } else {
+                    await supabaseQuery('proto_golf_shared_inventory', 'POST', {
+                        item_type: 'shaft',
+                        item_name: 'Chrome',
+                        stock: chromeStock,
+                        price_addon: 0,
+                        sort_order: 1
+                    });
+                }
+                savedCount++;
+            } catch (e) {
+                console.error('Failed to save chrome shaft:', e);
+                errors.push('Chrome shaft');
+            }
+
+            try {
+                // Upsert black shaft
+                if (shaftInventory.black.id) {
+                    await supabaseQuery('proto_golf_shared_inventory', 'PATCH',
+                        { stock: blackStock },
+                        `?id=eq.${shaftInventory.black.id}`
+                    );
+                } else {
+                    await supabaseQuery('proto_golf_shared_inventory', 'POST', {
+                        item_type: 'shaft',
+                        item_name: 'Black',
+                        stock: blackStock,
+                        price_addon: 12,
+                        sort_order: 2
+                    });
+                }
+                savedCount++;
+            } catch (e) {
+                console.error('Failed to save black shaft:', e);
+                errors.push('Black shaft');
+            }
+
+            // 2. Save putter head stock changes
+            for (const product of allProducts) {
+                if (product.stockChanged) {
+                    try {
+                        await supabaseQuery('proto_golf_products', 'PATCH',
+                            { stock: product.stock },
+                            `?id=eq.${product.id}`
+                        );
+                        product.stockChanged = false;
+                        savedCount++;
+                    } catch (e) {
+                        console.error('Failed to save product stock:', product.name, e);
+                        errors.push(product.name);
+                    }
+                }
+            }
+
+            // 3. Save length addon price (store in localStorage for now, or could add to DB)
+            const lengthPrice = parseFloat(document.getElementById('lengthAddonPrice').value) || 15;
+            localStorage.setItem('protoGolfLengthAddon', lengthPrice);
+
+            if (errors.length > 0) {
+                alert(`Saved with errors. Failed: ${errors.join(', ')}`);
+            } else {
+                alert(`All changes saved successfully!`);
+            }
+
+            // Reload data
+            await loadShaftInventory();
+            renderPutterPricingGrid();
+            updateStats();
         }
 
         function renderOrders() {
