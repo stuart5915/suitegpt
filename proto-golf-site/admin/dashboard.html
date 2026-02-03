@@ -1006,7 +1006,7 @@
                     <li><a href="#" onclick="showSection('bgremover', event)">BG Remover</a></li>
                     <li><a href="#" onclick="showSection('siteeditor', event)">Edit Site</a></li>
                     <li style="margin-top: 24px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.1);">
-                        <a href="../index.html" target="_blank">View Site ↗</a>
+                        <a href="https://suitegpt.app/proto-golf-site/" target="_blank">View Site ↗</a>
                     </li>
                     <li><a href="#" onclick="logout()">Logout</a></li>
                 </ul>
@@ -1398,18 +1398,18 @@
                             <label>Page to Edit</label>
                             <select id="siteEditorPageSelect" onchange="loadSiteEditorPage()">
                                 <optgroup label="Main Pages">
-                                    <option value="../index.html">Home</option>
-                                    <option value="../shop.html">Shop</option>
-                                    <option value="../about.html">About</option>
-                                    <option value="../contact.html">Contact</option>
-                                    <option value="../faq.html">FAQ</option>
-                                    <option value="../limited.html">Limited Editions</option>
-                                    <option value="../checkout.html">Checkout</option>
+                                    <option value="index.html">Home</option>
+                                    <option value="shop.html">Shop</option>
+                                    <option value="about.html">About</option>
+                                    <option value="contact.html">Contact</option>
+                                    <option value="faq.html">FAQ</option>
+                                    <option value="limited.html">Limited Editions</option>
+                                    <option value="checkout.html">Checkout</option>
                                 </optgroup>
                                 <optgroup label="Product Pages">
-                                    <option value="../products/rough-mill.html">Rough Mill</option>
-                                    <option value="../products/centre-blade.html">Centre Blade</option>
-                                    <option value="../products/long-neck-blade.html">Long Neck Blade</option>
+                                    <option value="products/rough-mill.html">Rough Mill</option>
+                                    <option value="products/centre-blade.html">Centre Blade</option>
+                                    <option value="products/long-neck-blade.html">Long Neck Blade</option>
                                 </optgroup>
                             </select>
                         </div>
@@ -1465,7 +1465,7 @@
 
                     <!-- Site Preview -->
                     <div class="site-editor-iframe-container">
-                        <iframe id="siteEditorIframe" class="site-editor-iframe" src="../index.html"></iframe>
+                        <iframe id="siteEditorIframe" class="site-editor-iframe" src="https://suitegpt.app/proto-golf-site/index.html"></iframe>
                     </div>
                 </div>
             </div>
@@ -2997,19 +2997,22 @@
             loadSiteEditorHistory();
         }
 
+        // Base URL for Proto Golf site (always use suitegpt.app for consistency)
+        const PROTO_GOLF_BASE_URL = 'https://suitegpt.app/proto-golf-site/';
+
         // Whitelist of allowed Proto Golf pages - ONLY these can be edited
         const ALLOWED_PROTO_GOLF_PAGES = [
-            '../index.html',
-            '../shop.html',
-            '../about.html',
-            '../contact.html',
-            '../faq.html',
-            '../limited.html',
-            '../checkout.html',
-            '../products/product.html',
-            '../products/rough-mill.html',
-            '../products/centre-blade.html',
-            '../products/long-neck-blade.html'
+            'index.html',
+            'shop.html',
+            'about.html',
+            'contact.html',
+            'faq.html',
+            'limited.html',
+            'checkout.html',
+            'products/product.html',
+            'products/rough-mill.html',
+            'products/centre-blade.html',
+            'products/long-neck-blade.html'
         ];
 
         function loadSiteEditorPage() {
@@ -3020,11 +3023,12 @@
             // Security: Only allow whitelisted Proto Golf pages
             if (!ALLOWED_PROTO_GOLF_PAGES.includes(selectedPage)) {
                 alert('Invalid page selected. Only Proto Golf pages can be edited.');
-                select.value = '../index.html';
+                select.value = 'index.html';
                 return;
             }
 
-            iframe.src = selectedPage;
+            // Use absolute URL to ensure it works regardless of which domain dashboard is accessed from
+            iframe.src = PROTO_GOLF_BASE_URL + selectedPage;
 
             // Reset selection
             siteEditorSelectedElement = null;
@@ -3303,7 +3307,7 @@
             updateEditorStatus(statusEl, ++currentStep, totalSteps, 'Reading current page...');
 
             const iframe = document.getElementById('siteEditorIframe');
-            const page = document.getElementById('siteEditorPageSelect').value.replace('../', '');
+            const page = document.getElementById('siteEditorPageSelect').value;
 
             // Upload attached image first if present
             let uploadedImageUrl = null;
