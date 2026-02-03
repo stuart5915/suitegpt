@@ -3319,6 +3319,9 @@ Return ONLY the modified HTML, no explanations.`;
                 // Remove base URL to restore relative paths
                 htmlForPublish = htmlForPublish.split(baseUrl).join('');
 
+                // Clean up browser extension junk and editor artifacts
+                htmlForPublish = cleanHtmlForPublish(htmlForPublish);
+
                 // Publish to GitHub via API
                 const publishResponse = await fetch('/api/publish-proto-golf', {
                     method: 'POST',
@@ -3387,6 +3390,44 @@ Return ONLY the modified HTML, no explanations.`;
                 statusEl.textContent = 'Failed to publish: ' + e.message;
                 statusEl.className = 'site-editor-status error';
             }
+        }
+
+        function cleanHtmlForPublish(html) {
+            // Remove site editor classes
+            html = html.replace(/\s*class="[^"]*site-editor-[^"]*"/g, (match) => {
+                // Keep other classes, just remove site-editor-* ones
+                const cleaned = match.replace(/site-editor-\w+/g, '').replace(/\s+/g, ' ').trim();
+                return cleaned === 'class=""' ? '' : cleaned;
+            });
+            html = html.replace(/\ssite-editor-\w+/g, '');
+
+            // Remove browser extension elements
+            html = html.replace(/<input[^>]*__yoroi_connector[^>]*>/gi, '');
+            html = html.replace(/<script[^>]*eternl-dom-script[^>]*>[\s\S]*?<\/script>/gi, '');
+            html = html.replace(/<script[^>]*chrome-extension:\/\/[^>]*>[\s\S]*?<\/script>/gi, '');
+            html = html.replace(/<grammarly-desktop-integration[^>]*>[\s\S]*?<\/grammarly-desktop-integration>/gi, '');
+            html = html.replace(/<span[^>]*id="ctrlcCopy"[^>]*>[\s\S]*?<\/span>/gi, '');
+
+            // Remove data attributes from extensions
+            html = html.replace(/\s*data-new-gr-c-s-check-loaded="[^"]*"/g, '');
+            html = html.replace(/\s*data-gr-ext-installed="[^"]*"/g, '');
+            html = html.replace(/\s*data-grammarly-shadow-root="[^"]*"/g, '');
+
+            // Remove site-editor styles that got injected
+            html = html.replace(/<style>\s*\.site-editor-hover[\s\S]*?<\/style>/gi, '');
+
+            // Clean up empty class attributes and extra whitespace in tags
+            html = html.replace(/\sclass=""/g, '');
+            html = html.replace(/\sclass="\s+"/g, '');
+            html = html.replace(/\sstyle=""/g, '');
+
+            // Fix crossorigin="" to crossorigin
+            html = html.replace(/crossorigin=""/g, 'crossorigin');
+
+            // Restore proper HTML entities
+            html = html.replace(/&amp;/g, '&');
+
+            return html;
         }
 
         async function loadSiteEditorHistory() {
