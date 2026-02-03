@@ -3160,23 +3160,29 @@
                 const baseUrl = pageUrl.href.substring(0, pageUrl.href.lastIndexOf('/') + 1);
 
                 // Build prompt for Gemini
-                const prompt = `You are editing an HTML page for Proto Golf website. Make ONLY the requested change.
+                const prompt = `You are a precise HTML editor. Your job is to make ONE small change to this HTML.
 
-CRITICAL RULES:
-1. Keep ALL <link>, <script>, and <meta> tags EXACTLY as they are
-2. Keep ALL href and src attributes EXACTLY as they are (do not change paths)
-3. Only modify the specific content the user requested
-4. Return the COMPLETE HTML document
+ABSOLUTE RULES - VIOLATION WILL BREAK THE SITE:
+1. DO NOT change ANY class="" attributes
+2. DO NOT change ANY id="" attributes
+3. DO NOT change ANY style="" attributes
+4. DO NOT change ANY <link>, <script>, <meta>, or <head> content
+5. DO NOT change ANY href="" or src="" paths
+6. DO NOT change indentation, whitespace, or formatting
+7. DO NOT remove or reorganize any elements
+8. ONLY add new content OR modify text inside existing tags
+
+The HTML structure and CSS classes are SACRED. Only change the text content the user specifically requests.
 
 CURRENT HTML:
 ${currentHtml}
 
-${siteEditorSelectedSelector ? `SELECTED ELEMENT: ${siteEditorSelectedSelector}` : ''}
-${siteEditorSelectedText ? `ELEMENT TEXT: "${siteEditorSelectedText}"` : ''}
+${siteEditorSelectedSelector ? `TARGET ELEMENT: ${siteEditorSelectedSelector}` : ''}
+${siteEditorSelectedText ? `CURRENT TEXT: "${siteEditorSelectedText}"` : ''}
 
 USER REQUEST: ${request}
 
-Return ONLY the modified HTML, no explanations.`;
+Return the COMPLETE HTML with ONLY the minimal change requested. No explanations.`;
 
                 // Call Gemini API
                 const response = await fetch('/api/gemini', {
@@ -3187,7 +3193,7 @@ Return ONLY the modified HTML, no explanations.`;
                         model: 'gemini-3-flash-preview',
                         enableSearch: false,
                         generationConfig: {
-                            temperature: 0.2,
+                            temperature: 0,
                             maxOutputTokens: 32000
                         }
                     })
