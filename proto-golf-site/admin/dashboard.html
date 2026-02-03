@@ -918,7 +918,6 @@
                     <li><a href="#" onclick="showSection('variants', event)">Variants</a></li>
                     <li><a href="#" onclick="showSection('photos', event)">Photos</a></li>
                     <li><a href="#" onclick="showSection('bgremover', event)">BG Remover</a></li>
-                    <li><a href="#" onclick="showSection('requests', event)">Requests</a></li>
                     <li><a href="#" onclick="showSection('siteeditor', event)">Edit Site</a></li>
                     <li style="margin-top: 24px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.1);">
                         <a href="../index.html" target="_blank">View Site ↗</a>
@@ -1294,48 +1293,6 @@
                 </div>
             </div>
 
-            <!-- Requests Section -->
-            <div class="content-section" id="section-requests">
-                <div class="main-header">
-                    <h1>Change Requests</h1>
-                    <div id="requestDaemonStatus" style="display: flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 100px; font-size: 0.8rem; font-weight: 600; background: var(--color-mist); color: var(--color-steel);">
-                        <span id="reqDaemonDot" style="width: 8px; height: 8px; border-radius: 50%; background: var(--color-silver);"></span>
-                        <span id="reqDaemonText">Checking...</span>
-                    </div>
-                </div>
-
-                <div class="section-card">
-                    <div class="section-header">
-                        <h3 class="section-title">Submit a Request</h3>
-                    </div>
-                    <div style="padding: 24px;">
-                        <p style="color: var(--color-steel); margin-bottom: 16px; font-size: 0.9rem;">
-                            Describe what you'd like changed on your site. Stuart will review and approve before changes are made.
-                        </p>
-                        <div class="form-group">
-                            <label class="form-label">Request Title</label>
-                            <input type="text" class="form-input" id="requestTitle" placeholder="e.g. Add new putter model to shop">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">What do you need?</label>
-                            <textarea class="form-input" id="requestContent" rows="4" placeholder="Describe the change you'd like made to your site..."></textarea>
-                        </div>
-                        <button class="btn btn-primary" style="width: 100%;" onclick="submitRequest()">Send Request</button>
-                        <div id="requestStatus" style="margin-top: 12px; display: none; padding: 12px; border-radius: 8px; font-size: 0.9rem;"></div>
-                    </div>
-                </div>
-
-                <div class="section-card" style="margin-top: 24px;">
-                    <div class="section-header">
-                        <h3 class="section-title">Request History</h3>
-                        <button class="btn btn-secondary btn-sm" onclick="loadRequests()">Refresh</button>
-                    </div>
-                    <div id="requestsList" style="padding: 24px;">
-                        <p style="color: var(--color-steel); text-align: center;">Loading requests...</p>
-                    </div>
-                </div>
-            </div>
-
             <!-- Site Editor Section -->
             <div class="content-section" id="section-siteeditor">
                 <div class="main-header">
@@ -1400,6 +1357,11 @@
                             <div id="siteEditorHistoryList">
                                 <p style="color: var(--color-silver); font-size: 0.85rem;">No requests yet.</p>
                             </div>
+                        </div>
+
+                        <div class="site-editor-contact" style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--color-mist);">
+                            <p style="font-size: 0.85rem; color: var(--color-steel); margin-bottom: 12px;">Need a bigger change? New page, restructure, or something complex?</p>
+                            <button class="btn btn-secondary btn-sm" style="width: 100%;" onclick="contactStu()">💬 Contact Stu</button>
                         </div>
                     </div>
 
@@ -3544,8 +3506,8 @@ RULES:
                     const elementInfo = r.element_selector
                         ? `<div class="site-editor-history-item-element">${escapeHtml(r.element_selector.substring(0, 40))}</div>`
                         : '';
-                    const statusBadge = r.status === 'completed'
-                        ? '<span class="badge badge-success" style="font-size:0.7rem;">Done</span>'
+                    const statusBadge = (r.status === 'completed' || r.status === 'published')
+                        ? '<span class="badge badge-success" style="font-size:0.7rem;">Live</span>'
                         : '<span class="badge badge-warning" style="font-size:0.7rem;">Pending</span>';
 
                     return `
@@ -3561,6 +3523,14 @@ RULES:
                 console.error('Failed to load history:', e);
                 container.innerHTML = '<p style="color: var(--color-error); font-size: 0.85rem;">Failed to load history.</p>';
             }
+        }
+
+        function contactStu() {
+            const page = document.getElementById('siteEditorPageSelect').value;
+            const pageName = document.getElementById('siteEditorPageSelect').selectedOptions[0]?.text || page;
+            const subject = encodeURIComponent(`Proto Golf Site Change Request - ${pageName}`);
+            const body = encodeURIComponent(`Hi Stu,\n\nI'd like to request a change to the Proto Golf website.\n\nPage: ${pageName}\n\nWhat I need:\n[Describe your request here]\n\nThanks,\nRachel`);
+            window.open(`mailto:stuart.hollinger@gmail.com?subject=${subject}&body=${body}`, '_blank');
         }
     </script>
 </body>
