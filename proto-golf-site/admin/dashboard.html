@@ -812,26 +812,24 @@
             font-size: 0.9rem;
         }
 
+        .putter-pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
         .putter-pricing-card {
             background: var(--color-paper);
             border: 1px solid var(--color-ash);
             border-radius: 12px;
-            margin-bottom: 20px;
             overflow: hidden;
         }
-        .putter-pricing-card:last-child {
-            margin-bottom: 0;
-        }
         .putter-pricing-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px 20px;
+            padding: 14px 16px;
             background: var(--color-bone);
             border-bottom: 1px solid var(--color-ash);
         }
         .putter-pricing-header h4 {
-            margin: 0;
+            margin: 0 0 8px 0;
             font-size: 1rem;
         }
         .putter-stock-badge {
@@ -844,22 +842,22 @@
             color: var(--color-steel);
         }
         .putter-stock-badge input {
-            width: 60px;
-            padding: 6px 8px;
+            width: 55px;
+            padding: 5px 6px;
             font-family: 'Space Mono', monospace;
             text-align: center;
             border: 1px solid var(--color-ash);
             border-radius: 6px;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
         .putter-pricing-body {
-            padding: 16px 20px;
+            padding: 12px 16px;
         }
         .finish-pricing-row {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            padding: 10px 0;
+            gap: 12px;
+            padding: 8px 0;
             border-bottom: 1px dashed var(--color-mist);
         }
         .finish-pricing-row:last-child {
@@ -867,36 +865,41 @@
         }
         .finish-name {
             font-weight: 500;
+            font-size: 0.9rem;
+            min-width: 100px;
         }
         .finish-name .default-badge {
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             background: var(--color-ink);
             color: var(--color-paper);
-            padding: 2px 6px;
-            border-radius: 4px;
-            margin-left: 8px;
+            padding: 2px 5px;
+            border-radius: 3px;
+            margin-left: 6px;
             font-weight: 600;
+            vertical-align: middle;
         }
         .finish-price-input {
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 3px;
+            margin-left: auto;
         }
         .finish-price-input span {
             color: var(--color-steel);
+            font-size: 0.9rem;
         }
         .finish-price-input input {
-            width: 70px;
-            padding: 6px 8px;
+            width: 65px;
+            padding: 5px 6px;
             font-family: 'Space Mono', monospace;
             text-align: right;
             border: 1px solid var(--color-ash);
             border-radius: 6px;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
         .add-finish-btn {
-            margin-top: 12px;
-            padding: 8px 16px;
+            margin-top: 10px;
+            padding: 6px 12px;
             background: transparent;
             border: 1px dashed var(--color-ash);
             border-radius: 6px;
@@ -2279,7 +2282,7 @@
                 return;
             }
 
-            grid.innerHTML = allProducts.map(product => {
+            const cards = allProducts.map(product => {
                 const finishes = defaultFinishOptions[product.name] || [
                     { name: 'Standard', price: parseFloat(product.base_price) || 105.00, isDefault: true }
                 ];
@@ -2293,7 +2296,7 @@
                         <div class="putter-pricing-header">
                             <h4>${product.name}</h4>
                             <div class="putter-stock-badge">
-                                <label>Head Stock:</label>
+                                <label>Stock:</label>
                                 <input type="number" value="${product.stock}" min="0"
                                        onchange="updatePutterStock('${product.id}', this.value)">
                                 <span class="badge ${stockStatus}">${stockText}</span>
@@ -2302,10 +2305,9 @@
                         <div class="putter-pricing-body">
                             ${finishes.map(f => `
                                 <div class="finish-pricing-row">
-                                    <div class="finish-name">
-                                        ${f.name}
-                                        ${f.isDefault ? '<span class="default-badge">BASE</span>' : ''}
-                                    </div>
+                                    <span class="finish-name">
+                                        ${f.name}${f.isDefault ? '<span class="default-badge">BASE</span>' : ''}
+                                    </span>
                                     <div class="finish-price-input">
                                         <span>$</span>
                                         <input type="number" value="${f.price.toFixed(2)}" step="0.01" min="0"
@@ -2317,6 +2319,8 @@
                     </div>
                 `;
             }).join('');
+
+            grid.innerHTML = `<div class="putter-pricing-grid">${cards}</div>`;
         }
 
         // Update putter stock in memory
