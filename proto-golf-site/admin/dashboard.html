@@ -620,6 +620,160 @@
             opacity: 0.85;
         }
 
+        /* Image Location Grid (Photos Section) */
+        .image-location-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 24px;
+        }
+        .image-location-card {
+            border: 1px solid var(--color-ash);
+            border-radius: 12px;
+            overflow: hidden;
+            background: var(--color-paper);
+        }
+        .image-location-card img {
+            width: 100%;
+            height: 140px;
+            object-fit: contain;
+            background: var(--color-mist);
+        }
+        .image-location-card-info {
+            padding: 12px;
+            border-top: 1px solid var(--color-ash);
+        }
+        .image-location-card-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+        .image-location-card-subtitle {
+            color: var(--color-steel);
+            font-size: 0.75rem;
+            margin-bottom: 8px;
+        }
+        .image-location-card .btn {
+            width: 100%;
+        }
+
+        /* Gallery accordion */
+        .gallery-product-card {
+            border: 1px solid var(--color-ash);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+        .gallery-product-header {
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            background: var(--color-bone);
+        }
+        .gallery-product-header:hover {
+            background: var(--color-mist);
+        }
+        .gallery-product-header h4 {
+            margin: 0;
+            font-size: 0.95rem;
+        }
+        .gallery-product-header .chevron {
+            transition: transform 0.2s;
+        }
+        .gallery-product-header.open .chevron {
+            transform: rotate(180deg);
+        }
+        .gallery-product-content {
+            display: none;
+            padding: 16px;
+            border-top: 1px solid var(--color-ash);
+        }
+        .gallery-product-content.open {
+            display: block;
+        }
+        .gallery-variant-section {
+            margin-bottom: 20px;
+        }
+        .gallery-variant-section:last-child {
+            margin-bottom: 0;
+        }
+        .gallery-variant-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--color-graphite);
+        }
+        .gallery-images-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: flex-start;
+        }
+        .gallery-image-wrapper {
+            position: relative;
+        }
+        .gallery-image-thumb {
+            width: 100px;
+            height: 100px;
+            object-fit: contain;
+            background: var(--color-mist);
+            border-radius: 8px;
+            border: 1px solid var(--color-ash);
+            cursor: pointer;
+        }
+        .gallery-image-thumb:hover {
+            border-color: var(--color-graphite);
+        }
+        .gallery-image-delete {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--color-error);
+            color: white;
+            border: none;
+            font-size: 12px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+        .gallery-image-wrapper:hover .gallery-image-delete {
+            display: flex;
+        }
+        .gallery-add-btn {
+            width: 100px;
+            height: 100px;
+            border: 2px dashed var(--color-ash);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--color-steel);
+            font-size: 24px;
+            background: transparent;
+        }
+        .gallery-add-btn:hover {
+            border-color: var(--color-graphite);
+            color: var(--color-graphite);
+        }
+        .gallery-image-count {
+            font-size: 0.75rem;
+            color: var(--color-steel);
+            background: var(--color-mist);
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
         /* ===== Site Editor Styles ===== */
         .site-editor-layout {
             display: flex;
@@ -1306,45 +1460,34 @@
             <!-- Photos Section -->
             <div class="content-section" id="section-photos">
                 <div class="main-header">
-                    <h1>Product Photos</h1>
+                    <h1>Site Images</h1>
                 </div>
 
+                <!-- Product Hero Images (Shop Cards) -->
                 <div class="section-card">
                     <div class="section-header">
-                        <h3 class="section-title">Manage Images</h3>
+                        <h3 class="section-title">Shop Page — Product Cards</h3>
+                        <span style="color: var(--color-steel); font-size: 0.8rem;">These appear on the main shop page</span>
                     </div>
-                    <div style="padding: 24px;">
-                        <div style="display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap;">
-                            <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
-                                <label class="form-label">Product</label>
-                                <select class="form-input" id="photoProduct" onchange="onPhotoProductChange()">
-                                    <!-- Populated from DB -->
-                                </select>
-                            </div>
-                            <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
-                                <label class="form-label">Variant</label>
-                                <select class="form-input" id="photoVariant" onchange="loadProductImages()">
-                                </select>
-                            </div>
-                        </div>
-
-                        <div style="margin-bottom: 24px;">
-                            <label class="form-label">Upload New Image</label>
-                            <input type="file" accept="image/*" id="photoFileInput" style="display: none;" onchange="updateFileLabel()" multiple>
-                            <div style="display: flex; gap: 12px; align-items: center;">
-                                <button class="btn btn-secondary btn-sm" onclick="document.getElementById('photoFileInput').click()" style="white-space: nowrap;" id="chooseFileBtn">Choose File</button>
-                                <span style="color: var(--color-steel); font-size: 0.875rem; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" id="fileLabel">No file selected</span>
-                                <button class="btn btn-sm" style="background: var(--color-ink); color: var(--color-paper); white-space: nowrap; width: auto;" onclick="uploadPhoto()" id="uploadPhotoBtn">Upload</button>
-                            </div>
-                        </div>
-
-                        <div id="photoGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px;">
-                            <div style="text-align: center; color: var(--color-steel); padding: 40px; grid-column: 1 / -1;">
-                                Select a product and variant to view images
-                            </div>
-                        </div>
+                    <div id="heroImagesGrid" class="image-location-grid">
+                        <div style="text-align: center; color: var(--color-steel); padding: 40px; grid-column: 1 / -1;">Loading...</div>
                     </div>
                 </div>
+
+                <!-- Product Gallery Images -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <h3 class="section-title">Product Galleries</h3>
+                        <span style="color: var(--color-steel); font-size: 0.8rem;">Per-variant images shown on product detail pages</span>
+                    </div>
+                    <div id="gallerySection" style="padding: 24px;">
+                        <div style="text-align: center; color: var(--color-steel); padding: 40px;">Loading...</div>
+                    </div>
+                </div>
+
+                <!-- Hidden file inputs for image uploads -->
+                <input type="file" accept="image/*" id="heroImageInput" style="display: none;">
+                <input type="file" accept="image/*" id="galleryImageInput" style="display: none;" multiple>
             </div>
 
             <!-- BG Remover Section -->
@@ -1819,6 +1962,11 @@
 
             document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
             document.getElementById('section-' + sectionId).classList.add('active');
+
+            // Load photos section data when shown
+            if (sectionId === 'photos') {
+                loadAllSiteImages();
+            }
 
             document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
             if (event && event.target) event.target.classList.add('active');
@@ -2298,14 +2446,7 @@
                     loadVariantsForProduct();
                 }
             }
-
-            // Photo product selector
-            const photoSelect = document.getElementById('photoProduct');
-            if (photoSelect) {
-                photoSelect.innerHTML = allProducts.map(p =>
-                    `<option value="${p.id}">${p.name}</option>`
-                ).join('');
-            }
+            // Note: Photo section now uses loadAllSiteImages() instead of dropdowns
         }
 
         async function loadVariantsForProduct() {
@@ -2436,124 +2577,245 @@
         }
 
         // ============================================
-        // PHOTOS MANAGEMENT (DB-driven)
+        // PHOTOS MANAGEMENT (New Single-Screen UX)
         // ============================================
-        let currentPhotos = [];
+        let allSiteImages = {
+            products: [],
+            variants: [],
+            galleryImages: []
+        };
+        let pendingHeroUpload = null;
+        let pendingGalleryUpload = null;
 
-        function updateFileLabel() {
-            const input = document.getElementById('photoFileInput');
-            const label = document.getElementById('fileLabel');
-            if (!input.files || input.files.length === 0) {
-                label.textContent = 'No file selected';
-            } else if (input.files.length === 1) {
-                label.textContent = input.files[0].name;
-            } else {
-                label.textContent = input.files.length + ' files selected';
-            }
-        }
+        // Load all site images when Photos section is shown
+        async function loadAllSiteImages() {
+            const heroGrid = document.getElementById('heroImagesGrid');
+            const gallerySection = document.getElementById('gallerySection');
 
-        async function onPhotoProductChange() {
-            const productId = document.getElementById('photoProduct').value;
-            const variantSelect = document.getElementById('photoVariant');
-
-            if (!productId) {
-                variantSelect.innerHTML = '';
-                return;
-            }
-
-            // Fetch variants for this product from DB
-            try {
-                const variants = await supabaseQuery('proto_golf_variants', 'GET', null,
-                    `?product_id=eq.${encodeURIComponent(productId)}&order=sort_order`);
-                const variantKeys = variants.map(v => `${v.finish_name}|${v.shaft_color}`);
-                // Deduplicate
-                const unique = [...new Set(variantKeys)];
-                variantSelect.innerHTML = unique.map(v =>
-                    `<option value="${v}">${v}</option>`
-                ).join('');
-            } catch (e) {
-                console.error('Failed to load photo variants:', e);
-                variantSelect.innerHTML = '';
-            }
-
-            loadProductImages();
-        }
-
-        async function loadProductImages() {
-            const productId = document.getElementById('photoProduct').value;
-            const variantKey = document.getElementById('photoVariant').value;
-            const grid = document.getElementById('photoGrid');
-
-            if (!productId || !variantKey) {
-                grid.innerHTML = '<div style="text-align: center; color: var(--color-steel); padding: 40px; grid-column: 1 / -1;">Select a product and variant to view images</div>';
-                return;
-            }
-
-            grid.innerHTML = '<div style="text-align: center; color: var(--color-steel); padding: 40px; grid-column: 1 / -1;">Loading...</div>';
+            heroGrid.innerHTML = '<div style="text-align: center; color: var(--color-steel); padding: 40px; grid-column: 1 / -1;">Loading...</div>';
+            gallerySection.innerHTML = '<div style="text-align: center; color: var(--color-steel); padding: 40px;">Loading...</div>';
 
             try {
-                const data = await supabaseQuery('proto_golf_product_images', 'GET', null,
-                    `?product_id=eq.${encodeURIComponent(productId)}&variant_key=eq.${encodeURIComponent(variantKey)}&order=sort_order`
-                );
-                currentPhotos = Array.isArray(data) ? data : [];
-                renderPhotoGrid();
+                // Fetch all data in parallel
+                const [products, variants, images] = await Promise.all([
+                    supabaseQuery('proto_golf_products', 'GET', null, '?order=sort_order,name'),
+                    supabaseQuery('proto_golf_variants', 'GET', null, '?order=product_id,sort_order'),
+                    supabaseQuery('proto_golf_product_images', 'GET', null, '?order=product_id,variant_key,sort_order')
+                ]);
+
+                allSiteImages.products = products || [];
+                allSiteImages.variants = variants || [];
+                allSiteImages.galleryImages = images || [];
+
+                renderHeroImagesGrid();
+                renderGallerySection();
             } catch (e) {
-                console.error('Failed to load images:', e);
-                grid.innerHTML = '<div style="text-align: center; color: var(--color-error); padding: 40px; grid-column: 1 / -1;">Failed to load images</div>';
+                console.error('Failed to load site images:', e);
+                heroGrid.innerHTML = '<div style="text-align: center; color: var(--color-error); padding: 40px; grid-column: 1 / -1;">Failed to load images</div>';
+                gallerySection.innerHTML = '<div style="text-align: center; color: var(--color-error); padding: 40px;">Failed to load images</div>';
             }
         }
 
-        function renderPhotoGrid() {
-            const grid = document.getElementById('photoGrid');
+        // Render the hero images grid (shop card images)
+        function renderHeroImagesGrid() {
+            const grid = document.getElementById('heroImagesGrid');
 
-            if (currentPhotos.length === 0) {
-                grid.innerHTML = '<div style="text-align: center; color: var(--color-steel); padding: 40px; grid-column: 1 / -1;">No images for this variant yet. Upload one above.</div>';
+            if (allSiteImages.products.length === 0) {
+                grid.innerHTML = '<div style="text-align: center; color: var(--color-steel); padding: 40px; grid-column: 1 / -1;">No products found</div>';
                 return;
             }
 
-            grid.innerHTML = currentPhotos.map(photo => `
-                <div class="photo-card">
-                    <img src="${photo.image_url}" alt="Product image" loading="lazy">
-                    <div class="photo-card-actions">
-                        <input type="number" value="${photo.sort_order}" min="0"
-                               onchange="updatePhotoOrder('${photo.id}', this.value)"
-                               title="Sort order">
-                        <button class="photo-delete-btn" onclick="deletePhoto('${photo.id}')">Delete</button>
+            grid.innerHTML = allSiteImages.products.map(product => {
+                const imgSrc = product.hero_image || '/proto-golf-site/assets/images/placeholder.jpg';
+                return `
+                    <div class="image-location-card">
+                        <img src="${imgSrc}" alt="${product.name}" loading="lazy" onerror="this.src='/proto-golf-site/assets/images/placeholder.jpg'">
+                        <div class="image-location-card-info">
+                            <div class="image-location-card-title">${product.name}</div>
+                            <div class="image-location-card-subtitle">Shop card image</div>
+                            <button class="btn btn-secondary btn-sm" onclick="changeHeroImage('${product.id}')">Change</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Render the gallery section with expandable product cards
+        function renderGallerySection() {
+            const section = document.getElementById('gallerySection');
+
+            if (allSiteImages.products.length === 0) {
+                section.innerHTML = '<div style="text-align: center; color: var(--color-steel); padding: 40px;">No products found</div>';
+                return;
+            }
+
+            section.innerHTML = allSiteImages.products.map(product => {
+                // Get variants for this product
+                const productVariants = allSiteImages.variants.filter(v => v.product_id === product.id);
+                // Get unique variant keys
+                const variantKeys = [...new Set(productVariants.map(v => `${v.finish_name}|${v.shaft_color}`))];
+
+                // Count total images for this product
+                const productImages = allSiteImages.galleryImages.filter(img => img.product_id === product.id);
+                const imageCount = productImages.length;
+
+                return `
+                    <div class="gallery-product-card">
+                        <div class="gallery-product-header" onclick="toggleGalleryProduct('${product.id}')">
+                            <h4>${product.name}</h4>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <span class="gallery-image-count">${imageCount} image${imageCount !== 1 ? 's' : ''}</span>
+                                <span class="chevron">▼</span>
+                            </div>
+                        </div>
+                        <div class="gallery-product-content" id="gallery-content-${product.id}">
+                            ${variantKeys.length === 0 ?
+                                '<div style="color: var(--color-steel); font-size: 0.9rem;">No variants defined for this product. Add variants in the Variants section first.</div>' :
+                                variantKeys.map(vk => renderVariantGallery(product.id, vk)).join('')
+                            }
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Render a single variant's gallery row
+        function renderVariantGallery(productId, variantKey) {
+            const images = allSiteImages.galleryImages.filter(
+                img => img.product_id === productId && img.variant_key === variantKey
+            );
+            const [finish, shaft] = variantKey.split('|');
+
+            return `
+                <div class="gallery-variant-section">
+                    <div class="gallery-variant-title">
+                        <span>${finish}</span>
+                        <span style="color: var(--color-silver);">•</span>
+                        <span>${shaft}</span>
+                    </div>
+                    <div class="gallery-images-row">
+                        ${images.map(img => `
+                            <div class="gallery-image-wrapper">
+                                <img src="${img.image_url}" alt="Gallery image" class="gallery-image-thumb"
+                                     onclick="viewGalleryImage('${img.id}')" loading="lazy"
+                                     onerror="this.src='/proto-golf-site/assets/images/placeholder.jpg'">
+                                <button class="gallery-image-delete" onclick="deleteGalleryImage('${img.id}')" title="Delete">×</button>
+                            </div>
+                        `).join('')}
+                        <button class="gallery-add-btn" onclick="addGalleryImage('${productId}', '${variantKey}')" title="Add image">+</button>
                     </div>
                 </div>
-            `).join('');
+            `;
         }
 
-        async function uploadPhoto() {
-            const fileInput = document.getElementById('photoFileInput');
-            const productId = document.getElementById('photoProduct').value;
-            const variantKey = document.getElementById('photoVariant').value;
-            const btn = document.getElementById('uploadPhotoBtn');
+        // Toggle product accordion
+        function toggleGalleryProduct(productId) {
+            const content = document.getElementById(`gallery-content-${productId}`);
+            const header = content.previousElementSibling;
 
-            if (!fileInput.files || fileInput.files.length === 0) {
-                alert('Please select image file(s)');
-                return;
+            content.classList.toggle('open');
+            header.classList.toggle('open');
+        }
+
+        // Change hero image for a product
+        function changeHeroImage(productId) {
+            pendingHeroUpload = productId;
+            const input = document.getElementById('heroImageInput');
+            input.onchange = handleHeroImageUpload;
+            input.click();
+        }
+
+        async function handleHeroImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file || !pendingHeroUpload) return;
+
+            const productId = pendingHeroUpload;
+            pendingHeroUpload = null;
+
+            // Find the button and show loading state
+            const cards = document.querySelectorAll('.image-location-card');
+            let targetBtn = null;
+            cards.forEach(card => {
+                const btn = card.querySelector('button');
+                if (btn && btn.onclick.toString().includes(productId)) {
+                    targetBtn = btn;
+                }
+            });
+
+            if (targetBtn) {
+                targetBtn.textContent = 'Uploading...';
+                targetBtn.disabled = true;
             }
 
-            if (!productId || !variantKey) {
-                alert('Please select a product and variant');
-                return;
+            try {
+                // Upload to Supabase Storage
+                const ext = file.name.split('.').pop() || 'jpg';
+                const storagePath = `hero/${productId}/${Date.now()}.${ext}`;
+
+                const uploadResp = await fetch(`${SUPABASE_URL}/storage/v1/object/proto-golf-images/${storagePath}`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': file.type || 'image/jpeg'
+                    },
+                    body: file
+                });
+
+                if (!uploadResp.ok) {
+                    throw new Error('Upload failed: ' + await uploadResp.text());
+                }
+
+                const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/proto-golf-images/${storagePath}`;
+
+                // Update product record
+                await supabaseQuery('proto_golf_products', 'PATCH',
+                    { hero_image: publicUrl },
+                    `?id=eq.${productId}`
+                );
+
+                // Refresh the grid
+                await loadAllSiteImages();
+            } catch (e) {
+                console.error('Hero image upload error:', e);
+                alert('Failed to upload image: ' + e.message);
+                if (targetBtn) {
+                    targetBtn.textContent = 'Change';
+                    targetBtn.disabled = false;
+                }
             }
 
-            const files = Array.from(fileInput.files);
-            const total = files.length;
-            btn.textContent = `Uploading 0/${total}...`;
-            btn.disabled = true;
+            event.target.value = '';
+        }
+
+        // Add image to variant gallery
+        function addGalleryImage(productId, variantKey) {
+            pendingGalleryUpload = { productId, variantKey };
+            const input = document.getElementById('galleryImageInput');
+            input.onchange = handleGalleryImageUpload;
+            input.click();
+        }
+
+        async function handleGalleryImageUpload(event) {
+            const files = Array.from(event.target.files);
+            if (files.length === 0 || !pendingGalleryUpload) return;
+
+            const { productId, variantKey } = pendingGalleryUpload;
+            pendingGalleryUpload = null;
+
+            // Get current count for sort_order
+            const existingImages = allSiteImages.galleryImages.filter(
+                img => img.product_id === productId && img.variant_key === variantKey
+            );
+            let sortOrder = existingImages.length;
 
             let uploaded = 0;
             let failed = 0;
 
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
-                btn.textContent = `Uploading ${i + 1}/${total}...`;
 
                 try {
-                    // Upload directly to Supabase Storage
                     const ext = file.name.split('.').pop() || 'jpg';
                     const storagePath = `${productId}/${variantKey.replace(/\|/g, '-').replace(/\s/g, '_')}/${Date.now()}_${i}.${ext}`;
 
@@ -2568,55 +2830,59 @@
                     });
 
                     if (!uploadResp.ok) {
-                        const errText = await uploadResp.text();
-                        throw new Error('Storage upload failed: ' + errText);
+                        throw new Error('Upload failed');
                     }
 
-                    // Get public URL
                     const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/proto-golf-images/${storagePath}`;
 
-                    // Insert DB record
-                    const ok = await supabaseQuery('proto_golf_product_images', 'POST', {
+                    await supabaseQuery('proto_golf_product_images', 'POST', {
                         product_id: productId,
                         variant_key: variantKey,
                         image_url: publicUrl,
-                        sort_order: currentPhotos.length + uploaded
+                        sort_order: sortOrder + uploaded
                     });
 
-                    if (ok) {
-                        uploaded++;
-                    } else {
-                        failed++;
-                        console.error('DB insert failed for', file.name);
-                    }
+                    uploaded++;
                 } catch (e) {
                     failed++;
-                    console.error('Upload error for', file.name, e);
+                    console.error('Gallery upload error:', e);
                 }
             }
 
-            fileInput.value = '';
-            document.getElementById('fileLabel').textContent = 'No file selected';
-            await loadProductImages();
+            event.target.value = '';
 
-            if (failed === 0) {
-                alert(`${uploaded} image${uploaded !== 1 ? 's' : ''} uploaded successfully!`);
-            } else {
-                alert(`${uploaded} uploaded, ${failed} failed.`);
+            // Refresh
+            await loadAllSiteImages();
+
+            // Re-open the product accordion
+            const content = document.getElementById(`gallery-content-${productId}`);
+            if (content && !content.classList.contains('open')) {
+                toggleGalleryProduct(productId);
             }
 
-            btn.textContent = 'Upload';
-            btn.disabled = false;
+            if (failed > 0) {
+                alert(`${uploaded} uploaded, ${failed} failed.`);
+            }
         }
 
-        async function deletePhoto(imageId) {
+        // View gallery image (could expand to a modal in the future)
+        function viewGalleryImage(imageId) {
+            const image = allSiteImages.galleryImages.find(img => img.id === imageId);
+            if (image) {
+                window.open(image.image_url, '_blank');
+            }
+        }
+
+        // Delete gallery image
+        async function deleteGalleryImage(imageId) {
             if (!confirm('Delete this image? This cannot be undone.')) return;
 
             try {
-                // Find the photo to get the storage path
-                const photo = currentPhotos.find(p => p.id === imageId);
-                if (photo && photo.image_url) {
-                    const urlParts = photo.image_url.split('/proto-golf-images/');
+                const image = allSiteImages.galleryImages.find(img => img.id === imageId);
+
+                // Delete from storage
+                if (image && image.image_url) {
+                    const urlParts = image.image_url.split('/proto-golf-images/');
                     if (urlParts.length === 2) {
                         const storagePath = decodeURIComponent(urlParts[1]);
                         await fetch(`${SUPABASE_URL}/storage/v1/object/proto-golf-images/${storagePath}`, {
@@ -2631,25 +2897,19 @@
 
                 // Delete DB record
                 await supabaseQuery('proto_golf_product_images', 'DELETE', null, `?id=eq.${imageId}`);
-                await loadProductImages();
+
+                // Refresh
+                await loadAllSiteImages();
             } catch (e) {
                 console.error('Delete error:', e);
                 alert('Delete failed: ' + e.message);
             }
         }
 
-        async function updatePhotoOrder(imageId, newOrder) {
-            try {
-                await supabaseQuery('proto_golf_product_images', 'PATCH',
-                    { sort_order: parseInt(newOrder) || 0 },
-                    `?id=eq.${imageId}`
-                );
-            } catch (e) {
-                console.error('Failed to update sort order:', e);
-            }
-        }
-
-        // Photo/variant dropdowns are populated after initDashboard() via populateProductDropdowns()
+        // Legacy functions kept for compatibility (if called from elsewhere)
+        let currentPhotos = [];
+        async function loadProductImages() { await loadAllSiteImages(); }
+        async function onPhotoProductChange() { await loadAllSiteImages(); }
 
         function exportOrders() {
             if (orders.length === 0) {
