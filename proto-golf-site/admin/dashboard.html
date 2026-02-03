@@ -3120,6 +3120,16 @@
         let siteEditorCurrentPage = null;
         let siteEditorPendingRequest = null;
 
+        // Helper to show step-by-step progress
+        function updateEditorStatus(statusEl, step, total, message, isWarning = true) {
+            const progress = `[${step}/${total}]`;
+            statusEl.innerHTML = `<span style="opacity:0.7">${progress}</span> ${message}`;
+            statusEl.className = 'site-editor-status';
+            statusEl.style.display = 'block';
+            statusEl.style.background = isWarning ? 'rgba(245, 158, 11, 0.1)' : 'rgba(34, 197, 94, 0.1)';
+            statusEl.style.color = isWarning ? 'var(--color-warning)' : 'var(--color-success)';
+        }
+
         async function applySiteEditorChange() {
             const request = document.getElementById('siteEditorTextInput').value.trim();
             const statusEl = document.getElementById('siteEditorStatus');
@@ -3135,11 +3145,8 @@
 
             btn.disabled = true;
             btn.textContent = 'Applying...';
-            statusEl.textContent = 'AI is making your changes...';
-            statusEl.className = 'site-editor-status';
-            statusEl.style.display = 'block';
-            statusEl.style.background = 'rgba(245, 158, 11, 0.1)';
-            statusEl.style.color = 'var(--color-warning)';
+
+            updateEditorStatus(statusEl, 1, 5, 'Reading current page...');
 
             const iframe = document.getElementById('siteEditorIframe');
             const page = document.getElementById('siteEditorPageSelect').value.replace('../', '');
@@ -3148,6 +3155,8 @@
                 // Get current HTML from iframe
                 const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
                 const currentHtml = '<!DOCTYPE html>\n' + iframeDoc.documentElement.outerHTML;
+
+                updateEditorStatus(statusEl, 2, 5, 'Analyzing your request...');
 
                 // Store original if not already stored
                 if (!siteEditorOriginalHtml || siteEditorCurrentPage !== page) {
@@ -3184,6 +3193,8 @@ USER REQUEST: ${request}
 
 Return the COMPLETE HTML with ONLY the minimal change requested. No explanations.`;
 
+                updateEditorStatus(statusEl, 3, 5, 'AI is editing the page...');
+
                 // Call Gemini API
                 const response = await fetch('/api/gemini', {
                     method: 'POST',
@@ -3204,6 +3215,8 @@ Return the COMPLETE HTML with ONLY the minimal change requested. No explanations
                     console.error('Gemini API error:', errData);
                     throw new Error(errData.error || 'Gemini API error');
                 }
+
+                updateEditorStatus(statusEl, 4, 5, 'Processing AI response...');
 
                 const data = await response.json();
                 let newHtml = data.text || data.response || '';
@@ -3231,6 +3244,8 @@ Return the COMPLETE HTML with ONLY the minimal change requested. No explanations
                     element_text: siteEditorSelectedText,
                     request_text: request
                 };
+
+                updateEditorStatus(statusEl, 5, 5, 'Updating preview...');
 
                 // Update iframe with new HTML
                 iframeDoc.open();
@@ -3309,11 +3324,7 @@ Return the COMPLETE HTML with ONLY the minimal change requested. No explanations
             const statusEl = document.getElementById('siteEditorStatus');
             const saveArea = document.getElementById('siteEditorSaveArea');
 
-            statusEl.textContent = 'Publishing to live site...';
-            statusEl.className = 'site-editor-status';
-            statusEl.style.background = 'rgba(245, 158, 11, 0.1)';
-            statusEl.style.color = 'var(--color-warning)';
-            statusEl.style.display = 'block';
+            updateEditorStatus(statusEl, 1, 5, 'Preparing HTML for publish...');
 
             try {
                 // Convert absolute URLs back to relative for the actual file
@@ -3325,8 +3336,12 @@ Return the COMPLETE HTML with ONLY the minimal change requested. No explanations
                 // Remove base URL to restore relative paths
                 htmlForPublish = htmlForPublish.split(baseUrl).join('');
 
+                updateEditorStatus(statusEl, 2, 5, 'Cleaning up HTML...');
+
                 // Clean up browser extension junk and editor artifacts
                 htmlForPublish = cleanHtmlForPublish(htmlForPublish);
+
+                updateEditorStatus(statusEl, 3, 5, 'Connecting to GitHub...');
 
                 // Publish to GitHub via API
                 const publishResponse = await fetch('/api/publish-proto-golf', {
@@ -3345,6 +3360,8 @@ Return the COMPLETE HTML with ONLY the minimal change requested. No explanations
                     throw new Error(publishResult.error || 'Failed to publish');
                 }
 
+                updateEditorStatus(statusEl, 4, 5, 'Committed to GitHub!');
+
                 // Save to Supabase as a record (don't fail if this errors)
                 try {
                     await supabaseQuery('proto_golf_requests', 'POST', {
@@ -3360,18 +3377,20 @@ Return the COMPLETE HTML with ONLY the minimal change requested. No explanations
                 }
 
                 saveArea.style.display = 'none';
-                statusEl.className = 'site-editor-status success';
 
-                // Countdown timer
+                // Deployment countdown with progress visualization
+                updateEditorStatus(statusEl, 5, 5, 'Deploying to Vercel...', false);
                 let countdown = 30;
-                statusEl.textContent = `✓ Published! Live in ${countdown}s...`;
                 const countdownInterval = setInterval(() => {
                     countdown--;
                     if (countdown <= 0) {
                         clearInterval(countdownInterval);
-                        statusEl.textContent = '✓ Published! Changes are now live.';
+                        statusEl.innerHTML = '✓ <strong>Published!</strong> Changes are now live.';
+                        statusEl.style.background = 'rgba(34, 197, 94, 0.1)';
+                        statusEl.style.color = 'var(--color-success)';
                     } else {
-                        statusEl.textContent = `✓ Published! Live in ${countdown}s...`;
+                        const progress = Math.round((30 - countdown) / 30 * 100);
+                        statusEl.innerHTML = `✓ Deploying... <strong>${countdown}s</strong> <span style="opacity:0.6">(${progress}%)</span>`;
                     }
                 }, 1000);
 
