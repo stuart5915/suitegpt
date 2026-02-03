@@ -859,6 +859,37 @@
             border-color: var(--color-ink);
         }
 
+        .site-editor-quick-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+            align-items: center;
+        }
+
+        .site-editor-quick-label {
+            font-size: 0.75rem;
+            color: var(--color-steel);
+            margin-right: 4px;
+        }
+
+        .site-editor-quick-btn {
+            padding: 6px 10px;
+            font-size: 0.75rem;
+            background: var(--color-bone);
+            border: 1px solid var(--color-ash);
+            border-radius: 100px;
+            cursor: pointer;
+            transition: all 0.15s;
+            color: var(--color-graphite);
+        }
+
+        .site-editor-quick-btn:hover {
+            background: var(--color-mist);
+            border-color: var(--color-steel);
+            color: var(--color-ink);
+        }
+
         .site-editor-submit-btn {
             width: 100%;
             margin-top: 12px;
@@ -1439,7 +1470,16 @@
                                 <button class="site-editor-image-remove" onclick="removeSiteEditorImage()">×</button>
                                 <span class="site-editor-image-name" id="siteEditorImageName"></span>
                             </div>
-                            <textarea class="site-editor-text-input" id="siteEditorTextInput" placeholder="Describe your change... e.g. 'Replace this image with my uploaded photo'"></textarea>
+                            <textarea class="site-editor-text-input" id="siteEditorTextInput" placeholder="Describe your change, or use a quick action below..."></textarea>
+                            <div class="site-editor-quick-actions" id="siteEditorQuickActions">
+                                <span class="site-editor-quick-label">Quick actions:</span>
+                                <button class="site-editor-quick-btn" onclick="setQuickAction('Remove this element')">🗑️ Remove</button>
+                                <button class="site-editor-quick-btn" onclick="setQuickAction('Change this text to: ')">✏️ Edit text</button>
+                                <button class="site-editor-quick-btn" onclick="setQuickAction('Make this bigger')">🔍 Bigger</button>
+                                <button class="site-editor-quick-btn" onclick="setQuickAction('Make this smaller')">🔎 Smaller</button>
+                                <button class="site-editor-quick-btn" onclick="setQuickAction('Hide this element')">👁️ Hide</button>
+                                <button class="site-editor-quick-btn" onclick="setQuickAction('Change the link to: ')">🔗 Link</button>
+                            </div>
                             <button class="site-editor-submit-btn" id="siteEditorSubmitBtn" onclick="applySiteEditorChange()">Apply Change</button>
                             <div class="site-editor-status" id="siteEditorStatus" style="display: none;"></div>
                         </div>
@@ -3238,6 +3278,16 @@
             document.getElementById('siteEditorImageName').textContent = '';
             document.getElementById('siteEditorImageInput').value = '';
             document.getElementById('siteEditorImageBtn').classList.remove('has-image');
+        }
+
+        function setQuickAction(text) {
+            const input = document.getElementById('siteEditorTextInput');
+            input.value = text;
+            input.focus();
+            // If the text ends with ": ", place cursor at the end for user to type
+            if (text.endsWith(': ')) {
+                input.setSelectionRange(text.length, text.length);
+            }
         }
 
         async function uploadImageToSupabase(file) {
