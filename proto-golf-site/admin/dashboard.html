@@ -3336,20 +3336,35 @@ Return ONLY the modified HTML, no explanations.`;
                     throw new Error(publishResult.error || 'Failed to publish');
                 }
 
-                // Save to Supabase as a record
-                await supabaseQuery('proto_golf_requests', 'POST', {
-                    page: siteEditorPendingRequest.page,
-                    element_selector: siteEditorPendingRequest.element_selector,
-                    element_text: siteEditorPendingRequest.element_text,
-                    request_text: siteEditorPendingRequest.request_text,
-                    input_type: 'ai_applied',
-                    status: 'published',
-                    commit_url: publishResult.commitUrl
-                });
+                // Save to Supabase as a record (don't fail if this errors)
+                try {
+                    await supabaseQuery('proto_golf_requests', 'POST', {
+                        page: siteEditorPendingRequest.page,
+                        element_selector: siteEditorPendingRequest.element_selector,
+                        element_text: siteEditorPendingRequest.element_text,
+                        request_text: siteEditorPendingRequest.request_text,
+                        input_type: 'ai_applied',
+                        status: 'published'
+                    });
+                } catch (dbErr) {
+                    console.warn('Failed to save to database (non-critical):', dbErr);
+                }
 
-                statusEl.textContent = '✓ Published! Live in ~30 seconds.';
-                statusEl.className = 'site-editor-status success';
                 saveArea.style.display = 'none';
+                statusEl.className = 'site-editor-status success';
+
+                // Countdown timer
+                let countdown = 30;
+                statusEl.textContent = `✓ Published! Live in ${countdown}s...`;
+                const countdownInterval = setInterval(() => {
+                    countdown--;
+                    if (countdown <= 0) {
+                        clearInterval(countdownInterval);
+                        statusEl.textContent = '✓ Published! Changes are now live.';
+                    } else {
+                        statusEl.textContent = `✓ Published! Live in ${countdown}s...`;
+                    }
+                }, 1000);
 
                 // Update original to be the new version
                 siteEditorOriginalHtml = siteEditorModifiedHtml;
