@@ -1715,7 +1715,86 @@
                     <h1>Site Images</h1>
                 </div>
 
-                <!-- Product Hero Images (Shop Cards) -->
+                <!-- Homepage Hero -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <h3 class="section-title">Homepage Hero</h3>
+                        <span style="color: var(--color-steel); font-size: 0.8rem;">Main hero image on the homepage</span>
+                    </div>
+                    <div class="image-location-grid" style="grid-template-columns: 1fr;">
+                        <div class="image-location-card" style="max-width: 400px;">
+                            <img id="homepageHeroImg" src="/proto-golf-site/assets/images/putter-blade-hero.jpg" alt="Homepage Hero"
+                                 style="height: 200px;" onerror="this.src=PLACEHOLDER_IMG">
+                            <div class="image-location-card-info">
+                                <div class="image-location-card-title">Hero Image</div>
+                                <div class="image-location-card-subtitle">assets/images/putter-blade-hero.jpg</div>
+                                <button class="btn btn-secondary btn-sm" onclick="changeSiteImage('homepage-hero')">Change</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Homepage Featured Products -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <h3 class="section-title">Homepage Featured Products</h3>
+                        <span style="color: var(--color-steel); font-size: 0.8rem;">Product images shown on homepage "The Lineup" section</span>
+                    </div>
+                    <div class="image-location-grid">
+                        <div class="image-location-card">
+                            <img id="homepageRoughMillImg" src="/proto-golf-site/assets/putters/polished-rough-mill-1.png" alt="Rough Mill" onerror="this.src=PLACEHOLDER_IMG">
+                            <div class="image-location-card-info">
+                                <div class="image-location-card-title">Rough Mill</div>
+                                <div class="image-location-card-subtitle">Homepage featured</div>
+                                <button class="btn btn-secondary btn-sm" onclick="changeSiteImage('homepage-rough-mill')">Change</button>
+                            </div>
+                        </div>
+                        <div class="image-location-card">
+                            <img id="homepageCentreBladeImg" src="/proto-golf-site/assets/putters/polished-centre-blade-1.png" alt="Centre Blade" onerror="this.src=PLACEHOLDER_IMG">
+                            <div class="image-location-card-info">
+                                <div class="image-location-card-title">Centre Blade</div>
+                                <div class="image-location-card-subtitle">Homepage featured</div>
+                                <button class="btn btn-secondary btn-sm" onclick="changeSiteImage('homepage-centre-blade')">Change</button>
+                            </div>
+                        </div>
+                        <div class="image-location-card">
+                            <img id="homepageLongNeckImg" src="/proto-golf-site/assets/putters/stainless-long-neck-blade-1.png" alt="Long Neck Blade" onerror="this.src=PLACEHOLDER_IMG">
+                            <div class="image-location-card-info">
+                                <div class="image-location-card-title">Long Neck Blade</div>
+                                <div class="image-location-card-subtitle">Homepage featured</div>
+                                <button class="btn btn-secondary btn-sm" onclick="changeSiteImage('homepage-long-neck')">Change</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Limited Edition Images -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <h3 class="section-title">Limited Edition Page</h3>
+                        <span style="color: var(--color-steel); font-size: 0.8rem;">Images for limited edition products</span>
+                    </div>
+                    <div class="image-location-grid">
+                        <div class="image-location-card">
+                            <img id="limitedMidnightImg" src="" alt="Midnight Edition" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src=PLACEHOLDER_IMG;}">
+                            <div class="image-location-card-info">
+                                <div class="image-location-card-title">Midnight Edition</div>
+                                <div class="image-location-card-subtitle">Rough Mill - Limited</div>
+                                <button class="btn btn-secondary btn-sm" onclick="changeSiteImage('limited-midnight')">Change</button>
+                            </div>
+                        </div>
+                        <div class="image-location-card">
+                            <img id="limitedHeirloomImg" src="" alt="The Heirloom" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src=PLACEHOLDER_IMG;}">
+                            <div class="image-location-card-info">
+                                <div class="image-location-card-title">The Heirloom</div>
+                                <div class="image-location-card-subtitle">Long Neck Blade - Limited</div>
+                                <button class="btn btn-secondary btn-sm" onclick="changeSiteImage('limited-heirloom')">Change</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shop Page Product Cards -->
                 <div class="section-card">
                     <div class="section-header">
                         <h3 class="section-title">Shop Page — Product Cards</h3>
@@ -1740,6 +1819,7 @@
                 <!-- Hidden file inputs for image uploads -->
                 <input type="file" accept="image/*" id="heroImageInput" style="display: none;">
                 <input type="file" accept="image/*" id="galleryImageInput" style="display: none;" multiple>
+                <input type="file" accept="image/*" id="siteImageInput" style="display: none;">
             </div>
 
             <!-- BG Remover Section -->
@@ -2218,6 +2298,7 @@
             // Load section-specific data when shown
             if (sectionId === 'photos') {
                 loadAllSiteImages();
+                loadSiteImagePreviews();
             } else if (sectionId === 'inventory') {
                 loadShaftInventory();
                 renderPutterPricingGrid();
@@ -3433,6 +3514,143 @@
         let currentPhotos = [];
         async function loadProductImages() { await loadAllSiteImages(); }
         async function onPhotoProductChange() { await loadAllSiteImages(); }
+
+        // ============================================
+        // SITE-WIDE IMAGE MANAGEMENT
+        // ============================================
+        let pendingSiteImageKey = null;
+
+        // Site image paths mapping
+        const siteImagePaths = {
+            'homepage-hero': {
+                file: 'index.html',
+                storage: 'site/homepage-hero',
+                imgId: 'homepageHeroImg',
+                selector: '.hero-image img'
+            },
+            'homepage-rough-mill': {
+                file: 'index.html',
+                storage: 'site/homepage-rough-mill',
+                imgId: 'homepageRoughMillImg',
+                selector: '[data-product-id="rough-mill"] .product-image img'
+            },
+            'homepage-centre-blade': {
+                file: 'index.html',
+                storage: 'site/homepage-centre-blade',
+                imgId: 'homepageCentreBladeImg',
+                selector: '[data-product-id="centre-blade"] .product-image img'
+            },
+            'homepage-long-neck': {
+                file: 'index.html',
+                storage: 'site/homepage-long-neck',
+                imgId: 'homepageLongNeckImg',
+                selector: '[data-product-id="long-neck-blade"] .product-image img'
+            },
+            'limited-midnight': {
+                file: 'limited.html',
+                storage: 'site/limited-midnight',
+                imgId: 'limitedMidnightImg',
+                selector: '.limited-card:nth-child(1) .limited-image',
+                isBackground: false,
+                addImg: true
+            },
+            'limited-heirloom': {
+                file: 'limited.html',
+                storage: 'site/limited-heirloom',
+                imgId: 'limitedHeirloomImg',
+                selector: '.limited-card:nth-child(2) .limited-image',
+                isBackground: false,
+                addImg: true
+            }
+        };
+
+        function changeSiteImage(imageKey) {
+            pendingSiteImageKey = imageKey;
+            const input = document.getElementById('siteImageInput');
+            input.onchange = handleSiteImageUpload;
+            input.click();
+        }
+
+        async function handleSiteImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file || !pendingSiteImageKey) return;
+
+            const imageKey = pendingSiteImageKey;
+            const config = siteImagePaths[imageKey];
+            pendingSiteImageKey = null;
+
+            if (!config) {
+                alert('Unknown image location');
+                return;
+            }
+
+            // Update button to show loading
+            const imgEl = document.getElementById(config.imgId);
+            const btn = imgEl?.parentElement?.querySelector('button');
+            if (btn) {
+                btn.textContent = 'Uploading...';
+                btn.disabled = true;
+            }
+
+            try {
+                // Upload to Supabase Storage
+                const ext = file.name.split('.').pop() || 'jpg';
+                const storagePath = `${config.storage}.${ext}`;
+
+                const uploadResp = await fetch(`${SUPABASE_URL}/storage/v1/object/proto-golf-images/${storagePath}`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': file.type || 'image/jpeg',
+                        'x-upsert': 'true'
+                    },
+                    body: file
+                });
+
+                if (!uploadResp.ok) {
+                    throw new Error('Upload failed: ' + await uploadResp.text());
+                }
+
+                const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/proto-golf-images/${storagePath}?t=${Date.now()}`;
+
+                // Update preview image
+                if (imgEl) {
+                    imgEl.src = publicUrl;
+                }
+
+                // Store the mapping in localStorage so we can apply it
+                const siteImageMappings = JSON.parse(localStorage.getItem('protoGolfSiteImages') || '{}');
+                siteImageMappings[imageKey] = publicUrl;
+                localStorage.setItem('protoGolfSiteImages', JSON.stringify(siteImageMappings));
+
+                alert('Image uploaded! The site will use this new image.');
+
+            } catch (e) {
+                console.error('Site image upload error:', e);
+                alert('Failed to upload: ' + e.message);
+            }
+
+            if (btn) {
+                btn.textContent = 'Change';
+                btn.disabled = false;
+            }
+            event.target.value = '';
+        }
+
+        // Load saved site image URLs on page load
+        function loadSiteImagePreviews() {
+            const mappings = JSON.parse(localStorage.getItem('protoGolfSiteImages') || '{}');
+            for (const [key, url] of Object.entries(mappings)) {
+                const config = siteImagePaths[key];
+                if (config && config.imgId) {
+                    const imgEl = document.getElementById(config.imgId);
+                    if (imgEl && url) {
+                        imgEl.src = url;
+                    }
+                }
+            }
+        }
 
         function exportOrders() {
             if (orders.length === 0) {
