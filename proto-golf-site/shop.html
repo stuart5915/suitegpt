@@ -235,7 +235,11 @@
                 cartCount.textContent = cart.length;
             }
 
-            const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
+            const subtotal = cart.reduce((sum, item) => {
+                const basePrice = item.price;
+                const shaftPremium = (item.options && item.options.shaft && item.options.shaft.toLowerCase() === 'black') ? 12 : 0;
+                return sum + basePrice + shaftPremium;
+            }, 0);
             const shipping = cart.length > 0 && cart[cart.length - 1].shippingCost ? cart[cart.length - 1].shippingCost : 0;
             cartTotal.textContent = '$' + (subtotal + shipping);
             cartCountNav.textContent = cart.length;
