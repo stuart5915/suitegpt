@@ -618,19 +618,27 @@
                 return;
             }
 
-            container.innerHTML = items.map(item => `
+            container.innerHTML = items.map(item => {
+                // Build options display based on item type
+                let optionsHtml = '';
+                if (item.isLongNeckBlade) {
+                    optionsHtml = `${item.faceMill || ''} · ${item.headFinish || ''}<br>${item.hosel || ''} hosel · ${item.shaftColorName} shaft · ${item.shaftLength || '34'}"`;
+                } else {
+                    optionsHtml = `${item.finishName} / ${item.shaftColorName} Shaft / ${item.shaftLength || '34'}"`;
+                }
+                return `
                 <div class="cart-item">
                     <div class="cart-item-image">${item.productName.charAt(0)}</div>
                     <div class="cart-item-details">
                         <div class="cart-item-name">${item.productName}</div>
                         <div class="cart-item-options">
-                            ${item.finishName} / ${item.shaftColorName} Shaft
+                            ${optionsHtml}
                         </div>
                         <button class="cart-item-remove" onclick="removeItem('${item.id}')">Remove</button>
                     </div>
                     <div class="cart-item-price">$${item.price.toFixed(2)}</div>
                 </div>
-            `).join('');
+            `}).join('');
 
             // Update summary items
             document.getElementById('summaryItems').innerHTML = items.map(item => `
@@ -822,8 +830,10 @@
                         customer_phone: orderData.customer.phone || null,
                         product_id: item.productId,
                         product_name: item.productName,
-                        finish: item.finishName,
+                        finish: item.isLongNeckBlade ? `${item.faceMill} / ${item.headFinish}` : item.finishName,
                         shaft_color: item.shaftColorName,
+                        shaft_length: item.shaftLength || '34',
+                        hosel: item.hosel || null,
                         quantity: item.quantity || 1,
                         unit_price: item.price,
                         delivery_method: orderData.delivery.method,

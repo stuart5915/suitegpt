@@ -11,8 +11,17 @@ let dbImages = {};
 let currentGallery = [];
 let selectedFinish = null;
 let selectedShaft = null;
+let selectedShaftLength = { length: '34', price: 0 }; // Default 34", no upcharge
 let selectedShipping = { type: 'shipping', price: 25 };
 let cart = JSON.parse(localStorage.getItem('proto_cart')) || [];
+
+// Shaft length options (30" to 39" in 0.5" increments)
+const SHAFT_LENGTHS = [];
+for (let i = 30; i <= 39; i += 0.5) {
+    const lengthStr = i % 1 === 0 ? i.toString() : i.toFixed(1);
+    const upcharge = i >= 36.5 ? 15 : 0;
+    SHAFT_LENGTHS.push({ length: lengthStr, price: upcharge });
+}
 
 // Long Neck Blade specific state
 let isLongNeckBlade = false;
@@ -237,6 +246,15 @@ function renderProduct() {
         return `<button class="variant-btn${isSelected ? ' selected' : ''}" onclick="selectShaft(this, '${escapeAttr(s.name)}', ${s.price})">${escapeHtml(s.name)}${priceLabel}</button>`;
     }).join('');
 
+    // Build shaft length dropdown
+    let shaftLengthHtml = `<select class="form-input" id="shaftLengthSelect" onchange="selectShaftLength(this.value)" style="max-width: 200px;">`;
+    SHAFT_LENGTHS.forEach(sl => {
+        const selected = sl.length === selectedShaftLength.length ? ' selected' : '';
+        const priceLabel = sl.price > 0 ? ` (+$${sl.price})` : '';
+        shaftLengthHtml += `<option value="${sl.length}"${selected}>${sl.length}"${priceLabel}</option>`;
+    });
+    shaftLengthHtml += '</select>';
+
     // Build main content
     const content = document.getElementById('productPageContent');
     content.innerHTML = `
@@ -281,6 +299,12 @@ function renderProduct() {
                         <span class="variant-label">Shaft Color</span>
                         <div class="variant-options" id="shaftOptions">${shaftButtonsHtml}</div>
                     </div>` : ''}
+
+                    <div class="variant-group">
+                        <span class="variant-label">Shaft Length</span>
+                        ${shaftLengthHtml}
+                        <span style="font-size: 0.75rem; color: #888; margin-top: 4px; display: block;">Standard: 30"-36" · Extended 36.5"+ adds $15</span>
+                    </div>
                 </div>` : ''}
 
                 <!-- Stock Status -->
@@ -373,16 +397,16 @@ function renderLongNeckBlade() {
         }
     }
 
-    // Build Face Mill buttons
+    // Build Face Mill buttons (hide stock counts from consumers)
     const faceMillHtml = faceMills.map(fm => {
         const isSelected = fm.pattern_name === selectedFaceMill.pattern_name;
-        const stockLabel = fm.stock > 0 ? `(${fm.stock} in stock)` : '(Out of stock)';
         const isDisabled = fm.stock <= 0;
+        const stockLabel = isDisabled ? '(Unavailable)' : '';
         return `<button class="variant-btn${isSelected ? ' selected' : ''}${isDisabled ? ' disabled' : ''}"
             onclick="selectFaceMill(this, '${escapeAttr(fm.pattern_name)}', ${fm.base_price}, ${fm.stock})"
             ${isDisabled ? 'disabled' : ''}>
             ${escapeHtml(fm.pattern_name)}
-            <span class="variant-stock ${fm.stock > 0 ? 'in-stock' : 'out-stock'}">${stockLabel}</span>
+            ${stockLabel ? `<span class="variant-stock out-stock">${stockLabel}</span>` : ''}
         </button>`;
     }).join('');
 
@@ -415,6 +439,15 @@ function renderLongNeckBlade() {
             ${escapeHtml(s.shaft_name)}${priceLabel}
         </button>`;
     }).join('');
+
+    // Build shaft length dropdown for LNB
+    let lnbShaftLengthHtml = `<select class="form-input" id="shaftLengthSelect" onchange="selectShaftLength(this.value)" style="max-width: 200px;">`;
+    SHAFT_LENGTHS.forEach(sl => {
+        const selected = sl.length === selectedShaftLength.length ? ' selected' : '';
+        const priceLabel = sl.price > 0 ? ` (+$${sl.price})` : '';
+        lnbShaftLengthHtml += `<option value="${sl.length}"${selected}>${sl.length}"${priceLabel}</option>`;
+    });
+    lnbShaftLengthHtml += '</select>';
 
     // Check if any face mills are in stock
     const totalStock = faceMills.reduce((sum, fm) => sum + (fm.stock || 0), 0);
@@ -474,6 +507,13 @@ function renderLongNeckBlade() {
                     <div class="variant-group">
                         <span class="variant-label">Shaft Color</span>
                         <div class="variant-options" id="lnbShaftOptions">${shaftHtml}</div>
+                    </div>
+
+                    <!-- Shaft Length -->
+                    <div class="variant-group">
+                        <span class="variant-label">Shaft Length</span>
+                        ${lnbShaftLengthHtml}
+                        <span style="font-size: 0.75rem; color: #888; margin-top: 4px; display: block;">Standard: 30"-36" · Extended 36.5"+ adds $15</span>
                     </div>
                 </div>
 
@@ -577,7 +617,8 @@ function updateLNBPrice() {
     const headFinishPrice = parseFloat(selectedHeadFinish.price_addon) || 0;
     const hoselPrice = parseFloat(selectedHosel.price_addon) || 0;
     const shaftPrice = parseFloat(selectedLNBShaft.price_addon) || 0;
-    const productPrice = basePrice + headFinishPrice + hoselPrice + shaftPrice;
+    const lengthPrice = selectedShaftLength ? selectedShaftLength.price : 0;
+    const productPrice = basePrice + headFinishPrice + hoselPrice + shaftPrice + lengthPrice;
     const total = productPrice + selectedShipping.price;
 
     // Update displayed price
@@ -599,6 +640,9 @@ function updateLNBPrice() {
         }
         if (shaftPrice > 0) {
             html += `<div class="breakdown-row"><span>${escapeHtml(selectedLNBShaft.shaft_name)} Shaft</span><span>+$${shaftPrice}</span></div>`;
+        }
+        if (lengthPrice > 0) {
+            html += `<div class="breakdown-row"><span>Extended Length (${selectedShaftLength.length}")</span><span>+$${lengthPrice}</span></div>`;
         }
         html += `<div class="breakdown-row breakdown-total"><span>Subtotal</span><span>$${productPrice}</span></div>`;
         breakdownEl.innerHTML = html;
@@ -660,7 +704,8 @@ function addLNBToCart() {
     const headFinishPrice = parseFloat(selectedHeadFinish.price_addon) || 0;
     const hoselPrice = parseFloat(selectedHosel.price_addon) || 0;
     const shaftPrice = parseFloat(selectedLNBShaft.price_addon) || 0;
-    const totalPrice = basePrice + headFinishPrice + hoselPrice + shaftPrice;
+    const lengthPrice = selectedShaftLength ? selectedShaftLength.price : 0;
+    const totalPrice = basePrice + headFinishPrice + hoselPrice + shaftPrice + lengthPrice;
 
     const item = {
         id: product.id,
@@ -672,6 +717,7 @@ function addLNBToCart() {
             headFinish: selectedHeadFinish.finish_name,
             hosel: selectedHosel.hosel_name,
             shaft: selectedLNBShaft.shaft_name,
+            shaftLength: selectedShaftLength ? selectedShaftLength.length : '34',
             shipping: selectedShipping.type
         },
         shippingCost: selectedShipping.price,
@@ -831,13 +877,24 @@ function selectShipping(el, type, price) {
     updatePrice();
 }
 
+function selectShaftLength(lengthValue) {
+    const found = SHAFT_LENGTHS.find(sl => sl.length === lengthValue);
+    if (found) {
+        selectedShaftLength = found;
+        updatePrice();
+        // Also update for LNB
+        updateLNBPrice();
+    }
+}
+
 
 function updatePrice() {
     if (!product) return;
     const basePrice = parseFloat(product.base_price);
     const finishPrice = selectedFinish ? selectedFinish.price : 0;
     const shaftPrice = selectedShaft ? selectedShaft.price : 0;
-    const productPrice = basePrice + finishPrice + shaftPrice;
+    const lengthPrice = selectedShaftLength ? selectedShaftLength.price : 0;
+    const productPrice = basePrice + finishPrice + shaftPrice + lengthPrice;
     const total = productPrice + selectedShipping.price;
 
     const priceEl = document.getElementById('productPrice');
@@ -860,24 +917,26 @@ function updateStockStatus() {
             addBtn.textContent = 'Sold Out';
         }
     } else if (product.stock <= 5) {
-        stockEl.textContent = `Low Stock - Only ${product.stock} left`;
+        stockEl.textContent = 'Low Stock';
         stockEl.classList.add('low');
     } else {
-        stockEl.textContent = `In Stock - ${product.stock} units available`;
+        stockEl.textContent = 'In Stock';
     }
 }
 
 function addToCart() {
     if (!product || product.stock <= 0) return;
 
+    const lengthPrice = selectedShaftLength ? selectedShaftLength.price : 0;
     const item = {
         id: product.id,
         name: product.name,
-        price: parseFloat(product.base_price) + (selectedFinish ? selectedFinish.price : 0) + (selectedShaft ? selectedShaft.price : 0),
+        price: parseFloat(product.base_price) + (selectedFinish ? selectedFinish.price : 0) + (selectedShaft ? selectedShaft.price : 0) + lengthPrice,
         icon: product.icon || product.name.charAt(0),
         options: {
             finish: selectedFinish ? selectedFinish.name : '',
             shaft: selectedShaft ? selectedShaft.name : '',
+            shaftLength: selectedShaftLength ? selectedShaftLength.length : '34',
             shipping: selectedShipping.type
         },
         shippingCost: selectedShipping.price
@@ -918,9 +977,9 @@ function updateCartUI() {
             // Handle Long Neck Blade items differently
             let optionsHtml = '';
             if (item.isLongNeckBlade && item.options) {
-                optionsHtml = `${item.options.faceMill} · ${item.options.headFinish}<br>${item.options.hosel} hosel · ${item.options.shaft} shaft`;
+                optionsHtml = `${item.options.faceMill} · ${item.options.headFinish}<br>${item.options.hosel} hosel · ${item.options.shaft} shaft · ${item.options.shaftLength || '34'}"`;
             } else if (item.options) {
-                optionsHtml = `${item.options.finish} / ${item.options.shaft} shaft`;
+                optionsHtml = `${item.options.finish} / ${item.options.shaft} shaft / ${item.options.shaftLength || '34'}"`;
             }
             return `
                 <div class="cart-item">
@@ -970,6 +1029,7 @@ function proceedToCheckout() {
                 hosel: item.options.hosel,
                 shaftColor: item.options.shaft.toLowerCase(),
                 shaftColorName: item.options.shaft,
+                shaftLength: item.options.shaftLength || '34',
                 price: item.price,
                 quantity: 1,
                 isLongNeckBlade: true
@@ -983,6 +1043,7 @@ function proceedToCheckout() {
                 finishName: item.options.finish,
                 shaftColor: item.options.shaft.toLowerCase(),
                 shaftColorName: item.options.shaft,
+                shaftLength: item.options.shaftLength || '34',
                 price: item.price,
                 quantity: 1
             };

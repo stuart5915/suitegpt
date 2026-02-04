@@ -216,21 +216,26 @@
                 cartItems.innerHTML = '<div class="cart-empty">Your cart is empty</div>';
                 cartCount.style.display = 'none';
             } else {
-                cartItems.innerHTML = cart.map((item, index) => `
+                cartItems.innerHTML = cart.map((item, index) => {
+                    let optionsHtml = '';
+                    if (item.options) {
+                        if (item.isLongNeckBlade) {
+                            optionsHtml = `${item.options.faceMill || ''} · ${item.options.headFinish || ''} · ${item.options.shaft} shaft · ${item.options.shaftLength || '34'}"`;
+                        } else {
+                            optionsHtml = `${item.options.finish || ''} / ${item.options.shaft} shaft / ${item.options.shaftLength || '34'}"`;
+                        }
+                    }
+                    return `
                     <div class="cart-item">
                         <div class="cart-item-image">${item.icon}</div>
                         <div class="cart-item-info">
                             <div class="cart-item-name">${item.name}</div>
-                            ${item.options ? `
-                                <div class="cart-item-options">
-                                    ${item.options.finish || ''} ${item.options.shaft ? '/ ' + item.options.shaft + ' shaft' : ''}
-                                </div>
-                            ` : ''}
+                            ${optionsHtml ? `<div class="cart-item-options">${optionsHtml}</div>` : ''}
                             <div class="cart-item-price">$${item.price}</div>
                         </div>
                         <button class="cart-item-remove" onclick="removeFromCart(${index})">X</button>
                     </div>
-                `).join('');
+                `}).join('');
                 cartCount.style.display = 'flex';
                 cartCount.textContent = cart.length;
             }
