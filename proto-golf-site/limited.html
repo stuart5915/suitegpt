@@ -13,6 +13,20 @@
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+    <!-- Load limited edition images immediately from cache (no flash) -->
+    <script>
+        (function() {
+            var c = localStorage.getItem('protoGolfSiteImages');
+            if (c) {
+                var m = JSON.parse(c);
+                document.addEventListener('DOMContentLoaded', function() {
+                    if (m['site/limited-midnight']) document.getElementById('img-limited-midnight').src = m['site/limited-midnight'];
+                    if (m['site/limited-heirloom']) document.getElementById('img-limited-heirloom').src = m['site/limited-heirloom'];
+                });
+            }
+        })();
+    </script>
+
     <!-- Navigation -->
     <nav class="nav">
         <div class="nav-container">
@@ -52,7 +66,7 @@
         <!-- Featured Limited Edition -->
         <div class="limited-card">
             <div class="limited-image">
-                <img src="https://rdsmdywbdiskxknluiym.supabase.co/storage/v1/object/public/proto-golf-images/uploads/site-editor-1770167459196-v8xzfpp1k.png" alt="Rough Mill - Midnight Edition">
+                <img id="img-limited-midnight" src="" alt="Rough Mill - Midnight Edition" style="width:100%;height:100%;object-fit:cover;">
                 <div class="limited-badge">Limited Run</div>
             </div>
             <div class="limited-info">
@@ -76,6 +90,7 @@
         <!-- Second Limited Edition -->
         <div class="limited-card">
             <div class="limited-image">
+                <img id="img-limited-heirloom" src="" alt="The Heirloom" style="width:100%;height:100%;object-fit:cover;">
                 <div class="limited-badge">Coming Soon</div>
             </div>
             <div class="limited-info">
@@ -191,7 +206,5 @@
         }
     </script>
 
-    <!-- Custom Site Images -->
-    <script src="js/site-images.js"></script>
 </body>
 </html>
