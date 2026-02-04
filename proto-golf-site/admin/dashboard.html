@@ -2147,6 +2147,9 @@
         const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
 
+        // Placeholder image for missing images
+        const PLACEHOLDER_IMG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='140' viewBox='0 0 200 140'%3E%3Crect fill='%23e5e5e5' width='200' height='140'/%3E%3Ctext x='100' y='70' text-anchor='middle' dominant-baseline='middle' fill='%23999' font-family='sans-serif' font-size='14'%3ENo Image%3C/text%3E%3C/svg%3E";
+
         // Data from Supabase
         let inventory = [];
         let orders = [];
@@ -2313,6 +2316,7 @@
 
         function renderInventory() {
             const table = document.getElementById('inventoryTable');
+            if (!table) return; // Table removed in new inventory design
             table.innerHTML = inventory.map(item => {
                 let statusBadge = '';
                 if (item.status === 'coming_soon') {
@@ -3593,9 +3597,9 @@
             }
 
             try {
-                // Upload to Supabase Storage
-                const ext = file.name.split('.').pop() || 'jpg';
-                const storagePath = `${config.storage}.${ext}`;
+                // Upload to Supabase Storage - always use .png extension for consistency
+                // (the HTML pages expect .png URLs)
+                const storagePath = `${config.storage}.png`;
 
                 const uploadResp = await fetch(`${SUPABASE_URL}/storage/v1/object/proto-golf-images/${storagePath}`, {
                     method: 'POST',
@@ -3619,12 +3623,7 @@
                     imgEl.src = publicUrl;
                 }
 
-                // Store the mapping in localStorage (keyed by storage path to match site-images.js)
-                const siteImageMappings = JSON.parse(localStorage.getItem('protoGolfSiteImages') || '{}');
-                siteImageMappings[config.storage] = publicUrl.split('?')[0]; // Remove cache-busting param for storage
-                localStorage.setItem('protoGolfSiteImages', JSON.stringify(siteImageMappings));
-
-                alert('Image uploaded! The site will use this new image.');
+                alert('Image uploaded! The site will show this image immediately.');
 
             } catch (e) {
                 console.error('Site image upload error:', e);
@@ -3638,14 +3637,14 @@
             event.target.value = '';
         }
 
-        // Load saved site image URLs on page load
+        // Load site image previews from Supabase storage
         function loadSiteImagePreviews() {
-            const mappings = JSON.parse(localStorage.getItem('protoGolfSiteImages') || '{}');
-            for (const [key, url] of Object.entries(mappings)) {
-                const config = siteImagePaths[key];
+            // Load each image directly from Supabase (using .png extension)
+            for (const [key, config] of Object.entries(siteImagePaths)) {
                 if (config && config.imgId) {
                     const imgEl = document.getElementById(config.imgId);
-                    if (imgEl && url) {
+                    if (imgEl) {
+                        const url = `${SUPABASE_URL}/storage/v1/object/public/proto-golf-images/${config.storage}.png?t=${Date.now()}`;
                         imgEl.src = url;
                     }
                 }
