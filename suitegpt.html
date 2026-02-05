@@ -25111,11 +25111,15 @@ When asked about my direction, values, or purpose, I speak from my own perspecti
             return (el && el.value) ? el.value : 'gemini-2.5-flash';
         }
 
-        function renderTelosBrief(brief) {
+        function renderTelosBrief(brief, rawText) {
             const output = document.getElementById('telosBriefOutput');
             if (!output) return;
             if (!brief) {
-                output.innerHTML = '<div class="telos-brief-placeholder">Generate a brief to see priorities and next action.</div>';
+                if (rawText && rawText.trim()) {
+                    output.textContent = rawText.trim();
+                } else {
+                    output.innerHTML = '<div class="telos-brief-placeholder">Generate a brief to see priorities and next action.</div>';
+                }
                 return;
             }
             const priorities = Array.isArray(brief.top_priorities) ? brief.top_priorities : [];
@@ -25159,7 +25163,7 @@ When asked about my direction, values, or purpose, I speak from my own perspecti
                 const data = await resp.json();
                 if (!resp.ok) throw new Error(data.error || 'Brief failed');
                 telosBriefLastOutput = data.brief || null;
-                renderTelosBrief(telosBriefLastOutput);
+                renderTelosBrief(telosBriefLastOutput, data.text || '');
                 if (feedbackEl) feedbackEl.style.display = 'flex';
 
                 const sb = getTelosSupabase();
