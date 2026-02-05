@@ -10043,10 +10043,6 @@
                 grid-template-columns: 1fr;
             }
 
-            .telos-main-grid {
-                grid-template-columns: 1fr;
-            }
-
             .telos-chat-panel,
             .telos-side-panel {
                 min-height: 0;
@@ -10217,14 +10213,6 @@
             gap: 8px;
         }
 
-        .telos-main-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            padding: 16px 20px 20px;
-            flex: 1;
-        }
-
         .telos-chat-panel {
             display: flex;
             flex-direction: column;
@@ -10233,6 +10221,7 @@
             border-radius: 12px;
             overflow: visible;
             min-height: 0;
+            margin: 16px 20px 20px;
         }
         
         .telos-messages {
@@ -10240,127 +10229,6 @@
             overflow: visible;
         }
 
-        .telos-side-panel {
-            display: flex;
-            flex-direction: column;
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 12px;
-            overflow: visible;
-            min-height: 0;
-        }
-
-        .telos-side-header {
-            padding: 12px 14px;
-            border-bottom: 1px solid var(--border-subtle);
-        }
-
-        .telos-side-title {
-            font-size: 0.9rem;
-            font-weight: 700;
-        }
-
-        .telos-side-subtitle {
-            font-size: 0.75rem;
-            color: var(--text-tertiary);
-            margin-top: 2px;
-        }
-
-        .telos-side-body {
-            padding: 12px 14px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            overflow: visible;
-        }
-
-        .telos-queue-input {
-            width: 100%;
-            min-height: 120px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border-subtle);
-            border-radius: 8px;
-            padding: 8px 10px;
-            color: var(--text-primary);
-            font-size: 0.85rem;
-            resize: vertical;
-        }
-
-        .telos-queue-actions {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .telos-checkbox {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.75rem;
-            color: var(--text-tertiary);
-        }
-
-        .telos-queue-list,
-        .telos-log-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .telos-queue-item,
-        .telos-log-item {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border-subtle);
-            border-radius: 8px;
-            padding: 8px 10px;
-            font-size: 0.82rem;
-            color: var(--text-secondary);
-        }
-
-        .telos-queue-item-title {
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 6px;
-        }
-
-        .telos-queue-item-actions {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-        }
-
-        .telos-log-section {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .telos-log-title {
-            font-size: 0.8rem;
-            font-weight: 700;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-        }
-
-        .telos-log-item {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .telos-log-meta {
-            font-size: 0.7rem;
-            color: var(--text-tertiary);
-        }
-
-        .telos-log-actions {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-        }
 
         .telos-avatar {
             width: 44px;
@@ -20989,67 +20857,26 @@
                                             </div>
                                         </div>
 
-                                        <div class="telos-main-grid">
-                                            <div class="telos-side-panel">
-                                                <div class="telos-side-header">
-                                                    <div>
-                                                        <div class="telos-side-title">Backlog Queue</div>
-                                                        <div class="telos-side-subtitle">Paste ideas, score alignment, auto‑remove.</div>
-                                                    </div>
-                                                </div>
-                                                <div class="telos-side-body">
-                                                    <textarea class="telos-queue-input" id="telosQueueInput" rows="6" placeholder="Paste ideas or tasks (one per line)"></textarea>
-                                                    <div class="telos-queue-actions">
-                                                        <button class="telos-brief-btn" onclick="addTelosQueueItems()">Load into queue</button>
-                                                        <label class="telos-checkbox">
-                                                            <input type="checkbox" id="telosAutoRemoveQueue" checked>
-                                                            <span>Auto-remove after score</span>
-                                                        </label>
-                                                    </div>
-                                                    <div class="telos-queue-list" id="telosQueueList"></div>
-                                                </div>
+                                        <div class="telos-chat-panel">
+                                            <div class="telos-messages" id="telosMessages">
+                                                <!-- Messages populated by JS -->
                                             </div>
 
-                                            <div class="telos-chat-panel">
-                                                <div class="telos-messages" id="telosMessages">
-                                                    <!-- Messages populated by JS -->
-                                                </div>
-
-                                                <div class="telos-input-area">
-                                                    <div class="telos-input-wrapper">
-                                                        <textarea
-                                                            class="telos-input"
-                                                            id="telosInput"
-                                                            placeholder="Ask me anything about my purpose, values, or direction..."
-                                                            rows="1"
-                                                            onkeydown="handleTelosKeydown(event)"
-                                                            oninput="autoResizeTelosInput(this)"
-                                                        ></textarea>
-                                                        <button class="telos-send-btn" onclick="sendTelosMessage()">
-                                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
-                                                            </svg>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div class="telos-side-panel">
-                                                <div class="telos-side-header">
-                                                    <div>
-                                                        <div class="telos-side-title">Telos Log</div>
-                                                        <div class="telos-side-subtitle">Tasks + chat history</div>
-                                                    </div>
-                                                </div>
-                                                <div class="telos-side-body">
-                                                    <div class="telos-log-section">
-                                                        <div class="telos-log-title">Tasks</div>
-                                                        <div class="telos-log-list" id="telosTaskLog"></div>
-                                                    </div>
-                                                    <div class="telos-log-section">
-                                                        <div class="telos-log-title">Chat</div>
-                                                        <div class="telos-log-list" id="telosChatLog"></div>
-                                                    </div>
+                                            <div class="telos-input-area">
+                                                <div class="telos-input-wrapper">
+                                                    <textarea
+                                                        class="telos-input"
+                                                        id="telosInput"
+                                                        placeholder="Ask Telos what to do next..."
+                                                        rows="1"
+                                                        onkeydown="handleTelosKeydown(event)"
+                                                        oninput="autoResizeTelosInput(this)"
+                                                    ></textarea>
+                                                    <button class="telos-send-btn" onclick="sendTelosMessage()">
+                                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                            <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                                                        </svg>
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -25364,9 +25191,6 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
 
             renderTelosMessages();
             loadTelosMemory();
-            loadTelosQueue();
-            loadTelosTaskLog();
-            loadTelosChatLog();
         }
 
         function renderTelosMessages() {
