@@ -52,7 +52,11 @@ Return the JSON now.`;
 
         const requestBody = {
             contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.4, maxOutputTokens: 1024 }
+            generationConfig: {
+                temperature: 0.4,
+                maxOutputTokens: 2048,
+                responseMimeType: 'application/json'
+            }
         };
 
         const fallbackModel = 'gemini-2.5-flash';
@@ -88,7 +92,15 @@ Return the JSON now.`;
         try {
             parsed = JSON.parse(text);
         } catch (e) {
-            parsed = null;
+            const start = text.indexOf('{');
+            const end = text.lastIndexOf('}');
+            if (start !== -1 && end !== -1 && end > start) {
+                try {
+                    parsed = JSON.parse(text.slice(start, end + 1));
+                } catch (err) {
+                    parsed = null;
+                }
+            }
         }
 
         return res.status(200).json({
