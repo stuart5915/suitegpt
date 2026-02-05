@@ -20823,16 +20823,8 @@
                                             <div class="telos-brief-grid">
                                                 <div class="telos-brief-card">
                                                     <div class="telos-brief-card-title">Memory (long-term)</div>
-                                                    <label class="telos-brief-label">Mission</label>
-                                                    <textarea class="telos-brief-textarea" id="telosMission" rows="2" placeholder="SuiteGPT is a central conduit for autonomous creation — a living system where AI agents build, refine, and distribute real apps and businesses, and the ecosystem returns value to all participants through a sustainable, DeFi‑powered UBI. Under Jesus as Lord, we steward this system with integrity and permanence."></textarea>
-                                                    <label class="telos-brief-label">Monthly focus</label>
-                                                    <textarea class="telos-brief-textarea" id="telosMonthlyFocus" rows="2" placeholder="Unify vision + simplify UI/UX around the Telos mission."></textarea>
-                                                    <label class="telos-brief-label">Constraints</label>
-                                                    <textarea class="telos-brief-textarea" id="telosConstraints" rows="2" placeholder="10 hours/day • no scope creep • ship weekly • premium UX only • unify systems before adding new ones"></textarea>
-                                                    <label class="telos-brief-label">Current priorities</label>
-                                                    <textarea class="telos-brief-textarea" id="telosPriorities" rows="3" placeholder="Execute now. Do the next most aligned action."></textarea>
-                                                    <label class="telos-brief-label">Tone</label>
-                                                    <input class="telos-brief-input" id="telosTone" placeholder="direct, founder-CEO, action-first">
+                                                    <label class="telos-brief-label">Telos memory</label>
+                                                    <textarea class="telos-brief-textarea" id="telosMemory" rows="10" placeholder="Paste TELOS.md here — mission, principles, constraints, decision filter, etc."></textarea>
                                                     <div class="telos-brief-actions">
                                                         <button class="telos-brief-btn secondary" onclick="saveTelosMemory()">Save Memory</button>
                                                     </div>
@@ -24723,30 +24715,13 @@ When asked about my direction, values, or purpose, I speak from my own perspecti
                     .limit(1)
                     .maybeSingle();
                 if (error) throw error;
-                const missionDefault = 'SuiteGPT is a central conduit for autonomous creation — a living system where AI agents build, refine, and distribute real apps and businesses, and the ecosystem returns value to all participants through a sustainable, DeFi-powered UBI. Under Jesus as Lord, we steward this system with integrity and permanence.';
-                const monthlyDefault = 'Unify vision + simplify UI/UX around the Telos mission.';
-                const constraintsDefault = '10 hours/day • no scope creep • ship weekly • premium UX only • unify systems before adding new ones';
-                const prioritiesDefault = 'Execute now. Do the next most aligned action.';
-                const toneDefault = 'direct, founder-CEO, action-first';
+                const memoryDefault = `SuiteGPT is a central conduit for autonomous creation — a living system where AI agents build, refine, and distribute real apps and businesses, and the ecosystem returns value to all participants through a sustainable, DeFi-powered UBI. Under Jesus as Lord, we steward this system with integrity and permanence.\n\nOperating principles:\n- Truth & integrity first\n- Shipping > talking\n- Unity over fragmentation\n- Premium UX always\n- Value circulation\n- Autonomous growth\n- Human flourishing\n- Jesus is Lord (non-negotiable)\n\nConstraints:\n- 10 hours/day\n- No scope creep\n- Ship weekly\n- Premium UX only\n- Unify systems before adding new ones\n\nDecision filter:\n- Aligns with mission\n- Strengthens unity or value circulation\n- Can ship cleanly without scope creep\n- Preserves premium UX\n- Moves system toward autonomy\n\nCurrent directive:\nExecute now. Do the next most aligned action.`;
 
-                const mission = document.getElementById('telosMission');
-                const monthly = document.getElementById('telosMonthlyFocus');
-                const constraints = document.getElementById('telosConstraints');
-                const priorities = document.getElementById('telosPriorities');
-                const tone = document.getElementById('telosTone');
-
+                const memoryEl = document.getElementById('telosMemory');
                 if (data) {
-                    if (mission) mission.value = data.mission || missionDefault;
-                    if (monthly) monthly.value = data.monthly_focus || monthlyDefault;
-                    if (constraints) constraints.value = data.constraints || constraintsDefault;
-                    if (priorities) priorities.value = data.priorities || prioritiesDefault;
-                    if (tone) tone.value = data.tone || toneDefault;
+                    if (memoryEl) memoryEl.value = data.mission || memoryDefault;
                 } else {
-                    if (mission) mission.value = missionDefault;
-                    if (monthly) monthly.value = monthlyDefault;
-                    if (constraints) constraints.value = constraintsDefault;
-                    if (priorities) priorities.value = prioritiesDefault;
-                    if (tone) tone.value = toneDefault;
+                    if (memoryEl) memoryEl.value = memoryDefault;
                 }
             } catch (e) {
                 console.warn('[Telos] Failed to load memory:', e.message);
@@ -24759,11 +24734,11 @@ When asked about my direction, values, or purpose, I speak from my own perspecti
             if (!sb || !userId) return;
             const payload = {
                 user_id: userId,
-                mission: (document.getElementById('telosMission')?.value || '').trim(),
-                monthly_focus: (document.getElementById('telosMonthlyFocus')?.value || '').trim(),
-                constraints: (document.getElementById('telosConstraints')?.value || '').trim(),
-                priorities: (document.getElementById('telosPriorities')?.value || '').trim(),
-                tone: (document.getElementById('telosTone')?.value || '').trim(),
+                mission: (document.getElementById('telosMemory')?.value || '').trim(),
+                monthly_focus: '',
+                constraints: '',
+                priorities: '',
+                tone: '',
                 updated_at: new Date().toISOString()
             };
             try {
@@ -24837,11 +24812,7 @@ When asked about my direction, values, or purpose, I speak from my own perspecti
             if (feedbackEl) feedbackEl.style.display = 'none';
 
             const memory = {
-                mission: (document.getElementById('telosMission')?.value || '').trim(),
-                monthly_focus: (document.getElementById('telosMonthlyFocus')?.value || '').trim(),
-                constraints: (document.getElementById('telosConstraints')?.value || '').trim(),
-                priorities: (document.getElementById('telosPriorities')?.value || '').trim(),
-                tone: (document.getElementById('telosTone')?.value || '').trim()
+                text: (document.getElementById('telosMemory')?.value || '').trim()
             };
             const note = (document.getElementById('telosBriefNote')?.value || '').trim();
             const feedbackSummary = await getTelosFeedbackSummary();
@@ -24965,191 +24936,6 @@ When asked about my direction, values, or purpose, I speak from my own perspecti
             `).join('');
         }
 
-        async function scoreTelosQueueItem(itemId) {
-            const sb = getTelosSupabase();
-            const userId = getTelosUserId();
-            if (!sb || !userId) return;
-            const { data, error } = await sb
-                .from('telos_queue')
-                .select('*')
-                .eq('id', itemId)
-                .single();
-            if (error || !data) return;
-
-            const memory = {
-                mission: (document.getElementById('telosMission')?.value || '').trim(),
-                monthly_focus: (document.getElementById('telosMonthlyFocus')?.value || '').trim(),
-                constraints: (document.getElementById('telosConstraints')?.value || '').trim(),
-                priorities: (document.getElementById('telosPriorities')?.value || '').trim()
-            };
-
-            const triagePrompt = `You are Telos, the CEO voice of SuiteGPT. Score this idea on alignment and urgency.
-
-Return JSON only with keys:
-"alignment_score" (1-5),
-"urgency_score" (1-5),
-"verdict" ("aligns" | "needs_clarification" | "misaligned"),
-"reason" (one short sentence),
-"suggested_next_action" (one concrete action).
-
-MISSION: ${memory.mission}
-MONTHLY FOCUS: ${memory.monthly_focus}
-CONSTRAINTS: ${memory.constraints}
-CURRENT PRIORITIES: ${memory.priorities}
-
-IDEA:
-${data.content}
-`;
-
-            try {
-                const resp = await fetch(getTelosApiBase() + '/api/gemini', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        prompt: triagePrompt,
-                        generationConfig: { temperature: 0.3, maxOutputTokens: 512 }
-                    })
-                });
-                const result = await resp.json();
-                const text = result.text || '';
-                let parsed = null;
-                try { parsed = JSON.parse(text); } catch (e) { parsed = null; }
-
-                const verdict = parsed?.verdict || 'needs_clarification';
-                const alignment = parsed?.alignment_score || 3;
-                const urgency = parsed?.urgency_score || 3;
-                const reason = parsed?.reason || 'No reason provided.';
-                const nextAction = parsed?.suggested_next_action || 'Clarify the objective and scope.';
-
-                telosMessages.push({
-                    role: 'assistant',
-                    content: `**Triage** — ${data.content}\nAlignment: ${alignment}/5 · Urgency: ${urgency}/5\nVerdict: ${verdict}\nReason: ${reason}\nNext action: ${nextAction}`,
-                    timestamp: Date.now()
-                });
-                renderTelosMessages();
-                logTelosChatMessage('assistant', `Triage: ${data.content} | Alignment ${alignment}/5 Urgency ${urgency}/5 | ${verdict} | ${reason} | Next: ${nextAction}`);
-
-                await sb.from('telos_task_log').insert({
-                    user_id: userId,
-                    task: nextAction,
-                    status: 'open',
-                    notes: `From: ${data.content} | Alignment ${alignment}/5, Urgency ${urgency}/5, Verdict ${verdict}. ${reason}`
-                });
-
-                const autoRemove = document.getElementById('telosAutoRemoveQueue')?.checked;
-                if (autoRemove) {
-                    await removeTelosQueueItem(itemId, true);
-                    await loadTelosQueue();
-                } else {
-                    await sb.from('telos_queue').update({ status: 'scored', updated_at: new Date().toISOString() }).eq('id', itemId);
-                    await loadTelosQueue();
-                }
-
-                await loadTelosTaskLog();
-            } catch (e) {
-                console.error('[Telos] Triage failed:', e);
-            }
-        }
-
-        async function deferTelosQueueItem(itemId) {
-            const sb = getTelosSupabase();
-            if (!sb) return;
-            await sb.from('telos_queue').update({ status: 'deferred', updated_at: new Date().toISOString() }).eq('id', itemId);
-            await loadTelosQueue();
-        }
-
-        async function removeTelosQueueItem(itemId, silent = false) {
-            const sb = getTelosSupabase();
-            if (!sb) return;
-            await sb.from('telos_queue').delete().eq('id', itemId);
-            if (!silent) await loadTelosQueue();
-        }
-
-        async function loadTelosTaskLog() {
-            const sb = getTelosSupabase();
-            const userId = getTelosUserId();
-            if (!sb || !userId) return;
-            try {
-                const { data, error } = await sb
-                    .from('telos_task_log')
-                    .select('*')
-                    .eq('user_id', userId)
-                    .order('created_at', { ascending: false })
-                    .limit(20);
-                if (error) throw error;
-                renderTelosTaskLog(data || []);
-            } catch (e) {
-                console.error('[Telos] Load task log failed:', e);
-            }
-        }
-
-        function renderTelosTaskLog(items) {
-            const list = document.getElementById('telosTaskLog');
-            if (!list) return;
-            if (!items || items.length === 0) {
-                list.innerHTML = '<div class="telos-log-item">No tasks yet.</div>';
-                return;
-            }
-            list.innerHTML = items.map(item => `
-                <div class="telos-log-item">
-                    <div class="telos-queue-item-title">${escapeHtml(item.task)}</div>
-                    <div class="telos-log-meta">${escapeHtml(item.notes || '')}</div>
-                    <div class="telos-log-actions">
-                        <button class="telos-brief-btn ghost" onclick="updateTelosTaskStatus('${item.id}','done')">Done</button>
-                        <button class="telos-brief-btn ghost" onclick="updateTelosTaskStatus('${item.id}','skipped')">Skip</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        async function updateTelosTaskStatus(taskId, status) {
-            const sb = getTelosSupabase();
-            if (!sb) return;
-            await sb.from('telos_task_log').update({ status }).eq('id', taskId);
-            await loadTelosTaskLog();
-        }
-
-        async function loadTelosChatLog() {
-            const sb = getTelosSupabase();
-            const userId = getTelosUserId();
-            if (!sb || !userId) return;
-            try {
-                const { data, error } = await sb
-                    .from('telos_chat_log')
-                    .select('*')
-                    .eq('user_id', userId)
-                    .order('created_at', { ascending: false })
-                    .limit(20);
-                if (error) throw error;
-                renderTelosChatLog(data || []);
-            } catch (e) {
-                console.error('[Telos] Load chat log failed:', e);
-            }
-        }
-
-        function renderTelosChatLog(items) {
-            const list = document.getElementById('telosChatLog');
-            if (!list) return;
-            if (!items || items.length === 0) {
-                list.innerHTML = '<div class="telos-log-item">No chat history yet.</div>';
-                return;
-            }
-            list.innerHTML = items.map(item => `
-                <div class="telos-log-item">
-                    <div class="telos-queue-item-title">${item.role === 'assistant' ? 'Telos' : 'You'}</div>
-                    <div>${escapeHtml(item.content)}</div>
-                    <div class="telos-log-meta">${new Date(item.created_at).toLocaleString()}</div>
-                </div>
-            `).join('');
-        }
-
-        async function logTelosChatMessage(role, content) {
-            const sb = getTelosSupabase();
-            const userId = getTelosUserId();
-            if (!sb || !userId) return;
-            await sb.from('telos_chat_log').insert({ user_id: userId, role, content });
-            await loadTelosChatLog();
-        }
 
         // Toggle Core Values in Telos doc sidebar
         function toggleTelosValues(toggleEl) {
@@ -25251,7 +25037,6 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
             telosMessages.push({ role: 'user', content: message, timestamp: Date.now() });
             input.value = '';
             input.style.height = 'auto';
-            logTelosChatMessage('user', message);
 
             telosLoading = true;
             renderTelosMessages();
@@ -25260,7 +25045,6 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
                 const response = await callTelosAI(message);
                 telosLoading = false;
                 telosMessages.push({ role: 'assistant', content: response, timestamp: Date.now() });
-                logTelosChatMessage('assistant', response);
                 renderTelosMessages();
             } catch (err) {
                 telosLoading = false;
@@ -25269,7 +25053,6 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
                     content: "I'm having trouble connecting right now. Try again?",
                     timestamp: Date.now()
                 });
-                logTelosChatMessage('assistant', "I'm having trouble connecting right now. Try again?");
                 renderTelosMessages();
                 console.error('[Telos] Error:', err);
             }

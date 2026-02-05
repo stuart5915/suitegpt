@@ -37,10 +37,8 @@ STRICT RULES:
 - Keys: "top_priorities" (array of 3 strings), "next_action" (string), "risks_blocks" (array of strings), "clarifying_question" (string).
 
 CONTEXT:
-MISSION: ${memory.mission || ''}
-MONTHLY FOCUS: ${memory.monthly_focus || ''}
-CONSTRAINTS: ${memory.constraints || ''}
-CURRENT PRIORITIES: ${memory.priorities || ''}
+TELOS MEMORY:
+${memory.text || memory.mission || ''}
 TONE: ${memory.tone || 'direct, founder-CEO, action-first'}
 TIMEZONE: ${timezone || 'unknown'}
 USER NOTE: ${note || ''}
