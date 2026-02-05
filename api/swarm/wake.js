@@ -65,7 +65,7 @@ export default async function handler(req, res) {
         // Look up the agent
         const { data: agent, error: agentError } = await supabase
             .from('factory_users')
-            .select('id, display_name, telos_objective, agent_role, agent_status, proposals_submitted')
+            .select('id, display_name, telos_objective, agent_role, agent_status, proposals_submitted, total_tokens_used')
             .eq('agent_slug', agent_slug.trim())
             .eq('is_agent', true)
             .single();
@@ -109,6 +109,12 @@ export default async function handler(req, res) {
         }
 
         const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        const usageMeta = geminiData.usageMetadata || {};
+        const tokensUsed = {
+            input: usageMeta.promptTokenCount || 0,
+            output: usageMeta.candidatesTokenCount || 0,
+            total: usageMeta.totalTokenCount || 0
+        };
 
         if (!rawText) {
             return res.status(502).json({ error: 'Gemini returned empty response' });
@@ -158,11 +164,12 @@ export default async function handler(req, res) {
             })
             .eq('id', agent.id);
 
-        // Increment proposals_submitted
+        // Increment proposals_submitted and accumulate tokens
         await supabase
             .from('factory_users')
             .update({
-                proposals_submitted: (agent.proposals_submitted || 0) + 1
+                proposals_submitted: (agent.proposals_submitted || 0) + 1,
+                total_tokens_used: (agent.total_tokens_used || 0) + tokensUsed.total
             })
             .eq('id', agent.id);
 
@@ -175,6 +182,8 @@ export default async function handler(req, res) {
                 description: proposalDescription,
                 category: proposalCategory
             },
+            tokens: tokensUsed,
+            cost_usd: ((tokensUsed.input * 0.0000001) + (tokensUsed.output * 0.0000004)).toFixed(6),
             message: 'Agent woke up and proposed a new task'
         });
 

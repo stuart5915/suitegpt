@@ -23030,13 +23030,16 @@ Technical: JavaScript, HTML/CSS, React/React Native, Supabase (Postgres, Auth, S
                     <div class="agent-detail-stat-label">Approved</div>
                 </div>
                 <div class="agent-detail-stat">
-                    <div class="agent-detail-stat-value" id="agentDetailCredits">0</div>
-                    <div class="agent-detail-stat-label">Credits</div>
+                    <div class="agent-detail-stat-value" id="agentDetailTokens">0</div>
+                    <div class="agent-detail-stat-label">Tokens</div>
                 </div>
                 <div class="agent-detail-stat">
-                    <div class="agent-detail-stat-value" id="agentDetailLastActive">--</div>
-                    <div class="agent-detail-stat-label">Last Active</div>
+                    <div class="agent-detail-stat-value" id="agentDetailCost">$0.00</div>
+                    <div class="agent-detail-stat-label">Est. Cost</div>
                 </div>
+            </div>
+            <div style="padding:0 24px 4px;text-align:right;">
+                <span style="font-size:0.65rem;color:var(--text-tertiary);" id="agentDetailCostNote">Gemini 2.0 Flash — free tier</span>
             </div>
             <div class="agent-detail-actions">
                 <button class="agent-wake-btn" id="agentWakeBtn" onclick="wakeAgent()">
@@ -25211,8 +25214,13 @@ Technical: JavaScript, HTML/CSS, React/React Native, Supabase (Postgres, Auth, S
                 document.getElementById('agentDetailObjective').textContent = agent.objective || 'No objective set.';
                 document.getElementById('agentDetailProposals').textContent = agent.proposals_submitted || 0;
                 document.getElementById('agentDetailApproved').textContent = agent.proposals_approved || 0;
-                document.getElementById('agentDetailCredits').textContent = agent.total_credits_earned || 0;
-                document.getElementById('agentDetailLastActive').textContent = agent.last_active_at ? timeAgo(new Date(agent.last_active_at)) : '--';
+                const totalTokens = agent.total_tokens_used || 0;
+                document.getElementById('agentDetailTokens').textContent = totalTokens.toLocaleString();
+                const estCost = (totalTokens * 0.00000025); // blended rate for flash
+                document.getElementById('agentDetailCost').textContent = estCost < 0.01 ? '$0.00' : '$' + estCost.toFixed(2);
+                document.getElementById('agentDetailCostNote').textContent = totalTokens === 0
+                    ? 'Gemini 2.0 Flash — free tier'
+                    : `${totalTokens.toLocaleString()} tokens · Gemini 2.0 Flash`;
 
                 // Load activity log
                 loadAgentLog(agent.id);
