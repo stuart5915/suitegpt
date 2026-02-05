@@ -21520,8 +21520,9 @@ Technical: JavaScript, HTML/CSS, React/React Native, Supabase (Postgres, Auth, S
                                                     </div>
                                                     <div class="jh-material-box">
                                                         <div class="jh-material-header"><h4>Application Q&A</h4><button class="jh-btn jh-btn-primary jh-btn-sm" onclick="jhGenerateAnswer()">Generate</button></div>
-                                                        <div class="jh-form-group"><label class="jh-form-label">Question</label><textarea class="jh-textarea" id="jhAppQuestion" rows="2" placeholder="e.g. Tell us about your blockchain knowledge..."></textarea></div>
-                                                        <div class="jh-form-group"><label class="jh-form-label">Context (optional)</label><input class="jh-input" type="text" id="jhAppContext" placeholder="e.g. Applying to Anthropic for DevRel..."></div>
+                                                        <p class="jh-form-hint" style="font-size:0.75rem;color:var(--text-tertiary);margin:-6px 0 10px 0;">Tailored to your selected role above + Role &amp; Company below.</p>
+                                                        <div class="jh-form-group"><label class="jh-form-label">Question</label><textarea class="jh-textarea" id="jhAppQuestion" rows="2" placeholder="e.g. Tell us about your experience with developer communities..."></textarea></div>
+                                                        <div class="jh-form-group"><label class="jh-form-label">Role &amp; Company <span style="font-weight:400;text-transform:none;letter-spacing:0;opacity:0.7;">— e.g. Developer Relations at Anthropic</span></label><input class="jh-input" type="text" id="jhAppContext" placeholder="e.g. Developer Relations at Anthropic, or PM at Vercel"></div>
                                                         <div class="jh-ai-output" id="jhAppAnswerOutput"></div>
                                                         <div style="display:none;margin-top:6px;gap:6px;" id="jhAppAnswerActions">
                                                             <button class="jh-btn-ghost" onclick="jhCopyOutput('jhAppAnswerOutput')">Copy</button>
@@ -25734,24 +25735,28 @@ Output the resume now using the section markers above. Plain text only, no markd
             output.textContent = ''; actionsDiv.style.display = 'none';
             output.innerHTML = '<span class="jh-spinner"></span> Generating answer...';
             const roleCtx = JH_ROLE_PROMPTS[jhSelectedRole] || '';
-            const prompt = `You are helping Stuart Hollinger answer a job application question. Write a compelling, authentic, first-person answer.
+            const hasRoleInfo = !!(roleCtx || context);
+            const prompt = `You are helping Stuart Hollinger answer a job application question. Write a compelling, authentic, first-person answer that is TAILORED to the specific role and company he is applying to.
 
 STRICT RULES:
 - ONLY use facts from the CANDIDATE BACKGROUND below. NEVER invent achievements, companies, metrics, or skills not stated.
 - Write in first person as Stuart. Be genuine, specific, and confident — not generic or boilerplate.
-- Reference specific projects and experiences from the background.
+- Reference specific projects and experiences from the background and connect them to why they matter FOR THIS ROLE / THIS COMPANY.
 - Keep it concise but thorough — aim for 150-300 words unless the question calls for more.
 - Do NOT use markdown formatting. Plain text only.
 - Sound like a real person, not a corporate template.
+${hasRoleInfo ? `
+TAILORING (CRITICAL): The answer MUST be specific to the role and company. Weave in why his experience is relevant to this position. If company/role context is given below, the answer should feel written for that application — mention the type of role or company where it fits naturally. Avoid answers that could apply to any job; this one is for a specific application.` : ''}
 
 CANDIDATE BACKGROUND:
 ${bg || 'Built SuiteGPT, an AI app ecosystem with 20+ apps, 30k+ LOC. 7 years in DeFi/crypto. Published author.'}
 
-${roleCtx ? 'TARGET ROLE CONTEXT: ' + roleCtx + '\n' : ''}${context ? 'EXTRA CONTEXT: ' + context + '\n' : ''}
+${roleCtx ? 'TARGET ROLE (from his selected profile): ' + roleCtx + '\n' : ''}${context ? 'ROLE & COMPANY FOR THIS APPLICATION: ' + context + '\n\nUse this to tailor the answer. Reference this role/company where relevant so the answer clearly fits this application.' : ''}
+
 APPLICATION QUESTION:
 ${question}
 
-Write the answer now. Plain text, first person, authentic.`;
+Write the answer now. Plain text, first person, authentic, and tailored to the role/company above.`;
             try {
                 const resp = await fetch('/api/gemini', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt, model: 'gemini-3-flash-preview', generationConfig: { temperature: 0.7, maxOutputTokens: 3000 } }) });
                 const data = await resp.json();
