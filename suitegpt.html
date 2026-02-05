@@ -7202,6 +7202,253 @@
                 flex-direction: column;
             }
         }
+        /* Agent Detail Panel */
+        .agent-detail-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+
+        .agent-detail-overlay.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .agent-detail-panel {
+            background: var(--bg-dark);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 560px;
+            max-height: 85vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .agent-detail-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            z-index: 2;
+        }
+
+        .agent-detail-close:hover {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+        }
+
+        .agent-detail-header {
+            padding: 28px 24px 20px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .agent-detail-identity {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .agent-detail-avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .agent-detail-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .agent-detail-meta {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-top: 4px;
+            flex-wrap: wrap;
+        }
+
+        .agent-detail-badge {
+            font-size: 0.7rem;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        .agent-detail-objective {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .agent-detail-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .agent-detail-stat {
+            text-align: center;
+        }
+
+        .agent-detail-stat-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .agent-detail-stat-label {
+            font-size: 0.7rem;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .agent-detail-actions {
+            padding: 20px 24px;
+            display: flex;
+            gap: 10px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .agent-wake-btn {
+            flex: 1;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .agent-wake-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .agent-wake-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .agent-wake-btn.waking {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .agent-detail-log {
+            padding: 20px 24px;
+        }
+
+        .agent-detail-log-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-tertiary);
+            margin-bottom: 12px;
+        }
+
+        .agent-log-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+
+        .agent-log-item:last-child {
+            border-bottom: none;
+        }
+
+        .agent-log-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-top: 5px;
+            flex-shrink: 0;
+        }
+
+        .agent-log-dot.proposal { background: #818cf8; }
+        .agent-log-dot.completion { background: #34d399; }
+        .agent-log-dot.update { background: #fbbf24; }
+        .agent-log-dot.escalation { background: #f87171; }
+
+        .agent-log-text {
+            flex: 1;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .agent-log-text strong {
+            color: var(--text-primary);
+        }
+
+        .agent-log-time {
+            font-size: 0.7rem;
+            color: var(--text-tertiary);
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .agent-log-empty {
+            text-align: center;
+            padding: 24px;
+            color: var(--text-tertiary);
+            font-size: 0.85rem;
+        }
+
+        /* Status pulse animation */
+        .agent-card-status.working .agent-card-status-dot,
+        .agent-card-status.executing .agent-card-status-dot {
+            animation: statusPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes statusPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.4); }
+        }
+
+        .agent-card-last-active {
+            font-size: 0.7rem;
+            color: var(--text-tertiary);
+            margin-top: 4px;
+        }
         /* === END AGENTS VIEW === */
 
         .factory-view-content {
@@ -22715,6 +22962,57 @@ Technical: JavaScript, HTML/CSS, React/React Native, Supabase (Postgres, Auth, S
         </main>
     </div>
 
+    <!-- Agent Detail Overlay -->
+    <div class="agent-detail-overlay" id="agentDetailOverlay" onclick="if(event.target===this)closeAgentDetail()">
+        <div class="agent-detail-panel">
+            <button class="agent-detail-close" onclick="closeAgentDetail()">&times;</button>
+            <div class="agent-detail-header">
+                <div class="agent-detail-identity">
+                    <div class="agent-detail-avatar" id="agentDetailAvatar">??</div>
+                    <div>
+                        <div class="agent-detail-name" id="agentDetailName">Agent</div>
+                        <div class="agent-detail-meta">
+                            <span class="agent-detail-badge" id="agentDetailRole" style="background:rgba(99,102,241,0.15);color:#818cf8;">Unassigned</span>
+                            <span class="agent-detail-badge" id="agentDetailType" style="background:rgba(255,255,255,0.06);color:var(--text-secondary);">cli</span>
+                            <span class="agent-detail-badge" id="agentDetailStatus" style="background:rgba(52,211,153,0.15);color:#34d399;">idle</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="agent-detail-objective" id="agentDetailObjective">No objective set.</div>
+            </div>
+            <div class="agent-detail-stats">
+                <div class="agent-detail-stat">
+                    <div class="agent-detail-stat-value" id="agentDetailProposals">0</div>
+                    <div class="agent-detail-stat-label">Proposals</div>
+                </div>
+                <div class="agent-detail-stat">
+                    <div class="agent-detail-stat-value" id="agentDetailApproved">0</div>
+                    <div class="agent-detail-stat-label">Approved</div>
+                </div>
+                <div class="agent-detail-stat">
+                    <div class="agent-detail-stat-value" id="agentDetailCredits">0</div>
+                    <div class="agent-detail-stat-label">Credits</div>
+                </div>
+                <div class="agent-detail-stat">
+                    <div class="agent-detail-stat-value" id="agentDetailLastActive">--</div>
+                    <div class="agent-detail-stat-label">Last Active</div>
+                </div>
+            </div>
+            <div class="agent-detail-actions">
+                <button class="agent-wake-btn" id="agentWakeBtn" onclick="wakeAgent()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    Wake Agent
+                </button>
+            </div>
+            <div class="agent-detail-log">
+                <div class="agent-detail-log-title">Activity Log</div>
+                <div id="agentDetailLogContent">
+                    <div class="agent-log-empty">No activity yet. Wake the agent to see it in action.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Add Lead Modal (Client Hub) -->
     <div class="ch-modal-overlay" id="chLeadModal">
         <div class="ch-modal">
@@ -24794,8 +25092,10 @@ Technical: JavaScript, HTML/CSS, React/React Native, Supabase (Postgres, Auth, S
                 'qa_tester': 'QA Tester'
             };
 
+            const lastActive = agent.last_active_at ? timeAgo(new Date(agent.last_active_at)) : null;
+
             return `
-                <div class="agent-card" onclick="viewAgentProfile('${agent.slug}')">
+                <div class="agent-card" onclick="openAgentDetail('${agent.slug}')">
                     <div class="agent-card-header">
                         <div class="agent-card-avatar">${initials}</div>
                         <div class="agent-card-info">
@@ -24814,11 +25114,155 @@ Technical: JavaScript, HTML/CSS, React/React Native, Supabase (Postgres, Auth, S
                         <span><strong>${agent.proposals_approved}</strong> approved</span>
                         <span><strong>${agent.total_credits_earned}</strong> credits</span>
                     </div>
+                    ${lastActive ? `<div class="agent-card-last-active">Active ${lastActive}</div>` : ''}
                 </div>`;
         }
 
-        function viewAgentProfile(slug) {
-            window.open('/agent-profile.html?id=' + slug, '_blank');
+        let currentDetailAgent = null;
+
+        async function openAgentDetail(slug) {
+            const overlay = document.getElementById('agentDetailOverlay');
+            overlay.classList.add('active');
+
+            // Reset state
+            document.getElementById('agentDetailAvatar').textContent = '...';
+            document.getElementById('agentDetailName').textContent = 'Loading...';
+            document.getElementById('agentDetailObjective').textContent = '';
+            document.getElementById('agentDetailLogContent').innerHTML = '<div class="agent-log-empty">Loading...</div>';
+            document.getElementById('agentWakeBtn').disabled = false;
+            document.getElementById('agentWakeBtn').classList.remove('waking');
+            document.getElementById('agentWakeBtn').innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> Wake Agent';
+
+            try {
+                const resp = await fetch('/api/swarm/agents?limit=100');
+                const data = await resp.json();
+                if (!data.success) throw new Error('Failed to load agents');
+
+                const agent = data.agents.find(a => a.slug === slug);
+                if (!agent) throw new Error('Agent not found');
+
+                currentDetailAgent = agent;
+
+                const initials = (agent.name || '??').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+                const roleNames = {
+                    'app_builder': 'App Builder', 'app_refiner': 'App Refiner',
+                    'content_creator': 'Content Creator', 'growth_outreach': 'Growth & Outreach',
+                    'qa_tester': 'QA Tester'
+                };
+
+                document.getElementById('agentDetailAvatar').textContent = initials;
+                document.getElementById('agentDetailName').textContent = agent.name || agent.slug;
+                document.getElementById('agentDetailRole').textContent = roleNames[agent.role] || agent.role || 'Unassigned';
+                document.getElementById('agentDetailType').textContent = agent.agent_type || 'cli';
+                document.getElementById('agentDetailStatus').textContent = agent.status || 'idle';
+
+                // Color the status badge
+                const statusEl = document.getElementById('agentDetailStatus');
+                const statusColors = {
+                    'idle': 'rgba(148,163,184,0.15)', 'working': 'rgba(99,102,241,0.15)',
+                    'waiting': 'rgba(251,191,36,0.15)', 'blocked': 'rgba(248,113,113,0.15)'
+                };
+                const statusText = {
+                    'idle': '#94a3b8', 'working': '#818cf8', 'waiting': '#fbbf24', 'blocked': '#f87171'
+                };
+                statusEl.style.background = statusColors[agent.status] || statusColors['idle'];
+                statusEl.style.color = statusText[agent.status] || statusText['idle'];
+
+                document.getElementById('agentDetailObjective').textContent = agent.objective || 'No objective set.';
+                document.getElementById('agentDetailProposals').textContent = agent.proposals_submitted || 0;
+                document.getElementById('agentDetailApproved').textContent = agent.proposals_approved || 0;
+                document.getElementById('agentDetailCredits').textContent = agent.total_credits_earned || 0;
+                document.getElementById('agentDetailLastActive').textContent = agent.last_active_at ? timeAgo(new Date(agent.last_active_at)) : '--';
+
+                // Load activity log
+                loadAgentLog(agent.id);
+
+            } catch (err) {
+                console.error('Failed to load agent detail:', err);
+                document.getElementById('agentDetailName').textContent = 'Error loading agent';
+            }
+        }
+
+        function closeAgentDetail() {
+            document.getElementById('agentDetailOverlay').classList.remove('active');
+            currentDetailAgent = null;
+        }
+
+        async function wakeAgent() {
+            if (!currentDetailAgent) return;
+            const btn = document.getElementById('agentWakeBtn');
+            btn.disabled = true;
+            btn.classList.add('waking');
+            btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite"><path d="M12 2v4m0 12v4m-7.07-3.93l2.83-2.83m8.48-8.48l2.83-2.83M2 12h4m12 0h4m-3.93 7.07l-2.83-2.83M7.76 7.76L4.93 4.93"/></svg> Waking up...';
+
+            try {
+                const resp = await fetch('/api/swarm/wake', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ agent_slug: currentDetailAgent.slug })
+                });
+                const data = await resp.json();
+
+                if (data.success) {
+                    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Proposal submitted!';
+                    showToast(`${currentDetailAgent.name} woke up and proposed: "${data.proposal.title}"`);
+
+                    // Reload the activity log
+                    setTimeout(() => loadAgentLog(currentDetailAgent.id), 500);
+
+                    // Re-enable after 3 seconds
+                    setTimeout(() => {
+                        btn.disabled = false;
+                        btn.classList.remove('waking');
+                        btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> Wake Agent';
+                    }, 3000);
+                } else {
+                    btn.innerHTML = 'Failed: ' + (data.error || 'Unknown error');
+                    btn.disabled = false;
+                    btn.classList.remove('waking');
+                    setTimeout(() => {
+                        btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> Wake Agent';
+                    }, 3000);
+                }
+            } catch (err) {
+                console.error('Wake agent error:', err);
+                btn.innerHTML = 'Error - try again';
+                btn.disabled = false;
+                btn.classList.remove('waking');
+                setTimeout(() => {
+                    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> Wake Agent';
+                }, 3000);
+            }
+        }
+
+        async function loadAgentLog(agentId) {
+            const container = document.getElementById('agentDetailLogContent');
+            try {
+                const { data: proposals, error } = await supabase
+                    .from('factory_proposals')
+                    .select('id, title, category, status, created_at')
+                    .eq('author_id', agentId)
+                    .order('created_at', { ascending: false })
+                    .limit(15);
+
+                if (error || !proposals || proposals.length === 0) {
+                    container.innerHTML = '<div class="agent-log-empty">No activity yet. Wake the agent to see it in action.</div>';
+                    return;
+                }
+
+                container.innerHTML = proposals.map(p => {
+                    const dotClass = p.status === 'approved' ? 'completion' : p.status === 'rejected' ? 'escalation' : p.status === 'submitted' ? 'proposal' : 'update';
+                    const statusLabel = p.status === 'approved' ? '✓ Approved' : p.status === 'rejected' ? '✗ Rejected' : p.status === 'submitted' ? '◎ Pending' : p.status;
+                    return `<div class="agent-log-item">
+                        <div class="agent-log-dot ${dotClass}"></div>
+                        <div class="agent-log-text"><strong>${p.title}</strong><br><span style="font-size:0.75rem;color:var(--text-tertiary);">${p.category} · ${statusLabel}</span></div>
+                        <div class="agent-log-time">${timeAgo(new Date(p.created_at))}</div>
+                    </div>`;
+                }).join('');
+            } catch (err) {
+                console.error('Failed to load agent log:', err);
+                container.innerHTML = '<div class="agent-log-empty">Failed to load activity log.</div>';
+            }
         }
 
         function filterAgentsByRole(roleId) {
