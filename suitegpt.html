@@ -10080,6 +10080,21 @@
             margin-bottom: 12px;
         }
 
+        .telos-brief-controls {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .telos-brief-select {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            color: var(--text-primary);
+            padding: 6px 10px;
+            font-size: 0.8rem;
+        }
+
         .telos-brief-title {
             font-weight: 700;
             font-size: 1rem;
@@ -20928,7 +20943,13 @@
                                                     <div class="telos-brief-title">Daily Brief</div>
                                                     <div class="telos-brief-subtitle">Wake up, ask “what’s next,” and get CEO-level direction.</div>
                                                 </div>
-                                                <button class="telos-brief-btn" onclick="generateTelosBrief()">Generate Brief</button>
+                                                <div class="telos-brief-controls">
+                                                    <select class="telos-brief-select" id="telosModel">
+                                                        <option value="gemini-3-flash-preview">Daily (Flash)</option>
+                                                        <option value="gemini-2.0-pro">Deep Strategy (Pro)</option>
+                                                    </select>
+                                                    <button class="telos-brief-btn" onclick="generateTelosBrief()">Generate Brief</button>
+                                                </div>
                                             </div>
 
                                             <div class="telos-brief-grid">
@@ -25077,6 +25098,11 @@ When asked about my direction, values, or purpose, I speak from my own perspecti
             }
         }
 
+        function getTelosModel() {
+            const el = document.getElementById('telosModel');
+            return (el && el.value) ? el.value : 'gemini-3-flash-preview';
+        }
+
         function renderTelosBrief(brief) {
             const output = document.getElementById('telosBriefOutput');
             if (!output) return;
@@ -25114,12 +25140,13 @@ When asked about my direction, values, or purpose, I speak from my own perspecti
             const note = (document.getElementById('telosBriefNote')?.value || '').trim();
             const feedbackSummary = await getTelosFeedbackSummary();
             const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const model = getTelosModel();
 
             try {
                 const resp = await fetch('/api/telos-brief', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ memory, feedbackSummary, note, timezone })
+                    body: JSON.stringify({ memory, feedbackSummary, note, timezone, model })
                 });
                 const data = await resp.json();
                 if (!resp.ok) throw new Error(data.error || 'Brief failed');
@@ -25540,12 +25567,14 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
         }
 
         async function callTelosAI(userMessage) {
+            const model = getTelosModel();
             const response = await fetch('/api/gemini', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     prompt: userMessage,
                     systemInstruction: TELOS_PROMPT,
+                    model,
                     generationConfig: { temperature: 0.9, maxOutputTokens: 1024 }
                 })
             });
