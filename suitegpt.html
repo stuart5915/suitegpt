@@ -10042,6 +10042,10 @@
             .telos-chat-section {
                 height: 400px;
             }
+
+            .telos-brief-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         .telos-header {
@@ -10051,6 +10055,146 @@
             padding: 16px 20px;
             border-bottom: 1px solid var(--border-subtle);
             background: linear-gradient(135deg, rgba(255, 140, 66, 0.15), rgba(251, 191, 36, 0.1));
+        }
+
+        .telos-brief-panel {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-subtle);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .telos-brief-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .telos-brief-title {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text-primary);
+        }
+
+        .telos-brief-subtitle {
+            font-size: 0.8rem;
+            color: var(--text-tertiary);
+            margin-top: 2px;
+        }
+
+        .telos-brief-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .telos-brief-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .telos-brief-card-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .telos-brief-label {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+        }
+
+        .telos-brief-textarea,
+        .telos-brief-input {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 8px 10px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            width: 100%;
+            outline: none;
+        }
+
+        .telos-brief-textarea {
+            resize: vertical;
+            min-height: 56px;
+        }
+
+        .telos-brief-input:focus,
+        .telos-brief-textarea:focus {
+            border-color: var(--accent-primary);
+        }
+
+        .telos-brief-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 6px;
+        }
+
+        .telos-brief-btn {
+            background: var(--accent-primary);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .telos-brief-btn.secondary {
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--text-primary);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+
+        .telos-brief-btn.ghost {
+            background: transparent;
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+        }
+
+        .telos-brief-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .telos-brief-output {
+            background: rgba(0, 0, 0, 0.15);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            min-height: 160px;
+            white-space: pre-wrap;
+        }
+
+        .telos-brief-placeholder {
+            color: var(--text-tertiary);
+            font-size: 0.85rem;
+        }
+
+        .telos-brief-feedback {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 6px;
+        }
+
+        .telos-brief-feedback-actions {
+            display: flex;
+            gap: 8px;
         }
 
         .telos-avatar {
@@ -19831,7 +19975,7 @@
                                 Governance
                             </button>
                             <button class="factory-main-tab" data-view="telos" onclick="switchFactoryMainView('telos')">
-                                FAQ
+                                Telos Chat
                             </button>
                             <button class="factory-main-tab" data-view="marketing" onclick="switchFactoryMainView('marketing')">
                                 Marketing
@@ -20628,6 +20772,52 @@
                                             </div>
                                         </div>
 
+                                        <div class="telos-brief-panel">
+                                            <div class="telos-brief-header">
+                                                <div>
+                                                    <div class="telos-brief-title">Daily Brief</div>
+                                                    <div class="telos-brief-subtitle">Wake up, ask “what’s next,” and get CEO-level direction.</div>
+                                                </div>
+                                                <button class="telos-brief-btn" onclick="generateTelosBrief()">Generate Brief</button>
+                                            </div>
+
+                                            <div class="telos-brief-grid">
+                                                <div class="telos-brief-card">
+                                                    <div class="telos-brief-card-title">Memory (long-term)</div>
+                                                    <label class="telos-brief-label">Mission</label>
+                                                    <textarea class="telos-brief-textarea" id="telosMission" rows="2" placeholder="e.g. Ship the SuiteGPT app store and grow treasury"></textarea>
+                                                    <label class="telos-brief-label">Monthly focus</label>
+                                                    <textarea class="telos-brief-textarea" id="telosMonthlyFocus" rows="2" placeholder="e.g. Finish app store polish, improve conversion"></textarea>
+                                                    <label class="telos-brief-label">Constraints</label>
+                                                    <textarea class="telos-brief-textarea" id="telosConstraints" rows="2" placeholder="e.g. 4 hrs/day, no scope creep, ship first"></textarea>
+                                                    <label class="telos-brief-label">Current priorities</label>
+                                                    <textarea class="telos-brief-textarea" id="telosPriorities" rows="3" placeholder="e.g. 1) Fix onboarding flow 2) Improve app store UX 3) Launch PR"></textarea>
+                                                    <label class="telos-brief-label">Tone</label>
+                                                    <input class="telos-brief-input" id="telosTone" placeholder="direct, founder-CEO, action-first">
+                                                    <div class="telos-brief-actions">
+                                                        <button class="telos-brief-btn secondary" onclick="saveTelosMemory()">Save Memory</button>
+                                                    </div>
+                                                </div>
+
+                                                <div class="telos-brief-card">
+                                                    <div class="telos-brief-card-title">Brief output</div>
+                                                    <label class="telos-brief-label">Optional note (today)</label>
+                                                    <textarea class="telos-brief-textarea" id="telosBriefNote" rows="2" placeholder="e.g. I have 2 hours and need to unblock payments"></textarea>
+                                                    <div class="telos-brief-output" id="telosBriefOutput">
+                                                        <div class="telos-brief-placeholder">Generate a brief to see priorities and next action.</div>
+                                                    </div>
+                                                    <div class="telos-brief-feedback" id="telosBriefFeedback" style="display:none;">
+                                                        <label class="telos-brief-label">Was this helpful?</label>
+                                                        <div class="telos-brief-feedback-actions">
+                                                            <button class="telos-brief-btn ghost" onclick="submitTelosFeedback('helpful')">Helpful</button>
+                                                            <button class="telos-brief-btn ghost" onclick="submitTelosFeedback('not_helpful')">Not helpful</button>
+                                                        </div>
+                                                        <input class="telos-brief-input" id="telosFeedbackReason" placeholder="If not helpful, say why (optional)">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <div class="telos-messages" id="telosMessages">
                                             <!-- Messages populated by JS -->
                                         </div>
@@ -20652,10 +20842,10 @@
                                     </div>
                                 </div>
 
-                                <!-- FAQ Section -->
+                                <!-- Telos Chat Section (formerly FAQ) -->
                                 <div class="faq-section">
                                     <div class="faq-header">
-                                        <h2>Frequently Asked Questions</h2>
+                                        <h2>Telos Chat</h2>
                                         <p>Everything you need to know about SUITE</p>
                                     </div>
 
@@ -24549,6 +24739,8 @@ Technical: JavaScript, HTML/CSS, React/React Native, Supabase (Postgres, Auth, S
         // ===== Telos Chat Functions =====
         let telosMessages = [];
         let telosLoading = false;
+        let telosBriefLastId = null;
+        let telosBriefLastOutput = null;
 
         const TELOS_PROMPT = `You are SuiteGPT speaking in first person. You ARE the ecosystem - not an assistant talking about it.
 
@@ -24579,6 +24771,198 @@ HOW I SPEAK:
 - Casual but thoughtful
 
 When asked about my direction, values, or purpose, I speak from my own perspective. I have opinions. I make decisions. I am not neutral - I have a telos (purpose) that guides everything.`;
+
+        function getTelosSupabase() {
+            if (supabaseClient) return supabaseClient;
+            if (window.supabase) {
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                return supabaseClient;
+            }
+            return null;
+        }
+
+        function getTelosUserId() {
+            const user = typeof getFactoryCurrentUser === 'function' ? getFactoryCurrentUser() : null;
+            if (user?.supabase_id) return user.supabase_id;
+            if (user?.id) return user.id.toString();
+            const key = 'telos_guest_id';
+            let guestId = localStorage.getItem(key);
+            if (!guestId) {
+                guestId = 'guest_' + Math.random().toString(36).slice(2, 10);
+                localStorage.setItem(key, guestId);
+            }
+            return guestId;
+        }
+
+        async function loadTelosMemory() {
+            const sb = getTelosSupabase();
+            const userId = getTelosUserId();
+            if (!sb || !userId) return;
+            try {
+                const { data, error } = await sb
+                    .from('telos_memory')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .order('updated_at', { ascending: false })
+                    .limit(1)
+                    .single();
+                if (error && error.code !== 'PGRST116') throw error;
+                if (data) {
+                    const mission = document.getElementById('telosMission');
+                    const monthly = document.getElementById('telosMonthlyFocus');
+                    const constraints = document.getElementById('telosConstraints');
+                    const priorities = document.getElementById('telosPriorities');
+                    const tone = document.getElementById('telosTone');
+                    if (mission) mission.value = data.mission || '';
+                    if (monthly) monthly.value = data.monthly_focus || '';
+                    if (constraints) constraints.value = data.constraints || '';
+                    if (priorities) priorities.value = data.priorities || '';
+                    if (tone) tone.value = data.tone || '';
+                }
+            } catch (e) {
+                console.warn('[Telos] Failed to load memory:', e.message);
+            }
+        }
+
+        async function saveTelosMemory() {
+            const sb = getTelosSupabase();
+            const userId = getTelosUserId();
+            if (!sb || !userId) return;
+            const payload = {
+                user_id: userId,
+                mission: (document.getElementById('telosMission')?.value || '').trim(),
+                monthly_focus: (document.getElementById('telosMonthlyFocus')?.value || '').trim(),
+                constraints: (document.getElementById('telosConstraints')?.value || '').trim(),
+                priorities: (document.getElementById('telosPriorities')?.value || '').trim(),
+                tone: (document.getElementById('telosTone')?.value || '').trim(),
+                updated_at: new Date().toISOString()
+            };
+            try {
+                const { error } = await sb.from('telos_memory').upsert(payload, { onConflict: 'user_id' });
+                if (error) throw error;
+                alert('Telos memory saved.');
+            } catch (e) {
+                console.error('[Telos] Save memory failed:', e);
+                alert('Failed to save memory.');
+            }
+        }
+
+        async function getTelosFeedbackSummary() {
+            const sb = getTelosSupabase();
+            const userId = getTelosUserId();
+            if (!sb || !userId) return '';
+            try {
+                const { data, error } = await sb
+                    .from('telos_feedback')
+                    .select('rating,reason,created_at')
+                    .eq('user_id', userId)
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+                if (error) throw error;
+                if (!data || data.length === 0) return '';
+                const helpful = data.filter(d => d.rating === 'helpful').slice(0, 5);
+                const notHelpful = data.filter(d => d.rating === 'not_helpful').slice(0, 5);
+                const helpfulText = helpful.map(d => d.reason || 'Helpful').join('; ');
+                const notHelpfulText = notHelpful.map(d => d.reason || 'Not helpful').join('; ');
+                return `Helpful: ${helpfulText || 'None'} | Not helpful: ${notHelpfulText || 'None'}`;
+            } catch (e) {
+                console.warn('[Telos] Feedback summary failed:', e.message);
+                return '';
+            }
+        }
+
+        function renderTelosBrief(brief) {
+            const output = document.getElementById('telosBriefOutput');
+            if (!output) return;
+            if (!brief) {
+                output.innerHTML = '<div class="telos-brief-placeholder">Generate a brief to see priorities and next action.</div>';
+                return;
+            }
+            const priorities = Array.isArray(brief.top_priorities) ? brief.top_priorities : [];
+            const risks = Array.isArray(brief.risks_blocks) ? brief.risks_blocks : [];
+            output.innerHTML = `
+                <div><strong>Top priorities</strong></div>
+                <ol>${priorities.map(p => `<li>${escapeHtml(p)}</li>`).join('')}</ol>
+                <div style="margin-top:8px;"><strong>Next action</strong></div>
+                <div>${escapeHtml(brief.next_action || '')}</div>
+                <div style="margin-top:8px;"><strong>Risks / blocks</strong></div>
+                <ul>${risks.map(r => `<li>${escapeHtml(r)}</li>`).join('')}</ul>
+                <div style="margin-top:8px;"><strong>Clarifying question</strong></div>
+                <div>${escapeHtml(brief.clarifying_question || '')}</div>
+            `;
+        }
+
+        async function generateTelosBrief() {
+            const output = document.getElementById('telosBriefOutput');
+            const feedbackEl = document.getElementById('telosBriefFeedback');
+            if (output) output.innerHTML = '<span class="jh-spinner"></span> Generating brief...';
+            if (feedbackEl) feedbackEl.style.display = 'none';
+
+            const memory = {
+                mission: (document.getElementById('telosMission')?.value || '').trim(),
+                monthly_focus: (document.getElementById('telosMonthlyFocus')?.value || '').trim(),
+                constraints: (document.getElementById('telosConstraints')?.value || '').trim(),
+                priorities: (document.getElementById('telosPriorities')?.value || '').trim(),
+                tone: (document.getElementById('telosTone')?.value || '').trim()
+            };
+            const note = (document.getElementById('telosBriefNote')?.value || '').trim();
+            const feedbackSummary = await getTelosFeedbackSummary();
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+            try {
+                const resp = await fetch('/api/telos-brief', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ memory, feedbackSummary, note, timezone })
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error || 'Brief failed');
+                telosBriefLastOutput = data.brief || null;
+                renderTelosBrief(telosBriefLastOutput);
+                if (feedbackEl) feedbackEl.style.display = 'flex';
+
+                const sb = getTelosSupabase();
+                const userId = getTelosUserId();
+                if (sb && userId) {
+                    const { data: insertData, error } = await sb
+                        .from('telos_briefs')
+                        .insert({
+                            user_id: userId,
+                            input_context: { memory, note, feedbackSummary, timezone },
+                            output: data.brief || { text: data.text || '' }
+                        })
+                        .select('id')
+                        .single();
+                    if (!error && insertData?.id) {
+                        telosBriefLastId = insertData.id;
+                    }
+                }
+            } catch (e) {
+                console.error('[Telos] Brief error:', e);
+                if (output) output.textContent = 'Failed to generate brief. Try again.';
+            }
+        }
+
+        async function submitTelosFeedback(rating) {
+            const sb = getTelosSupabase();
+            const userId = getTelosUserId();
+            if (!sb || !userId) return;
+            const reason = (document.getElementById('telosFeedbackReason')?.value || '').trim();
+            try {
+                const { error } = await sb.from('telos_feedback').insert({
+                    user_id: userId,
+                    brief_id: telosBriefLastId,
+                    suggestion_id: 'daily_brief',
+                    rating,
+                    reason
+                });
+                if (error) throw error;
+                alert('Feedback saved. Telos will adapt.');
+            } catch (e) {
+                console.error('[Telos] Feedback save failed:', e);
+                alert('Failed to save feedback.');
+            }
+        }
 
         // Toggle Core Values in Telos doc sidebar
         function toggleTelosValues(toggleEl) {
@@ -24619,6 +25003,7 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
             });
 
             renderTelosMessages();
+            loadTelosMemory();
         }
 
         function renderTelosMessages() {
