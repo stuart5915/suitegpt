@@ -20935,13 +20935,13 @@
                                                 <div class="telos-brief-card">
                                                     <div class="telos-brief-card-title">Memory (long-term)</div>
                                                     <label class="telos-brief-label">Mission</label>
-                                                    <textarea class="telos-brief-textarea" id="telosMission" rows="2" placeholder="e.g. Ship the SuiteGPT app store and grow treasury"></textarea>
+                                                    <textarea class="telos-brief-textarea" id="telosMission" rows="2" placeholder="SuiteGPT is a central conduit for autonomous creation — a living system where AI agents build, refine, and distribute real apps and businesses, and the ecosystem returns value to all participants through a sustainable, DeFi‑powered UBI. Under Jesus as Lord, we steward this system with integrity and permanence."></textarea>
                                                     <label class="telos-brief-label">Monthly focus</label>
-                                                    <textarea class="telos-brief-textarea" id="telosMonthlyFocus" rows="2" placeholder="e.g. Finish app store polish, improve conversion"></textarea>
+                                                    <textarea class="telos-brief-textarea" id="telosMonthlyFocus" rows="2" placeholder="Unify vision + simplify UI/UX around the Telos mission."></textarea>
                                                     <label class="telos-brief-label">Constraints</label>
-                                                    <textarea class="telos-brief-textarea" id="telosConstraints" rows="2" placeholder="e.g. 4 hrs/day, no scope creep, ship first"></textarea>
+                                                    <textarea class="telos-brief-textarea" id="telosConstraints" rows="2" placeholder="10 hours/day • no scope creep • ship weekly • premium UX only • unify systems before adding new ones"></textarea>
                                                     <label class="telos-brief-label">Current priorities</label>
-                                                    <textarea class="telos-brief-textarea" id="telosPriorities" rows="3" placeholder="e.g. 1) Fix onboarding flow 2) Improve app store UX 3) Launch PR"></textarea>
+                                                    <textarea class="telos-brief-textarea" id="telosPriorities" rows="3" placeholder="Execute now. Do the next most aligned action."></textarea>
                                                     <label class="telos-brief-label">Tone</label>
                                                     <input class="telos-brief-input" id="telosTone" placeholder="direct, founder-CEO, action-first">
                                                     <div class="telos-brief-actions">
@@ -25000,17 +25000,30 @@ When asked about my direction, values, or purpose, I speak from my own perspecti
                     .limit(1)
                     .single();
                 if (error && error.code !== 'PGRST116') throw error;
+                const missionDefault = 'SuiteGPT is a central conduit for autonomous creation — a living system where AI agents build, refine, and distribute real apps and businesses, and the ecosystem returns value to all participants through a sustainable, DeFi-powered UBI. Under Jesus as Lord, we steward this system with integrity and permanence.';
+                const monthlyDefault = 'Unify vision + simplify UI/UX around the Telos mission.';
+                const constraintsDefault = '10 hours/day • no scope creep • ship weekly • premium UX only • unify systems before adding new ones';
+                const prioritiesDefault = 'Execute now. Do the next most aligned action.';
+                const toneDefault = 'direct, founder-CEO, action-first';
+
+                const mission = document.getElementById('telosMission');
+                const monthly = document.getElementById('telosMonthlyFocus');
+                const constraints = document.getElementById('telosConstraints');
+                const priorities = document.getElementById('telosPriorities');
+                const tone = document.getElementById('telosTone');
+
                 if (data) {
-                    const mission = document.getElementById('telosMission');
-                    const monthly = document.getElementById('telosMonthlyFocus');
-                    const constraints = document.getElementById('telosConstraints');
-                    const priorities = document.getElementById('telosPriorities');
-                    const tone = document.getElementById('telosTone');
-                    if (mission) mission.value = data.mission || '';
-                    if (monthly) monthly.value = data.monthly_focus || '';
-                    if (constraints) constraints.value = data.constraints || '';
-                    if (priorities) priorities.value = data.priorities || '';
-                    if (tone) tone.value = data.tone || '';
+                    if (mission) mission.value = data.mission || missionDefault;
+                    if (monthly) monthly.value = data.monthly_focus || monthlyDefault;
+                    if (constraints) constraints.value = data.constraints || constraintsDefault;
+                    if (priorities) priorities.value = data.priorities || prioritiesDefault;
+                    if (tone) tone.value = data.tone || toneDefault;
+                } else {
+                    if (mission) mission.value = missionDefault;
+                    if (monthly) monthly.value = monthlyDefault;
+                    if (constraints) constraints.value = constraintsDefault;
+                    if (priorities) priorities.value = prioritiesDefault;
+                    if (tone) tone.value = toneDefault;
                 }
             } catch (e) {
                 console.warn('[Telos] Failed to load memory:', e.message);
