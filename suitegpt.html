@@ -25576,18 +25576,28 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
 
         async function callTelosAI(userMessage) {
             const model = getTelosModel();
-            const response = await fetch(getTelosApiBase() + '/api/gemini', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    prompt: userMessage,
-                    systemInstruction: TELOS_PROMPT,
-                    model,
-                    generationConfig: { temperature: 0.9, maxOutputTokens: 1024 }
-                })
-            });
+            const callModel = async (modelName) => {
+                const response = await fetch(getTelosApiBase() + '/api/gemini', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: userMessage,
+                        systemInstruction: TELOS_PROMPT,
+                        model: modelName,
+                        generationConfig: { temperature: 0.9, maxOutputTokens: 1024 }
+                    })
+                });
+                const data = await response.json();
+                return { response, data };
+            };
 
-            const data = await response.json();
+            let { response, data } = await callModel(model);
+            if (!response.ok) {
+                const message = data.error || '';
+                if (message.includes('not found') || message.includes('not supported')) {
+                    ({ response, data } = await callModel('gemini-3-flash-preview'));
+                }
+            }
             return data.text || "I'm having trouble finding the words right now.";
         }
 

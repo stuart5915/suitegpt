@@ -55,18 +55,32 @@ Return the JSON now.`;
             generationConfig: { temperature: 0.4, maxOutputTokens: 1024 }
         };
 
-        const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestBody)
-            }
-        );
+        const fallbackModel = 'gemini-3-flash-preview';
+        const callModel = async (modelName) => {
+            const resp = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                }
+            );
+            const json = await resp.json();
+            return { resp, json };
+        };
 
-        const data = await response.json();
-        if (!response.ok) {
-            return res.status(response.status).json({ error: data.error?.message || 'Gemini API error' });
+        let { resp, json: data } = await callModel(model);
+        if (!resp.ok) {
+            const message = data.error?.message || 'Gemini API error';
+            if (message.includes('not found') || message.includes('not supported')) {
+                ({ resp, json: data } = await callModel(fallbackModel));
+            } else {
+                return res.status(resp.status).json({ error: message });
+            }
+        }
+
+        if (!resp.ok) {
+            return res.status(resp.status).json({ error: data.error?.message || 'Gemini API error' });
         }
 
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
