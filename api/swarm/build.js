@@ -168,20 +168,32 @@ Return the complete HTML starting with <!DOCTYPE html>`;
         }
 
         // Register in suite_operators so it shows in Community Apps
-        const { error: opErr } = await supabase
+        // Try with user_id null first, then without it
+        let opErr = null;
+        const opData = {
+            user_app_id: app.id,
+            name: proposal.title,
+            description: proposal.content,
+            slug: slug,
+            icon_bg: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+            status: 'active'
+        };
+
+        // Try inserting — if user_id is required, add agent's id
+        const { error: opErr1 } = await supabase
             .from('suite_operators')
-            .insert({
-                user_app_id: app.id,
-                name: proposal.title,
-                description: proposal.content,
-                slug: slug,
-                icon_bg: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                status: 'active'
-            });
+            .insert(opData);
+
+        if (opErr1) {
+            // Retry with user_id set to agent's factory_users id
+            const { error: opErr2 } = await supabase
+                .from('suite_operators')
+                .insert({ ...opData, user_id: agent.id });
+            opErr = opErr2;
+        }
 
         if (opErr) {
             console.error('Suite operator insert error:', opErr);
-            // App was still saved, just won't show in community grid
         }
 
         // Update agent - accumulate tokens, set status

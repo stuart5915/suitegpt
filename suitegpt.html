@@ -23077,6 +23077,10 @@ Technical: JavaScript, HTML/CSS, React/React Native, Supabase (Postgres, Auth, S
                     <div class="agent-log-empty">No activity yet. Wake the agent to see it in action.</div>
                 </div>
             </div>
+            <div class="agent-detail-log" id="agentDetailAppsSection" style="display:none; border-top:1px solid var(--border-subtle);">
+                <div class="agent-detail-log-title">Built Apps</div>
+                <div id="agentDetailAppsContent"></div>
+            </div>
         </div>
     </div>
 
@@ -25248,6 +25252,7 @@ Technical: JavaScript, HTML/CSS, React/React Native, Supabase (Postgres, Auth, S
 
                 // Load activity log
                 loadAgentLog(agent.id);
+                loadAgentApps(agent.id);
 
             } catch (err) {
                 console.error('Failed to load agent detail:', err);
@@ -25401,6 +25406,74 @@ Technical: JavaScript, HTML/CSS, React/React Native, Supabase (Postgres, Auth, S
             }
         }
 
+        async function loadAgentApps(agentId) {
+            const section = document.getElementById('agentDetailAppsSection');
+            const container = document.getElementById('agentDetailAppsContent');
+            try {
+                const sb = window.supabaseClient || supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                const { data: apps } = await sb
+                    .from('agent_apps')
+                    .select('id, name, slug, description, code, created_at')
+                    .eq('agent_id', agentId)
+                    .eq('is_public', true)
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+
+                if (!apps || apps.length === 0) {
+                    section.style.display = 'none';
+                    return;
+                }
+
+                section.style.display = 'block';
+                container.innerHTML = apps.map(app => `
+                    <div class="agent-log-item" style="cursor:pointer;" onclick="launchAgentApp('${app.id}')">
+                        <div class="agent-log-dot completion"></div>
+                        <div class="agent-log-text">
+                            <strong>${app.name}</strong>
+                            ${app.description ? `<div style="font-size:0.78rem;color:var(--text-secondary);margin-top:2px;">${app.description.substring(0, 120)}${app.description.length > 120 ? '...' : ''}</div>` : ''}
+                            <span style="font-size:0.7rem;color:var(--text-tertiary);">${Math.round((app.code || '').length / 1024)}KB · ${timeAgo(new Date(app.created_at))}</span>
+                        </div>
+                        <div style="flex-shrink:0;">
+                            <button class="agent-log-build" onclick="event.stopPropagation(); launchAgentApp('${app.id}')" style="font-size:0.7rem;padding:4px 10px;">Open</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error('Failed to load agent apps:', err);
+            }
+        }
+
+        async function launchAgentApp(appId) {
+            try {
+                const sb = window.supabaseClient || supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                const { data: app } = await sb
+                    .from('agent_apps')
+                    .select('id, name, code')
+                    .eq('id', appId)
+                    .single();
+
+                if (!app || !app.code) {
+                    alert('App not found');
+                    return;
+                }
+
+                const blob = new Blob([app.code], { type: 'text/html' });
+                const blobUrl = URL.createObjectURL(blob);
+
+                // Close the detail overlay
+                closeAgentDetail();
+
+                if (window.innerWidth < 768) {
+                    previewApp(null, blobUrl, app.name);
+                } else {
+                    openMobileAppView(null, blobUrl, app.name);
+                }
+            } catch (err) {
+                console.error('Failed to launch agent app:', err);
+                alert('Failed to launch app');
+            }
+        }
+
         async function buildAgentApp(proposalId, agentId) {
             const actionsEl = document.getElementById('buildActions_' + proposalId);
             if (!actionsEl) return;
@@ -25438,7 +25511,7 @@ Technical: JavaScript, HTML/CSS, React/React Native, Supabase (Postgres, Auth, S
                 }
 
                 // Refresh the log
-                setTimeout(() => loadAgentLog(agentId), 1000);
+                setTimeout(() => { loadAgentLog(agentId); loadAgentApps(agentId); }, 1000);
 
             } catch (e) {
                 console.error('Build agent app error:', e);
