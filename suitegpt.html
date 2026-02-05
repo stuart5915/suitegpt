@@ -25322,22 +25322,18 @@ Technical: JavaScript, HTML/CSS, React/React Native, Supabase (Postgres, Auth, S
             actionsEl.innerHTML = '<span style="font-size:0.75rem;color:var(--text-tertiary);">Processing...</span>';
 
             try {
-                const sb = window.supabaseClient || supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                const resp = await fetch('/api/swarm/review', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ proposal_id: proposalId, decision })
+                });
+                const data = await resp.json();
 
-                const updateData = { status: decision, feedback_at: new Date().toISOString() };
-                if (decision === 'passed') updateData.resolved_at = new Date().toISOString();
-
-                const { error: propError } = await sb
-                    .from('factory_proposals')
-                    .update(updateData)
-                    .eq('id', proposalId);
-                if (propError) throw propError;
+                if (!resp.ok || !data.success) {
+                    throw new Error(data.error || 'Failed to update');
+                }
 
                 const newStatus = decision === 'passed' ? 'working' : 'idle';
-                await sb.from('factory_users').update({
-                    agent_status: newStatus,
-                    last_active_at: new Date().toISOString()
-                }).eq('id', agentId);
 
                 if (decision === 'passed') {
                     actionsEl.innerHTML = '<span style="font-size:0.75rem;color:#22c55e;">✓ Approved — agent working</span>';
@@ -25364,7 +25360,7 @@ Technical: JavaScript, HTML/CSS, React/React Native, Supabase (Postgres, Auth, S
 
             } catch (e) {
                 console.error('Resolve from detail error:', e);
-                actionsEl.innerHTML = '<span style="font-size:0.75rem;color:#f87171;">Failed — try again</span>';
+                actionsEl.innerHTML = '<span style="font-size:0.75rem;color:#f87171;">Failed: ' + (e.message || 'try again') + '</span>';
             }
         }
 
