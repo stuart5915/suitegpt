@@ -98,6 +98,19 @@
 
     // Bottom nav removed - keeping simple top nav only
 
+    // Close mobile menu when a link or connect button is clicked
+    const mobileMenu = document.getElementById('mobileMenu');
+    if (mobileMenu) {
+        mobileMenu.querySelectorAll('a, .mobile-connect-btn').forEach(function(el) {
+            el.addEventListener('click', function() {
+                const btn = document.querySelector('.mobile-menu-btn');
+                if (btn && btn.classList.contains('active')) {
+                    toggleMobileMenu();
+                }
+            });
+        });
+    }
+
     // Inject connect modal
     const modalHtml = `
         <div class="connect-modal-overlay" id="navConnectModalOverlay" onclick="if(event.target === this) closeNavConnectModal()">
@@ -471,8 +484,10 @@
 function toggleMobileMenu() {
     const menuBtn = document.querySelector('.mobile-menu-btn');
     const mobileMenu = document.getElementById('mobileMenu');
+    if (!menuBtn || !mobileMenu) return;
     menuBtn.classList.toggle('active');
     mobileMenu.classList.toggle('active');
+    document.body.classList.toggle('nav-mobile-menu-open', menuBtn.classList.contains('active'));
 }
 
 // Modal functions

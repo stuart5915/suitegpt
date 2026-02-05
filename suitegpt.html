@@ -2344,26 +2344,36 @@
             display: block;
         }
 
+        body.mobile-sidebar-open {
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+        }
+
         .mobile-header {
             display: none;
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            height: 56px;
+            min-height: 56px;
+            padding: env(safe-area-inset-top) max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left));
+            padding-bottom: 0;
+            box-sizing: border-box;
             background: var(--bg-sidebar);
             backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border-subtle);
             z-index: 150;
-            padding: 0 16px;
             align-items: center;
             justify-content: flex-start;
             gap: 12px;
         }
 
         .mobile-menu-btn {
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
+            min-width: 44px;
+            min-height: 44px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -2372,8 +2382,14 @@
             color: var(--text-primary);
             font-size: 1.4rem;
             cursor: pointer;
-            border-radius: 8px;
+            border-radius: 10px;
             transition: background 0.2s ease;
+            padding: 0;
+        }
+
+        .mobile-menu-btn svg {
+            width: 24px;
+            height: 24px;
         }
 
         .mobile-menu-btn:hover {
@@ -17605,10 +17621,13 @@
 
             .sidebar {
                 transform: translateX(-100%);
+                z-index: 100;
             }
 
             .sidebar.open {
                 transform: translateX(0);
+                z-index: 160;
+                box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
             }
 
             .sidebar-overlay.active {
@@ -17617,7 +17636,7 @@
 
             .main-content {
                 margin-left: 0;
-                padding-top: 56px;
+                padding-top: calc(56px + env(safe-area-inset-top));
                 max-width: 100vw;
                 width: 100%;
             }
@@ -18245,7 +18264,11 @@
 
         <!-- Mobile Header -->
         <header class="mobile-header">
-            <button class="mobile-menu-btn" id="mobileMenuBtn"></button>
+            <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open menu">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="24" height="24">
+                    <path d="M3 12h18M3 6h18M3 18h18"/>
+                </svg>
+            </button>
             <span class="mobile-title">SuiteGPT</span>
         </header>
 
@@ -31368,18 +31391,26 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
 
         // Sidebar toggle functions
         function closeSidebar() {
-            document.getElementById('sidebar').classList.add('collapsed');
+            const sidebarEl = document.getElementById('sidebar');
+            const overlayEl = document.getElementById('sidebarOverlay');
+            sidebarEl.classList.add('collapsed');
+            if (overlayEl) overlayEl.classList.remove('active');
+            sidebarEl.classList.remove('open');
             document.querySelector('.main-content').classList.add('sidebar-collapsed');
-            document.querySelector('.bg-gradient').classList.add('sidebar-collapsed');
-            document.getElementById('sidebarOpenBtn').classList.add('visible');
+            const bg = document.querySelector('.bg-gradient');
+            if (bg) bg.classList.add('sidebar-collapsed');
+            const openBtn = document.getElementById('sidebarOpenBtn');
+            if (openBtn) openBtn.classList.add('visible');
             localStorage.setItem('suitegpt_sidebar_collapsed', 'true');
         }
 
         function openSidebar() {
             document.getElementById('sidebar').classList.remove('collapsed');
             document.querySelector('.main-content').classList.remove('sidebar-collapsed');
-            document.querySelector('.bg-gradient').classList.remove('sidebar-collapsed');
-            document.getElementById('sidebarOpenBtn').classList.remove('visible');
+            const bg = document.querySelector('.bg-gradient');
+            if (bg) bg.classList.remove('sidebar-collapsed');
+            const openBtn = document.getElementById('sidebarOpenBtn');
+            if (openBtn) openBtn.classList.remove('visible');
             localStorage.setItem('suitegpt_sidebar_collapsed', 'false');
         }
 
@@ -38148,11 +38179,18 @@ Rules:
             return null;
         }
 
+        function setMobileSidebarBodyLock(open) {
+            if (window.matchMedia('(max-width: 768px)').matches) {
+                document.body.classList.toggle('mobile-sidebar-open', open);
+            }
+        }
+
         // Mobile sidebar toggle
         if (mobileMenuBtn) {
             mobileMenuBtn.addEventListener('click', () => {
                 sidebar.classList.toggle('open');
                 sidebarOverlay.classList.toggle('active');
+                setMobileSidebarBodyLock(sidebar.classList.contains('open'));
             });
         }
 
@@ -38160,6 +38198,23 @@ Rules:
             sidebarOverlay.addEventListener('click', () => {
                 sidebar.classList.remove('open');
                 sidebarOverlay.classList.remove('active');
+                setMobileSidebarBodyLock(false);
+            });
+        }
+
+        // On mobile, close sidebar drawer when user clicks a nav item (so drawer closes after selection)
+        function closeMobileSidebarDrawer() {
+            if (window.matchMedia('(max-width: 768px)').matches) {
+                sidebar.classList.remove('open');
+                if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+                setMobileSidebarBodyLock(false);
+            }
+        }
+        if (sidebar) {
+            sidebar.addEventListener('click', (e) => {
+                if (e.target.closest('.sidebar-item, .sidebar-app-tab, .sidebar-your-apps-btn, .chat-history-item, .sidebar-profile, .sidebar-footer-factory')) {
+                    closeMobileSidebarDrawer();
+                }
             });
         }
 
