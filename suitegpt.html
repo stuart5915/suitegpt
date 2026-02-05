@@ -25162,8 +25162,14 @@ When asked about my direction, values, or purpose, I speak from my own perspecti
                 });
                 const data = await resp.json();
                 if (!resp.ok) throw new Error(data.error || 'Brief failed');
+                const rawText = (data.text || '').trim();
+                if (!data.brief && !rawText) {
+                    if (output) output.textContent = data.error ? `Brief error: ${data.error}` : 'No brief returned. Try Daily (2.5 Flash).';
+                    console.warn('[Telos] Empty brief response:', data);
+                    return;
+                }
                 telosBriefLastOutput = data.brief || null;
-                renderTelosBrief(telosBriefLastOutput, data.text || '');
+                renderTelosBrief(telosBriefLastOutput, rawText);
                 if (feedbackEl) feedbackEl.style.display = 'flex';
 
                 const sb = getTelosSupabase();
