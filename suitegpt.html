@@ -7489,6 +7489,30 @@
         .agent-log-reject:hover {
             background: rgba(248, 113, 113, 0.25);
         }
+
+        .agent-log-build {
+            padding: 5px 14px;
+            border-radius: 6px;
+            border: none;
+            font-family: inherit;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+        }
+        .agent-log-build:hover {
+            opacity: 0.85;
+            transform: translateY(-1px);
+        }
+
+        .agent-log-item.approved {
+            background: rgba(34, 197, 94, 0.04);
+            border-radius: 8px;
+            padding: 12px 10px;
+            margin: 4px -10px;
+        }
         /* === END AGENTS VIEW === */
 
         .factory-view-content {
@@ -25300,11 +25324,13 @@ Technical: JavaScript, HTML/CSS, React/React Native, Supabase (Postgres, Auth, S
                 }
 
                 container.innerHTML = proposals.map(p => {
-                    const dotClass = p.status === 'passed' ? 'completion' : p.status === 'rejected' ? 'escalation' : p.status === 'submitted' ? 'proposal' : 'update';
-                    const statusLabel = p.status === 'passed' ? '✓ Approved' : p.status === 'rejected' ? '✗ Rejected' : p.status === 'submitted' ? '◎ Pending Review' : p.status;
+                    const dotClass = p.status === 'passed' ? 'completion' : p.status === 'completed' ? 'completion' : p.status === 'rejected' ? 'escalation' : p.status === 'submitted' ? 'proposal' : 'update';
+                    const statusLabel = p.status === 'passed' ? '✓ Approved' : p.status === 'completed' ? '✓ Built' : p.status === 'rejected' ? '✗ Rejected' : p.status === 'submitted' ? '◎ Pending Review' : p.status;
                     const isPending = p.status === 'submitted';
+                    const isApproved = p.status === 'passed';
+                    const canBuild = isApproved && ['app_idea', 'feature', 'improvement'].includes(p.category);
 
-                    return `<div class="agent-log-item${isPending ? ' pending' : ''}">
+                    return `<div class="agent-log-item${isPending ? ' pending' : ''}${isApproved ? ' approved' : ''}">
                         <div class="agent-log-dot ${dotClass}"></div>
                         <div class="agent-log-text">
                             <strong>${p.title}</strong>
@@ -25313,6 +25339,9 @@ Technical: JavaScript, HTML/CSS, React/React Native, Supabase (Postgres, Auth, S
                             ${isPending ? `<div class="agent-log-actions" id="logActions_${p.id}">
                                 <button class="agent-log-approve" onclick="resolveFromDetail('${p.id}', '${agentId}', 'passed')">Approve</button>
                                 <button class="agent-log-reject" onclick="resolveFromDetail('${p.id}', '${agentId}', 'rejected')">Reject</button>
+                            </div>` : ''}
+                            ${canBuild ? `<div class="agent-log-actions" id="buildActions_${p.id}">
+                                <button class="agent-log-build" onclick="buildAgentApp('${p.id}', '${agentId}')">Build App</button>
                             </div>` : ''}
                         </div>
                         <div class="agent-log-time">${timeAgo(new Date(p.created_at))}</div>
@@ -25369,6 +25398,56 @@ Technical: JavaScript, HTML/CSS, React/React Native, Supabase (Postgres, Auth, S
             } catch (e) {
                 console.error('Resolve from detail error:', e);
                 actionsEl.innerHTML = '<span style="font-size:0.75rem;color:#f87171;">Failed: ' + (e.message || 'try again') + '</span>';
+            }
+        }
+
+        async function buildAgentApp(proposalId, agentId) {
+            const actionsEl = document.getElementById('buildActions_' + proposalId);
+            if (!actionsEl) return;
+            actionsEl.innerHTML = '<span style="font-size:0.75rem;color:#818cf8;">Building app... this may take 15-30 seconds</span>';
+
+            // Update status badge to show building
+            const statusEl = document.getElementById('agentDetailStatus');
+            if (statusEl) {
+                statusEl.textContent = 'building';
+                statusEl.style.background = 'rgba(99,102,241,0.15)';
+                statusEl.style.color = '#818cf8';
+            }
+
+            try {
+                const resp = await fetch('/api/swarm/build', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ proposal_id: proposalId })
+                });
+                const data = await resp.json();
+
+                if (!resp.ok || !data.success) {
+                    throw new Error(data.error || 'Build failed');
+                }
+
+                actionsEl.innerHTML = `<span style="font-size:0.75rem;color:#22c55e;">✓ App built! (${Math.round(data.app.code_length / 1024)}KB)</span>
+                    <button class="agent-log-approve" onclick="openAppsPanel(); switchAppsSource('community');" style="margin-top:6px;">View in Apps</button>`;
+                showToast(data.message);
+
+                // Update status badge
+                if (statusEl) {
+                    statusEl.textContent = 'idle';
+                    statusEl.style.background = 'rgba(148,163,184,0.15)';
+                    statusEl.style.color = '#94a3b8';
+                }
+
+                // Refresh the log
+                setTimeout(() => loadAgentLog(agentId), 1000);
+
+            } catch (e) {
+                console.error('Build agent app error:', e);
+                actionsEl.innerHTML = '<span style="font-size:0.75rem;color:#f87171;">Build failed: ' + (e.message || 'try again') + '</span>';
+                if (statusEl) {
+                    statusEl.textContent = 'idle';
+                    statusEl.style.background = 'rgba(148,163,184,0.15)';
+                    statusEl.style.color = '#94a3b8';
+                }
             }
         }
 
@@ -34565,27 +34644,41 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
         }
 
         async function launchCommunityApp(appId) {
-            if (!supabaseClient) return;
+            const sb = window.supabaseClient || supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
             try {
-                // Fetch the app code
-                const { data: app, error } = await supabaseClient
+                // Try user_apps first, then agent_apps
+                let app = null;
+                const { data: userApp } = await sb
                     .from('user_apps')
                     .select('*')
                     .eq('id', appId)
                     .single();
 
-                if (error) throw error;
+                if (userApp) {
+                    app = userApp;
+                    // Increment uses count
+                    sb.from('user_apps')
+                        .update({ uses: (app.uses || 0) + 1 })
+                        .eq('id', appId)
+                        .then(() => {});
+                } else {
+                    // Check agent_apps (built by AI agents)
+                    const { data: agentApp } = await sb
+                        .from('agent_apps')
+                        .select('*')
+                        .eq('id', appId)
+                        .single();
+                    if (agentApp) app = agentApp;
+                }
 
-                // Increment uses count
-                supabaseClient
-                    .from('user_apps')
-                    .update({ uses: (app.uses || 0) + 1 })
-                    .eq('id', appId)
-                    .then(() => {});
+                if (!app || !app.code) {
+                    alert('App not found');
+                    return;
+                }
 
                 // Inject Credit SDK and open the app in a blob URL
-                const appCode = injectCreditSDK(app.code, appId);
+                const appCode = typeof injectCreditSDK === 'function' ? injectCreditSDK(app.code, appId) : app.code;
                 const blob = new Blob([appCode], { type: 'text/html' });
                 const blobUrl = URL.createObjectURL(blob);
 
