@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     try {
-        const { name, owner_wallet, objective } = req.body;
+        const { name, owner_wallet, objective, agent_type, agent_role } = req.body;
 
         if (!name || name.trim().length < 2) {
             return res.status(400).json({ error: 'Agent name is required (min 2 characters)' });
@@ -69,11 +69,16 @@ export default async function handler(req, res) {
 
         const agentId = data;
 
-        // Set owner_wallet if provided
-        if (owner_wallet) {
+        // Set optional fields
+        const updateFields = {};
+        if (owner_wallet) updateFields.owner_wallet = owner_wallet.trim().toLowerCase();
+        if (agent_type && ['cli', 'openclaw', 'hosted'].includes(agent_type)) updateFields.agent_type = agent_type;
+        if (agent_role) updateFields.agent_role = agent_role;
+
+        if (Object.keys(updateFields).length > 0) {
             await supabase
                 .from('factory_users')
-                .update({ owner_wallet: owner_wallet.trim().toLowerCase() })
+                .update(updateFields)
                 .eq('id', agentId);
         }
 
