@@ -10046,6 +10046,15 @@
             .telos-brief-grid {
                 grid-template-columns: 1fr;
             }
+
+            .telos-main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .telos-chat-panel,
+            .telos-side-panel {
+                min-height: 320px;
+            }
         }
 
         .telos-header {
@@ -10195,6 +10204,147 @@
         .telos-brief-feedback-actions {
             display: flex;
             gap: 8px;
+        }
+
+        .telos-main-grid {
+            display: grid;
+            grid-template-columns: minmax(220px, 1fr) minmax(320px, 2fr) minmax(220px, 1fr);
+            gap: 12px;
+            padding: 16px 20px 20px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .telos-chat-panel {
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            overflow: hidden;
+            min-height: 420px;
+        }
+
+        .telos-side-panel {
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            overflow: hidden;
+            min-height: 420px;
+        }
+
+        .telos-side-header {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .telos-side-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        .telos-side-subtitle {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            margin-top: 2px;
+        }
+
+        .telos-side-body {
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow: auto;
+        }
+
+        .telos-queue-input {
+            width: 100%;
+            min-height: 120px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 8px 10px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            resize: vertical;
+        }
+
+        .telos-queue-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .telos-checkbox {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+        }
+
+        .telos-queue-list,
+        .telos-log-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .telos-queue-item,
+        .telos-log-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+        }
+
+        .telos-queue-item-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+
+        .telos-queue-item-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .telos-log-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .telos-log-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .telos-log-item {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .telos-log-meta {
+            font-size: 0.7rem;
+            color: var(--text-tertiary);
+        }
+
+        .telos-log-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
         }
 
         .telos-avatar {
@@ -20818,25 +20968,68 @@
                                             </div>
                                         </div>
 
-                                        <div class="telos-messages" id="telosMessages">
-                                            <!-- Messages populated by JS -->
-                                        </div>
+                                        <div class="telos-main-grid">
+                                            <div class="telos-side-panel">
+                                                <div class="telos-side-header">
+                                                    <div>
+                                                        <div class="telos-side-title">Backlog Queue</div>
+                                                        <div class="telos-side-subtitle">Paste ideas, score alignment, auto‑remove.</div>
+                                                    </div>
+                                                </div>
+                                                <div class="telos-side-body">
+                                                    <textarea class="telos-queue-input" id="telosQueueInput" rows="6" placeholder="Paste ideas or tasks (one per line)"></textarea>
+                                                    <div class="telos-queue-actions">
+                                                        <button class="telos-brief-btn" onclick="addTelosQueueItems()">Load into queue</button>
+                                                        <label class="telos-checkbox">
+                                                            <input type="checkbox" id="telosAutoRemoveQueue" checked>
+                                                            <span>Auto-remove after score</span>
+                                                        </label>
+                                                    </div>
+                                                    <div class="telos-queue-list" id="telosQueueList"></div>
+                                                </div>
+                                            </div>
 
-                                        <div class="telos-input-area">
-                                            <div class="telos-input-wrapper">
-                                                <textarea
-                                                    class="telos-input"
-                                                    id="telosInput"
-                                                    placeholder="Ask me anything about my purpose, values, or direction..."
-                                                    rows="1"
-                                                    onkeydown="handleTelosKeydown(event)"
-                                                    oninput="autoResizeTelosInput(this)"
-                                                ></textarea>
-                                                <button class="telos-send-btn" onclick="sendTelosMessage()">
-                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
-                                                    </svg>
-                                                </button>
+                                            <div class="telos-chat-panel">
+                                                <div class="telos-messages" id="telosMessages">
+                                                    <!-- Messages populated by JS -->
+                                                </div>
+
+                                                <div class="telos-input-area">
+                                                    <div class="telos-input-wrapper">
+                                                        <textarea
+                                                            class="telos-input"
+                                                            id="telosInput"
+                                                            placeholder="Ask me anything about my purpose, values, or direction..."
+                                                            rows="1"
+                                                            onkeydown="handleTelosKeydown(event)"
+                                                            oninput="autoResizeTelosInput(this)"
+                                                        ></textarea>
+                                                        <button class="telos-send-btn" onclick="sendTelosMessage()">
+                                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="telos-side-panel">
+                                                <div class="telos-side-header">
+                                                    <div>
+                                                        <div class="telos-side-title">Telos Log</div>
+                                                        <div class="telos-side-subtitle">Tasks + chat history</div>
+                                                    </div>
+                                                </div>
+                                                <div class="telos-side-body">
+                                                    <div class="telos-log-section">
+                                                        <div class="telos-log-title">Tasks</div>
+                                                        <div class="telos-log-list" id="telosTaskLog"></div>
+                                                    </div>
+                                                    <div class="telos-log-section">
+                                                        <div class="telos-log-title">Chat</div>
+                                                        <div class="telos-log-list" id="telosChatLog"></div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -24964,6 +25157,248 @@ When asked about my direction, values, or purpose, I speak from my own perspecti
             }
         }
 
+        async function addTelosQueueItems() {
+            const sb = getTelosSupabase();
+            const userId = getTelosUserId();
+            const input = document.getElementById('telosQueueInput');
+            if (!sb || !userId || !input) return;
+            const lines = input.value.split('\n').map(l => l.trim()).filter(Boolean);
+            if (lines.length === 0) return;
+            const rows = lines.map(content => ({ user_id: userId, content, status: 'queued' }));
+            try {
+                const { error } = await sb.from('telos_queue').insert(rows);
+                if (error) throw error;
+                input.value = '';
+                await loadTelosQueue();
+            } catch (e) {
+                console.error('[Telos] Queue insert failed:', e);
+            }
+        }
+
+        async function loadTelosQueue() {
+            const sb = getTelosSupabase();
+            const userId = getTelosUserId();
+            if (!sb || !userId) return;
+            try {
+                const { data, error } = await sb
+                    .from('telos_queue')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .eq('status', 'queued')
+                    .order('created_at', { ascending: true })
+                    .limit(50);
+                if (error) throw error;
+                renderTelosQueue(data || []);
+            } catch (e) {
+                console.error('[Telos] Load queue failed:', e);
+            }
+        }
+
+        function renderTelosQueue(items) {
+            const list = document.getElementById('telosQueueList');
+            if (!list) return;
+            if (!items || items.length === 0) {
+                list.innerHTML = '<div class="telos-queue-item">No queued items yet.</div>';
+                return;
+            }
+            list.innerHTML = items.map(item => `
+                <div class="telos-queue-item">
+                    <div class="telos-queue-item-title">${escapeHtml(item.content)}</div>
+                    <div class="telos-queue-item-actions">
+                        <button class="telos-brief-btn ghost" onclick="scoreTelosQueueItem('${item.id}')">Score</button>
+                        <button class="telos-brief-btn ghost" onclick="deferTelosQueueItem('${item.id}')">Defer</button>
+                        <button class="telos-brief-btn ghost" onclick="removeTelosQueueItem('${item.id}')">Remove</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function scoreTelosQueueItem(itemId) {
+            const sb = getTelosSupabase();
+            const userId = getTelosUserId();
+            if (!sb || !userId) return;
+            const { data, error } = await sb
+                .from('telos_queue')
+                .select('*')
+                .eq('id', itemId)
+                .single();
+            if (error || !data) return;
+
+            const memory = {
+                mission: (document.getElementById('telosMission')?.value || '').trim(),
+                monthly_focus: (document.getElementById('telosMonthlyFocus')?.value || '').trim(),
+                constraints: (document.getElementById('telosConstraints')?.value || '').trim(),
+                priorities: (document.getElementById('telosPriorities')?.value || '').trim()
+            };
+
+            const triagePrompt = `You are Telos, the CEO voice of SuiteGPT. Score this idea on alignment and urgency.
+
+Return JSON only with keys:
+"alignment_score" (1-5),
+"urgency_score" (1-5),
+"verdict" ("aligns" | "needs_clarification" | "misaligned"),
+"reason" (one short sentence),
+"suggested_next_action" (one concrete action).
+
+MISSION: ${memory.mission}
+MONTHLY FOCUS: ${memory.monthly_focus}
+CONSTRAINTS: ${memory.constraints}
+CURRENT PRIORITIES: ${memory.priorities}
+
+IDEA:
+${data.content}
+`;
+
+            try {
+                const resp = await fetch('/api/gemini', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: triagePrompt,
+                        generationConfig: { temperature: 0.3, maxOutputTokens: 512 }
+                    })
+                });
+                const result = await resp.json();
+                const text = result.text || '';
+                let parsed = null;
+                try { parsed = JSON.parse(text); } catch (e) { parsed = null; }
+
+                const verdict = parsed?.verdict || 'needs_clarification';
+                const alignment = parsed?.alignment_score || 3;
+                const urgency = parsed?.urgency_score || 3;
+                const reason = parsed?.reason || 'No reason provided.';
+                const nextAction = parsed?.suggested_next_action || 'Clarify the objective and scope.';
+
+                telosMessages.push({
+                    role: 'assistant',
+                    content: `**Triage** — ${data.content}\nAlignment: ${alignment}/5 · Urgency: ${urgency}/5\nVerdict: ${verdict}\nReason: ${reason}\nNext action: ${nextAction}`,
+                    timestamp: Date.now()
+                });
+                renderTelosMessages();
+                logTelosChatMessage('assistant', `Triage: ${data.content} | Alignment ${alignment}/5 Urgency ${urgency}/5 | ${verdict} | ${reason} | Next: ${nextAction}`);
+
+                await sb.from('telos_task_log').insert({
+                    user_id: userId,
+                    task: nextAction,
+                    status: 'open',
+                    notes: `From: ${data.content} | Alignment ${alignment}/5, Urgency ${urgency}/5, Verdict ${verdict}. ${reason}`
+                });
+
+                const autoRemove = document.getElementById('telosAutoRemoveQueue')?.checked;
+                if (autoRemove) {
+                    await removeTelosQueueItem(itemId, true);
+                    await loadTelosQueue();
+                } else {
+                    await sb.from('telos_queue').update({ status: 'scored', updated_at: new Date().toISOString() }).eq('id', itemId);
+                    await loadTelosQueue();
+                }
+
+                await loadTelosTaskLog();
+            } catch (e) {
+                console.error('[Telos] Triage failed:', e);
+            }
+        }
+
+        async function deferTelosQueueItem(itemId) {
+            const sb = getTelosSupabase();
+            if (!sb) return;
+            await sb.from('telos_queue').update({ status: 'deferred', updated_at: new Date().toISOString() }).eq('id', itemId);
+            await loadTelosQueue();
+        }
+
+        async function removeTelosQueueItem(itemId, silent = false) {
+            const sb = getTelosSupabase();
+            if (!sb) return;
+            await sb.from('telos_queue').delete().eq('id', itemId);
+            if (!silent) await loadTelosQueue();
+        }
+
+        async function loadTelosTaskLog() {
+            const sb = getTelosSupabase();
+            const userId = getTelosUserId();
+            if (!sb || !userId) return;
+            try {
+                const { data, error } = await sb
+                    .from('telos_task_log')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .order('created_at', { ascending: false })
+                    .limit(20);
+                if (error) throw error;
+                renderTelosTaskLog(data || []);
+            } catch (e) {
+                console.error('[Telos] Load task log failed:', e);
+            }
+        }
+
+        function renderTelosTaskLog(items) {
+            const list = document.getElementById('telosTaskLog');
+            if (!list) return;
+            if (!items || items.length === 0) {
+                list.innerHTML = '<div class="telos-log-item">No tasks yet.</div>';
+                return;
+            }
+            list.innerHTML = items.map(item => `
+                <div class="telos-log-item">
+                    <div class="telos-queue-item-title">${escapeHtml(item.task)}</div>
+                    <div class="telos-log-meta">${escapeHtml(item.notes || '')}</div>
+                    <div class="telos-log-actions">
+                        <button class="telos-brief-btn ghost" onclick="updateTelosTaskStatus('${item.id}','done')">Done</button>
+                        <button class="telos-brief-btn ghost" onclick="updateTelosTaskStatus('${item.id}','skipped')">Skip</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function updateTelosTaskStatus(taskId, status) {
+            const sb = getTelosSupabase();
+            if (!sb) return;
+            await sb.from('telos_task_log').update({ status }).eq('id', taskId);
+            await loadTelosTaskLog();
+        }
+
+        async function loadTelosChatLog() {
+            const sb = getTelosSupabase();
+            const userId = getTelosUserId();
+            if (!sb || !userId) return;
+            try {
+                const { data, error } = await sb
+                    .from('telos_chat_log')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .order('created_at', { ascending: false })
+                    .limit(20);
+                if (error) throw error;
+                renderTelosChatLog(data || []);
+            } catch (e) {
+                console.error('[Telos] Load chat log failed:', e);
+            }
+        }
+
+        function renderTelosChatLog(items) {
+            const list = document.getElementById('telosChatLog');
+            if (!list) return;
+            if (!items || items.length === 0) {
+                list.innerHTML = '<div class="telos-log-item">No chat history yet.</div>';
+                return;
+            }
+            list.innerHTML = items.map(item => `
+                <div class="telos-log-item">
+                    <div class="telos-queue-item-title">${item.role === 'assistant' ? 'Telos' : 'You'}</div>
+                    <div>${escapeHtml(item.content)}</div>
+                    <div class="telos-log-meta">${new Date(item.created_at).toLocaleString()}</div>
+                </div>
+            `).join('');
+        }
+
+        async function logTelosChatMessage(role, content) {
+            const sb = getTelosSupabase();
+            const userId = getTelosUserId();
+            if (!sb || !userId) return;
+            await sb.from('telos_chat_log').insert({ user_id: userId, role, content });
+            await loadTelosChatLog();
+        }
+
         // Toggle Core Values in Telos doc sidebar
         function toggleTelosValues(toggleEl) {
             toggleEl.classList.toggle('expanded');
@@ -25004,6 +25439,9 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
 
             renderTelosMessages();
             loadTelosMemory();
+            loadTelosQueue();
+            loadTelosTaskLog();
+            loadTelosChatLog();
         }
 
         function renderTelosMessages() {
@@ -25064,6 +25502,7 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
             telosMessages.push({ role: 'user', content: message, timestamp: Date.now() });
             input.value = '';
             input.style.height = 'auto';
+            logTelosChatMessage('user', message);
 
             telosLoading = true;
             renderTelosMessages();
@@ -25072,6 +25511,7 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
                 const response = await callTelosAI(message);
                 telosLoading = false;
                 telosMessages.push({ role: 'assistant', content: response, timestamp: Date.now() });
+                logTelosChatMessage('assistant', response);
                 renderTelosMessages();
             } catch (err) {
                 telosLoading = false;
@@ -25080,6 +25520,7 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
                     content: "I'm having trouble connecting right now. Try again?",
                     timestamp: Date.now()
                 });
+                logTelosChatMessage('assistant', "I'm having trouble connecting right now. Try again?");
                 renderTelosMessages();
                 console.error('[Telos] Error:', err);
             }
