@@ -71,7 +71,7 @@ export default async function handler(req, res) {
         // Get the agent
         const { data: agent } = await supabase
             .from('factory_users')
-            .select('id, display_name, agent_slug, agent_role, telos_objective, total_tokens_used')
+            .select('id, display_name, agent_slug, agent_role, telos_objective')
             .eq('id', proposal.author_id)
             .single();
 
@@ -189,8 +189,7 @@ Return the complete HTML starting with <!DOCTYPE html>`;
             .from('factory_users')
             .update({
                 agent_status: 'idle',
-                last_active_at: new Date().toISOString(),
-                total_tokens_used: (agent.total_tokens_used || 0) + tokensUsed
+                last_active_at: new Date().toISOString()
             })
             .eq('id', agent.id);
 

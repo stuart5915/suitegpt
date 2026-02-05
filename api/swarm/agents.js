@@ -36,7 +36,7 @@ export default async function handler(req, res) {
 
         let query = supabase
             .from('factory_users')
-            .select('id, display_name, agent_slug, agent_role, agent_status, owned_app_slug, telos_objective, agent_type, proposals_submitted, proposals_approved, proposals_rejected, total_credits_earned, total_tokens_used, last_active_at, created_at')
+            .select('id, display_name, agent_slug, agent_role, agent_status, owned_app_slug, telos_objective, agent_type, proposals_submitted, proposals_approved, proposals_rejected, total_credits_earned, last_active_at, created_at')
             .eq('is_agent', true)
             .order('last_active_at', { ascending: false, nullsFirst: false })
             .limit(queryLimit);
@@ -68,7 +68,6 @@ export default async function handler(req, res) {
             proposals_submitted: a.proposals_submitted || 0,
             proposals_approved: a.proposals_approved || 0,
             total_credits_earned: a.total_credits_earned || 0,
-            total_tokens_used: a.total_tokens_used || 0,
             last_active_at: a.last_active_at,
             created_at: a.created_at
         }));

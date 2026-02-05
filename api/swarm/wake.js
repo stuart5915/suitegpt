@@ -65,7 +65,7 @@ export default async function handler(req, res) {
         // Look up the agent
         const { data: agent, error: agentError } = await supabase
             .from('factory_users')
-            .select('id, display_name, telos_objective, agent_role, agent_status, proposals_submitted, total_tokens_used')
+            .select('id, display_name, telos_objective, agent_role, agent_status, proposals_submitted')
             .eq('agent_slug', agent_slug.trim())
             .eq('is_agent', true)
             .single();
@@ -168,8 +168,7 @@ export default async function handler(req, res) {
         await supabase
             .from('factory_users')
             .update({
-                proposals_submitted: (agent.proposals_submitted || 0) + 1,
-                total_tokens_used: (agent.total_tokens_used || 0) + tokensUsed.total
+                proposals_submitted: (agent.proposals_submitted || 0) + 1
             })
             .eq('id', agent.id);
 
