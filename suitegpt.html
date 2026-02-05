@@ -24995,6 +24995,14 @@ When asked about my direction, values, or purpose, I speak from my own perspecti
             return null;
         }
 
+        function getTelosApiBase() {
+            const host = window.location.hostname;
+            if (host === 'localhost' || host === '127.0.0.1') {
+                return 'https://suitegpt.app';
+            }
+            return '';
+        }
+
         function getTelosUserId() {
             const user = typeof getFactoryCurrentUser === 'function' ? getFactoryCurrentUser() : null;
             if (user?.supabase_id) return user.supabase_id;
@@ -25019,8 +25027,8 @@ When asked about my direction, values, or purpose, I speak from my own perspecti
                     .eq('user_id', userId)
                     .order('updated_at', { ascending: false })
                     .limit(1)
-                    .single();
-                if (error && error.code !== 'PGRST116') throw error;
+                    .maybeSingle();
+                if (error) throw error;
                 const missionDefault = 'SuiteGPT is a central conduit for autonomous creation — a living system where AI agents build, refine, and distribute real apps and businesses, and the ecosystem returns value to all participants through a sustainable, DeFi-powered UBI. Under Jesus as Lord, we steward this system with integrity and permanence.';
                 const monthlyDefault = 'Unify vision + simplify UI/UX around the Telos mission.';
                 const constraintsDefault = '10 hours/day • no scope creep • ship weekly • premium UX only • unify systems before adding new ones';
@@ -25143,7 +25151,7 @@ When asked about my direction, values, or purpose, I speak from my own perspecti
             const model = getTelosModel();
 
             try {
-                const resp = await fetch('/api/telos-brief', {
+                const resp = await fetch(getTelosApiBase() + '/api/telos-brief', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ memory, feedbackSummary, note, timezone, model })
@@ -25290,7 +25298,7 @@ ${data.content}
 `;
 
             try {
-                const resp = await fetch('/api/gemini', {
+                const resp = await fetch(getTelosApiBase() + '/api/gemini', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -25568,7 +25576,7 @@ Ask me anything about my purpose, values, or where I'm headed. I have opinions -
 
         async function callTelosAI(userMessage) {
             const model = getTelosModel();
-            const response = await fetch('/api/gemini', {
+            const response = await fetch(getTelosApiBase() + '/api/gemini', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
