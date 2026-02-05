@@ -25278,7 +25278,8 @@ Technical: JavaScript, HTML/CSS, React/React Native, Supabase (Postgres, Auth, S
         async function loadAgentLog(agentId) {
             const container = document.getElementById('agentDetailLogContent');
             try {
-                const { data: proposals, error } = await supabase
+                const sb = window.supabaseClient || supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                const { data: proposals, error } = await sb
                     .from('factory_proposals')
                     .select('id, title, content, category, status, created_at')
                     .eq('author_id', agentId)
@@ -25411,7 +25412,8 @@ Technical: JavaScript, HTML/CSS, React/React Native, Supabase (Postgres, Auth, S
 
         async function loadAgentsActivity() {
             try {
-                const { data: proposals } = await supabase
+                const sb = window.supabaseClient || supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                const { data: proposals } = await sb
                     .from('factory_proposals')
                     .select('id, title, submission_type, status, created_at, author_id')
                     .eq('from_agent', true)
@@ -25675,7 +25677,8 @@ Technical: JavaScript, HTML/CSS, React/React Native, Supabase (Postgres, Auth, S
         // --- Agent Messages ---
         async function loadAgentMessages() {
             try {
-                const { data: messages, error } = await supabase
+                const sb = window.supabaseClient || supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                const { data: messages, error } = await sb
                     .from('agent_messages')
                     .select('id, content, message_type, created_at, from_agent_id, to_agent_id, channel')
                     .order('created_at', { ascending: false })
