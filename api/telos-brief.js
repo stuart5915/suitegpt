@@ -24,7 +24,7 @@ export default async function handler(req, res) {
             feedbackSummary = '',
             note = '',
             timezone = '',
-            model = 'gemini-3-flash-preview'
+            model = 'gemini-2.5-flash'
         } = req.body || {};
 
         const prompt = `You are Telos, the CEO voice of SuiteGPT. Produce a Daily Brief that tells Stuart exactly what to do next.
@@ -55,7 +55,7 @@ Return the JSON now.`;
             generationConfig: { temperature: 0.4, maxOutputTokens: 1024 }
         };
 
-        const fallbackModel = 'gemini-3-flash-preview';
+        const fallbackModel = 'gemini-2.5-flash';
         const callModel = async (modelName) => {
             const resp = await fetch(
                 `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`,
