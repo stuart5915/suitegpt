@@ -1,24 +1,10 @@
 /**
  * SUITE Visual Feedback - Popup Script
- * Handles destination selection, settings, and activation
  */
 
 document.addEventListener('DOMContentLoaded', () => {
     const activateBtn = document.getElementById('activateBtn');
     const statusBadge = document.getElementById('status');
-    const supabaseKeyInput = document.getElementById('supabaseKey');
-    const userIdInput = document.getElementById('userId');
-    const saveBtn = document.getElementById('saveBtn');
-    const destinationOptions = document.querySelectorAll('.destination-option:not(.disabled)');
-
-    // Load saved settings
-    chrome.storage.sync.get(['supabaseKey', 'userId', 'destination'], (result) => {
-        if (result.supabaseKey) supabaseKeyInput.value = result.supabaseKey;
-        if (result.userId) userIdInput.value = result.userId;
-        if (result.destination) {
-            updateDestinationUI(result.destination);
-        }
-    });
 
     // Check current status
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -36,49 +22,39 @@ document.addEventListener('DOMContentLoaded', () => {
     // Activate button
     activateBtn.addEventListener('click', () => {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            if (tabs[0]) {
-                chrome.tabs.sendMessage(tabs[0].id, { action: 'toggle' }, (response) => {
-                    if (response) {
-                        updateStatus(response.active);
-                    }
-                });
-            }
-        });
-    });
+            if (!tabs[0]) return;
+            const tabId = tabs[0].id;
 
-    // Destination selection
-    destinationOptions.forEach(option => {
-        option.addEventListener('click', () => {
-            const dest = option.dataset.dest;
-            updateDestinationUI(dest);
-            chrome.storage.sync.set({ destination: dest });
-        });
-    });
-
-    function updateDestinationUI(dest) {
-        document.querySelectorAll('.destination-option').forEach(opt => {
-            opt.classList.remove('selected');
-            if (opt.dataset.dest === dest) {
-                opt.classList.add('selected');
-                const input = opt.querySelector('input');
-                if (input) input.checked = true;
-            }
-        });
-    }
-
-    // Save settings
-    saveBtn.addEventListener('click', () => {
-        const supabaseKey = supabaseKeyInput.value.trim();
-        const userId = userIdInput.value.trim();
-
-        chrome.storage.sync.set({ supabaseKey, userId }, () => {
-            saveBtn.textContent = '✓ Saved!';
-            saveBtn.classList.add('save-success');
-
-            setTimeout(() => {
-                saveBtn.textContent = 'Save Settings';
-                saveBtn.classList.remove('save-success');
-            }, 2000);
+            chrome.tabs.sendMessage(tabId, { action: 'toggle' }, (response) => {
+                if (chrome.runtime.lastError || !response) {
+                    // Content script not loaded — inject it, then retry
+                    chrome.scripting.executeScript({
+                        target: { tabId },
+                        files: ['content.js']
+                    }).then(() => {
+                        return chrome.scripting.insertCSS({
+                            target: { tabId },
+                            files: ['content.css']
+                        });
+                    }).then(() => {
+                        setTimeout(() => {
+                            chrome.tabs.sendMessage(tabId, { action: 'toggle' }, (resp) => {
+                                if (resp) updateStatus(resp.active);
+                                window.close();
+                            });
+                        }, 150);
+                    }).catch((err) => {
+                        console.error('Cannot inject on this page:', err);
+                        activateBtn.textContent = 'Cannot activate on this page';
+                        setTimeout(() => {
+                            activateBtn.textContent = '🎯 Activate on This Page';
+                        }, 2000);
+                    });
+                } else {
+                    updateStatus(response.active);
+                    window.close();
+                }
+            });
         });
     });
 

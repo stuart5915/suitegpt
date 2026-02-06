@@ -17,14 +17,6 @@
     let popup = null;
     let statusIndicator = null;
 
-    // Config (loaded from storage)
-    let config = {
-        supabaseUrl: 'https://rdsmdywbdiskxknluiym.supabase.co',
-        supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM',
-        userId: null,
-        destination: 'antigravity' // 'antigravity', 'clipboard', 'claude-api', 'openai-api'
-    };
-
     // Initialize when DOM is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
@@ -33,13 +25,6 @@
     }
 
     function init() {
-        // Load config from storage
-        chrome.storage.sync.get(['supabaseKey', 'userId', 'destination'], (result) => {
-            if (result.supabaseKey) config.supabaseKey = result.supabaseKey;
-            if (result.userId) config.userId = result.userId;
-            if (result.destination) config.destination = result.destination;
-        });
-
         // Listen for activation from popup/keyboard
         chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             if (msg.action === 'toggle') {
@@ -240,7 +225,7 @@
             <textarea class="suite-vf-textarea" placeholder="Describe the change you want... (e.g., 'Make this button gradient purple')"></textarea>
             <div class="suite-vf-actions">
                 <button class="suite-vf-btn suite-vf-btn-secondary">Cancel</button>
-                <button class="suite-vf-btn suite-vf-btn-primary">Send to AI ⏎</button>
+                <button class="suite-vf-btn suite-vf-btn-primary">📋 Copy to Clipboard ⏎</button>
             </div>
         `;
 
@@ -322,11 +307,10 @@
 
     async function sendFeedback(message, selector, element, dragBounds) {
         const sendBtn = popup.querySelector('.suite-vf-btn-primary');
-        sendBtn.textContent = 'Sending...';
+        sendBtn.textContent = 'Copying...';
         sendBtn.disabled = true;
 
         try {
-            // Get element info
             const elementInfo = element ? {
                 tagName: element.tagName,
                 className: element.className,
@@ -335,65 +319,30 @@
                 outerHTML: element.outerHTML?.slice(0, 500)
             } : null;
 
-            // Build prompt
             const fullPrompt = buildPrompt(message, selector, elementInfo, dragBounds);
 
-            // Re-read destination from storage to ensure we have the latest selection
-            const storedConfig = await new Promise(resolve => {
-                chrome.storage.sync.get(['supabaseKey', 'destination'], resolve);
-            });
-            const destination = storedConfig.destination || config.destination;
-            const supabaseKey = storedConfig.supabaseKey || config.supabaseKey;
+            // Copy to clipboard — try modern API first, then fallback
+            let copied = false;
+            try {
+                await navigator.clipboard.writeText(fullPrompt);
+                copied = true;
+            } catch (_) {}
 
-            // Route based on destination
-            switch (destination) {
-                case 'clipboard':
-                    await navigator.clipboard.writeText(fullPrompt);
-                    showSuccess('Copied to clipboard!');
-                    break;
-
-                case 'claude-api':
-                case 'openai-api':
-                    // Future: Direct API integration with file context
-                    showSuccess('API integration coming soon!');
-                    break;
-
-                case 'antigravity':
-                default:
-                    // Check for Supabase key
-                    if (!supabaseKey) {
-                        throw new Error('No Supabase key! Click extension icon → enter key in Settings');
-                    }
-
-                    // Send to Supabase for PC Watcher
-                    // Only send columns that exist in prompts table: prompt, status, target
-                    const response = await fetch(`${config.supabaseUrl}/rest/v1/prompts`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'apikey': supabaseKey,
-                            'Authorization': `Bearer ${supabaseKey}`,
-                            'Prefer': 'return=minimal'
-                        },
-                        body: JSON.stringify({
-                            prompt: fullPrompt,
-                            status: 'pending',
-                            target: 'suitegpt'
-                        })
-                    });
-
-                    if (response.ok || response.status === 201) {
-                        showSuccess('Sent to PC Watcher!');
-                    } else {
-                        const errorText = await response.text();
-                        console.error('Supabase error:', response.status, errorText);
-                        throw new Error(`Failed: ${response.status}`);
-                    }
-                    break;
+            if (!copied) {
+                // Fallback: create a temporary textarea and use execCommand
+                const ta = document.createElement('textarea');
+                ta.value = fullPrompt;
+                ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
             }
+
+            showSuccess('Copied to clipboard!');
         } catch (error) {
-            console.error('Send failed:', error);
-            sendBtn.textContent = error.message.length < 30 ? error.message : 'Failed - Retry';
+            console.error('Copy failed:', error);
+            sendBtn.textContent = 'Failed - try again';
             sendBtn.disabled = false;
         }
     }
