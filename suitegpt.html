@@ -28219,8 +28219,9 @@ STRICT RULES:
 - ONLY use facts from the CANDIDATE BACKGROUND below. NEVER invent skills, tools, companies, or achievements that are not explicitly stated.
 - Do NOT use markdown formatting (no #, ##, ###, **, *, etc). Use ONLY plain text.
 - Use these section markers exactly: ===CONTACT===, ===SUMMARY===, ===EXPERIENCE===, ===PROJECTS===, ===SKILLS===
-- Contact info is always: Stuart Hollinger | stuart@suitegpt.app | Cambridge, ON, Canada | linkedin.com/in/stuart-hollinger | portfolio.suitegpt.app
+- Contact info is always: Stuart Hollinger | stuart@suitegpt.app | Cambridge, ON, Canada | linkedin.com/in/stuart-hollinger | suitegpt.app | Demo: loom.com/share/0482546faef241518e3d3562c6adb77a
 - Do NOT include a phone number.
+- ALWAYS include the Loom demo link in the contact line exactly as provided above.
 - Use strong action verbs. Be specific. Quantify where possible using ONLY facts from the background.
 - EXPERIENCE FORMAT: For each role use this exact structure:
   Job Title | Company Name | Location
@@ -28261,10 +28262,14 @@ Output the resume now using the section markers above. Plain text only, no markd
             const parts = contactLine.split('|').map(s => s.trim());
             const name = parts[0] || 'Stuart Hollinger';
             const details = parts.slice(1).join(' · ');
+            const linkifyContact = s => s.replace(/(https?:\/\/[^\s,·|]+|(?:[\w-]+\.)+(?:app|com|org|net|io|ca)(?:\/[^\s,·|]*)?)/g, function(url) {
+                const href = url.startsWith('http') ? url : 'https://' + url;
+                return '<a href="' + href + '" target="_blank" style="color:#6366f1;text-decoration:underline;">' + url + '</a>';
+            });
             let html = '<div style="font-family:inherit;">';
             html += '<div style="text-align:center;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.1);">';
             html += '<div style="font-size:1.3rem;font-weight:800;letter-spacing:0.5px;">' + esc(name) + '</div>';
-            html += '<div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px;">' + esc(details) + '</div>';
+            html += '<div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px;">' + linkifyContact(esc(details)) + '</div>';
             html += '</div>';
             const sectionOrder = ['SUMMARY','EXPERIENCE','PROJECTS','SKILLS'];
             const sectionLabels = {SUMMARY:'Professional Summary',EXPERIENCE:'Experience',PROJECTS:'Projects',SKILLS:'Skills'};
