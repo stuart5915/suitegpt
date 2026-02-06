@@ -34485,6 +34485,13 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
                 description: 'Remove & replace photo backgrounds with AI',
                 iconBg: 'linear-gradient(135deg, #ec4899, #be185d)',
                 url: '/bgswap.html'
+            },
+            'docdigest': {
+                name: 'DocDigest',
+                description: 'Upload any PDF — get instant summary, key points, and action items',
+                iconBg: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                url: '/docdigest/',
+                screens: ['/docdigest/']
             }
         };
 
@@ -37699,12 +37706,26 @@ window.addEventListener('message', function(e) {
                     return;
                 }
 
-                // Call the deduct_app_credits RPC
-                const { data, error } = await supabaseClient.rpc('deduct_app_credits', {
-                    p_wallet: walletAddress.toLowerCase(),
-                    p_base_cost: BASE_AI_COST,
-                    p_user_app_id: appId
-                });
+                // Determine if slug-based (file-based app) or UUID-based (DB app)
+                const isSlugBased = typeof appId === 'string' && !appId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+
+                let data, error;
+                if (isSlugBased) {
+                    // Slug-based app (file-based like docdigest)
+                    ({ data, error } = await supabaseClient.rpc('deduct_suite_credits', {
+                        p_wallet: walletAddress.toLowerCase(),
+                        p_amount: BASE_AI_COST,
+                        p_feature: feature || 'ai',
+                        p_app_id: appId
+                    }));
+                } else {
+                    // UUID-based app (DB-stored)
+                    ({ data, error } = await supabaseClient.rpc('deduct_app_credits', {
+                        p_wallet: walletAddress.toLowerCase(),
+                        p_base_cost: BASE_AI_COST,
+                        p_user_app_id: appId
+                    }));
+                }
 
                 if (error) throw error;
 
@@ -37712,9 +37733,9 @@ window.addEventListener('message', function(e) {
                 e.source?.postMessage({
                     type: 'suite-charge-result',
                     chargeId,
-                    success: result.success,
+                    success: result.success !== undefined ? result.success : true,
                     error: result.error || null,
-                    totalCharged: result.total_charged || 0
+                    totalCharged: result.total_charged || result.amount || 0
                 }, '*');
             } catch (err) {
                 console.error('Credit charge failed:', err);
