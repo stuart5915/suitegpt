@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ResumeForge — AI Resume Tailor | Match Score, Keywords & Cover Letter</title>
+    <meta name="description" content="Upload your resume and a job posting. AI gives you a match score, keyword gaps, rewritten bullets, a tailored summary, and a cover letter draft. Free to try.">
+    <meta name="keywords" content="AI resume builder, resume tailor, tailor resume to job posting, resume keyword optimizer, AI cover letter, resume match score, resume optimizer, job application AI">
+
+    <meta property="og:title" content="ResumeForge — AI Resume Tailor">
+    <meta property="og:description" content="Upload your resume + a job posting. Get a match score, keyword gaps, rewritten bullets, and a cover letter. Free AI resume optimization.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://suitegpt.app/resumeforge/">
+    <meta property="og:site_name" content="SUITE">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="ResumeForge — AI Resume Tailor">
+    <meta name="twitter:description" content="Upload your resume + a job posting. Get a match score, keyword gaps, rewritten bullets, and a cover letter.">
+
+    <link rel="canonical" href="https://suitegpt.app/resumeforge/">
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #0a0a0f; --bg-card: #1a1a2e; --border: #2a2a3e;
+            --accent: #10b981; --accent-hover: #34d399;
+            --accent-glow: rgba(16, 185, 129, 0.12);
+            --text: #e2e8f0; --text-secondary: #94a3b8; --text-dim: #64748b;
+            --danger: #ef4444;
+        }
+        body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; overflow-x: hidden; }
+
+        .nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; max-width: 1100px; margin: 0 auto; }
+        .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); font-weight: 700; font-size: 18px; }
+        .nav-logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+        .nav-suite { color: var(--text-secondary); text-decoration: none; font-size: 14px; font-weight: 500; padding: 8px 16px; border: 1px solid var(--border); border-radius: 8px; transition: all 0.2s; }
+        .nav-suite:hover { border-color: var(--accent); color: var(--accent); }
+
+        .hero { text-align: center; padding: 80px 24px 60px; max-width: 800px; margin: 0 auto; position: relative; }
+        .hero::before { content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 600px; height: 400px; background: radial-gradient(ellipse, rgba(16,185,129,0.06) 0%, transparent 70%); pointer-events: none; }
+        .hero-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; background: var(--accent-glow); border: 1px solid rgba(16,185,129,0.25); border-radius: 100px; font-size: 13px; font-weight: 500; color: var(--accent-hover); margin-bottom: 24px; }
+        .hero h1 { font-size: 52px; font-weight: 800; line-height: 1.1; margin-bottom: 20px; letter-spacing: -0.02em; }
+        .hero h1 .gradient { background: linear-gradient(135deg, #10b981, #34d399, #6ee7b7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero p { font-size: 18px; color: var(--text-secondary); max-width: 560px; margin: 0 auto 32px; line-height: 1.7; }
+        .hero-cta { display: inline-flex; align-items: center; gap: 8px; padding: 14px 32px; background: linear-gradient(135deg, #10b981, #059669); color: white; text-decoration: none; border-radius: 12px; font-size: 16px; font-weight: 600; transition: all 0.2s; box-shadow: 0 4px 20px rgba(16,185,129,0.25); }
+        .hero-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(16,185,129,0.35); }
+        .hero-sub { margin-top: 12px; font-size: 13px; color: var(--text-dim); }
+
+        /* Demo */
+        .demo-preview { max-width: 800px; margin: 0 auto 80px; padding: 0 24px; }
+        .demo-box { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 32px; position: relative; overflow: hidden; }
+        .demo-box::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #10b981, #34d399, #10b981); }
+        .demo-score { text-align: center; margin-bottom: 20px; }
+        .demo-score-num { font-size: 48px; font-weight: 800; color: var(--accent); }
+        .demo-score-label { font-size: 13px; color: var(--text-dim); }
+        .demo-score-summary { font-size: 14px; color: var(--text-secondary); margin-top: 8px; max-width: 500px; margin-left: auto; margin-right: auto; }
+        .demo-section { margin-top: 20px; }
+        .demo-section h4 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin-bottom: 10px; }
+        .demo-gap { display: inline-block; padding: 4px 12px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); border-radius: 6px; font-size: 12px; color: #fca5a5; margin: 3px; }
+        .demo-match { display: inline-block; padding: 4px 12px; background: var(--accent-glow); border: 1px solid rgba(16,185,129,0.2); border-radius: 6px; font-size: 12px; color: var(--accent-hover); margin: 3px; }
+
+        .section { max-width: 900px; margin: 0 auto 80px; padding: 0 24px; }
+        .section-title { text-align: center; font-size: 32px; font-weight: 700; margin-bottom: 48px; }
+
+        .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+        .step { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 28px 24px; text-align: center; transition: all 0.2s; }
+        .step:hover { border-color: rgba(16,185,129,0.3); transform: translateY(-2px); }
+        .step-num { width: 40px; height: 40px; background: var(--accent-glow); border: 1px solid rgba(16,185,129,0.3); border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; color: var(--accent-hover); margin-bottom: 16px; }
+        .step h3 { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
+        .step p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
+
+        .features-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        .feature { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 24px; transition: all 0.2s; }
+        .feature:hover { border-color: rgba(16,185,129,0.3); }
+        .feature-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-bottom: 12px; }
+        .feature h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+        .feature p { font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
+
+        .use-cases-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .use-case { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center; }
+        .use-case-emoji { font-size: 28px; margin-bottom: 8px; }
+        .use-case h4 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+        .use-case p { font-size: 13px; color: var(--text-dim); }
+
+        .faq { max-width: 700px; margin: 0 auto 80px; padding: 0 24px; }
+        .faq-item { border-bottom: 1px solid var(--border); padding: 20px 0; }
+        .faq-item:first-child { border-top: 1px solid var(--border); }
+        .faq-q { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+        .faq-a { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
+        .faq-a a { color: var(--accent); text-decoration: none; }
+
+        .bottom-cta { text-align: center; padding: 60px 24px 80px; max-width: 600px; margin: 0 auto; }
+        .bottom-cta h2 { font-size: 28px; font-weight: 700; margin-bottom: 12px; }
+        .bottom-cta p { color: var(--text-secondary); font-size: 16px; margin-bottom: 24px; }
+
+        .footer { text-align: center; padding: 24px; border-top: 1px solid var(--border); color: var(--text-dim); font-size: 13px; }
+        .footer a { color: var(--accent); text-decoration: none; }
+
+        @media (max-width: 768px) {
+            .hero { padding: 48px 20px 40px; }
+            .hero h1 { font-size: 32px; }
+            .steps { grid-template-columns: 1fr; }
+            .features-grid { grid-template-columns: 1fr; }
+            .use-cases-grid { grid-template-columns: 1fr; }
+            .section-title { font-size: 24px; margin-bottom: 32px; }
+        }
+    </style>
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "ResumeForge",
+        "description": "AI-powered resume optimizer that tailors your resume to any job posting with match scoring, keyword analysis, rewritten bullets, and cover letter generation.",
+        "url": "https://suitegpt.app/resumeforge/",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "creator": { "@type": "Organization", "name": "SUITE", "url": "https://suitegpt.app" }
+    }
+    </script>
+</head>
+<body>
+
+    <nav class="nav">
+        <a href="/resumeforge/" class="nav-logo">
+            <div class="nav-logo-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="18" height="18">
+                    <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/>
+                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                </svg>
+            </div>
+            ResumeForge
+        </a>
+        <a href="https://suitegpt.app" class="nav-suite">Part of SUITE</a>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-badge">AI-Powered &mdash; Free to try</div>
+        <h1>Tailor your resume <br><span class="gradient">to any job posting</span></h1>
+        <p>Upload your resume and paste a job description. AI gives you a match score, finds keyword gaps, rewrites your bullets, and drafts a cover letter.</p>
+        <a href="/resumeforge/app.html" class="hero-cta">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+            </svg>
+            Tailor Your Resume
+        </a>
+        <p class="hero-sub">No sign-up required. Your resume is processed locally in your browser.</p>
+    </section>
+
+    <div class="demo-preview">
+        <div class="demo-box">
+            <div class="demo-score">
+                <div class="demo-score-num">78%</div>
+                <div class="demo-score-label">Match Score</div>
+                <p class="demo-score-summary">Strong experience match for Senior Product Manager. Missing cloud infrastructure keywords and stakeholder management emphasis that the role requires.</p>
+            </div>
+            <div class="demo-section">
+                <h4>Missing Keywords</h4>
+                <span class="demo-gap">Kubernetes</span>
+                <span class="demo-gap">stakeholder management</span>
+                <span class="demo-gap">OKRs</span>
+                <span class="demo-gap">A/B testing</span>
+                <span class="demo-gap">product roadmap</span>
+            </div>
+            <div class="demo-section">
+                <h4>Strong Matches</h4>
+                <span class="demo-match">5+ years product management</span>
+                <span class="demo-match">cross-functional leadership</span>
+                <span class="demo-match">agile methodology</span>
+                <span class="demo-match">data-driven decisions</span>
+            </div>
+        </div>
+    </div>
+
+    <section class="section">
+        <h2 class="section-title">How It Works</h2>
+        <div class="steps">
+            <div class="step">
+                <div class="step-num">1</div>
+                <h3>Upload Your Resume</h3>
+                <p>Drop your resume PDF. Text is extracted locally — your file never leaves your device.</p>
+            </div>
+            <div class="step">
+                <div class="step-num">2</div>
+                <h3>Paste the Job Posting</h3>
+                <p>Copy the full job description — title, requirements, responsibilities, and qualifications.</p>
+            </div>
+            <div class="step">
+                <div class="step-num">3</div>
+                <h3>Get Tailored Results</h3>
+                <p>Match score, keyword gaps, rewritten bullets, a tailored summary, and a full cover letter draft.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <h2 class="section-title">What You Get</h2>
+        <div class="features-grid">
+            <div class="feature">
+                <div class="feature-icon" style="background: var(--accent-glow);">&#127919;</div>
+                <h3>Match Score</h3>
+                <p>See exactly how well your resume matches the role — 0 to 100 with a clear explanation of where you stand.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon" style="background: rgba(239,68,68,0.1);">&#128269;</div>
+                <h3>Keyword Gap Analysis</h3>
+                <p>Find the exact skills, tools, and qualifications from the job posting that are missing from your resume.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon" style="background: rgba(99,102,241,0.12);">&#9999;&#65039;</div>
+                <h3>Rewritten Bullets</h3>
+                <p>Your experience bullets rewritten with stronger action verbs, quantified results, and job-relevant keywords.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon" style="background: rgba(245,158,11,0.12);">&#128196;</div>
+                <h3>Tailored Summary</h3>
+                <p>A professional summary written specifically for this role, ready to paste at the top of your resume.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon" style="background: rgba(236,72,153,0.12);">&#128140;</div>
+                <h3>Cover Letter Draft</h3>
+                <p>A full cover letter that references your actual experience and is tailored to the specific company and role.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon" style="background: rgba(139,92,246,0.12);">&#128172;</div>
+                <h3>Ask Follow-Up Questions</h3>
+                <p>"Should I include my freelance work?" "How do I address the career gap?" Get specific advice for your situation.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <h2 class="section-title">Perfect For</h2>
+        <div class="use-cases-grid">
+            <div class="use-case">
+                <div class="use-case-emoji">&#128187;</div>
+                <h4>Tech Jobs</h4>
+                <p>Match technical skills and frameworks to job requirements</p>
+            </div>
+            <div class="use-case">
+                <div class="use-case-emoji">&#128188;</div>
+                <h4>Corporate Roles</h4>
+                <p>Align leadership experience with executive job descriptions</p>
+            </div>
+            <div class="use-case">
+                <div class="use-case-emoji">&#127891;</div>
+                <h4>Recent Grads</h4>
+                <p>Maximize limited experience to match entry-level requirements</p>
+            </div>
+            <div class="use-case">
+                <div class="use-case-emoji">&#128640;</div>
+                <h4>Career Changers</h4>
+                <p>Translate skills from one industry to another</p>
+            </div>
+            <div class="use-case">
+                <div class="use-case-emoji">&#127757;</div>
+                <h4>Remote Applications</h4>
+                <p>Stand out in competitive remote job markets</p>
+            </div>
+            <div class="use-case">
+                <div class="use-case-emoji">&#128176;</div>
+                <h4>Salary Negotiation</h4>
+                <p>Understand your match strength before negotiating</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="faq">
+        <h2 class="section-title">Frequently Asked Questions</h2>
+        <div class="faq-item">
+            <div class="faq-q">Is my resume data secure?</div>
+            <div class="faq-a">Your resume PDF is processed entirely in your browser using pdf.js. The raw file never leaves your device. Only the extracted text is sent for AI analysis over an encrypted connection. We don't store your resume.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-q">How is the match score calculated?</div>
+            <div class="faq-a">AI compares your skills, experience, education, and keywords against the job requirements, responsibilities, and qualifications. The score reflects how well your background aligns with what the employer is looking for.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-q">Can I use the rewritten bullets directly?</div>
+            <div class="faq-a">Yes! The rewritten bullets and tailored summary are designed to be copied directly into your resume. The cover letter is a complete draft ready to customize with personal touches.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-q">Does it work for any industry?</div>
+            <div class="faq-a">Yes. ResumeForge works with any job posting and resume — tech, finance, healthcare, education, marketing, engineering, and more. It adapts to the specific terminology and requirements of each role.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-q">How much does it cost?</div>
+            <div class="faq-a">ResumeForge uses 5 SUITE credits per analysis. New accounts start with free credits. <a href="https://suitegpt.app">Create a free SUITE account</a> to get started.</div>
+        </div>
+    </section>
+
+    <section class="bottom-cta">
+        <h2>Land more interviews</h2>
+        <p>Stop sending the same resume to every job. Tailor it in 30 seconds.</p>
+        <a href="/resumeforge/app.html" class="hero-cta">Tailor Your Resume Free</a>
+    </section>
+
+    <footer class="footer">
+        <p>ResumeForge is part of <a href="https://suitegpt.app">SUITE</a> &mdash; Anyone Can Build. Everyone Gets Paid.</p>
+    </footer>
+
+</body>
+</html>

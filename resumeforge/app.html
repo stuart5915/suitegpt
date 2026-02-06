@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ResumeForge - AI Resume Tailor | SUITE</title>
+    <meta name="description" content="Upload your resume and paste a job posting. AI tailors your resume with match score, keyword gaps, rewritten bullets, and a cover letter.">
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #0a0a0f; --bg-card: #1a1a2e; --border: #2a2a3e;
+            --accent: #10b981; --accent-hover: #34d399;
+            --accent-glow: rgba(16, 185, 129, 0.12);
+            --text: #e2e8f0; --text-secondary: #94a3b8; --text-dim: #64748b;
+            --danger: #ef4444; --warning: #f59e0b; --info: #3b82f6;
+        }
+        body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 900px; padding: 24px 20px; flex: 1; }
+
+        .header { text-align: center; margin-bottom: 32px; }
+        .header-logo { display: inline-flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+        .header-icon { width: 40px; height: 40px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+        .header h1 { font-size: 28px; font-weight: 700; background: linear-gradient(135deg, #e2e8f0, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header p { color: var(--text-secondary); font-size: 15px; }
+
+        /* Input view */
+        .input-section { margin-bottom: 20px; }
+        .input-section label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+        .input-section label span { color: var(--text-dim); font-weight: 400; }
+
+        .upload-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 40px 24px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--bg-card); }
+        .upload-zone:hover, .upload-zone.drag-over { border-color: var(--accent); background: var(--accent-glow); }
+        .upload-zone h3 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+        .upload-zone p { color: var(--text-secondary); font-size: 13px; }
+        .upload-zone .browse-btn { display: inline-block; margin-top: 12px; padding: 8px 20px; background: var(--accent); color: white; border-radius: 8px; font-weight: 600; font-size: 13px; }
+
+        .file-info { display: none; margin-top: 12px; padding: 12px 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; }
+        .file-info.show { display: flex; align-items: center; gap: 12px; }
+        .file-info-icon { width: 36px; height: 36px; background: rgba(239,68,68,0.15); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+        .file-info-details { flex: 1; min-width: 0; }
+        .file-info-name { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .file-info-size { color: var(--text-secondary); font-size: 12px; }
+        .remove-btn { background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 4px; font-size: 18px; }
+        .remove-btn:hover { color: var(--danger); }
+
+        .job-textarea { width: 100%; min-height: 150px; padding: 14px 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-size: 14px; font-family: inherit; outline: none; resize: vertical; transition: border-color 0.2s; }
+        .job-textarea:focus { border-color: var(--accent); }
+        .job-textarea::placeholder { color: var(--text-dim); }
+
+        .analyze-btn { display: none; width: 100%; margin-top: 20px; padding: 14px; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+        .analyze-btn.show { display: block; }
+        .analyze-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(16,185,129,0.3); }
+        .analyze-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* Processing */
+        .processing-view { display: none; text-align: center; padding: 60px 24px; }
+        .processing-view.show { display: block; }
+        .processing-spinner { width: 48px; height: 48px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .processing-view h3 { font-size: 18px; margin-bottom: 8px; }
+        .processing-status { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+        .progress-bar { width: 100%; max-width: 400px; height: 6px; background: var(--border); border-radius: 3px; margin: 0 auto; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background: linear-gradient(90deg, #10b981, #059669); border-radius: 3px; transition: width 0.3s; width: 0%; }
+
+        /* Results */
+        .results-view { display: none; }
+        .results-view.show { display: block; }
+        .results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .results-header h2 { font-size: 20px; font-weight: 700; }
+        .new-btn { padding: 8px 16px; background: var(--bg-card); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+        .new-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* Match Score */
+        .match-score { text-align: center; padding: 24px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; margin-bottom: 20px; }
+        .score-ring { width: 100px; height: 100px; margin: 0 auto 12px; position: relative; }
+        .score-ring svg { width: 100px; height: 100px; transform: rotate(-90deg); }
+        .score-ring circle { fill: none; stroke-width: 8; }
+        .score-ring .bg { stroke: var(--border); }
+        .score-ring .fg { stroke-linecap: round; transition: stroke-dashoffset 1s ease, stroke 0.3s; }
+        .score-num { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 28px; font-weight: 700; }
+        .match-summary { color: var(--text-secondary); font-size: 14px; line-height: 1.6; max-width: 500px; margin: 0 auto; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 4px; background: var(--bg-card); padding: 4px; border-radius: 10px; margin-bottom: 20px; border: 1px solid var(--border); overflow-x: auto; }
+        .tab { flex: 1; padding: 10px 12px; background: none; border: none; color: var(--text-secondary); font-size: 13px; font-weight: 500; cursor: pointer; border-radius: 7px; transition: all 0.2s; font-family: inherit; white-space: nowrap; }
+        .tab:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+        .tab.active { background: var(--accent); color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Lists */
+        .item-list { list-style: none; }
+        .item-list li { padding: 12px 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; font-size: 14px; line-height: 1.5; display: flex; gap: 12px; align-items: flex-start; }
+        .gap-dot { width: 8px; height: 8px; background: var(--danger); border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
+        .match-dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
+
+        /* Bullets */
+        .bullet-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+        .bullet-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+        .bullet-original { color: var(--text-dim); font-size: 13px; line-height: 1.5; padding: 8px 12px; background: rgba(255,255,255,0.02); border-radius: 6px; margin-bottom: 8px; text-decoration: line-through; }
+        .bullet-improved { color: var(--text); font-size: 14px; line-height: 1.5; padding: 8px 12px; background: var(--accent-glow); border: 1px solid rgba(16,185,129,0.2); border-radius: 6px; }
+
+        /* Summary & Cover Letter */
+        .text-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; font-size: 14px; line-height: 1.7; position: relative; }
+        .copy-btn { position: absolute; top: 12px; right: 12px; padding: 6px 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text-secondary); border-radius: 6px; font-size: 12px; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+        .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* Q&A */
+        .qa-messages { max-height: 400px; overflow-y: auto; margin-bottom: 16px; }
+        .qa-message { padding: 12px 16px; border-radius: 12px; margin-bottom: 8px; font-size: 14px; line-height: 1.6; }
+        .qa-message.user { background: var(--accent); color: white; margin-left: 40px; }
+        .qa-message.ai { background: var(--bg-card); border: 1px solid var(--border); margin-right: 40px; }
+        .qa-input-row { display: flex; gap: 8px; }
+        .qa-input { flex: 1; padding: 12px 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-size: 14px; font-family: inherit; outline: none; }
+        .qa-input:focus { border-color: var(--accent); }
+        .qa-input::placeholder { color: var(--text-dim); }
+        .qa-send-btn { padding: 12px 20px; background: var(--accent); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; white-space: nowrap; }
+        .qa-send-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .qa-placeholder { text-align: center; padding: 40px 20px; color: var(--text-dim); font-size: 14px; }
+        .qa-placeholder p:first-child { font-size: 24px; margin-bottom: 8px; }
+
+        .no-items { text-align: center; padding: 40px; color: var(--text-dim); font-size: 14px; }
+        .error-msg { display: none; padding: 12px 16px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; color: var(--danger); font-size: 14px; margin-top: 16px; }
+        .error-msg.show { display: block; }
+        .footer { text-align: center; padding: 20px; color: var(--text-dim); font-size: 12px; }
+        .footer a { color: var(--accent); text-decoration: none; }
+
+        @media (max-width: 640px) {
+            .container { padding: 16px 12px; }
+            .header h1 { font-size: 22px; }
+            .upload-zone { padding: 28px 16px; }
+            .tabs { flex-wrap: nowrap; overflow-x: auto; }
+            .tab { flex: 0 0 auto; font-size: 12px; padding: 8px 12px; }
+            .qa-message.user { margin-left: 20px; }
+            .qa-message.ai { margin-right: 20px; }
+            .results-header { flex-direction: column; gap: 12px; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-logo">
+                <div class="header-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="24" height="24">
+                        <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/>
+                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                        <line x1="9" y1="10" x2="15" y2="10"/>
+                        <line x1="9" y1="14" x2="15" y2="14"/>
+                        <line x1="9" y1="18" x2="12" y2="18"/>
+                    </svg>
+                </div>
+                <h1>ResumeForge</h1>
+            </div>
+            <p>Upload your resume + paste a job posting — AI tailors it for the perfect match</p>
+        </div>
+
+        <!-- Input View -->
+        <div id="inputView">
+            <div class="input-section">
+                <label>Your Resume <span>(PDF)</span></label>
+                <div class="upload-zone" id="uploadZone">
+                    <h3>Drop your resume here</h3>
+                    <p>or click to browse</p>
+                    <span class="browse-btn">Choose PDF</span>
+                    <input type="file" id="fileInput" accept=".pdf" style="display:none">
+                </div>
+                <div class="file-info" id="fileInfo">
+                    <div class="file-info-icon">PDF</div>
+                    <div class="file-info-details">
+                        <div class="file-info-name" id="fileName"></div>
+                        <div class="file-info-size" id="fileSize"></div>
+                    </div>
+                    <button class="remove-btn" id="removeBtn">&times;</button>
+                </div>
+            </div>
+
+            <div class="input-section" style="margin-top: 20px;">
+                <label>Job Posting <span>(paste the full description)</span></label>
+                <textarea class="job-textarea" id="jobTextarea" placeholder="Paste the job description here...&#10;&#10;Include the title, requirements, responsibilities, and qualifications."></textarea>
+            </div>
+
+            <button class="analyze-btn" id="analyzeBtn">Tailor My Resume</button>
+            <div class="error-msg" id="errorMsg"></div>
+        </div>
+
+        <!-- Processing -->
+        <div class="processing-view" id="processingView">
+            <div class="processing-spinner"></div>
+            <h3 id="processingTitle">Extracting resume...</h3>
+            <p class="processing-status" id="processingStatus">Reading your resume...</p>
+            <div class="progress-bar"><div class="progress-bar-fill" id="progressFill"></div></div>
+        </div>
+
+        <!-- Results -->
+        <div class="results-view" id="resultsView">
+            <div class="results-header">
+                <h2>Resume Analysis</h2>
+                <button class="new-btn" id="newBtn">New Resume</button>
+            </div>
+
+            <div class="match-score" id="matchScoreSection">
+                <div class="score-ring">
+                    <svg viewBox="0 0 100 100">
+                        <circle class="bg" cx="50" cy="50" r="42"/>
+                        <circle class="fg" id="scoreCircle" cx="50" cy="50" r="42" stroke-dasharray="264" stroke-dashoffset="264"/>
+                    </svg>
+                    <div class="score-num" id="scoreNum">0</div>
+                </div>
+                <div class="match-summary" id="matchSummary"></div>
+            </div>
+
+            <div class="tabs">
+                <button class="tab active" data-tab="gaps">Gaps</button>
+                <button class="tab" data-tab="matches">Matches</button>
+                <button class="tab" data-tab="bullets">Rewritten Bullets</button>
+                <button class="tab" data-tab="summary">Summary</button>
+                <button class="tab" data-tab="cover">Cover Letter</button>
+                <button class="tab" data-tab="qa">Q&A</button>
+            </div>
+
+            <div class="tab-content active" id="tab-gaps">
+                <ul class="item-list" id="gapsList"></ul>
+            </div>
+
+            <div class="tab-content" id="tab-matches">
+                <ul class="item-list" id="matchesList"></ul>
+            </div>
+
+            <div class="tab-content" id="tab-bullets">
+                <div id="bulletsList"></div>
+            </div>
+
+            <div class="tab-content" id="tab-summary">
+                <div class="text-block" id="suggestedSummary">
+                    <button class="copy-btn" onclick="copyText('suggestedSummaryText')">Copy</button>
+                    <div id="suggestedSummaryText"></div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="tab-cover">
+                <div class="text-block" id="coverLetter">
+                    <button class="copy-btn" onclick="copyText('coverLetterText')">Copy</button>
+                    <div id="coverLetterText"></div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="tab-qa">
+                <div class="qa-messages" id="qaMessages">
+                    <div class="qa-placeholder">
+                        <p>Ask anything about your application</p>
+                        <p>e.g. "How should I address the experience gap?" or "What skills should I highlight?"</p>
+                    </div>
+                </div>
+                <div class="qa-input-row">
+                    <input type="text" class="qa-input" id="qaInput" placeholder="Ask about your resume or this job...">
+                    <button class="qa-send-btn" id="qaSendBtn">Ask</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">Powered by <a href="https://suitegpt.app" target="_blank">SUITE</a></div>
+
+    <script>
+        let selectedFile = null, extractedText = '', jobText = '', qaHistory = [];
+        const $ = id => document.getElementById(id);
+
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        function chargeCredits(feature) {
+            if (window.parent !== window) {
+                window.parent.postMessage({ type: 'suite-charge-credits', appId: 'resumeforge', feature, chargeId: 'rf-' + Date.now(), amount: 5 }, '*');
+            }
+        }
+
+        function esc(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+        function formatSize(b) { if (b < 1024) return b + ' B'; if (b < 1048576) return (b/1024).toFixed(1) + ' KB'; return (b/1048576).toFixed(1) + ' MB'; }
+        function showError(msg) { $('errorMsg').textContent = msg; $('errorMsg').classList.add('show'); }
+        function hideError() { $('errorMsg').classList.remove('show'); }
+
+        // Upload
+        $('uploadZone').addEventListener('click', () => $('fileInput').click());
+        $('uploadZone').addEventListener('dragover', e => { e.preventDefault(); $('uploadZone').classList.add('drag-over'); });
+        $('uploadZone').addEventListener('dragleave', () => $('uploadZone').classList.remove('drag-over'));
+        $('uploadZone').addEventListener('drop', e => {
+            e.preventDefault(); $('uploadZone').classList.remove('drag-over');
+            const f = e.dataTransfer.files[0];
+            if (f && f.type === 'application/pdf') handleFile(f); else showError('Please upload a PDF');
+        });
+        $('fileInput').addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+        $('removeBtn').addEventListener('click', () => {
+            selectedFile = null; $('fileInput').value = '';
+            $('fileInfo').classList.remove('show'); checkReady(); hideError();
+        });
+
+        function handleFile(file) {
+            if (file.size > 50*1024*1024) { showError('File must be under 50MB'); return; }
+            selectedFile = file;
+            $('fileName').textContent = file.name;
+            $('fileSize').textContent = formatSize(file.size);
+            $('fileInfo').classList.add('show');
+            hideError(); checkReady();
+        }
+
+        $('jobTextarea').addEventListener('input', checkReady);
+
+        function checkReady() {
+            const ready = selectedFile && $('jobTextarea').value.trim().length > 20;
+            $('analyzeBtn').classList.toggle('show', ready);
+        }
+
+        // Analyze
+        $('analyzeBtn').addEventListener('click', async () => {
+            if (!selectedFile) return;
+            jobText = $('jobTextarea').value.trim();
+            if (!jobText) return;
+
+            $('analyzeBtn').disabled = true;
+            $('inputView').style.display = 'none';
+            $('processingView').classList.add('show');
+            $('progressFill').style.width = '0%';
+
+            try {
+                $('processingTitle').textContent = 'Extracting resume...';
+                $('processingStatus').textContent = 'Reading your resume PDF...';
+
+                const buf = await selectedFile.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+                let text = '';
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    $('processingStatus').textContent = `Page ${i} of ${pdf.numPages}...`;
+                    $('progressFill').style.width = `${(i/pdf.numPages)*50}%`;
+                    const page = await pdf.getPage(i);
+                    const content = await page.getTextContent();
+                    text += content.items.map(item => item.str).join(' ') + '\n\n';
+                }
+                extractedText = text.trim();
+                if (!extractedText || extractedText.length < 30) throw new Error('Could not extract text from this PDF.');
+
+                $('processingTitle').textContent = 'Tailoring your resume...';
+                $('processingStatus').textContent = 'AI is matching your experience to the job...';
+                $('progressFill').style.width = '60%';
+
+                chargeCredits('tailor');
+
+                const resp = await fetch('/api/resumeforge', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'tailor', resumeText: extractedText, jobPosting: jobText })
+                });
+                $('progressFill').style.width = '90%';
+                if (!resp.ok) { const err = await resp.json(); throw new Error(err.error || 'Analysis failed'); }
+                const result = await resp.json();
+                $('progressFill').style.width = '100%';
+                showResults(result);
+            } catch (err) {
+                $('processingView').classList.remove('show');
+                $('inputView').style.display = 'block';
+                $('analyzeBtn').disabled = false;
+                showError(err.message);
+            }
+        });
+
+        function showResults(data) {
+            $('processingView').classList.remove('show');
+            $('resultsView').classList.add('show');
+
+            // Score ring
+            const score = Math.min(100, Math.max(0, data.matchScore || 0));
+            const circumference = 264;
+            const offset = circumference - (score / 100) * circumference;
+            const circle = $('scoreCircle');
+            circle.style.strokeDashoffset = offset;
+            circle.style.stroke = score >= 70 ? '#10b981' : score >= 40 ? '#f59e0b' : '#ef4444';
+            $('scoreNum').textContent = score;
+            $('matchSummary').textContent = data.matchSummary || '';
+
+            // Gaps
+            const gapsList = $('gapsList');
+            if (data.keywordGaps?.length > 0) {
+                gapsList.innerHTML = data.keywordGaps.map(g => `<li><div class="gap-dot"></div>${esc(g)}</li>`).join('');
+            } else { gapsList.innerHTML = '<div class="no-items" style="color:var(--accent)">No keyword gaps found — great match!</div>'; }
+
+            // Matches
+            const matchesList = $('matchesList');
+            if (data.strongMatches?.length > 0) {
+                matchesList.innerHTML = data.strongMatches.map(m => `<li><div class="match-dot"></div>${esc(m)}</li>`).join('');
+            } else { matchesList.innerHTML = '<div class="no-items">No strong matches identified.</div>'; }
+
+            // Bullets
+            const bulletsList = $('bulletsList');
+            if (data.rewrittenBullets?.length > 0) {
+                bulletsList.innerHTML = data.rewrittenBullets.map(b => `
+                    <div class="bullet-card">
+                        <div class="bullet-label" style="color:var(--text-dim)">Original</div>
+                        <div class="bullet-original">${esc(b.original)}</div>
+                        <div class="bullet-label" style="color:var(--accent)">Tailored</div>
+                        <div class="bullet-improved">${esc(b.improved)}</div>
+                    </div>
+                `).join('');
+            } else { bulletsList.innerHTML = '<div class="no-items">No bullet rewrites generated.</div>'; }
+
+            // Summary
+            $('suggestedSummaryText').textContent = data.suggestedSummary || 'No summary generated.';
+
+            // Cover letter
+            $('coverLetterText').innerHTML = (data.coverLetterDraft || 'No cover letter generated.').split('\n\n').map(p => `<p style="margin-bottom:12px">${esc(p.trim())}</p>`).join('');
+
+            // Reset Q&A
+            qaHistory = [];
+            $('qaMessages').innerHTML = '<div class="qa-placeholder"><p>Ask anything about your application</p><p>e.g. "How should I address the experience gap?" or "What skills should I highlight?"</p></div>';
+        }
+
+        function copyText(elId) {
+            const text = $(elId).textContent;
+            navigator.clipboard.writeText(text).catch(() => {
+                const ta = document.createElement('textarea'); ta.value = text;
+                ta.style.cssText = 'position:fixed;left:-9999px'; document.body.appendChild(ta);
+                ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+            });
+            const btn = $(elId).parentElement.querySelector('.copy-btn');
+            btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 1500);
+        }
+
+        // Tabs
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                $('tab-' + tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        // Q&A
+        $('qaSendBtn').addEventListener('click', sendQuestion);
+        $('qaInput').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendQuestion(); } });
+
+        async function sendQuestion() {
+            const question = $('qaInput').value.trim();
+            if (!question || !extractedText) return;
+            const placeholder = $('qaMessages').querySelector('.qa-placeholder');
+            if (placeholder) placeholder.remove();
+            $('qaMessages').innerHTML += `<div class="qa-message user">${esc(question)}</div>`;
+            $('qaInput').value = ''; $('qaSendBtn').disabled = true; $('qaInput').disabled = true;
+            const lid = 'qa-' + Date.now();
+            $('qaMessages').innerHTML += `<div class="qa-message ai" id="${lid}">Thinking...</div>`;
+            $('qaMessages').scrollTop = $('qaMessages').scrollHeight;
+            try {
+                chargeCredits('qa');
+                const resp = await fetch('/api/resumeforge', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'qa', resumeText: extractedText, jobPosting: jobText, question, history: qaHistory })
+                });
+                if (!resp.ok) throw new Error((await resp.json()).error || 'Failed');
+                const result = await resp.json();
+                $(lid).textContent = result.answer;
+                qaHistory.push({ role: 'user', content: question }, { role: 'model', content: result.answer });
+            } catch (err) { $(lid).textContent = 'Error: ' + err.message; }
+            $('qaSendBtn').disabled = false; $('qaInput').disabled = false; $('qaInput').focus();
+            $('qaMessages').scrollTop = $('qaMessages').scrollHeight;
+        }
+
+        // New
+        $('newBtn').addEventListener('click', () => {
+            selectedFile = null; extractedText = ''; jobText = ''; qaHistory = [];
+            $('fileInput').value = ''; $('jobTextarea').value = '';
+            $('resultsView').classList.remove('show');
+            $('inputView').style.display = 'block';
+            $('fileInfo').classList.remove('show');
+            $('analyzeBtn').classList.remove('show');
+            $('analyzeBtn').disabled = false; hideError();
+        });
+    </script>
+</body>
+</html>
