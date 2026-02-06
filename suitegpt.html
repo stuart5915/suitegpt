@@ -7513,6 +7513,26 @@
             padding: 12px 10px;
             margin: 4px -10px;
         }
+
+        .agent-delete-btn {
+            padding: 12px 20px;
+            background: transparent;
+            border: 1px solid rgba(248, 113, 113, 0.3);
+            border-radius: 10px;
+            color: #f87171;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .agent-delete-btn:hover {
+            background: rgba(248, 113, 113, 0.1);
+            border-color: #f87171;
+        }
         /* === END AGENTS VIEW === */
 
         .factory-view-content {
@@ -23070,6 +23090,10 @@ Technical: JavaScript, HTML/CSS, React/React Native, Supabase (Postgres, Auth, S
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                     Wake Agent
                 </button>
+                <button class="agent-delete-btn" id="agentDeleteBtn" onclick="deleteAgent()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                    Delete
+                </button>
             </div>
             <div class="agent-detail-log">
                 <div class="agent-detail-log-title">Activity Log</div>
@@ -25263,6 +25287,38 @@ Technical: JavaScript, HTML/CSS, React/React Native, Supabase (Postgres, Auth, S
         function closeAgentDetail() {
             document.getElementById('agentDetailOverlay').classList.remove('active');
             currentDetailAgent = null;
+        }
+
+        async function deleteAgent() {
+            if (!currentDetailAgent) return;
+            if (!confirm(`Delete "${currentDetailAgent.name}"? This will remove the agent, its proposals, and any apps it built. This cannot be undone.`)) return;
+
+            const btn = document.getElementById('agentDeleteBtn');
+            btn.disabled = true;
+            btn.textContent = 'Deleting...';
+
+            try {
+                const resp = await fetch('/api/swarm/delete-agent', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ agent_slug: currentDetailAgent.slug })
+                });
+                const data = await resp.json();
+
+                if (!resp.ok || !data.success) {
+                    throw new Error(data.error || 'Delete failed');
+                }
+
+                showToast(data.message);
+                closeAgentDetail();
+                loadAgentsDirectory();
+
+            } catch (e) {
+                console.error('Delete agent error:', e);
+                btn.disabled = false;
+                btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg> Delete';
+                showToast('Failed: ' + (e.message || 'try again'));
+            }
         }
 
         async function wakeAgent() {
