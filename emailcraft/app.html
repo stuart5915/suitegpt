@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EmailCraft - AI Email Writer | SUITE</title>
+    <meta name="description" content="Describe your situation and AI writes the perfect professional email. Choose tone, get subject lines, and copy to clipboard.">
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #0a0a0f; --bg-card: #1a1a2e; --border: #2a2a3e;
+            --accent: #3b82f6; --accent-hover: #60a5fa;
+            --accent-glow: rgba(59, 130, 246, 0.12);
+            --text: #e2e8f0; --text-secondary: #94a3b8; --text-dim: #64748b;
+            --danger: #ef4444; --success: #10b981;
+        }
+        body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 800px; padding: 24px 20px; flex: 1; }
+
+        .header { text-align: center; margin-bottom: 28px; }
+        .header-logo { display: inline-flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+        .header-icon { width: 40px; height: 40px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+        .header h1 { font-size: 28px; font-weight: 700; background: linear-gradient(135deg, #e2e8f0, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header p { color: var(--text-secondary); font-size: 15px; }
+
+        /* Mode tabs */
+        .mode-tabs { display: flex; gap: 4px; background: var(--bg-card); padding: 4px; border-radius: 10px; margin-bottom: 24px; border: 1px solid var(--border); }
+        .mode-tab { flex: 1; padding: 10px 16px; background: none; border: none; color: var(--text-secondary); font-size: 14px; font-weight: 500; cursor: pointer; border-radius: 7px; transition: all 0.2s; font-family: inherit; }
+        .mode-tab:hover { color: var(--text); }
+        .mode-tab.active { background: var(--accent); color: white; }
+
+        .mode-content { display: none; }
+        .mode-content.active { display: block; }
+
+        /* Form */
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary); }
+        .form-textarea { width: 100%; min-height: 120px; padding: 14px 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-size: 14px; font-family: inherit; outline: none; resize: vertical; transition: border-color 0.2s; line-height: 1.6; }
+        .form-textarea:focus { border-color: var(--accent); }
+        .form-textarea::placeholder { color: var(--text-dim); }
+        .form-input { width: 100%; padding: 12px 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-size: 14px; font-family: inherit; outline: none; transition: border-color 0.2s; }
+        .form-input:focus { border-color: var(--accent); }
+        .form-input::placeholder { color: var(--text-dim); }
+
+        /* Tone selector */
+        .tone-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+        .tone-btn { padding: 8px 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+        .tone-btn:hover { border-color: var(--accent); color: var(--text); }
+        .tone-btn.active { background: var(--accent-glow); border-color: var(--accent); color: var(--accent-hover); }
+
+        .generate-btn { width: 100%; margin-top: 20px; padding: 14px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+        .generate-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(59,130,246,0.3); }
+        .generate-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* Loading */
+        .loading { display: none; text-align: center; padding: 40px; }
+        .loading.show { display: block; }
+        .loading-spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading p { color: var(--text-secondary); font-size: 14px; }
+
+        /* Result */
+        .result { display: none; }
+        .result.show { display: block; }
+
+        .result-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+        .result-header h3 { font-size: 16px; font-weight: 600; }
+        .result-actions { display: flex; gap: 8px; }
+
+        .btn-sm { padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit; transition: all 0.2s; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-secondary); }
+        .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+        .btn-sm.primary { background: var(--accent); border-color: var(--accent); color: white; }
+        .btn-sm.primary:hover { background: var(--accent-hover); }
+
+        .subject-line { padding: 12px 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 12px; }
+        .subject-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin-bottom: 4px; }
+        .subject-text { font-size: 15px; font-weight: 600; }
+
+        .email-body { padding: 20px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; font-size: 14px; line-height: 1.7; white-space: pre-wrap; margin-bottom: 16px; }
+
+        .alt-subjects { margin-bottom: 16px; }
+        .alt-subjects h4 { font-size: 12px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+        .alt-subject { padding: 8px 12px; background: rgba(255,255,255,0.02); border-radius: 6px; font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; cursor: pointer; transition: all 0.2s; }
+        .alt-subject:hover { background: var(--accent-glow); color: var(--text); }
+
+        .tips { padding: 16px; background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.15); border-radius: 10px; }
+        .tips h4 { font-size: 12px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+        .tips li { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 4px; margin-left: 16px; }
+
+        /* Refine bar */
+        .refine-bar { display: flex; gap: 8px; margin-top: 16px; }
+        .refine-input { flex: 1; padding: 10px 14px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px; font-family: inherit; outline: none; }
+        .refine-input:focus { border-color: var(--accent); }
+        .refine-input::placeholder { color: var(--text-dim); }
+        .refine-btn { padding: 10px 18px; background: var(--accent); color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; white-space: nowrap; }
+        .refine-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .error-msg { display: none; padding: 12px 16px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; color: var(--danger); font-size: 14px; margin-top: 16px; }
+        .error-msg.show { display: block; }
+
+        .footer { text-align: center; padding: 20px; color: var(--text-dim); font-size: 12px; }
+        .footer a { color: var(--accent); text-decoration: none; }
+
+        @media (max-width: 640px) {
+            .container { padding: 16px 12px; }
+            .header h1 { font-size: 22px; }
+            .mode-tabs { flex-wrap: wrap; }
+            .mode-tab { flex: 1 1 30%; font-size: 13px; }
+            .result-header { flex-direction: column; gap: 10px; align-items: flex-start; }
+            .refine-bar { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-logo">
+                <div class="header-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="24" height="24">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                </div>
+                <h1>EmailCraft</h1>
+            </div>
+            <p>Describe your situation — AI writes the perfect email</p>
+        </div>
+
+        <!-- Mode Tabs -->
+        <div class="mode-tabs">
+            <button class="mode-tab active" data-mode="write" onclick="switchMode('write')">Write New</button>
+            <button class="mode-tab" data-mode="reply" onclick="switchMode('reply')">Write Reply</button>
+        </div>
+
+        <!-- Write Mode -->
+        <div class="mode-content active" id="mode-write">
+            <div class="form-group">
+                <label>What's the situation?</label>
+                <textarea class="form-textarea" id="situationInput" placeholder="e.g. I need to ask my manager for a raise. I've been at the company for 2 years and took on 3 additional projects this quarter..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Who is this to?</label>
+                <input class="form-input" id="recipientInput" placeholder="e.g. My manager, a client, HR, a professor...">
+            </div>
+            <div class="form-group">
+                <label>Tone</label>
+                <div class="tone-grid" id="toneGrid">
+                    <button class="tone-btn active" data-tone="professional">Professional</button>
+                    <button class="tone-btn" data-tone="friendly">Friendly</button>
+                    <button class="tone-btn" data-tone="formal">Formal</button>
+                    <button class="tone-btn" data-tone="assertive">Assertive</button>
+                    <button class="tone-btn" data-tone="apologetic">Apologetic</button>
+                    <button class="tone-btn" data-tone="grateful">Grateful</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Additional context <span style="color:var(--text-dim);font-weight:400">(optional)</span></label>
+                <input class="form-input" id="contextInput" placeholder="Any extra details the AI should know...">
+            </div>
+            <button class="generate-btn" id="generateBtn" onclick="generateEmail()">Write My Email</button>
+        </div>
+
+        <!-- Reply Mode -->
+        <div class="mode-content" id="mode-reply">
+            <div class="form-group">
+                <label>Paste the email you're replying to</label>
+                <textarea class="form-textarea" id="replyOriginal" style="min-height:150px" placeholder="Paste the original email here..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>What do you want to say? <span style="color:var(--text-dim);font-weight:400">(brief is fine)</span></label>
+                <textarea class="form-textarea" id="replyContext" style="min-height:80px" placeholder="e.g. I want to politely decline the meeting and suggest an alternative time..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Tone</label>
+                <div class="tone-grid" id="replyToneGrid">
+                    <button class="tone-btn active" data-tone="professional">Professional</button>
+                    <button class="tone-btn" data-tone="friendly">Friendly</button>
+                    <button class="tone-btn" data-tone="formal">Formal</button>
+                    <button class="tone-btn" data-tone="assertive">Assertive</button>
+                </div>
+            </div>
+            <button class="generate-btn" id="replyBtn" onclick="generateReply()">Write My Reply</button>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <p>Crafting your email...</p>
+        </div>
+
+        <!-- Result -->
+        <div class="result" id="result">
+            <div class="result-header">
+                <h3>Your Email</h3>
+                <div class="result-actions">
+                    <button class="btn-sm primary" onclick="copyEmail()">Copy Email</button>
+                    <button class="btn-sm" onclick="startOver()">Start Over</button>
+                </div>
+            </div>
+
+            <div class="subject-line">
+                <div class="subject-label">Subject</div>
+                <div class="subject-text" id="resultSubject"></div>
+            </div>
+
+            <div class="email-body" id="resultBody"></div>
+
+            <div class="alt-subjects" id="altSubjects">
+                <h4>Alternative Subject Lines</h4>
+                <div id="altSubjectsList"></div>
+            </div>
+
+            <div class="tips" id="tipsSection">
+                <h4>Tips</h4>
+                <ul id="tipsList"></ul>
+            </div>
+
+            <div class="refine-bar">
+                <input class="refine-input" id="refineInput" placeholder="Refine: make it shorter, more formal, add urgency...">
+                <button class="refine-btn" id="refineBtn" onclick="refineEmail()">Refine</button>
+            </div>
+        </div>
+
+        <div class="error-msg" id="errorMsg"></div>
+    </div>
+
+    <div class="footer">Powered by <a href="https://suitegpt.app" target="_blank">SUITE</a></div>
+
+    <script>
+        let currentSubject = '', currentBody = '', currentMode = 'write';
+        const $ = id => document.getElementById(id);
+
+        function chargeCredits(feature) {
+            if (window.parent !== window) {
+                window.parent.postMessage({ type: 'suite-charge-credits', appId: 'emailcraft', feature, chargeId: 'ec-' + Date.now(), amount: 5 }, '*');
+            }
+        }
+
+        function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+        // Mode switching
+        function switchMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
+            document.querySelectorAll('.mode-content').forEach(c => c.classList.remove('active'));
+            $('mode-' + mode).classList.add('active');
+            $('result').classList.remove('show');
+            $('loading').classList.remove('show');
+            hideError();
+        }
+
+        // Tone selection
+        document.querySelectorAll('.tone-grid').forEach(grid => {
+            grid.addEventListener('click', e => {
+                const btn = e.target.closest('.tone-btn');
+                if (!btn) return;
+                grid.querySelectorAll('.tone-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+
+        function getActiveTone(gridId) {
+            return $('toneGrid').closest('.mode-content.active')?.querySelector('.tone-btn.active')?.dataset.tone || 'professional';
+        }
+
+        function showError(msg) { $('errorMsg').textContent = msg; $('errorMsg').classList.add('show'); }
+        function hideError() { $('errorMsg').classList.remove('show'); }
+
+        async function generateEmail() {
+            const situation = $('situationInput').value.trim();
+            if (!situation) { showError('Describe the situation first'); return; }
+
+            const tone = $('toneGrid').querySelector('.tone-btn.active')?.dataset.tone || 'professional';
+            const recipient = $('recipientInput').value.trim();
+            const context = $('contextInput').value.trim();
+
+            hideError();
+            $('mode-write').style.display = 'none';
+            $('loading').classList.add('show');
+
+            try {
+                chargeCredits('generate');
+                const resp = await fetch('/api/emailcraft', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'generate', situation, tone, recipient, context })
+                });
+                if (!resp.ok) throw new Error((await resp.json()).error || 'Failed');
+                const data = await resp.json();
+                showResult(data);
+            } catch (err) {
+                $('loading').classList.remove('show');
+                $('mode-write').style.display = 'block';
+                showError(err.message);
+            }
+        }
+
+        async function generateReply() {
+            const emailText = $('replyOriginal').value.trim();
+            if (!emailText) { showError('Paste the email you\'re replying to'); return; }
+
+            const situation = $('replyContext').value.trim();
+            const tone = $('replyToneGrid').querySelector('.tone-btn.active')?.dataset.tone || 'professional';
+
+            hideError();
+            $('mode-reply').style.display = 'none';
+            $('loading').classList.add('show');
+
+            try {
+                chargeCredits('reply');
+                const resp = await fetch('/api/emailcraft', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'reply', emailText, situation, tone })
+                });
+                if (!resp.ok) throw new Error((await resp.json()).error || 'Failed');
+                const data = await resp.json();
+                showResult(data);
+            } catch (err) {
+                $('loading').classList.remove('show');
+                $('mode-reply').style.display = 'block';
+                showError(err.message);
+            }
+        }
+
+        function showResult(data) {
+            $('loading').classList.remove('show');
+
+            currentSubject = data.subject || '';
+            currentBody = data.body || '';
+
+            $('resultSubject').textContent = currentSubject;
+            $('resultBody').textContent = currentBody;
+
+            // Alt subjects
+            if (data.alternateSubjects?.length > 0) {
+                $('altSubjects').style.display = 'block';
+                $('altSubjectsList').innerHTML = data.alternateSubjects.map(s =>
+                    `<div class="alt-subject" onclick="this.closest('.result').querySelector('.subject-text').textContent='${esc(s)}'; currentSubject='${s.replace(/'/g, "\\'")}';">${esc(s)}</div>`
+                ).join('');
+            } else {
+                $('altSubjects').style.display = 'none';
+            }
+
+            // Tips
+            if (data.tips?.length > 0) {
+                $('tipsSection').style.display = 'block';
+                $('tipsList').innerHTML = data.tips.map(t => `<li>${esc(t)}</li>`).join('');
+            } else {
+                $('tipsSection').style.display = 'none';
+            }
+
+            $('result').classList.add('show');
+        }
+
+        function copyEmail() {
+            const text = `Subject: ${currentSubject}\n\n${currentBody}`;
+            navigator.clipboard.writeText(text).catch(() => {
+                const ta = document.createElement('textarea'); ta.value = text;
+                ta.style.cssText = 'position:fixed;left:-9999px'; document.body.appendChild(ta);
+                ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+            });
+            const btn = document.querySelector('.btn-sm.primary');
+            btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy Email', 1500);
+        }
+
+        async function refineEmail() {
+            const instruction = $('refineInput').value.trim();
+            if (!instruction || !currentBody) return;
+
+            $('refineBtn').disabled = true;
+            $('refineBtn').textContent = 'Refining...';
+
+            try {
+                chargeCredits('refine');
+                const resp = await fetch('/api/emailcraft', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'refine', emailText: `Subject: ${currentSubject}\n\n${currentBody}`, instruction })
+                });
+                if (!resp.ok) throw new Error((await resp.json()).error || 'Failed');
+                const data = await resp.json();
+                currentSubject = data.subject || currentSubject;
+                currentBody = data.body || currentBody;
+                $('resultSubject').textContent = currentSubject;
+                $('resultBody').textContent = currentBody;
+                $('refineInput').value = '';
+
+                if (data.changes?.length > 0) {
+                    $('tipsSection').style.display = 'block';
+                    $('tipsList').innerHTML = data.changes.map(c => `<li>${esc(c)}</li>`).join('');
+                    $('tipsSection').querySelector('h4').textContent = 'Changes Made';
+                }
+            } catch (err) {
+                showError(err.message);
+            }
+
+            $('refineBtn').disabled = false;
+            $('refineBtn').textContent = 'Refine';
+        }
+
+        $('refineInput').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); refineEmail(); } });
+
+        function startOver() {
+            $('result').classList.remove('show');
+            hideError();
+            if (currentMode === 'write') {
+                $('mode-write').style.display = 'block';
+                $('situationInput').value = '';
+                $('recipientInput').value = '';
+                $('contextInput').value = '';
+            } else {
+                $('mode-reply').style.display = 'block';
+                $('replyOriginal').value = '';
+                $('replyContext').value = '';
+            }
+        }
+    </script>
+</body>
+</html>
