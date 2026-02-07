@@ -213,6 +213,7 @@
         const authName = urlParams.get('name');
         const authEntityType = urlParams.get('entityType');
         const authApiKey = urlParams.get('apiKey');
+        const authTgId = urlParams.get('tgId');
 
         const playerName = authName || 'Player' + Math.floor(Math.random() * 9999);
         const playerColor = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6,'0');
@@ -444,6 +445,7 @@
                 const client = new Colyseus.Client(WS_URL);
                 const joinOptions = {name:playerName, color:playerColor};
                 if (authToken) joinOptions.supabaseToken = authToken;
+                if (authTgId) joinOptions.tgId = authTgId;
                 if (authEntityType) joinOptions.entityType = authEntityType;
                 if (authApiKey) joinOptions.apiKey = authApiKey;
                 room = await client.joinOrCreate('agentscape', joinOptions);

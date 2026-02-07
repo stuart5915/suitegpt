@@ -158,6 +158,17 @@ export class AgentScapeRoom extends Room<GameState> {
             }
         }
 
+        // Telegram auth — use tg: prefix for persistent saves
+        if (options?.tgId && !player.supabaseUserId) {
+            const tgUserId = 'tg:' + options.tgId;
+            player.supabaseUserId = tgUserId;
+            const saved = await this.supabase.loadPlayerByUserId(tgUserId);
+            if (saved) {
+                this.supabase.restorePlayer(player, saved);
+                console.log(`[AgentScapeRoom] Restored Telegram save for ${player.name} (${tgUserId})`);
+            }
+        }
+
         // Find walkable spawn in SUITE City center
         let sx = 40, sz = 38;
         if (this.map.grid[sx][sz] === 0) {
