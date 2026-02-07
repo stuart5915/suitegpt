@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NutriScan — AI Food Photo Analyzer</title>
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+
+        .app-container { max-width: 800px; margin: 0 auto; padding: 24px; }
+
+        .app-header { text-align: center; margin-bottom: 32px; padding-top: 20px; }
+        .app-header h1 { font-size: 2rem; font-weight: 800; margin-bottom: 8px; }
+        .app-header h1 span { background: linear-gradient(135deg, #4ade80, #22c55e); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .app-header p { color: #94a3b8; font-size: 0.95rem; }
+
+        .input-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; margin-bottom: 24px; }
+        .input-section h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; color: #4ade80; }
+
+        .upload-zone {
+            border: 2px dashed #2a2a3e; border-radius: 14px; padding: 40px 20px; text-align: center;
+            cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden; margin-bottom: 18px;
+        }
+        .upload-zone:hover, .upload-zone.dragover { border-color: #22c55e; background: rgba(34, 197, 94, 0.05); }
+        .upload-zone .icon { font-size: 3rem; margin-bottom: 12px; }
+        .upload-zone .text { color: #94a3b8; font-size: 0.9rem; margin-bottom: 4px; }
+        .upload-zone .hint { color: #64748b; font-size: 0.75rem; }
+        .upload-zone input { display: none; }
+
+        .preview-container { display: none; margin-bottom: 18px; text-align: center; }
+        .preview-img { max-width: 100%; max-height: 300px; border-radius: 12px; border: 1px solid #2a2a3e; }
+        .preview-name { font-size: 0.8rem; color: #94a3b8; margin-top: 8px; }
+        .remove-btn { display: inline-block; margin-top: 8px; padding: 6px 14px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); color: #f87171; border-radius: 6px; font-size: 0.75rem; cursor: pointer; }
+
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: #94a3b8; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-group input {
+            width: 100%; padding: 12px 16px; background: #0f0f1a; border: 1px solid #2a2a3e;
+            border-radius: 10px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem;
+        }
+        .form-group input:focus { outline: none; border-color: #22c55e; }
+
+        .generate-btn {
+            width: 100%; padding: 16px; background: linear-gradient(135deg, #4ade80, #22c55e);
+            color: #000; font-weight: 700; font-size: 1rem; border: none; border-radius: 12px;
+            cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .generate-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(34, 197, 94, 0.3); }
+        .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .loading { text-align: center; padding: 60px 20px; }
+        .loading .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #22c55e; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading p { color: #94a3b8; font-size: 0.9rem; }
+
+        .results-section { display: none; }
+
+        /* Summary cards */
+        .summary-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        .summary-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 18px; text-align: center; }
+        .summary-card .val { font-size: 2rem; font-weight: 800; }
+        .summary-card .val.cal { color: #4ade80; }
+        .summary-card .val.score { color: #fbbf24; }
+        .summary-card .lbl { font-size: 0.7rem; color: #94a3b8; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .meal-header { margin-bottom: 20px; }
+        .meal-name { font-size: 1.3rem; font-weight: 800; margin-bottom: 4px; }
+        .meal-desc { font-size: 0.85rem; color: #94a3b8; line-height: 1.5; }
+
+        /* Macro bars */
+        .macro-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+        .macro-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; text-align: center; }
+        .macro-name { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+        .macro-val { font-size: 1.3rem; font-weight: 800; }
+        .macro-val.protein { color: #f87171; }
+        .macro-val.carbs { color: #fbbf24; }
+        .macro-val.fat { color: #a78bfa; }
+        .macro-val.fiber { color: #34d399; }
+        .macro-pct { font-size: 0.7rem; color: #64748b; margin-top: 2px; }
+        .macro-bar { width: 100%; height: 6px; background: #0f0f1a; border-radius: 3px; margin-top: 8px; overflow: hidden; }
+        .macro-fill { height: 100%; border-radius: 3px; }
+        .macro-fill.protein { background: #f87171; }
+        .macro-fill.carbs { background: #fbbf24; }
+        .macro-fill.fat { background: #a78bfa; }
+        .macro-fill.fiber { background: #34d399; }
+        .macro-rating { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; margin-top: 4px; }
+        .macro-rating.good { color: #22c55e; }
+        .macro-rating.low { color: #fbbf24; }
+        .macro-rating.high { color: #f87171; }
+
+        .tab-bar { display: flex; gap: 4px; background: #1a1a2e; border-radius: 12px; padding: 4px; margin-bottom: 24px; overflow-x: auto; }
+        .tab-btn {
+            flex: 1; padding: 10px 10px; background: transparent; border: none; color: #64748b;
+            font-weight: 600; font-size: 0.78rem; border-radius: 8px; cursor: pointer; transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .tab-btn.active { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+        .tab-btn:hover:not(.active) { color: #94a3b8; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .item-row { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 14px 18px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .item-name { font-weight: 700; font-size: 0.9rem; }
+        .item-portion { font-size: 0.75rem; color: #64748b; }
+        .item-macros { display: flex; gap: 14px; font-size: 0.75rem; color: #94a3b8; }
+        .item-macros span { font-weight: 600; }
+
+        .micro-row { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 18px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+        .micro-name { font-weight: 600; font-size: 0.85rem; }
+        .micro-info { text-align: right; }
+        .micro-amount { font-size: 0.85rem; font-weight: 700; color: #4ade80; }
+        .micro-dv { font-size: 0.7rem; color: #64748b; }
+
+        .suggestion-item { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 14px 18px; margin-bottom: 8px; font-size: 0.85rem; line-height: 1.5; display: flex; gap: 10px; }
+
+        .diet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .diet-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 14px; }
+        .diet-name { font-weight: 700; font-size: 0.85rem; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+        .diet-compat { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; }
+        .diet-compat.yes { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+        .diet-compat.no { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .diet-reason { font-size: 0.75rem; color: #94a3b8; }
+
+        .section-title { font-size: 1rem; font-weight: 700; margin-bottom: 14px; color: #4ade80; }
+
+        /* Q&A */
+        .qa-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 20px; }
+        .qa-messages { max-height: 400px; overflow-y: auto; margin-bottom: 16px; }
+        .qa-msg { margin-bottom: 12px; padding: 12px 16px; border-radius: 12px; font-size: 0.85rem; line-height: 1.6; }
+        .qa-msg.user { background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.2); margin-left: 40px; }
+        .qa-msg.ai { background: #0f0f1a; border: 1px solid #2a2a3e; margin-right: 40px; }
+        .qa-input-row { display: flex; gap: 10px; }
+        .qa-input { flex: 1; padding: 12px 16px; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; }
+        .qa-input:focus { outline: none; border-color: #22c55e; }
+        .qa-send { padding: 12px 20px; background: linear-gradient(135deg, #4ade80, #22c55e); color: #000; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 0.85rem; }
+        .qa-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .new-btn { display: inline-block; margin-top: 20px; padding: 12px 28px; background: #1a1a2e; border: 1px solid #2a2a3e; color: #94a3b8; font-weight: 600; font-size: 0.85rem; border-radius: 10px; cursor: pointer; transition: all 0.2s; }
+        .new-btn:hover { border-color: #22c55e; color: #4ade80; }
+
+        .hidden { display: none !important; }
+
+        @media (max-width: 640px) {
+            .summary-row { grid-template-columns: 1fr; }
+            .macro-grid { grid-template-columns: 1fr 1fr; }
+            .diet-grid { grid-template-columns: 1fr; }
+            .qa-msg.user { margin-left: 20px; }
+            .qa-msg.ai { margin-right: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="app-header">
+            <h1>Nutri<span>Scan</span></h1>
+            <p>Photo your food — get instant calories, macros, and nutritional breakdown</p>
+        </div>
+
+        <!-- Input -->
+        <div id="inputSection" class="input-section">
+            <h2>Upload Your Meal</h2>
+
+            <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                <div class="icon">📸</div>
+                <div class="text">Drop your food photo here or click to browse</div>
+                <div class="hint">Supports JPG, PNG, WebP — max 4MB</div>
+                <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" onchange="handleFile(this.files[0])">
+            </div>
+
+            <div class="preview-container" id="previewContainer">
+                <img id="previewImg" class="preview-img">
+                <div id="previewName" class="preview-name"></div>
+                <div class="remove-btn" onclick="removeImage()">✕ Remove</div>
+            </div>
+
+            <div class="form-group">
+                <label>Extra Context (optional)</label>
+                <input type="text" id="descInput" placeholder="e.g. homemade, restaurant portion, dressing on the side...">
+            </div>
+
+            <button class="generate-btn" id="analyzeBtn" onclick="analyzeFood()">Scan Nutrition →</button>
+        </div>
+
+        <!-- Loading -->
+        <div id="loadingSection" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Analyzing your meal...</p>
+        </div>
+
+        <!-- Results -->
+        <div id="resultsSection" class="results-section">
+            <div id="mealHeader" class="meal-header"></div>
+            <div id="summaryRow" class="summary-row"></div>
+            <div id="macroGrid" class="macro-grid"></div>
+
+            <div class="tab-bar">
+                <button class="tab-btn active" onclick="switchTab('items')">Food Items</button>
+                <button class="tab-btn" onclick="switchTab('micros')">Micronutrients</button>
+                <button class="tab-btn" onclick="switchTab('diet')">Diet Check</button>
+                <button class="tab-btn" onclick="switchTab('tips')">Tips</button>
+                <button class="tab-btn" onclick="switchTab('qa')">Nutrition Q&A</button>
+            </div>
+
+            <div id="tab-items" class="tab-content active"></div>
+            <div id="tab-micros" class="tab-content"></div>
+            <div id="tab-diet" class="tab-content"></div>
+            <div id="tab-tips" class="tab-content"></div>
+            <div id="tab-qa" class="tab-content">
+                <div class="qa-section">
+                    <div class="qa-messages" id="qaMessages">
+                        <div class="qa-msg ai">Ask me anything about this meal — calories, substitutions, how it fits your diet, or healthier alternatives.</div>
+                    </div>
+                    <div class="qa-input-row">
+                        <input type="text" class="qa-input" id="qaInput" placeholder="Ask about nutrition..." onkeydown="if(event.key==='Enter')askQuestion()">
+                        <button class="qa-send" id="qaSendBtn" onclick="askQuestion()">Ask</button>
+                    </div>
+                </div>
+            </div>
+
+            <div style="text-align: center;">
+                <button class="new-btn" onclick="resetApp()">← Scan Another Meal</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentResult = null;
+        let qaHistory = [];
+        let imageBase64 = null;
+        let imageMimeType = null;
+
+        // Drag and drop
+        const zone = document.getElementById('uploadZone');
+        zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+        zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+        zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('dragover'); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+
+        function handleFile(file) {
+            if (!file) return;
+            if (file.size > 4 * 1024 * 1024) { alert('Image must be under 4MB'); return; }
+            if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { alert('Please upload a JPG, PNG, or WebP image'); return; }
+
+            imageMimeType = file.type;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const base64Full = e.target.result;
+                imageBase64 = base64Full.split(',')[1]; // Remove data:image/...;base64, prefix
+                document.getElementById('previewImg').src = base64Full;
+                document.getElementById('previewName').textContent = file.name + ' (' + (file.size / 1024).toFixed(0) + ' KB)';
+                document.getElementById('previewContainer').style.display = 'block';
+                document.getElementById('uploadZone').style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeImage() {
+            imageBase64 = null;
+            imageMimeType = null;
+            document.getElementById('previewContainer').style.display = 'none';
+            document.getElementById('uploadZone').style.display = 'block';
+            document.getElementById('fileInput').value = '';
+        }
+
+        function chargeCredits(feature, amount) {
+            if (window.parent !== window) {
+                window.parent.postMessage({ type: 'suite-charge-credits', appId: 'nutriscan', feature, chargeId: Date.now().toString(), amount: amount || 5 }, '*');
+            }
+        }
+
+        async function analyzeFood() {
+            if (!imageBase64) { alert('Please upload a photo of your food.'); return; }
+
+            document.getElementById('inputSection').classList.add('hidden');
+            document.getElementById('loadingSection').classList.remove('hidden');
+            document.getElementById('analyzeBtn').disabled = true;
+
+            try {
+                chargeCredits('analyze');
+
+                const resp = await fetch('/api/nutriscan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mode: 'analyze',
+                        image: imageBase64,
+                        mimeType: imageMimeType,
+                        description: document.getElementById('descInput').value.trim()
+                    })
+                });
+
+                const data = await resp.json();
+                if (data.error) throw new Error(data.error);
+                if (data.raw) throw new Error('Unexpected response format');
+
+                currentResult = data;
+                renderResults(data);
+            } catch (err) {
+                alert('Error: ' + err.message);
+                document.getElementById('inputSection').classList.remove('hidden');
+            } finally {
+                document.getElementById('loadingSection').classList.add('hidden');
+                document.getElementById('analyzeBtn').disabled = false;
+            }
+        }
+
+        function renderResults(d) {
+            // Header
+            document.getElementById('mealHeader').innerHTML = `
+                <div class="meal-name">${d.mealName || 'Your Meal'}</div>
+                <div class="meal-desc">${d.mealDescription || ''}</div>
+            `;
+
+            // Summary
+            document.getElementById('summaryRow').innerHTML = `
+                <div class="summary-card"><div class="val cal">${d.totalCalories || '?'}</div><div class="lbl">Calories</div></div>
+                <div class="summary-card"><div class="val score">${d.healthScore || '?'}<span style="font-size:0.8rem;color:#64748b">/10</span></div><div class="lbl">Health Score</div></div>
+                <div class="summary-card"><div class="val" style="color:#94a3b8;font-size:1rem">${d.mealTiming || 'Anytime'}</div><div class="lbl">Best Timing</div></div>
+            `;
+
+            // Macros
+            const m = d.macros || {};
+            const renderMacro = (key, label, cls) => {
+                const data = m[key] || {};
+                return `<div class="macro-card">
+                    <div class="macro-name">${label}</div>
+                    <div class="macro-val ${cls}">${data.grams || 0}g</div>
+                    ${data.percentage ? `<div class="macro-pct">${data.percentage}%</div>` : ''}
+                    <div class="macro-bar"><div class="macro-fill ${cls}" style="width:${Math.min(data.percentage || 0, 100)}%"></div></div>
+                    ${data.rating ? `<div class="macro-rating ${data.rating}">${data.rating}</div>` : ''}
+                </div>`;
+            };
+            document.getElementById('macroGrid').innerHTML =
+                renderMacro('protein', 'Protein', 'protein') +
+                renderMacro('carbs', 'Carbs', 'carbs') +
+                renderMacro('fat', 'Fat', 'fat') +
+                renderMacro('fiber', 'Fiber', 'fiber');
+
+            // Food items tab
+            document.getElementById('tab-items').innerHTML = `
+                <div class="section-title">Food Items Detected</div>
+                ${(d.items || []).map(it => `
+                    <div class="item-row">
+                        <div>
+                            <div class="item-name">${it.name}</div>
+                            <div class="item-portion">${it.portion || ''}</div>
+                        </div>
+                        <div class="item-macros">
+                            <span style="color:#4ade80">${it.calories || 0} cal</span>
+                            <span style="color:#f87171">P${it.protein || 0}g</span>
+                            <span style="color:#fbbf24">C${it.carbs || 0}g</span>
+                            <span style="color:#a78bfa">F${it.fat || 0}g</span>
+                        </div>
+                    </div>
+                `).join('')}
+            `;
+
+            // Micronutrients tab
+            document.getElementById('tab-micros').innerHTML = `
+                <div class="section-title">Notable Micronutrients</div>
+                ${(d.micronutrients || []).map(mn => `
+                    <div class="micro-row">
+                        <div>
+                            <div class="micro-name">${mn.name}</div>
+                            <div style="font-size:0.7rem;color:#64748b">${mn.source || ''}</div>
+                        </div>
+                        <div class="micro-info">
+                            <div class="micro-amount">${mn.amount || ''}</div>
+                            ${mn.dailyValue ? `<div class="micro-dv">${mn.dailyValue} DV</div>` : ''}
+                        </div>
+                    </div>
+                `).join('')}
+            `;
+
+            // Diet tab
+            const dc = d.dietCompatibility || {};
+            document.getElementById('tab-diet').innerHTML = `
+                <div class="section-title">Diet Compatibility</div>
+                <div class="diet-grid">
+                    ${Object.entries(dc).map(([key, val]) => `
+                        <div class="diet-card">
+                            <div class="diet-name">
+                                <span class="diet-compat ${val.compatible ? 'yes' : 'no'}">${val.compatible ? '✓' : '✕'}</span>
+                                ${key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')}
+                            </div>
+                            <div class="diet-reason">${val.reason || ''}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            // Tips tab
+            document.getElementById('tab-tips').innerHTML = `
+                <div class="section-title">Nutritional Suggestions</div>
+                ${(d.suggestions || []).map(s => `<div class="suggestion-item"><span>💡</span>${s}</div>`).join('')}
+                ${d.healthNotes ? `<div class="suggestion-item" style="margin-top:12px;"><span>📊</span>${d.healthNotes}</div>` : ''}
+            `;
+
+            document.getElementById('resultsSection').style.display = 'block';
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('tab-' + tab).classList.add('active');
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const question = input.value.trim();
+            if (!question) return;
+
+            const msgs = document.getElementById('qaMessages');
+            msgs.innerHTML += `<div class="qa-msg user">${question}</div>`;
+            input.value = '';
+            document.getElementById('qaSendBtn').disabled = true;
+            msgs.innerHTML += `<div class="qa-msg ai" id="qaLoading"><em>Thinking...</em></div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+
+            try {
+                chargeCredits('qa');
+                const resp = await fetch('/api/nutriscan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'qa', question, context: JSON.stringify(currentResult), history: qaHistory })
+                });
+                const data = await resp.json();
+                document.getElementById('qaLoading').remove();
+                const answer = data.answer || data.error || 'No response.';
+                msgs.innerHTML += `<div class="qa-msg ai">${answer.replace(/\n/g, '<br>')}</div>`;
+                qaHistory.push({ role: 'user', content: question });
+                qaHistory.push({ role: 'assistant', content: answer });
+            } catch (err) {
+                document.getElementById('qaLoading').remove();
+                msgs.innerHTML += `<div class="qa-msg ai">Error: ${err.message}</div>`;
+            } finally {
+                document.getElementById('qaSendBtn').disabled = false;
+                msgs.scrollTop = msgs.scrollHeight;
+            }
+        }
+
+        function resetApp() {
+            currentResult = null;
+            qaHistory = [];
+            removeImage();
+            document.getElementById('descInput').value = '';
+            document.getElementById('qaMessages').innerHTML = '<div class="qa-msg ai">Ask me anything about this meal.</div>';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('inputSection').classList.remove('hidden');
+            document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === 0));
+            document.querySelectorAll('.tab-content').forEach((c, i) => c.classList.toggle('active', i === 0));
+        }
+    </script>
+</body>
+</html>
