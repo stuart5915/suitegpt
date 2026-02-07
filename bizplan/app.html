@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BizPlan AI — Business Plan Generator | SUITE</title>
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+
+        .app-header { background: linear-gradient(135deg, rgba(6,182,212,0.15), rgba(8,145,178,0.08)); border-bottom: 1px solid rgba(6,182,212,0.2); padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+        .app-header h1 { font-size: 1.3rem; font-weight: 800; background: linear-gradient(135deg, #06b6d4, #0891b2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .app-header span { font-size: 0.8rem; color: #94a3b8; }
+        .header-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #06b6d4, #0891b2); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+
+        .container { max-width: 900px; margin: 0 auto; padding: 24px; }
+
+        /* Form */
+        .form-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; }
+        .form-section h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; color: #06b6d4; }
+        .form-section p { font-size: 0.85rem; color: #94a3b8; margin-bottom: 20px; }
+
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 6px; }
+        .form-group .hint { font-size: 0.75rem; color: #64748b; margin-bottom: 6px; }
+        textarea, input[type="text"] { width: 100%; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 14px; color: #e2e8f0; font-family: inherit; font-size: 0.88rem; outline: none; transition: border-color 0.2s; }
+        textarea:focus, input[type="text"]:focus { border-color: #06b6d4; }
+        textarea { resize: vertical; min-height: 80px; }
+        textarea::placeholder, input::placeholder { color: #4a5568; }
+
+        .progress-bar { display: flex; gap: 4px; margin-bottom: 24px; }
+        .progress-dot { flex: 1; height: 4px; border-radius: 2px; background: #2a2a3e; transition: background 0.3s; }
+        .progress-dot.filled { background: #06b6d4; }
+        .progress-dot.current { background: #22d3ee; box-shadow: 0 0 8px rgba(6,182,212,0.5); }
+
+        .step-indicator { font-size: 0.75rem; color: #64748b; margin-bottom: 16px; }
+
+        .btn-row { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-back { padding: 12px 24px; border-radius: 10px; border: 1px solid #2a2a3e; background: #1a1a2e; color: #94a3b8; font-family: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+        .btn-next { flex: 1; padding: 12px 24px; border-radius: 10px; border: none; background: linear-gradient(135deg, #06b6d4, #0891b2); color: #fff; font-family: inherit; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        .btn-next:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(6,182,212,0.4); }
+        .btn-next:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* Processing */
+        .processing { display: none; text-align: center; padding: 60px 20px; }
+        .processing.active { display: block; }
+        .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #06b6d4; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .processing p { color: #94a3b8; }
+
+        /* Results */
+        .results { display: none; }
+        .results.active { display: block; }
+
+        .plan-header { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; margin-bottom: 20px; text-align: center; }
+        .plan-header h2 { font-size: 1.8rem; font-weight: 800; color: #fff; margin-bottom: 4px; }
+        .plan-header .tagline { font-size: 1rem; color: #06b6d4; font-style: italic; }
+
+        .results-tabs { display: flex; gap: 4px; background: #1a1a2e; border-radius: 12px; padding: 4px; margin-bottom: 20px; overflow-x: auto; }
+        .results-tab { padding: 10px 14px; border-radius: 8px; border: none; background: transparent; color: #94a3b8; font-family: inherit; font-size: 0.78rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+        .results-tab:hover { color: #e2e8f0; }
+        .results-tab.active { background: rgba(6,182,212,0.15); color: #06b6d4; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .plan-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 20px; margin-bottom: 14px; position: relative; }
+        .plan-card h3 { font-size: 0.9rem; font-weight: 700; color: #06b6d4; margin-bottom: 10px; }
+        .plan-card p { font-size: 0.9rem; color: #cbd5e1; line-height: 1.7; white-space: pre-line; }
+        .plan-card ul { list-style: none; padding: 0; }
+        .plan-card ul li { padding: 8px 0; border-bottom: 1px solid #1f1f35; font-size: 0.88rem; color: #cbd5e1; line-height: 1.5; }
+        .plan-card ul li:last-child { border-bottom: none; }
+
+        .copy-btn { position: absolute; top: 12px; right: 12px; background: rgba(6,182,212,0.15); border: 1px solid rgba(6,182,212,0.3); color: #06b6d4; padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .copy-btn:hover { background: rgba(6,182,212,0.3); }
+
+        .segment-card, .competitor-card, .stream-card, .channel-card, .milestone-card, .risk-card { background: #0f0f1a; border-radius: 10px; padding: 14px; margin-bottom: 8px; }
+        .segment-card strong, .competitor-card strong, .stream-card strong, .channel-card strong { color: #22d3ee; font-size: 0.85rem; }
+        .segment-card p, .competitor-card p, .stream-card p, .channel-card p, .milestone-card p, .risk-card p { font-size: 0.83rem; color: #94a3b8; margin-top: 4px; line-height: 1.5; }
+        .priority-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; }
+        .priority-primary { background: rgba(6,182,212,0.2); color: #06b6d4; }
+        .priority-secondary { background: rgba(148,163,184,0.15); color: #94a3b8; }
+
+        .projection-row { display: flex; gap: 12px; margin-top: 12px; }
+        .projection-box { flex: 1; background: #0f0f1a; border-radius: 10px; padding: 14px; text-align: center; }
+        .projection-box .year { font-size: 0.7rem; color: #64748b; font-weight: 600; text-transform: uppercase; }
+        .projection-box .amount { font-size: 0.95rem; color: #22d3ee; font-weight: 700; margin-top: 4px; }
+
+        /* Q&A */
+        .qa-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 18px; }
+        .qa-messages { max-height: 400px; overflow-y: auto; margin-bottom: 14px; }
+        .qa-msg { padding: 10px 14px; border-radius: 10px; margin-bottom: 8px; font-size: 0.88rem; line-height: 1.5; }
+        .qa-msg.user { background: rgba(6,182,212,0.12); border: 1px solid rgba(6,182,212,0.2); color: #e2e8f0; margin-left: 40px; }
+        .qa-msg.ai { background: #0f0f1a; border: 1px solid #2a2a3e; color: #cbd5e1; margin-right: 40px; white-space: pre-line; }
+        .qa-input-row { display: flex; gap: 8px; }
+        .qa-input { flex: 1; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 8px; padding: 10px 14px; color: #e2e8f0; font-family: inherit; font-size: 0.88rem; outline: none; }
+        .qa-input:focus { border-color: #06b6d4; }
+        .qa-send { background: linear-gradient(135deg, #06b6d4, #0891b2); border: none; color: #fff; padding: 10px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+        .new-btn { margin-top: 20px; padding: 12px 24px; border-radius: 10px; border: 1px solid #2a2a3e; background: #1a1a2e; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+        .new-btn:hover { border-color: #06b6d4; }
+        .export-btn { margin-top: 20px; margin-left: 10px; padding: 12px 24px; border-radius: 10px; border: none; background: linear-gradient(135deg, #06b6d4, #0891b2); color: #fff; font-family: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+
+        .hidden { display: none !important; }
+
+        @media (max-width: 600px) {
+            .container { padding: 16px; }
+            .projection-row { flex-direction: column; }
+            .qa-msg.user { margin-left: 20px; }
+            .qa-msg.ai { margin-right: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <div class="header-icon">📊</div>
+        <div>
+            <h1>BizPlan AI</h1>
+            <span>Answer prompts → complete business plan</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Form View -->
+        <div id="formView" class="form-section">
+            <h2>Tell us about your business idea</h2>
+            <p>Answer a few questions and AI will generate a comprehensive business plan.</p>
+
+            <div class="progress-bar" id="progressBar"></div>
+            <div class="step-indicator" id="stepIndicator"></div>
+
+            <div id="formContent"></div>
+
+            <div class="btn-row">
+                <button class="btn-back" id="backBtn" onclick="prevStep()" style="display:none">Back</button>
+                <button class="btn-next" id="nextBtn" onclick="nextStep()">Next</button>
+            </div>
+        </div>
+
+        <!-- Processing -->
+        <div id="processingView" class="processing">
+            <div class="spinner"></div>
+            <p>Building your business plan...</p>
+            <p style="font-size:0.8rem; color:#4a5568; margin-top:8px;">This takes about 15 seconds</p>
+        </div>
+
+        <!-- Results -->
+        <div id="resultsView" class="results">
+            <div class="plan-header" id="planHeader"></div>
+            <div class="results-tabs" id="resultsTabs"></div>
+            <div id="resultsContent"></div>
+            <div style="display:flex; flex-wrap:wrap;">
+                <button class="new-btn" onclick="reset()">← New Plan</button>
+                <button class="export-btn" onclick="exportPlan()">Copy Full Plan</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const steps = [
+            {
+                title: 'The Basics',
+                fields: [
+                    { id: 'businessName', label: 'Business / Product Name', hint: 'What do you want to call it?', type: 'text', placeholder: 'e.g., FreshBox' },
+                    { id: 'oneLiner', label: 'One-line description', hint: 'Explain what it does in one sentence', type: 'text', placeholder: 'e.g., Weekly meal kit delivery for busy professionals' },
+                    { id: 'problem', label: 'What problem does it solve?', hint: 'What pain point or frustration does your customer have?', type: 'textarea', placeholder: 'e.g., Busy professionals don\'t have time to meal plan and grocery shop, so they eat unhealthy takeout...' }
+                ]
+            },
+            {
+                title: 'Your Solution',
+                fields: [
+                    { id: 'solution', label: 'How does your product/service solve this?', hint: 'What do you offer and what makes it different?', type: 'textarea', placeholder: 'e.g., Pre-portioned ingredients with 20-minute recipe cards, delivered weekly. All organic, locally sourced...' },
+                    { id: 'stage', label: 'What stage are you at?', hint: '', type: 'text', placeholder: 'e.g., Just an idea / Have a prototype / Already have customers' }
+                ]
+            },
+            {
+                title: 'Target Market',
+                fields: [
+                    { id: 'customer', label: 'Who is your ideal customer?', hint: 'Be specific — demographics, habits, where they hang out', type: 'textarea', placeholder: 'e.g., Urban professionals aged 25-40, household income $75K+, health-conscious but time-poor...' },
+                    { id: 'marketSize', label: 'How big is the opportunity?', hint: 'Even a rough guess helps — city, country, global?', type: 'text', placeholder: 'e.g., $15B US meal kit market, targeting Austin TX first' }
+                ]
+            },
+            {
+                title: 'Business Model',
+                fields: [
+                    { id: 'revenue', label: 'How will you make money?', hint: 'Subscription, one-time, freemium, marketplace, etc.', type: 'textarea', placeholder: 'e.g., Weekly subscription $79/week for 3 meals for 2 people. Add-on snack box $15...' },
+                    { id: 'competitors', label: 'Who are your competitors?', hint: 'Name direct and indirect competitors', type: 'textarea', placeholder: 'e.g., HelloFresh, Blue Apron, local meal prep services, Uber Eats...' }
+                ]
+            },
+            {
+                title: 'Resources & Goals',
+                fields: [
+                    { id: 'budget', label: 'What budget / resources do you have?', hint: 'Savings, funding, skills, team', type: 'text', placeholder: 'e.g., $20K personal savings, one co-founder who is a chef' },
+                    { id: 'goals', label: 'What are your goals for the first year?', hint: 'Revenue, users, milestones — what does success look like?', type: 'textarea', placeholder: 'e.g., 500 subscribers by month 6, $30K/month revenue, expand to 2 cities...' }
+                ]
+            }
+        ];
+
+        let currentStep = 0;
+        let answers = {};
+        let currentPlan = null;
+        let qaHistory = [];
+
+        function renderStep() {
+            const step = steps[currentStep];
+            const progressBar = document.getElementById('progressBar');
+            progressBar.innerHTML = steps.map((_, i) =>
+                `<div class="progress-dot ${i < currentStep ? 'filled' : ''} ${i === currentStep ? 'current' : ''}"></div>`
+            ).join('');
+
+            document.getElementById('stepIndicator').textContent = `Step ${currentStep + 1} of ${steps.length}: ${step.title}`;
+            document.getElementById('backBtn').style.display = currentStep > 0 ? 'block' : 'none';
+            document.getElementById('nextBtn').textContent = currentStep === steps.length - 1 ? 'Generate Business Plan' : 'Next';
+
+            let html = '';
+            for (const field of step.fields) {
+                const val = answers[field.id] || '';
+                html += `<div class="form-group">
+                    <label>${field.label}</label>
+                    ${field.hint ? `<div class="hint">${field.hint}</div>` : ''}
+                    ${field.type === 'textarea'
+                        ? `<textarea id="${field.id}" placeholder="${field.placeholder}">${val}</textarea>`
+                        : `<input type="text" id="${field.id}" value="${val}" placeholder="${field.placeholder}" />`
+                    }
+                </div>`;
+            }
+            document.getElementById('formContent').innerHTML = html;
+        }
+
+        function saveCurrentFields() {
+            const step = steps[currentStep];
+            for (const field of step.fields) {
+                const el = document.getElementById(field.id);
+                if (el) answers[field.id] = el.value.trim();
+            }
+        }
+
+        function nextStep() {
+            saveCurrentFields();
+            if (currentStep < steps.length - 1) {
+                currentStep++;
+                renderStep();
+            } else {
+                generate();
+            }
+        }
+
+        function prevStep() {
+            saveCurrentFields();
+            if (currentStep > 0) {
+                currentStep--;
+                renderStep();
+            }
+        }
+
+        function chargeCredits(feature, amount) {
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'suite-charge-credits',
+                    appId: 'bizplan',
+                    feature: feature,
+                    chargeId: Date.now().toString(),
+                    amount: amount || 5
+                }, '*');
+            }
+        }
+
+        async function generate() {
+            document.getElementById('formView').classList.add('hidden');
+            document.getElementById('processingView').classList.add('active');
+            chargeCredits('generate');
+
+            try {
+                const resp = await fetch('/api/bizplan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'generate', answers })
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error || 'API error');
+
+                currentPlan = data;
+                renderResults(data);
+            } catch (err) {
+                alert('Error: ' + err.message);
+                document.getElementById('processingView').classList.remove('active');
+                document.getElementById('formView').classList.remove('hidden');
+            }
+        }
+
+        function renderResults(plan) {
+            document.getElementById('processingView').classList.remove('active');
+            document.getElementById('resultsView').classList.add('active');
+
+            document.getElementById('planHeader').innerHTML = `
+                <h2>${esc(plan.companyName || answers.businessName || 'Your Business Plan')}</h2>
+                <div class="tagline">${esc(plan.tagline || '')}</div>
+            `;
+
+            const tabs = ['Executive Summary', 'Market', 'Competition', 'Revenue', 'Marketing', 'Operations', 'Financials', 'Risks', 'Q&A'];
+            document.getElementById('resultsTabs').innerHTML = tabs.map((t, i) =>
+                `<button class="results-tab ${i === 0 ? 'active' : ''}" onclick="switchTab(${i})">${t}</button>`
+            ).join('');
+
+            const c = document.getElementById('resultsContent');
+            c.innerHTML = `
+                <!-- Executive Summary -->
+                <div class="tab-content active" id="tab-0">
+                    <div class="plan-card">
+                        <h3>Executive Summary</h3>
+                        <button class="copy-btn" onclick="copyCard(this)">Copy</button>
+                        <p>${esc(plan.executiveSummary || '')}</p>
+                    </div>
+                    <div class="plan-card">
+                        <h3>The Problem</h3>
+                        <p>${esc(plan.problemStatement || '')}</p>
+                    </div>
+                    <div class="plan-card">
+                        <h3>The Solution</h3>
+                        <p>${esc(plan.solution || '')}</p>
+                    </div>
+                    ${plan.nextSteps ? `<div class="plan-card"><h3>Immediate Next Steps</h3><ul>${plan.nextSteps.map(s => `<li>→ ${esc(s)}</li>`).join('')}</ul></div>` : ''}
+                </div>
+
+                <!-- Market -->
+                <div class="tab-content" id="tab-1">
+                    <div class="plan-card">
+                        <h3>Target Market Overview</h3>
+                        <button class="copy-btn" onclick="copyCard(this)">Copy</button>
+                        <p>${esc(plan.targetMarket?.overview || '')}</p>
+                    </div>
+                    ${plan.targetMarket?.segments ? `<div class="plan-card"><h3>Market Segments</h3>${plan.targetMarket.segments.map(s => `
+                        <div class="segment-card">
+                            <strong>${esc(s.name)}</strong> <span class="priority-badge ${s.priority?.toLowerCase() === 'primary' ? 'priority-primary' : 'priority-secondary'}">${esc(s.priority || '')}</span>
+                            <p>${esc(s.description || '')} ${s.size ? `<br>Estimated size: ${esc(s.size)}` : ''}</p>
+                        </div>
+                    `).join('')}</div>` : ''}
+                    ${plan.targetMarket?.tam ? `<div class="plan-card"><h3>Market Sizing</h3>
+                        <div class="projection-row">
+                            <div class="projection-box"><div class="year">TAM</div><div class="amount">${esc(plan.targetMarket.tam)}</div></div>
+                            <div class="projection-box"><div class="year">SAM</div><div class="amount">${esc(plan.targetMarket.sam || 'N/A')}</div></div>
+                            <div class="projection-box"><div class="year">SOM</div><div class="amount">${esc(plan.targetMarket.som || 'N/A')}</div></div>
+                        </div>
+                    </div>` : ''}
+                </div>
+
+                <!-- Competition -->
+                <div class="tab-content" id="tab-2">
+                    <div class="plan-card">
+                        <h3>Competitive Landscape</h3>
+                        <button class="copy-btn" onclick="copyCard(this)">Copy</button>
+                        <p>${esc(plan.competitiveAnalysis?.overview || '')}</p>
+                    </div>
+                    ${plan.competitiveAnalysis?.competitors ? plan.competitiveAnalysis.competitors.map(comp => `
+                        <div class="plan-card">
+                            <div class="competitor-card">
+                                <strong>${esc(comp.name)}</strong>
+                                <p><strong style="color:#10b981">Strengths:</strong> ${esc(comp.strengths || '')}</p>
+                                <p><strong style="color:#ef4444">Weaknesses:</strong> ${esc(comp.weaknesses || '')}</p>
+                                <p><strong style="color:#06b6d4">Your edge:</strong> ${esc(comp.differentiation || '')}</p>
+                            </div>
+                        </div>
+                    `).join('') : ''}
+                    ${plan.competitiveAnalysis?.moat ? `<div class="plan-card"><h3>Your Competitive Moat</h3><p>${esc(plan.competitiveAnalysis.moat)}</p></div>` : ''}
+                </div>
+
+                <!-- Revenue -->
+                <div class="tab-content" id="tab-3">
+                    <div class="plan-card">
+                        <h3>Revenue Model</h3>
+                        <button class="copy-btn" onclick="copyCard(this)">Copy</button>
+                        <p>${esc(plan.revenueModel?.overview || '')}</p>
+                    </div>
+                    ${plan.revenueModel?.streams ? plan.revenueModel.streams.map(s => `
+                        <div class="plan-card"><div class="stream-card">
+                            <strong>${esc(s.name)}</strong>
+                            <p>${esc(s.description || '')}</p>
+                            <p style="color:#22d3ee">Pricing: ${esc(s.pricing || '')}</p>
+                        </div></div>
+                    `).join('') : ''}
+                    ${plan.revenueModel?.projections ? `<div class="plan-card"><h3>Revenue Projections</h3>
+                        <div class="projection-row">
+                            <div class="projection-box"><div class="year">Year 1</div><div class="amount">${esc(plan.revenueModel.projections.year1 || '')}</div></div>
+                            <div class="projection-box"><div class="year">Year 2</div><div class="amount">${esc(plan.revenueModel.projections.year2 || '')}</div></div>
+                            <div class="projection-box"><div class="year">Year 3</div><div class="amount">${esc(plan.revenueModel.projections.year3 || '')}</div></div>
+                        </div>
+                    </div>` : ''}
+                </div>
+
+                <!-- Marketing -->
+                <div class="tab-content" id="tab-4">
+                    ${plan.marketingStrategy?.positioning ? `<div class="plan-card"><h3>Brand Positioning</h3><button class="copy-btn" onclick="copyCard(this)">Copy</button><p>${esc(plan.marketingStrategy.positioning)}</p></div>` : ''}
+                    ${plan.marketingStrategy?.channels ? `<div class="plan-card"><h3>Marketing Channels</h3>${plan.marketingStrategy.channels.map(ch => `
+                        <div class="channel-card">
+                            <strong>${esc(ch.channel)}</strong> ${ch.budget ? `<span style="color:#06b6d4; font-size:0.75rem;">(${esc(ch.budget)})</span>` : ''}
+                            <p>${esc(ch.strategy || '')}</p>
+                        </div>
+                    `).join('')}</div>` : ''}
+                    ${plan.marketingStrategy?.launchPlan ? `<div class="plan-card"><h3>90-Day Launch Plan</h3><button class="copy-btn" onclick="copyCard(this)">Copy</button><p>${esc(plan.marketingStrategy.launchPlan)}</p></div>` : ''}
+                </div>
+
+                <!-- Operations -->
+                <div class="tab-content" id="tab-5">
+                    ${plan.operations?.team ? `<div class="plan-card"><h3>Team & Hiring</h3><button class="copy-btn" onclick="copyCard(this)">Copy</button><p>${esc(plan.operations.team)}</p></div>` : ''}
+                    ${plan.operations?.technology ? `<div class="plan-card"><h3>Technology & Infrastructure</h3><p>${esc(plan.operations.technology)}</p></div>` : ''}
+                    ${plan.operations?.milestones ? `<div class="plan-card"><h3>Milestones</h3>${plan.operations.milestones.map(m => `
+                        <div class="milestone-card">
+                            <strong style="color:#22d3ee">${esc(m.timeframe)}</strong>
+                            <p>${esc(m.milestone)}</p>
+                        </div>
+                    `).join('')}</div>` : ''}
+                </div>
+
+                <!-- Financials -->
+                <div class="tab-content" id="tab-6">
+                    ${plan.financials ? `
+                        <div class="plan-card"><h3>Startup Costs</h3><button class="copy-btn" onclick="copyCard(this)">Copy</button><p>${esc(plan.financials.startupCosts || '')}</p></div>
+                        <div class="plan-card"><h3>Monthly Burn Rate</h3><p>${esc(plan.financials.monthlyBurn || '')}</p></div>
+                        <div class="plan-card"><h3>Breakeven Timeline</h3><p>${esc(plan.financials.breakeven || '')}</p></div>
+                        <div class="plan-card"><h3>Funding Requirements</h3><p>${esc(plan.financials.fundingNeeded || '')}</p></div>
+                    ` : ''}
+                </div>
+
+                <!-- Risks -->
+                <div class="tab-content" id="tab-7">
+                    ${plan.risks ? plan.risks.map(r => `
+                        <div class="plan-card">
+                            <div class="risk-card">
+                                <strong style="color:#ef4444">Risk:</strong> <span style="color:#cbd5e1">${esc(r.risk)}</span>
+                                <p><strong style="color:#10b981">Mitigation:</strong> ${esc(r.mitigation)}</p>
+                            </div>
+                        </div>
+                    `).join('') : ''}
+                </div>
+
+                <!-- Q&A -->
+                <div class="tab-content" id="tab-8">
+                    <div class="qa-section">
+                        <div class="qa-messages" id="qaMessages">
+                            <div class="qa-msg ai">Your business plan is ready! Ask me anything — want deeper analysis on a section, help with financial modeling, or advice on go-to-market strategy?</div>
+                        </div>
+                        <div class="qa-input-row">
+                            <input class="qa-input" id="qaInput" placeholder="Ask about your business plan..." onkeydown="if(event.key==='Enter')askQuestion()" />
+                            <button class="qa-send" onclick="askQuestion()">Send</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function switchTab(idx) {
+            document.querySelectorAll('.results-tab').forEach((t, i) => t.classList.toggle('active', i === idx));
+            document.querySelectorAll('.tab-content').forEach((c, i) => c.classList.toggle('active', i === idx));
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const q = input.value.trim();
+            if (!q) return;
+            input.value = '';
+
+            const msgs = document.getElementById('qaMessages');
+            msgs.innerHTML += `<div class="qa-msg user">${esc(q)}</div>`;
+            msgs.innerHTML += `<div class="qa-msg ai" id="qaLoading" style="opacity:0.5">Thinking...</div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+
+            qaHistory.push({ role: 'user', content: q });
+            chargeCredits('qa');
+
+            try {
+                const resp = await fetch('/api/bizplan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'qa', answers, question: q, history: qaHistory })
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error);
+
+                document.getElementById('qaLoading').remove();
+                qaHistory.push({ role: 'assistant', content: data.answer });
+                msgs.innerHTML += `<div class="qa-msg ai">${esc(data.answer)}</div>`;
+                msgs.scrollTop = msgs.scrollHeight;
+            } catch (err) {
+                document.getElementById('qaLoading').remove();
+                msgs.innerHTML += `<div class="qa-msg ai" style="color:#ef4444">Error: ${esc(err.message)}</div>`;
+            }
+        }
+
+        function copyCard(btn) {
+            const card = btn.closest('.plan-card');
+            const text = card.innerText.replace('Copy', '').trim();
+            navigator.clipboard.writeText(text);
+            btn.textContent = 'Copied!';
+            setTimeout(() => btn.textContent = 'Copy', 1500);
+        }
+
+        function exportPlan() {
+            if (!currentPlan) return;
+            const p = currentPlan;
+            let text = `BUSINESS PLAN: ${p.companyName || ''}\n${p.tagline || ''}\n${'='.repeat(50)}\n\n`;
+            text += `EXECUTIVE SUMMARY\n${p.executiveSummary || ''}\n\n`;
+            text += `THE PROBLEM\n${p.problemStatement || ''}\n\n`;
+            text += `THE SOLUTION\n${p.solution || ''}\n\n`;
+            text += `TARGET MARKET\n${p.targetMarket?.overview || ''}\n\n`;
+            text += `COMPETITIVE ANALYSIS\n${p.competitiveAnalysis?.overview || ''}\n\n`;
+            text += `REVENUE MODEL\n${p.revenueModel?.overview || ''}\n\n`;
+            text += `MARKETING STRATEGY\n${p.marketingStrategy?.positioning || ''}\n${p.marketingStrategy?.launchPlan || ''}\n\n`;
+            text += `FINANCIALS\nStartup Costs: ${p.financials?.startupCosts || ''}\nMonthly Burn: ${p.financials?.monthlyBurn || ''}\nBreakeven: ${p.financials?.breakeven || ''}\nFunding: ${p.financials?.fundingNeeded || ''}\n\n`;
+            if (p.nextSteps) text += `NEXT STEPS\n${p.nextSteps.map(s => `• ${s}`).join('\n')}\n`;
+            navigator.clipboard.writeText(text);
+            const btn = document.querySelector('.export-btn');
+            btn.textContent = 'Copied!';
+            setTimeout(() => btn.textContent = 'Copy Full Plan', 1500);
+        }
+
+        function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+        function reset() {
+            document.getElementById('resultsView').classList.remove('active');
+            document.getElementById('formView').classList.remove('hidden');
+            currentStep = 0;
+            answers = {};
+            qaHistory = [];
+            currentPlan = null;
+            renderStep();
+        }
+
+        renderStep();
+    </script>
+</body>
+</html>
