@@ -187,8 +187,18 @@
     <div id="context-menu"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script>window.Buffer = window.Buffer || {isBuffer:function(){return false},from:function(){return[]},alloc:function(){return[]}};</script>
-    <script src="https://unpkg.com/colyseus.js@^0.15.0/dist/colyseus.js"></script>
+    <script>
+    // Node.js polyfills required by Colyseus.js browser bundle
+    if(typeof global==='undefined')window.global=window;
+    if(typeof process==='undefined')window.process={env:{},version:'v20.0.0',nextTick:function(fn){setTimeout(fn,0)},browser:true};
+    if(typeof Buffer==='undefined'){
+        window.Buffer={isBuffer:function(){return false},from:function(d){if(typeof d==='string')return new TextEncoder().encode(d);return new Uint8Array(d||[])},
+        alloc:function(n){return new Uint8Array(n)},allocUnsafe:function(n){return new Uint8Array(n)},
+        concat:function(l){var t=l.reduce(function(a,b){return a+b.length},0),r=new Uint8Array(t),o=0;l.forEach(function(b){r.set(b,o);o+=b.length});return r},
+        byteLength:function(s){return new TextEncoder().encode(s).length}};
+    }
+    </script>
+    <script src="https://unpkg.com/colyseus.js@0.15.24/dist/colyseus.js"></script>
     <script>
     (function() {
         // ============================================================
