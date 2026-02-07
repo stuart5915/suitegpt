@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SleepCoach AI — Personalized Sleep Protocol | SUITE</title>
+    <meta name="description" content="Analyze your sleep habits and get a personalized optimization protocol — evening routine, environment tips, and a 4-week improvement plan.">
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+
+        .header { text-align: center; padding: 30px 0 20px; }
+        .header h1 { font-size: 1.8rem; font-weight: 700; }
+        .header h1 span { color: #818cf8; }
+        .header p { color: #94a3b8; margin-top: 6px; font-size: 0.9rem; }
+
+        .input-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; margin-bottom: 24px; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group.full { grid-column: 1 / -1; }
+        .form-group label { font-size: 0.8rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-group select, .form-group input, .form-group textarea {
+            background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 14px;
+            color: #e2e8f0; font-size: 0.9rem; font-family: inherit; outline: none; transition: border-color 0.2s;
+        }
+        .form-group select:focus, .form-group input:focus, .form-group textarea:focus { border-color: #818cf8; }
+        .form-group textarea { resize: vertical; min-height: 60px; }
+
+        .chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+        .chip {
+            padding: 8px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 500; cursor: pointer;
+            border: 1px solid #2a2a3e; background: #0f0f1a; color: #94a3b8; transition: all 0.2s;
+        }
+        .chip:hover { border-color: #818cf8; color: #e2e8f0; }
+        .chip.active { background: #818cf8; color: #000; border-color: #818cf8; font-weight: 600; }
+
+        .generate-btn {
+            width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600;
+            cursor: pointer; background: linear-gradient(135deg, #818cf8, #6366f1); color: #fff;
+            transition: opacity 0.2s; font-family: inherit;
+        }
+        .generate-btn:hover { opacity: 0.9; }
+        .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .loading { text-align: center; padding: 60px 20px; }
+        .loading .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #818cf8; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .results { display: none; }
+
+        .score-card { background: linear-gradient(135deg, #818cf815, #6366f110); border: 1px solid #818cf830; border-radius: 16px; padding: 28px; margin-bottom: 20px; text-align: center; }
+        .score-ring { width: 120px; height: 120px; margin: 0 auto 16px; position: relative; }
+        .score-ring svg { transform: rotate(-90deg); }
+        .score-ring .score-val { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2rem; font-weight: 800; }
+        .score-label { font-size: 1rem; font-weight: 600; margin-bottom: 8px; }
+        .score-assessment { color: #94a3b8; font-size: 0.9rem; line-height: 1.6; max-width: 600px; margin: 0 auto; }
+
+        .issues-bar { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 16px; }
+        .issue-chip { padding: 6px 14px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; }
+        .issue-chip.high { background: #dc262620; color: #fca5a5; border: 1px solid #dc262640; }
+        .issue-chip.medium { background: #f59e0b20; color: #fcd34d; border: 1px solid #f59e0b40; }
+        .issue-chip.low { background: #22c55e20; color: #86efac; border: 1px solid #22c55e40; }
+
+        .action-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .action-btn {
+            padding: 10px 20px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+            border: 1px solid #2a2a3e; background: #1a1a2e; color: #94a3b8; transition: all 0.2s; font-family: inherit;
+        }
+        .action-btn:hover { border-color: #818cf8; color: #e2e8f0; }
+
+        .tabs { display: flex; gap: 6px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px; }
+        .tab {
+            padding: 10px 18px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+            background: #1a1a2e; border: 1px solid #2a2a3e; color: #94a3b8; white-space: nowrap; transition: all 0.2s;
+        }
+        .tab:hover { border-color: #818cf8; color: #e2e8f0; }
+        .tab.active { background: #818cf8; color: #000; border-color: #818cf8; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .routine-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+        .routine-card h3 { color: #818cf8; font-size: 1rem; margin-bottom: 14px; }
+        .step-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid #1a1a2e; }
+        .step-time { min-width: 70px; font-size: 0.8rem; font-weight: 700; color: #818cf8; padding-top: 2px; }
+        .step-content { flex: 1; }
+        .step-action { font-size: 0.9rem; font-weight: 600; margin-bottom: 4px; }
+        .step-why { font-size: 0.75rem; color: #64748b; }
+
+        .env-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 10px; }
+        .env-factor { font-size: 0.8rem; font-weight: 700; color: #818cf8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .env-rec { font-size: 0.9rem; margin-bottom: 4px; }
+        .env-why { font-size: 0.75rem; color: #64748b; }
+
+        .habit-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 10px; display: flex; gap: 14px; align-items: flex-start; }
+        .habit-priority { padding: 4px 10px; border-radius: 6px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; white-space: nowrap; }
+        .habit-priority.high { background: #dc262620; color: #fca5a5; }
+        .habit-priority.medium { background: #f59e0b20; color: #fcd34d; }
+        .habit-priority.low { background: #22c55e20; color: #86efac; }
+        .habit-info { flex: 1; }
+        .habit-change { font-size: 0.9rem; font-weight: 600; margin-bottom: 4px; }
+        .habit-meta { font-size: 0.75rem; color: #64748b; }
+
+        .supp-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 10px; }
+        .supp-name { font-size: 0.95rem; font-weight: 700; color: #818cf8; margin-bottom: 4px; }
+        .supp-details { font-size: 0.85rem; color: #94a3b8; margin-bottom: 4px; }
+        .supp-note { font-size: 0.75rem; color: #f59e0b; font-style: italic; }
+
+        .week-plan { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; }
+        .week-plan h3 { color: #818cf8; font-size: 1rem; margin-bottom: 14px; }
+        .week-item { padding: 12px; background: #0f0f1a; border-radius: 10px; margin-bottom: 8px; }
+        .week-label { font-size: 0.75rem; font-weight: 700; color: #818cf8; text-transform: uppercase; margin-bottom: 4px; }
+        .week-desc { font-size: 0.85rem; color: #94a3b8; line-height: 1.5; }
+
+        .disclaimer { background: #f59e0b10; border: 1px solid #f59e0b20; border-radius: 10px; padding: 12px; font-size: 0.75rem; color: #fcd34d; margin-bottom: 16px; text-align: center; }
+
+        .qa-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; margin-top: 20px; }
+        .qa-messages { max-height: 400px; overflow-y: auto; margin-bottom: 16px; }
+        .qa-msg { padding: 12px 16px; border-radius: 12px; margin-bottom: 10px; font-size: 0.85rem; line-height: 1.6; }
+        .qa-msg.user { background: #818cf820; border: 1px solid #818cf830; margin-left: 40px; }
+        .qa-msg.ai { background: #0f0f1a; border: 1px solid #2a2a3e; margin-right: 40px; }
+        .qa-input-row { display: flex; gap: 10px; }
+        .qa-input-row input { flex: 1; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px; color: #e2e8f0; font-size: 0.85rem; font-family: inherit; outline: none; }
+        .qa-input-row input:focus { border-color: #818cf8; }
+        .qa-input-row button { padding: 12px 24px; border: none; border-radius: 10px; background: #818cf8; color: #000; font-weight: 600; cursor: pointer; font-family: inherit; }
+
+        .error-msg { background: #dc262620; border: 1px solid #dc262640; border-radius: 10px; padding: 14px; color: #fca5a5; font-size: 0.85rem; margin-bottom: 16px; }
+
+        @media (max-width: 640px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .qa-msg.user { margin-left: 10px; }
+            .qa-msg.ai { margin-right: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌙 <span>SleepCoach AI</span></h1>
+            <p>Analyze your sleep habits — get a personalized optimization protocol</p>
+        </div>
+
+        <div id="inputSection" class="input-section">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Usual Bedtime</label>
+                    <select id="bedtime">
+                        <option value="9:00 PM">9:00 PM</option>
+                        <option value="9:30 PM">9:30 PM</option>
+                        <option value="10:00 PM">10:00 PM</option>
+                        <option value="10:30 PM">10:30 PM</option>
+                        <option value="11:00 PM" selected>11:00 PM</option>
+                        <option value="11:30 PM">11:30 PM</option>
+                        <option value="12:00 AM">12:00 AM</option>
+                        <option value="12:30 AM">12:30 AM</option>
+                        <option value="1:00 AM">1:00 AM</option>
+                        <option value="1:30 AM+">1:30 AM or later</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Usual Wake Time</label>
+                    <select id="wakeTime">
+                        <option value="5:00 AM">5:00 AM</option>
+                        <option value="5:30 AM">5:30 AM</option>
+                        <option value="6:00 AM">6:00 AM</option>
+                        <option value="6:30 AM">6:30 AM</option>
+                        <option value="7:00 AM" selected>7:00 AM</option>
+                        <option value="7:30 AM">7:30 AM</option>
+                        <option value="8:00 AM">8:00 AM</option>
+                        <option value="8:30 AM">8:30 AM</option>
+                        <option value="9:00 AM+">9:00 AM or later</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Hours Actually Sleeping</label>
+                    <select id="hoursSlept">
+                        <option value="less than 5">Less than 5</option>
+                        <option value="5-6">5-6 hours</option>
+                        <option value="6-7" selected>6-7 hours</option>
+                        <option value="7-8">7-8 hours</option>
+                        <option value="8+">8+ hours</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Sleep Quality (self-rated)</label>
+                    <select id="quality">
+                        <option value="terrible — wake up exhausted">Terrible</option>
+                        <option value="poor — rarely feel rested" selected>Poor</option>
+                        <option value="okay — some good nights">Okay</option>
+                        <option value="good — usually rested">Good</option>
+                        <option value="great — always refreshed">Great</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Caffeine Intake</label>
+                    <select id="caffeine">
+                        <option value="none">No caffeine</option>
+                        <option value="1 cup morning only">1 cup, morning only</option>
+                        <option value="2-3 cups, last one before noon">2-3 cups, before noon</option>
+                        <option value="2-3 cups, last one in afternoon" selected>2-3 cups, afternoon</option>
+                        <option value="4+ cups throughout the day">4+ cups all day</option>
+                        <option value="energy drinks">Energy drinks</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Screen Time Before Bed</label>
+                    <select id="screenTime">
+                        <option value="none — I avoid screens before bed">None</option>
+                        <option value="30 minutes">~30 minutes</option>
+                        <option value="1 hour" selected>~1 hour</option>
+                        <option value="2+ hours">2+ hours</option>
+                        <option value="I fall asleep with phone/TV">Fall asleep with screen</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Exercise</label>
+                    <select id="exercise">
+                        <option value="none — sedentary">None / Sedentary</option>
+                        <option value="light — walking a few times a week">Light (walking)</option>
+                        <option value="moderate — 3-4 times per week" selected>Moderate (3-4x/week)</option>
+                        <option value="intense — daily workouts">Intense (daily)</option>
+                        <option value="late evening workouts">Late evening workouts</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Stress Level</label>
+                    <select id="stress">
+                        <option value="low">Low</option>
+                        <option value="moderate" selected>Moderate</option>
+                        <option value="high — racing thoughts at night">High</option>
+                        <option value="very high — anxiety/overwhelm">Very High</option>
+                    </select>
+                </div>
+                <div class="form-group full">
+                    <label>Main Sleep Issues (select all that apply)</label>
+                    <div class="chip-group" id="issueChips">
+                        <div class="chip" data-val="trouble falling asleep">Can't Fall Asleep</div>
+                        <div class="chip" data-val="waking up at night">Wake Up at Night</div>
+                        <div class="chip" data-val="waking up too early">Wake Too Early</div>
+                        <div class="chip" data-val="not feeling rested">Not Rested</div>
+                        <div class="chip" data-val="inconsistent schedule">Inconsistent Schedule</div>
+                        <div class="chip" data-val="snoring/breathing issues">Snoring</div>
+                        <div class="chip" data-val="racing thoughts">Racing Thoughts</div>
+                        <div class="chip" data-val="vivid dreams/nightmares">Bad Dreams</div>
+                    </div>
+                </div>
+                <div class="form-group full">
+                    <label>Anything Else? (optional)</label>
+                    <textarea id="additional" placeholder="e.g., shift work, new baby, travel frequently, medications..."></textarea>
+                </div>
+            </div>
+            <button class="generate-btn" id="generateBtn" onclick="analyze()">Analyze My Sleep</button>
+        </div>
+
+        <div id="loadingSection" class="loading" style="display:none;">
+            <div class="spinner"></div>
+            <p>Analyzing your sleep habits...</p>
+        </div>
+
+        <div id="errorSection" style="display:none;"></div>
+
+        <div id="resultsSection" class="results">
+            <div id="scoreCard" class="score-card"></div>
+            <div id="disclaimerBar" class="disclaimer"></div>
+
+            <div class="action-bar">
+                <button class="action-btn" onclick="copyProtocol()">📋 Copy Protocol</button>
+                <button class="action-btn" onclick="newAnalysis()">🔄 New Analysis</button>
+            </div>
+
+            <div class="tabs">
+                <div class="tab active" data-tab="routine" onclick="switchTab('routine')">Routines</div>
+                <div class="tab" data-tab="environment" onclick="switchTab('environment')">Environment</div>
+                <div class="tab" data-tab="habits" onclick="switchTab('habits')">Habits</div>
+                <div class="tab" data-tab="supplements" onclick="switchTab('supplements')">Supplements</div>
+                <div class="tab" data-tab="plan" onclick="switchTab('plan')">4-Week Plan</div>
+                <div class="tab" data-tab="qa" onclick="switchTab('qa')">Q&A</div>
+            </div>
+
+            <div id="routineTab" class="tab-content active"></div>
+            <div id="environmentTab" class="tab-content"></div>
+            <div id="habitsTab" class="tab-content"></div>
+            <div id="supplementsTab" class="tab-content"></div>
+            <div id="planTab" class="tab-content"></div>
+            <div id="qaTab" class="tab-content">
+                <div class="qa-section">
+                    <div class="qa-messages" id="qaMessages">
+                        <div class="qa-msg ai">Ask me anything about your sleep protocol — alternatives, deeper explanations, or adjustments!</div>
+                    </div>
+                    <div class="qa-input-row">
+                        <input type="text" id="qaInput" placeholder="e.g., What if I can't avoid screens before bed?" onkeydown="if(event.key==='Enter')askQuestion()">
+                        <button onclick="askQuestion()">Ask</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentAnalysis = null;
+        let qaHistory = [];
+        const selectedIssues = new Set();
+
+        document.querySelectorAll('#issueChips .chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                chip.classList.toggle('active');
+                const val = chip.dataset.val;
+                if (selectedIssues.has(val)) selectedIssues.delete(val); else selectedIssues.add(val);
+            });
+        });
+
+        async function analyze() {
+            const btn = document.getElementById('generateBtn');
+            btn.disabled = true;
+            document.getElementById('inputSection').style.display = 'none';
+            document.getElementById('loadingSection').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+
+            try {
+                chargeCredits('analyze');
+                const resp = await fetch('/api/sleepcoach', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mode: 'analyze',
+                        sleepData: {
+                            bedtime: document.getElementById('bedtime').value,
+                            wakeTime: document.getElementById('wakeTime').value,
+                            hoursSlept: document.getElementById('hoursSlept').value,
+                            quality: document.getElementById('quality').value,
+                            issues: [...selectedIssues].join(', ') || 'general improvement',
+                            caffeine: document.getElementById('caffeine').value,
+                            screenTime: document.getElementById('screenTime').value,
+                            exercise: document.getElementById('exercise').value,
+                            stress: document.getElementById('stress').value,
+                            additional: document.getElementById('additional').value.trim()
+                        }
+                    })
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error || 'API error');
+                if (data.raw) {
+                    document.getElementById('errorSection').innerHTML = `<div class="error-msg">${data.raw}</div>`;
+                    document.getElementById('errorSection').style.display = 'block';
+                    document.getElementById('inputSection').style.display = 'block';
+                } else {
+                    currentAnalysis = data;
+                    renderResults(data);
+                    document.getElementById('resultsSection').style.display = 'block';
+                }
+            } catch (err) {
+                document.getElementById('errorSection').innerHTML = `<div class="error-msg">Error: ${err.message}</div>`;
+                document.getElementById('errorSection').style.display = 'block';
+                document.getElementById('inputSection').style.display = 'block';
+            } finally {
+                document.getElementById('loadingSection').style.display = 'none';
+                btn.disabled = false;
+            }
+        }
+
+        function renderResults(d) {
+            const score = d.sleepScore || 50;
+            const color = score >= 80 ? '#22c55e' : score >= 60 ? '#f59e0b' : '#dc2626';
+            const circ = 2 * Math.PI * 50;
+            const offset = circ - (score / 100) * circ;
+
+            document.getElementById('scoreCard').innerHTML = `
+                <div class="score-ring">
+                    <svg width="120" height="120" viewBox="0 0 120 120">
+                        <circle cx="60" cy="60" r="50" fill="none" stroke="#2a2a3e" stroke-width="8"/>
+                        <circle cx="60" cy="60" r="50" fill="none" stroke="${color}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${offset}"/>
+                    </svg>
+                    <div class="score-val" style="color:${color}">${score}</div>
+                </div>
+                <div class="score-label" style="color:${color}">${d.scoreLabel || 'Sleep Score'}</div>
+                <div class="score-assessment">${d.assessment || ''}</div>
+                ${d.issues?.length ? `<div class="issues-bar">${d.issues.map(i => `<span class="issue-chip ${i.severity || 'medium'}">${i.issue}</span>`).join('')}</div>` : ''}
+            `;
+
+            document.getElementById('disclaimerBar').textContent = d.disclaimer || 'This is general wellness guidance, not medical advice.';
+
+            // Routines
+            let routineHtml = '';
+            if (d.eveningRoutine) {
+                routineHtml += `<div class="routine-card"><h3>🌙 Evening Routine (start at ${d.eveningRoutine.startTime || '?'})</h3>`;
+                (d.eveningRoutine.steps || []).forEach(s => {
+                    routineHtml += `<div class="step-item"><div class="step-time">${s.time || ''}</div><div class="step-content"><div class="step-action">${s.action || ''}</div><div class="step-why">${s.why || ''}</div></div></div>`;
+                });
+                routineHtml += '</div>';
+            }
+            if (d.morningRoutine) {
+                routineHtml += `<div class="routine-card"><h3>☀️ Morning Routine (wake at ${d.morningRoutine.wakeTime || '?'})</h3>`;
+                (d.morningRoutine.steps || []).forEach(s => {
+                    routineHtml += `<div class="step-item"><div class="step-time">${s.time || ''}</div><div class="step-content"><div class="step-action">${s.action || ''}</div><div class="step-why">${s.why || ''}</div></div></div>`;
+                });
+                routineHtml += '</div>';
+            }
+            document.getElementById('routineTab').innerHTML = routineHtml;
+
+            // Environment
+            document.getElementById('environmentTab').innerHTML = (d.environment || []).map(e =>
+                `<div class="env-card"><div class="env-factor">${e.factor || ''}</div><div class="env-rec">${e.recommendation || ''}</div><div class="env-why">${e.why || ''}</div></div>`
+            ).join('') || '<p style="color:#94a3b8">No environment tips.</p>';
+
+            // Habits
+            document.getElementById('habitsTab').innerHTML = (d.habits || []).map(h =>
+                `<div class="habit-card"><span class="habit-priority ${h.priority || 'medium'}">${h.priority || 'med'}</span><div class="habit-info"><div class="habit-change">${h.change || ''}</div><div class="habit-meta">${h.timeline || ''} — ${h.impact || ''}</div></div></div>`
+            ).join('') || '<p style="color:#94a3b8">No habit changes.</p>';
+
+            // Supplements
+            document.getElementById('supplementsTab').innerHTML = (d.supplements || []).map(s =>
+                `<div class="supp-card"><div class="supp-name">${s.name || ''}</div><div class="supp-details">${s.dosage || ''} — ${s.timing || ''}</div>${s.note ? `<div class="supp-note">⚠️ ${s.note}</div>` : ''}</div>`
+            ).join('') || '<p style="color:#94a3b8">No supplements suggested.</p>';
+
+            // Weekly plan
+            if (d.weeklyPlan) {
+                document.getElementById('planTab').innerHTML = `<div class="week-plan"><h3>📅 4-Week Improvement Plan</h3>
+                    ${Object.entries(d.weeklyPlan).map(([k, v]) => `<div class="week-item"><div class="week-label">${k.replace('week', 'Week ')}</div><div class="week-desc">${v}</div></div>`).join('')}
+                </div>`;
+            }
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(tab + 'Tab').classList.add('active');
+            document.querySelector(`.tabs .tab[data-tab="${tab}"]`).classList.add('active');
+        }
+
+        function copyProtocol() {
+            if (!currentAnalysis) return;
+            const d = currentAnalysis;
+            let text = `SLEEP PROTOCOL — Score: ${d.sleepScore}/100\n${'='.repeat(40)}\n${d.assessment || ''}\n\n`;
+            if (d.eveningRoutine) {
+                text += `EVENING ROUTINE:\n`;
+                (d.eveningRoutine.steps || []).forEach(s => { text += `  ${s.time}: ${s.action}\n`; });
+                text += '\n';
+            }
+            if (d.morningRoutine) {
+                text += `MORNING ROUTINE:\n`;
+                (d.morningRoutine.steps || []).forEach(s => { text += `  ${s.time}: ${s.action}\n`; });
+                text += '\n';
+            }
+            if (d.habits?.length) {
+                text += `HABIT CHANGES:\n`;
+                d.habits.forEach(h => { text += `  [${h.priority}] ${h.change} — ${h.timeline}\n`; });
+            }
+            navigator.clipboard.writeText(text);
+            const btn = event.target;
+            btn.textContent = '✓ Copied!';
+            setTimeout(() => btn.textContent = '📋 Copy Protocol', 2000);
+        }
+
+        function newAnalysis() {
+            currentAnalysis = null;
+            qaHistory = [];
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('inputSection').style.display = 'block';
+            document.getElementById('qaMessages').innerHTML = '<div class="qa-msg ai">Ask me anything about your sleep protocol!</div>';
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const q = input.value.trim();
+            if (!q) return;
+            input.value = '';
+            const msgs = document.getElementById('qaMessages');
+            msgs.innerHTML += `<div class="qa-msg user">${q}</div>`;
+            msgs.innerHTML += `<div class="qa-msg ai" id="qaLoading"><em>Thinking...</em></div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+            try {
+                chargeCredits('qa');
+                const resp = await fetch('/api/sleepcoach', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'qa', question: q, history: qaHistory, context: currentAnalysis ? JSON.stringify(currentAnalysis).slice(0, 50000) : '' })
+                });
+                const data = await resp.json();
+                qaHistory.push({ role: 'user', content: q });
+                const answer = data.answer || data.error || 'No response';
+                qaHistory.push({ role: 'model', content: answer });
+                document.getElementById('qaLoading').innerHTML = answer.replace(/\n/g, '<br>');
+            } catch (err) {
+                document.getElementById('qaLoading').innerHTML = `Error: ${err.message}`;
+            }
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+
+        function chargeCredits(feature) {
+            if (window.parent !== window) {
+                window.parent.postMessage({ type: 'suite-charge-credits', appId: 'sleepcoach', feature, chargeId: Date.now().toString(), amount: 5 }, '*');
+            }
+        }
+    </script>
+</body>
+</html>
