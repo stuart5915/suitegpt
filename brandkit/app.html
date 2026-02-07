@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BrandKit AI — AI Brand Identity Generator</title>
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+
+        .header { padding: 20px 24px; border-bottom: 1px solid #1a1a2e; display: flex; align-items: center; justify-content: space-between; }
+        .header h1 { font-size: 1.3rem; font-weight: 800; }
+        .header h1 span { background: linear-gradient(135deg, #c084fc, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header-btn { background: #1a1a2e; border: 1px solid #2a2a3e; color: #94a3b8; padding: 8px 16px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; }
+        .header-btn:hover { border-color: #8b5cf6; color: #e2e8f0; }
+
+        .container { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+        .form-label { font-size: 0.8rem; font-weight: 600; color: #8b5cf6; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: block; }
+        .form-section { margin-bottom: 20px; }
+
+        .text-input {
+            width: 100%; padding: 12px 16px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px;
+            color: #e2e8f0; font-size: 0.9rem; font-family: 'Inter', sans-serif; transition: border-color 0.2s;
+        }
+        .text-input:focus { outline: none; border-color: #8b5cf6; }
+        .text-input::placeholder { color: #4a5568; }
+        .text-input.big { font-size: 1.3rem; font-weight: 700; padding: 16px; }
+
+        .options-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+        .option-group select {
+            width: 100%; padding: 10px 12px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px;
+            color: #e2e8f0; font-size: 0.85rem; font-family: 'Inter', sans-serif;
+        }
+        .option-group select:focus { outline: none; border-color: #8b5cf6; }
+
+        .vibe-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+        .vibe-chip {
+            padding: 8px 16px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 20px;
+            font-size: 0.8rem; color: #94a3b8; cursor: pointer; transition: all 0.2s; user-select: none;
+        }
+        .vibe-chip:hover { border-color: #8b5cf6; }
+        .vibe-chip.active { background: #8b5cf615; border-color: #8b5cf6; color: #c084fc; font-weight: 600; }
+
+        .generate-btn {
+            width: 100%; padding: 16px; background: linear-gradient(135deg, #c084fc, #8b5cf6); color: #fff;
+            font-weight: 700; font-size: 1rem; border: none; border-radius: 12px; cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .generate-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px #8b5cf630; }
+        .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .loading { display: none; text-align: center; padding: 60px 24px; }
+        .loading.active { display: block; }
+        .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #8b5cf6; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .results { display: none; }
+        .results.active { display: block; }
+
+        .brand-header { text-align: center; margin-bottom: 28px; }
+        .brand-name-display { font-size: 2rem; font-weight: 800; margin-bottom: 4px; }
+        .brand-tagline { font-size: 1.1rem; color: #c084fc; font-style: italic; }
+        .brand-mission { font-size: 0.85rem; color: #94a3b8; margin-top: 8px; max-width: 600px; margin-left: auto; margin-right: auto; line-height: 1.5; }
+
+        .tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid #2a2a3e; overflow-x: auto; }
+        .tab { padding: 10px 16px; font-size: 0.8rem; font-weight: 600; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; }
+        .tab:hover { color: #94a3b8; }
+        .tab.active { color: #c084fc; border-bottom-color: #8b5cf6; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Color palette */
+        .color-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .color-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; overflow: hidden; cursor: pointer; transition: transform 0.2s; }
+        .color-card:hover { transform: translateY(-2px); }
+        .color-swatch { height: 80px; }
+        .color-info { padding: 12px; }
+        .color-name { font-weight: 700; font-size: 0.85rem; margin-bottom: 2px; }
+        .color-hex { font-size: 0.75rem; color: #8b5cf6; font-weight: 600; font-family: monospace; }
+        .color-usage { font-size: 0.7rem; color: #64748b; margin-top: 4px; }
+
+        /* Typography */
+        .type-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 20px; margin-bottom: 12px; }
+        .type-role { font-size: 0.7rem; color: #8b5cf6; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+        .type-font { font-size: 1.3rem; font-weight: 700; margin-bottom: 4px; }
+        .type-style { font-size: 0.8rem; color: #94a3b8; }
+        .type-reason { font-size: 0.8rem; color: #64748b; margin-top: 8px; font-style: italic; }
+
+        /* Voice */
+        .voice-section { margin-bottom: 20px; }
+        .voice-section h4 { font-size: 0.85rem; color: #c084fc; margin-bottom: 10px; }
+        .trait-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+        .trait-tag { background: #8b5cf615; border: 1px solid #8b5cf630; color: #c084fc; padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; }
+        .voice-example { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 16px; font-size: 0.85rem; color: #94a3b8; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+        .voice-sample { background: #1a1a2e; border-left: 3px solid #8b5cf6; padding: 16px; border-radius: 0 12px 12px 0; font-size: 0.95rem; color: #cbd5e1; line-height: 1.6; font-style: italic; margin-top: 12px; }
+
+        /* Social bios */
+        .bio-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 12px; position: relative; }
+        .bio-platform { font-size: 0.75rem; color: #8b5cf6; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .bio-text { font-size: 0.85rem; color: #cbd5e1; line-height: 1.6; white-space: pre-line; }
+        .bio-copy { position: absolute; top: 12px; right: 12px; background: #0f0f1a; border: 1px solid #2a2a3e; color: #64748b; padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; cursor: pointer; transition: all 0.2s; }
+        .bio-copy:hover { border-color: #8b5cf6; color: #c084fc; }
+
+        /* Visual style */
+        .visual-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+        .visual-card h4 { font-size: 0.85rem; color: #c084fc; margin-bottom: 8px; }
+        .visual-card p { font-size: 0.85rem; color: #94a3b8; line-height: 1.6; }
+
+        /* Do/Don't */
+        .brand-rules { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+        .rule-card { border-radius: 12px; padding: 16px; }
+        .rule-card.do { background: #10b98110; border: 1px solid #10b98125; }
+        .rule-card.dont { background: #ef444410; border: 1px solid #ef444420; }
+        .rule-card h4 { font-size: 0.85rem; margin-bottom: 10px; }
+        .rule-card.do h4 { color: #34d399; }
+        .rule-card.dont h4 { color: #f87171; }
+        .rule-card li { font-size: 0.85rem; color: #94a3b8; line-height: 1.6; padding: 3px 0; list-style: none; padding-left: 16px; position: relative; }
+        .rule-card.do li::before { content: '✓'; position: absolute; left: 0; color: #34d399; }
+        .rule-card.dont li::before { content: '✗'; position: absolute; left: 0; color: #f87171; }
+
+        /* Elevator pitch */
+        .pitch-card { background: #1a1a2e; border-left: 3px solid #8b5cf6; padding: 20px; border-radius: 0 12px 12px 0; }
+        .pitch-card h4 { font-size: 0.85rem; color: #c084fc; margin-bottom: 8px; }
+        .pitch-card p { font-size: 0.95rem; color: #cbd5e1; line-height: 1.7; }
+
+        /* Brand story */
+        .story-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+        .story-card h4 { font-size: 0.85rem; color: #c084fc; margin-bottom: 8px; }
+        .story-card p { font-size: 0.9rem; color: #94a3b8; line-height: 1.7; }
+
+        /* Q&A */
+        .qa-container { max-width: 680px; margin: 0 auto; }
+        .qa-messages { display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px; max-height: 400px; overflow-y: auto; padding: 4px; }
+        .qa-msg { padding: 12px 16px; border-radius: 12px; font-size: 0.9rem; line-height: 1.6; max-width: 85%; }
+        .qa-msg.user { background: #8b5cf620; border: 1px solid #8b5cf630; align-self: flex-end; color: #e2e8f0; }
+        .qa-msg.ai { background: #1a1a2e; border: 1px solid #2a2a3e; align-self: flex-start; color: #cbd5e1; }
+        .qa-input-row { display: flex; gap: 8px; }
+        .qa-input { flex: 1; padding: 12px 16px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; color: #e2e8f0; font-size: 0.9rem; font-family: 'Inter', sans-serif; }
+        .qa-input:focus { outline: none; border-color: #8b5cf6; }
+        .qa-send { padding: 12px 20px; background: linear-gradient(135deg, #c084fc, #8b5cf6); color: #fff; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.85rem; }
+        .qa-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .error { display: none; text-align: center; padding: 40px; }
+        .error.active { display: block; }
+        .error p { color: #f87171; margin-bottom: 16px; }
+
+        @media (max-width: 640px) {
+            .options-row { grid-template-columns: 1fr; }
+            .color-grid { grid-template-columns: repeat(2, 1fr); }
+            .brand-rules { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>BrandKit <span>AI</span></h1>
+        <button class="header-btn" onclick="resetAll()">+ New Brand</button>
+    </div>
+
+    <div class="container">
+        <div id="inputForm">
+            <div class="form-section">
+                <label class="form-label">Brand Name</label>
+                <input class="text-input big" id="brandInput" placeholder="Enter your brand name">
+            </div>
+
+            <div class="form-section">
+                <label class="form-label">Brand Vibe</label>
+                <div class="vibe-grid">
+                    <div class="vibe-chip active" data-vibe="modern & clean">Modern & Clean</div>
+                    <div class="vibe-chip" data-vibe="bold & energetic">Bold & Energetic</div>
+                    <div class="vibe-chip" data-vibe="elegant & luxurious">Elegant & Luxurious</div>
+                    <div class="vibe-chip" data-vibe="friendly & approachable">Friendly & Warm</div>
+                    <div class="vibe-chip" data-vibe="minimalist & sophisticated">Minimalist</div>
+                    <div class="vibe-chip" data-vibe="playful & creative">Playful & Creative</div>
+                    <div class="vibe-chip" data-vibe="professional & trustworthy">Professional</div>
+                    <div class="vibe-chip" data-vibe="edgy & disruptive">Edgy & Disruptive</div>
+                    <div class="vibe-chip" data-vibe="earthy & organic">Earthy & Natural</div>
+                    <div class="vibe-chip" data-vibe="techy & futuristic">Tech & Future</div>
+                </div>
+            </div>
+
+            <div class="options-row">
+                <div class="option-group">
+                    <label class="form-label">Industry</label>
+                    <select id="industrySelect">
+                        <option value="technology / SaaS">Technology / SaaS</option>
+                        <option value="e-commerce / retail">E-Commerce / Retail</option>
+                        <option value="food & beverage">Food & Beverage</option>
+                        <option value="health & wellness">Health & Wellness</option>
+                        <option value="fashion & beauty">Fashion & Beauty</option>
+                        <option value="finance / fintech">Finance / Fintech</option>
+                        <option value="education / edtech">Education</option>
+                        <option value="real estate">Real Estate</option>
+                        <option value="agency / consulting">Agency / Consulting</option>
+                        <option value="entertainment / media">Entertainment</option>
+                        <option value="nonprofit / social impact">Nonprofit</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="option-group">
+                    <label class="form-label">Target Audience</label>
+                    <input class="text-input" id="audienceInput" placeholder="e.g. 'Millennial entrepreneurs'">
+                </div>
+            </div>
+
+            <div class="form-section">
+                <label class="form-label">Core Values (optional)</label>
+                <input class="text-input" id="valuesInput" placeholder="e.g. 'innovation, sustainability, transparency'">
+            </div>
+
+            <button class="generate-btn" onclick="generate()">Generate Brand Kit →</button>
+        </div>
+
+        <div class="loading" id="loadingView">
+            <div class="spinner"></div>
+            <p>Crafting your brand identity...</p>
+        </div>
+
+        <div class="error" id="errorView">
+            <p id="errorMsg">Something went wrong.</p>
+            <button class="generate-btn" style="max-width:300px;margin:0 auto;" onclick="resetAll()">Try Again</button>
+        </div>
+
+        <div class="results" id="resultsView">
+            <div class="brand-header">
+                <div class="brand-name-display" id="brandNameDisplay"></div>
+                <div class="brand-tagline" id="brandTagline"></div>
+                <div class="brand-mission" id="brandMission"></div>
+            </div>
+
+            <div class="tabs">
+                <div class="tab active" data-tab="colors">Colors</div>
+                <div class="tab" data-tab="type">Typography</div>
+                <div class="tab" data-tab="voice">Voice & Tone</div>
+                <div class="tab" data-tab="social">Social Bios</div>
+                <div class="tab" data-tab="visual">Visual Style</div>
+                <div class="tab" data-tab="guidelines">Guidelines</div>
+                <div class="tab" data-tab="qa">Brand Advisor</div>
+            </div>
+
+            <div class="tab-content active" id="tab-colors">
+                <div class="color-grid" id="colorGrid"></div>
+            </div>
+
+            <div class="tab-content" id="tab-type">
+                <div id="typeContent"></div>
+            </div>
+
+            <div class="tab-content" id="tab-voice">
+                <div id="voiceContent"></div>
+            </div>
+
+            <div class="tab-content" id="tab-social">
+                <div id="socialContent"></div>
+            </div>
+
+            <div class="tab-content" id="tab-visual">
+                <div id="visualContent"></div>
+            </div>
+
+            <div class="tab-content" id="tab-guidelines">
+                <div class="story-card" id="storyCard"></div>
+                <div class="brand-rules" id="brandRules"></div>
+                <div class="pitch-card" id="pitchCard"></div>
+            </div>
+
+            <div class="tab-content" id="tab-qa">
+                <div class="qa-container">
+                    <p style="color:#94a3b8;font-size:0.85rem;margin-bottom:16px;">Ask about your brand — strategy, positioning, marketing, or design questions.</p>
+                    <div class="qa-messages" id="qaMessages"></div>
+                    <div class="qa-input-row">
+                        <input class="qa-input" id="qaInput" placeholder="How should I position this brand against competitors?" onkeydown="if(event.key==='Enter')askQuestion()">
+                        <button class="qa-send" id="qaSend" onclick="askQuestion()">Ask</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let brandData = null;
+        let qaHistory = [];
+
+        document.querySelectorAll('.vibe-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                document.querySelectorAll('.vibe-chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+            });
+        });
+
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        function showView(v) {
+            document.getElementById('inputForm').style.display = v === 'input' ? 'block' : 'none';
+            document.getElementById('loadingView').classList.toggle('active', v === 'loading');
+            document.getElementById('errorView').classList.toggle('active', v === 'error');
+            document.getElementById('resultsView').classList.toggle('active', v === 'results');
+        }
+
+        async function generate() {
+            const brandName = document.getElementById('brandInput').value.trim();
+            if (!brandName) { document.getElementById('brandInput').focus(); return; }
+
+            const vibe = document.querySelector('.vibe-chip.active')?.dataset.vibe || 'modern & clean';
+            const industry = document.getElementById('industrySelect').value;
+            const audience = document.getElementById('audienceInput').value.trim();
+            const values = document.getElementById('valuesInput').value.trim();
+
+            showView('loading');
+
+            try {
+                const resp = await fetch('/api/brandkit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'generate', brandName, industry, vibe, audience: audience || undefined, values: values || undefined })
+                });
+                const data = await resp.json();
+                if (data.error) throw new Error(data.error);
+                if (data.raw) throw new Error('Unexpected format');
+
+                brandData = data;
+                renderResults(data);
+                showView('results');
+                chargeCredits('generate');
+            } catch (err) {
+                document.getElementById('errorMsg').textContent = err.message || 'Failed to generate brand kit.';
+                showView('error');
+            }
+        }
+
+        function renderResults(d) {
+            document.getElementById('brandNameDisplay').textContent = d.brandName || '';
+            document.getElementById('brandTagline').textContent = d.tagline || '';
+            document.getElementById('brandMission').textContent = d.missionStatement || '';
+
+            // Colors
+            const colorGrid = document.getElementById('colorGrid');
+            colorGrid.innerHTML = '';
+            if (d.colorPalette) {
+                for (const [key, c] of Object.entries(d.colorPalette)) {
+                    colorGrid.innerHTML += `<div class="color-card" onclick="copyHex('${c.hex}', this)">
+                        <div class="color-swatch" style="background:${c.hex};"></div>
+                        <div class="color-info">
+                            <div class="color-name">${esc(c.name)}</div>
+                            <div class="color-hex">${c.hex}</div>
+                            <div class="color-usage">${esc(c.usage)}</div>
+                        </div>
+                    </div>`;
+                }
+            }
+
+            // Typography
+            const typeContent = document.getElementById('typeContent');
+            typeContent.innerHTML = '';
+            if (d.typography) {
+                for (const [role, t] of Object.entries(d.typography)) {
+                    typeContent.innerHTML += `<div class="type-card">
+                        <div class="type-role">${role}</div>
+                        <div class="type-font">${esc(t.font)}</div>
+                        <div class="type-style">${esc(t.style)}</div>
+                        <div class="type-reason">${esc(t.reason)}</div>
+                    </div>`;
+                }
+            }
+
+            // Voice
+            const voiceContent = document.getElementById('voiceContent');
+            voiceContent.innerHTML = '';
+            if (d.voiceAndTone) {
+                const v = d.voiceAndTone;
+                let html = '<div class="voice-section"><h4>Brand Personality</h4><div class="trait-tags">';
+                if (v.personality?.length) v.personality.forEach(p => html += `<span class="trait-tag">${esc(p)}</span>`);
+                html += '</div></div>';
+                if (v.toneDescriptors?.length) {
+                    html += '<div class="voice-section"><h4>Tone</h4><div class="trait-tags">';
+                    v.toneDescriptors.forEach(t => html += `<span class="trait-tag">${esc(t)}</span>`);
+                    html += '</div></div>';
+                }
+                if (v.doSay?.length) {
+                    html += '<div class="voice-section"><h4>Do Say</h4>';
+                    v.doSay.forEach(s => html += `<div class="voice-example"><span style="color:#34d399;">✓</span> ${esc(s)}</div>`);
+                    html += '</div>';
+                }
+                if (v.dontSay?.length) {
+                    html += '<div class="voice-section"><h4>Don\'t Say</h4>';
+                    v.dontSay.forEach(s => html += `<div class="voice-example"><span style="color:#f87171;">✗</span> ${esc(s)}</div>`);
+                    html += '</div>';
+                }
+                if (v.sampleSentence) html += `<div class="voice-sample">"${esc(v.sampleSentence)}"</div>`;
+                voiceContent.innerHTML = html;
+            }
+
+            // Social bios
+            const socialContent = document.getElementById('socialContent');
+            socialContent.innerHTML = '';
+            if (d.socialBios) {
+                const icons = { twitter: '𝕏', instagram: '📸', linkedin: '💼', tiktok: '🎵' };
+                for (const [platform, bio] of Object.entries(d.socialBios)) {
+                    socialContent.innerHTML += `<div class="bio-card">
+                        <button class="bio-copy" onclick="copyBio(this, '${platform}')">Copy</button>
+                        <div class="bio-platform">${icons[platform] || ''} ${platform}</div>
+                        <div class="bio-text">${esc(bio)}</div>
+                    </div>`;
+                }
+            }
+
+            // Visual style
+            const visualContent = document.getElementById('visualContent');
+            visualContent.innerHTML = '';
+            if (d.visualStyle) {
+                const vs = d.visualStyle;
+                if (vs.imageStyle) visualContent.innerHTML += `<div class="visual-card"><h4>Photography Style</h4><p>${esc(vs.imageStyle)}</p></div>`;
+                if (vs.iconStyle) visualContent.innerHTML += `<div class="visual-card"><h4>Icon Style</h4><p>${esc(vs.iconStyle)}</p></div>`;
+                if (vs.patterns) visualContent.innerHTML += `<div class="visual-card"><h4>Patterns & Textures</h4><p>${esc(vs.patterns)}</p></div>`;
+                if (vs.moodWords?.length) {
+                    visualContent.innerHTML += `<div class="visual-card"><h4>Mood Board Keywords</h4><div class="trait-tags">${vs.moodWords.map(w => `<span class="trait-tag">${esc(w)}</span>`).join('')}</div></div>`;
+                }
+            }
+
+            // Guidelines
+            const storyCard = document.getElementById('storyCard');
+            storyCard.innerHTML = d.brandStory ? `<h4>Brand Story</h4><p>${esc(d.brandStory)}</p>` : '';
+
+            const brandRules = document.getElementById('brandRules');
+            brandRules.innerHTML = '';
+            if (d.brandDoDont) {
+                let doHtml = '<div class="rule-card do"><h4>Brand Do\'s</h4><ul>';
+                if (d.brandDoDont.do?.length) d.brandDoDont.do.forEach(r => doHtml += `<li>${esc(r)}</li>`);
+                doHtml += '</ul></div>';
+                let dontHtml = '<div class="rule-card dont"><h4>Brand Don\'ts</h4><ul>';
+                if (d.brandDoDont.dont?.length) d.brandDoDont.dont.forEach(r => dontHtml += `<li>${esc(r)}</li>`);
+                dontHtml += '</ul></div>';
+                brandRules.innerHTML = doHtml + dontHtml;
+            }
+
+            const pitchCard = document.getElementById('pitchCard');
+            pitchCard.innerHTML = d.elevatorPitch ? `<h4>Elevator Pitch</h4><p>${esc(d.elevatorPitch)}</p>` : '';
+        }
+
+        function copyHex(hex, el) {
+            navigator.clipboard.writeText(hex).then(() => {
+                const orig = el.style.borderColor;
+                el.style.borderColor = '#8b5cf6';
+                setTimeout(() => el.style.borderColor = orig, 1000);
+            });
+        }
+
+        function copyBio(btn, platform) {
+            const bio = brandData?.socialBios?.[platform] || '';
+            navigator.clipboard.writeText(bio).then(() => {
+                btn.textContent = '✓';
+                setTimeout(() => btn.textContent = 'Copy', 2000);
+            });
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const q = input.value.trim();
+            if (!q) return;
+            input.value = '';
+            const msgs = document.getElementById('qaMessages');
+            msgs.innerHTML += `<div class="qa-msg user">${esc(q)}</div>`;
+            document.getElementById('qaSend').disabled = true;
+            msgs.innerHTML += `<div class="qa-msg ai" id="qaTyping" style="color:#64748b;">Thinking...</div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+
+            try {
+                const resp = await fetch('/api/brandkit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'qa', question: q, context: JSON.stringify(brandData), history: qaHistory })
+                });
+                const data = await resp.json();
+                document.getElementById('qaTyping')?.remove();
+                const answer = data.answer || data.error || 'No response';
+                qaHistory.push({ role: 'user', content: q }, { role: 'model', content: answer });
+                msgs.innerHTML += `<div class="qa-msg ai">${fmtMd(answer)}</div>`;
+                msgs.scrollTop = msgs.scrollHeight;
+                chargeCredits('qa');
+            } catch (err) {
+                document.getElementById('qaTyping')?.remove();
+                msgs.innerHTML += `<div class="qa-msg ai" style="color:#f87171;">Error: ${err.message}</div>`;
+            } finally {
+                document.getElementById('qaSend').disabled = false;
+            }
+        }
+
+        function esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+        function fmtMd(t) { return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/\n/g,'<br>'); }
+        function resetAll() { brandData = null; qaHistory = []; document.getElementById('qaMessages').innerHTML = ''; showView('input'); }
+        function chargeCredits(f) { if (window.parent !== window) window.parent.postMessage({ type: 'suite-charge-credits', appId: 'brandkit', feature: f, chargeId: Date.now().toString(), amount: 5 }, '*'); }
+    </script>
+</body>
+</html>
