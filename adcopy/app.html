@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AdCopy AI — AI Ad Copy Generator</title>
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+
+        .header { padding: 20px 24px; border-bottom: 1px solid #1a1a2e; display: flex; align-items: center; justify-content: space-between; }
+        .header h1 { font-size: 1.3rem; font-weight: 800; }
+        .header h1 span { background: linear-gradient(135deg, #fb923c, #f97316); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header-btn { background: #1a1a2e; border: 1px solid #2a2a3e; color: #94a3b8; padding: 8px 16px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; }
+        .header-btn:hover { border-color: #f97316; color: #e2e8f0; }
+
+        .container { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+
+        .form-label { font-size: 0.8rem; font-weight: 600; color: #f97316; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: block; }
+        .form-section { margin-bottom: 20px; }
+
+        .text-area {
+            width: 100%; padding: 14px 16px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px;
+            color: #e2e8f0; font-size: 0.9rem; font-family: 'Inter', sans-serif; resize: vertical; min-height: 90px; line-height: 1.6;
+            transition: border-color 0.2s;
+        }
+        .text-area:focus { outline: none; border-color: #f97316; }
+        .text-area::placeholder { color: #4a5568; }
+
+        .text-input {
+            width: 100%; padding: 10px 14px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px;
+            color: #e2e8f0; font-size: 0.85rem; font-family: 'Inter', sans-serif; transition: border-color 0.2s;
+        }
+        .text-input:focus { outline: none; border-color: #f97316; }
+        .text-input::placeholder { color: #4a5568; }
+
+        .options-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 20px; }
+        .option-group select {
+            width: 100%; padding: 10px 12px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px;
+            color: #e2e8f0; font-size: 0.85rem; font-family: 'Inter', sans-serif; cursor: pointer;
+        }
+        .option-group select:focus { outline: none; border-color: #f97316; }
+
+        /* Platform chips */
+        .platform-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+        .platform-chip {
+            padding: 8px 16px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 20px;
+            font-size: 0.8rem; color: #94a3b8; cursor: pointer; transition: all 0.2s; user-select: none;
+        }
+        .platform-chip:hover { border-color: #f97316; color: #e2e8f0; }
+        .platform-chip.active { background: #f9731615; border-color: #f97316; color: #fb923c; font-weight: 600; }
+
+        .generate-btn {
+            width: 100%; padding: 16px; background: linear-gradient(135deg, #fb923c, #f97316); color: #fff;
+            font-weight: 700; font-size: 1rem; border: none; border-radius: 12px; cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .generate-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px #f9731630; }
+        .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* Loading */
+        .loading { display: none; text-align: center; padding: 60px 24px; }
+        .loading.active { display: block; }
+        .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #f97316; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading p { color: #94a3b8; }
+
+        /* Results */
+        .results { display: none; }
+        .results.active { display: block; }
+
+        .campaign-header { text-align: center; margin-bottom: 28px; }
+        .campaign-name { font-size: 1.5rem; font-weight: 800; margin-bottom: 4px; }
+        .campaign-name span { background: linear-gradient(135deg, #fb923c, #f97316); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid #2a2a3e; overflow-x: auto; }
+        .tab {
+            padding: 10px 18px; font-size: 0.8rem; font-weight: 600; color: #64748b; cursor: pointer;
+            border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap;
+        }
+        .tab:hover { color: #94a3b8; }
+        .tab.active { color: #fb923c; border-bottom-color: #f97316; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Ad cards */
+        .platform-section { margin-bottom: 32px; }
+        .platform-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .platform-badge { font-size: 0.7rem; background: #f9731620; color: #fb923c; padding: 3px 10px; border-radius: 6px; font-weight: 600; }
+
+        .ad-card {
+            background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; margin-bottom: 12px;
+            position: relative; transition: border-color 0.2s;
+        }
+        .ad-card:hover { border-color: #f9731640; }
+        .ad-variation { font-size: 0.65rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin-bottom: 12px; }
+        .ad-headline { font-size: 1.05rem; font-weight: 700; color: #e2e8f0; margin-bottom: 8px; line-height: 1.4; }
+        .ad-body { font-size: 0.85rem; color: #94a3b8; line-height: 1.6; margin-bottom: 10px; }
+        .ad-cta {
+            display: inline-block; padding: 6px 16px; background: #f9731620; border: 1px solid #f9731640;
+            color: #fb923c; font-size: 0.8rem; font-weight: 600; border-radius: 6px;
+        }
+        .ad-desc { font-size: 0.75rem; color: #64748b; margin-top: 8px; font-style: italic; }
+        .copy-ad-btn {
+            position: absolute; top: 12px; right: 12px; background: #0f0f1a; border: 1px solid #2a2a3e; color: #64748b;
+            padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; cursor: pointer; transition: all 0.2s;
+        }
+        .copy-ad-btn:hover { border-color: #f97316; color: #fb923c; }
+
+        /* Hooks */
+        .hooks-list { display: flex; flex-direction: column; gap: 8px; }
+        .hook-item {
+            background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 16px;
+            font-size: 0.9rem; color: #cbd5e1; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: all 0.2s;
+        }
+        .hook-item:hover { border-color: #f97316; }
+        .hook-num { font-size: 0.7rem; font-weight: 700; color: #f97316; min-width: 20px; }
+
+        /* Tips */
+        .tip-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+        .tip-card h4 { font-size: 0.85rem; color: #fb923c; margin-bottom: 8px; }
+        .tip-list { list-style: none; }
+        .tip-list li { font-size: 0.85rem; color: #94a3b8; line-height: 1.6; padding: 4px 0; padding-left: 16px; position: relative; }
+        .tip-list li::before { content: '→'; position: absolute; left: 0; color: #f97316; }
+
+        /* Q&A */
+        .qa-container { max-width: 680px; margin: 0 auto; }
+        .qa-messages { display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px; max-height: 400px; overflow-y: auto; padding: 4px; }
+        .qa-msg { padding: 12px 16px; border-radius: 12px; font-size: 0.9rem; line-height: 1.6; max-width: 85%; }
+        .qa-msg.user { background: #f9731620; border: 1px solid #f9731630; align-self: flex-end; color: #e2e8f0; }
+        .qa-msg.ai { background: #1a1a2e; border: 1px solid #2a2a3e; align-self: flex-start; color: #cbd5e1; }
+        .qa-input-row { display: flex; gap: 8px; }
+        .qa-input { flex: 1; padding: 12px 16px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; color: #e2e8f0; font-size: 0.9rem; font-family: 'Inter', sans-serif; }
+        .qa-input:focus { outline: none; border-color: #f97316; }
+        .qa-send { padding: 12px 20px; background: linear-gradient(135deg, #fb923c, #f97316); color: #fff; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.85rem; }
+        .qa-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .error { display: none; text-align: center; padding: 40px; }
+        .error.active { display: block; }
+        .error p { color: #f87171; margin-bottom: 16px; }
+
+        @media (max-width: 640px) {
+            .options-row { grid-template-columns: 1fr; }
+            .tabs { gap: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>AdCopy <span>AI</span></h1>
+        <button class="header-btn" onclick="resetAll()">+ New Campaign</button>
+    </div>
+
+    <div class="container">
+        <!-- Input Form -->
+        <div id="inputForm">
+            <div class="form-section">
+                <label class="form-label">What are you advertising?</label>
+                <textarea class="text-area" id="productInput" placeholder="Describe your product or service... e.g. 'An online course that teaches people to build mobile apps in 30 days with no coding experience. $197 one-time payment. Includes lifetime access and a private community.'"></textarea>
+            </div>
+
+            <div class="form-section">
+                <label class="form-label">Target Audience</label>
+                <input class="text-input" id="audienceInput" placeholder="e.g. 'Small business owners aged 25-45 who want to grow online'">
+            </div>
+
+            <div class="form-section">
+                <label class="form-label">Platforms (select all that apply)</label>
+                <div class="platform-grid">
+                    <div class="platform-chip active" data-platform="Facebook">📘 Facebook</div>
+                    <div class="platform-chip active" data-platform="Instagram">📸 Instagram</div>
+                    <div class="platform-chip" data-platform="Google Search">🔍 Google Search</div>
+                    <div class="platform-chip" data-platform="Google Display">🖥️ Google Display</div>
+                    <div class="platform-chip" data-platform="LinkedIn">💼 LinkedIn</div>
+                    <div class="platform-chip" data-platform="TikTok">🎵 TikTok</div>
+                    <div class="platform-chip" data-platform="Twitter/X">𝕏 Twitter/X</div>
+                </div>
+            </div>
+
+            <div class="options-row">
+                <div class="option-group">
+                    <label class="form-label">Campaign Goal</label>
+                    <select id="goalSelect">
+                        <option value="conversions/sales">Sales & Conversions</option>
+                        <option value="lead generation">Lead Generation</option>
+                        <option value="brand awareness">Brand Awareness</option>
+                        <option value="website traffic">Website Traffic</option>
+                        <option value="app installs">App Installs</option>
+                        <option value="engagement">Engagement</option>
+                    </select>
+                </div>
+                <div class="option-group">
+                    <label class="form-label">Tone</label>
+                    <select id="toneSelect">
+                        <option value="professional but engaging">Professional</option>
+                        <option value="casual and friendly">Casual</option>
+                        <option value="urgent and action-driven">Urgent</option>
+                        <option value="witty and clever">Witty</option>
+                        <option value="luxurious and premium">Premium</option>
+                        <option value="empathetic and relatable">Empathetic</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <label class="form-label">Keywords to include (optional)</label>
+                <input class="text-input" id="keywordsInput" placeholder="e.g. 'no-code, build apps, 30 days, lifetime access'">
+            </div>
+
+            <button class="generate-btn" id="generateBtn" onclick="generateAds()">Generate Ad Copy →</button>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading" id="loadingView">
+            <div class="spinner"></div>
+            <p>Crafting high-converting ad copy...</p>
+        </div>
+
+        <!-- Error -->
+        <div class="error" id="errorView">
+            <p id="errorMsg">Something went wrong.</p>
+            <button class="generate-btn" style="max-width:300px;margin:0 auto;" onclick="resetAll()">Try Again</button>
+        </div>
+
+        <!-- Results -->
+        <div class="results" id="resultsView">
+            <div class="campaign-header">
+                <div class="campaign-name"><span id="campaignName"></span></div>
+            </div>
+
+            <div class="tabs" id="tabsBar"></div>
+            <div id="tabContents"></div>
+        </div>
+    </div>
+
+    <script>
+        let adData = null;
+        let qaHistory = [];
+
+        // Platform chips toggle
+        document.querySelectorAll('.platform-chip').forEach(chip => {
+            chip.addEventListener('click', () => chip.classList.toggle('active'));
+        });
+
+        function showView(view) {
+            document.getElementById('inputForm').style.display = view === 'input' ? 'block' : 'none';
+            document.getElementById('loadingView').classList.toggle('active', view === 'loading');
+            document.getElementById('errorView').classList.toggle('active', view === 'error');
+            document.getElementById('resultsView').classList.toggle('active', view === 'results');
+        }
+
+        async function generateAds() {
+            const product = document.getElementById('productInput').value.trim();
+            if (!product) { document.getElementById('productInput').focus(); return; }
+
+            const audience = document.getElementById('audienceInput').value.trim();
+            const platforms = [...document.querySelectorAll('.platform-chip.active')].map(c => c.dataset.platform).join(', ');
+            const goal = document.getElementById('goalSelect').value;
+            const tone = document.getElementById('toneSelect').value;
+            const keywords = document.getElementById('keywordsInput').value.trim();
+
+            if (!platforms) { alert('Please select at least one platform.'); return; }
+
+            showView('loading');
+
+            try {
+                const resp = await fetch('/api/adcopy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'generate', product, audience: audience || undefined, platforms, goal, tone, keywords: keywords || undefined })
+                });
+                const data = await resp.json();
+
+                if (data.error) throw new Error(data.error);
+                if (data.raw) throw new Error('Unexpected response format');
+
+                adData = data;
+                renderResults(data);
+                showView('results');
+                chargeCredits('generate');
+            } catch (err) {
+                document.getElementById('errorMsg').textContent = err.message || 'Failed to generate ads.';
+                showView('error');
+            }
+        }
+
+        function renderResults(data) {
+            document.getElementById('campaignName').textContent = data.campaignName || 'Your Ad Campaign';
+
+            const tabsBar = document.getElementById('tabsBar');
+            const tabContents = document.getElementById('tabContents');
+            tabsBar.innerHTML = '';
+            tabContents.innerHTML = '';
+
+            // Platform tabs
+            if (data.ads?.length) {
+                data.ads.forEach((platformAds, i) => {
+                    const tabId = 'platform-' + i;
+                    tabsBar.innerHTML += `<div class="tab ${i === 0 ? 'active' : ''}" data-tab="${tabId}">${platformAds.platform}</div>`;
+                    let html = `<div class="tab-content ${i === 0 ? 'active' : ''}" id="tab-${tabId}"><div class="platform-section">`;
+                    if (platformAds.variations?.length) {
+                        platformAds.variations.forEach((v, vi) => {
+                            html += `<div class="ad-card">
+                                <button class="copy-ad-btn" onclick="copyAd(this, ${i}, ${vi})">Copy</button>
+                                <div class="ad-variation">Variation ${vi + 1}</div>
+                                <div class="ad-headline">${esc(v.headline)}</div>
+                                <div class="ad-body">${esc(v.primaryText)}</div>
+                                <div class="ad-cta">${esc(v.callToAction)}</div>
+                                ${v.description ? `<div class="ad-desc">${esc(v.description)}</div>` : ''}
+                            </div>`;
+                        });
+                    }
+                    html += '</div></div>';
+                    tabContents.innerHTML += html;
+                });
+            }
+
+            // Hooks tab
+            tabsBar.innerHTML += `<div class="tab" data-tab="hooks">Hooks</div>`;
+            let hooksHtml = '<div class="tab-content" id="tab-hooks"><div class="hooks-list">';
+            if (data.hooks?.length) {
+                data.hooks.forEach((h, i) => {
+                    hooksHtml += `<div class="hook-item" onclick="copyText(this, '${esc(h).replace(/'/g, "\\'")}')"><span class="hook-num">${i + 1}</span>${esc(h)}</div>`;
+                });
+            }
+            hooksHtml += '</div></div>';
+            tabContents.innerHTML += hooksHtml;
+
+            // Tips tab
+            tabsBar.innerHTML += `<div class="tab" data-tab="tips">Tips</div>`;
+            let tipsHtml = '<div class="tab-content" id="tab-tips">';
+            if (data.targetingTips?.length) {
+                tipsHtml += '<div class="tip-card"><h4>Targeting Tips</h4><ul class="tip-list">';
+                data.targetingTips.forEach(t => tipsHtml += `<li>${esc(t)}</li>`);
+                tipsHtml += '</ul></div>';
+            }
+            if (data.bestPractices?.length) {
+                tipsHtml += '<div class="tip-card"><h4>Best Practices</h4><ul class="tip-list">';
+                data.bestPractices.forEach(t => tipsHtml += `<li>${esc(t)}</li>`);
+                tipsHtml += '</ul></div>';
+            }
+            tipsHtml += '</div>';
+            tabContents.innerHTML += tipsHtml;
+
+            // Q&A tab
+            tabsBar.innerHTML += `<div class="tab" data-tab="qa">Ad Advisor</div>`;
+            tabContents.innerHTML += `<div class="tab-content" id="tab-qa">
+                <div class="qa-container">
+                    <p style="color:#94a3b8;font-size:0.85rem;margin-bottom:16px;">Ask about your ads — refine copy, get strategy advice, or request new variations.</p>
+                    <div class="qa-messages" id="qaMessages"></div>
+                    <div class="qa-input-row">
+                        <input class="qa-input" id="qaInput" placeholder="Make the Facebook ads more urgent..." onkeydown="if(event.key==='Enter')askQuestion()">
+                        <button class="qa-send" id="qaSend" onclick="askQuestion()">Ask</button>
+                    </div>
+                </div>
+            </div>`;
+
+            // Tab click handlers
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+                });
+            });
+        }
+
+        function copyAd(btn, pi, vi) {
+            const ad = adData.ads[pi].variations[vi];
+            const text = `${ad.headline}\n\n${ad.primaryText}\n\n${ad.callToAction}${ad.description ? '\n\n' + ad.description : ''}`;
+            navigator.clipboard.writeText(text).then(() => {
+                btn.textContent = '✓';
+                setTimeout(() => btn.textContent = 'Copy', 2000);
+            });
+        }
+
+        function copyText(el, text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const orig = el.style.borderColor;
+                el.style.borderColor = '#f97316';
+                setTimeout(() => el.style.borderColor = orig, 1000);
+            });
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const q = input.value.trim();
+            if (!q) return;
+            input.value = '';
+
+            const msgs = document.getElementById('qaMessages');
+            msgs.innerHTML += `<div class="qa-msg user">${esc(q)}</div>`;
+            document.getElementById('qaSend').disabled = true;
+            msgs.innerHTML += `<div class="qa-msg ai" id="qaTyping" style="color:#64748b;">Thinking...</div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+
+            try {
+                const resp = await fetch('/api/adcopy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'qa', question: q, context: JSON.stringify(adData), history: qaHistory })
+                });
+                const data = await resp.json();
+                document.getElementById('qaTyping')?.remove();
+
+                const answer = data.answer || data.error || 'No response';
+                qaHistory.push({ role: 'user', content: q }, { role: 'model', content: answer });
+
+                msgs.innerHTML += `<div class="qa-msg ai">${fmtMd(answer)}</div>`;
+                msgs.scrollTop = msgs.scrollHeight;
+                chargeCredits('qa');
+            } catch (err) {
+                document.getElementById('qaTyping')?.remove();
+                msgs.innerHTML += `<div class="qa-msg ai" style="color:#f87171;">Error: ${err.message}</div>`;
+            } finally {
+                document.getElementById('qaSend').disabled = false;
+            }
+        }
+
+        function esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+        function fmtMd(t) { return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/`(.*?)`/g,'<code style="background:#0f0f1a;padding:2px 6px;border-radius:4px;font-size:0.85em;">$1</code>').replace(/\n/g,'<br>'); }
+
+        function resetAll() {
+            adData = null;
+            qaHistory = [];
+            showView('input');
+        }
+
+        function chargeCredits(feature) {
+            if (window.parent !== window) {
+                window.parent.postMessage({ type: 'suite-charge-credits', appId: 'adcopy', feature, chargeId: Date.now().toString(), amount: 5 }, '*');
+            }
+        }
+    </script>
+</body>
+</html>
